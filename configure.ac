@@ -112,6 +112,5 @@ AC_CONFIG_FILES([
 	doc/doxygen.conf
 	version.h
 	libburn-1.pc
-	libisofs-1.pc
 	])
 AC_OUTPUT

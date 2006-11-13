@@ -1,7 +1,7 @@
 pkgconfigdir=$(libdir)/pkgconfig
 libincludedir=$(includedir)/libburn
 
-lib_LTLIBRARIES = libburn/libburn.la libisofs/libisofs.la
+lib_LTLIBRARIES = libburn/libburn.la 
 
 ## ========================================================================= ##
 
@@ -64,33 +64,8 @@ libburn_libburn_la_SOURCES = \
 
 ##	libburn/sg-@ARCH@.c \
 
-libisofs_libisofs_la_LDFLAGS = \
-	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
-libisofs_libisofs_la_SOURCES = \
-	libisofs/tree.h \
-	libisofs/tree.c \
-	libisofs/volume.h \
-	libisofs/volume.c \
-	libisofs/util.h \
-	libisofs/util.c \
-	libisofs/ecma119.c \
-	libisofs/ecma119.h \
-	libisofs/ecma119_tree.c \
-	libisofs/ecma119_tree.h \
-	libisofs/susp.h \
-	libisofs/susp.c \
-	libisofs/rockridge.h \
-	libisofs/rockridge.c \
-	libisofs/joliet.c \
-	libisofs/joliet.h \
-	libisofs/exclude.c \
-	libisofs/exclude.h \
-	libisofs/hash.h \
-	libisofs/hash.c 
-
 libinclude_HEADERS = \
-	libburn/libburn.h \
-	libisofs/libisofs.h
+	libburn/libburn.h 
 
 ## ========================================================================= ##
 
@@ -99,7 +74,6 @@ noinst_PROGRAMS = \
 	test/libburner \
 	test/dewav \
 	test/fake_au \
-	test/iso \
 	test/poll \
 	test/toc \
 	test/structest
@@ -125,9 +99,6 @@ test_toc_SOURCES = test/toc.c
 test_structest_CPPFLAGS = -Ilibburn
 test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_structest_SOURCES = test/structest.c
-test_iso_CPPFLAGS = -Ilibisofs
-test_iso_LDADD = $(libisofs_libisofs_la_OBJECTS) $(THREAD_LIBS)
-test_iso_SOURCES = test/iso.c
 
 ##  cdrskin construction site - ts A60816
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
@@ -174,13 +145,11 @@ uninstall-local:
 
 # Indent source files
 indent_files = \
-	$(libisofs_libisofs_la_SOURCES) \
 	$(libburn_libburn_la_SOURCES) \
 	$(test_libburner_SOURCES) \
 	$(test_poll_SOURCES) \
 	$(test_toc_SOURCES) \
-	$(test_structest_SOURCES) \
-	$(test_iso_SOURCES)
+	$(test_structest_SOURCES)
 	
 
 indent: $(indent_files)
@@ -196,12 +165,10 @@ indent: $(indent_files)
 
 # Extra things
 nodist_pkgconfig_DATA = \
-	libburn-1.pc \
-	libisofs-1.pc
+	libburn-1.pc
 
 EXTRA_DIST = \
 	libburn-1.pc.in \
-	libisofs-1.pc.in \
 	version.h.in \
 	doc/comments \
 	doc/doxygen.conf.in \
