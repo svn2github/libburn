@@ -10,7 +10,8 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 
 + -pad is always set for audio tracks
 
-+ -sao is default for multi-track sessions with all track lengths defined
++ -sao is default where possible, -tao is default where needed 
+  (Note: cdrecord write mode defaults have changed in cdrtools-2.01.01a20)
 
 + premature end of source is not an error and leads to full announced tracksize
 
@@ -1142,7 +1143,6 @@ Made available drive buffer fill during write
 libburn/sg-freebsd.c
 Updated tangling of FreeBSD code with mmc.c :(
 
-
 2006.10.23.134719  [310]
 cdrskin/cdrskin.c
 Corrected -toc track counter and notified about "hidden" tracks
@@ -1429,6 +1429,7 @@ Prepared next cdrskin-0.2.5 upload cycle
 * Bug fixed: Trailing trash appended to .wav files caused error message
   and, if exceeding fifo size, could even stall a burn.
 
+
 2006.11.09.112832  [365]
 cdrskin/cdrskin.c
 Check desired write and block type with burn_drive_info.*_block_types
@@ -1494,17 +1495,59 @@ Demanded (for now) -tao for writing to appendable CDs
 cdrskin/cdrskin.c
 Generally enabled -multi, -msinfo and writing to appendable CDs in TAO mode
 
-11 Nov 2006  []
+11 Nov 2006  [381]
 cdrskin/changelog.txt
 Prepared next cdrskin-0.2.5 cycle
 
------------------------------------- cycle  - cdrskin-0.2.5 - 2006.11.11.
+11 Nov 2006  [382]
+cdrskin/cdrskin_eng.html
+cdrskin/README
+Updated docs about multi-session
+
+------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.11.163625
+* Multi-session CDs (for now restricted to write mode TAO), -multi, -msinfo
 * Bug fixed: False speed with first pacifier cycle. Potential SIGFPE by NaN.
-* multi-session CDs (for now restricted to write mode TAO) by -multi, -msinfo
+
+
+2006.11.12.085808  [383]
+libburn/mmc.c
+Made speed 0 in burn_drive_set_speed() really maximum speed (i.e. FFFFh)
+
+2006.11.12.113629  [384]
+cdrskin/cdrskin.c
+Made SAO preferrable default write mode, kept TAO as default where needed
+
+2006.11.12.152723  [385]
+libburn/mmc.c
+libburn/libdax_msgs.h
+Reacted on error condition during write operation
+
+2006.11.12.185342  [386]
+cdrskin/cdrskin.c
+Made -toc on blank CD exit with value 0 (rather than 7 with no media)
+
+13 Nov 2006  [390]
+README
+cdrskin/add_ts_changes_to_libburn_0_2_5
+cdrskin/cdrskin_eng.html
+Changed SVN URLs to reflect new structure
+
+13 Nov 2006  [391]
+README
+Refered to both libburn and libisofs in SVN description, updated history
+
+
+------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.13.122418
+* Enabled named pipes and other non-plain file types as track sources
+  (actually already in previous cycle)
+* Bug fixed: Default speed was not highest possible but announced as "MAX"
+* SAO is preferred default write mode, TAO is default when needed
 
 
 
------------------------------------- cycle  - cdrskin-0.2.5 - 
+  []
+Best effort to find a suitable write mode as default
+
 
   []
 Enable multi-session for write modes other than TAO
