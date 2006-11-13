@@ -22,7 +22,7 @@ set -x
 #
 # libburn version used:  http://libburn.pykix.org
 # Downloaded by:
-#  $ svn co http://libburn-svn.pykix.org/trunk libburn_pykix
+#  $ svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
 # packed up in a tarball just to save it from inadverted changes by
 #  $ tar czf libburn_svn.tgz libburn_pykix
 original="./libburn_svn.tgz"

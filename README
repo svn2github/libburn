@@ -27,7 +27,7 @@ This libburn.pykix.org toplevel README (C) 2006 Thomas Schmitt
 Our build system is based on autotools. For preparing the build of a SVN 
 snapshot you will need autotools of at least version 1.7. 
 Check out from SVN by
-   svn co http://libburn-svn.pykix.org/trunk libburn_pykix
+   svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
 and apply autotools by
    ./bootstrap
 
