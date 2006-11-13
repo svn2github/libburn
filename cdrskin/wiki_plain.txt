@@ -1,0 +1,204 @@
+--------------------------------------------------------------------------
+                       cdrskin Wiki - plain text copy
+--------------------------------------------------------------------------
+
+cdrskin-0.2.5 is the cdrecord compatibility middleware of libburn.
+
+Its paragon, cdrecord, is a powerful GPL'ed burn program included in Joerg
+Schilling's cdrtools. cdrskin strives to be a second source for the services
+traditionally provided by cdrecord. Currently it does CD-R and CD-RW.
+Its future ability to burn DVD media depends on the development of libburn.
+
+cdrskin does not contain any bytes copied from cdrecord's sources.
+Many bytes have been copied from the message output of cdrecord
+runs, though. The most comprehensive technical overview of cdrskin
+can be found in cdrskin/README . Online available as :
+http://libburn.pykix.org/browser/trunk/cdrskin/README?format=raw
+
+--------------------------------------------------------------------------
+
+cdrskin with CD media fails to match its paragon cdrecord on one major field:
+Multi session.
+
+Convenient TAO burn mode is provided in development version 0.2.5 but not in
+current "stable" release 0.2.4.
+
+cdrskin does not provide DVD burning yet. See advise to use dvd+rw-tools
+at the end of this text.
+
+--------------------------------------------------------------------------
+
+About the command line options of cdrskin:
+
+There are two families of options: cdrecord-compatible ones and options
+which are specific to cdrskin. The latter are mostly used to configure
+cdrskin for its task to emulate cdrecord. There are some, nevertheless,
+which provide rather exotic unique features of cdrskin.
+
+The cdrecord-compatible options are listed in the output of
+
+cdrskin -help
+
+where the option "help" has *one* dash. 
+For these options you may expect program behavior that is roughly the
+same as described in original  man 1 cdrecord . 
+
+Online: http://cdrecord.berlios.de/old/private/man/cdrecord-2.0.html
+
+The cdrskin-specific options are listed by
+
+cdrskin --help
+
+where the option "help" has *two* dashes.
+
+Those have no man page yet. Some are very experimental and should only be
+used in coordination with the libburn developer team.
+Some are of general user interest, though:
+
+--------------------------------------------------------------------------
+
+--devices allows the sysadmin to scan the system for possible drives
+and displays their detected properties.
+The drives are listed one per line, with fields:
+
+libburn-drive-number  sysadmin-device-file  permissions :  vendor  type
+
+0  dev='/dev/sg0'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
+
+This feature is valuable since cdrskin -scanbus will not give you
+the device file name and its current permissions.
+cdrskin will accept of course the proposed dev= option as address
+for any usage of the drive.
+
+Different from cdrecord, cdrskin is intended to be run without special
+privileges, i.e. no superuser setuid. It is intended that the sysadmin
+controls drive accessability by rw-permissions of the drive rather than
+by x-permission of the burn binary. To be usable with cdrskin, the drive
+has to offer both, r- and w-permission.
+
+--------------------------------------------------------------------------
+
+--fifo_start_empty is a throughput enhancer for unsteady data streams
+like they are produced by a compressing archiver program when piping to
+CD on-the-fly. It makes better use of the general property of a FIFO 
+buffer to transport surplus bandwidth into the future. Yep. A time machine.
+One-way, i fear.
+
+FIFO originally was introduced by cdrecord's author Joerg Schilling in order
+to protect mediocre burner hardware from suffering buffer underruns
+and thus producing misburns (at 1x speed on CD-R media at the price of a
+DVD-RAM nowadays). This purpose would not justify a fifo any more -
+given the limited life time of burners and the seamless underrun protection
+of contemporary consumer drives.
+
+With an unsteady data stream the task of the buffer is to soak up peak 
+performance and to release it steadily at the drive's maximum speed.
+The larger the buffer the more reserves can be built up and the longer
+input drought can be compensated.
+
+Original cdrecord has the historical property, though, to first wait until
+the buffer is completely filled. Best practice for fighting drive
+underruns, of course.
+With a very fat fs=# buffer (128 MB for 12x CD is not unrealistic) this
+can cause a big delay until burning finally starts and takes its due time.
+
+--fifo_start_empty makes cdrskin start burning without waiting for the
+FIFO to be full resp. the data stream to end. It can make use of the 
+seconds spend with drive preparation and lead-in, it risks a few drive
+buffer underruns at the beginning of burn - but modern drives stand this.
+
+Note: no FIFO can give you better average throughput than the average
+throughput of the data source and the throughput of the burner.
+It can be used, though, to bring the effective throughput very close
+to the theoretical limit. Especially with high speed media.
+
+--------------------------------------------------------------------------
+
+--no_rc allows you to surely ban influence from systemwide or user specific
+default settings of cdrskin. Possible locations for such settings:
+
+/etc/default/cdrskin
+
+/etc/opt/cdrskin/rc
+
+$HOME/.cdrskinrc
+
+--------------------------------------------------------------------------
+
+tao_to_sao_tsize=<num> allows the - actually unsupported - cdrecord option
+-tao and defines a default track size to be used if - as custom with -tao -
+no option tsize=# is given.
+
+Since -tao is supported in cdrskin-0.2.5 the TAO-to-SAO workaround on its way
+to obsolescence. Nevertheless, tao_to_sao_tsize= allows to preset a default
+size for SAO mode which is in effect only if no track size is available.
+
+As in general with cdrskin tsize=# the data source does not have to provide
+the full annouced amount of data. Missing data will be padded up by 0-bytes.
+Surplus data is supposed to cause an error, though. The burn will then
+be a failure in any way.
+
+--------------------------------------------------------------------------
+
+dev_translation=<sep><from><sep><to> may be needed to foist cdrskin to
+frontend programs of cdrecord which do *not* ask cdrecord -scanbus but
+which make own assumptions and guesses about cdrecord's device addresses.
+
+Normally, cdrskin understands all addresses which are suitable for cdrecord
+under Linux. See cdrskin/README, "Pseudo-SCSI Adresses".
+This option is mainly for (yet unknown) exotic configurations or very
+stubborn frontend programs.
+
+If a frontend refuses to work with cdrskin, look into the error protocol
+of that frontend, look at the output of a run of cdrskin --devices and give
+cdrskin the necessary hint.
+Example: Your frontend insists in using "0,0,0" and --devices reported 
+dev='/dev/hdc' resp. cdrskin dev=ATA -scanbus reported "1,0,0" then this
+would be the appropriate translation:
+
+dev_translation=+0,0,0+/dev/hdc
+
+The "+" character is a separator to be choosen by you.
+Currently i am not aware of the need to choose any other than "+"
+unless you get playful with custom translations like
+
+dev_translation=-"cd+dvd"-1,0,0
+
+See http://scdbackup.sourceforge.net/k3b_on_cdrskin.html
+for an illustrated example with K3b 0.10 .
+
+--------------------------------------------------------------------------
+
+DVD advise:
+
+For burning of DVD media the cdrskin project currently advises to use
+Andy Polyakov's dvd+rw-tools which despite their historic name burn
+for me on above burner: DVD+RW, DVD+R, DVD-RW, DVD-R .
+
+http://fy.chalmers.se/~appro/linux/DVD+RW/tools
+
+They are not compatible or related to cdrecord resp. cdrecord-ProDVD
+(now obsoleted by original source cdrtools cdrecord with identical
+capabilities besides the license key).
+
+If there is sincere and well motivated interest, the cdrskin project could try
+to employ growisofs as DVD burning engine. The cdrskin project would prefer to
+wait for DVD support being included in libburn, though.
+A very limited and specialized cdrecord-compatibility wrapper for growisofs
+serves in my project scdbackup. It is not overly hard to make one that serves
+some very few fixed use cases.
+
+To my knowledge, Linux kernels 2.6 do write to DVD+RW via block devices as
+they would write to a traditional tape device. Try old tape archiver
+commands with addresses like /dev/sr0 or /dev/hdc rather than /dev/mt0 .
+I have heard rumors that DVD-RW in mode "restricted overwrite" would be
+block device ready, too. My burner is not a real friend of DVD-RW and
+in an experiment the burn worked fine - but the result was not identical
+to the stream sent to the device. I had similar failure with DVD-RAM, too.
+
+Beware of the impact of a slow block device on overall system i/o buffering.
+It is wise to curb its input to a speed which it is able to deliver to media.
+Else your i/o dedicated RAM might buffer a big amount of stream data.
+
+--------------------------------------------------------------------------
+

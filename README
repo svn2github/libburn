@@ -1,0 +1,211 @@
+------------------------------------------------------------------------------
+                               libburn.pykix.org
+------------------------------------------------------------------------------
+This all is under GPL.
+(See GPL reference, our clarification and commitment at the end of this text)
+------------------------------------------------------------------------------
+libburn.pykix.org
+By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
+Copyright (C) 2006 Mario Danic, Thomas Schmitt
+
+Still containing parts of
+Libburn. By Derek Foreman <derek@signalmarketing.com> and
+            Ben Jansens <xor@orodu.net>
+Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
+These parts are to be replaced by own code of above libburn.pykix.org-copyright
+holders and then libburn.pykix.org is to be their sole copyright.
+This is done to achieve the right to issue the clarification and the
+commitment as written at the end of this text.
+The rights and merits of the Libburn-copyright holders Derek Foreman and
+Ben Jansens will be duely respected. 
+
+This libburn.pykix.org toplevel README (C) 2006 Thomas Schmitt 
+------------------------------------------------------------------------------
+
+                           Build and Installation
+
+Our build system is based on autotools. For preparing the build of a SVN 
+snapshot you will need autotools of at least version 1.7. 
+Check out from SVN by
+   svn co http://libburn-svn.pykix.org/trunk libburn_pykix
+and apply autotools by
+   ./bootstrap
+
+Alternatively you may unpack a release tarball for which you do not need
+autotools installed.
+
+To build libburn.pykix.org and its subprojects it should be sufficient to go
+into its toplevel directory (here: "libburn_pykix") and execute
+   ./configure
+   make
+
+To make the libraries accessible for running resp. developing applications 
+   make install
+
+------------------------------------------------------------------------------
+
+                         Overview of libburn.pykix.org 
+
+libburn.pykix.org is an open-source library for reading, mastering and writing
+optical discs. For now this means only CD-R and CD-RW.
+
+The project comprises of several more or less interdependent parts which
+together strive to be a usable foundation for application development.
+These are libraries, language bindings, and middleware binaries which emulate
+classical (and valuable) Linux tools.
+
+Our scope is currently Linux 2.4 and 2.6 and we will have a hard time to widen
+this for now, because of our history. The project could need advise from or
+membership of skilled kernel people and people who know how to talk CD/DVD
+drives into doing things.
+
+We do have a workable code base for burning data CDs, though. The burn API is
+quite comprehensively documented and can be used to build a presentable
+application.
+We do have a functional binary which emulates parts of cdrecord in order to
+prove that usability, and in order to allow you to explore libburn's scope
+by help of existing cdrecord frontends.
+
+The project components (list subject to growth, hopefully):
+
+- libburn  is the library by which preformatted data get onto optical media.
+           It uses either /dev/sgN (e.g. on kernel 2.4 with ide-scsi) or
+           /dev/hdX (e.g. on kernel 2.6).
+           libburn is the foundation of our cdrecord emulation.
+
+- libisofs is the library to pack up hard disk files and directories into a
+           ISO 9660 disk image. This may then be brought to CD via libburn.
+           libisofs is to be the foundation of our upcoming mkisofs emulation.
+
+- cdrskin  is a limited cdrecord compatibility wrapper for libburn.
+           Cdrecord is a powerful GPL'ed burn program included in Joerg
+           Schilling's cdrtools. cdrskin strives to be a second source for
+           the services traditionally provided by cdrecord.
+           cdrskin does not contain any bytes copied from cdrecord's sources.
+           Many bytes have been copied from the message output of cdrecord
+           runs, though.
+           See cdrskin/README for more.
+
+- test     is a collection of application gestures and examples given by the
+           authors of the library features. The main API example for libburn
+           is test/libburner.c .
+           Explore these examples if you look for inspiration.
+
+We plan to be a responsive upstream. Bear with us. We are still practicing.
+
+
+------------------------------------------------------------------------------
+Project history as far as known to me:
+
+- Founded in 2002 as it seems. See mailing list archives
+     http://lists.freedesktop.org/archives/libburn/
+  The site of this founder team is reachable and offers download of a
+  (somewhat outdated) tarball and from CVS :
+     http://icculus.org/burn/
+  Copyright holders and most probably founders:
+  Derek Foreman and Ben Jansens.
+
+- I came to using libburn in 2005. Founded the cdrskin project and submitted
+  necessary patches which were accepted or implemented better. Except one
+  remaining patch which prevented cdrskin from using vanilla libburn from CVS.
+  The cdrskin project site is reachable and offers download of the heavily
+  patched (elsewise outdated) tarball under the name  cdrskin-0.1.2  :
+     http://scdbackup.sourceforge.net/cdrskin_eng.html
+  It has meanwhile moved to use vanilla libburn.pykix.org , though.
+  Version 0.1.4 constitutes the first release of this kind.
+
+- In Juli 2006 our team mate Mario Danic announced a revival of libburn
+  which by about nearly everybody else was perceived as unfriendly fork.
+  Derek Foreman four days later posted a message which expressed his
+  discontent.
+  The situation first caused me to publically regret it and then - after i
+  got the opportunity to move in with cdrskin - gave me true reason to
+  personally apologize to Derek Foreman, Ben Jansens and the contibutors at 
+  icculus.org/burn. Posted to both projects:
+    http://lists.freedesktop.org/archives/libburn/2006-August/000446.html
+    http://mailman-mail1.webfaction.com/pipermail/libburn-hackers/2006-August/000024.html
+
+- Mid August 2006 project cdrskin established a branch office in 
+  libburn.pykix.org so that all maintainers of our tools have one single place
+  to get the current (at least slightely) usable coordinated versions of
+  everything.
+  Project cdrskin will live forth independendly for a while but it is committed
+  to stay in sync with libburn.pykix.org (or some successor, if ever).
+  cdrskin is also committed to support  icculus.org/burn  if the pending fork
+  is made reality by content changes in that project. It will cease to maintain
+  a patched version of  icculus.org/burn  though. Precondition for a new
+  release of cdrskin on base of  icculus.org/burn  would be the pending
+  "whitelist patch" therefore.
+  I would rather prefer if both projects find consense and merge, or at least
+  cooperate. I have not given up hope totally, yet.
+  I, personally, will honor any approach.
+
+- 2nd September 2006 the decision is made to strive for a consolidation of
+  copyright and a commitment to GPL in a reasonable and open minded way.
+  This is to avoid long term problems with code of unknown origin and
+  with finding consense among the not so clearly defined group of copyright
+  claimers and -holders.
+  libisofs is already claimed sole copyright Mario Danic.
+  cdrskin and libburner are already claimed sole copyright Thomas Schmitt.
+  Rewrites of other components will follow and concluded by claiming full
+  copyright within the group of libburn.pykix.org-copyright holders.
+
+- 16th September 2006 feature freeze for release of libburn-0.2.2 .
+
+- 20th September 2006 release of libburn-0.2.2 .
+
+- 26th October 2006 feature freeze for cdrskin-0.2.4 based on libburn-0.2.3 .
+  This version of cdrskin is much more cdrecord compatible in repect
+  to drive addressing and audio features.
+
+
+------------------------------------------------------------------------------
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+------------------------------------------------------------------------------
+Clarification in my name and in the name of Mario Danic, upcoming copyright
+holders on toplevel of libburn. To be fully in effect after the remaining other
+copyrighted code has been replaced by ours and by copyright-free contributions
+of our friends:
+------------------------------------------------------------------------------
+
+We, the copyright holders, agree on the interpretation that
+dynamical linking of our libraries constitutes "use of" and
+not "derivation from" our work in the sense of GPL, provided
+those libraries are compiled from our unaltered code.
+
+Thus you may link our libraries dynamically with applications
+which are not under GPL. You may distribute our libraries and
+application tools in binary form, if you fulfill the usual
+condition of GPL to offer a copy of the source code -altered
+or unaltered- under GPL.
+
+We ask you politely to use our work in open source spirit
+and with the due reference to the entire open source community.
+
+If there should really arise the case where above clarification
+does not suffice to fulfill a clear and neat request in open source
+spirit that would otherwise be declined for mere formal reasons,
+only in that case we will duely consider to issue a special license
+covering only that special case.
+It is the open source idea of responsible freedom which will be
+decisive and you will have to prove that you exhausted all own
+means to qualify for GPL.
+
+For now we are firmly committed to maintain one single license: GPL.
+
+signed: Mario Danic, Thomas Schmitt
+
