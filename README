@@ -28,6 +28,9 @@ Our build system is based on autotools. For preparing the build of a SVN
 snapshot you will need autotools of at least version 1.7. 
 Check out from SVN by
    svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
+resp.
+   svn co http://libburn-svn.pykix.org/libisofs/trunk libisofs_pykix
+go into the respective directory libburn_pykix or libisofs_pykix,
 and apply autotools by
    ./bootstrap
 
@@ -54,10 +57,10 @@ together strive to be a usable foundation for application development.
 These are libraries, language bindings, and middleware binaries which emulate
 classical (and valuable) Linux tools.
 
-Our scope is currently Linux 2.4 and 2.6 and we will have a hard time to widen
-this for now, because of our history. The project could need advise from or
-membership of skilled kernel people and people who know how to talk CD/DVD
-drives into doing things.
+Our scope is currently Linux 2.4 and 2.6 only. For ports to other systems
+we would need : login on a development machine resp. a live OS on CD or DVD,
+advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
+volunteers for testing of realistic use cases.
 
 We do have a workable code base for burning data CDs, though. The burn API is
 quite comprehensively documented and can be used to build a presentable
@@ -158,6 +161,9 @@ Project history as far as known to me:
   This version of cdrskin is much more cdrecord compatible in repect
   to drive addressing and audio features.
 
+- 30th October 2006 release of cdrskin-0.2.4 .
+
+- 13th November 2006 splitting releases of libburn+cdrskin from libisofs.
 
 ------------------------------------------------------------------------------
 
