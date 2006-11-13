@@ -221,10 +221,12 @@ Enhancements towards previous stable version cdrskin-0.2.2:
 <DT><H3>Development snapshot, version 0.2.5 :</H3></DT>
 <DD>Enhancements towards stable version 0.2.4:
  <UL>
- <LI>Option <KBD><B>-tao</B></KBD> is fully enabled.
-     With single track or with undefined size from standard input,
-     default is -tao. With other multi-track sessions, default is -sao.
-     (The latter is an intentional deviation from cdrecord defaults.)
+ <LI>Option <KBD><B>-tao</B></KBD> is fully enabled.<BR>
+     SAO is still the preferred default but TAO is default if a track of
+     unpredicted size is present (stdin, named pipe, ...) or if a follow-up
+     session is written to an appendable CD.
+     (This is an intentional deviation from cdrecord defaults which themselves
+      have changed with the newest cdrecord versions.)
  </LI>
  <LI>Status report during blank, preparation and finalization improved.</LI>
  <LI>Bug fixed: Trailing trash appended to .wav files caused error message
