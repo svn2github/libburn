@@ -323,7 +323,7 @@ will be the right one to replace "1,0,0" in above example.
 
 If not --no_rc is the first argument then cdrskin attempts on startup to read
 arguments from the following three files:
-  /etc/defaults/cdrskin
+  /etc/default/cdrskin
   /etc/opt/cdrskin/rc
   $HOME/.cdrskinrc
 The files are read in the sequence given above.
