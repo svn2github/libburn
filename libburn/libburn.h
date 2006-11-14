@@ -643,7 +643,7 @@ void burn_drive_release(struct burn_drive *drive, int eject);
 
 
 /** Returns what kind of disc a drive is holding. This function may need to be
-    called more than once to get a proper status from it. See burn_status
+    called more than once to get a proper status from it. See burn_disc_status
     for details.
     @param drive The drive to query for a disc.
     @return The status of the drive, or what kind of disc is in it.
