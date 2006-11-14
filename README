@@ -28,10 +28,7 @@ Our build system is based on autotools. For preparing the build of a SVN
 snapshot you will need autotools of at least version 1.7. 
 Check out from SVN by
    svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
-resp.
-   svn co http://libburn-svn.pykix.org/libisofs/trunk libisofs_pykix
-go into the respective directory libburn_pykix or libisofs_pykix,
-and apply autotools by
+go into directory libburn_pykix and apply autotools by
    ./bootstrap
 
 Alternatively you may unpack a release tarball for which you do not need
@@ -45,12 +42,19 @@ into its toplevel directory (here: "libburn_pykix") and execute
 To make the libraries accessible for running resp. developing applications 
    make install
 
+
+The other half of the project, libisofs, is hosted in the libburn SVN, too:
+   svn co http://libburn-svn.pykix.org/libisofs/trunk libisofs_pykix
+See README file there.
+
+
 ------------------------------------------------------------------------------
+
 
                          Overview of libburn.pykix.org 
 
-libburn.pykix.org is an open-source library for reading, mastering and writing
-optical discs. For now this means only CD-R and CD-RW.
+libburn.pykix.org is an open-source software project for reading, mastering and
+writing optical discs. For now this means only CD-R and CD-RW.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
