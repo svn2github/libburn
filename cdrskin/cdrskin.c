@@ -913,6 +913,15 @@ int Cdrtrack_set_track_type(struct CdrtracK *o, int track_type, int flag)
 }
 
 
+int Cdrtrack_get_track_type(struct CdrtracK *o, int *track_type, 
+                            int *sector_size, int flag)
+{
+ *track_type= o->track_type;
+ *sector_size= o->sector_size;
+ return(1);
+}
+
+
 /** 
     @param flag Bitfield for control purposes:
                 bit0= size returns number of actually processed source bytes
@@ -4202,15 +4211,19 @@ ex:;
 int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
- int ok;
+ int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
  struct burn_drive_info *drive_info;
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
+   was_still_default= 1;
 
 #ifdef Cdrskin_allow_libburn_taO
-   if(s  == BURN_DISC_APPENDABLE) 
+   if(s  == BURN_DISC_APPENDABLE) {
      strcpy(skin->preskin->write_mode_name,"TAO");
-   else
+
+     was_still_default= 2; /*<<< prevents trying of SAO if drive dislikes TAO*/
+
+   } else
 #endif
 
      strcpy(skin->preskin->write_mode_name,"SAO");
@@ -4239,26 +4252,50 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
    goto it_is_done;
  }
 
+ /* <<< this should become a libburn API function.The knowledge about TAO audio
+        track block type is quite inappropriate here. It refers to a habit of
+        spc_select_write_params() (and MMC-1 table 61). But the knowledge about
+        the tracklist is rather cdrskin realm. (ponder ...)
+ */
+check_with_drive:;
  drive_info= skin->drives+skin->driveno;
  ok= 0;
  if(skin->write_type==BURN_WRITE_RAW)
    ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
  else if(skin->write_type==BURN_WRITE_SAO)
    ok= !!(drive_info->sao_block_types & BURN_BLOCK_SAO);
- else if(skin->write_type==BURN_WRITE_TAO)
-   ok= ((drive_info->tao_block_types & (BURN_BLOCK_MODE1|BURN_BLOCK_RAW0))
-        == (BURN_BLOCK_MODE1|BURN_BLOCK_RAW0));
- if(!ok) {
-   if(! skin->force_is_set) {
-
-     /* >>> if write mode was not set explicitely: try to find a better one */;
-
+ else if(skin->write_type==BURN_WRITE_TAO) {
+   block_type_demand= 0;
+   for(i=0;i<skin->track_counter;i++) {
+     Cdrtrack_get_track_type(skin->tracklist[i],&track_type,&sector_size,0);
+     if(track_type==BURN_AUDIO)
+       block_type_demand|= BURN_BLOCK_RAW0;
+     else
+       block_type_demand|= BURN_BLOCK_MODE1;
    }
+   ok= ((drive_info->tao_block_types & block_type_demand)==block_type_demand);
+ }
+
+ if(!ok) {
    fprintf(stderr,
            "cdrskin: %s : Drive indicated refusal for write mode %s.\n",
-           (skin->force_is_set?"WARNING":"FATAL"),
+           (skin->force_is_set || was_still_default==1?"WARNING":"FATAL"),
            skin->preskin->write_mode_name);
    if(! skin->force_is_set) {
+     if(was_still_default==1) {
+       if(skin->write_type==BURN_WRITE_RAW ||
+          skin->write_type==BURN_WRITE_SAO) {
+         skin->write_type= BURN_WRITE_TAO;
+         skin->block_type= BURN_BLOCK_MODE1;
+         strcpy(skin->preskin->write_mode_name,"TAO");
+       } else {
+         skin->write_type= BURN_WRITE_SAO;
+         skin->block_type= BURN_BLOCK_SAO;
+         strcpy(skin->preskin->write_mode_name,"SAO");
+       }
+       was_still_default= 2; /* do not try more than once */
+       goto check_with_drive;
+     }
      fprintf(stderr,"cdrskin: HINT : If you are certain that the drive will do, try option -force\n");
      return(0);
    }
