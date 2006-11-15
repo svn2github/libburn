@@ -591,6 +591,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	int done = 0, no_c_page = 0;
 	int err;
 	sg_io_hdr_t s;
+/*
+#define Libburn_log_sg_commandS 1
+*/
 
 #ifdef Libburn_log_sg_commandS
 	/* <<< ts A61030 */
@@ -612,10 +615,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		fp= fopen("/tmp/libburn_sg_command_log","a");
 		fprintf(fp,"\n-----------------------------------------\n");
 	}
-	for(i=0;i<10;i++)
-	  fprintf(fp,"%2.2x ", c->opcode[i]);
-	fprintf(fp,"\n");
-	fpcount++;
+	if(fp!=NULL) {
+		for(i=0;i<10;i++)
+	  		fprintf(fp,"%2.2x ", c->opcode[i]);
+		fprintf(fp,"\n");
+		fpcount++;
+	}
 #endif /* Libburn_log_sg_commandS */
 	  
 
@@ -714,6 +719,15 @@ ex:;
 	if (c->error) {
 		/* >>> to become  d->notify_error() */
 		scsi_notify_error(d, c, s.sbp, s.sb_len_wr, 0);
+
+#ifdef Libburn_log_sg_commandS
+        	if(fp!=NULL) {
+  			fprintf(fp,"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh\n",
+				s.sbp[2], s.sbp[12], s.sbp[13]);
+			fpcount++;
+		}
+#endif /* Libburn_log_sg_commandS */
+
 	}
 	return 1;
 }
