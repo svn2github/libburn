@@ -9,7 +9,8 @@ struct burn_write_opts;
 struct burn_disc;
 
 struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
-					  struct burn_session *session);
+					  struct burn_session *session,
+					  int nwa);
 int burn_sector_length(int trackmode);
 int burn_subcode_length(int trackmode);
 

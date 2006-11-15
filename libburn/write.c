@@ -13,6 +13,11 @@
 #define Libburn_experimental_no_close_sessioN 1
 */
 
+/* ts A61114 : Highly experimental : try to achieve SAO on appendables
+               THIS DOES NOT WORK YET !
+#define Libburn_sao_can_appenD 1
+*/
+
 
 #include <stdio.h>
 #include <string.h>
@@ -285,8 +290,10 @@ static int add_cue(struct cue_sheet *sheet, unsigned char ctladr,
 	return 1;
 }
 
+/* ts A61114: added parameter nwa */
 struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
-					  struct burn_session *session)
+					  struct burn_session *session,
+					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret;
 	unsigned char ctladr;
@@ -298,6 +305,11 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	int rem = 0;
 
 	d = o->drive;
+
+#ifdef Libburn_sao_can_appenD
+	if (d->status == BURN_DISC_APPENDABLE)
+ 		runtime = nwa-150;
+#endif
 
 	sheet = malloc(sizeof(struct cue_sheet));
 
@@ -570,7 +582,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 {
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
-	int i, tmp = 0, open_ended = 0, ret, nwa, lba;
+	int i, tmp = 0, open_ended = 0, ret= 0, nwa, lba;
 	int sectors;
 	char msg[80];
 
@@ -750,7 +762,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	struct burn_drive *d = o->drive;
 	struct buffer buf;
 	struct burn_track *lt;
-	int first = 1, i, ret, lba, nwa;
+	int first = 1, i, ret, lba, nwa = 0;
 	char msg[80];
 
 /* ts A60924 : libburn/message.c gets obsoleted
@@ -770,7 +782,7 @@ return crap.  so we send the command, then ignore the result.
 */
 	/* ts A61107 : moved up send_write_parameters because LG GSA-4082B
 			 seems to dislike get_nwa() in advance */
-	d->alba = d->start_lba;
+	d->alba = d->start_lba; /* ts A61114: this looks senseless */
 	d->nwa = d->alba;
 	if (o->write_type == BURN_WRITE_TAO) {
 		nwa = 0; /* get_nwa() will be called in burn_track() */
@@ -811,7 +823,8 @@ return crap.  so we send the command, then ignore the result.
 		d->progress.session = i;
 		d->progress.tracks = disc->session[i]->tracks;
 
-		sheet = burn_create_toc_entries(o, disc->session[i]);
+		/* ts A61114: added parameter nwa */
+		sheet = burn_create_toc_entries(o, disc->session[i], nwa);
 
 		/* ts A61009 */
 		if (sheet == NULL)
@@ -835,8 +848,28 @@ return crap.  so we send the command, then ignore the result.
 					d->nwa= d->alba = 0;
 				} else {
 
+#ifdef Libburn_sao_can_appenD
+					/* ts A61114: address for d->write() */
+					if (d->status == BURN_DISC_APPENDABLE
+					  && o->write_type == BURN_WRITE_SAO) {
+						d->nwa = d->alba = nwa-150;
+
+						sprintf(msg, 
+				"SAO appendable d->nwa= %d\n", d->nwa);
+						libdax_msgs_submit(
+				libdax_messenger, d->global_index, 0x000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg,0,0);
+
+					} else {
+						d->nwa = -150;
+						d->alba = -150;
+					}
+#else
 					d->nwa = -150;
 					d->alba = -150;
+#endif /* ! Libburn_sao_can_appenD */
+
 
 				}
 
