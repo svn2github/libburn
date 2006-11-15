@@ -523,3 +523,109 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	}
 	return 1;
 }
+
+
+/* ts A61115 moved from sg-*.c */
+enum response scsi_error(struct burn_drive *d, unsigned char *sense,
+			 int senselen)
+{
+	int key, asc, ascq;
+
+	senselen = senselen;
+	key = sense[2];
+	asc = sense[12];
+	ascq = sense[13];
+
+	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
+		   key, asc, ascq, d->idata->vendor, d->idata->product);
+
+	switch (asc) {
+	case 0:
+		burn_print(12, "NO ERROR!\n");
+		return RETRY;
+
+	case 2:
+		burn_print(1, "not ready\n");
+		return RETRY;
+	case 4:
+		burn_print(1,
+			   "logical unit is in the process of becoming ready\n");
+		return RETRY;
+	case 0x20:
+		if (key == 5)
+			burn_print(1, "bad opcode\n");
+		return FAIL;
+	case 0x21:
+		burn_print(1, "invalid address or something\n");
+		return FAIL;
+	case 0x24:
+		if (key == 5)
+			burn_print(1, "invalid field in cdb\n");
+		else
+			break;
+		return FAIL;
+	case 0x26:
+		if ( key == 5 )
+			burn_print( 1, "invalid field in parameter list\n" );
+		return FAIL;
+	case 0x28:
+		if (key == 6)
+			burn_print(1,
+				   "Not ready to ready change, medium may have changed\n");
+		else
+			break;
+		return RETRY;
+	case 0x3A:
+		burn_print(12, "Medium not present in %s %s\n",
+			   d->idata->vendor, d->idata->product);
+
+		d->status = BURN_DISC_EMPTY;
+		return FAIL;
+	}
+	burn_print(1, "unknown failure\n");
+	burn_print(1, "key:0x%x, asc:0x%x, ascq:0x%x\n", key, asc, ascq);
+	return FAIL;
+}
+
+
+/* ts A61030 - A61115 */
+/* @param flag bit0=do report conditions which are considered not an error */
+int scsi_notify_error(struct burn_drive *d, struct command *c,
+                      unsigned char *sense, int senselen, int flag)
+{
+	int key= -1, asc= -1, ascq= -1, ret;
+	char msg[160];
+
+	if (d->silent_on_scsi_error)
+		return 1;
+
+	if (senselen > 2)
+		key = sense[2];
+	if (senselen > 13) {
+		asc = sense[12];
+		ascq = sense[13];
+	}
+
+	if(!(flag & 1)) {
+		/* SPC : TEST UNIT READY command */
+		if (c->opcode[0] == 0)
+			return 1;
+		/* MMC : READ DISC INFORMATION command */
+		if (c->opcode[0] == 0x51)
+			if (key == 0x2 && asc == 0x3A &&
+			    ascq>=0 && ascq <= 0x02) /* MEDIUM NOT PRESENT */
+				return 1;
+	}
+
+	sprintf(msg,"SCSI error condition on command %2.2Xh :", c->opcode[0]);
+	if (key>=0)
+		sprintf(msg+strlen(msg), " key=%Xh", key);
+	if (asc>=0)
+		sprintf(msg+strlen(msg), " asc=%2.2Xh", asc);
+	if (ascq>=0)
+		sprintf(msg+strlen(msg), " ascq=%2.2Xh", ascq);
+	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
+	return ret;
+}
+

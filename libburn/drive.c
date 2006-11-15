@@ -52,7 +52,7 @@ void burn_drive_free(struct burn_drive *d)
 		return;
 	/* ts A60822 : close open fds before forgetting them */
 	if (burn_drive_is_open(d))
-		sg_close_drive(d);
+		d->release(d);
 	free((void *) d->idata);
 	free((void *) d->mdata);
 	if(d->toc_entry != NULL)
@@ -578,8 +578,10 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 #endif /* 0 */
 
 		/* refresh the lib's drives */
-		sg_enumerate();
-		ata_enumerate();
+
+		/* ts A61115 : formerly sg_enumerate(); ata_enumerate(); */
+		scsi_enumerate_drives();
+
 		count = burn_drive_count();
 		if (count)
 			*drives =

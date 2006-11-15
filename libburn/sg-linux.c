@@ -1,7 +1,45 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
-/* ts A61010 */
-/* #include <a ssert.h> */
+/*
+This is the operating system dependent part of libburn. It implements the
+transport level aspects of SCSI control and command i/o.
+
+Present implementation: Linux SCSI Generic (sg)
+
+PORTING:
+
+There are public functions, used by other parts of libburn, which have to be
+implemented in a way that provides libburn with the desired services:
+ 
+sg_give_next_adr()      iterates over the set of potentially useful drive 
+                        address strings.
+
+scsi_enumerate_drives() brings all available, not-whitelist-banned, and
+                        accessible drives into libburn's list of drives.
+
+sg_drive_is_open()      tells wether libburn has the given drive in use.
+
+sg_grab()               opens the drive for SCSI commands and ensures
+                        undisturbed access.
+
+sg_release()            closes a drive opened by sg_grab()
+
+sg_issue_command()      sends a SCSI command to the drive, receives reply,
+                        and evaluates wether the command succeeded or shall
+                        be retried or finally failed.
+
+sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
+
+
+Porting hints are marked by the text "PORTING:".
+Send feedback to libburn-hackers@pykix.org .
+
+Hint: You should also look into sg-freebsd-port.c, which is a younger and
+      in some aspects more straightforward implementation of this interface.
+*/
+
+
+/** PORTING : ------- OS dependent headers and definitions ------ */
 
 #include <errno.h>
 #include <unistd.h>
@@ -10,15 +48,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-
-/* #include <m alloc.h>  ts A61013 : not in Linux man 3 malloc */
-
 #include <string.h>
 #include <sys/poll.h>
 #include <linux/hdreg.h>
 #include <stdlib.h>
 #include <scsi/sg.h>
 #include <scsi/scsi.h>
+
+
+/** PORTING : ------ libburn portable headers and definitions ----- */
 
 #include "transport.h"
 #include "drive.h"
@@ -30,20 +68,24 @@
 #include "toc.h"
 #include "util.h"
 
-/* kludge! glibc headers don't define all the SCSI stuff that we use! */
-#ifndef SG_GET_ACCESS_COUNT
-#  define SG_GET_ACCESS_COUNT 0x2289
-#endif
-
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
-
-static void enumerate_common(char *fname, int bus_no, int host_no,
-			     int channel_no, int target_no, int lun_no);
 
 /* ts A51221 */
 int burn_drive_is_banned(char *device_address);
 
+
+/* ------------------------------------------------------------------------ */
+/* PORTING:   Private definitions. Port only if needed by public functions. */
+/*            (Public functions are listed below)                           */
+/* ------------------------------------------------------------------------ */
+
+
+static void enumerate_common(char *fname, int bus_no, int host_no,
+			     int channel_no, int target_no, int lun_no);
+
+
+/* >>> ts A61115 : this needs mending. A Linux aspect shows up in cdrskin. */
 /* ts A60813 : storage objects are in libburn/init.c
    wether to use O_EXCL
    wether to use O_NOBLOCK with open(2) on devices
@@ -56,6 +98,12 @@ extern int burn_sg_open_abort_busy;
 /* ts A60821
    <<< debug: for tracing calls which might use open drive fds */
 int mmc_function_spy(char * text);
+
+
+/* ------------------------------------------------------------------------ */
+/* PORTING:   Private functions. Port only if needed by public functions    */
+/*            (Public functions are listed below)                           */
+/* ------------------------------------------------------------------------ */
 
 
 static int sgio_test(int fd)
@@ -73,45 +121,8 @@ static int sgio_test(int fd)
 }
 
 
-/* ts A60925 : ticket 74 */
-int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
-{
-	int ret, os_errno, sevno= LIBDAX_MSGS_SEV_DEBUG;
-	char msg[4096+100];
-
-	if(*fd < 0)
-		return(0);
-	ret = close(*fd);
-	*fd = -1337;
-	if(ret != -1)
-		return 1;
-	os_errno= errno;
-
-	if (fname != NULL)
-		sprintf(msg, "Encountered error when closing drive '%s'",
-			fname);
-	else
-		sprintf(msg, "Encountered error when closing drive");
-
-	if (sorry)
-		sevno = LIBDAX_MSGS_SEV_SORRY;
-	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
-			sevno, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno, 0);
-	return 0;	
-}
-
-int sg_drive_is_open(struct burn_drive * d)
-{
-	/* a bit more detailed case distinction than needed */
-	if (d->fd == -1337)
-		return 0;
-	if (d->fd < 0)
-		return 0;
-	return 1;
-}
-
 /* ts A60924 */
-int sg_handle_busy_device(char *fname, int os_errno)
+static int sg_handle_busy_device(char *fname, int os_errno)
 {
 	char msg[4096];
 
@@ -135,87 +146,8 @@ int sg_handle_busy_device(char *fname, int os_errno)
 }
 
 
-/* ts A60922 ticket 33 */
-/** Returns the next index number and the next enumerated drive address.
-    @param idx An opaque handle. Make no own theories about it.
-    @param adr Takes the reply
-    @param adr_size Gives maximum size of reply including final 0
-    @param initialize  1 = start new,
-                       0 = continue, use no other values for now
-                      -1 = finish
-    @return 1 = reply is a valid address , 0 = no further address available
-           -1 = severe error (e.g. adr_size too small)
-*/
-int sg_give_next_adr(burn_drive_enumerator_t *idx,
-		     char adr[], int adr_size, int initialize)
-{
-	/* sg.h : typedef int burn_drive_enumerator_t; */
-	static int sg_limit = 32, ata_limit = 26;
-	int baseno = 0;
-
-	if (initialize == -1)
-		return 0;
-
-	if (initialize  == 1)
-		*idx = -1;
-	(*idx)++;
-	if (*idx >= sg_limit)
-		goto next_ata;
-	if (adr_size < 10)
-		return -1;
-	sprintf(adr, "/dev/sg%d", *idx);
-	return 1;
-next_ata:;
-	baseno += sg_limit;
-	if (*idx - baseno >= ata_limit)
-		goto next_nothing;
-	if (adr_size < 9)
-		return -1;
-	sprintf(adr, "/dev/hd%c", 'a' + (*idx - baseno));
-	return 1;
-next_nothing:;
-	baseno += ata_limit;
-	return 0;
-}
-
-int sg_is_enumerable_adr(char *adr)
-{
-	char fname[4096];
-	int i, ret = 0, first = 1;
-
-	while (1) {
-		ret= sg_give_next_adr(&i, fname, sizeof(fname), first);
-		if(ret <= 0)
-	break;
-		first = 0;
-		if (strcmp(adr, fname) == 0)
-			return 1;
-
-	}
-	return(0);
-}
-
-
 /* ts A60926 */
-int sg_release_siblings(int sibling_fds[], int *sibling_count)
-{
-	int i;
-	char msg[81];
-
-	for(i= 0; i < *sibling_count; i++)
-		sg_close_drive_fd(NULL, -1, &(sibling_fds[i]), 0);
-	if(*sibling_count > 0) {
-		sprintf(msg, "Closed %d O_EXCL scsi siblings", *sibling_count);
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020007,
-			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH, msg, 0,0);
-	}
-	*sibling_count = 0;
-	return 1;
-}
-
-
-/* ts A60926 */
-int sg_open_drive_fd(char *fname, int scan_mode)
+static int sg_open_drive_fd(char *fname, int scan_mode)
 {
 	int open_mode = O_RDWR, fd;
 	char msg[81];
@@ -266,8 +198,67 @@ int sg_open_drive_fd(char *fname, int scan_mode)
 }
 
 
+/* ts A60925 : ticket 74 */
+static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
+{
+	int ret, os_errno, sevno= LIBDAX_MSGS_SEV_DEBUG;
+	char msg[4096+100];
+
+	if(*fd < 0)
+		return(0);
+	ret = close(*fd);
+	*fd = -1337;
+	if(ret != -1)
+		return 1;
+	os_errno= errno;
+
+	if (fname != NULL)
+		sprintf(msg, "Encountered error when closing drive '%s'",
+			fname);
+	else
+		sprintf(msg, "Encountered error when closing drive");
+
+	if (sorry)
+		sevno = LIBDAX_MSGS_SEV_SORRY;
+	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
+			sevno, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno, 0);
+	return 0;	
+}
+
+
 /* ts A60926 */
-int sg_open_scsi_siblings(char *path, int driveno,
+static int sg_release_siblings(int sibling_fds[], int *sibling_count)
+{
+	int i;
+	char msg[81];
+
+	for(i= 0; i < *sibling_count; i++)
+		sg_close_drive_fd(NULL, -1, &(sibling_fds[i]), 0);
+	if(*sibling_count > 0) {
+		sprintf(msg, "Closed %d O_EXCL scsi siblings", *sibling_count);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020007,
+			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH, msg, 0,0);
+	}
+	*sibling_count = 0;
+	return 1;
+}
+
+
+/* ts A60926 */
+static int sg_close_drive(struct burn_drive *d)
+{
+	int ret;
+
+	if (!burn_drive_is_open(d))
+		return 0;
+	sg_release_siblings(d->sibling_fds, &(d->sibling_count));
+	ret = sg_close_drive_fd(d->devname, d->global_index, &(d->fd), 0);
+	return ret;
+}
+
+
+/* ts A60926 */
+static int sg_open_scsi_siblings(char *path, int driveno,
 			  int sibling_fds[], int *sibling_count,
 			  int host_no, int channel_no, int id_no, int lun_no)
 {
@@ -324,19 +315,9 @@ failed:;
 }
 
 
-/* ts A60926 */
-int sg_close_drive(struct burn_drive *d)
-{
-	int ret;
-
-	if (!burn_drive_is_open(d))
-		return 0;
-	sg_release_siblings(d->sibling_fds, &(d->sibling_count));
-	ret = sg_close_drive_fd(d->devname, d->global_index, &(d->fd), 0);
-	return ret;
-}
-
-void ata_enumerate(void)
+/** Speciality of Linux: detect non-SCSI ATAPI (EIDE) which will from
+   then on used used via generic SCSI as is done with (emulated) SCSI drives */ 
+static void ata_enumerate(void)
 {
 	struct hd_driveid tm;
 	int i, fd;
@@ -372,7 +353,9 @@ void ata_enumerate(void)
 	}
 }
 
-void sg_enumerate(void)
+
+/** Detects (probably emulated) SCSI drives */
+static void sg_enumerate(void)
 {
 	struct sg_scsi_id sid;
 	int i, fd, sibling_fds[LIBBURN_SG_MAX_SIBLINGS], sibling_count= 0, ret;
@@ -428,6 +411,19 @@ void sg_enumerate(void)
 	}
 }
 
+
+/* ts A61115 */
+/* ----------------------------------------------------------------------- */
+/* PORTING: Private functions which contain publicly needed functionality. */
+/*          Their portable part must be performed. So it is probably best  */
+/*          to replace the non-portable part and to call these functions   */
+/*          in your port, too.                                             */
+/* ----------------------------------------------------------------------- */
+
+
+/** Wraps a detected drive into libburn structures and hands it over to
+    libburn drive list.
+*/
 /* ts A60923 - A61005 : introduced new SCSI parameters */
 /* ts A61021 : moved non os-specific code to spc,sbc,mmc,drive */
 static void enumerate_common(char *fname, int bus_no, int host_no,
@@ -446,6 +442,8 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	if (ret<=0)
 		return;
 
+	/* PORTING: ------------------- non portable part --------------- */
+
 	/* Operating system adapter is Linux Generic SCSI (sg) */
 	/* Adapter specific handles and data */
 	out.fd = -1337;
@@ -458,21 +456,122 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.drive_is_open= sg_drive_is_open;
 	out.issue_command = sg_issue_command;
 
+	/* PORTING: ---------------- end of non portable part ------------ */
+
 	/* Finally register drive and inquire drive information */
 	burn_drive_finish_enum(&out);
 }
 
-/*
-	we use the sg reference count to decide whether we can use the
-	drive or not.
-	if refcount is not one, drive is open somewhere else.
 
-	ts A60813: this test is too late. O_EXCL is the stronger solution.
-	After all the test was disabled already in icculus.org/burn CVS.
+/* ts A61115 */
+/* ------------------------------------------------------------------------ */
+/* PORTING:           Public functions. These MUST be ported.               */
+/* ------------------------------------------------------------------------ */
+
+
+/** PORTING:
+    In this Linux implementation, this function mirrors the enumeration
+    done in sg_enumerate and ata_enumerate(). It would be better to base those
+    functions on this sg_give_next_adr() but the situation is not inviting. 
+*/
+/* ts A60922 ticket 33 : called from drive.c */
+/** Returns the next index number and the next enumerated drive address.
+    The enumeration has to cover all available and accessible drives. It is
+    allowed to return addresses of drives which are not available but under
+    some (even exotic) circumstances could be available. It is on the other
+    hand allowed, only to hand out addresses which can really be used right
+    in the moment of this call. (This implementation chooses the former.)
+    @param idx An opaque handle. Make no own theories about it.
+    @param adr Takes the reply
+    @param adr_size Gives maximum size of reply including final 0
+    @param initialize  1 = start new,
+                       0 = continue, use no other values for now
+                      -1 = finish
+    @return 1 = reply is a valid address , 0 = no further address available
+           -1 = severe error (e.g. adr_size too small)
+*/
+int sg_give_next_adr(burn_drive_enumerator_t *idx,
+		     char adr[], int adr_size, int initialize)
+{
+	/* sg.h : typedef int burn_drive_enumerator_t; */
+	static int sg_limit = 32, ata_limit = 26;
+	int baseno = 0;
+
+	if (initialize == -1)
+		return 0;
+
+	if (initialize  == 1)
+		*idx = -1;
+	(*idx)++;
+	if (*idx >= sg_limit)
+		goto next_ata;
+	if (adr_size < 10)
+		return -1;
+	sprintf(adr, "/dev/sg%d", *idx);
+	return 1;
+next_ata:;
+	baseno += sg_limit;
+	if (*idx - baseno >= ata_limit)
+		goto next_nothing;
+	if (adr_size < 9)
+		return -1;
+	sprintf(adr, "/dev/hd%c", 'a' + (*idx - baseno));
+	return 1;
+next_nothing:;
+	baseno += ata_limit;
+	return 0;
+}
+
+
+/** Brings all available, not-whitelist-banned, and accessible drives into
+    libburn's list of drives.
+*/
+/** PORTING:
+    If not stricken with an incompletely unified situation like in Linux
+    one would rather implement this by a loop calling sg_give_next_adr().
+    If needed with your sg_give_next_adr() results, do a test for existence
+    and accessability. If burn activities are prone to external interference
+    on your system it is also necessary to obtain exclusive access locks on
+    the drives.
+    Hand over each accepted drive to enumerate_common() resp. its replacement
+    within your port.
+
+    See FreeBSD port sketch sg-freebsd-port.c for such an implementation.
+*/
+/* ts A61115: replacing call to sg-implementation internals from drive.c */
+int scsi_enumerate_drives(void)
+{
+	sg_enumerate();
+	ata_enumerate();
+	return 1;
+}
+
+
+/** Tells wether libburn has the given drive in use or exclusively reserved.
+    If it is "open" then libburn will eventually call sg_release() on it when
+    it is time to give up usage resp. reservation.
+*/
+/** Published as burn_drive.drive_is_open() */
+int sg_drive_is_open(struct burn_drive * d)
+{
+	/* a bit more detailed case distinction than needed */
+	if (d->fd == -1337)
+		return 0;
+	if (d->fd < 0)
+		return 0;
+	return 1;
+}
+
+
+/** Opens the drive for SCSI commands and - if burn activities are prone
+    to external interference on your system - obtains an exclusive access lock
+    on the drive. (Note: this is not physical tray locking.)
+    A drive that has been opened with sg_grab() will eventually be handed
+    over to sg_release() for closing and unreserving.
 */
 int sg_grab(struct burn_drive *d)
 {
-	int fd, count, os_errno= 0, ret;
+	int fd, os_errno= 0, ret;
 
 	/* ts A60813 */
 	int open_mode = O_RDWR;
@@ -495,12 +594,11 @@ int sg_grab(struct burn_drive *d)
 	if(burn_sg_open_o_nonblock)
 		open_mode |= O_NONBLOCK;
 
-	/* ts A60813
+	/* ts A60813 - A60822
 	   After enumeration the drive fd is probably still open.
 	   -1337 is the initial value of burn_drive.fd and the value after
 	   relase of drive. Unclear why not the official error return
 	   value -1 of open(2) war used. */
-				/* ts A60822: was  if(d->fd == -1337) { */
 	if(! burn_drive_is_open(d)) {
 
 		/* ts A60821
@@ -523,49 +621,34 @@ int sg_grab(struct burn_drive *d)
 	} else
 		fd= d->fd;
 
-	/* ts A61007 : this is redundant */
-	/* a ssert(fd != -1337); */
-	
 	if (fd >= 0) {
-
-		/* ts A60814:
-		   according to my experiments this test would work now ! */
-
-		/* ts A60926 : this was disabled */
-		/* Tests with growisofs on kernel 2.4.21 yielded that this
-		   does not help against blocking on busy drives.
-		*/
-/* <<< the old dummy */
-/*              er = ioctl(fd, SG_GET_ACCESS_COUNT, &count);*/
-		count = 1;
-
-		if (1 == count) {
-			d->fd = fd;
-			fcntl(fd, F_SETOWN, getpid());
-			d->released = 0;
-			return 1;
-		}
-
-drive_is_in_use:;
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020003,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Could not grab drive - already in use", 0, 0);
-		sg_close_drive(d);
-		d->fd = -1337;
-		return 0;
+		d->fd = fd;
+		fcntl(fd, F_SETOWN, getpid());
+		d->released = 0;
+		return 1;
 	}
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Could not grab drive", os_errno, 0);
 	return 0;
+
+drive_is_in_use:;
+	libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020003,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Could not grab drive - already in use", 0, 0);
+	sg_close_drive(d);
+	d->fd = -1337;
+	return 0;
 }
 
-/*
-	non zero return means you still have the drive and it's not
-	in a state to be released? (is that even possible?)
-*/
 
+/** PORTING: Is mainly about the call to sg_close_drive() and wether it
+             implements the demanded functionality.
+*/
+/** Gives up the drive for SCSI commands and releases eventual access locks.
+    (Note: this is not physical tray locking.)
+*/
 int sg_release(struct burn_drive *d)
 {
 	/* ts A60821
@@ -586,6 +669,15 @@ int sg_release(struct burn_drive *d)
 }
 
 
+/** Sends a SCSI command to the drive, receives reply and evaluates wether
+    the command succeeded or shall be retried or finally failed.
+    Returned SCSI errors shall not lead to a return value indicating failure.
+    The callers get notified by c->error. An SCSI failure which leads not to
+    a retry shall be notified via scsi_notify_error().
+    The Libburn_log_sg_commandS facility might be of help when problems with
+    a drive have to be examined. It shall stay disabled for normal use.
+    @return: 1 success , <=0 failure
+*/
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
 	int done = 0, no_c_page = 0;
@@ -596,7 +688,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 */
 
 #ifdef Libburn_log_sg_commandS
-	/* <<< ts A61030 */
+	/* ts A61030 */
 	static FILE *fp= NULL;
 	static int fpcount= 0;
 	int i;
@@ -610,7 +702,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	mmc_function_spy(buf);
 
 #ifdef Libburn_log_sg_commandS
-	/* <<< ts A61030 */
+	/* ts A61030 */
 	if(fp==NULL) {
 		fp= fopen("/tmp/libburn_sg_command_log","a");
 		fprintf(fp,"\n-----------------------------------------\n");
@@ -717,7 +809,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	/* ts A61106 */
 ex:;
 	if (c->error) {
-		/* >>> to become  d->notify_error() */
 		scsi_notify_error(d, c, s.sbp, s.sb_len_wr, 0);
 
 #ifdef Libburn_log_sg_commandS
@@ -733,111 +824,8 @@ ex:;
 }
 
 
-/* ts A61030 - A61109 */
-/* @param flag bit0=do report conditions which are considered not an error */
-int scsi_notify_error(struct burn_drive *d, struct command *c,
-                      unsigned char *sense, int senselen, int flag)
-{
-	int key= -1, asc= -1, ascq= -1, ret;
-	char msg[160];
-
-	if (d->silent_on_scsi_error)
-		return 1;
-
-	if (senselen > 2)
-		key = sense[2];
-	if (senselen > 13) {
-		asc = sense[12];
-		ascq = sense[13];
-	}
-
-	if(!(flag & 1)) {
-		/* SPC : TEST UNIT READY command */
-		if (c->opcode[0] == 0)
-			return 1;
-		/* MMC : READ DISC INFORMATION command */
-		if (c->opcode[0] == 0x51)
-			if (key == 0x2 && asc == 0x3A &&
-			    ascq>=0 && ascq <= 0x02) /* MEDIUM NOT PRESENT */
-				return 1;
-	}
-
-	sprintf(msg,"SCSI error condition on command %2.2Xh :", c->opcode[0]);
-	if (key>=0)
-		sprintf(msg+strlen(msg), " key=%Xh", key);
-	if (asc>=0)
-		sprintf(msg+strlen(msg), " asc=%2.2Xh", asc);
-	if (ascq>=0)
-		sprintf(msg+strlen(msg), " ascq=%2.2Xh", ascq);
-	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
-	return ret;
-}
-
-
-enum response scsi_error(struct burn_drive *d, unsigned char *sense,
-			 int senselen)
-{
-	int key, asc, ascq;
-
-	senselen = senselen;
-	key = sense[2];
-	asc = sense[12];
-	ascq = sense[13];
-
-	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
-		   key, asc, ascq, d->idata->vendor, d->idata->product);
-
-	switch (asc) {
-	case 0:
-		burn_print(12, "NO ERROR!\n");
-		return RETRY;
-
-	case 2:
-		burn_print(1, "not ready\n");
-		return RETRY;
-	case 4:
-		burn_print(1,
-			   "logical unit is in the process of becoming ready\n");
-		return RETRY;
-	case 0x20:
-		if (key == 5)
-			burn_print(1, "bad opcode\n");
-		return FAIL;
-	case 0x21:
-		burn_print(1, "invalid address or something\n");
-		return FAIL;
-	case 0x24:
-		if (key == 5)
-			burn_print(1, "invalid field in cdb\n");
-		else
-			break;
-		return FAIL;
-	case 0x26:
-		if ( key == 5 )
-			burn_print( 1, "invalid field in parameter list\n" );
-		return FAIL;
-	case 0x28:
-		if (key == 6)
-			burn_print(1,
-				   "Not ready to ready change, medium may have changed\n");
-		else
-			break;
-		return RETRY;
-	case 0x3A:
-		burn_print(12, "Medium not present in %s %s\n",
-			   d->idata->vendor, d->idata->product);
-
-		d->status = BURN_DISC_EMPTY;
-		return FAIL;
-	}
-	burn_print(1, "unknown failure\n");
-	burn_print(1, "key:0x%x, asc:0x%x, ascq:0x%x\n", key, asc, ascq);
-	return FAIL;
-}
-
 /* ts A60922 */
-/** Try to obtain SCSI address parameters.
+/** Tries to obtain SCSI address parameters.
     @return  1 is success , 0 is failure
 */
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
@@ -882,3 +870,27 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 #endif
 	return 1;
 }
+
+
+/* ts A60922 ticket 33 : called from drive.c */
+/** Tells wether a text is a persistent address as listed by the enumeration
+    functions.
+*/
+int sg_is_enumerable_adr(char *adr)
+{
+	char fname[4096];
+	int i, ret = 0, first = 1;
+
+	while (1) {
+		ret= sg_give_next_adr(&i, fname, sizeof(fname), first);
+		if(ret <= 0)
+	break;
+		first = 0;
+		if (strcmp(adr, fname) == 0)
+			return 1;
+
+	}
+	return(0);
+}
+
+

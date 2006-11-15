@@ -1,19 +1,17 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 
-/* >>> ts A61021 : for testing the new arrangement of code 
-		   please outcomment these defines : */
 
-/* Keeps alive old enumerate_common(). New version delegates much work
+/* Revives old enumerate_common(). New version delegates much work
    to methods in drive, mmc, spc, and sbc .
 */
 #define Scsi_freebsd_make_own_enumeratE 1
 
 
-/* Keeps alive old sg_enumerate(). New version delegates most work to
+/* Revives old scsi_enumerate_drives(). New version delegates most work to
    sg_give_next_adr().
 */
-#define Scsi_freebsd_old_sg_enumeratE 1
+#define Scsi_freebsd_old_scsi_enumeratE 1
 
 
 #include <assert.h>
@@ -59,7 +57,7 @@ int burn_drive_is_banned(char *device_address);
 int mmc_function_spy(char * text);
 
 
-#ifdef Scsi_freebsd_old_sg_enumeratE
+#ifdef Scsi_freebsd_old_scsi_enumeratE
 
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
@@ -78,10 +76,11 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	return (0);
 }
 
-#else /* Scsi_freebsd_old_sg_enumeratE */
+#else /* Scsi_freebsd_old_scsi_enumeratE */
 
-/* ts A61021 : Moved most code from sg_enumerate under sg_give_next_adr() */
-/* Some helper functions for sg_give_next_adr() */
+/* ts A61021 : Moved most code from scsi_enumerate_drives under
+               sg_give_next_adr() */
+/* Some helper functions for scsi_give_next_adr() */
 
 static int sg_init_enumerator(burn_drive_enumerator_t *idx)
 {
@@ -172,7 +171,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 
 try_item:; /* This spaghetti loop keeps the number of tabs small  */
 
-	/* Loop content from old sg_enumerate() */
+	/* Loop content from old scsi_enumerate_drives() */
 
 	while (idx->i >= idx->ccb.cdm.num_matches) {
 		ret = sg_next_enumeration_buffer(idx);
@@ -277,7 +276,7 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	return (0);
 }
 
-#endif /* ! Scsi_freebsd_old_sg_enumeratE */
+#endif /* ! Scsi_freebsd_old_scsi_enumeratE */
 
 
 int sg_close_drive(struct burn_drive * d)
@@ -294,20 +293,10 @@ int sg_drive_is_open(struct burn_drive * d)
 	return (d->cam != NULL);
 }
 
-
-void ata_enumerate(void)
-{
-	/* ts A61021: Only a dummy function is needed in FreeBSD */
-	/* The difference between sg and ata should be encapsulated
-	   in sg-linux.c */
-	;
-}
-
-
-void sg_enumerate(void)
+int scsi_enumerate_drives(void)
 {
 
-#ifdef Scsi_freebsd_old_sg_enumeratE
+#ifdef Scsi_freebsd_old_scsi_enumeratE
 
 	union ccb ccb;
 	int bufsize, fd;
@@ -404,7 +393,7 @@ void sg_enumerate(void)
 
 	close(fd);
 
-#else /* Scsi_freebsd_old_sg_enumeratE */
+#else /* Scsi_freebsd_old_scsi_enumeratE */
 
 	burn_drive_enumerator_t idx;
 	int initialize = 1;
@@ -423,7 +412,7 @@ void sg_enumerate(void)
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 
-#endif /* ! Scsi_freebsd_old_sg_enumeratE */
+#endif /* ! Scsi_freebsd_old_scsi_enumeratE */
 
 }
 
@@ -704,66 +693,5 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	} while (!done);
 	cam_freeccb(ccb);
 	return 1;
-}
-
-enum response scsi_error(struct burn_drive *d, unsigned char *sense,
-			 int senselen)
-{
-	int key, asc, ascq;
-
-	senselen = senselen;
-	key = sense[2];
-	asc = sense[12];
-	ascq = sense[13];
-
-	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
-		   key, asc, ascq, d->idata->vendor, d->idata->product);
-
-	switch (asc) {
-	case 0:
-		burn_print(12, "NO ERROR!\n");
-		return RETRY;
-
-	case 2:
-		burn_print(1, "not ready\n");
-		return RETRY;
-	case 4:
-		burn_print(1,
-			   "logical unit is in the process of becoming ready\n");
-		return RETRY;
-	case 0x20:
-		if (key == 5)
-			burn_print(1, "bad opcode\n");
-		return FAIL;
-	case 0x21:
-		burn_print(1, "invalid address or something\n");
-		return FAIL;
-	case 0x24:
-		if (key == 5)
-			burn_print(1, "invalid field in cdb\n");
-		else
-			break;
-		return FAIL;
-	case 0x26:
-		if (key == 5)
-			burn_print( 1, "invalid field in parameter list\n" );
-		return FAIL;
-	case 0x28:
-		if (key == 6)
-			burn_print(1,
-				   "Not ready to ready change, medium may have changed\n");
-		else
-			break;
-		return RETRY;
-	case 0x3A:
-		burn_print(12, "Medium not present in %s %s\n",
-			   d->idata->vendor, d->idata->product);
-
-		d->status = BURN_DISC_EMPTY;
-		return FAIL;
-	}
-	burn_print(1, "unknown failure\n");
-	burn_print(1, "key:0x%x, asc:0x%x, ascq:0x%x\n", key, asc, ascq);
-	return FAIL;
 }
 

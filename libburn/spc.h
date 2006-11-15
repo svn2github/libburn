@@ -33,5 +33,13 @@ int spc_setup_drive(struct burn_drive *d);
 int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 			int channel_no, int target_no, int lun_no, int flag);
 
+/* ts A61115 moved from sg-*.h */
+enum response { RETRY, FAIL };
+enum response scsi_error(struct burn_drive *, unsigned char *, int);
+
+/* ts A61030 */
+/* @param flag bit0=do report conditions which are considered not an error */
+int scsi_notify_error(struct burn_drive *, struct command *c,
+			unsigned char *sense, int senselen, int flag);
 
 #endif /*__SPC*/
