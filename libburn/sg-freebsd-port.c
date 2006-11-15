@@ -1,7 +1,8 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-This is the operating system dependent part of libburn. It implements the
+
+This is the operating system dependent SCSI part of libburn. It implements the
 transport level aspects of SCSI control and command i/o.
 
 Present implementation: FreeBSD CAM (untested)
@@ -33,6 +34,12 @@ sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
 Porting hints are marked by the text "PORTING:".
 Send feedback to libburn-hackers@pykix.org .
+
+
+Other source modules where to expect OS dependencies (look for "__FreeBSD__"):
+  cleanup.c     signal_list : add or delete as described in your man 7 signal
+  transport.h   struct burn_drive : OS dependent i/o attributes
+                BUFFER_SIZE maximum size for a (SCSI) i/o transaction
 
 */
 
@@ -187,14 +194,14 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	/* Operating system adapter is CAM */
 	/* Adapter specific handles and data */
 	out.cam = NULL;
-	/* Adapter specific functions */
+
+	/* PORTING: ---------------- end of non portable part ------------ */
+
+	/* Adapter specific functions with standardized names */
 	out.grab = sg_grab;
 	out.release = sg_release;
 	out.drive_is_open = sg_drive_is_open;
 	out.issue_command = sg_issue_command;
-
-	/* PORTING: ---------------- end of non portable part ------------ */
-
 	/* Finally register drive and inquire drive information */
 	burn_drive_finish_enum(&out);
 }
