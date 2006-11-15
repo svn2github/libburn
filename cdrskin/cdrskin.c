@@ -196,6 +196,7 @@ or
 #ifdef Cdrskin_new_api_tesT
 
 /* put macros under test caveat here */
+#define Cdrskin_allow_sao_for_appendablE 1
 
 /* could be i repaired this with getting -atip minimum speed */
 #ifdef Cdrskin_libburn_has_read_atiP
@@ -3776,9 +3777,10 @@ int Cdrskin_wait_before_action(struct CdrskiN *skin, int flag)
    else
      sprintf(speed_text,"%.f",skin->x_speed);
    printf(
-  "Starting to write CD/DVD at speed %s in %s %s mode for single session.\n",
+  "Starting to write CD/DVD at speed %s in %s %s mode for %s session.\n",
           speed_text,(skin->dummy_mode?"dummy":"real"),
-          (flag&1?"BLANK":skin->preskin->write_mode_name));
+          (flag&1?"BLANK":skin->preskin->write_mode_name),
+          (skin->multi?"multi":"single"));
    printf("Last chance to quit, starting real write in %3d seconds.",
           skin->gracetime);
    fflush(stdout);
@@ -4390,7 +4392,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if (s != BURN_DISC_BLANK) {
 #endif
    Cdrskin_release_drive(skin,0);
-   fprintf(stderr,"cdrskin: FATAL : no blank media detected.\n");
+   fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
    return(0);
  }
 
