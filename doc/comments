@@ -91,9 +91,8 @@ stay upward compatible for a good while.
    @subsection libburner-help Libburner --help
 <pre>
 Usage: test/libburner
-       [--drive <address>|<driveno>|"-"]
-       [--blank_fast|--blank_full] [--audio]
-       [--try_to_simulate] [--stdin_size <bytes>]
+       [--drive <address>|<driveno>|"-"]  [--audio]
+       [--blank_fast|--blank_full]  [--try_to_simulate]
        [<one or more imagefiles>|"-"]
 Examples
 A bus scan (needs rw-permissions to see a drive):
@@ -110,7 +109,7 @@ Burn two audio tracks
   test/libburner --drive /dev/hdc --audio track1.cd track2.cd
 Burn a compressed afio archive on-the-fly, pad up to 700 MB:
   ( cd my_directory ; find . -print | afio -oZ - ) | \
-  test/libburner --drive /dev/hdc --stdin_size 734003200  -
+  test/libburner --drive /dev/hdc -
 To be read from *not mounted* CD via: afio -tvZ /dev/hdc
 Program tar would need a clean EOF which our padded CD cannot deliver.
 </pre>
