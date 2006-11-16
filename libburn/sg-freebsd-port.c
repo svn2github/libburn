@@ -14,7 +14,7 @@ Porting libburn typically will consist of adding a new operating system case
 to the following switcher files:
   os.h    Operating system specific libburn definitions and declarations.
   sg.c    Operating system dependent transport level modules.
-and to derive the following system specific files from existing examples:
+and of deriving the following system specific files from existing examples:
   os-*.h  Included by os.h. You will need some general system knowledge
           about signals and knowledge about the storage object needs of your
           transport level module sg-*.c.
