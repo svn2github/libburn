@@ -20,11 +20,13 @@ and to derive the following system specific files from existing examples:
           transport level module sg-*.c.
 
   sg-*.c  This source module. You will need special system knowledge about
-          how to detect all potentially available drives and how to perform
-          low-level SCSI and drive operations. You will not need to know
-          about CD burning, MMC or other high level SCSI aspects.
+          how to detect all potentially available drives, how to open them,
+          eventually how to exclusively reserve them, how to perform
+          SCSI transactions, how to inquire the (pseudo-)SCSI driver. 
+          You will not need to care about CD burning, MMC or other high-level
+          SCSI aspects.
 
-Said low-level operations are defined by a public function interface, which has
+Said sg-*.c operations are defined by a public function interface, which has
 to be implemented in a way that provides libburn with the desired services:
  
 sg_give_next_adr()      iterates over the set of potentially useful drive 
@@ -897,17 +899,21 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 int sg_is_enumerable_adr(char *adr)
 {
 	char fname[4096];
-	int i, ret = 0, first = 1;
+	int ret = 0, first = 1;
+	burn_drive_enumerator_t idx;
 
 	while (1) {
-		ret= sg_give_next_adr(&i, fname, sizeof(fname), first);
+		ret= sg_give_next_adr(&idx, fname, sizeof(fname), first);
 		if(ret <= 0)
 	break;
 		first = 0;
-		if (strcmp(adr, fname) == 0)
+		if (strcmp(adr, fname) == 0) {
+			sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 			return 1;
+		}
 
 	}
+	sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 	return(0);
 }
 
