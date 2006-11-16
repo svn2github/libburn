@@ -49,6 +49,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 /** For simplicity i use global variables to represent the drives.
@@ -320,7 +322,7 @@ int libburner_regrab(struct burn_drive *drive) {
 */
 int libburner_payload(struct burn_drive *drive, 
 		      char source_adr[][4096], int source_adr_count,
-		      off_t stdin_size, int simulate_burn, int all_tracks_type)
+		      int simulate_burn, int all_tracks_type)
 {
 	struct burn_source *data_src;
 	struct burn_disc *target_disc;
@@ -330,8 +332,10 @@ int libburner_payload(struct burn_drive *drive,
 	struct burn_track *track, *tracklist[99];
 	struct burn_progress progress;
 	time_t start_time;
-	int last_sector = 0, padding = 0, trackno;
+	int last_sector = 0, padding = 0, trackno, write_mode_tao = 0, fd;
+	off_t fixed_size;
 	char *adr;
+	struct stat stbuf;
 
 	if (all_tracks_type != BURN_AUDIO) {
 		all_tracks_type = BURN_MODE1;
@@ -348,12 +352,21 @@ int libburner_payload(struct burn_drive *drive,
 	  burn_track_define_data(track, 0, padding, 1, all_tracks_type);
 
 	  adr = source_adr[trackno];
+	  fixed_size = 0;
 	  if (adr[0] == '-' && adr[1] == 0) {
-		data_src = burn_fd_source_new(0, -1, stdin_size);
-		printf("Note: using standard input as source with %.f bytes\n",
-			(double) stdin_size);
-	  } else
-		data_src = burn_file_source_new(adr, NULL);
+		fd = 0;
+	  } else {
+		fd = open(adr, O_RDONLY);
+		if (fd>=0)
+			if (fstat(fd,&stbuf)!=-1)
+				if((stbuf.st_mode&S_IFMT)==S_IFREG)
+					fixed_size = stbuf.st_size;
+	  }
+	  if (fixed_size==0)
+		write_mode_tao = 1;
+	  data_src = NULL;
+	  if (fd>=0)
+	  	data_src = burn_fd_source_new(fd, -1, fixed_size);
 	  if (data_src == NULL) {
 		fprintf(stderr,
 		       "FATAL: Could not open data source '%s'.\n",adr);
@@ -381,36 +394,25 @@ int libburner_payload(struct burn_drive *drive,
 	if (disc_state != BURN_DISC_BLANK) {
 		if (disc_state == BURN_DISC_FULL ||
 		    disc_state == BURN_DISC_APPENDABLE) {
-			fprintf(stderr,
-      		       "FATAL: Media with data detected. Need blank media.\n");
+			fprintf(stderr, "FATAL: Media with data detected. Need blank media.\n");
 			if (burn_disc_erasable(drive))
 				fprintf(stderr, "HINT: Try --blank_fast\n\n");
 		} else if (disc_state == BURN_DISC_EMPTY) 
 			fprintf(stderr,"FATAL: No media detected in drive\n");
 		else
 			fprintf(stderr,
-			    "FATAL: Cannot recognize drive and media state\n");
+			 "FATAL: Cannot recognize state of drive and media\n");
 		return 0;
 	}
 
 	burn_options = burn_write_opts_new(drive);
 	burn_write_opts_set_perform_opc(burn_options, 0);
-
-#ifdef Libburner_raw_mode_which_i_do_not_likE
-	/* This yields higher CD capacity but hampers my IDE controller
-	   with burning on one drive and reading on another simultaneously.
-	   My burner does not obey the order --try_to_simulate in this mode.
-        */
-	burn_write_opts_set_write_type(burn_options,
-				       BURN_WRITE_RAW, BURN_BLOCK_RAW96R);
-#else
-
-	/* This is by what cdrskin competes with cdrecord -sao which
-	   i understand is the mode preferrably advised by Joerg Schilling */
-	burn_write_opts_set_write_type(burn_options,
-				       BURN_WRITE_SAO, BURN_BLOCK_SAO);
-
-#endif
+	if (write_mode_tao)
+		burn_write_opts_set_write_type(burn_options,
+					BURN_WRITE_TAO, BURN_BLOCK_MODE1);
+	else
+		burn_write_opts_set_write_type(burn_options,
+					BURN_WRITE_SAO, BURN_BLOCK_SAO);
 	if(simulate_burn)
 		printf("\n*** Will TRY to SIMULATE burning ***\n\n");
 	burn_write_opts_set_simulate(burn_options, simulate_burn);
@@ -430,6 +432,9 @@ int libburner_payload(struct burn_drive *drive,
 			printf(
 			     "Thank you for being patient since %d seconds.\n",
 			     (int) (time(0) - start_time));
+		else if(write_mode_tao)
+			printf("Track %d : sector %d\n", progress.track,
+				progress.sector);
 		else
 			printf("Track %d : sector %d of %d\n", progress.track,
 				progress.sector, progress.sectors);
@@ -449,12 +454,11 @@ int libburner_payload(struct burn_drive *drive,
 
 
 /** The setup parameters of libburn */
-static char drive_adr[BURN_DRIVE_ADR_LEN]= {""};
-static int driveno= 0;
-static int do_blank= 0;
+static char drive_adr[BURN_DRIVE_ADR_LEN] = {""};
+static int driveno = 0;
+static int do_blank = 0;
 static char source_adr[99][4096];
-static int source_adr_count= 0;
-static off_t stdin_size= 650*1024*1024;
+static int source_adr_count = 0;
 static int simulate_burn = 0;
 static int all_tracks_type = BURN_MODE1;
 
@@ -499,15 +503,9 @@ int libburner_setup(int argc, char **argv)
                 }
                 strcpy(drive_adr, argv[i]);
             }
-        } else if (!strcmp(argv[i], "--stdin_size")) {
-            ++i;
-            if (i >= argc) {
-                fprintf(stderr,"--stdin_size requires an argument\n");
-                return 3;
-            } else
-                stdin_size = atoi(argv[i]);
-            if (stdin_size < 600*1024) /* minimum readable track size */
-                stdin_size = 600*1024;
+	} else if (!strcmp(argv[i], "--stdin_size")) { /* obsoleted */
+	    i++;
+
         } else if (!strcmp(argv[i], "--try_to_simulate")) {
             simulate_burn = 1;
 
@@ -539,9 +537,8 @@ int libburner_setup(int argc, char **argv)
         insuffient_parameters = 0;
     if (print_help || insuffient_parameters ) {
         printf("Usage: %s\n", argv[0]);
-        printf("       [--drive <address>|<driveno>|\"-\"]\n");
-        printf("       [--blank_fast|--blank_full] [--audio]\n");
-        printf("       [--try_to_simulate] [--stdin_size <bytes>]\n");
+        printf("       [--drive <address>|<driveno>|\"-\"]  [--audio]\n");
+        printf("       [--blank_fast|--blank_full]  [--try_to_simulate]\n");
         printf("       [<one or more imagefiles>|\"-\"]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
@@ -559,7 +556,7 @@ int libburner_setup(int argc, char **argv)
         printf("  %s --drive /dev/hdc --audio track1.cd track2.cd\n", argv[0]);
         printf("Burn a compressed afio archive on-the-fly, pad up to 700 MB:\n");
         printf("  ( cd my_directory ; find . -print | afio -oZ - ) | \\\n");
-        printf("  %s --drive /dev/hdc --stdin_size 734003200  -\n", argv[0]);
+        printf("  %s --drive /dev/hdc -\n", argv[0]);
         printf("To be read from *not mounted* CD via: afio -tvZ /dev/hdc\n");
         printf("Program tar would need a clean EOF which our padded CD cannot deliver.\n");
         if (insuffient_parameters)
@@ -616,7 +613,7 @@ int main(int argc, char **argv)
 	}
 	if (source_adr_count > 0) {
 		ret = libburner_payload(drive_list[driveno].drive,
-				source_adr, source_adr_count, stdin_size,
+				source_adr, source_adr_count,
 				simulate_burn, all_tracks_type);
 		if (ret<=0)
 			{ ret = 38; goto release_drive; }
