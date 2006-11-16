@@ -4,20 +4,16 @@
 #define __TRANSPORT
 
 #include "libburn.h"
+#include "os.h"
 
 #include <pthread.h>
 /* sg data structures */
 #include <sys/types.h>
 
-#ifdef __FreeBSD__
 
-#define BUFFER_SIZE 65536/2
+/* see os.h for name of particular os-*.h where this is defined */
+#define BUFFER_SIZE BURN_OS_TRANSPORT_BUFFER_SIZE
 
-#else /* __FreeBSD__ */
-
-#define BUFFER_SIZE 65536
-
-#endif /* ! __FreeBSD__ */
 
 enum transfer_direction
 { TO_DRIVE, FROM_DRIVE, NO_TRANSFER };
@@ -107,15 +103,10 @@ struct burn_drive
 	int lun;
 	char *devname;
 
-#if defined(__FreeBSD__)
-	struct cam_device* cam;
-#else
-	int fd;
 
-	/* ts A60926 : trying to lock against growisofs /dev/srN, /dev/scdN */
-	int sibling_count;
-	int sibling_fds[LIBBURN_SG_MAX_SIBLINGS];
-#endif
+	/* see os.h for name of particular os-*.h where this is defined */
+	BURN_OS_TRANSPORT_DRIVE_ELEMENTS	
+
 
 	/* ts A60904 : ticket 62, contribution by elmom */
 	/**

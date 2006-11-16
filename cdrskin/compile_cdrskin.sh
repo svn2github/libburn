@@ -32,13 +32,13 @@ do
     libvers="-DCdrskin_libburn_cvs_A60220_tS"
     libdax_audioxtr_o=
     libdax_msgs_o="libburn/message.o"
-    cleanup_src_or_obj="cdrskin/cleanup.c"
+    cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-libburn_0_2_2"
   then
     libvers="-DCdrskin_libburn_0_2_2"
     libdax_audioxtr_o=
     libdax_msgs_o="libburn/message.o"
-    cleanup_src_or_obj="cdrskin/cleanup.c"
+    cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-libburn_0_2_3"
   then
     libvers="-DCdrskin_libburn_0_2_3"
@@ -51,6 +51,7 @@ do
   elif test "$i" = "-oldfashioned"
   then
     def_opts="$def_opts -DCdrskin_oldfashioned_api_usE"
+    cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-no_largefile"
   then
     largefile_opts=	

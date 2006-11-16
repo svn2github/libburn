@@ -23,31 +23,27 @@ typedef void (*sighandler_t)(int);
 
 #include "cleanup.h"
 
-#ifdef __FreeBSD__
+
+#ifndef Cleanup_has_no_libburn_os_H
+
+
+#include "../libburn/os.h"
+
+/* see os.h for name of particular os-*.h where this is defined */
+static int signal_list[]=        { BURN_OS_SIGNAL_MACRO_LIST , -1};
+static char *signal_name_list[]= { BURN_OS_SIGNAL_NAME_LIST , "@"};
+static int signal_list_count=      BURN_OS_SIGNAL_COUNT;
+static int non_signal_list[]=    { BURN_OS_NON_SIGNAL_MACRO_LIST, -1};
+static int non_signal_list_count=  BURN_OS_NON_SIGNAL_COUNT;
+
+
+#else /* ! Cleanup_has_no_libburn_os_H */
+
+
+/* Outdated. Linux only. For backward compatibility with pre-libburn-0.2.3 */
 
 /* Signals to be caught */
-static int signal_list[]= { 
- SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT,
- SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM,
- SIGUSR1, SIGUSR2, SIGXCPU, SIGTSTP, SIGTTIN,
- SIGTTOU,
- SIGBUS, SIGPROF, SIGSYS, SIGTRAP,
- SIGVTALRM, SIGXCPU, SIGXFSZ, -1
-};
-static char *signal_name_list[]= { 
- "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGABRT",
- "SIGFPE", "SIGSEGV", "SIGPIPE", "SIGALRM", "SIGTERM",
- "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGTSTP", "SIGTTIN",
- "SIGTTOU",
- "SIGBUS", "SIGPROF", "SIGSYS", "SIGTRAP",
- "SIGVTALRM", "SIGXCPU", "SIGXFSZ", "@"
-};
-static int signal_list_count= 23;
-
-#else /* __FreeBSD__ */
-
-/* Signals to be caught */
-static int signal_list[]= { 
+static int signal_list[]= {
  SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT,
  SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM,
  SIGUSR1, SIGUSR2, SIGXCPU, SIGTSTP, SIGTTIN,
@@ -55,7 +51,7 @@ static int signal_list[]= {
  SIGBUS, SIGPOLL, SIGPROF, SIGSYS, SIGTRAP,
  SIGVTALRM, SIGXCPU, SIGXFSZ, -1
 };
-static char *signal_name_list[]= { 
+static char *signal_name_list[]= {
  "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGABRT",
  "SIGFPE", "SIGSEGV", "SIGPIPE", "SIGALRM", "SIGTERM",
  "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGTSTP", "SIGTTIN",
@@ -65,13 +61,15 @@ static char *signal_name_list[]= {
 };
 static int signal_list_count= 24;
 
-#endif /* ! __FreeBSD__ */
-
 /* Signals not to be caught */
 static int non_signal_list[]= {
   SIGKILL, SIGCHLD, SIGSTOP, SIGURG, -1
-}; 
+};
 static int non_signal_list_count= 4;
+
+
+#endif /* Cleanup_has_no_libburn_os_H */
+
 
 
 /* run time dynamic part */

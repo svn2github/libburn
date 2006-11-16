@@ -39,6 +39,7 @@ libburn_libburn_la_SOURCES = \
 	libburn/null.h \
 	libburn/options.c \
 	libburn/options.h \
+	libburn/os.h \
 	libburn/read.c \
 	libburn/read.h \
 	libburn/sbc.c \
@@ -184,6 +185,8 @@ EXTRA_DIST = \
 	cdrskin/wiki_plain.txt \
 	cdrskin/cleanup.h \
 	cdrskin/cleanup.c \
+	libburn/os-freebsd.h \
+	libburn/os-linux.h \
 	libburn/sg-freebsd.c \
 	libburn/sg-linux.c \
 	COPYING

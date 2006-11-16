@@ -1,5 +1,9 @@
 
-/* ts A61013 : It would be nice if autotools could do that job */
+/* sg.c
+   Switcher for operating system dependent transport level modules of libburn.
+   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+*/
+
 
 #ifdef __FreeBSD__
 

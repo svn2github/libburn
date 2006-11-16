@@ -3,30 +3,13 @@
 #ifndef __SG
 #define __SG
 
-#ifdef __FreeBSD__
 
-/* To hold all state information of BSD device enumeration
-   which are now local in sg_enumerate() . So that sg_give_next_adr()
-   can work in BSD and sg_enumerate() can use it. */
-struct burn_drive_enumeration_state {
-	union ccb ccb;
-	int bufsize, fd;
-	unsigned int i;
-	int skip_device;
-};
-typedef struct burn_drive_enumeration_state burn_drive_enumerator_t;
+#include "os.h"
 
-#else /* __FreeBSD__ */
 
-/* <<< just for testing the C syntax */
-struct burn_drive_enumeration_state {
-        int dummy;
-};
-typedef struct burn_drive_enumeration_state burn_drive_enumerator_tX;
+/* see os.h for name of particular os-*.h where this is defined */
+BURN_OS_DEFINE_DRIVE_ENUMERATOR_T
 
-typedef int burn_drive_enumerator_t;
-
-#endif /* ! __FreeBSD__ */
 
 struct burn_drive;
 struct command;

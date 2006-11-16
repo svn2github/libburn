@@ -2,15 +2,30 @@
 
 /*
 
-This is the operating system dependent SCSI part of libburn. It implements the
-transport level aspects of SCSI control and command i/o.
+This is the main operating system dependent SCSI part of libburn. It implements
+the transport level aspects of SCSI control and command i/o.
 
 Present implementation: Linux SCSI Generic (sg)
 
+
 PORTING:
 
-There are public functions, used by other parts of libburn, which have to be
-implemented in a way that provides libburn with the desired services:
+Porting libburn typically will consist of adding a new operating system case
+to the following switcher files:
+  os.h    Operating system specific libburn definitions and declarations.
+  sg.c    Operating system dependent transport level modules.
+and to derive the following system specific files from existing examples:
+  os-*.h  Included by os.h. You will need some general system knowledge
+          about signals and knowledge about the storage object needs of your
+          transport level module sg-*.c.
+
+  sg-*.c  This source module. You will need special system knowledge about
+          how to detect all potentially available drives and how to perform
+          low-level SCSI and drive operations. You will not need to know
+          about CD burning, MMC or other high level SCSI aspects.
+
+Said low-level operations are defined by a public function interface, which has
+to be implemented in a way that provides libburn with the desired services:
  
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
@@ -37,11 +52,6 @@ Send feedback to libburn-hackers@pykix.org .
 
 Hint: You should also look into sg-freebsd-port.c, which is a younger and
       in some aspects more straightforward implementation of this interface.
-
-Other source modules where to expect OS dependencies (look for "__FreeBSD__"):
-  cleanup.c     signal_list : add or delete as described in your man 7 signal
-  transport.h   struct burn_drive : OS dependent i/o attributes
-                BUFFER_SIZE maximum size for a (SCSI) i/o transaction
 
 */
 
