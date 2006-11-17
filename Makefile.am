@@ -77,7 +77,6 @@ noinst_PROGRAMS = \
 	test/dewav \
 	test/fake_au \
 	test/poll \
-	test/toc \
 	test/structest
 
 bin_PROGRAMS = \
@@ -98,9 +97,6 @@ test_fake_au_SOURCES = test/fake_au.c
 test_poll_CPPFLAGS = -Ilibburn
 test_poll_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_poll_SOURCES = test/poll.c
-test_toc_CPPFLAGS = -Ilibburn
-test_toc_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
-test_toc_SOURCES = test/toc.c
 test_structest_CPPFLAGS = -Ilibburn
 test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_structest_SOURCES = test/structest.c
@@ -150,9 +146,7 @@ uninstall-local:
 # Indent source files
 indent_files = \
 	$(libburn_libburn_la_SOURCES) \
-	$(test_libburner_SOURCES) \
 	$(test_poll_SOURCES) \
-	$(test_toc_SOURCES) \
 	$(test_structest_SOURCES)
 	
 
