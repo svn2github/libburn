@@ -73,6 +73,7 @@ libinclude_HEADERS = \
 ## Build test applications
 noinst_PROGRAMS = \
 	test/libburner \
+	test/telltoc \
 	test/dewav \
 	test/fake_au \
 	test/poll \
@@ -85,6 +86,9 @@ bin_PROGRAMS = \
 test_libburner_CPPFLAGS = -Ilibburn
 test_libburner_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_libburner_SOURCES = test/libburner.c
+test_telltoc_CPPFLAGS = -Ilibburn
+test_telltoc_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_telltoc_SOURCES = test/telltoc.c
 test_dewav_CPPFLAGS = -Ilibburn
 test_dewav_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_dewav_SOURCES = test/dewav.c
@@ -106,7 +110,6 @@ cdrskin_cdrskin_CPPFLAGS = -Ilibburn
 cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_2_3
 cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 cdrskin_cdrskin_SOURCES = cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cdrfifo.h cdrskin/cdrskin_timestamp.h
-## cdrskin_cdrskin_SOURCES = cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cdrfifo.h cdrskin/cleanup.c cdrskin/cleanup.h cdrskin/cdrskin_timestamp.h
 ##
 ## Open questions: how to compute $timestamp and express -DX="$timestamp"
 ##                 
