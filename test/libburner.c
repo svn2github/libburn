@@ -1,7 +1,7 @@
 
-/*  test/libburner.c , API illustration of burning a single data track to CD */
-/*  Copyright (C) 2005 - 2006 Thomas Schmitt <scdbackup@gmx.net> */
-/*  Provided under GPL, see also "License and copyright aspects" at file end */
+/* test/libburner.c , API illustration of burning data or audio tracks to CD */
+/* Copyright (C) 2005 - 2006 Thomas Schmitt <scdbackup@gmx.net> */
+/* Provided under GPL, see also "License and copyright aspects" at file end */
 
 
 /**                               Overview 
@@ -115,9 +115,6 @@ int libburner_aquire_by_adr(char *drive_adr)
 	if (ret <= 0) {
 		fprintf(stderr,"FAILURE with persistent drive address  '%s'\n",
 			drive_adr);
-		if (strncmp(drive_adr,"/dev/sg",7) != 0 &&
-		    strncmp(drive_adr,"/dev/hd",7) != 0)
-			fprintf(stderr,"\nHINT: Consider addresses like  '/dev/hdc'  or  '/dev/sg0'\n");
 	} else {
 		printf("Done\n");
 		drive_is_grabbed = 1;
@@ -176,7 +173,6 @@ int libburner_aquire_by_driveno(int *driveno)
 			i,adr,drive_list[i].vendor,drive_list[i].product);
 	}
 	printf("-----------------------------------------------------------------------------\n\n");
-
 
 	/*
 	On multi-drive systems save yourself from sysadmins' revenge.
@@ -322,7 +318,7 @@ int libburner_regrab(struct burn_drive *drive) {
 */
 int libburner_payload(struct burn_drive *drive, 
 		      char source_adr[][4096], int source_adr_count,
-		      int simulate_burn, int all_tracks_type)
+		      int multi, int simulate_burn, int all_tracks_type)
 {
 	struct burn_source *data_src;
 	struct burn_disc *target_disc;
@@ -391,10 +387,11 @@ int libburner_payload(struct burn_drive *drive,
 	/* Evaluate drive and media */
 	while ((disc_state = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
 		usleep(100001);
-	if (disc_state != BURN_DISC_BLANK) {
-		if (disc_state == BURN_DISC_FULL ||
-		    disc_state == BURN_DISC_APPENDABLE) {
-			fprintf(stderr, "FATAL: Media with data detected. Need blank media.\n");
+	if (disc_state == BURN_DISC_APPENDABLE) {
+		write_mode_tao = 1;
+	} else if (disc_state != BURN_DISC_BLANK) {
+		if (disc_state == BURN_DISC_FULL) {
+			fprintf(stderr, "FATAL: Closed media with data detected. Need blank or appendable media.\n");
 			if (burn_disc_erasable(drive))
 				fprintf(stderr, "HINT: Try --blank_fast\n\n");
 		} else if (disc_state == BURN_DISC_EMPTY) 
@@ -407,6 +404,7 @@ int libburner_payload(struct burn_drive *drive,
 
 	burn_options = burn_write_opts_new(drive);
 	burn_write_opts_set_perform_opc(burn_options, 0);
+	burn_write_opts_set_multi(burn_options, !!multi);
 	if (write_mode_tao)
 		burn_write_opts_set_write_type(burn_options,
 					BURN_WRITE_TAO, BURN_BLOCK_MODE1);
@@ -433,10 +431,10 @@ int libburner_payload(struct burn_drive *drive,
 			     "Thank you for being patient since %d seconds.\n",
 			     (int) (time(0) - start_time));
 		else if(write_mode_tao)
-			printf("Track %d : sector %d\n", progress.track,
+			printf("Track %d : sector %d\n", progress.track+1,
 				progress.sector);
 		else
-			printf("Track %d : sector %d of %d\n", progress.track,
+			printf("Track %d : sector %d of %d\n",progress.track+1,
 				progress.sector, progress.sectors);
 		last_sector = progress.sector;
 		sleep(1);
@@ -447,18 +445,21 @@ int libburner_payload(struct burn_drive *drive,
 		burn_track_free(tracklist[trackno]);
 	burn_session_free(session);
 	burn_disc_free(target_disc);
-	if(simulate_burn)
+	if (multi)
+		printf("NOTE: Media left appendable.\n");
+	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
 	return 0;
 }
 
 
-/** The setup parameters of libburn */
+/** The setup parameters of libburner */
 static char drive_adr[BURN_DRIVE_ADR_LEN] = {""};
 static int driveno = 0;
 static int do_blank = 0;
 static char source_adr[99][4096];
 static int source_adr_count = 0;
+static int do_multi = 0;
 static int simulate_burn = 0;
 static int all_tracks_type = BURN_MODE1;
 
@@ -503,6 +504,9 @@ int libburner_setup(int argc, char **argv)
                 }
                 strcpy(drive_adr, argv[i]);
             }
+        } else if (!strcmp(argv[i], "--multi")) {
+	    do_multi = 1;
+
 	} else if (!strcmp(argv[i], "--stdin_size")) { /* obsoleted */
 	    i++;
 
@@ -539,14 +543,13 @@ int libburner_setup(int argc, char **argv)
         printf("Usage: %s\n", argv[0]);
         printf("       [--drive <address>|<driveno>|\"-\"]  [--audio]\n");
         printf("       [--blank_fast|--blank_full]  [--try_to_simulate]\n");
-        printf("       [<one or more imagefiles>|\"-\"]\n");
+        printf("       [--multi]  [<one or more imagefiles>|\"-\"]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
         printf("  %s --drive -\n",argv[0]);
-        printf("Burn a file to drive chosen by number:\n");
-        printf("  %s --drive 0 my_image_file\n",
-            argv[0]);
-        printf("Burn a file to drive chosen by persistent address:\n");
+        printf("Burn a file to drive chosen by number, leave appendable:\n");
+        printf("  %s --drive 0 --multi my_image_file\n", argv[0]);
+        printf("Burn a file to drive chosen by persistent address, close:\n");
         printf("  %s --drive /dev/hdc my_image_file\n", argv[0]);
         printf("Blank a used CD-RW (is combinable with burning in one run):\n");
         printf("  %s --drive /dev/hdc --blank_fast\n",argv[0]);
@@ -554,7 +557,7 @@ int libburner_setup(int argc, char **argv)
         printf("  lame --decode -t /path/to/track1.mp3 track1.cd\n");
         printf("  test/dewav /path/to/track2.wav -o track2.cd\n");
         printf("  %s --drive /dev/hdc --audio track1.cd track2.cd\n", argv[0]);
-        printf("Burn a compressed afio archive on-the-fly, pad up to 700 MB:\n");
+        printf("Burn a compressed afio archive on-the-fly:\n");
         printf("  ( cd my_directory ; find . -print | afio -oZ - ) | \\\n");
         printf("  %s --drive /dev/hdc -\n", argv[0]);
         printf("To be read from *not mounted* CD via: afio -tvZ /dev/hdc\n");
@@ -614,7 +617,7 @@ int main(int argc, char **argv)
 	if (source_adr_count > 0) {
 		ret = libburner_payload(drive_list[driveno].drive,
 				source_adr, source_adr_count,
-				simulate_burn, all_tracks_type);
+				do_multi, simulate_burn, all_tracks_type);
 		if (ret<=0)
 			{ ret = 38; goto release_drive; }
 	}
