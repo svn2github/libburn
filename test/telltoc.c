@@ -226,7 +226,7 @@ int telltoc_media(struct burn_drive *drive)
 
 	printf("Media status : ");
 	if (s==BURN_DISC_FULL) {
-		printf("is written, is closed\n");
+		printf("is written , is closed\n");
 		media_found = 1;
 	} else if (s==BURN_DISC_APPENDABLE) {
 		printf("is written, is appendable\n");
