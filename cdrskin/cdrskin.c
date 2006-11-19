@@ -4322,7 +4322,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  enum burn_drive_status drive_status;
  struct burn_progress p;
  struct burn_drive *drive;
- int ret,loop_counter= 0,max_track= -1,i,hflag,nwa;
+ int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num;
  int fifo_disabled= 0,fifo_percent,total_min_fill,mb,min_buffer_fill= 101;
  double put_counter,get_counter,empty_counter,full_counter;
  double start_time,last_time;
@@ -4631,8 +4631,9 @@ fifo_full_at_end:;
    /* cdrskin recorded its own coarse min_buffer_fill.
       libburn's is finer - if enough bytes were processed so it is available.*/
    if(p.buffer_min_fill<=p.buffer_capacity && p.buffer_capacity>0)
-     min_buffer_fill= 100.0 * 
-                      ((double) p.buffer_min_fill)/(double) p.buffer_capacity;
+     num= 100.0 * ((double) p.buffer_min_fill)/(double) p.buffer_capacity;
+     if(num<min_buffer_fill)
+       min_buffer_fill= num; 
 #endif /* Cdrskin_libburn_has_buffer_min_filL */
 
    if(min_buffer_fill>100)
