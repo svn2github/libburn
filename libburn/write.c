@@ -125,6 +125,8 @@ int burn_write_flush(struct burn_write_opts *o, struct burn_track *track)
 			track->writecount += d->buffer->bytes;
 			track->written_sectors += d->buffer->sectors;
 		}
+		/* ts A61119 */
+		d->progress.buffered_bytes += d->buffer->bytes;
 
 		d->nwa += d->buffer->sectors;
 		d->buffer->bytes = 0;
@@ -178,6 +180,7 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 			d->nwa += d->buffer->sectors;
 			t->writecount += d->buffer->bytes;
 			t->written_sectors += d->buffer->sectors;
+			d->progress.buffered_bytes += d->buffer->bytes;
 		}
 		d->cancel = cancelled;
 	}
@@ -651,7 +654,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
         burn_print(12, "track %d is %d sectors long\n", tnum, sectors);
 
-	/* ts A61030 : this cannot happen. tnum is alsways < s-tracks */
+	/* ts A61030 : this cannot happen. tnum is always < s->tracks */
 	if (tnum == s->tracks)
 		tmp = sectors > 150 ? 150 : sectors;
 
@@ -710,6 +713,8 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 			/* A61101 : probably this is not all payload data */
 			/* A61108 : but audio count is short without this */
 			t->writecount += d->buffer->bytes;
+			t->written_sectors += d->buffer->sectors;
+			d->progress.buffered_bytes += d->buffer->bytes;
 
 			d->nwa += d->buffer->sectors;
 			d->buffer->bytes = 0;
@@ -815,6 +820,8 @@ return crap.  so we send the command, then ignore the result.
 	/* ts A61023 */
 	d->progress.buffer_capacity = 0;
 	d->progress.buffer_available = 0;
+	d->progress.buffered_bytes = 0;
+	d->progress.buffer_min_fill = 0xffffffff;
 
 	d->busy = BURN_DRIVE_WRITING;
 

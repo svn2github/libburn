@@ -874,6 +874,14 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 			(data[4]<<24)|(data[5]<<16)|(data[6]<<8)|data[7];
 	d->progress.buffer_available =
 			(data[8]<<24)|(data[9]<<16)|(data[10]<<8)|data[11];
+	if (d->progress.buffered_bytes >= d->progress.buffer_capacity){
+		double fill;
+
+		fill = d->progress.buffer_capacity
+			      - d->progress.buffer_available;
+		if (fill < d->progress.buffer_min_fill && fill>=0)
+			d->progress.buffer_min_fill = fill;
+	}
 	return 1;
 }
 

@@ -177,6 +177,7 @@ or
 #define Cdrskin_libburn_has_buffer_progresS 1
 #define Cdrskin_libburn_has_pretend_fulL 1
 #define Cdrskin_libburn_has_multI 1
+#define Cdrskin_libburn_has_buffer_min_filL 1
 #endif
 
 #ifndef Cdrskin_libburn_versioN
@@ -3245,7 +3246,7 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
                                int flag)
 {
  printf("cdrskin: status %d ",s);
- if (s==BURN_DISC_FULL) {
+ if(s==BURN_DISC_FULL) {
    printf("burn_disc_full \"There is a disc with data on it in the drive\"\n"); 
  } else if(s==BURN_DISC_BLANK) {
    printf("burn_disc_blank \"The drive holds a blank disc\"\n"); 
@@ -4624,6 +4625,16 @@ fifo_full_at_end:;
   "Cdrskin: fifo was %.f times empty and %.f times full, min fill was %d%%.\n",
              empty_counter,full_counter,fifo_percent);
    }
+   drive_status= burn_drive_get_status(drive, &p);
+
+#ifdef Cdrskin_libburn_has_buffer_min_filL
+   /* cdrskin recorded its own coarse min_buffer_fill.
+      libburn's is finer - if enough bytes were processed so it is available.*/
+   if(p.buffer_min_fill<=p.buffer_capacity && p.buffer_capacity>0)
+     min_buffer_fill= 100.0 * 
+                      ((double) p.buffer_min_fill)/(double) p.buffer_capacity;
+#endif /* Cdrskin_libburn_has_buffer_min_filL */
+
    if(min_buffer_fill>100)
      min_buffer_fill= 50;
    printf("Min drive buffer fill was %d%%\n", min_buffer_fill);

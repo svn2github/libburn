@@ -228,6 +228,8 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 			track->writecount += out->bytes;
 			track->written_sectors += out->sectors;
 		}
+		/* ts A61119 */
+		d->progress.buffered_bytes += out->bytes;
 
 		d->nwa += out->sectors;
 		out->bytes = 0;

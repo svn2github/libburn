@@ -388,9 +388,11 @@ struct burn_progress {
 	int index;
 	/** The starting logical block address */
 	int start_sector;
-	/** The number of sector */
+	/** On write: The number of sectors.
+	    On blank: 0x10000 as upper limit for relative progress steps */
 	int sectors;
-	/** The current sector being processed */
+	/** On write: The current sector being processed.
+	    On blank: Relative progress steps 0 to 0x10000 */
 	int sector;
 
 	/* ts A61023 */
@@ -398,6 +400,14 @@ struct burn_progress {
 	unsigned buffer_capacity;
 	/** The free space in the drive buffer (might be slightly outdated) */
 	unsigned buffer_available;
+
+	/* ts A61119 */
+	/** The number of bytes sent to the drive buffer */
+	off_t buffered_bytes;
+	/** The minimum number of buffered bytes. (Caution: Before surely
+	    one buffer size of bytes was processed, this value is 0xffffffff.) 
+	*/
+	unsigned buffer_min_fill;
 };
 
 /** Initialize the library.
