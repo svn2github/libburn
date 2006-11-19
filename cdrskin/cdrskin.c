@@ -4630,10 +4630,11 @@ fifo_full_at_end:;
 #ifdef Cdrskin_libburn_has_buffer_min_filL
    /* cdrskin recorded its own coarse min_buffer_fill.
       libburn's is finer - if enough bytes were processed so it is available.*/
-   if(p.buffer_min_fill<=p.buffer_capacity && p.buffer_capacity>0)
+   if(p.buffer_min_fill<=p.buffer_capacity && p.buffer_capacity>0) {
      num= 100.0 * ((double) p.buffer_min_fill)/(double) p.buffer_capacity;
      if(num<min_buffer_fill)
        min_buffer_fill= num; 
+   }
 #endif /* Cdrskin_libburn_has_buffer_min_filL */
 
    if(min_buffer_fill>100)
