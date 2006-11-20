@@ -19,11 +19,10 @@ About libburn API for burning CD: http://libburn-api.pykix.org
 
 --------------------------------------------------------------------------
 
-cdrskin with CD media fails to match its paragon cdrecord on one major field:
-Multi session.
-
 Convenient TAO burn mode is provided in development version 0.2.5 but not in
-current "stable" release 0.2.4.
+current "stable" release 0.2.4. The same is true for multi-session, where
+follow-up sessions must be done in TAO mode. (Users who have a burner which
+succeeds with a follow-up session via cdrecord -sao : please contact us.)
 
 cdrskin does not provide DVD burning yet. See advise to use dvd+rw-tools
 at the end of this text.
