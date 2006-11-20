@@ -795,7 +795,7 @@ struct CdrtracK {
  /** fd[0] of the fifo pipe. This is from where libburn reads its data. */
  int fifo_outlet_fd;
  int fifo_size;
- int fifo_start_empty;
+ int fifo_start_at;
 
  /** The possibly external fifo object which knows the real input fd and
      the fd[1] of the pipe. */
@@ -816,7 +816,7 @@ int Cdrtrack_set_track_type(struct CdrtracK *o, int track_type, int flag);
     @param boss The cdrskin control object (corresponds to session)
     @param trackno The index in the cdrskin tracklist array (is not constant)
     @param flag Bitfield for control purposes:
-                bit0= set fifo_start_empty to 1
+                bit0= set fifo_start_at to 0
                 bit1= track is originally stdin
 */
 int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
@@ -830,7 +830,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                         int *track_type_by_default, int *swap_audio_bytes,
                         int flag);
  int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
-                          int *fifo_size, int *fifo_start_empty, int flag);
+                          int *fifo_size, int *fifo_start_at, int flag);
 
  (*track)= o= TSOB_FELD(struct CdrtracK,1);
  if(o==NULL)
@@ -853,7 +853,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->fifo= NULL;
  o->fifo_outlet_fd= -1;
  o->fifo_size= 0;
- o->fifo_start_empty= 0;
+ o->fifo_start_at= -1;
  o->ff_fifo= NULL;
  o->ff_idx= -1;
  o->libburn_track= NULL;
@@ -867,13 +867,13 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
 
 #ifndef Cdrskin_extra_leaN
  ret= Cdrskin_get_fifo_par(boss, &(o->fifo_enabled),&(o->fifo_size),
-                           &(o->fifo_start_empty),0);
+                           &(o->fifo_start_at),0);
  if(ret<=0)
    goto failed;
 #endif /* ! Cdrskin_extra_leaN */
 
  if(flag&1)
-   o->fifo_start_empty= 1;
+   o->fifo_start_at= 0;
  return(1);
 failed:;
  Cdrtrack_destroy(track,0);
@@ -1185,11 +1185,15 @@ int Cdrtrack_fill_fifo(struct CdrtracK *track, int flag)
 {
  int ret,buffer_fill,buffer_space;
 
- if(track->fifo==NULL || track->fifo_start_empty)
+ if(track->fifo==NULL || track->fifo_start_at==0)
    return(2);
+ if(track->fifo_start_at>0 && track->fifo_start_at<track->fifo_size)
+   printf(
+      "cdrskin: NOTE : Input buffer will be initially filled up to %d bytes\n",
+      track->fifo_start_at);
  printf("Waiting for reader process to fill input buffer ... ");
  fflush(stdout);
- ret= Cdrfifo_fill(track->fifo,0);
+ ret= Cdrfifo_fill(track->fifo,track->fifo_start_at,0);
  if(ret<=0)
    return(ret);
 
@@ -1981,7 +1985,9 @@ set_dev:;
      printf(" --fifo_disable     disable fifo despite any fs=...\n");
      printf(" --fifo_per_track   use a separate fifo for each track\n");
      printf(
-          " --fifo_start_empty do not wait for full fifo before burn start\n");
+      " fifo_start_at=<number> do not wait for full fifo but start burning\n");
+     printf(
+         "                    as soon as the given number of bytes is read\n");
      printf(
           " grab_drive_and_wait=<num>  grab drive, wait given number of\n");
      printf(
@@ -2384,7 +2390,7 @@ struct CdrskiN {
  /** fd[0] of the fifo pipe. This is from where libburn reads its data. */
  int fifo_outlet_fd;
  int fifo_size;
- int fifo_start_empty;
+ int fifo_start_at;
  int fifo_per_track;
 
 
@@ -2481,7 +2487,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->fifo= NULL;
  o->fifo_outlet_fd= -1;
  o->fifo_size= 4*1024*1024;
- o->fifo_start_empty= 0;
+ o->fifo_start_at= -1;
  o->fifo_per_track= 0;
  o->adr_trn= NULL;
  o->drives= NULL;
@@ -2570,11 +2576,11 @@ int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
 
 /** Return information about current fifo setting */
 int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
-                         int *fifo_size, int *fifo_start_empty, int flag)
+                         int *fifo_size, int *fifo_start_at, int flag)
 {
  *fifo_enabled= skin->fifo_enabled;
  *fifo_size= skin->fifo_size;
- *fifo_start_empty= skin->fifo_start_empty;
+ *fifo_start_at= skin->fifo_start_at;
  return(1);
 }
 
@@ -5034,8 +5040,16 @@ set_driveropts:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        printf("cdrskin: option fs=... disabled\n");
 
-   } else if(strcmp(argv[i],"--fifo_start_empty")==0) {
-     skin->fifo_start_empty= 1;
+   } else if(strcmp(argv[i],"--fifo_start_empty")==0) { /* obsoleted */
+     skin->fifo_start_at= 0;
+
+   } else if(strncmp(argv[i],"fifo_start_at=",14)==0) {
+     value= Scanf_io_size(argv[i]+14,0);
+     if(value>1024.0*1024.0*1024.0)
+       value= 1024.0*1024.0*1024.0;
+     else if(value<0)
+       value= 0;
+     skin->fifo_start_at= value;
 
    } else if(strcmp(argv[i],"--fifo_per_track")==0) {
      skin->fifo_per_track= 1;
@@ -5078,6 +5092,7 @@ gracetime_equals:;
    } else if(
       strcmp(argv[i],"--fifo_disable")==0 ||
       strcmp(argv[i],"--fifo_start_empty")==0 ||
+      strncmp(argv[i],"fifo_start_at=",14)==0 ||
       strcmp(argv[i],"--fifo_per_track")==0 ||
       strncmp(argv[i],"-fs=",4)==0 ||
       strncmp(argv[i],"fs=",3)==0 ||

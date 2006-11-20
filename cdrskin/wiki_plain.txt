@@ -15,6 +15,8 @@ runs, though. The most comprehensive technical overview of cdrskin
 can be found in cdrskin/README . Online available as :
 http://libburn.pykix.org/browser/trunk/cdrskin/README?format=raw
 
+About libburn API for burning CD: http://libburn-api.pykix.org
+
 --------------------------------------------------------------------------
 
 cdrskin with CD media fails to match its paragon cdrecord on one major field:
@@ -36,9 +38,9 @@ cdrskin for its task to emulate cdrecord. There are some, nevertheless,
 which provide rather exotic unique features of cdrskin.
 
 The cdrecord-compatible options are listed in the output of
-
+{{{
 cdrskin -help
-
+}}}
 where the option "help" has *one* dash. 
 For these options you may expect program behavior that is roughly the
 same as described in original  man 1 cdrecord . 
@@ -46,9 +48,9 @@ same as described in original  man 1 cdrecord .
 Online: http://cdrecord.berlios.de/old/private/man/cdrecord-2.0.html
 
 The cdrskin-specific options are listed by
-
+{{{
 cdrskin --help
-
+}}}
 where the option "help" has *two* dashes.
 
 Those have no man page yet. Some are very experimental and should only be
@@ -60,11 +62,10 @@ Some are of general user interest, though:
 --devices allows the sysadmin to scan the system for possible drives
 and displays their detected properties.
 The drives are listed one per line, with fields:
-
-libburn-drive-number  sysadmin-device-file  permissions :  vendor  type
-
+libburn-drive-number, sysadmin-device-file, permissions, vendor, type
+{{{
 0  dev='/dev/sg0'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
-
+}}}
 This feature is valuable since cdrskin -scanbus will not give you
 the device file name and its current permissions.
 cdrskin will accept of course the proposed dev= option as address
@@ -78,7 +79,7 @@ has to offer both, r- and w-permission.
 
 --------------------------------------------------------------------------
 
---fifo_start_empty is a throughput enhancer for unsteady data streams
+fifo_start_at=<num> is a throughput enhancer for unsteady data streams
 like they are produced by a compressing archiver program when piping to
 CD on-the-fly. It makes better use of the general property of a FIFO 
 buffer to transport surplus bandwidth into the future. Yep. A time machine.
@@ -102,10 +103,16 @@ underruns, of course.
 With a very fat fs=# buffer (128 MB for 12x CD is not unrealistic) this
 can cause a big delay until burning finally starts and takes its due time.
 
---fifo_start_empty makes cdrskin start burning without waiting for the
-FIFO to be full resp. the data stream to end. It can make use of the 
-seconds spend with drive preparation and lead-in, it risks a few drive
-buffer underruns at the beginning of burn - but modern drives stand this.
+fifo_start_at=<num> makes cdrskin start burning after the given number of bytes
+is read rather than waiting for the FIFO to be completely full resp. the data
+stream to end. It risks a few drive buffer underruns at the beginning of burn
+- but modern drives stand this.
+
+Usage examples:
+{{{
+cdrskin ...  fs=128m  fifo_start_at=20m  ...
+cdrskin ...  fifo_start_at=0  ...
+}}}
 
 Note: no FIFO can give you better average throughput than the average
 throughput of the data source and the throughput of the burner.
@@ -155,15 +162,15 @@ cdrskin the necessary hint.
 Example: Your frontend insists in using "0,0,0" and --devices reported 
 dev='/dev/hdc' resp. cdrskin dev=ATA -scanbus reported "1,0,0" then this
 would be the appropriate translation:
-
+{{{
 dev_translation=+0,0,0+/dev/hdc
-
+}}}
 The "+" character is a separator to be choosen by you.
 Currently i am not aware of the need to choose any other than "+"
 unless you get playful with custom translations like
-
+{{{
 dev_translation=-"cd+dvd"-1,0,0
-
+}}}
 See http://scdbackup.sourceforge.net/k3b_on_cdrskin.html
 for an illustrated example with K3b 0.10 .
 

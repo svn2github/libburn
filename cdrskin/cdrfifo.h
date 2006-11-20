@@ -145,10 +145,11 @@ int Cdrfifo_get_cdr_counters(struct CdrfifO *o,
 int Cdrfifo_try_to_work(struct CdrfifO *o, int wait_usec, 
                         char *reply_buffer, int *reply_count, int flag);
 
-/** Fill the fifo as far as possible without writing to destination fd
+/** Fill the fifo as far as possible without writing to destination fd.
+    @param size if >=0 : end filling after the given number of bytes
     @return 1 on success, <=0 on failure
 */
-int Cdrfifo_fill(struct CdrfifO *o, int flag);
+int Cdrfifo_fill(struct CdrfifO *o, int size, int flag);
 
 
 #endif /* Cdrfifo_headerfile_includeD */

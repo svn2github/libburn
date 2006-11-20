@@ -796,7 +796,7 @@ ex:;
 
 
 /** Fill the fifo as far as possible without writing to destination fd */
-int Cdrfifo_fill(struct CdrfifO *o, int flag)
+int Cdrfifo_fill(struct CdrfifO *o, int size, int flag)
 {
  int ret,fill= 0,space,state;
 
@@ -810,6 +810,8 @@ int Cdrfifo_fill(struct CdrfifO *o, int flag)
    } else if(state!=1)
  break;
    if(space<=0)
+ break;
+   if(size>=0 && fill>=size)
  break;
    ret= Cdrfifo_try_to_work(o,100000,NULL,NULL,2);
    if(ret<0) {
