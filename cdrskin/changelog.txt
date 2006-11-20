@@ -1536,7 +1536,6 @@ Changed SVN URLs to reflect new structure
 README
 Refered to both libburn and libisofs in SVN description, updated history
 
-
 ------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.13.122418
 * Enabled named pipes and other non-plain file types as track sources
   (actually already in previous cycle)
@@ -1544,39 +1543,185 @@ Refered to both libburn and libisofs in SVN description, updated history
 * SAO is preferred default write mode, TAO is default when needed
 
 
+2006.11.13.122418 [392]
+cdrskin/changelog.txt
+Next cdrskin-0.2.5 cycle
+
+13 Nov 2006  [393]
+cdrskin/cdrskin_eng.html
+Adjusted description of write mode default
+
+13 Nov 2006  [394]
+Makefile.am
+configure.ac
+Removed references to libisofs
+
+14 Nov 2006  [399]
+README
+Changed references to libisofs
+
+14 Nov 2006  [400]
+cdrskin/README
+Corrected a typo reported by George Danchev
+
+2006.11.14.104023  [401]
+cdrskin/cdrskin.c
+Implemented try to find on restricted drives a suitable write mode as default 
+
+14 Nov 2006  [402]
+libburn/libburn.h
+Fixed a wrong name in API description
+
+15 Nov 2006  [403]
+libburn/write.h
+libburn/write.c
+Prepared tests for eventual drive which might support SAO to appendable CD
+
+15 Nov 2006  [404]
+libburn/sg-linux.c
+Enhanced optional SCSI command logging
+
+2006.11.15.091329  [405]
+cdrskin/cdrskin.c
+Adjusted some texts to new multi-session situation
+
+2006.11.15.170927  [406]
+libburn/sg.h
+libburn/sg-linux.c
+libburn/sg-freebsd.c
++ libburn/sg-freebsd-port.c
+libburn/spc.h
+libburn/spc.c
+libburn/drive.c
+Made portability clarifications
+
+15 Nov 2006  [407]
+libburn/sg-linux.c
+libburn/sg-freebsd-port.c
+Narrowed system specific part of enumerate_common()
+
+2006.11.16.111656  [408] [409]
+Makefile.am
++ libburn/os.h
++ libburn/os-linux.h
++ libburn/os-freebsd.h
+libburn/sg.h
+libburn/sg.c
+libburn/transport.h
+libburn/cleanup.c
+libburn/sg-linux.c
+libburn/sg-freebsd-port.c
+cdrskin/cleanup.c
+cdrskin/compile_cdrskin.sh
+Made consolidaed operating system adapters for ease of porting
+
+2006.11.16.133951  [410]
+libburn/sg-linux.c
+libburn/sg-freebsd-port.c
+Polished porting hints and self-compliance to newly established specs
+
+16 Nov 2006  [411]
+libburn/sg-linux.c
+libburn/sg-freebsd-port.c
+Polished porting hints
+
+16 Nov 2006  [412]
+test/libburner.c
+Obsoleted --stdin_size by automatic TAO, cared for non-plain track files
+
+16 Nov 2006  [413]
+doc/comments
+Updated help text of libburner
+
+17 Nov 2006  [414]
+Makefile.am
++ test/telltoc.c
+Created info retrieval companion for libburner
+
+17 Nov 2006  [415]
+test/libburner.c
+Enabled multi-session with libburner
+
+17 Nov 2006  [416]
+Makefile.am
+- test/toc.c
+Obsoleted old test program
+
+17 Nov 2006  [417] [418]
+test/telltoc.c
+Shifted a comma
+
+2006.11.18.194606  [419]
+libburn/transport.h
+libburn/sbc.h
+libburn/sbc.c
+libburn/drive.c
+Test wether SCSI 1Bh START UNIT would be helpful with ticket 90
+
+2006.11.19.114413  [420]
+libburn/libburn.h
+libburn/mmc.c
+libburn/sector.c
+libburn/write.c
+cdrskin/cdrskin.c
+Implemented libburn builtin fine granulated drive buffer min-fill recording
+
+2006.11.19.162900  [421]
+cdrskin/cdrskin.c
+Avoided self contradiction with "Min drive buffer fill"
+
+2006.11.19.163646  [422]
+cdrskin/cdrskin.c
+Fixed missing brackets from revison 421
+
+2006.11.20.090207  [423]
+libburn/sector.c
+Silenced compiler warnings
+
+2006.11.20.090503  [424]
+libburn/drive.c
+Removed a redundant d->start_unit() of revision 419
+
+
+------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.20.092808
+* libisofs unbundled from libburn+cdrskin
+* Hints for porting to other operating systems are now in sg-*.c
+
+
 
   []
-Best effort to find a suitable write mode as default
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+cdrskin/cdrfifo.c
+cdrskin/wiki_plain.txt
+Implemented new option fifo_start_at=
 
-
-  []
-Enable multi-session for write modes other than TAO
-
-
-  []
-Liberate generic SCSI code from sg-linux.c (scsi_notify_error(), scsi_error())
 
   []
 Coordinate scsi_notify_error() and scsi_error() about harmless conditions
 
 
-2006  []
+----------------------------------------- long term intentions:
+
+  []
 -reset: ioctl(fd,CDROMRESET)  ioctl(fd,SG_SCSI_RESET,SG_SCSI_RESET_DEVICE)
 
-2006  []
+  []
 Open O_EXCL all devices in address resolution chain
 (Might help with non-standard hdX device siblings)
 
-2006  []
+  []
 Convert libburn_experimental: into LIBDAX_MSGS_SEV_DEBUG
 Convert burn_print() into libdax_msgs_submit()
 
-2006  []
+  []
 Test unlocking of all drives by burn_drive_info_free()
 Test unlocking of single drive by burn_drive_grab(), burn_drive_release()
 
-2006  []
+  []
 Clear outdated persistent read buffer after small CD image was read (ticket 57)
 
+  []
+Enable multi-session for write modes other than TAO
 
 
