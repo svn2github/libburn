@@ -156,10 +156,8 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	}
 	d->busy = BURN_DRIVE_GRABBING;
 
-	if (le) {
+	if (le)
 		d->load(d);
-		d->start_unit(d);
-	}
 
 	d->lock(d);
 	d->start_unit(d);
