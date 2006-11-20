@@ -350,6 +350,8 @@ static void convert_subs(struct burn_write_opts *o, int inmode,
 		out[0] = ~out[0];
 		out[1] = ~out[1];
 		break;
+	/* ts A61119 : to silence compiler warnings */
+	default:;
 	}
 }
 
@@ -813,7 +815,14 @@ void process_q(struct burn_drive *d, unsigned char *q)
 #endif
 
 /* this needs more info.  subs in the data? control/adr? */
+
+/* ts A61119 : One should not use inofficial compiler extensions.
+   >>> Some day this function needs to be implemented. At least for now
+       the result does not match the "mode" of cdrecord -toc.
+ */
+/*
 #warning sector_identify needs to be written
+*/
 int sector_identify(unsigned char *data)
 {
 	scramble(data);
