@@ -1,4 +1,4 @@
-AC_INIT([libburn], [0.2.3], [http://libburn.pykix.org])
+AC_INIT([libburn], [0.2.6], [http://libburn.pykix.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -25,7 +25,7 @@ dnl if MAJOR or MINOR version changes, be sure to change AC_INIT above to match
 dnl
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=2
-BURN_MICRO_VERSION=3
+BURN_MICRO_VERSION=6
 BURN_INTERFACE_AGE=0
 BURN_BINARY_AGE=0
 BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
