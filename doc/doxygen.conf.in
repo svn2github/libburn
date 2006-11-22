@@ -56,8 +56,8 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = libburn libisofs doc test
-FILE_PATTERNS          = libburn.h libisofs.h comments libburner.c
+INPUT                  = libburn doc test
+FILE_PATTERNS          = libburn.h comments libburner.c
 RECURSIVE              = NO
 EXCLUDE                = 
 EXCLUDE_SYMLINKS       = NO
