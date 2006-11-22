@@ -525,66 +525,85 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 }
 
 
-/* ts A61115 moved from sg-*.c */
-enum response scsi_error(struct burn_drive *d, unsigned char *sense,
-			 int senselen)
+/* ts A61122  */
+enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
+			     int senselen, char msg[161],
+			     int *key, int *asc, int *ascq)
 {
-	int key, asc, ascq;
+	*key= *asc= *ascq= -1;
 
-	senselen = senselen;
-	key = sense[2];
-	asc = sense[12];
-	ascq = sense[13];
+	if (senselen<=0 || senselen>2)
+		*key = sense[2];
+	if (senselen<=0 || senselen>12)
+		*asc = sense[12];
+	if (senselen<=0 || senselen>13)
+		*ascq = sense[13];
 
 	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
-		   key, asc, ascq, d->idata->vendor, d->idata->product);
+		   *key, *asc, *ascq, d->idata->vendor, d->idata->product);
 
-	switch (asc) {
+	switch (*asc) {
 	case 0:
-		burn_print(12, "NO ERROR!\n");
+		sprintf(msg, "(no error reported by SCSI transaction)");
 		return RETRY;
 
 	case 2:
-		burn_print(1, "not ready\n");
+		sprintf(msg, "not ready");
 		return RETRY;
 	case 4:
-		burn_print(1,
-			   "logical unit is in the process of becoming ready\n");
+		sprintf(msg,
+			"logical unit is in the process of becoming ready");
 		return RETRY;
 	case 0x20:
-		if (key == 5)
-			burn_print(1, "bad opcode\n");
+		if (*key == 5)
+			sprintf(msg, "bad opcode");
 		return FAIL;
 	case 0x21:
-		burn_print(1, "invalid address or something\n");
+		sprintf(msg, "invalid address");
 		return FAIL;
 	case 0x24:
-		if (key == 5)
-			burn_print(1, "invalid field in cdb\n");
+		if (*key == 5)
+			sprintf(msg, "invalid field in cdb");
 		else
 			break;
 		return FAIL;
 	case 0x26:
-		if ( key == 5 )
-			burn_print( 1, "invalid field in parameter list\n" );
+		if (*key == 5 )
+			sprintf(msg, "invalid field in parameter list" );
 		return FAIL;
 	case 0x28:
-		if (key == 6)
-			burn_print(1,
-				   "Not ready to ready change, medium may have changed\n");
+		if (*key == 6)
+			sprintf(msg, "Medium may have changed");
 		else
 			break;
 		return RETRY;
 	case 0x3A:
-		burn_print(12, "Medium not present in %s %s\n",
-			   d->idata->vendor, d->idata->product);
-
+		sprintf(msg, "Medium not present");
 		d->status = BURN_DISC_EMPTY;
 		return FAIL;
 	}
-	burn_print(1, "unknown failure\n");
-	burn_print(1, "key:0x%x, asc:0x%x, ascq:0x%x\n", key, asc, ascq);
+	sprintf(msg,
+		"Failure. See mmc3r10g.pdf: Sense Key %X ASC %2.2X ASCQ %2.2X",
+		*key, *asc, *ascq);
 	return FAIL;
+}
+
+
+/* ts A61115 moved from sg-*.c */
+/* ts A61122 made it frontend to scsi_error_msg() */
+enum response scsi_error(struct burn_drive *d, unsigned char *sense,
+			 int senselen)
+{
+	int key, asc, ascq;
+	char msg[160];
+	enum response resp;
+
+	resp = scsi_error_msg(d, sense, senselen, msg, &key, &asc, &ascq);
+	if (asc == 0 || asc == 0x3A)
+		burn_print(12, "%s\n", msg);
+	else
+		burn_print(1, "%s\n", msg);
+	return resp;
 }
 
 
@@ -594,17 +613,15 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
                       unsigned char *sense, int senselen, int flag)
 {
 	int key= -1, asc= -1, ascq= -1, ret;
-	char msg[160];
+	char msg[320],scsi_msg[160];
 
 	if (d->silent_on_scsi_error)
 		return 1;
 
-	if (senselen > 2)
-		key = sense[2];
-	if (senselen > 13) {
-		asc = sense[12];
-		ascq = sense[13];
-	}
+	strcpy(scsi_msg, "    \"");
+	scsi_error_msg(d, sense, senselen, scsi_msg + strlen(scsi_msg),
+			 &key, &asc, &ascq);
+	strcat(scsi_msg, "\"");
 
 	if(!(flag & 1)) {
 		/* SPC : TEST UNIT READY command */
@@ -626,6 +643,11 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 		sprintf(msg+strlen(msg), " ascq=%2.2Xh", ascq);
 	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
+	if (ret < 0)
+		return ret;
+	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			scsi_msg,0,0);
 	return ret;
 }
 

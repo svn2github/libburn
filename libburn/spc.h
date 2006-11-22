@@ -37,6 +37,11 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 enum response { RETRY, FAIL };
 enum response scsi_error(struct burn_drive *, unsigned char *, int);
 
+/* ts A61122 */
+enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
+                             int senselen, char msg[161],
+                             int *key, int *asc, int *ascq);
+
 /* ts A61030 */
 /* @param flag bit0=do report conditions which are considered not an error */
 int scsi_notify_error(struct burn_drive *, struct command *c,
