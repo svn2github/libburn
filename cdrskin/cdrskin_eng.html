@@ -51,7 +51,7 @@ A CD recorder suitable for
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.2.3 stabilized SVN snapshot</DT>
+<DT>libburn-0.2.6</DT>
 <DD>(by Derek Foreman, Ben Jansens, and team of libburn.pykix.org)</DD>
 <DD>transfers data to CD</DD>
 </DL>
@@ -99,9 +99,7 @@ wishes as well as on the development of libburn.</DT>
 <DD>$ cdrskin -v dev=/dev/dvd blank=fast -eject</DD>
 <DT>Write ISO-9660 filesystem image:</DT>
 <DD>$ cdrskin -v dev=/dev/hdc speed=12 fs=8m driveropts=burnfree -sao -eject padsize=300k my_image.iso</DD>
-<DT>Write compressed afio archive on-the-fly via cdrskin-0.2.4 :</DT>
-<DD>$ find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 driveropts=burnfree padsize=300k -sao tsize=650m -</DD>
-<DT>Write compressed afio archive on-the-fly via cdrskin-0.2.5 :</DT>
+<DT>Write compressed afio archive on-the-fly :</DT>
 <DD>$ find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 driveropts=burnfree padsize=300k -tao -</DD>
 <DT>Write audio tracks:</DT>
 <DD>$ cdrskin -v dev=ATA:1,0,0 speed=48 driveropts=burnfree -sao track1.wav track2.au -audio -swab track3.raw
@@ -125,13 +123,7 @@ wishes as well as on the development of libburn.</DT>
 <UL>
 <DT></DT>
 <LI>
-Burns only a single closed session. No -multi option yet.
-Note: Development version 0.2.5 offers multi-session now. See below.
-</LI>
-<LI>
-No TAO mode in cdrskin-0.2.4 and therefore no writing on-the-fly without
-a predefined source size.<BR>
-Note: Development version 0.2.5 offers TAO now. See below.
+Appending sessions to unclosed media is restricted to write mode TAO.
 </LI>
 <LI>
 cdrskin -scanbus or --devices hangs for quite a while if there is 
@@ -153,7 +145,7 @@ rw-permissions and retry the bus scan as non-superuser.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.2.4.pl01.tar.gz">cdrskin-0.2.4.pl01.tar.gz</A>
+<DD><A HREF="cdrskin-0.2.6.pl01.tar.gz">cdrskin-0.2.6.pl01.tar.gz</A>
 (510 KB).
 </DD>
 <DD>
@@ -164,14 +156,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.2.4.pl01-x86-suse9_0.tar.gz">
-cdrskin_0.2.4.pl01-x86-suse9_0.tar.gz</A>, (60 KB),
+<DD><A HREF="cdrskin_0.2.6.pl01-x86-suse9_0.tar.gz">
+cdrskin_0.2.6.pl01-x86-suse9_0.tar.gz</A>, (60 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.2.4.pl01-x86-suse9_0-static.tar.gz">
-cdrskin_0.2.4.pl01-x86-suse9_0-static.tar.gz</A>, (260 KB), -static compiled,
+<DD><A HREF="cdrskin_0.2.6.pl01-x86-suse9_0-static.tar.gz">
+cdrskin_0.2.6.pl01-x86-suse9_0-static.tar.gz</A>, (260 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -195,22 +187,23 @@ cdrskin_0.2.4.pl01-x86-suse9_0-static.tar.gz</A>, (260 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.2.2:
+Enhancements towards previous stable version cdrskin-0.2.4:
 <UL>
-<LI>cdrecord compatibility with drive addresses of form [ATA:]Bus,Target,Lun.
-<BR>(use option --old_pseudo_scsi_adr to get back the incompatible
-     Bus,Traget,Lun addressing of version 0.2.2)
+<LI>Option <KBD><B>-tao</B></KBD> is fully enabled.<BR>
+    SAO is still the preferred default but TAO is default if a track of
+    unpredicted size is present (stdin, named pipe, ...) or if a follow-up
+    session is written to an appendable CD.
+    (This is an intentional deviation from cdrecord defaults which themselves
+     have changed with the newest cdrecord versions.)
 </LI>
-<LI>Drives adressable via links and device siblings (/dev/cdrom , /dev/scd0).
-</LI>
-<LI>Automatic -audio extraction with .wav files and .au files.
-</LI>
-<LI>Bug fix about failure to eject.</LI>
-<LI>Comments and empty lines allowed in startup files.</LI>
-<LI>Options -scanbus and --devices print SORRY messages about busy drives.
-</LI>
-<LI>Drive buffer fill indicator reports realistic percentage numbers.</LI>
-<LI>Option -toc is supported, drive firmware revision gets displayed.</LI>
+<LI>Status report during blank, preparation and finalization improved.</LI>
+<LI>Bug fixed: Trailing trash appended to .wav files caused error message
+    and, if exceeding fifo size, could even stall a burn. 
+    (Workaround: disable fifo by <KBD><B>fs=0</B></KBD>)</LI>
+<LI>Bug fixed: False speed with first pacifier cycle. Potential program
+    abort by floating point exception (NaN).</LI>
+<LI>multi-session CDs: <KBD><B>-multi</B></KBD>, <KBD><B>-msinfo</B></KBD>,
+    writing to appendable CDs (for now restricted to write mode TAO).</LI>
 </UL>
 </P>
 
@@ -218,30 +211,14 @@ Enhancements towards previous stable version cdrskin-0.2.2:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.2.5 :</H3></DT>
-<DD>Enhancements towards stable version 0.2.4:
- <UL>
- <LI>Option <KBD><B>-tao</B></KBD> is fully enabled.<BR>
-     SAO is still the preferred default but TAO is default if a track of
-     unpredicted size is present (stdin, named pipe, ...) or if a follow-up
-     session is written to an appendable CD.
-     (This is an intentional deviation from cdrecord defaults which themselves
-      have changed with the newest cdrecord versions.)
- </LI>
- <LI>Status report during blank, preparation and finalization improved.</LI>
- <LI>Bug fixed: Trailing trash appended to .wav files caused error message
-     and, if exceeding fifo size, could even stall a burn. 
-     (Workaround: disable fifo by <KBD><B>fs=0</B></KBD>)</LI>
- <LI>Bug fixed: False speed with first pacifier cycle. Potential program
-     abort by floating point exception (NaN).</LI>
- <LI>multi-session CDs: <KBD><B>-multi</B></KBD>, <KBD><B>-msinfo</B></KBD>,
-     writing to appendable CDs (for now restricted to write mode TAO).</LI>
- </UL>
+<DT><H3>Development snapshot, version 0.2.7 :</H3></DT>
+<DD>Enhancements towards stable version 0.2.6:
+(none yet)
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.2.5</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.2.5 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.2.5 -help</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.2.7</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.2.7 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.2.7 -help</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburn.pykix.org"> libburn.pykix.org</A></DT>
@@ -261,15 +238,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.2.5.tar.gz">cdrskin-0.2.5.tar.gz</A>
+<A HREF="cdrskin-0.2.7.tar.gz">cdrskin-0.2.7.tar.gz</A>
 (500 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.2.5-x86-suse9_0.tar.gz">
-cdrskin_0.2.5-x86-suse9_0.tar.gz</A>, (60 KB).
+<DD><A HREF="cdrskin_0.2.7-x86-suse9_0.tar.gz">
+cdrskin_0.2.7-x86-suse9_0.tar.gz</A>, (60 KB).
 </DD>
-<DD><A HREF="cdrskin_0.2.5-x86-suse9_0-static.tar.gz">
-cdrskin_0.2.5-x86-suse9_0-static.tar.gz</A>, (260 KB)
+<DD><A HREF="cdrskin_0.2.7-x86-suse9_0-static.tar.gz">
+cdrskin_0.2.7-x86-suse9_0-static.tar.gz</A>, (260 KB)
 </DD>
 </DL>
 </P>
@@ -322,14 +299,6 @@ is a GUI frontend which uses cdrecord for CD burning.)
 <DT>Example for a test session with a cdrecord based scdbackup installation:</DT>
 <DD>$ <KBD><B>cdrskin -scanbus</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-</DL>
-If your system is stricken with some ill CD device then this can stall
-and you will have to press <KBD>Ctrl+C</KBD> to abort.
-In this case, you may execute
-<KBD>export SCDBACKUP_NO_SCANBUS=1</KBD>
-and try again.
-<DL>
-<DT></DT>
 <DD><KBD>&nbsp;&nbsp;&nbsp; 2,0,0 &nbsp;&nbsp; 0)&nbsp; 'TEAC' 'CD-ROM CD-532S' '?' Removable CD-ROM</KBD></DD>
 <DD>$ <KBD><B>cdrskin -scanbus dev=ATA</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
@@ -344,8 +313,15 @@ and try again.
 <DD>$ <KBD><B>export SCDBACKUP_USE_CDRSKIN=1</B></KBD></DD>
 <DD>$ <KBD><B>./CONFIGURE_CD</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>cdrskin 0.2.4 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
-<DD><KBD>...</KBD></DD>
+<DD><KBD>cdrskin 0.2.6 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
+</DL>
+If your system is stricken with some ill CD device then this can stall
+and you will have to press <KBD>Ctrl+C</KBD> to abort.
+In this case, you may execute
+<KBD>export SCDBACKUP_NO_SCANBUS=1</KBD>
+and try again.
+<DL>
+<DT></DT>
 <DD><KBD> ------------------- SCSI devices. To be used like &nbsp;&nbsp; 0,0,0</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;&nbsp; 2,0,0 &nbsp;&nbsp; 0)&nbsp; 'TEAC' 'CD-ROM CD-532S' '?' Removable CD-ROM</KBD></DD>
 <DD><KBD> ------------------- end of SCSI device list</KBD></DD>

@@ -2,7 +2,7 @@
                        cdrskin Wiki - plain text copy
 --------------------------------------------------------------------------
 
-cdrskin-0.2.5 is the cdrecord compatibility middleware of libburn.
+cdrskin is the cdrecord compatibility middleware of libburn.
 
 Its paragon, cdrecord, is a powerful GPL'ed burn program included in Joerg
 Schilling's cdrtools. cdrskin strives to be a second source for the services
@@ -19,10 +19,9 @@ About libburn API for burning CD: http://libburn-api.pykix.org
 
 --------------------------------------------------------------------------
 
-Convenient TAO burn mode is provided in development version 0.2.5 but not in
-current "stable" release 0.2.4. The same is true for multi-session, where
-follow-up sessions must be done in TAO mode. (Users who have a burner which
-succeeds with a follow-up session via cdrecord -sao : please contact us.)
+Appending sessions to an unclosed CD is restricted to write mode TAO.
+(Users who have a burner which succeeds with a follow-up session via
+ cdrecord -sao : please contact us.)
 
 cdrskin does not provide DVD burning yet. See advise to use dvd+rw-tools
 at the end of this text.
@@ -135,8 +134,8 @@ tao_to_sao_tsize=<num> allows the - actually unsupported - cdrecord option
 -tao and defines a default track size to be used if - as custom with -tao -
 no option tsize=# is given.
 
-Since -tao is supported in cdrskin-0.2.5 the TAO-to-SAO workaround on its way
-to obsolescence. Nevertheless, tao_to_sao_tsize= allows to preset a default
+Since -tao is supported in cdrskin-0.2.6 the TAO-to-SAO workaround has become
+quite obsolete. Nevertheless, tao_to_sao_tsize= allows to preset a default
 size for SAO mode which is in effect only if no track size is available.
 
 As in general with cdrskin tsize=# the data source does not have to provide

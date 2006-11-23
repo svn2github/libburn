@@ -36,7 +36,7 @@ intermediate="./libburn_pykix"
 # My changes are in libburn-0.2.3.ts.develop , mainly in ./cdrskin
 
 changes="./libburn-0.2.3.ts.develop"
-skin_rev="0.2.5"
+skin_rev="0.2.7"
 
 # The result directory and the name of the result tarballs
 target="./cdrskin-${skin_rev}"
