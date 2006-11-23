@@ -1687,21 +1687,38 @@ Removed a redundant d->start_unit() of revision 419
 * libisofs unbundled from libburn+cdrskin
 * Hints for porting to other operating systems are now in sg-*.c
 
+20 Nov 2006  [425]
+cdrskin/changelog.txt
+Next cdrskin-0.2.5 cycle
 
-
-  []
+2006.11.20.132717  [426]
 cdrskin/cdrskin.c
 cdrskin/cdrfifo.h
 cdrskin/cdrfifo.c
 cdrskin/wiki_plain.txt
 Implemented new option fifo_start_at=
 
+20 Nov 2006  [427]
+cdrskin/wiki_plain.txt
+Updated in respect to multi-session
 
-  []
-Coordinate scsi_notify_error() and scsi_error() about harmless conditions
+2006.11.22.122228  [428]
+libburn/spc.h
+libburn/spc.c
+Coordinated scsi_notify_error() and scsi_error()
+
+
+------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.22.142517
+
+23 Nov 2006  []
+cdrskin/changelog.txt
+Last cdrskin-0.2.5 cycle
 
 
 ----------------------------------------- long term intentions:
+
+  []
+Truely recognize media type
 
   []
 -reset: ioctl(fd,CDROMRESET)  ioctl(fd,SG_SCSI_RESET,SG_SCSI_RESET_DEVICE)
