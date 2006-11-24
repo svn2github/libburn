@@ -7,7 +7,7 @@
 debug_opts=
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
-libvers="-DCdrskin_libburn_0_2_6"
+libvers="-DCdrskin_libburn_0_2_7"
 cleanup_src_or_obj="libburn/cleanup.o"
 libdax_msgs_o="libburn/libdax_msgs.o"
 libdax_audioxtr_o="libburn/libdax_audioxtr.o"
@@ -41,7 +41,7 @@ do
     cleanup_src_or_obj="libburn/cleanup.o"
   elif test "$i" = "-libburn_svn"
   then
-    libvers="-DCdrskin_libburn_0_2_6"
+    libvers="-DCdrskin_libburn_0_2_7"
     libdax_audioxtr_o="libburn/libdax_audioxtr.o"
     libdax_msgs_o="libburn/libdax_msgs.o"
     cleanup_src_or_obj="libburn/cleanup.o"

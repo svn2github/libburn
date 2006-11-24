@@ -123,7 +123,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.2.6"
+#define Cdrskin_prog_versioN "0.2.7"
 #endif
 
 /** The source code release timestamp */
@@ -158,6 +158,11 @@ or
 
 #ifdef Cdrskin_libburn_0_2_6
 #define Cdrskin_libburn_versioN "0.2.6"
+#define Cdrskin_libburn_from_pykix_svN 1
+#endif /* Cdrskin_libburn_0_2_6 */
+
+#ifdef Cdrskin_libburn_0_2_7
+#define Cdrskin_libburn_versioN "0.2.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif /* Cdrskin_libburn_0_2_6 */
 

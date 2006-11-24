@@ -26,12 +26,12 @@ following possible.
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburn.pykix.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.2.6.pl01.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.2.7.tar.gz
 Copyright (C) 2006 Thomas Schmitt
 
 ------------------------------------------------------------------------------
 
-On top of libburn there is implemented cdrskin 0.2.6, a limited cdrecord
+On top of libburn there is implemented cdrskin 0.2.7, a limited cdrecord
 compatibility wrapper which allows to use some libburn features from
 the command line.
 Interested users of cdrecord are invited to participate in the development
@@ -59,16 +59,16 @@ systems, including 64 bit systems. (Further reports are welcome.)
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.2.6.pl01.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.2.7.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.2.6.pl01.tar.gz
-    cd cdrskin-0.2.6
+    tar xzf cdrskin-0.2.7.tar.gz
+    cd cdrskin-0.2.7
 
 Or obtain a libburn.pykix.org SVN snapshot,
 go into the toplevel directory of the snapshot (e.g.  cd libburn_pykix ),
 and execute the autotools script ./bootstrap . Use autools version >= 1.7 .
 
-Within that toplevel directory of either cdrskin-0.2.6 or libburn then execute:
+Within that toplevel directory of either cdrskin-0.2.7 or libburn then execute:
 
     ./configure
     make
