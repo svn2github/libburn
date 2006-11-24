@@ -1710,9 +1710,64 @@ Coordinated scsi_notify_error() and scsi_error()
 
 ------------------------------------ cycle  - cdrskin-0.2.5 - 2006.11.22.142517
 
-23 Nov 2006  []
+23 Nov 2006  [433]
 cdrskin/changelog.txt
 Last cdrskin-0.2.5 cycle
+
+
+23 Nov 2006  [434]
+- test/burn.c
+- test/master.c
+- test/tree.py
+- test/tree.pyc
+- test/rip.c
+Removed obsolete test programs
+
+
+2006.11.23.102340  [435]
+Makefile.am
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin.c
+cdrskin/cdrskin_eng.html
+cdrskin/README
+cdrskin/wiki_plain.txt
++ cdrskin/add_ts_changes_to_libburn_0_2_6
++ cdrskin/add_ts_changes_to_libburn_0_2_7
+- cdrskin/add_ts_changes_to_libburn_0_2_4
+- cdrskin/add_ts_changes_to_libburn_0_2_5
+Version leap to 0.2.6
+
+24 Nov 2006
+Published cdrskin-0.2.6.pl01 on cdrskin home pages
+
+------------------------------- cycle  - cdrskin-0.2.6.pl01 - 2006.11.23.114611
+
+
+2006.11.24.121745  [437]
+Makefile.am
+configure.ac
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin.c
+cdrskin/README
+Version leap to 0.2.7
+
+24 Nov 2006  [438]
+doc/comments
+Mentioned telltoc and dewav as helpers of libburner
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2006.11.24.125445
+
+  []
+cdrskin/changelog.txt
+First cdrskin-0.2.7 cycle
+
+24 Nov 2006  []
+doc/comments 
+Updated libburner helptext
+
+  []
+Create alternative to regrabbing which does not close the drive fd
 
 
 ----------------------------------------- long term intentions:
