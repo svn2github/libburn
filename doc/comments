@@ -93,13 +93,13 @@ stay upward compatible for a good while.
 Usage: test/libburner
        [--drive <address>|<driveno>|"-"]  [--audio]
        [--blank_fast|--blank_full]  [--try_to_simulate]
-       [<one or more imagefiles>|"-"]
+       [--multi]  [one or more imagefiles|"-"]
 Examples
 A bus scan (needs rw-permissions to see a drive):
   test/libburner --drive -
-Burn a file to drive chosen by number:
-  test/libburner --drive 0 my_image_file
-Burn a file to drive chosen by persistent address:
+Burn a file to drive chosen by number, leave appendable:
+  test/libburner --drive 0 --multi my_image_file
+Burn a file to drive chosen by persistent address, close:
   test/libburner --drive /dev/hdc my_image_file
 Blank a used CD-RW (is combinable with burning in one run):
   test/libburner --drive /dev/hdc --blank_fast
@@ -107,7 +107,7 @@ Burn two audio tracks
   lame --decode -t /path/to/track1.mp3 track1.cd
   test/dewav /path/to/track2.wav -o track2.cd
   test/libburner --drive /dev/hdc --audio track1.cd track2.cd
-Burn a compressed afio archive on-the-fly, pad up to 700 MB:
+Burn a compressed afio archive on-the-fly:
   ( cd my_directory ; find . -print | afio -oZ - ) | \
   test/libburner --drive /dev/hdc -
 To be read from *not mounted* CD via: afio -tvZ /dev/hdc
@@ -118,7 +118,8 @@ peripheral tasks of burning.
 
 telltoc prints a table of content (sessions, tracks and leadouts), it tells
 about type and state of CD media, and also is able to provide the necessary
-multi-session information for program mkisofs option -C. See: telltoc --help.
+multi-session information for program mkisofs option -C. 
+See: test/telltoc --help.
 
 dewav extracts raw byte-swapped audio data from files of format .wav (MS WAVE)
 or .au (SUN Audio). See example in libburner --help.
