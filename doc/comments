@@ -18,12 +18,12 @@ we would need : login on a development machine resp. a live OS on CD or DVD,
 advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
 volunteers for testing of realistic use cases.
 
-We do have a workable code base for burning data CDs, though. The burn API is
+We have a workable code base for burning data and audio CDs. The burn API is
 quite comprehensively documented and can be used to build a presentable
 application.
-We do have a functional binary which emulates parts of cdrecord in order to
-prove that usability, and in order to allow you to explore libburn's scope
-by help of existing cdrecord frontends.
+We have a functional binary which emulates the core use cases of cdrecord in
+order to prove that usability, and in order to allow you to explore libburn's
+scope by help of existing cdrecord frontends.
 
 @subsection components The project components (list subject to growth, hopefully):
 
