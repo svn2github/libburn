@@ -363,7 +363,7 @@ int libburner_payload(struct burn_drive *drive,
 	  }
 
 	  burn_session_add_track(session, track, BURN_POS_END);
-	  printf("Track %d : source is '%s'\n", trackno, adr);
+	  printf("Track %d : source is '%s'\n", trackno+1, adr);
 	  burn_source_free(data_src);
         } /* trackno loop end */
 
@@ -435,7 +435,7 @@ int libburner_payload(struct burn_drive *drive,
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
-	return 0;
+	return 1;
 }
 
 
