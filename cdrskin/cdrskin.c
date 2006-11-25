@@ -164,7 +164,8 @@ or
 #ifdef Cdrskin_libburn_0_2_7
 #define Cdrskin_libburn_versioN "0.2.7"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_2_6 */
+#define Cdrskin_atip_speed_is_oK 1
+#endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
 #define Cdrskin_libburn_versioN "0.2.6"
@@ -199,11 +200,6 @@ or
 
 /* put macros under test caveat here */
 #define Cdrskin_allow_sao_for_appendablE 1
-
-/* could be i repaired this with getting -atip minimum speed */
-#ifdef Cdrskin_libburn_has_read_atiP
-#define Cdrskin_atip_speed_is_oK 1
-#endif
 
 #endif /* Cdrskin_new_api_tesT */
 
