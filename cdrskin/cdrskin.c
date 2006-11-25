@@ -2150,8 +2150,13 @@ see_cdrskin_eng_html:;
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      (o->verbosity)++;
      printf("cdrskin: verbosity level : %d\n",o->verbosity);
+set_severities:;
      if(o->verbosity>=Cdrskin_verbose_debuG)
        Cdrpreskin_set_severities(o,"NEVER","DEBUG",0);
+   } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
+             strcmp(argv[i],"-vvvv")==0) {
+     (o->verbosity)+= strlen(argv[i])-1;
+     goto set_severities;
 
    } else if(strcmp(argv[i],"-version")==0) {
      printf(
@@ -5242,6 +5247,9 @@ track_too_large:;
        printf("cdrskin: fixed track size : %.f\n",skin->fixed_size);
 
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
+     /* is handled in Cdrpreskin_setup() */;
+   } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
+             strcmp(argv[i],"-vvvv")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if( i==argc-1 ||
