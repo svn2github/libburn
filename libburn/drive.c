@@ -456,7 +456,6 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	!d->test_unit_ready(d))
 		sleep(1);
 	d->progress.sector = 0x10000;
-	d->busy = BURN_DRIVE_IDLE;
 
 	/* ts A61125 : update media state records */
 	burn_drive_mark_unready(d);

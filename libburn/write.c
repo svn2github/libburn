@@ -920,12 +920,11 @@ return crap.  so we send the command, then ignore the result.
 
 	sleep(1);
 
-	burn_print(1, "done\n");
-	d->busy = BURN_DRIVE_IDLE;
-
 	/* ts A61125 : update media state records */
 	burn_drive_mark_unready(d);
 	burn_drive_inquire_media(d);
+
+	burn_print(1, "done\n");
 
 	/* ts A61012 : This return was traditionally missing. I suspect this
 			to have caused Cdrskin_eject() failures */
