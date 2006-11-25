@@ -107,12 +107,21 @@ int libburner_aquire_drive(char *drive_adr, int *driveno)
 int libburner_aquire_by_adr(char *drive_adr)
 {
 	int ret;
-	
-	printf("Aquiring drive '%s' ...\n",drive_adr);
-	ret = burn_drive_scan_and_grab(&drive_list,drive_adr,1);
+	char libburn_drive_adr[BURN_DRIVE_ADR_LEN];
+
+	/* This tries to resolve links or alternative device files */
+	ret = burn_drive_convert_fs_adr(drive_adr, libburn_drive_adr);	
+	if (ret<=0) {
+		fprintf(stderr,"Address does not lead to a CD burner: '%s'\n",
+			drive_adr);
+		return ret;
+	}
+
+	printf("Aquiring drive '%s' ...\n",libburn_drive_adr);
+	ret = burn_drive_scan_and_grab(&drive_list,libburn_drive_adr,1);
 	if (ret <= 0) {
 		fprintf(stderr,"FAILURE with persistent drive address  '%s'\n",
-			drive_adr);
+			libburn_drive_adr);
 	} else {
 		printf("Done\n");
 		drive_is_grabbed = 1;
