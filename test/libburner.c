@@ -25,8 +25,6 @@
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
   With that aquired drive you can blank a CD-RW
      libburner_blank_disc()
-  Between blanking and burning one eventually has to reload the drive status
-     libburner_regrab()
   With the aquired drive you can burn to CD-R or blank CD-RW
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
@@ -284,27 +282,6 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 	}
 	printf("Done\n");
 	return 1;
-}
-
-
-/** This gesture is necessary to get the drive info after blanking.
-    It opens a small gap for losing the drive to another libburn instance.
-    We will work on closing this gap.
-*/
-int libburner_regrab(struct burn_drive *drive) {
-	int ret;
-
-	printf("Releasing and regrabbing drive ...\n");
-	if (drive_is_grabbed)
-		burn_drive_release(drive, 0);
-	drive_is_grabbed = 0;
-	ret = burn_drive_grab(drive, 0);
-	if (ret != 0) {
-		drive_is_grabbed = 1;
-	 	printf("Done\n");
-	} else
-	 	printf("FAILED\n");
-	return !!ret;
 }
 
 
@@ -606,13 +583,6 @@ int main(int argc, char **argv)
 					  do_blank == 1);
 		if (ret<=0)
 			{ ret = 36; goto release_drive; }
-		if (ret != 2 && source_adr_count > 0)
-			ret = libburner_regrab(drive_list[driveno].drive);
-		if (ret<=0) {
-			fprintf(stderr,
-	        "FATAL: Cannot release and grab again drive after blanking\n");
-			{ ret = 37; goto finish_libburn; }
-		}
 	}
 	if (source_adr_count > 0) {
 		ret = libburner_payload(drive_list[driveno].drive,

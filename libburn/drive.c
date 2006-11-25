@@ -135,32 +135,14 @@ unsigned int burn_drive_count(void)
 	return drivetop + 1;
 }
 
-int burn_drive_grab(struct burn_drive *d, int le)
-{
-	int errcode;
-	int was_equal = 0, must_equal = 3, max_loop = 20;
 
+/* ts A61125 : media status aspects of burn_drive_grab() */
+int burn_drive_inquire_media(struct burn_drive *d)
+{
 	/* ts A60907 */
+	int was_equal = 0, must_equal = 3, max_loop = 20;
 	int loop_count, old_speed = -1234567890, new_speed = -987654321;
 	int old_erasable = -1234567890, new_erasable = -987654321;
-
-	if (!d->released) {
-		burn_print(1, "can't grab - already grabbed\n");
-		return 0;
-	}
-	errcode = d->grab(d);
-
-	if (errcode == 0) {
-		burn_print(1, "low level drive grab failed\n");
-		return 0;
-	}
-	d->busy = BURN_DRIVE_GRABBING;
-
-	if (le)
-		d->load(d);
-
-	d->lock(d);
-	d->start_unit(d);
 
 	/* ts A61020 : this was BURN_DISC_BLANK as pure guess */
 	d->status = BURN_DISC_UNREADY;
@@ -169,6 +151,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	    d->mdata->dvdr_write || d->mdata->dvdram_write) {
 
 #ifdef Libburn_grab_release_and_grab_agaiN
+		/* This code demanded the app to release and re-grab. */
 
 		d->read_disc_info(d);
 
@@ -178,8 +161,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 		   without closing and re-opening the drive */
 		/* This seems to work for burn_disc_erasable() .
 		   Speed values on RIP-14 and LITE-ON 48125S are stable
-		   and false, nevertheless. So cdrskin -atip is still
-		   forced to finish-initialize. */
+		   and false, nevertheless. */
 		/*
 		fprintf(stderr,"libburn: experimental: read_disc_info()\n");
 		*/
@@ -214,6 +196,38 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	}
 	d->busy = BURN_DRIVE_IDLE;
 	return 1;
+}
+
+
+int burn_drive_grab(struct burn_drive *d, int le)
+{
+	int errcode;
+	/* ts A61125 */
+	int ret;
+
+	if (!d->released) {
+		burn_print(1, "can't grab - already grabbed\n");
+		return 0;
+	}
+	errcode = d->grab(d);
+
+	if (errcode == 0) {
+		burn_print(1, "low level drive grab failed\n");
+		return 0;
+	}
+	d->busy = BURN_DRIVE_GRABBING;
+
+	if (le)
+		d->load(d);
+
+	d->lock(d);
+
+	/* ts A61118 */
+	d->start_unit(d);
+
+	/* ts A61125 : outsourced media state inquiry aspects */
+	ret = burn_drive_inquire_media(d);
+	return ret;
 }
 
 struct burn_drive *burn_drive_register(struct burn_drive *d)
@@ -311,6 +325,26 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 }
 
 
+/* ts A61125 : model aspects of burn_drive_release */
+int burn_drive_mark_unready(struct burn_drive *d)
+{
+	/* ts A61020 : mark media info as invalid */
+	d->start_lba= -2000000000;
+	d->end_lba= -2000000000;
+
+	d->status = BURN_DISC_UNREADY;
+	if (d->toc_entry != NULL)
+		free(d->toc_entry);
+	d->toc_entry = NULL;
+	d->toc_entries = 0;
+	if (d->disc != NULL) {
+		burn_disc_free(d->disc);
+		d->disc = NULL;
+	}
+	return 1;
+}
+
+
 void burn_drive_release(struct burn_drive *d, int le)
 {
 	if (d->released) {
@@ -334,26 +368,14 @@ void burn_drive_release(struct burn_drive *d, int le)
 		return;
 	}
 
-	/* ts A61020 : mark media info as invalid */
-	d->start_lba= -2000000000;
-	d->end_lba= -2000000000;
-
 	d->unlock(d);
 	if (le)
 		d->eject(d);
-
 	d->release(d);
-
-	d->status = BURN_DISC_UNREADY;
 	d->released = 1;
-	if (d->toc_entry != NULL)
-		free(d->toc_entry);
-	d->toc_entry = NULL;
-	d->toc_entries = 0;
-	if (d->disc != NULL) {
-		burn_disc_free(d->disc);
-		d->disc = NULL;
-	}
+
+	/* ts A61125 : outsourced model aspects */
+	burn_drive_mark_unready(d);
 }
 
 
@@ -435,6 +457,10 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 		sleep(1);
 	d->progress.sector = 0x10000;
 	d->busy = BURN_DRIVE_IDLE;
+
+	/* ts A61125 : update media state records */
+	burn_drive_mark_unready(d);
+	burn_drive_inquire_media(d);
 }
 
 enum burn_disc_status burn_disc_get_status(struct burn_drive *d)

@@ -69,5 +69,10 @@ int burn_setup_drive(struct burn_drive *d, char *fname);
 */
 struct burn_drive *burn_drive_finish_enum(struct burn_drive *d);
 
+/* ts A61125 : media status aspects of burn_drive_grab() */
+int burn_drive_inquire_media(struct burn_drive *d);
+
+/* ts A61125 : model aspects of burn_drive_release */
+int burn_drive_mark_unready(struct burn_drive *d);
 
 #endif /* __DRIVE */
