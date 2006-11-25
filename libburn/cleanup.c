@@ -75,6 +75,7 @@ static int non_signal_list_count= 4;
 /* run time dynamic part */
 static char cleanup_msg[4096]= {""};
 static int cleanup_exiting= 0;
+static int cleanup_has_reported= -1234567890;
 
 static void *cleanup_app_handle= NULL;
 static Cleanup_app_handler_T cleanup_app_handler= NULL;
@@ -85,8 +86,10 @@ static int Cleanup_handler_exit(int exit_value, int signum, int flag)
 {
  int ret;
 
- if(cleanup_msg[0]!=0)
+ if(cleanup_msg[0]!=0 && cleanup_has_reported!=signum) {
    fprintf(stderr,"\n%s\n",cleanup_msg);
+   cleanup_has_reported= signum;
+ }
  if(cleanup_perform_app_handler_first)
    if(cleanup_app_handler!=NULL) {
      ret= (*cleanup_app_handler)(cleanup_app_handle,signum,0);
