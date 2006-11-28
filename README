@@ -169,6 +169,16 @@ Project history as far as known to me:
 
 - 13th November 2006 splitting releases of libburn+cdrskin from libisofs.
 
+- 24th November 2006 release of libburn-0.2.6 and cdrskin-0.2.6 . cdrskin has
+  become suitable for unaware frontends as long as they perform only the core 
+  of cdrecord use cases (including open-ended input streams, audio, and
+  multi-session).
+
+- 28th November 2006 the umbrella project which encloses both, libisofs and
+  libburn, is now called libburnia. For the origin of this name, see 
+  http://en.wikipedia.org/wiki/Liburnians .
+
+
 ------------------------------------------------------------------------------
 
     This program is free software; you can redistribute it and/or modify
