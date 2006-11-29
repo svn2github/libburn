@@ -1694,9 +1694,12 @@ int Cdrpreskin__cdrecord_to_dev(char *adr, char device_adr[Cdrskin_adrleN],
      "cdrskin: FATAL : dev=[Prefix:]Bus,Target,Lun expects Bus number >= 0\n");
          return(-3);
        }
-       if((strncmp(adr,"ATA",3)==0 && (adr[3]==0 || adr[3]==':')) ||
-          (strncmp(adr,"ATAPI",5)==0 && (adr[5]==0 || adr[5]==':'))) {
-
+       if(busno>=1000) {
+         busno-= 1000;
+         goto ata_bus;
+       } else if((strncmp(adr,"ATA",3)==0 && (adr[3]==0 || adr[3]==':')) ||
+                 (strncmp(adr,"ATAPI",5)==0 && (adr[5]==0 || adr[5]==':'))) {
+ata_bus:;
          if(busno>12 || (*driveno)<0 || (*driveno)>1) {
            fprintf(stderr,
 "cdrskin: FATAL : dev=ATA:Bus,Target,Lun expects Bus {0..12}, Target {0,1}\n");
