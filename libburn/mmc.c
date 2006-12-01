@@ -47,8 +47,11 @@ static unsigned char MMC_SET_SPEED[] =
 static unsigned char MMC_WRITE_12[] =
 	{ 0xAA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_WRITE_10[] = { 0x2A, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+/* ts A61201 : inserted 0, before 16, */
 static unsigned char MMC_GET_CONFIGURATION[] =
-	{ 0x46, 0, 0, 0, 0, 0, 16, 0, 0 };
+	{ 0x46, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
+
 static unsigned char MMC_SYNC_CACHE[] = { 0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_GET_EVENT[] = { 0x4A, 1, 0, 0, 16, 0, 0, 0, 8, 0 };
 static unsigned char MMC_CLOSE[] = { 0x5B, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -461,6 +464,23 @@ void mmc_read_disc_info(struct burn_drive *d)
 	struct buffer buf;
 	unsigned char *data;
 	struct command c;
+	char msg[160];
+
+	/* ts A61020 */
+	d->start_lba = d->end_lba = -2000000000;
+	d->erasable = 0;
+
+	mmc_get_configuration(d);
+	if (! d->current_is_cd_profile) {
+		sprintf(msg, "Unsuitable media detected. Profile 0x%2.2X  %s",
+			d->current_profile, d->current_profile_text);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			 0x0002011e,
+			 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			 msg, 0,0);
+		d->status = BURN_DISC_UNSUITABLE;
+		return;
+	}
 
 	mmc_function_spy("mmc_read_disc_info");
 	memcpy(c.opcode, MMC_GET_DISC_INFO, sizeof(MMC_GET_DISC_INFO));
@@ -479,9 +499,6 @@ void mmc_read_disc_info(struct burn_drive *d)
 
 	data = c.page->data;
 	d->erasable = !!(data[2] & 16);
-
-	/* ts A61020 */
-	d->start_lba = d->end_lba = -2000000000;
 
 /*
 	fprintf(stderr, "libburn_experimental: data[2]= %d  0x%x\n",
@@ -804,11 +821,46 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	d->issue_command(d, &c);
 }
 
+
+/* A61201 : found in unfunctional state */
 void mmc_get_configuration(struct burn_drive *d)
 {
 	struct buffer buf;
-	int len;
+	int len, i, cp;
 	struct command c;
+	char msg[160];
+	static char *texts[256] = {NULL};
+	
+	if (texts[0] == NULL) {
+		for (i = 0; i<256; i++)
+			texts[i] = "";
+		/* mmc5r03c.pdf , Table 89 */
+		texts[0x08] = "CD-ROM";
+		texts[0x09] = "CD-R";
+		texts[0x0a] = "CD-RW";
+		texts[0x10] = "DVD-ROM";
+		texts[0x11] = "DVD-R Sequential";
+		texts[0x12] = "DVD-RAM";
+		texts[0x13] = "DVD-RW Restricted Overwrite";
+		texts[0x14] = "DVD-RW Sequential";
+		texts[0x15] = "DVD-R DL Sequential";
+		texts[0x16] = "DVD-R DL Jump";
+		texts[0x1a] = "DVD+RW";
+		texts[0x1b] = "DVD+R";
+		texts[0x2a] = "DVD+RW DL";
+		texts[0x2b] = "DVD+R DL";
+		texts[0x40] = "BD-ROM";
+		texts[0x41] = "BD-R SRM Sequential";
+		texts[0x42] = "BD-R RRM Random";
+		texts[0x43] = "BD-RE";
+		texts[0x50] = "HD DVD-ROM";
+		texts[0x51] = "HD DVD-R";
+		texts[0x52] = "HD DVD-RAM";
+	}
+
+	d->current_profile = 0;
+        d->current_profile_text[0] = 0;
+	d->current_is_cd_profile = 0;
 
 	mmc_function_spy("mmc_get_configuration");
 	memcpy(c.opcode, MMC_GET_CONFIGURATION, sizeof(MMC_GET_CONFIGURATION));
@@ -820,15 +872,21 @@ void mmc_get_configuration(struct burn_drive *d)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 
-	burn_print(1, "got it back\n");
+	if (c.error)
+		return;
 	len = (c.page->data[0] << 24)
 		+ (c.page->data[1] << 16)
 		+ (c.page->data[2] << 8)
 		+ c.page->data[3];
-	burn_print(1, "all %d bytes of it\n", len);
-	burn_print(1, "%d, %d, %d, %d\n",
-		   c.page->data[0],
-		   c.page->data[1], c.page->data[2], c.page->data[3]);
+
+	if (len<8)
+		return;
+	cp = (c.page->data[6]<<8) | c.page->data[7];
+	d->current_profile = cp;
+	if (cp < 256)
+		strcpy(d->current_profile_text, texts[cp]);
+	if (cp == 0x08 || cp == 0x09 || cp == 0x0a)
+		d->current_is_cd_profile = 1;
 }
 
 void mmc_sync_cache(struct burn_drive *d)
@@ -906,8 +964,14 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->read_buffer_capacity = mmc_read_buffer_capacity;
 
 	/* ts A61020 */
-	d->start_lba= -2000000000;
-	d->end_lba= -2000000000;
+	d->start_lba = -2000000000;
+	d->end_lba = -2000000000;
+
+	/* ts A61201 */
+	d->erasable = 0;
+	d->current_profile = 0;
+	d->current_profile_text[0] = 0;
+	d->current_is_cd_profile = 0;
 
 	return 1;
 }

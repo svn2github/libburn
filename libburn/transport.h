@@ -119,6 +119,12 @@ struct burn_drive
 
 	enum burn_disc_status status;
 	int erasable;
+
+	/* ts A61201 from 46h GET CONFIGURATION  */
+	int current_profile;
+	char current_profile_text[80];
+	int current_is_cd_profile;
+
 	volatile int released;
 
 	/* ts A61106 */

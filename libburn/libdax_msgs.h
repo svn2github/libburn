@@ -335,6 +335,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002011b (FATAL,HIGH)   = Attempt to read track info from ungrabbed drive
  0x0002011c (FATAL,HIGH)   = Attempt to read track info from busy drive
  0x0002011d (FATAL,HIGH)   = SCSI error condition on write
+ 0x0002011e (SORRY, HIGH)  = Unsuitable media detected
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
