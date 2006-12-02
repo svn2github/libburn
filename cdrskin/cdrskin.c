@@ -165,6 +165,7 @@ or
 #define Cdrskin_libburn_versioN "0.2.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 #define Cdrskin_atip_speed_is_oK 1
+#define Cdrskin_libburn_has_get_profilE 1
 #endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -3634,6 +3635,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  double x_speed_max, x_speed_min= -1.0;
  enum burn_disc_status s;
  struct burn_drive *drive;
+ int profile_number= 0;
+ char profile_name[80];
 
  printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno);
  ret= Cdrskin_checkdrive(skin,1);
@@ -3705,20 +3708,40 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
 #endif /* Cdrskin_atip_speed_brokeN */
 
+ profile_name[0]= 0;
+#ifdef Cdrskin_libburn_has_get_profilE
+ ret= burn_disc_get_profile(drive,&profile_number,profile_name);
+ if(ret<=0) {
+   profile_number= 0;
+   strcpy(profile_name, "-unidentified-");
+ }
+#endif /* Cdrskin_libburn_has_get_profilE */
+
 #ifdef Cdrskin_libburn_has_read_atiP
- ret= burn_disc_read_atip(drive);
- if(ret>0) {
-   ret= burn_drive_get_min_write_speed(drive);
-   x_speed_min= ((double) ret)/Cdrskin_libburn_cd_speed_factoR;
+ if(burn_disc_get_status(drive) != BURN_DISC_UNSUITABLE) {
+   ret= burn_disc_read_atip(drive);
+   if(ret>0) {
+     ret= burn_drive_get_min_write_speed(drive);
+     x_speed_min= ((double) ret)/Cdrskin_libburn_cd_speed_factoR;
+   }
  }
 #endif
 
 #ifdef Cdrskin_libburn_has_burn_disc_unsuitablE
  if(burn_disc_get_status(drive) == BURN_DISC_UNSUITABLE) {
-   printf("Current: UNSUITABLE MEDIA\n");
+   if(skin->verbosity>=Cdrskin_verbose_progresS) {
+#ifdef Cdrskin_libburn_has_get_profilE
+     if(profile_name[0])
+       printf("Current: %s\n",profile_name);
+     else
+       printf("Current: UNSUITABLE MEDIA (Profile %4.4Xh)\n",profile_number);
+#else
+     printf("Current: UNSUITABLE MEDIA\n");
+#endif
+   }
    {ret= 0; goto ex;}
  }
-#endif
+#endif /* Cdrskin_libburn_has_burn_disc_unsuitablE */
 
  ret= burn_drive_get_write_speed(drive);
  x_speed_max= ((double) ret)/Cdrskin_libburn_cd_speed_factoR;
@@ -3726,7 +3749,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    x_speed_min= x_speed_max;
  printf("cdrskin: burn_drive_get_write_speed = %d  (%.1fx)\n",ret,x_speed_max);
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
-   if(burn_disc_erasable(drive))
+   if(profile_name[0])
+     printf("Current: %s\n",profile_name);
+   else if(burn_disc_erasable(drive))
      printf("Current: CD-RW\n");
    else
      printf("Current: CD-R\n");

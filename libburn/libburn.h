@@ -720,6 +720,16 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
 int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 				int trackno, int *lba, int *nwa);
 
+/* ts A61202 */
+/** Tells the MMC Profile identifier of the loaded media. The drive must be
+    grabbed in order to get a non-zero result.
+    @param d The drive where the media is inserted.
+    @param pno Profile Number as of mmc5r03c.pdf, table 89
+    @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
+    @return 1 profile is valid, 0 no profile info available 
+    Note: libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW".
+*/
+int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
 
 /** Tells whether a disc can be erased or not
     @return Non-zero means erasable

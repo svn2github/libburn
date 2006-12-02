@@ -470,9 +470,14 @@ void mmc_read_disc_info(struct burn_drive *d)
 	d->start_lba = d->end_lba = -2000000000;
 	d->erasable = 0;
 
+	/* ts A61202 */
+	d->toc_entries = 0;
+	if (d->status == BURN_DISC_EMPTY)
+		return;
+
 	mmc_get_configuration(d);
 	if (! d->current_is_cd_profile) {
-		sprintf(msg, "Unsuitable media detected. Profile 0x%2.2X  %s",
+		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
 			d->current_profile, d->current_profile_text);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			 0x0002011e,
@@ -822,41 +827,55 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 }
 
 
-/* A61201 : found in unfunctional state */
-void mmc_get_configuration(struct burn_drive *d)
+/* ts A61201 */
+static char *mmc_obtain_profile_name(int profile_number)
 {
-	struct buffer buf;
-	int len, i, cp;
-	struct command c;
-	char msg[160];
-	static char *texts[256] = {NULL};
+	static char *texts[0x53] = {NULL};
+	int i, max_pno = 0x53;
 	
 	if (texts[0] == NULL) {
-		for (i = 0; i<256; i++)
+		for (i = 0; i<max_pno; i++)
 			texts[i] = "";
-		/* mmc5r03c.pdf , Table 89 */
+		/* mmc5r03c.pdf , Table 89, Spelling: guessed cdrecord style */
+		texts[0x01] = "Non-removable disk";
+		texts[0x02] = "Removable disk";
+		texts[0x03] = "MO erasable";
+		texts[0x04] = "Optical write once";
+		texts[0x05] = "AS-MO";
 		texts[0x08] = "CD-ROM";
 		texts[0x09] = "CD-R";
 		texts[0x0a] = "CD-RW";
 		texts[0x10] = "DVD-ROM";
-		texts[0x11] = "DVD-R Sequential";
+		texts[0x11] = "DVD-R sequential recording";
 		texts[0x12] = "DVD-RAM";
-		texts[0x13] = "DVD-RW Restricted Overwrite";
-		texts[0x14] = "DVD-RW Sequential";
-		texts[0x15] = "DVD-R DL Sequential";
-		texts[0x16] = "DVD-R DL Jump";
+		texts[0x13] = "DVD-RW restricted overwrite";
+		texts[0x14] = "DVD-RW sequential overwrite";
+		texts[0x15] = "DVD-R/DL sequential recording";
+		texts[0x16] = "DVD-R/DL layer jump recording";
 		texts[0x1a] = "DVD+RW";
 		texts[0x1b] = "DVD+R";
-		texts[0x2a] = "DVD+RW DL";
-		texts[0x2b] = "DVD+R DL";
+		texts[0x2a] = "DVD+RW/DL";
+		texts[0x2b] = "DVD+R/DL";
 		texts[0x40] = "BD-ROM";
-		texts[0x41] = "BD-R SRM Sequential";
-		texts[0x42] = "BD-R RRM Random";
+		texts[0x41] = "BD-R sequential recording";
+		texts[0x42] = "BD-R random recording";
 		texts[0x43] = "BD-RE";
-		texts[0x50] = "HD DVD-ROM";
-		texts[0x51] = "HD DVD-R";
-		texts[0x52] = "HD DVD-RAM";
+		texts[0x50] = "HD-DVD-ROM";
+		texts[0x51] = "HD-DVD-R";
+		texts[0x52] = "HD-DVD-RAM";
 	}
+	if (profile_number<0 || profile_number>=max_pno)
+		return "";
+	return texts[profile_number];
+}
+
+
+/* ts A61201 : found in unfunctional state */
+void mmc_get_configuration(struct burn_drive *d)
+{
+	struct buffer buf;
+	int len, cp;
+	struct command c;
 
 	d->current_profile = 0;
         d->current_profile_text[0] = 0;
@@ -883,8 +902,7 @@ void mmc_get_configuration(struct burn_drive *d)
 		return;
 	cp = (c.page->data[6]<<8) | c.page->data[7];
 	d->current_profile = cp;
-	if (cp < 256)
-		strcpy(d->current_profile_text, texts[cp]);
+	strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
 	if (cp == 0x08 || cp == 0x09 || cp == 0x0a)
 		d->current_is_cd_profile = 1;
 }
@@ -969,7 +987,7 @@ int mmc_setup_drive(struct burn_drive *d)
 
 	/* ts A61201 */
 	d->erasable = 0;
-	d->current_profile = 0;
+	d->current_profile = -1;
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 

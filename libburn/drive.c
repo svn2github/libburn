@@ -144,8 +144,7 @@ int burn_drive_inquire_media(struct burn_drive *d)
 	int loop_count, old_speed = -1234567890, new_speed = -987654321;
 	int old_erasable = -1234567890, new_erasable = -987654321;
 
-	/* ts A61020 : this was BURN_DISC_BLANK as pure guess */
-	d->status = BURN_DISC_UNREADY;
+	/* ts A61020 : d->status was set to BURN_DISC_BLANK as pure guess */
 
 	if (d->mdata->cdr_write || d->mdata->cdrw_write ||
 	    d->mdata->dvdr_write || d->mdata->dvdram_write) {
@@ -209,6 +208,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 		burn_print(1, "can't grab - already grabbed\n");
 		return 0;
 	}
+	d->status = BURN_DISC_UNREADY;
 	errcode = d->grab(d);
 
 	if (errcode == 0) {
@@ -332,6 +332,8 @@ int burn_drive_mark_unready(struct burn_drive *d)
 	d->start_lba= -2000000000;
 	d->end_lba= -2000000000;
 
+	/* ts A61202 */
+	d->current_profile = -1;
 	d->status = BURN_DISC_UNREADY;
 	if (d->toc_entry != NULL)
 		free(d->toc_entry);
@@ -1257,4 +1259,14 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 	ret = d->get_nwa(d, trackno, lba, nwa);
 	return ret;
 }
+
+
+/* ts A61202 : New API function */
+int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80])
+{
+	*pno = d->current_profile;
+	strcpy(name,d->current_profile_text);
+	return *pno >= 0;
+}
+
 
