@@ -478,12 +478,15 @@ void mmc_read_disc_info(struct burn_drive *d)
 	mmc_get_configuration(d);
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
 		&& ! d->current_is_cd_profile) {
-		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
-			d->current_profile, d->current_profile_text);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			 0x0002011e,
-			 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			 msg, 0,0);
+		if (!d->silent_on_scsi_error) {
+			sprintf(msg,
+				"Unsuitable media detected. Profile %4.4Xh  %s",
+				d->current_profile, d->current_profile_text);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x0002011e,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				 msg, 0,0);
+		}
 		d->status = BURN_DISC_UNSUITABLE;
 		return;
 	}

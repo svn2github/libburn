@@ -201,8 +201,8 @@ int burn_drive_inquire_media(struct burn_drive *d)
 int burn_drive_grab(struct burn_drive *d, int le)
 {
 	int errcode;
-	/* ts A61125 */
-	int ret;
+	/* ts A61125 - A61202 */
+	int ret, sose;
 
 	if (!d->released) {
 		burn_print(1, "can't grab - already grabbed\n");
@@ -225,8 +225,13 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	/* ts A61118 */
 	d->start_unit(d);
 
+	/* ts A61202 : gave bit1 of le a meaning */
+	sose = d->silent_on_scsi_error;
+	if (!le)
+		d->silent_on_scsi_error = 1;
 	/* ts A61125 : outsourced media state inquiry aspects */
 	ret = burn_drive_inquire_media(d);
+	d->silent_on_scsi_error = sose;
 	return ret;
 }
 
