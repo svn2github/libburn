@@ -201,6 +201,7 @@ or
 
 /* put macros under test caveat here */
 #define Cdrskin_allow_sao_for_appendablE 1
+#define Cdrskin_no_aftergrab_loopS 1
 
 #endif /* Cdrskin_new_api_tesT */
 
@@ -2668,49 +2669,6 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 }
 
 
-/** Shutdown library and restart again on single drive which gets grabbed.
-    Does only work with a valid skin->driveno or with an already set
-    skin->preskin->device_adr . 
-    @param flag Bitfield for control purposes:
-                bit0= skin->driveno points to a valid drive. The library
-                      will get reopened with that drive listed as only one
-                      and already grabbed.
-                bit1= do not load drive tray
-    @return  1 = success , 
-             0 = failure, drive is released, library initialized
-            -1 = failure, library is finished (and could not get initialized)
-*/    
-int Cdrskin_reinit_lib_with_adr(struct CdrskiN *skin, int flag)
-{
- int ret;
-
- if(skin->drive_is_grabbed)
-   Cdrskin_release_drive(skin,0);
- if(flag&1)
-   burn_drive_get_adr(&(skin->drives[skin->driveno]),
-                      skin->preskin->device_adr);
- if(strlen(skin->preskin->device_adr)<=0) {
-   fprintf(stderr,
-           "cdrskin: FATAL : unable to determine persistent drive address\n");
-   ret= 0; goto ex;
- }
- burn_drive_info_free(skin->drives);
- burn_finish();
- if(!burn_initialize()) {
-   fflush(stdout);
-   fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
-   {ret= -1; goto ex;}
- }
- ret= Cdrskin_grab_drive(skin,1|(flag&2));/* uses burn_drive_scan_and_grab() */
- if(ret<=0)
-   {ret=0; goto ex;}
-
- ret= 1;
-ex:
- return(ret);
-}
-
-
 /** Obtain access to a libburn drive for writing or information retrieval.
     If libburn is not restricted to a single persistent address then the
     unused drives are dropped. This might be done by shutting down and
@@ -2779,9 +2737,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  } else {
    if(strlen(skin->preskin->device_adr)<=0) {
 
-#define Cdrskin_drop_drives_by_forgeT 1
-#ifdef Cdrskin_drop_drives_by_forgeT 
-
      if(skin->verbosity>=Cdrskin_verbose_debuG)   
        ClN(fprintf(stderr,
          "cdrskin_debug: Cdrskin_grab_drive() dropping unwanted drives (%d)\n",
@@ -2800,13 +2755,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
        fprintf(stderr,
            "cdrskin:        burn_drive_info_forget() returns %d\n",ret);
      }
-
-#else
-
-     ret= Cdrskin_reinit_lib_with_adr(skin,1|(flag&2));
-     goto ex; /* this calls Cdrskin_grab() with persistent address or fails */
-
-#endif /* ! Cdrskin_drop_drives_by_forgeT */
 
    }
 
@@ -3494,10 +3442,16 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
+
+#ifndef Cdrskin_no_aftergrab_loopS
  while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
    usleep(100002);
  while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
    usleep(100002);
+#else
+ s= burn_disc_get_status(drive);
+#endif /* ! Cdrskin_no_aftergrab_loopS */
+
  if(s!=BURN_DISC_APPENDABLE) {
    Cdrskin_report_disc_status(skin,s,0);
    fprintf(stderr,
@@ -3646,10 +3600,16 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
+
+#ifndef Cdrskin_no_aftergrab_loopS
  while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
    usleep(100002);
  while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
    usleep(100002);
+#else
+ s= burn_disc_get_status(drive);
+#endif
+
  Cdrskin_report_disc_status(skin,s,0);
  if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable) {
    is_not_really_erasable= 1;
@@ -3850,10 +3810,15 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
 
+#ifndef Cdrskin_no_aftergrab_loopS
  while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
    usleep(100002);
- while ((s = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
+ while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
    usleep(100002);
+#else
+ s= burn_disc_get_status(drive);
+#endif
+
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
 
@@ -4391,11 +4356,14 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
 
+#ifndef Cdrskin_no_aftergrab_loopS
  while(burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
    usleep(100002); /* >>> ??? add a timeout ? */
-
  while((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
    usleep(100002); /* >>> ??? add a timeout ? */
+#else
+ s= burn_disc_get_status(drive);
+#endif
 
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
