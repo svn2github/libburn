@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------
                        cdrskin Wiki - plain text copy
 --------------------------------------------------------------------------
+[[Image(source:/libburn/trunk/cdrskin/doener_150x200_tr.gif)]]
 
 cdrskin is the cdrecord compatibility middleware of libburn.
 
@@ -13,9 +14,9 @@ cdrskin does not contain any bytes copied from cdrecord's sources.
 Many bytes have been copied from the message output of cdrecord
 runs, though. The most comprehensive technical overview of cdrskin
 can be found in cdrskin/README . Online available as :
-http://libburn.pykix.org/browser/trunk/cdrskin/README?format=raw
+http://libburnia.pykix.org/browser/trunk/cdrskin/README?format=raw
 
-About libburn API for burning CD: http://libburn-api.pykix.org
+About libburn API for burning CD: http://libburnia-api.pykix.org
 
 --------------------------------------------------------------------------
 
@@ -52,7 +53,7 @@ cdrskin --help
 where the option "help" has *two* dashes.
 
 Those have no man page yet. Some are very experimental and should only be
-used in coordination with the libburn developer team.
+used in coordination with the libburnia developer team.
 Some are of general user interest, though:
 
 --------------------------------------------------------------------------
