@@ -1832,13 +1832,60 @@ Correction for drives which return empty tray as profile 0x00 rather than error
 * Improved recognition of unsuitable media types
 
 
-  []
+2 Dec 2006  [454]
 cdrskin/changelog.txt
 cdrskin/cdrskin_eng.html
 Next cdrskin-0.2.7 cycle
 
+2006.12.02.201405  [456]
+libburn/drive.c
+libburn/mmc.c
+Avoided unsuitable media complaint on burn_drive_grab() with load==0
 
------------------------------------- cycle  - cdrskin-0.2.7 - 
+2006.12.02.201529  [457]
+cdrskin/cdrskin.c
+Testing wether the after-grab status waiting loops are necessary
+
+3 Dec 2006  [461]
+cdrskin/doener_150x200_tr.gif
+cdrskin/doener_150x200_tr_octx.gif
+cdrskin/cdrskin_eng.html
+cdrskin is declared honoray Doenerware (burp)
+
+3 Dec 2006  [463]
+cdrskin/cdrskin_eng.html
+Have wikipedia explain doenerism ("Eat the rich" and so)
+
+2006.12.03.155703  [464]
+README
+doc/comments
+test/libburner.c
+cdrskin/cdrskin_eng.html
+cdrskin/README
+cdrskin/cdrskin.c
+Changed URLs and umbrella names to libburnia
+
+3 Dec 2006  [465]
+cdrskin/wiki_plain.txt
+Changed URLs and umbrella names to libburnia
+
+3 Dec 2006  [466]
+cdrskin/wiki_plain.txt
+Added Doener logo and link
+
+3 Dec 2006  [468]
+cdrskin/cdrskin_eng.html
+cdrskin/add_ts_changes_to_libburn_0_2_7
+Excluded doener gifs from cdrskin tarballs
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.03.204709
+
+
+2006.12.03.204709  3 Dec 2006  []
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
+
 
 
 ----------------------------------------- long term intentions:
