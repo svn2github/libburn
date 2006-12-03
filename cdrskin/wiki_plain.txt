@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------
                        cdrskin Wiki - plain text copy
 --------------------------------------------------------------------------
-[[Image(source:/libburn/trunk/cdrskin/doener_150x200_tr.gif)]]
+[[Image(source:/libburn/trunk/cdrskin/doener_150x200_tr.gif)]] [http://en.wikipedia.org/wiki/D%C3%B6ner_kebab Doener]
 
-cdrskin is the cdrecord compatibility middleware of libburn.
+'''cdrskin is the cdrecord compatibility middleware of libburn.'''
 
 Its paragon, cdrecord, is a powerful GPL'ed burn program included in Joerg
 Schilling's cdrtools. cdrskin strives to be a second source for the services
@@ -22,7 +22,7 @@ About libburn API for burning CD: http://libburnia-api.pykix.org
 
 Appending sessions to an unclosed CD is restricted to write mode TAO.
 (Users who have a burner which succeeds with a follow-up session via
- cdrecord -sao : please contact us.)
+cdrecord -sao : please contact us.)
 
 cdrskin does not provide DVD burning yet. See advise to use dvd+rw-tools
 at the end of this text.
