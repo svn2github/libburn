@@ -7,10 +7,10 @@
 /**                               Overview 
   
   libburner is a minimal demo application for the library libburn as provided
-  on  http://libburn.pykix.org . It can list the available devices, can
+  on  http://libburnia.pykix.org . It can list the available devices, can
   blank a CD-RW and can burn to CD-R or CD-RW.
   It's main purpose, nevertheless, is to show you how to use libburn and also
-  to serve the libburn team as reference application. libburner.c does indeed
+  to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
   stay upward compatible for a good while.
   
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
 	if (ret)
 		exit(ret);
 
-	printf("Initializing libburn.pykix.org ...\n");
+	printf("Initializing libburnia.pykix.org ...\n");
 	if (burn_initialize())
 		printf("Done\n");
 	else {
@@ -624,7 +624,7 @@ Be also invited to study the code of cdrskin/cdrskin.c et al.
 
 
 Clarification in my name and in the name of Mario Danic, copyright holder
-on toplevel of libburn. To be fully in effect after the remaining other
+on toplevel of libburnia. To be fully in effect after the remaining other
 copyrighted code has been replaced by ours and by copyright-free contributions
 of our friends:
 

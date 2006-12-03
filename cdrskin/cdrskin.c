@@ -77,8 +77,9 @@ restart of libburn.
 
 ------------------------------------------------------------------------------
 This program is currently copyright Thomas Schmitt only.
-The copyrights of several components of libburn.pykix.org are willfully tangled
-at toplevel to form an irrevocable commitment to true open source spirit.
+The copyrights of several components of libburnia.pykix.org are willfully
+tangled at toplevel to form an irrevocable commitment to true open source
+spirit.
 We have chosen the GPL for legal compatibility and clearly express that it
 shall not hamper the use of our software by non-GPL applications which show
 otherwise the due respect to the open source community.
@@ -91,7 +92,7 @@ usage in due open source spirit will be made possible somehow and in the
 particular special case. I will not raise public protest if you spawn yourself
 a BSD license from an (outdated) cdrskin.c which still bears that old promise.
 Note that this extended commitment is valid only for cdrskin.[ch],
-cdrfifo.[ch] and cleanup.[ch], but not for libburn.pykix.org as a whole.
+cdrfifo.[ch] and cleanup.[ch], but not for libburnia.pykix.org as a whole.
 
 cdrskin is originally inspired by libburn-0.2/test/burniso.c :
 (c) Derek Foreman <derek@signalmarketing.com> and Ben Jansens <xor@orodu.net>
@@ -243,7 +244,7 @@ or
 #define Cdrskin_is_erasable_on_load_is_brokeN 1
 #endif
 
-/** http://libburn.pykix.org/ticket/41 reports of big trouble without 
+/** http://libburnia.pykix.org/ticket/41 reports of big trouble without 
     padding any track to a full sector
 */
 #define Cdrskin_all_tracks_with_sector_paD 1
@@ -2028,7 +2029,7 @@ set_dev:;
          "used as track source. If it is \"-\" then stdin is used.\n");
      printf("cdrskin  : http://scdbackup.sourceforge.net/cdrskin_eng.html\n");
      printf("           mailto:scdbackup@gmx.net  (Thomas Schmitt)\n");
-     printf("libburn  : http://libburn.pykix.org\n");
+     printf("libburn  : http://libburnia.pykix.org\n");
      printf("cdrecord : ftp://ftp.berlios.de/pub/cdrecord/\n");
      printf("My respect to the authors of cdrecord and libburn.\n");
      printf("scdbackup: http://scdbackup.sourceforge.net/main_eng.html\n");
@@ -2165,7 +2166,7 @@ set_severities:;
 
    } else if(strcmp(argv[i],"-version")==0) {
      printf(
-        "Cdrecord 2.01-Emulation Copyright (C) 2006, see libburn.pykix.org\n");
+      "Cdrecord 2.01-Emulation Copyright (C) 2006, see libburnia.pykix.org\n");
      printf("libburn version   :  %s\n",Cdrskin_libburn_versioN);
 
 #ifndef Cdrskin_extra_leaN

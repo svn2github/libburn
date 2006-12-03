@@ -1,10 +1,10 @@
 ------------------------------------------------------------------------------
-                               libburn.pykix.org
+                              libburnia.pykix.org
 ------------------------------------------------------------------------------
 This all is under GPL.
 (See GPL reference, our clarification and commitment at the end of this text)
 ------------------------------------------------------------------------------
-libburn.pykix.org
+libburnia.pykix.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
 Copyright (C) 2006 Mario Danic, Thomas Schmitt
 
@@ -12,14 +12,14 @@ Still containing parts of
 Libburn. By Derek Foreman <derek@signalmarketing.com> and
             Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
-These parts are to be replaced by own code of above libburn.pykix.org-copyright
-holders and then libburn.pykix.org is to be their sole copyright.
+These parts are to be replaced by own code of above libburnia.pykix.org
+copyright holders and then libburnia.pykix.org is to be their sole copyright.
 This is done to achieve the right to issue the clarification and the
 commitment as written at the end of this text.
 The rights and merits of the Libburn-copyright holders Derek Foreman and
 Ben Jansens will be duely respected. 
 
-This libburn.pykix.org toplevel README (C) 2006 Thomas Schmitt 
+This libburnia.pykix.org toplevel README (C) 2006 Thomas Schmitt 
 ------------------------------------------------------------------------------
 
                            Build and Installation
@@ -27,14 +27,14 @@ This libburn.pykix.org toplevel README (C) 2006 Thomas Schmitt
 Our build system is based on autotools. For preparing the build of a SVN 
 snapshot you will need autotools of at least version 1.7. 
 Check out from SVN by
-   svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
+   svn co http://libburnia-svn.pykix.org/libburn/trunk libburn_pykix
 go into directory libburn_pykix and apply autotools by
    ./bootstrap
 
 Alternatively you may unpack a release tarball for which you do not need
 autotools installed.
 
-To build libburn.pykix.org and its subprojects it should be sufficient to go
+To build a libburnia.pykix.org subproject it should be sufficient to go
 into its toplevel directory (here: "libburn_pykix") and execute
    ./configure
    make
@@ -43,18 +43,18 @@ To make the libraries accessible for running resp. developing applications
    make install
 
 
-The other half of the project, libisofs, is hosted in the libburn SVN, too:
-   svn co http://libburn-svn.pykix.org/libisofs/trunk libisofs_pykix
+The other half of the project, libisofs, is hosted in the libburnia SVN, too:
+   svn co http://libburnia-svn.pykix.org/libisofs/trunk libisofs_pykix
 See README file there.
 
 
 ------------------------------------------------------------------------------
 
 
-                         Overview of libburn.pykix.org 
+                        Overview of libburnia.pykix.org 
 
-libburn.pykix.org is an open-source software project for reading, mastering and
-writing optical discs. For now this means only CD-R and CD-RW.
+libburnia.pykix.org is an open-source software project for reading, mastering
+and writing optical discs. For now this means only CD-R and CD-RW.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -70,7 +70,7 @@ We do have a workable code base for burning data CDs, though. The burn API is
 quite comprehensively documented and can be used to build a presentable
 application.
 We do have a functional binary which emulates parts of cdrecord in order to
-prove that usability, and in order to allow you to explore libburn's scope
+prove that usability, and in order to allow you to explore libburnia's scope
 by help of existing cdrecord frontends.
 
 The project components (list subject to growth, hopefully):
@@ -197,9 +197,9 @@ Project history as far as known to me:
 
 ------------------------------------------------------------------------------
 Clarification in my name and in the name of Mario Danic, upcoming copyright
-holders on toplevel of libburn. To be fully in effect after the remaining other
-copyrighted code has been replaced by ours and by copyright-free contributions
-of our friends:
+holders on toplevel of libburnia. To be fully in effect after the remaining
+other copyrighted code has been replaced by ours and by copyright-free
+contributions of our friends:
 ------------------------------------------------------------------------------
 
 We, the copyright holders, agree on the interpretation that
