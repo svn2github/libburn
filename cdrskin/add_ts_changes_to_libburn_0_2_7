@@ -127,6 +127,9 @@ do
   fi
 done
 
+# Remove GIFs of cdrskin_eng.html
+rm "$cdrskin_target"/doener_*.gif
+
 # Remove unwanted SVN stuff (TODO: avoid downloading it)
 for i in "$target"/.svn "$target"/*/.svn
 do
