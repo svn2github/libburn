@@ -1,4 +1,4 @@
-AC_INIT([libburn], [0.2.7], [http://libburn.pykix.org])
+AC_INIT([libburn], [0.2.7], [http://libburnia.pykix.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -63,6 +63,7 @@ AC_C_BIGENDIAN
 dnl Large file support
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
+AC_CHECK_FUNC([fseeko])
 if test ! $ac_cv_func_fseeko; then
    AC_ERROR([Libburn requires largefile support.])
 fi
