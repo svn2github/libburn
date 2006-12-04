@@ -224,14 +224,27 @@ int telltoc_regrab(struct burn_drive *drive) {
 
 int telltoc_media(struct burn_drive *drive)
 {
-	int ret, media_found = 0;
+	int ret, media_found = 0, profile_no = -1;
 	double max_speed = 0.0, min_speed = 0.0;
 	enum burn_disc_status s;
+	char profile_name[80];
 
 	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
 		usleep(100001);
 	while ((s = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
 		usleep(100001);
+
+	printf("Media current: ");
+	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
+	if (profile_no > 0 && ret >0) {
+		if (profile_name[0])
+			printf("%s\n", profile_name);
+		else
+			printf("%4.4Xh\n", profile_no);
+	} else
+		printf("is not recognizable\n");
+
+	/* >>> libburn does not obtain full profile list yet */
 
 	printf("Media status : ");
 	if (s==BURN_DISC_FULL) {
@@ -248,7 +261,7 @@ int telltoc_media(struct burn_drive *drive)
 	else
 		printf("is not recognizable\n");
 
-	printf("Media type   : ");
+	printf("Media reuse  : ");
 	if (media_found) {
 		if (burn_disc_erasable(drive))
 			printf("is erasable\n");
