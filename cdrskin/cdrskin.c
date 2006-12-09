@@ -1960,7 +1960,8 @@ set_dev:;
       "blanking and burning see output of option -help rather than --help.\n");
      printf("Non-cdrecord options:\n");
      printf(" --abort_handler    do not leave the drive in busy state\n");
-     printf(" --allow_setuid     disable setuid blocker (very insecure !)\n");
+     printf(
+        " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
      printf(
          " --any_track        allow source_addresses to match '^-.' or '='\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
@@ -2186,18 +2187,6 @@ set_severities:;
 final_checks:;
  if(flag&1)
    goto ex;
-
- if(o->allow_setuid==0 && getuid()!=geteuid()) {
-   fprintf(stderr,
-    "cdrskin: SORRY : uid and euid differ. Will abort for safety concerns.\n");
-   fprintf(stderr,
-    "cdrskin: HINT  : Consider to allow rw-access to the writer device and\n");
-   fprintf(stderr,
-    "cdrskin: HINT  : to run cdrskin under your normal user identity.\n");
-   fprintf(stderr,
-    "cdrskin: HINT  : Option  --allow_setuid  disables this safety check.\n");
-   ret= 0; goto ex;
- }
 
  if(strlen(o->raw_device_adr)>0 && !o->no_whitelist) {
    int driveno,hret;
@@ -5497,6 +5486,19 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  int ret;
 
  *exit_value= 0;
+
+ if(skin->preskin->allow_setuid==0 && getuid()!=geteuid()) {
+   fprintf(stderr,"\n");
+   fprintf(stderr,"cdrskin: WARNING : THIS PROGRAM WAS TREATED WITH chmod u+s WHICH IS INSECURE !\n");
+   fprintf(stderr,
+    "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
+   fprintf(stderr,
+    "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+   fprintf(stderr,
+    "cdrskin: HINT : Option  --allow_setuid  disables this safety check.\n");
+   fprintf(stderr,"\n");
+ }
+
  if(skin->do_devices) {
    if(skin->n_drives<=0 && skin->preskin->scan_demands_drive)
      {*exit_value= 4; goto no_drive;}
