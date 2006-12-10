@@ -186,5 +186,8 @@ EXTRA_DIST = \
 	libburn/os-linux.h \
 	libburn/sg-freebsd.c \
 	libburn/sg-linux.c \
-	COPYING
+	COPYING \
+        NEWS \
+        ChangeLog \
+        INSTALL
 
