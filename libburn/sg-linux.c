@@ -75,6 +75,50 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <scsi/scsi.h>
 
 
+
+/* ts A61211 : preparing for exploration of recent Linux ATA adventures */
+/** PORTING : Device file families for bus scanning and drive access.
+    Both device families must support the following ioctls:
+      SG_IO,
+      SG_GET_SCSI_ID
+      SCSI_IOCTL_GET_BUS_NUMBER
+      SCSI_IOCTL_GET_IDLUN
+    as well as mutual exclusively locking with open(O_EXCL).
+    If a device family is left empty, then it will not be used.
+
+    To avoid misunderstandings: both families are used via identical
+    transport methods as soon as a device file is accepted as CD drive
+    by the family specific function <family>_enumerate().
+    One difference remains throughout usage: Host,Channel,Id,Lun and Bus
+    address parameters of ATA devices are considered invalid.
+*/
+
+/* Set this to 1 in order to get on stderr messages from sg_enumerate() */
+static int linux_sg_enumerate_debug = 0;
+
+/* The device file family to use for (emulated) generic SCSI transport.
+   This must be a printf formatter with one single placeholder for int
+   in the range of 0 to 31 . The resulting addresses must provide SCSI
+   address parameters Host, Channel, Id, Lun and also Bus.
+   E.g.: "/dev/sg%d"
+*/
+static char linux_sg_device_family[80] = {"/dev/sg%d"};
+
+
+/* The device file family to use for SCSI transport over ATA.
+   This must be a printf formatter with one single placeholder for a
+   _single_ char in the range of 'a' to 'z'. This placeholder _must_ be
+   at the end of the formatter string.
+   E.g. "/dev/hd%c"
+*/
+static char linux_ata_device_family[80] = {"/dev/hd%c"};
+
+/* >>> Not implemented yet:
+  Set this to 1 in order to get on stderr messages from ata_enumerate() */
+static int linux_ata_enumerate_verbous = 0;
+
+
+
 /** PORTING : ------ libburn portable headers and definitions ----- */
 
 #include "transport.h"
@@ -285,7 +329,11 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 	int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char msg[161], fname[81];
 
-	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/st%d", ""};
+	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/st%d", 
+				  "/dev/sg%d", ""};
+
+	if (linux_sg_device_family[0] == 0)
+		return 1;
 
 	if(host_no < 0 || id_no < 0 || channel_no < 0 || lun_no < 0)
 		return(2);
@@ -293,6 +341,8 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 		sg_release_siblings(sibling_fds, sibling_count);
 		
 	for (tld = 0; tldev[tld][0] != 0; tld++) {
+		if (strcmp(tldev[tld], linux_sg_device_family)==0)
+	continue;
 		for (i = 0; i < 32; i++) {
 			sprintf(fname, tldev[tld], i);
 			ret = sg_obtain_scsi_adr(fname, &i_bus_no, &i_host_no,
@@ -327,7 +377,7 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 			(*sibling_count)++;
 		}
 	}
-	return(1);
+	return 1;
 failed:;
 	sg_release_siblings(sibling_fds, sibling_count);
 	return 0;
@@ -342,8 +392,11 @@ static void ata_enumerate(void)
 	int i, fd;
 	char fname[10];
 
+	if (linux_ata_device_family[0] == 0)
+		return;
+
 	for (i = 0; i < 26; i++) {
-		sprintf(fname, "/dev/hd%c", 'a' + i);
+		sprintf(fname, linux_ata_device_family, 'a' + i);
 		/* ts A51221 */
 		if (burn_drive_is_banned(fname))
 	continue;
@@ -381,15 +434,34 @@ static void sg_enumerate(void)
 	int bus_no = -1;
 	char fname[10];
 
+	if (linux_sg_enumerate_debug)
+	  fprintf(stderr, "libburn_debug: linux_sg_device_family = %s\n",
+		  linux_sg_device_family);
+
+	if (linux_sg_device_family[0] == 0)
+		return;
+
 	for (i = 0; i < 32; i++) {
-		sprintf(fname, "/dev/sg%d", i);
+		sprintf(fname, linux_sg_device_family, i);
+
+		if (linux_sg_enumerate_debug)
+		  fprintf(stderr, "libburn_debug: %s : ", fname);
+
 		/* ts A51221 */
-		if (burn_drive_is_banned(fname))
+		if (burn_drive_is_banned(fname)) {
+			if (linux_sg_enumerate_debug)
+			  fprintf(stderr, "not in whitelist\n"); 
 	continue;
+		}
+
 		/* ts A60927 */
 		fd = sg_open_drive_fd(fname, 1);
-		if (fd == -1)
+		if (fd == -1) {
+			if (linux_sg_enumerate_debug)
+			  fprintf(stderr, "open failed, errno=%d  '%s'\n",
+				  errno, strerror(errno));
 	continue;
+		}
 
 		/* found a drive */
 		ioctl(fd, SG_GET_SCSI_ID, &sid);
@@ -401,10 +473,18 @@ static void sg_enumerate(void)
 #endif
 
 		if (sg_close_drive_fd(fname, -1, &fd, 
-				sid.scsi_type == TYPE_ROM ) <= 0)
+				sid.scsi_type == TYPE_ROM ) <= 0) {
+			if (linux_sg_enumerate_debug)
+			  fprintf(stderr,
+				  "cannot close properly, errno=%d  '%s'\n",
+				  errno, strerror(errno)); 
 	continue;
-		if (sid.scsi_type != TYPE_ROM)
+		}
+		if (sid.scsi_type != TYPE_ROM) {
+			if (linux_sg_enumerate_debug)
+			  fprintf(stderr, "sid.scsi_type != TYPE_ROM\n"); 
 	continue;
+		}
 
 		/* ts A60927 : trying to do locking with growisofs */
 		if(burn_sg_open_o_excl>1) {
@@ -413,6 +493,8 @@ static void sg_enumerate(void)
 					sid.host_no, sid.channel,
 					sid.scsi_id, sid.lun);
 			if (ret<=0) {
+				if (linux_sg_enumerate_debug)
+				  fprintf(stderr, "cannot lock siblings\n"); 
 				sg_handle_busy_device(fname, 0);
 	continue;
 			}
@@ -425,6 +507,10 @@ static void sg_enumerate(void)
 #else
 		bus_no = sid.host_no;
 #endif
+		if (linux_sg_enumerate_debug)
+		  fprintf(stderr, "accepting as SCSI %d,%d,%d,%d bus=%d\n",
+			  sid.host_no, sid.channel, sid.scsi_id, sid.lun,
+			  bus_no);
 		enumerate_common(fname, bus_no, sid.host_no, sid.channel, 
 				 sid.scsi_id, sid.lun);
 	}
@@ -513,12 +599,17 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	/* sg.h : typedef int burn_drive_enumerator_t; */
+	/* os-linux.h : typedef int burn_drive_enumerator_t; */
 	static int sg_limit = 32, ata_limit = 26;
 	int baseno = 0;
 
 	if (initialize == -1)
 		return 0;
+
+	if (linux_sg_device_family[0] == 0)
+		sg_limit = 0;
+	if (linux_ata_device_family[0] == 0)
+		ata_limit = 0;
 
 	if (initialize  == 1)
 		*idx = -1;
@@ -527,7 +618,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		goto next_ata;
 	if (adr_size < 10)
 		return -1;
-	sprintf(adr, "/dev/sg%d", *idx);
+	sprintf(adr, linux_sg_device_family, *idx);
 	return 1;
 next_ata:;
 	baseno += sg_limit;
@@ -535,7 +626,7 @@ next_ata:;
 		goto next_nothing;
 	if (adr_size < 9)
 		return -1;
-	sprintf(adr, "/dev/hd%c", 'a' + (*idx - baseno));
+	sprintf(adr, linux_ata_device_family, 'a' + (*idx - baseno));
 	return 1;
 next_nothing:;
 	baseno += ata_limit;
@@ -851,14 +942,15 @@ ex:;
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
-	int fd, ret;
+	int fd, ret, l;
 	struct my_scsi_idlun {
 		int x;
 		int host_unique_id;
 	};
  	struct my_scsi_idlun idlun;
 
-	if (strncmp(path, "/dev/hd", 7) == 0 
+	l = strlen(linux_ata_device_family) - 2;
+	if (l > 0 && strncmp(path, linux_ata_device_family, l) == 0 
 	    && path[7] >= 'a' && path[7] <= 'z' && path[8] == 0)
 		return 0; /* on RIP 14 all hdx return SCSI adr 0,0,0,0 */
 
