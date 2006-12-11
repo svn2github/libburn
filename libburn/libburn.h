@@ -441,6 +441,7 @@ void burn_finish(void);
     @param patience Maximum number of seconds to wait for drives to finish
     @param pacifier_func If not NULL: a function to produce appeasing messages.
                          See burn_abort_pacifier() for an example.
+    @param handle Opaque handle to be used with pacifier_func
     @return 1  ok, all went well
             0  had to leave a drive in unclean state
             <0 severe error, do no use libburn again
@@ -615,6 +616,11 @@ int burn_drive_convert_fs_adr(char *path, char adr[]);
     then it is not decisive and the first enumerated address which matches
     the >= 0 parameters is taken as result.
     Note: bus and (host,channel) are supposed to be redundant.
+    @param bus_no "Bus Number" (something like a virtual controller)
+    @param host_no "Host Number" (something like half a virtual controller)
+    @param channel_no "Channel Number" (other half of "Host Number")
+    @param target_no "Target Number" or "SCSI Id" (a device)
+    @param lun_no "Logical Unit Number" (a sub device)
     @param adr  An application provided array of at least BURN_DRIVE_ADR_LEN
                 characters size. The persistent address gets copied to it.
     @return     1 = success , 0 = failure , -1 = severe error
@@ -715,6 +721,8 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
     @param d The drive to query.
     @param o If not NULL: write parameters to be set on drive before query
     @param trackno 0=next track to come, >0 number of existing track
+    @param lba return value: start lba
+    @param nwa return value: Next Writeable Address
     @return 1=nwa is valid , 0=nwa is not valid , -1=error
 */
 int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
@@ -1215,9 +1223,10 @@ int burn_msgs_set_severities(char *queue_severity,
 /** Obtain the oldest pending libburn message from the queue which has at
     least the given minimum_severity. This message and any older message of
     lower severity will get discarded from the queue and is then lost forever.
-    Severity may be one of "NEVER", "FATAL", "SORRY", "WARNING", "HINT",
-    "NOTE", "UPDATE", "DEBUG", "ALL". To call with minimum_severity "NEVER"
-    will discard the whole queue.
+    @param minimum_severity  may be one of "NEVER", "FATAL", "SORRY",
+                      "WARNING", "HINT", "NOTE", "UPDATE", "DEBUG", "ALL".
+                      To call with minimum_severity "NEVER" will discard the
+                      whole queue.
     @param error_code Will become a unique error code as liste in
                       libburn/libdax_msgs.h
     @param msg_text   Must provide at least BURN_MSGS_MESSAGE_LEN bytes.
