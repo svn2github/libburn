@@ -438,6 +438,7 @@ static void sg_enumerate(void)
 {
 	struct sg_scsi_id sid;
 	int i, fd, sibling_fds[LIBBURN_SG_MAX_SIBLINGS], sibling_count= 0, ret;
+	int sid_ret = 0;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[10];
 
@@ -471,7 +472,11 @@ static void sg_enumerate(void)
 		}
 
 		/* found a drive */
-		ioctl(fd, SG_GET_SCSI_ID, &sid);
+		sid_ret = ioctl(fd, SG_GET_SCSI_ID, &sid);
+		if (sid_ret == -1 && linux_sg_enumerate_debug)
+		  fprintf(stderr,
+			"ioctl(SG_GET_SCSI_ID) failed, errno=%d  '%s' , ",
+			errno, strerror(errno));
 
 #ifdef SCSI_IOCTL_GET_BUS_NUMBER
 		/* Hearsay A61005 */
@@ -487,14 +492,15 @@ static void sg_enumerate(void)
 				  errno, strerror(errno)); 
 	continue;
 		}
-		if (sid.scsi_type != TYPE_ROM && !linux_sg_accept_any_type) {
+		if ( (sid_ret == -1 || sid.scsi_type != TYPE_ROM)
+		     && !linux_sg_accept_any_type) {
 			if (linux_sg_enumerate_debug)
 			  fprintf(stderr, "sid.scsi_type = %d (!= TYPE_ROM)\n",
 				sid.scsi_type); 
 	continue;
 		}
 
-		if (sid.scsi_type != TYPE_ROM) {
+		if (sid_ret == -1) {
 			/* ts A61211 : employ a more general ioctl */
 			ret = sg_obtain_scsi_adr(fname, &bus_no, &host_no,
 					   &channel_no, &target_no, &lun_no);
@@ -503,6 +509,10 @@ static void sg_enumerate(void)
 				sid.channel = channel_no;
 				sid.scsi_id = target_no;
 				sid.lun = lun_no;
+			} else {
+				if (linux_sg_enumerate_debug)
+				  fprintf(stderr,
+					"sg_obtain_scsi_adr() failed\n");
 			}
                 }
 
