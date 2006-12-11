@@ -423,7 +423,9 @@ void mmc_read_toc(struct burn_drive *d)
 
 			}
 		}
-		if (tdata[3] < 100) {
+		if (tdata[0] <= 0 || tdata[0] > d->disc->sessions)
+			tdata[0] = d->disc->sessions;
+		if (tdata[3] < 100 && tdata[0] > 0) {
 			track = burn_track_create();
 			burn_session_add_track(d->disc->session[tdata[0] - 1],
 					       track, BURN_POS_END);

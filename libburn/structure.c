@@ -386,13 +386,19 @@ int burn_disc_get_sectors(struct burn_disc *d)
 
 void burn_track_get_entry(struct burn_track *t, struct burn_toc_entry *entry)
 {
-	memcpy(entry, t->entry, sizeof(struct burn_toc_entry));
+	if (t->entry == NULL)
+		memset(entry, 0, sizeof(struct burn_toc_entry));
+	else
+		memcpy(entry, t->entry, sizeof(struct burn_toc_entry));
 }
 
 void burn_session_get_leadout_entry(struct burn_session *s,
 				    struct burn_toc_entry *entry)
 {
-	memcpy(entry, s->leadout_entry, sizeof(struct burn_toc_entry));
+	if (s->leadout_entry == NULL)
+		memset(entry, 0, sizeof(struct burn_toc_entry));
+	else
+		memcpy(entry, s->leadout_entry, sizeof(struct burn_toc_entry));
 }
 
 struct burn_session **burn_disc_get_sessions(struct burn_disc *d, int *num)
