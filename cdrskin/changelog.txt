@@ -1882,10 +1882,38 @@ Excluded doener gifs from cdrskin tarballs
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.03.204709
 
 
-2006.12.03.204709  3 Dec 2006  []
+2006.12.03.204709  [469]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
+4 Dec 2006  [470]
+cdrskin/cdrskin_eng.html
+Removed a newline which made the Mozilla family show a "_"
+
+4 Dec 2006  [471]
+test/telltoc.c
+Added reporting of current media profile, changed "Media type" to "Media reuse"
+
+2006.12.09.111108  [475]
+cdrskin/cdrskin.c
+Replaced setuid blocker by warning. People must know themselves what they do.
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.09.141837
+* Replaced ban of chmod u+s by loud warning
+
+11 Dec 2006  []
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
+
+2006.12.11.095230 []
+cdrskin/cdrskin_timestamp.h
+Belated timestamp for changes in cdrskin
+
+  []
+Makefile.am
+Unified mix of tab an blanks which looks ugly in diff
 
 
 ----------------------------------------- long term intentions:
