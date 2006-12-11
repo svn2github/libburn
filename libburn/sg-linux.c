@@ -103,12 +103,11 @@ static int linux_sg_enumerate_debug = 0;
    address parameters Host, Channel, Id, Lun and also Bus.
    E.g.: "/dev/sg%d"
 */
-/* NOT READY YET !!! DO NOT SET TO OTHER THAN "/dev/sg%d" !!! */
 static char linux_sg_device_family[80] = {"/dev/sg%d"};
 
 
 /* Set this to 1 in order to accept any TYPE_* (see scsi/scsi.h) */
-/* NOT READY YET !!! DO NOT SET TO 1 !!! */
+/* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL HARD DISKS chmod -rw !!! */
 static int linux_sg_accept_any_type = 0;
 
 
