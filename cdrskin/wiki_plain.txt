@@ -13,8 +13,7 @@ Its future ability to burn DVD media depends on the development of libburn.
 cdrskin does not contain any bytes copied from cdrecord's sources.
 Many bytes have been copied from the message output of cdrecord
 runs, though. The most comprehensive technical overview of cdrskin
-can be found in cdrskin/README . Online available as :
-http://libburnia.pykix.org/browser/trunk/cdrskin/README?format=raw
+can be found in [http://libburnia.pykix.org/browser/libburn/trunk/cdrskin/README?format=txt cdrskin/README].
 
 About libburn API for burning CD: http://libburnia-api.pykix.org
 
@@ -126,6 +125,8 @@ default settings of cdrskin. Possible locations for such settings:
 /etc/default/cdrskin
 
 /etc/opt/cdrskin/rc
+
+/etc/cdrskin/cdrskin.conf
 
 $HOME/.cdrskinrc
 
