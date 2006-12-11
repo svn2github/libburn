@@ -96,13 +96,20 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 /* Set this to 1 in order to get on stderr messages from sg_enumerate() */
 static int linux_sg_enumerate_debug = 0;
 
+
 /* The device file family to use for (emulated) generic SCSI transport.
    This must be a printf formatter with one single placeholder for int
    in the range of 0 to 31 . The resulting addresses must provide SCSI
    address parameters Host, Channel, Id, Lun and also Bus.
    E.g.: "/dev/sg%d"
 */
+/* NOT READY YET !!! DO NOT SET TO OTHER THAN "/dev/sg%d" !!! */
 static char linux_sg_device_family[80] = {"/dev/sg%d"};
+
+
+/* Set this to 1 in order to accept any TYPE_* (see scsi/scsi.h) */
+/* NOT READY YET !!! DO NOT SET TO 1 !!! */
+static int linux_sg_accept_any_type = 0;
 
 
 /* The device file family to use for SCSI transport over ATA.
@@ -114,8 +121,9 @@ static char linux_sg_device_family[80] = {"/dev/sg%d"};
 static char linux_ata_device_family[80] = {"/dev/hd%c"};
 
 /* >>> Not implemented yet:
-  Set this to 1 in order to get on stderr messages from ata_enumerate() */
+  Set this to 1 in order to get on stderr messages from ata_enumerate()i
 static int linux_ata_enumerate_verbous = 0;
+*/
 
 
 
@@ -480,9 +488,10 @@ static void sg_enumerate(void)
 				  errno, strerror(errno)); 
 	continue;
 		}
-		if (sid.scsi_type != TYPE_ROM) {
+		if (sid.scsi_type != TYPE_ROM && !linux_sg_accept_any_type) {
 			if (linux_sg_enumerate_debug)
-			  fprintf(stderr, "sid.scsi_type != TYPE_ROM\n"); 
+			  fprintf(stderr, "sid.scsi_type = %d (!= TYPE_ROM)\n",
+				sid.scsi_type); 
 	continue;
 		}
 
