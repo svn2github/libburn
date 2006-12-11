@@ -2023,7 +2023,8 @@ set_dev:;
         "Preconfigured arguments are read from the following startup files\n");
      printf(
           "if they exist and are readable. The sequence is as listed here:\n");
-     printf("  /etc/default/cdrskin  /etc/opt/cdrskin/rc  /etc/cdrskin/cdrskin.conf  $HOME/.cdrskinrc\n");
+     printf("  /etc/default/cdrskin         /etc/opt/cdrskin/rc\n");
+     printf("  /etc/cdrskin/cdrskin.conf    $HOME/.cdrskinrc\n");
      printf("Each file line is a single argument. No whitespace.\n");
      printf(
          "By default any argument that does not match grep '^-.' or '=' is\n");

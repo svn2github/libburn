@@ -325,6 +325,7 @@ If not --no_rc is the first argument then cdrskin attempts on startup to read
 arguments from the following three files:
   /etc/default/cdrskin
   /etc/opt/cdrskin/rc
+  /etc/cdrskin/cdrskin.conf
   $HOME/.cdrskinrc
 The files are read in the sequence given above.
 Each readable line is treated as one single argument. No extra blanks.
