@@ -1719,7 +1719,7 @@ ata_bus:;
                                           device_adr);
          if(ret==0) {
            fprintf(stderr,
-   "cdrskin: FATAL : Cannot find /dev/sgN with Bus,Target,Lun = %d,%d,%d\n",
+   "cdrskin: FATAL : Cannot find /dev/* with Bus,Target,Lun = %d,%d,%d\n",
                    busno,*driveno,lun_no);
            fprintf(stderr,
    "cdrskin: HINT : This drive may be in use by another program currently\n");

@@ -74,6 +74,8 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <scsi/sg.h>
 #include <scsi/scsi.h>
 
+/* ts A61211 : to recognize CD devices on /dev/sr* */
+#include <linux/cdrom.h>
 
 
 /* ts A61211 : preparing for exploration of recent Linux ATA adventures */
@@ -103,11 +105,23 @@ static int linux_sg_enumerate_debug = 0;
    address parameters Host, Channel, Id, Lun and also Bus.
    E.g.: "/dev/sg%d"
 */
+/* NEW INFO: If hard disks at /dev/sr allow ioctl(CDROM_DRIVE_STATUS), they
+             are in danger.
+             If you want it less dangerous:
+               #undef CDROM_DRIVE_STATUS
+             but then you might need linux_sg_accept_any_type = 1 which
+             is _more dangerous_.
+*/
+/* !!! DO NOT SET TO sr%d UNLESS YOU PROTECTED ALL INDISPENSIBLE DEVICES
+       by chmod -rw . A test wether non-CD devices are properly excluded would
+       be well needed though. Heroic disks, scanners, etc. wanted !!! */
 static char linux_sg_device_family[80] = {"/dev/sg%d"};
 
 
 /* Set this to 1 in order to accept any TYPE_* (see scsi/scsi.h) */
-/* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL HARD DISKS chmod -rw !!! */
+/* NEW INFO: Try with 0 first. There is hope via CDROM_DRIVE_STATUS. */
+/* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL INDISPENSIBLE DEVICES
+       chmod -rw !!! */
 static int linux_sg_accept_any_type = 0;
 
 
@@ -473,10 +487,31 @@ static void sg_enumerate(void)
 
 		/* found a drive */
 		sid_ret = ioctl(fd, SG_GET_SCSI_ID, &sid);
-		if (sid_ret == -1 && linux_sg_enumerate_debug)
-		  fprintf(stderr,
-			"ioctl(SG_GET_SCSI_ID) failed, errno=%d  '%s' , ",
-			errno, strerror(errno));
+		if (sid_ret == -1) {
+			sid.scsi_id = -1; /* mark SCSI address as invalid */
+			if(linux_sg_enumerate_debug) 
+		  	  fprintf(stderr,
+			    "ioctl(SG_GET_SCSI_ID) failed, errno=%d  '%s' , ",
+			    errno, strerror(errno));
+
+#ifdef CDROM_DRIVE_STATUS
+			/* ts A61211 : not widening old acceptance range */
+			if (strcmp(linux_sg_device_family,"/dev/sg%d") != 0) {
+				/* http://developer.osdl.org/dev/robustmutexes/
+				  src/fusyn.hg/Documentation/ioctl/cdrom.txt */
+				sid_ret = ioctl(fd, CDROM_DRIVE_STATUS, 0);
+				if(linux_sg_enumerate_debug)
+				  fprintf(stderr,
+					"ioctl(CDROM_DRIVE_STATUS) = %d , ",
+					sid_ret);
+				if (sid_ret != -1 && sid_ret != CDS_NO_INFO)
+					sid.scsi_type = TYPE_ROM;
+				else
+					sid_ret = -1;
+			}
+#endif /* CDROM_DRIVE_STATUS */
+
+		}
 
 #ifdef SCSI_IOCTL_GET_BUS_NUMBER
 		/* Hearsay A61005 */
@@ -500,7 +535,7 @@ static void sg_enumerate(void)
 	continue;
 		}
 
-		if (sid_ret == -1) {
+		if (sid_ret == -1 || sid.scsi_id < 0) {
 			/* ts A61211 : employ a more general ioctl */
 			ret = sg_obtain_scsi_adr(fname, &bus_no, &host_no,
 					   &channel_no, &target_no, &lun_no);
@@ -513,6 +548,7 @@ static void sg_enumerate(void)
 				if (linux_sg_enumerate_debug)
 				  fprintf(stderr,
 					"sg_obtain_scsi_adr() failed\n");
+	continue;
 			}
                 }
 
