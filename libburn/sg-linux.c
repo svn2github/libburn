@@ -439,7 +439,7 @@ static void sg_enumerate(void)
 {
 	struct sg_scsi_id sid;
 	int i, fd, sibling_fds[LIBBURN_SG_MAX_SIBLINGS], sibling_count= 0, ret;
-	int bus_no = -1;
+	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[10];
 
 	if (linux_sg_enumerate_debug)
@@ -494,6 +494,18 @@ static void sg_enumerate(void)
 				sid.scsi_type); 
 	continue;
 		}
+
+		if (sid.scsi_type != TYPE_ROM) {
+			/* ts A61211 : employ a more general ioctl */
+			ret = sg_obtain_scsi_adr(fname, &bus_no, &host_no,
+					   &channel_no, &target_no, &lun_no);
+			if (ret>0) {
+				sid.host_no = host_no;
+				sid.channel = channel_no;
+				sid.scsi_id = target_no;
+				sid.lun = lun_no;
+			}
+                }
 
 		/* ts A60927 : trying to do locking with growisofs */
 		if(burn_sg_open_o_excl>1) {
