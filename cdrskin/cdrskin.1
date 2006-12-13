@@ -60,10 +60,32 @@ state of the output media.
 .PP
 There can be more than one track burned by a single run of cdrskin.
 CDs can be kept appendable so that further tracks can
-be witten to them in subsequent runs of cdrskin (see option -multi).
+be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
 content (TOC) on media and can be retrieved via cdrskin option -toc.
 These informations are also used by the operating systems' CD-ROM read drivers.
+.PP
+In general there are two types of tracks: data and audio. They differ in
+sector size, throughput and readability via the systems' CD-ROM drivers
+resp. by music CD players.
+.br
+If not explicitely option -audio is given, then any track is burned as data
+unless the track source is a file with suffix ".wav" or ".au" and has a
+header part which identifies it as MS-WAVE resp. SUN Audio with suitable
+parameters. Such files are burned as audio tracks by default.
+.PP
+While audio tracks just contain a given time span of acoustic vibrations,
+data tracks may have an arbitray meaning. Nevertheless, ISO-9660 filesystems
+are established as a format which can represent a tree of directories and
+data files on all major operating systems. Such filesystem images can be
+produced by programs mkisofs or genisoimage. They can also be extended by
+follow-up tracks if prepared properly. See the man pages of said programs.
+cdrskin is able to fulfill the needs about their option -C.
+.br
+Another type of data track content are archive formats which originally
+have been developed for magnetic tapes. Only formats which mark a detectable
+end-of-archive in their data are suitable with CD, though. Well tested are
+the archivers afio and star. Not suitable seems GNU tar.
 .br
 .SH OPTIONS
 .TP
@@ -303,16 +325,16 @@ somebody who had a look into the program sourcecode.
 Alphabetical list of options which are genuine to cdrskin and intended for
 normal use:
 .TP
+.BI \--allow_setuid
+Disable the loud warning about insecure discrepance between login user and
+effective user which indicates application of chmod u+s to the program binary.
+One should not do this chmod u+s , but it is an old cdrecord tradition.
+.TP
 .BI \--any_track
 Allow source_addresses to begin with "-" (plus further characters) or to
 contain a "=" character.
 By default such arguments are seen as misspelled options. It is nevertheless
 not possible to use one of the options listed with --list_ignored_options.
-.TP
-.BI \--allow_setuid
-Disable the loud warning about insecure discrepance between login user and
-effective user which indicates application of chmod u+s to the program binary.
-One should not do this chmod u+s , but it is an old cdrecord tradition.
 .TP
 .BI \--demand_a_drive
 Exit with a nonzero value if no drive can be found during a bus scan.
@@ -351,7 +373,7 @@ interpretation of eventual startup files. See section FILES below.
 .BI \--list_ignored_options
 List all ignored cdrecord options. The --options cannot be used as addresses
 of track sources. No track source address may begin with a text equal to an
-option which ends by "=".
+option which ends by "=". The list is ended by an empty line.
 .TP
 .BI \--single_track
 Accept only the last argument of the command line as track source address.
@@ -482,7 +504,7 @@ cdrskin -v dev=0,1,0 fs=32m speed=8 driveropts=burnfree \\
 .br
 padsize=300k -tao -
 .SS
-.B Write several sessions to the same CD
+.B Write several sessions to the same CD:
 .br
 cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
 .br
@@ -492,7 +514,7 @@ cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.afio
 .br
 cdrskin dev=/dev/hdc padsize=300k -tao 4.afio
 .SS
-.B Get the multi-session info for option -C of program mkisofs
+.B Get the multi-session info for option -C of program mkisofs:
 .br
 c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)
 .br
