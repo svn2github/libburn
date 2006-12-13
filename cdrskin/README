@@ -90,6 +90,7 @@ Version identification and help texts available afterwards:
     cdrskin/cdrskin -version
     cdrskin/cdrskin --help
     cdrskin/cdrskin -help
+    man cdrskin/cdrskin.1
 
 Install (eventually as superuser) cdrskin to a directory where it can be found:
 If cdrskin was already installed by a previous version, or by "make install"
