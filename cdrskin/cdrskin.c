@@ -1897,15 +1897,30 @@ set_dev:;
 
        printf("Supported SCSI transports for this platform:\n");
        fflush(stdout);
-       fprintf(stderr,"\nTransport name:\t\tlibburn\n");
-       fprintf(stderr,
-         "Transport descr.:\tOpen-source library for writing optical discs\n");
+       if(o->old_pseudo_scsi_adr) {
+         fprintf(stderr,"\nTransport name:\t\tlibburn OLD_PSEUDO\n");
+         fprintf(stderr,
+         "Transport descr.:\tBus0=DriveNum , Bus1=/dev/sgN , Bus2=/dev/hdX\n");
+       } else {
+         fprintf(stderr,"\nTransport name:\t\tlibburn SCSI\n");
+         fprintf(stderr,
+            "Transport descr.:\tSCSI Bus,Id,Lun as of operating system\n");
+       }
        fprintf(stderr,"Transp. layer ind.:\t\n");
        fprintf(stderr,"Target specifier:\tbus,target,lun\n");
        fprintf(stderr,"Target example:\t\t1,2,0\n");
        fprintf(stderr,"SCSI Bus scanning:\tsupported\n");
-       fprintf(stderr,
-               "Open via UNIX device:\tsupported (see option --devices)\n");
+       fprintf(stderr,"Open via UNIX device:\tsupported\n");
+       if(!o->old_pseudo_scsi_adr) {
+         fprintf(stderr,"\nTransport name:\t\tlibburn HD\n");
+         fprintf(stderr,
+           "Transport descr.:\tLinux specific alias for /dev/hdX\n");
+         fprintf(stderr,"Transp. layer ind.:\tATA:\n");
+         fprintf(stderr,"Target specifier:\tbus,target,lun\n");
+         fprintf(stderr,"Target example:\t\tATA:1,0,0\n");
+         fprintf(stderr,"SCSI Bus scanning:\tsupported\n");
+         fprintf(stderr,"Open via UNIX device:\tsupported\n");
+       }
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -1995,6 +2010,7 @@ set_dev:;
           "                    seconds, release drive, and do normal work\n");
      printf(
        " --ignore_signals   try to ignore any signals rather than to abort\n");
+     printf(" --list_ignored_options list all ignored cdrecord options.\n");
      printf(" --no_abort_handler  exit even if the drive is in busy state\n");
      printf(" --no_blank_appendable  refuse to blank appendable CD-RW\n");
      printf(" --no_convert_fs_adr  only literal translations of dev=\n");
@@ -5099,6 +5115,17 @@ gracetime_equals:;
 
    } else if(strcmp(argv[i],"--ignore_signals")==0) {
      /* is handled in Cdrpreskin_setup() */;
+
+   } else if(strcmp(argv[i],"--list_ignored_options")==0) {
+     char line[80];
+
+     line[0]= 0;
+     printf("cdrskin: List of all ignored options:\n");
+     for(k=0;ignored_partial_options[k][0]!=0;k++)
+       printf("%s\n",ignored_partial_options[k]);
+     for(k=0;ignored_full_options[k][0]!=0;k++) 
+       printf("%s\n",ignored_full_options[k]);
+     printf("\n");
 
    } else if(strcmp(argv[i],"-multi")==0) {
 #ifdef Cdrskin_libburn_has_multI
