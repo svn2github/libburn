@@ -108,6 +108,10 @@ It will not collide with an installed version of libburn either.
 But libpthread must be installed on the system and glibc has to match. (See
 below for a way to create a statically linked binary.)
 
+To install the man page, you may do: echo $MANPATH and choose one of the
+listed directories to copy the man-page under its ./man1 directory. Like:
+    cp cdrskin/cdrskin.1 /usr/share/man/man1/cdrskin.1
+
 
                                     Usage
 
