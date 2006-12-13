@@ -86,6 +86,17 @@ Another type of data track content are archive formats which originally
 have been developed for magnetic tapes. Only formats which mark a detectable
 end-of-archive in their data are suitable with CD, though. Well tested are
 the archivers afio and star. Not suitable seems GNU tar.
+.PP
+.B Recordable CD Media:
+.br
+CD-R can be initially written only once and eventually extended until they
+get closed (or are spoiled because they are overly full). After that they are
+read-only.
+.br
+CD-RW media can be blanked to make them re-usable for another
+round of overwriting. Blanking damages the previous content but does not
+make it completely unreadable. It is no effective privacy precaution.
+Multiple cycles of blanking and overwriting with random numbers might be.
 .br
 .SH OPTIONS
 .TP
@@ -343,7 +354,7 @@ Exit with a nonzero value if no drive can be found during a bus scan.
 List the device file addresses of all accessible drives. In order to get
 listed a drive has to offer rw-permission for the cdrskin user and it may
 not be busy.
-Busy drives are reported as "SORRY" messages of standard error.
+Busy drives are reported as "SORRY" messages on standard error.
 .br
 Each available drive gets listed by a line containing the following fields:
 .br
