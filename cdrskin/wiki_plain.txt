@@ -30,6 +30,9 @@ at the end of this text.
 
 About the command line options of cdrskin:
 
+They are described in detail in [http://scdbackup.sourceforge.net/man_1_cdrskin_devel.html#OPTIONS section OPTIONS] of
+[http://scdbackup.sourceforge.net/man_1_cdrskin_devel.html man cdrskin]
+
 There are two families of options: cdrecord-compatible ones and options
 which are specific to cdrskin. The latter are mostly used to configure
 cdrskin for its task to emulate cdrecord. There are some, nevertheless,
@@ -41,7 +44,7 @@ cdrskin -help
 }}}
 where the option "help" has *one* dash. 
 For these options you may expect program behavior that is roughly the
-same as described in original  man 1 cdrecord . 
+same as described in original  man cdrecord . 
 
 Online: http://cdrecord.berlios.de/old/private/man/cdrecord-2.0.html
 
@@ -51,7 +54,7 @@ cdrskin --help
 }}}
 where the option "help" has *two* dashes.
 
-Those have no man page yet. Some are very experimental and should only be
+Some are very experimental and should only be
 used in coordination with the libburnia developer team.
 Some are of general user interest, though:
 
