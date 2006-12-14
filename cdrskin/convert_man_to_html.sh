@@ -37,6 +37,10 @@ then
 #  set -x
 
   sed \
+  -e 's/<meta name="generator" content="groff -Thtml, see www.gnu.org">/<meta name="generator" content="groff -Thtml, via man -H, via cdrskin\/convert_man_to_html.sh">/' \
+  -e 's/<meta name="Content-Style" content="text\/css">/<meta name="Content-Style" content="text\/css"><META NAME="description" CONTENT="man page of cdrskin"><META NAME="keywords" CONTENT="man cdrskin, manual, cdrskin, CD, CD-RW, CD-R, burning, cdrecord, compatible"><META NAME="robots" CONTENT="follow">/' \
+  -e 's/<title>CDRSKIN<\/title>/<title>man 1 cdrskin<\/title>/' \
+  -e 's/<h1 align=center>CDRSKIN<\/h1>/<h1 align=center>man 1 cdrskin<\/h1>/' \
   -e 's/<body>/<body BGCOLOR="#F5DEB3" TEXT=#000000 LINK=#0000A0 VLINK=#800000>/' \
   -e 's/<b>Overview of features:<\/b>/\&nbsp;<BR><b>Overview of features:<\/b>/' \
   -e 's/<b>Known deficiencies:<\/b>/\&nbsp;<BR><b>Known deficiencies:<\/b>/' \
