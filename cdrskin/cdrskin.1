@@ -50,13 +50,15 @@ See section EXAMPLES at the end of this text.
 .br
 No DVD support yet.
 .PP
-.B Data recording model:
+.B Track recording model:
 .br
-The input-output entities which get processed are called "tracks". Each track
-is depicted by one input argument, which may either be "-" for standard input
-or the address of a readable file. If no write mode is given explicitely then
-one will be choosen which matches the peculiarities of track input and the
-state of the output media.
+The input-output entities which get processed are called tracks.
+A track stores a stream of bytes.
+.br
+Each track is initiated by one track source address argument, which may either
+be "-" for standard input or the address of a readable file. If no write mode
+is given explicitely then one will be chosen which matches the peculiarities
+of track source and the state of the output media.
 .PP
 There can be more than one track burned by a single run of cdrskin.
 CDs can be kept appendable so that further tracks can
@@ -118,7 +120,7 @@ Retrieve some info about media state. With CD-RW print "Is erasable".
 .TP 
 .BI \-audio
 Announces that the subsequent tracks are to be burned as audio.
-The input is supposed to be uncompressed headerless PCM, 44100 Hz, 16 bit,
+The source is supposed to be uncompressed headerless PCM, 44100 Hz, 16 bit,
 stereo. For little-endian byte order (which is usual on PCs) use option
 -swab. Input files with suffix .wav are examined wether they have a header
 in MS-WAVE format confirming those parameters and eventually raw audio data
@@ -166,8 +168,8 @@ Bus,Target,Lun addresses.
 .TP
 .BI driveropts= opt
 Set "driveropts=burnfree" to enable the drive's eventual protection mechanism
-against temporary lack of input data (i.e. buffer underrun). It is not an error
-to do this with a drive that has no such capabilities.
+against temporary lack of source data (i.e. buffer underrun).
+It is not an error to do this with a drive that has no such capabilities.
 .TP
 .BI \-dummy
 Try to perform the drive operations without actually affecting the inserted
@@ -193,9 +195,11 @@ multiply the preceding number:
 .br
 Set size to 0 in order to disable the fifo (default is "4m").
 .br
-The fifo buffers an eventual temporary surplus of input data in order to
-provide the drive with a steady stream during times of temporary lack of input.
-The larger the fifo, the longer periods of poor input can be compensated.
+The fifo buffers an eventual temporary surplus of track source data in order to
+provide the drive with a steady stream during times of temporary lack of track
+source supply.
+The larger the fifo, the longer periods of poor source supply can be
+compensated.
 But a large fifo needs substantial time to fill up if not curbed via
 option fifo_start_at=size.
 .TP
@@ -275,8 +279,8 @@ Set speed of drive. With data CD, 1x speed corresponds to a throughput of
 and media. One should stay within a realistic speed range, though.
 .TP
 .BI \-swab
-Announce that raw audio data input of subsequent tracks is byte swapped versus
-the expectations of cdrecord. This option is suitable for audio where
+Announce that the raw audio data source of subsequent tracks is byte swapped
+versus the expectations of cdrecord. This option is suitable for audio where
 the least significant byte of a 16 bit word is first (little-endian, Intel).
 Most raw audio data on PC systems are available in this byte order.
 Less guesswork is needed if track sources are in format MS-WAVE in a file with
@@ -372,7 +376,7 @@ Do not wait for full fifo but start burning as soon as the given number
 of bytes is read. This option may be helpful to bring the average throughput
 near to the maximum throughput of a drive. A large fs= and a small 
 fifo_start_at= combine a quick burn start and a large savings buffer to
-compensate for temporary lack of input data. At the beginning of burning,
+compensate for temporary lack of source data. At the beginning of burning,
 the software protection against buffer underun is as weak as the size of
 fifo_start_at= . So it is best if the drive offers hardware protection which
 has to be enabled by driveropts=burnfree.
@@ -399,7 +403,7 @@ This option is only needed for revoking eventual --ignore_signals or
 --no_abort_handler.
 .TP
 .BI dev_translation= <sep><from><sep><to>
-Set input address alias. This was necessary before cdrskin-0.2.4 to manually
+Set drive address alias. This was necessary before cdrskin-0.2.4 to manually
 translate cdrecord addresses into cdrskin addresses.
 .br
 <sep> is a single character which may not occur in the address string
@@ -576,7 +580,7 @@ fs=16m
 .br
 .SH SEE ALSO
 .TP
-Formatting track input for cdrskin:
+Formatting track sources for cdrskin:
 .br
 .BR mkisofs (8),
 .BR genisoimage (8),
