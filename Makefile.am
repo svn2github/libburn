@@ -180,6 +180,7 @@ EXTRA_DIST = \
 	cdrskin/README \
 	cdrskin/cdrecord_spy.sh \
 	cdrskin/compile_cdrskin.sh \
+	cdrskin/convert_man_to_html.sh \
 	cdrskin/changelog.txt \
 	cdrskin/cdrskin_eng.html \
 	cdrskin/wiki_plain.txt \
