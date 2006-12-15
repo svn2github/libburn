@@ -27,8 +27,9 @@ cdrskin \- burns preformatted data to CD-R or CD-RW via libburn.
 .\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
 .\" respectively.
 .PP 
-\fBcdrskin\fP is a program that provides some of cdrecord's options in a compatible way. 
-You don't need to be root to use it.
+\fBcdrskin\fP is a program that provides some of cdrecord's options
+in a compatible way. 
+You do not need to be superuser for its daily usage.
 .PP
 .B Overview of features:
 .br
@@ -46,21 +47,17 @@ Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
 See section EXAMPLES at the end of this text.
 .PP
-.B Known deficiencies:
-.br
-No DVD support yet.
-.PP
 .B Track recording model:
 .br
 The input-output entities which get processed are called tracks.
-A track stores a stream of bytes.
+A \fBtrack\fP stores a stream of bytes.
 .br
 Each track is initiated by one track source address argument, which may either
 be "-" for standard input or the address of a readable file. If no write mode
 is given explicitely then one will be chosen which matches the peculiarities
 of track source and the state of the output media.
 .PP
-There can be more than one track burned by a single run of cdrskin.
+More than one track can be burned by a single run of cdrskin.
 CDs can be kept appendable so that further tracks can
 be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
@@ -71,15 +68,15 @@ In general there are two types of tracks: data and audio. They differ in
 sector size, throughput and readability via the systems' CD-ROM drivers
 resp. by music CD players.
 .br
-If not explicitely option -audio is given, then any track is burned as data
-unless the track source is a file with suffix ".wav" or ".au" and has a
+If not explicitely option -audio is given, then any track is burned as type
+data, unless the track source is a file with suffix ".wav" or ".au" and has a
 header part which identifies it as MS-WAVE resp. SUN Audio with suitable
 parameters. Such files are burned as audio tracks by default.
 .PP
 While audio tracks just contain a given time span of acoustic vibrations,
 data tracks may have an arbitray meaning. Nevertheless, ISO-9660 filesystems
 are established as a format which can represent a tree of directories and
-data files on all major operating systems. Such filesystem images can be
+files on all major operating systems. Such filesystem images can be
 produced by programs mkisofs or genisoimage. They can also be extended by
 follow-up tracks if prepared properly. See the man pages of said programs.
 cdrskin is able to fulfill the needs about their option -C.
@@ -99,6 +96,37 @@ CD-RW media can be blanked to make them re-usable for another
 round of overwriting. Blanking damages the previous content but does not
 make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be.
+.PP
+.B Drive preparation and addressing:
+.br
+The drives, either CD burners or DVD burners, are accessed via addresses which
+are specific to libburn and the operating system. Those addresses get listed
+by a run of \fBcdrskin --devices\fP.
+.br
+On Linux, they are device files which traditionally do not offer
+w-permissions for normal users. Because libburn needs rw-permission,
+it might be only the superuser who is able to get this list without further
+precautions.
+.br
+It is consensus that \fBchmod a+rw /dev/sg0\fP or \fBchmod a+rw /dev/hdc\fP
+is less security sensitive than chmod u+s /usr/bin/cdrskin. The risk for the
+drive is somewhat higher but the overall system is much less at stake.
+.br
+.PP
+If you only got one CD capable drive then you may leave out cdrskin option
+\fBdev=\fP. Else you should use this option to address the drive you want.
+.br
+cdrskin option dev= not only accepts the listed addresses but also
+traditional cdrecord SCSI addresses which on modern Linux consist of three
+numbers: Bus,Target,Lun. There is also a related address family "ATA" which
+accesses IDE drives not under control of Linux SCSI drivers:
+ATA:Bus,Target,Lun.
+.br
+See option -scanbus for getting a list of cdrecord style addresses.
+.br
+Further are accepted on Linux: links to libburn-suitable device files, 
+device files which have the same major and minor device number,
+and device files which have the same SCSI address parameters (e.g. /dev/sr0).
 .br
 .SH OPTIONS
 .TP
@@ -153,18 +181,20 @@ Subsequent tracks are data tracks. This option is default and only needed
 to mark the end of the range of an eventual option -audio.
 .TP
 .BI dev= target
-Sets the (pseudo-)SCSI address of the drive to use. Valid are at least the
-X,Y,Z addresses listed with option -scanbus, ATA:X,Y,Z addresses listed with
-options dev=ATA -scanbus, the device file addresses listed with
-option --devices , volatile libburn drive numbers (numbering starts at "0").
+Sets the address of the drive to use. Valid are at least the
+the addresses listed with option --devices, 
+X,Y,Z addresses listed with option -scanbus,
+ATA:X,Y,Z addresses listed with options dev=ATA -scanbus,
+and volatile libburn drive numbers (numbering starts at "0").
 Other device file addresses which lead to the same drive might work too.
 .br
 If no dev= is given, volatile address "dev=0" is assumed. That is the first
-drive found being available. Better avoid this on multi-drive systems.
+drive found being available. Better avoid this ambiguity on systems with more
+than one drive.
 .br
 The special target "help" lists hints about available addressing formats.
-Be aware that option --old_pseudo_scsi_adr changes the meaning of 
-Bus,Target,Lun addresses.
+Be aware that deprecated option --old_pseudo_scsi_adr may change the meaning
+of Bus,Target,Lun addresses.
 .TP
 .BI driveropts= opt
 Set "driveropts=burnfree" to enable the drive's eventual protection mechanism
@@ -355,10 +385,10 @@ not possible to use one of the options listed with --list_ignored_options.
 Exit with a nonzero value if no drive can be found during a bus scan.
 .TP
 .BI \--devices
-List the device file addresses of all accessible drives. In order to get
-listed a drive has to offer rw-permission for the cdrskin user and it may
-not be busy.
-Busy drives are reported as "SORRY" messages on standard error.
+List the device file addresses of all accessible CD drives. In order to get
+listed, a drive has to offer rw-permission for the cdrskin user and it may
+not be busy. The superuser should be able to see all idle drives listed and 
+busy drives reported as "SORRY" messages.
 .br
 Each available drive gets listed by a line containing the following fields:
 .br
@@ -366,10 +396,6 @@ Number dev='Devicefile' rw-Permissions : 'Vendor' 'Model'
 .br
 Number and Devicefile can both be used with option dev=, but number is
 volatile (numbering changes if drives become busy).
-Normal users might not see all drives unless the superuser enabled access
-by chmod o+rw
-after using cdrskin --devices to get an overview of the situation.
-That's why current rw-Permissions are listed.
 .TP
 .BI fifo_start_at= size
 Do not wait for full fifo but start burning as soon as the given number
