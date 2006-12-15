@@ -55,9 +55,12 @@ A \fBtrack\fP stores a stream of bytes.
 Each track is initiated by one track source address argument, which may either
 be "-" for standard input or the address of a readable file. If no write mode
 is given explicitely then one will be chosen which matches the peculiarities
-of track source and the state of the output media.
+of track sources and the state of the output media.
 .PP
-More than one track can be burned by a single run of cdrskin.
+More than one track can be burned by a single run of cdrskin. 
+In the terms of the MMC standard all tracks written by the same run constitute
+a \fBsession\fP.
+.br
 CDs can be kept appendable so that further tracks can
 be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
@@ -182,7 +185,7 @@ to mark the end of the range of an eventual option -audio.
 .TP
 .BI dev= target
 Sets the address of the drive to use. Valid are at least the
-the addresses listed with option --devices, 
+addresses listed with option --devices, 
 X,Y,Z addresses listed with option -scanbus,
 ATA:X,Y,Z addresses listed with options dev=ATA -scanbus,
 and volatile libburn drive numbers (numbering starts at "0").
