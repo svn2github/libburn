@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "December 13, 2006"
+.TH CDRSKIN 1 "December 16, 2006"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -120,7 +120,7 @@ If you only got one CD capable drive then you may leave out cdrskin option
 \fBdev=\fP. Else you should use this option to address the drive you want.
 .br
 cdrskin option dev= not only accepts the listed addresses but also
-traditional cdrecord SCSI addresses which on modern Linux consist of three
+traditional cdrecord SCSI addresses which on Linux consist of three
 numbers: Bus,Target,Lun. There is also a related address family "ATA" which
 accesses IDE drives not under control of Linux SCSI drivers:
 ATA:Bus,Target,Lun.
@@ -153,9 +153,10 @@ Retrieve some info about media state. With CD-RW print "Is erasable".
 Announces that the subsequent tracks are to be burned as audio.
 The source is supposed to be uncompressed headerless PCM, 44100 Hz, 16 bit,
 stereo. For little-endian byte order (which is usual on PCs) use option
--swab. Input files with suffix .wav are examined wether they have a header
-in MS-WAVE format confirming those parameters and eventually raw audio data
-get extracted automatically. Same is done for suffix .au and SUN Audio.
+-swab. Unless marked explicitely by option -data, input files with suffix
+.wav are examined wether they have a header in MS-WAVE format confirming
+those parameters and eventually raw audio data get extracted and burned as
+audio track. Same is done for suffix .au and SUN Audio.
 .TP 
 .BI blank= type
 Blank a CD-RW disc. This is combinable with burning in the same run of cdrskin.
@@ -184,7 +185,7 @@ Subsequent tracks are data tracks. This option is default and only needed
 to mark the end of the range of an eventual option -audio.
 .TP
 .BI dev= target
-Sets the address of the drive to use. Valid are at least the
+Set the address of the drive to use. Valid are at least the
 addresses listed with option --devices, 
 X,Y,Z addresses listed with option -scanbus,
 ATA:X,Y,Z addresses listed with options dev=ATA -scanbus,
@@ -328,9 +329,9 @@ already hold data.
 .BI \-toc
 Print the table of content (TOC) which describes the tracks recorded on CD.
 The output contains all info from option -atip plus lines which begin with
-"track:  " followed by the track number, the word "lba:" and a number which
-gives the start address of the track. Addresses are counted in CD sectors which
-with data tracks hold 2048 bytes each.
+"track:", the track number, the word "lba:" and a number which gives the
+start address of the track. Addresses are counted in CD sectors which with
+SAO or TAO data tracks hold 2048 bytes each.
 .RS
 .TP
 Example. Retrieve an afio archive from track number 2:
@@ -339,7 +340,7 @@ tracknumber=2
 .br
 lba=$(cdrskin dev=/dev/cdrom -toc 2>&1 | \\
 .br
-grep '^track:  [ 0-9][0-9]' | \\
+grep '^track:[ ]*[ 0-9][0-9]' | \\
 .br
 tail +"$tracknumber" | head -1 | \\
 .br
