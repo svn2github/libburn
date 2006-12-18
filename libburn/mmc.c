@@ -535,6 +535,13 @@ void mmc_read_disc_info(struct burn_drive *d)
 		mmc_read_toc(d);
 		break;
 	}
+
+	/* ts A61217 : Note for future
+	   >>> growisofs performs OPC if (data[0]<<8)|data[1]<=32
+	   >>> which indicates no OPC entries are attached to the
+	   >>> reply from the drive.
+	*/
+
 }
 
 void mmc_read_atip(struct burn_drive *d)
