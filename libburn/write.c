@@ -583,10 +583,9 @@ ex:;
 
 /* ts A61218 : outsourced from burn_write_track() */
 int burn_disc_init_track_status(struct burn_write_opts *o,
-				struct burn_session *s, int tnum)
+				struct burn_session *s, int tnum, int sectors)
 {
 	struct burn_drive *d = o->drive;
-	int sectors;
 
 	/* ts A61102 */
 	d->busy = BURN_DRIVE_WRITING;
@@ -664,7 +663,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
 
-	burn_disc_init_track_status(o, s, tnum);
+	burn_disc_init_track_status(o, s, tnum, sectors);
 
         burn_print(12, "track %d is %d sectors long\n", tnum, sectors);
 
@@ -823,7 +822,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 
 	/* >>> any type specific track preparations */;
 
-	burn_disc_init_track_status(o, s, tnum);
+	burn_disc_init_track_status(o, s, tnum, sectors);
 	for (i = 0; open_ended || i < sectors; i++) {
 
 		/* From time to time inquire drive buffer */
