@@ -34,6 +34,23 @@
 extern struct libdax_msgs *libdax_messenger;
 
 
+/* ts A61219 : ! HIGHLY EXPERIMENTAL !
+               Based on knowlege from dvd+rw-tools-7.0 and mmc5r03c.pdf
+*/
+/*
+#define Libburn_support_dvd_plus_rW 1
+*/
+/* Progress report (with Libburn_support_dvd_plus_rW defined):
+   ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
+               Error messages of class DEBUG appear because of inability to
+               read TOC or track info. Nevertheless, the written images verify.
+   ts A61220 : Burned to a virgin DVD+RW by help of new mmc_format_unit()
+               (did not test wether it would work without). Burned to a
+               not completely formatted DVD+RW. (Had worked before without
+               mmc_format_unit(). I did not exceed the formatted range
+               as reported by dvd+rw-mediainfo. 
+*/
+
 
 static unsigned char MMC_GET_TOC[] = { 0x43, 2, 2, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_ATIP[] = { 0x43, 2, 4, 0, 0, 0, 0, 16, 0, 0 };
@@ -61,6 +78,9 @@ static unsigned char MMC_SEND_CUE_SHEET[] =
 
 /* ts A61023 : get size and free space of drive buffer */
 static unsigned char MMC_READ_BUFFER_CAPACITY[] = { 0x5C, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
+
+/* ts A61219 : format DVD+RW (and various others) */
+static unsigned char MMC_FORMAT_UNIT[] = { 0x04, 0x11, 0, 0, 0, 0 };
 
 
 static int mmc_function_spy_do_tell = 0;
@@ -310,9 +330,10 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 
 		/* >>> make this scsi_notify_error() when liberated */
 		if (c.sense[2]!=0) {
-			char msg[80];
+			char msg[160];
 			sprintf(msg,
-		"SCSI error condition on write : key=%X asc=%2.2Xh ascq=%2.2Xh",
+		"SCSI error on write(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
+				start, len,
 				c.sense[2],c.sense[12],c.sense[13]);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011d,
@@ -355,7 +376,7 @@ void mmc_read_toc(struct burn_drive *d)
 		/* ts A61106 : also snaps on CD with unclosed track/session */
 		/* Very unsure wether this old measure is ok.
 		   Obviously higher levels do not care about this.
-		   DVD+RW burns go on after passing through here.
+		   outdated info: DVD+RW burns go on after passing through here.
 
 		d->busy = BURN_DRIVE_IDLE;
 		*/
@@ -479,7 +500,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 
 	mmc_get_configuration(d);
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
-		&& ! d->current_is_cd_profile) {
+		&& ! d->current_is_supported_profile) {
 		if (!d->silent_on_scsi_error) {
 			sprintf(msg,
 				"Unsuitable media detected. Profile %4.4Xh  %s",
@@ -536,12 +557,24 @@ void mmc_read_disc_info(struct burn_drive *d)
 		break;
 	}
 
-	/* ts A61217 : Note for future
-	   >>> growisofs performs OPC if (data[0]<<8)|data[1]<=32
-	   >>> which indicates no OPC entries are attached to the
-	   >>> reply from the drive.
+	/* >>> ts A61217 : Note for future
+	   growisofs performs OPC if (data[0]<<8)|data[1]<=32
+	   which indicates no OPC entries are attached to the
+	   reply from the drive.
 	*/
 
+	/* ts A61219 : mmc5r03c.pdf 6.22.3.1.13 BG Format Status
+	   0=blank (not yet started)
+           1=started but neither running nor complete
+	   2=in progress
+	   3=completed
+	*/
+	d->bg_format_status = data[7] & 3;
+
+	/* <<< ts A61219 : preliminarily declare all DVD+RW blank,
+		(which is not the same as bg_format_status==0 "blank") */
+	if (d->current_profile == 0x1a)
+		d->status = BURN_DISC_BLANK;
 }
 
 void mmc_read_atip(struct burn_drive *d)
@@ -893,6 +926,7 @@ void mmc_get_configuration(struct burn_drive *d)
 	d->current_profile = 0;
         d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
+	d->current_is_supported_profile = 0;
 
 	mmc_function_spy("mmc_get_configuration");
 	memcpy(c.opcode, MMC_GET_CONFIGURATION, sizeof(MMC_GET_CONFIGURATION));
@@ -917,7 +951,13 @@ void mmc_get_configuration(struct burn_drive *d)
 	d->current_profile = cp;
 	strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
 	if (cp == 0x08 || cp == 0x09 || cp == 0x0a)
-		d->current_is_cd_profile = 1;
+		d->current_is_supported_profile = d->current_is_cd_profile = 1;
+
+#ifdef Libburn_support_dvd_plus_rW
+	if (cp == 0x1a)
+		d->current_is_supported_profile = 1;
+#endif
+
 }
 
 void mmc_sync_cache(struct burn_drive *d)
@@ -975,6 +1015,77 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 }
 
 
+/* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format() */
+int mmc_format_unit(struct burn_drive *d)
+{
+	struct buffer buf;
+	struct command c;
+	int ret;
+	char msg[160],descr[80];
+
+	mmc_function_spy("mmc_format_unit");
+	c.retry = 1;
+	c.oplen = sizeof(MMC_FORMAT_UNIT);
+	memcpy(c.opcode, MMC_FORMAT_UNIT, sizeof(MMC_FORMAT_UNIT));
+	c.page = &buf;
+	c.page->bytes = 12;
+	c.page->sectors = 0;
+	c.dir = TO_DRIVE;
+	memset(c.page->data, 0, c.page->bytes);
+
+	descr[0] = 0;
+	if (d->current_profile == 0x1a) { /* DVD+RW */
+		c.page->data[1] = 0x02;          /* Immed */
+		c.page->data[3] = 8;             /* Format descriptor length */
+		/* mmc5r03c.pdf , 6.5.4.2.14 */
+		c.page->data[8] = 0x26 << 2;        /* Format type */
+		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
+		if (d->bg_format_status == 1)       /* is partly formatted */
+			c.page->data[11] = 1;       /* Restart bit */
+		else if(d->bg_format_status == 2) { /* format in progress */
+			strcpy(msg,"FORMAT UNIT ignored. Already in progress");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020120,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+		}
+		sprintf(descr, "DVD+RW, BGFS %d",
+			d->bg_format_status);
+	} else { 
+
+	/* >>> other formattable types to come */
+
+		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
+			d->current_profile, d->current_profile_text);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002011e,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
+		return 0;
+	}
+
+	d->issue_command(d, &c);
+	if (c.error) {
+		if (c.sense[2]!=0) {
+			sprintf(msg,
+		"SCSI error on format_unit(%s): key=%X asc=%2.2Xh ascq=%2.2Xh",
+				descr,
+				c.sense[2],c.sense[12],c.sense[13]);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020122,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		}
+		return 0;
+	}
+
+	for (ret = 0; ret <= 0 ;)
+		ret = spc_test_unit_ready(d);
+	mmc_sync_cache(d);
+	return 1;
+}
+
+
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()
 */
 int mmc_setup_drive(struct burn_drive *d)
@@ -993,6 +1104,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->close_session = mmc_close_session;
 	d->close_track_session = mmc_close;
 	d->read_buffer_capacity = mmc_read_buffer_capacity;
+	d->format_unit = mmc_format_unit;
 
 	/* ts A61020 */
 	d->start_lba = -2000000000;
@@ -1003,6 +1115,8 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_profile = -1;
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
+	d->current_is_supported_profile = 0;
+	d->bg_format_status = -1;
 
 	return 1;
 }

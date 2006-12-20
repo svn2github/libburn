@@ -36,7 +36,12 @@ struct params
 
 struct buffer
 {
-	unsigned char data[BUFFER_SIZE];
+	/* ts A61219: 
+	   Added 4096 bytes reserve against possible buffer overflows.
+	   (Changed in sector.c buffer flush test from >= to > BUFFER_SIZE .
+	    This can at most cause a 1 sector overlap. Sometimes an offset
+	    of 16 byte is applied to the output data (in some RAW mode). ) */
+	unsigned char data[BUFFER_SIZE + 4096];
 	int sectors;
 	int bytes;
 };
@@ -124,6 +129,11 @@ struct burn_drive
 	int current_profile;
 	char current_profile_text[80];
 	int current_is_cd_profile;
+	int current_is_supported_profile;
+
+	/* ts A61218 from 46h GET CONFIGURATION  */
+	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
+
 
 	volatile int released;
 
@@ -205,6 +215,9 @@ struct burn_drive
 
 	/* ts A61023 : get size and free space of drive buffer */
 	int (*read_buffer_capacity) (struct burn_drive *d);
+
+	/* ts A61220 : format media (e.g. DVD+RW) */
+	int (*format_unit) (struct burn_drive *d);
 
 };
 

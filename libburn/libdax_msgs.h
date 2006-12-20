@@ -334,8 +334,12 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002011a (NOTE,HIGH)    = Padding up track to minimum size
  0x0002011b (FATAL,HIGH)   = Attempt to read track info from ungrabbed drive
  0x0002011c (FATAL,HIGH)   = Attempt to read track info from busy drive
- 0x0002011d (FATAL,HIGH)   = SCSI error condition on write
- 0x0002011e (SORRY, HIGH)  = Unsuitable media detected
+ 0x0002011d (FATAL,HIGH)   = SCSI error on write
+ 0x0002011e (SORRY,HIGH)   = Unsuitable media detected
+ 0x0002011f (SORRY,HIGH)   = Burning of DVD+RW is restricted to a single track
+ 0x00020120 (NOTE,HIGH)    = FORMAT UNIT ignored
+ 0x00020121 (FATAL,HIGH)   = Write preparation setup failed
+ 0x00020122 (FATAL,HIGH)   = SCSI error on format_unit
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

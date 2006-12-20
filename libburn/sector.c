@@ -217,7 +217,8 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 		return NULL;
 	seclen += burn_subcode_length(outmode);
 
-	if (out->bytes + (seclen) >= BUFFER_SIZE) {
+	/* ts A61219 : opts->obs is eventually a 32k trigger for DVD */
+	if (out->bytes + (seclen) > BUFFER_SIZE || out->bytes == opts->obs) {
 		int err;
 		err = d->write(d, d->nwa, out);
 		if (err == BE_CANCELLED)
@@ -642,7 +643,10 @@ int sector_data(struct burn_write_opts *o, struct burn_track *t, int psub)
 		return 2;
 	}
 
-	if (!t->source->read_sub)
+	/* ts A61219 : allow track without .entry */
+	if (t->entry == NULL)
+		;
+	else if (!t->source->read_sub)
 		subcode_user(o, subs, t->entry->point,
 			     t->entry->control, 1, &t->isrc, psub);
 	else if (!t->source->read_sub(t->source, subs, 96))

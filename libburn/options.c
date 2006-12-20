@@ -32,6 +32,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->simulate = 0;
 	opts->underrun_proof = drive->mdata->underrun_proof;
 	opts->perform_opc = 1;
+	opts->obs = -1;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;

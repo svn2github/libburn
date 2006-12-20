@@ -32,6 +32,11 @@ struct burn_write_opts
 	/** Perform calibration of the drive's laser before beginning the
 	    write. */
 	unsigned int perform_opc:1;
+
+	/* ts A61219 : Output block size to trigger buffer flush if hit.
+			 -1 with CD, 32 kB with DVD */
+	int obs;
+
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
 	unsigned char mediacatalog[13];

@@ -580,6 +580,30 @@ ex:;
 	return ret;
 }
 
+
+/* ts A61218 : outsourced from burn_write_track() */
+int burn_disc_init_track_status(struct burn_write_opts *o,
+				struct burn_session *s, int tnum)
+{
+	struct burn_drive *d = o->drive;
+	int sectors;
+
+	/* ts A61102 */
+	d->busy = BURN_DRIVE_WRITING;
+
+	/* Update progress */
+	d->progress.start_sector = d->nwa;
+	d->progress.sectors = sectors;
+	d->progress.sector = 0;
+
+	/* ts A60831: added tnum-line, extended print message on proposal
+           by bonfire-app@wanadoo.fr in http://libburn.pykix.org/ticket/58 */
+        d->progress.track = tnum;
+
+	return 1;
+}
+
+
 int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		      int tnum)
 {
@@ -637,20 +661,10 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 /* user data */
 
-	/* ts A61102 */
-	d->busy = BURN_DRIVE_WRITING;
-
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
 
-	/* Update progress */
-	d->progress.start_sector = d->nwa;
-	d->progress.sectors = sectors;
-	d->progress.sector = 0;
-
-	/* ts A60831: added tnum-line, extended print message on proposal
-           by bonfire-app@wanadoo.fr in http://libburn.pykix.org/ticket/58 */
-        d->progress.track = tnum;
+	burn_disc_init_track_status(o, s, tnum);
 
         burn_print(12, "track %d is %d sectors long\n", tnum, sectors);
 
@@ -761,47 +775,12 @@ bad_track_mode_found:;
 	return 0;
 }
 
-void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
+
+/* ts A61218 : outsourced from burn_disc_write_sync() */
+int burn_disc_init_write_status(struct burn_write_opts *o,
+				struct burn_disc *disc)
 {
-	struct cue_sheet *sheet;
 	struct burn_drive *d = o->drive;
-	struct buffer buf;
-	struct burn_track *lt;
-	int first = 1, i, ret, lba, nwa = 0;
-	char msg[80];
-
-/* ts A60924 : libburn/message.c gets obsoleted
-	burn_message_clear_queue();
-*/
-
-	burn_print(1, "sync write of %d sessions\n", disc->sessions);
-	d->buffer = &buf;
-	memset(d->buffer, 0, sizeof(struct buffer));
-
-	d->rlba = -150;
-
-	d->toc_temp = 9;
-
-/* Apparently some drives require this command to be sent, and a few drives
-return crap.  so we send the command, then ignore the result.
-*/
-	/* ts A61107 : moved up send_write_parameters because LG GSA-4082B
-			 seems to dislike get_nwa() in advance */
-	d->alba = d->start_lba; /* ts A61114: this looks senseless */
-	d->nwa = d->alba;
-	if (o->write_type == BURN_WRITE_TAO) {
-		nwa = 0; /* get_nwa() will be called in burn_track() */
-	} else {
-
-		d->send_write_parameters(d, o);
-
-		ret = d->get_nwa(d, -1, &lba, &nwa);
-		sprintf(msg, "Inquired nwa: %d  (ret=%d)", nwa, ret);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00000002,
-				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-				msg,0,0);
-	}
 
 	/* init progress before showing the state */
 	d->progress.session = 0;
@@ -824,6 +803,259 @@ return crap.  so we send the command, then ignore the result.
 	d->progress.buffer_min_fill = 0xffffffff;
 
 	d->busy = BURN_DRIVE_WRITING;
+
+	return 1;
+}
+
+
+/* ts A61218 */
+int burn_dvd_write_track(struct burn_write_opts *o,
+				struct burn_session *s, int tnum)
+{
+	struct burn_track *t = s->track[tnum];
+	struct burn_drive *d = o->drive;
+	struct buffer *out = d->buffer;
+	int sectors;
+	int i, open_ended = 0, ret= 0;
+
+	sectors = burn_track_get_sectors(t);
+	open_ended = burn_track_is_open_ended(t);
+
+	/* >>> any type specific track preparations */;
+
+	burn_disc_init_track_status(o, s, tnum);
+	for (i = 0; open_ended || i < sectors; i++) {
+
+		/* From time to time inquire drive buffer */
+		if ((i%256)==0)
+			d->read_buffer_capacity(d);
+
+		/* transact a (CD sized) sector */
+		if (!sector_data(o, t, 0))
+			{ ret = 0; goto ex; }
+
+		if (open_ended) {
+			d->progress.sectors = sectors = i;
+                        if (burn_track_is_data_done(t)) 
+	break;
+		}
+
+		/* update current progress */
+		d->progress.sector++;
+	}
+	
+	/* Pad up buffer to next full 32 kB */
+	if (out->bytes > 0 && out->bytes < o->obs) {
+		memset(out->data + out->bytes, 0, o->obs - out->bytes);
+		out->sectors += (o->obs - out->bytes) / 2048;
+		out->bytes = o->obs;
+	}
+	ret = burn_write_flush(o, t);
+	if (ret <= 0)
+		goto ex;
+
+	/* >>> any normal track finalizing */;
+
+	ret = 1;
+ex:;
+	if (ret<=0) {
+		/* >>> any unnormal track finalizing */;
+	}
+	return ret;
+}
+
+
+/* ts A61219 */
+int burn_disc_close_session_dvd_plus_rw(struct burn_write_opts *o,
+					struct burn_session *s)
+{
+	struct burn_drive *d = o->drive;
+
+	/* This seems to be a quick end : "if (!dvd_compat)" */
+	/* >>> Stop de-icing (ongoing background format) quickly
+	       by mmc_close() i(but with opcode[2]=0).
+	       Wait for unit to get ready.
+	       return 1;
+	*/
+	/* Else: end eventual background format in a "DVD-RO" compatible way */
+	d->close_track_session(d, 1, 0); /* same as CLOSE SESSION for CD */
+	return 1;
+}
+
+
+/* ts A61218 */
+int burn_dvd_write_session(struct burn_write_opts *o,
+				struct burn_session *s)
+{
+	int i,ret;
+        struct burn_drive *d = o->drive;
+
+	for (i = 0; i < s->tracks; i++) {
+		ret = burn_dvd_write_track(o, s, i);
+		if (ret <= 0)
+	break;
+	}
+	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
+		ret = burn_disc_close_session_dvd_plus_rw(o, s);
+		if (ret <= 0)
+			return 0;
+	}
+	return 1;
+}
+
+
+/* ts A61218 : learned much from dvd+rw-tools-7.0/growisofs_mmc.cpp */
+int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
+				struct burn_disc *disc)
+{
+	struct burn_drive *d = o->drive;
+	int ret;
+
+	fprintf(stderr, "LIBBURN_DEBUG: d->bg_format_status= %d\n",
+		d->bg_format_status);
+
+	if (d->bg_format_status==0 || d->bg_format_status==1) {
+		/* start or re-start dvd_plus_rw formatting */
+		ret = d->format_unit(d);
+
+		fprintf(stderr, "LIBBURN_DEBUG: format_unit() = %d\n", ret);
+
+		if (ret <= 0)
+			return 0;
+	}
+
+	/* >>> Set speed */;
+
+	/* >>> perform OPC if needed */;
+
+	d->nwa = 0;
+	/* >>> d->get_nwa() (default to 0) */;
+
+	/* >>> ? what else ? */;
+
+	return 1;
+}
+
+
+/* ts A61218 */
+int burn_dvd_write_sync(struct burn_write_opts *o,
+				 struct burn_disc *disc)
+{
+	int i, ret;
+	struct burn_drive *d = o->drive;
+	char msg[160];
+
+	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
+
+		if (disc->sessions!=1 || disc->session[0]->tracks>1) {
+			sprintf(msg,
+			  "Burning of DVD+RW is restricted to a single track");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002011f,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			return 0;
+		}
+
+		ret = burn_disc_setup_dvd_plus_rw(o, disc);
+		if (ret <= 0) {
+			sprintf(msg,
+			  "Write preparation setup failed for DVD+RW");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020121,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			return 0;
+		}
+
+	} else {
+		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
+			d->current_profile, d->current_profile_text);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002011e,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
+		return 0;
+	}
+	
+	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
+
+	burn_disc_init_write_status(o, disc);
+	for (i = 0; i < disc->sessions; i++) {
+		/* update progress */
+		d->progress.session = i;
+		d->progress.tracks = disc->session[i]->tracks;
+
+		ret = burn_dvd_write_session(o, disc->session[i]);
+		if (ret <= 0)
+			goto ex;
+	}
+
+	/* >>> eventual normal  finalization measures */
+
+	ret = 1;
+ex:;
+
+	/* >>> eventual emergency finalization measures */
+
+	/* update media state records */
+	burn_drive_mark_unready(d);
+	burn_drive_inquire_media(d);
+
+	return ret;
+}
+
+
+void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
+{
+	struct cue_sheet *sheet;
+	struct burn_drive *d = o->drive;
+	struct buffer buf;
+	struct burn_track *lt;
+	int first = 1, i, ret, lba, nwa = 0;
+	char msg[80];
+
+/* ts A60924 : libburn/message.c gets obsoleted
+	burn_message_clear_queue();
+*/
+
+	d->buffer = &buf;
+	memset(d->buffer, 0, sizeof(struct buffer));
+	d->rlba = -150;
+	d->toc_temp = 9;
+
+	/* ts A61218 */
+	if (! d->current_is_cd_profile) {
+		ret = burn_dvd_write_sync(o, disc);
+		if (ret <= 0)
+			goto fail_wo_sync;
+		return;
+	}
+
+	burn_print(1, "sync write of %d CD sessions\n", disc->sessions);
+
+/* Apparently some drives require this command to be sent, and a few drives
+return crap.  so we send the command, then ignore the result.
+*/
+	/* ts A61107 : moved up send_write_parameters because LG GSA-4082B
+			 seems to dislike get_nwa() in advance */
+	d->alba = d->start_lba; /* ts A61114: this looks senseless */
+	d->nwa = d->alba;
+	if (o->write_type == BURN_WRITE_TAO) {
+		nwa = 0; /* get_nwa() will be called in burn_track() */
+	} else {
+
+		d->send_write_parameters(d, o);
+
+		ret = d->get_nwa(d, -1, &lba, &nwa);
+		sprintf(msg, "Inquired nwa: %d  (ret=%d)", nwa, ret);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg,0,0);
+	}
+
+	burn_disc_init_write_status(o, disc);
 
 	for (i = 0; i < disc->sessions; i++) {
 		/* update progress */
@@ -932,6 +1164,7 @@ return crap.  so we send the command, then ignore the result.
 
 fail:
 	d->sync_cache(d);
+fail_wo_sync:;
 	burn_print(1, "done - failed\n");
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010b,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
