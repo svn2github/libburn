@@ -191,7 +191,8 @@ int burn_drive_inquire_media(struct burn_drive *d)
 #endif /* ! Libburn_grab_release_and_grab_agaiN */
 
 	} else {
-		d->read_toc(d);
+		if (d->current_profile == -1 || d->current_is_cd_profile)
+			d->read_toc(d);
 	}
 	d->busy = BURN_DRIVE_IDLE;
 	return 1;
@@ -1232,8 +1233,13 @@ int burn_disc_read_atip(struct burn_drive *d)
 				0, 0);
 		return -1;
 	}
-	d->read_atip(d);
-	/* >>> some control of success would be nice :) */
+	if (d->current_profile == -1 || d->current_is_cd_profile) {
+		d->read_atip(d);
+		/* >>> some control of success would be nice :) */
+	} else {
+		/* mmc5r03c.pdf 6.26.3.6.3 : ATIP is undefined for non-CD */;
+		return 0;
+	}
 	return 1;
 }
 

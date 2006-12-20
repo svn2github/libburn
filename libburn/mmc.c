@@ -553,7 +553,8 @@ void mmc_read_disc_info(struct burn_drive *d)
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
 	case 2:
-		mmc_read_toc(d);
+		if (d->current_profile == -1 || d->current_is_cd_profile)
+			mmc_read_toc(d);
 		break;
 	}
 
