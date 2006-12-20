@@ -3356,7 +3356,7 @@ ex:;
                 bit0= do not print message about pseudo-checkdrive
     @return <=0 error, 1 success
 */
-int Cdrskin_checkdrive(struct CdrskiN *skin, int flag)
+int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
 {
  struct burn_drive_info *drive_info;
  int ret;
@@ -3392,7 +3392,8 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, int flag)
    printf(" TAO");
  if(drive_info->sao_block_types & BURN_BLOCK_SAO)
    printf(" SAO");
- if(drive_info->raw_block_types & BURN_BLOCK_RAW96R)
+ if((drive_info->raw_block_types & BURN_BLOCK_RAW96R) &&
+    strstr(profile_name,"DVD")!=profile_name)
    printf(" RAW/RAW96R");
  printf("\n");
 
@@ -3601,9 +3602,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  char profile_name[80];
 
  printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno);
- ret= Cdrskin_checkdrive(skin,1);
- if(ret<=0)
-   return(ret);
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
    return(ret);
@@ -3684,6 +3682,10 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    strcpy(profile_name, "-unidentified-");
  }
 #endif /* Cdrskin_libburn_has_get_profilE */
+
+ ret= Cdrskin_checkdrive(skin,profile_name,1);
+ if(ret<=0)
+   return(ret);
 
 #ifdef Cdrskin_libburn_has_read_atiP
  if(burn_disc_get_status(drive) != BURN_DISC_UNSUITABLE) {
@@ -5551,7 +5553,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    {*exit_value= 5*(ret<=0); goto ex;}
  }
  if(skin->do_checkdrive) {
-   ret= Cdrskin_checkdrive(skin,0);
+   ret= Cdrskin_checkdrive(skin,"",0);
    {*exit_value= 6*(ret<=0); goto ex;}
  }
  if(skin->do_msinfo) {
