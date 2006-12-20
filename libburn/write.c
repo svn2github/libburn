@@ -941,9 +941,24 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
-	int i, ret;
+	int i, ret, sx, tx, mode, exotic_track = 0;
 	struct burn_drive *d = o->drive;
 	char msg[160];
+
+	for (sx = 0; sx < disc->sessions; sx++)
+		for (tx = 0 ; tx < disc->session[sx]->tracks; tx++) {
+			mode = disc->session[sx]->track[tx]->mode;
+			if (disc->session[sx]->track[tx]->mode != BURN_MODE1)
+				exotic_track = 1;
+		}
+	if (exotic_track) {
+		sprintf(msg,"DVD Media are unsuitable for desired track type");
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020123,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
+		goto early_failure;
+	}
 
 	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
 
@@ -954,7 +969,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				0x0002011f,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
-			return 0;
+			goto early_failure;
 		}
 
 		ret = burn_disc_setup_dvd_plus_rw(o, disc);
@@ -965,7 +980,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				0x00020121,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
-			return 0;
+			goto early_failure;
 		}
 
 	} else {
@@ -975,7 +990,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			0x0002011e,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0,0);
-		return 0;
+		goto early_failure;
 	}
 	
 	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
@@ -1003,6 +1018,12 @@ ex:;
 	burn_drive_inquire_media(d);
 
 	return ret;
+early_failure:;
+	pthread_mutex_lock(&d->access_lock);
+	d->cancel = 1;
+	pthread_mutex_unlock(&d->access_lock);
+	usleep(500001); /* to avoid a warning from remove_worker() */
+	return 0;
 }
 
 

@@ -340,6 +340,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020120 (NOTE,HIGH)    = FORMAT UNIT ignored
  0x00020121 (FATAL,HIGH)   = Write preparation setup failed
  0x00020122 (FATAL,HIGH)   = SCSI error on format_unit
+ 0x00020123 (SORRY,HIGH)   = DVD Media are unsuitable for desired track type
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
