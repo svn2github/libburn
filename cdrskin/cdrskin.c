@@ -3723,32 +3723,37 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      printf("Current: CD-RW\n");
    else
      printf("Current: CD-R\n");
- }    
- printf("ATIP info from disk:\n");
- if(burn_disc_erasable(drive)) {
-   if(is_not_really_erasable)
-     printf("  Is erasable (but not while in this incomplete state)\n");
-   else
-     printf("  Is erasable\n");
- } else {
-   printf("  Is not erasable\n");
  }
+ if(strstr(profile_name,"DVD")==profile_name) {
+   printf("book type:       %s (emulated)\n", profile_name);
+ } else {
+   printf("ATIP info from disk:\n");
+   if(burn_disc_erasable(drive)) {
+     if(is_not_really_erasable)
+       printf("  Is erasable (but not while in this incomplete state)\n");
+     else
+       printf("  Is erasable\n");
+   } else {
+     printf("  Is not erasable\n");
+   }
 
 #ifdef Cdrskin_libburn_has_get_start_end_lbA
- { int start_lba,end_lba,min,sec,fr;
-   ret= burn_drive_get_start_end_lba(drive,&start_lba,&end_lba,0);
-   if(ret>0) {
-     burn_lba_to_msf(start_lba,&min,&sec,&fr);
-     printf("  ATIP start of lead in:  %d (%-2.2d:%-2.2d/%-2.2d)\n",
-            start_lba,min,sec,fr);
-     burn_lba_to_msf(end_lba,&min,&sec,&fr);
-     printf("  ATIP start of lead out: %d (%-2.2d:%-2.2d/%-2.2d)\n",
-            end_lba,min,sec,fr);
+   { int start_lba,end_lba,min,sec,fr;
+     ret= burn_drive_get_start_end_lba(drive,&start_lba,&end_lba,0);
+     if(ret>0) {
+       burn_lba_to_msf(start_lba,&min,&sec,&fr);
+       printf("  ATIP start of lead in:  %d (%-2.2d:%-2.2d/%-2.2d)\n",
+              start_lba,min,sec,fr);
+       burn_lba_to_msf(end_lba,&min,&sec,&fr);
+       printf("  ATIP start of lead out: %d (%-2.2d:%-2.2d/%-2.2d)\n",
+              end_lba,min,sec,fr);
+     }
    }
- }
 #endif /* Cdrskin_libburn_has_get_start_end_lbA */
 
- printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
+   printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
+ }
+
  ret= 1;
  if(flag&1)
    Cdrskin_toc(skin,1);/*cdrecord seems to ignore -toc errors if -atip is ok */
