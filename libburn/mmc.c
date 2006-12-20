@@ -136,7 +136,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
 	c.opcode[1] = 1;
 	if(trackno<=0) {
-		if (d->current_profile = 0x1a) /* DVD+RW */
+		if (d->current_profile == 0x1a) /* DVD+RW */
 			c.opcode[5] = 1;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			c.opcode[5] = 0xFF;
@@ -151,7 +151,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 		+ (data[10] << 8) + data[11];
 	*nwa = (data[12] << 24) + (data[13] << 16)
 		+ (data[14] << 8) + data[15];
-	if (d->current_profile = 0x1a) { /* DVD+RW */
+	if (d->current_profile == 0x1a) { /* DVD+RW */
 		*nwa = *nwa = 0;
 	} else if (!(data[7]&1)) {
 		/* ts A61106 :  MMC-1 Table 142 : NWA_V = NWA Valid Flag */
