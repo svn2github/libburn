@@ -955,9 +955,11 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
 
-		if (disc->sessions!=1 || disc->session[0]->tracks>1) {
+		if (disc->sessions!=1 || disc->session[0]->tracks>1
+			|| o->multi ) {
 			sprintf(msg,
-			  "Burning of DVD+RW is restricted to a single track");
+		"Burning of DVD+RW is restricted to a single track and session"
+				);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011f,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
