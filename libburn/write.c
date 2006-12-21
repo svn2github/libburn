@@ -910,15 +910,9 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 	int ret;
 
-	fprintf(stderr, "LIBBURN_DEBUG: d->bg_format_status= %d\n",
-		d->bg_format_status);
-
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
 		/* start or re-start dvd_plus_rw formatting */
 		ret = d->format_unit(d);
-
-		fprintf(stderr, "LIBBURN_DEBUG: format_unit() = %d\n", ret);
-
 		if (ret <= 0)
 			return 0;
 	}
