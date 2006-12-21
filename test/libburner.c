@@ -68,6 +68,9 @@ static unsigned int drive_count;
     finally released */
 static int drive_is_grabbed = 0;
 
+/** A text describing the type of media in aquired drive */
+static char current_profile_name[80]= {""};
+
 
 /* Some in-advance definitions to allow a more comprehensive ordering
    of the functions and their explanations in here */
@@ -90,13 +93,18 @@ int libburner_aquire_by_driveno(int *drive_no);
 */
 int libburner_aquire_drive(char *drive_adr, int *driveno)
 {
-	int ret;
+	int ret, x;
 
 	if(drive_adr != NULL && drive_adr[0] != 0)
 		ret = libburner_aquire_by_adr(drive_adr);
 	else
 		ret = libburner_aquire_by_driveno(driveno);
-	return ret;
+	if (ret <= 0)
+		return ret;
+	burn_disc_get_profile(drive_list[0].drive, &x, current_profile_name);
+	if (current_profile_name[0])
+		printf("Detected media type: %s\n", current_profile_name);
+	return 1;
 }
 
 
@@ -431,7 +439,7 @@ int libburner_payload(struct burn_drive *drive,
 		burn_track_free(tracklist[trackno]);
 	burn_session_free(session);
 	burn_disc_free(target_disc);
-	if (multi)
+	if (multi && strcmp(current_profile_name, "DVD+RW") != 0)
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
