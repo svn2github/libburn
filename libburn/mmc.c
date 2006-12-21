@@ -34,12 +34,9 @@
 extern struct libdax_msgs *libdax_messenger;
 
 
-/* ts A61219 : ! HIGHLY EXPERIMENTAL !
-               Based on knowlege from dvd+rw-tools-7.0 and mmc5r03c.pdf
-*/
-/*
+/* ts A61219 : Based on knowlege from dvd+rw-tools-7.0 and mmc5r03c.pdf */
 #define Libburn_support_dvd_plus_rW 1
-*/
+
 /* Progress report (with Libburn_support_dvd_plus_rW defined):
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
@@ -47,8 +44,17 @@ extern struct libdax_msgs *libdax_messenger;
    ts A61220 : Burned to a virgin DVD+RW by help of new mmc_format_unit()
                (did not test wether it would work without). Burned to a
                not completely formatted DVD+RW. (Had worked before without
-               mmc_format_unit(). I did not exceed the formatted range
-               as reported by dvd+rw-mediainfo. 
+               mmc_format_unit() but i did not exceed the formatted range
+               as reported by dvd+rw-mediainfo.) 
+   ts A61221 : Speed setting now works for both of my drives. The according
+               functions in dvd+rw-tools are a bit intimidating to the reader.
+               I hope it is possible to leave much of this to the drive. 
+               And if it fails ... well, it's only speed setting. :))
+Todo:
+   Determine media capacity.
+   Determine drive+media speed options.
+   Determine first free lba for appending data. 
+   Determine start lba of most recent mkisofs session.
 */
 
 
@@ -77,10 +83,16 @@ static unsigned char MMC_SEND_CUE_SHEET[] =
 	{ 0x5D, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* ts A61023 : get size and free space of drive buffer */
-static unsigned char MMC_READ_BUFFER_CAPACITY[] = { 0x5C, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
+static unsigned char MMC_READ_BUFFER_CAPACITY[] =
+	{ 0x5C, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 
 /* ts A61219 : format DVD+RW (and various others) */
 static unsigned char MMC_FORMAT_UNIT[] = { 0x04, 0x11, 0, 0, 0, 0 };
+
+/* ts A61221 :
+   To set speed for DVD media (0xBB is for CD but works on my LG GSA drive) */
+static unsigned char MMC_SET_STREAMING[] =
+	{ 0xB6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 static int mmc_function_spy_do_tell = 0;
@@ -854,9 +866,94 @@ void mmc_perform_opc(struct burn_drive *d)
 	d->issue_command(d, &c);
 }
 
+
+/* ts A61221 : Learned much from dvd+rw-tools-7.0 set_speed_B6h() but then
+   made own experiments on base of mmc5r03c.pdf 6.8.3 and 6.39 in the hope
+   to achieve a leaner solution */
+int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
+{
+	struct buffer buf;
+	struct command c;
+	int b, end_lba;
+	char msg[160];
+	unsigned char *pd;
+
+	mmc_function_spy("mmc_format_unit");
+
+	if (r_speed <= 0)
+		r_speed = 0x10000000; /* ~ 2 TB/s */
+	if (w_speed <= 0)
+		w_speed = 0x10000000; /* ~ 2 TB/s */
+	c.retry = 1;
+	c.oplen = sizeof(MMC_SET_STREAMING);
+	memcpy(c.opcode, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
+	c.page = &buf;
+	c.page->bytes = 28;
+	c.opcode[9] = (c.page->bytes >> 8) & 0xff;
+	c.opcode[10] = c.page->bytes & 0xff;
+	c.page->sectors = 0;
+	c.dir = TO_DRIVE;
+	memset(c.page->data, 0, c.page->bytes);
+	pd = c.page->data;
+
+	/* Trying to avoid inquiry of available speed descriptors but rather
+	   to allow the drive to use the liberties of Exact==0.
+	*/
+	pd[0] = 0; /* WRC=0 (Default Rotation Control), RDD=Exact=RA=0 */
+
+	/* >>> This is computed from 4.7e9. Need to obtain media capacity.*/
+	end_lba = 2294921 - 1;
+	/* overstatement (gross or not) works for my NEC, but not for my LG */
+	/* end_lba = 0x10000000; / * ~ 2 TB */
+
+	/* start_lba is 0 , 1000 = 1 second as base time for data rate */
+	for (b = 0; b < 4 ; b++) {
+		pd[8+b] = (end_lba >> (24 - 8 * b)) & 0xff;
+		pd[12+b] = (r_speed >> (24 - 8 * b)) & 0xff;
+		pd[16+b] = (1000 >> (24 - 8 * b)) & 0xff;
+		pd[20+b] = (w_speed >> (24 - 8 * b)) & 0xff;
+		pd[24+b] = (1000 >> (24 - 8 * b)) & 0xff;
+	}
+
+/* <<<
+	fprintf(stderr,"LIBBURN_EXPERIMENTAL : B6h Performance descriptor:\n");
+	for (b = 0; b < 28 ; b++)
+		fprintf(stderr, "%2.2X%c", pd[b], ((b+1)%4 ? ' ' : '\n'));
+*/
+
+	
+	d->issue_command(d, &c);
+	if (c.error) {
+		if (c.sense[2]!=0 && !d->silent_on_scsi_error) {
+			sprintf(msg,
+	"SCSI error on set_streaming(%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
+				w_speed,
+				c.sense[2],c.sense[12],c.sense[13]);
+				libdax_msgs_submit(libdax_messenger,
+				d->global_index,
+				0x00020124,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		}
+		return 0;
+	}
+	return 1;
+}
+
+
 void mmc_set_speed(struct burn_drive *d, int r, int w)
 {
 	struct command c;
+	int ret;
+
+	mmc_function_spy("mmc_set_speed");
+
+	/* ts A61221 : try to set DVD speed via command B6h */
+	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
+		ret = mmc_set_streaming(d, r, w);
+		if (ret != 0)
+			return; /* success or really fatal failure */ 
+	}
 
 	/* ts A61112 : MMC standards prescribe FFFFh as max speed.
 			But libburn.h prescribes 0. */
@@ -865,7 +962,6 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	if (w<=0 || w>0xffff)
 		w = 0xffff;
 
-	mmc_function_spy("mmc_set_speed");
 	memcpy(c.opcode, MMC_SET_SPEED, sizeof(MMC_SET_SPEED));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_SET_SPEED);
