@@ -2314,18 +2314,29 @@ ex:;
 
 /* Some constants obtained by hearsay and experiments */
 
-/** The payload speed factor for reporting progress: 1x = 150 kB/s */
+/** The CD payload speed factor for reporting progress: 1x = 150 kB/s */
 static double Cdrskin_cd_speed_factoR= 150.0*1024.0;
+/** The DVD payload speed factor for reporting progress: 1x */
+static double Cdrskin_dvd_speed_factoR= 1385000;
 
-/** The speed conversion factor consumer x-speed to libburn speed as used with
+/** The effective payload speed factor for reporting progress */
+static double Cdrskin_speed_factoR= 150.0*1024.0;
+
+/** The speed conversion factors consumer x-speed to libburn speed as used with
     burn_drive_set_speed() burn_drive_get_write_speed()
 */
 static double Cdrskin_libburn_cd_speed_factoR= 176.0;
+static double Cdrskin_libburn_dvd_speed_factoR= 1385.0;
+
+/* The effective speed conversion factor for burn_drive_set_speed() */
+static double Cdrskin_libburn_speed_factoR= 176.0;
 
 /** Add-on for burn_drive_set_speed() to accomodate to the slightley oversized
     speed ideas of my LG DVDRAM GSA-4082B. LITE-ON LTR-48125S tolerates it.
 */
 static double Cdrskin_libburn_cd_speed_addoN= 50.0;
+static double Cdrskin_libburn_dvd_speed_addoN= 1.0; /*poor accuracy with 2.4x*/
+static double Cdrskin_libburn_speed_addoN = 50.0;
 
 
 /** The program run control object. Defaults: see Cdrskin_new(). */
@@ -2664,10 +2675,10 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
  if(skin->x_speed<0)
    k_speed= 0; /* libburn.h promises 0 to be max speed. */
  else if(skin->x_speed==0) /* cdrecord specifies 0 as minimum speed. */
-   k_speed= Cdrskin_libburn_cd_speed_factoR+Cdrskin_libburn_cd_speed_addoN;
+   k_speed= Cdrskin_libburn_speed_factoR+Cdrskin_libburn_speed_addoN;
  else
-   k_speed= skin->x_speed*Cdrskin_libburn_cd_speed_factoR +
-            Cdrskin_libburn_cd_speed_addoN;
+   k_speed= skin->x_speed*Cdrskin_libburn_speed_factoR +
+            Cdrskin_libburn_speed_addoN;
 
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(fprintf(stderr,"cdrskin_debug: k_speed= %d\n",k_speed));
@@ -2694,8 +2705,9 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 */
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 {
- int ret,i;
+ int ret,i,profile_number;
  struct burn_drive *drive;
+ char profile_name[80];
 #ifdef Cdrskin_grab_abort_brokeN
  int restore_handler= 0;
 #endif
@@ -2799,6 +2811,21 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 
  }
  skin->drive_is_grabbed= 1;
+
+ Cdrskin_speed_factoR= Cdrskin_cd_speed_factoR;
+ Cdrskin_libburn_speed_factoR= Cdrskin_libburn_cd_speed_factoR;
+ Cdrskin_libburn_speed_addoN= Cdrskin_libburn_cd_speed_addoN;
+#ifdef Cdrskin_libburn_has_get_profilE
+ ret= burn_disc_get_profile(drive,&profile_number,profile_name);
+ if(ret>0) {
+   if(strstr(profile_name,"DVD")==profile_name) {
+     Cdrskin_speed_factoR= Cdrskin_dvd_speed_factoR;
+     Cdrskin_libburn_speed_factoR= Cdrskin_libburn_dvd_speed_factoR;
+     Cdrskin_libburn_speed_addoN= Cdrskin_libburn_dvd_speed_addoN;
+   }
+ }
+#endif /* Cdrskin_libburn_has_get_profilE */
+
  ret= 1;
 ex:;
 
@@ -3692,7 +3719,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    ret= burn_disc_read_atip(drive);
    if(ret>0) {
      ret= burn_drive_get_min_write_speed(drive);
-     x_speed_min= ((double) ret)/Cdrskin_libburn_cd_speed_factoR;
+     x_speed_min= ((double) ret)/Cdrskin_libburn_speed_factoR;
    }
  }
 #endif
@@ -3714,7 +3741,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 #endif /* Cdrskin_libburn_has_burn_disc_unsuitablE */
 
  ret= burn_drive_get_write_speed(drive);
- x_speed_max= ((double) ret)/Cdrskin_libburn_cd_speed_factoR;
+ x_speed_max= ((double) ret)/Cdrskin_libburn_speed_factoR;
  if(x_speed_min<0)
    x_speed_min= x_speed_max;
  printf("cdrskin: burn_drive_get_write_speed = %d  (%.1fx)\n",ret,x_speed_max);
@@ -4089,7 +4116,7 @@ thank_you_for_patience:;
  if(elapsed_time>0.0)
    measured_speed= written_bytes/elapsed_time;
  else if(written_bytes>0.0)
-   measured_speed= 99.91*Cdrskin_cd_speed_factoR;
+   measured_speed= 99.91*Cdrskin_speed_factoR;
  if(measured_speed<=0.0 && written_total_bytes>=skin->fixed_size && 
     skin->fixed_size>0) {
    if(!skin->is_writing)
@@ -4106,7 +4133,7 @@ thank_you_for_patience:;
    if(flag&1) {
      printf("%.f/%.f (%2.1f%%) @%1.1f, remaining %.f:%2.2d\n",
             written_total_bytes,bytes_to_write,percent,
-            measured_speed/Cdrskin_cd_speed_factoR,
+            measured_speed/Cdrskin_speed_factoR,
             estim_minutes,(int) estim_seconds);
    } else {
      fill= 0;
@@ -4155,7 +4182,7 @@ thank_you_for_patience:;
                (int) ((fixed_size+padding)/1024.0/1024.0));
      } else
        sprintf(mb_text,"%4d",(int) (written_total_bytes/1024.0/1024.0));
-     speed_factor= Cdrskin_cd_speed_factoR*sector_size/2048;
+     speed_factor= Cdrskin_speed_factoR*sector_size/2048;
 
      buffer_fill= 50;
 #ifdef Cdrskin_libburn_has_buffer_progresS
