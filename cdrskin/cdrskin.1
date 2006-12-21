@@ -16,7 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD-R or CD-RW via libburn.
+cdrskin \- burns preformatted data to CD-R, CD-RW or DVD+RW via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -35,15 +35,17 @@ You do not need to be superuser for its daily usage.
 .br
 Blanking of CD-RW.
 .br
-Burning of data or audio tracks to CD.
+Burning of data or audio tracks to CD,
 .br
-Either in versatile Track at Once mode (TAO)
+either in versatile Track at Once mode (TAO)
 .br
 or in Session at Once mode for seamless tracks.
 .br
-Multi session (follow-up sessions in TAO only).
+Multi session on CD (follow-up sessions in TAO only).
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
+.br
+Burning of a single data track to DVD+RW.
 .br
 See section EXAMPLES at the end of this text.
 .PP
@@ -99,6 +101,16 @@ CD-RW media can be blanked to make them re-usable for another
 round of overwriting. Blanking damages the previous content but does not
 make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be.
+.PP
+.B Recordable DVD Media:
+.br
+Currently only type DVD+RW can be burned via cdrskin.
+DVD+RW media get treated as blank media regardless wether they hold data
+or not. Options -audio and -multi are not allowed. Only one track is allowed.
+-toc does not return information about the media content.
+Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
+there is no difference between -sao and -tao. If ever, then -tao will be the
+mode which preserves the current behavior.
 .PP
 .B Drive preparation and addressing:
 .br
@@ -559,13 +571,13 @@ cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.afio
 .br
 cdrskin dev=/dev/hdc padsize=300k -tao 4.afio
 .SS
-.B Get the multi-session info for option -C of program mkisofs:
+.B Get CD multi-session info for option -C of program mkisofs:
 .br
 c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)
 .br
 mkisofs ... -C "$c_values" ...
 .SS
-.B Write audio tracks:
+.B Write audio tracks to CD:
 .br
 cdrskin -v dev=ATA:1,0,0 speed=48 \\
 .br

@@ -7,6 +7,8 @@
 
 Libburnia is an open-source project for reading, mastering and writing
 optical discs. For now this means only CD-R and CD-RW.
+Support for DVD+RW is emerging.
+
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -82,6 +84,7 @@ libburner is a minimal demo application for the library libburn
 (see: libburn/libburn.h) as provided on  http://libburn.pykix.org .
 It can list the available devices, can blank a CD-RW and
 can burn to CD-R or CD-RW.
+New: burning to DVD+RW (single data track, single session only).
 
 It's main purpose, nevertheless, is to show you how to use libburn and also
 to serve the libburnia team as reference application. libburner does indeed

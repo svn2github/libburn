@@ -1970,7 +1970,7 @@ set_dev:;
 
      printf("\n");
      printf("Usage: %s [options|source_addresses]\n", argv[0]);
-     printf("Burns preformatted data to CD-R or CD-RW via libburn.\n");
+     printf("Burns preformatted data to CD-R, CD-RW or DVD+RW via libburn.\n");
      printf("For the cdrecord compatible options which control the work of\n");
      printf(
       "blanking and burning see output of option -help rather than --help.\n");
@@ -2908,7 +2908,7 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  if(skin->grabbed_drive!=NULL)
    drive_status= burn_drive_get_status(skin->grabbed_drive,&p);
  if(drive_status!=BURN_DRIVE_IDLE) {
-   fprintf(stderr,"cdrskin: ABORT : Abort processing depends on CD speed and buffer size\n");
+   fprintf(stderr,"cdrskin: ABORT : Abort processing depends on speed and buffer size\n");
    fprintf(stderr,"cdrskin: ABORT : Usually it is done with 4x speed after about a MINUTE\n");
    fprintf(stderr,"cdrskin: URGE  : But wait at least the normal burning time before any kill -9\n");
  }
@@ -2974,7 +2974,7 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
                "cdrskin: ABORT : Will wait for current operation to end\n");
      }
      if(drive_status!=BURN_DRIVE_IDLE) {
-       fprintf(stderr,"cdrskin: ABORT : Abort processing depends on CD speed and buffer size\n");
+       fprintf(stderr,"cdrskin: ABORT : Abort processing depends on speed and buffer size\n");
        fprintf(stderr,"cdrskin: ABORT : Usually it is done with 4x speed after about a MINUTE\n");
        fprintf(stderr,"cdrskin: URGE  : But wait at least the normal burning time before any kill -9\n");
      }
@@ -3754,7 +3754,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      printf("Current: CD-R\n");
  }
  if(strstr(profile_name,"DVD")==profile_name) {
-   printf("book type:       %s (emulated)\n", profile_name);
+   printf("book type:       %s (emulated booktype)\n", profile_name);
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {
