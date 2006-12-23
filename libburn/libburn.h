@@ -229,7 +229,11 @@ enum burn_drive_status
 	/** The drive is told to close a track (TAO only) */
 	BURN_DRIVE_CLOSING_TRACK,
 	/** The drive is told to close a session (TAO only) */
-	BURN_DRIVE_CLOSING_SESSION
+	BURN_DRIVE_CLOSING_SESSION,
+
+	/* ts A61223 */
+	/** The drive is formatting media */
+	BURN_DRIVE_FORMATTING
 
 };
 

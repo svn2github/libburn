@@ -170,6 +170,7 @@ or
 #define Cdrskin_libburn_has_get_profilE 1
 #define Cdrskin_libburn_has_set_start_bytE 1
 #define Cdrskin_libburn_has_wrote_welL 1
+#define Cdrskin_libburn_has_bd_formattinG 1
 #endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -3981,7 +3982,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  double elapsed_time,elapsed_total_time,current_time;
  double estim_time,estim_minutes,estim_seconds,percent;
  int ret,fifo_percent,fill,space,advance_interval=0,new_mb,old_mb,time_to_tell;
- int fs,bs,old_track_idx,buffer_fill;
+ int fs,bs,old_track_idx,buffer_fill,formatting= 0;
  char fifo_text[80],mb_text[40];
  char *debug_mark= ""; /* use this to prepend a marker text for experiments */
 
@@ -3993,6 +3994,11 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  elapsed_time= current_time-*last_time;
  time_to_tell= (elapsed_time>=1.0)&&(elapsed_total_time>=1.0);
 
+#ifdef Cdrskin_libburn_has_bd_formattinG
+ if(drive_status==BURN_DRIVE_FORMATTING)
+   formatting= 1;
+#endif
+
  if(drive_status==BURN_DRIVE_WRITING) {
    ;
  } else if(drive_status==BURN_DRIVE_WRITING_LEADIN
@@ -4000,15 +4006,14 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
 #ifdef Cdrskin_allow_libburn_taO
            || drive_status==BURN_DRIVE_WRITING_PREGAP
 #endif
-
-           ) {
+           || formatting) {
    if(time_to_tell || skin->is_writing) {
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
        if(skin->is_writing)
          fprintf(stderr,"\n");
        fprintf(stderr,
-           "\rcdrskin: working pre-track (burning since %.f seconds)         ",
-           elapsed_total_time);
+           "\rcdrskin: %s (burning since %.f seconds)         ",
+           (formatting?"formatting":"working pre-track"), elapsed_total_time);
      }
      skin->is_writing= 0;
      advance_interval= 1;

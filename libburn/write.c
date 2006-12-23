@@ -870,6 +870,7 @@ int burn_disc_close_session_dvd_plus_rw(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	/* This seems to be a quick end : "if (!dvd_compat)" */
 	/* >>> Stop de-icing (ongoing background format) quickly
 	       by mmc_close() i(but with opcode[2]=0).
@@ -878,6 +879,7 @@ int burn_disc_close_session_dvd_plus_rw(struct burn_write_opts *o,
 	*/
 	/* Else: end eventual background format in a "DVD-RO" compatible way */
 	d->close_track_session(d, 1, 0); /* same as CLOSE SESSION for CD */
+	d->busy = BURN_DRIVE_WRITING;
 	return 1;
 }
 
@@ -912,10 +914,12 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 	char msg[160];
 
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
+		d->busy = BURN_DRIVE_FORMATTING;
 		/* start or re-start dvd_plus_rw formatting */
 		ret = d->format_unit(d);
 		if (ret <= 0)
 			return 0;
+		d->busy = BURN_DRIVE_WRITING;
 	}
 	d->nwa = 0;
 	if (o->start_byte >= 0)
