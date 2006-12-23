@@ -160,6 +160,7 @@ original cdrecord by Joerg Schilling:
 .TP
 .BI \-atip
 Retrieve some info about media state. With CD-RW print "Is erasable".
+With DVD media print "book type:" and a media type text.
 .TP 
 .BI \-audio
 Announces that the subsequent tracks are to be burned as audio.
@@ -434,6 +435,10 @@ interpretation of eventual startup files. See section FILES below.
 .TP
 .BI \--single_track
 Accept only the last argument of the command line as track source address.
+.TP 
+.BI write_start_address= byte_offset
+Set the address on media where to start writing the track. DVD+RW only for
+now. byte_offset must be aligned to 2 KB blocks. Better is 32 kB alignment.
 .PP
 Alphabetical list of options which are only intended for very special
 situations and not for  normal use:
@@ -630,7 +635,7 @@ Formatting track sources for cdrskin:
 .BR star (1)
 .br
 .TP
-Other CD burn programs:
+Other CD/DVD burn programs:
 .br
 .BR cdrecord (1),
 .BR wodim (1)
