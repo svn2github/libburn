@@ -169,6 +169,7 @@ or
 #define Cdrskin_no_aftergrab_loopS 1
 #define Cdrskin_libburn_has_get_profilE 1
 #define Cdrskin_libburn_has_set_start_bytE 1
+#define Cdrskin_libburn_has_wrote_welL 1
 #endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -4367,7 +4368,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  enum burn_drive_status drive_status;
  struct burn_progress p;
  struct burn_drive *drive;
- int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num;
+ int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
  int fifo_disabled= 0,fifo_percent,total_min_fill,mb,min_buffer_fill= 101;
  double put_counter,get_counter,empty_counter,full_counter;
  double start_time,last_time;
@@ -4615,6 +4616,11 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  skin->drive_is_busy= 0;
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    printf("\n");
+
+#ifdef Cdrskin_libburn_has_wrote_welL
+ wrote_well = burn_drive_wrote_well(drive);
+#endif
+
  if(max_track<0) {
    printf("Track 01: Total bytes read/written: %.f/%.f (%.f sectors).\n",
           total_count,total_count,total_count/sector_size);
@@ -4630,7 +4636,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
 
 #ifndef Cdrskin_extra_leaN
 
- if(skin->fifo!=NULL && skin->fifo_size>0) {
+ if(skin->fifo!=NULL && skin->fifo_size>0 && wrote_well) {
    int dummy,final_fill;
    Cdrfifo_get_buffer_state(skin->fifo,&final_fill,&dummy,0);
    if(final_fill>0) {
@@ -4696,10 +4702,16 @@ fifo_full_at_end:;
 
 #endif /* ! Cdrskin_extra_leaN */
 
-
- if(skin->verbosity>=Cdrskin_verbose_progresS) 
-   printf("cdrskin: burning done\n");
  ret= 1;
+ if(wrote_well) {
+   if(skin->verbosity>=Cdrskin_verbose_progresS) 
+     printf("cdrskin: burning done\n");
+ } else {
+   if(skin->verbosity>=Cdrskin_verbose_progresS) 
+     printf("cdrskin: burning failed\n");
+   fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
+   ret= 0;
+ }
 ex:;
  skin->drive_is_busy= 0;
  if(skin->verbosity>=Cdrskin_verbose_debuG)

@@ -811,6 +811,17 @@ void burn_disc_write(struct burn_write_opts *o, struct burn_disc *disc);
 */
 void burn_drive_cancel(struct burn_drive *drive);
 
+
+/* ts A61223 */
+/** Inquire wether the most recent write run was successful. Reasons for
+    non-success may be: rejection of burn parameters, abort during fatal errors
+    during write, a call to burn_drive_cancel() by the application thread.
+    @param d The drive to inquire.
+    @return 1=burn seems to have went well, 0=burn failed 
+*/
+int burn_drive_wrote_well(struct burn_drive *d);
+
+
 /** Convert a minute-second-frame (MSF) value to sector count
     @param m Minute component
     @param s Second component

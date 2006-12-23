@@ -1281,3 +1281,9 @@ int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80])
 }
 
 
+/* ts A61223 : New API function */
+int burn_drive_wrote_well(struct burn_drive *d)
+{
+	return !d->cancel;
+}
+

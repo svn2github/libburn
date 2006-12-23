@@ -921,7 +921,7 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 	if (o->start_byte >= 0)
 		d->nwa = o->start_byte / 2048;
 
-	sprintf(msg, "Write start address is  %d * 2048\n", d->nwa);
+	sprintf(msg, "Write start address is  %d * 2048", d->nwa);
 	libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020127,
 			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
@@ -971,6 +971,15 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
+		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
+			sprintf(msg,
+			  "Write start address not properly aligned to 2048");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020125,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
 
 		ret = burn_disc_setup_dvd_plus_rw(o, disc);
 		if (ret <= 0) {
@@ -979,15 +988,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020121,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0,0);
-			goto early_failure;
-		}
-		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
-			sprintf(msg,
-			  "Write start address not properly aligned to 2048");
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020125,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
 			goto early_failure;
 		}
@@ -1027,9 +1027,6 @@ ex:;
 
 	return ret;
 early_failure:;
-	pthread_mutex_lock(&d->access_lock);
-	d->cancel = 1;
-	pthread_mutex_unlock(&d->access_lock);
 	return 0;
 }
 
@@ -1047,6 +1044,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	burn_message_clear_queue();
 */
 
+	d->cancel = 0;
 	d->buffer = &buf;
 	memset(d->buffer, 0, sizeof(struct buffer));
 	d->rlba = -150;
@@ -1207,5 +1205,6 @@ fail_wo_sync:;
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010b,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Burn run failed", 0, 0);
+	d->cancel = 1;
 	d->busy = BURN_DRIVE_IDLE;
 }
