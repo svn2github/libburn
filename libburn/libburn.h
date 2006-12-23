@@ -765,7 +765,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive);
 void burn_write_opts_free(struct burn_write_opts *opts);
 
 /** Creates a read_opts struct for reading from the specified drive
-    must be freed with burn_write_opts_free
+    must be freed with burn_read_opts_free
     @param drive The drive to read from
     @return The read_opts
 */
@@ -1062,11 +1062,24 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned cha
 
 
 /* ts A61106 */
-/* Sets the multi flag which eventually marks the emerging session as not being
-   the last one and thus creating a BURN_DISC_APPENDABLE media.
-     @param multi 1=media will be appendable, 0=media will be closed (default) 
+/** Sets the multi flag which eventually marks the emerging session as not
+    being the last one and thus creating a BURN_DISC_APPENDABLE media.
+    @param multi 1=media will be appendable, 0=media will be closed (default) 
 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
+
+
+/* ts A61222 */
+/** Sets a start address for writing to media and write modes which allow to
+    choose this address at all (DVD+RW only for now). The address is given in
+    bytes. If it is not -1 then a write run will fail if choice of start
+    address is not supported or if the block alignment of the address is not
+    suitable for media and write mode. (Alignment to 32 kB blocks is advised
+    with DVD media.)
+    @param opts The write opts to change
+    @param value The address in bytes (-1 = start at default address)
+*/
+void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 
 
 /** Sets whether to read in raw mode or not

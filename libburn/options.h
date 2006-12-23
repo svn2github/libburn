@@ -37,6 +37,9 @@ struct burn_write_opts
 			 -1 with CD, 32 kB with DVD */
 	int obs;
 
+	/* ts A61222 : Start address for media which allow a choice */
+	off_t start_byte;
+
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
 	unsigned char mediacatalog[13];

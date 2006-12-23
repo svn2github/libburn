@@ -33,6 +33,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->underrun_proof = drive->mdata->underrun_proof;
 	opts->perform_opc = 1;
 	opts->obs = -1;
+	opts->start_byte = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -153,12 +154,19 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts,
 	memcpy(opts->mediacatalog, &mediacatalog, 13);
 }
 
+
 /* ts A61106 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi)
 {
 	opts->multi = !!multi;
 }
 
+
+/* ts A61222 */
+void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value)
+{
+	opts->start_byte = value;
+}
 
 
 void burn_read_opts_set_raw(struct burn_read_opts *opts, int raw)

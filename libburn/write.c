@@ -909,6 +909,7 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 	int ret;
+	char msg[160];
 
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
 		/* start or re-start dvd_plus_rw formatting */
@@ -916,13 +917,17 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 		if (ret <= 0)
 			return 0;
 	}
+	d->nwa = 0;
+	if (o->start_byte >= 0)
+		d->nwa = o->start_byte / 2048;
 
-	/* >>> Set speed */;
+	sprintf(msg, "Write start address is  %d * 2048\n", d->nwa);
+	libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020127,
+			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
 
 	/* >>> perform OPC if needed */;
-
-	d->nwa = 0;
-	/* >>> d->get_nwa() (default to 0) */;
 
 	/* >>> ? what else ? */;
 
@@ -977,6 +982,15 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
+		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
+			sprintf(msg,
+			  "Write start address not properly aligned to 2048");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020125,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
 
 	} else {
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
@@ -987,7 +1001,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			msg, 0,0);
 		goto early_failure;
 	}
-	
 	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
 
 	burn_disc_init_write_status(o, disc);
@@ -1017,7 +1030,6 @@ early_failure:;
 	pthread_mutex_lock(&d->access_lock);
 	d->cancel = 1;
 	pthread_mutex_unlock(&d->access_lock);
-	usleep(500001); /* to avoid a warning from remove_worker() */
 	return 0;
 }
 
@@ -1046,6 +1058,15 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 		if (ret <= 0)
 			goto fail_wo_sync;
 		return;
+	}
+
+	if (o->start_byte >= 0) {
+		sprintf(msg, "Write start address not supported");
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020124,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
+		goto fail_wo_sync;
 	}
 
 	burn_print(1, "sync write of %d CD sessions\n", disc->sessions);
@@ -1181,6 +1202,7 @@ return crap.  so we send the command, then ignore the result.
 fail:
 	d->sync_cache(d);
 fail_wo_sync:;
+	usleep(500001); /* ts A61222: to avoid a warning from remove_worker()*/
 	burn_print(1, "done - failed\n");
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010b,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
