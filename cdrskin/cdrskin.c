@@ -166,7 +166,9 @@ or
 #define Cdrskin_libburn_versioN "0.2.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 #define Cdrskin_atip_speed_is_oK 1
+#define Cdrskin_no_aftergrab_loopS 1
 #define Cdrskin_libburn_has_get_profilE 1
+#define Cdrskin_libburn_has_set_start_bytE 1
 #endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -202,7 +204,6 @@ or
 
 /* put macros under test caveat here */
 #define Cdrskin_allow_sao_for_appendablE 1
-#define Cdrskin_no_aftergrab_loopS 1
 
 #endif /* Cdrskin_new_api_tesT */
 
@@ -2036,6 +2037,8 @@ set_dev:;
 #endif
 
      printf(
+         " write_start_address=<num>  write to given byte address (DVD+RW)\n");
+     printf(
         "Preconfigured arguments are read from the following startup files\n");
      printf(
           "if they exist and are readable. The sequence is as listed here:\n");
@@ -2376,6 +2379,8 @@ struct CdrskiN {
  int block_type;
  int multi;
 
+ double write_start_address;
+
  int do_eject;
  char eject_device[Cdrskin_strleN];
 
@@ -2491,6 +2496,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
+ o->write_start_address= -1.0;
  o->burnfree= 0;
  o->do_eject= 0;
  o->eject_device[0]= 0;
@@ -4508,6 +4514,10 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  burn_write_opts_set_multi(o,skin->multi);
 #endif
 
+#ifdef Cdrskin_libburn_has_set_start_bytE
+ burn_write_opts_set_start_byte(o, skin->write_start_address);
+#endif
+
  burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
  if(skin->dummy_mode) {
    fprintf(stderr,
@@ -5300,6 +5310,11 @@ track_too_large:;
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
      /* is handled in Cdrpreskin_setup() */;
+
+   } else if(strncmp(argv[i],"write_start_address=",20)==0) {
+     skin->write_start_address= Scanf_io_size(argv[i]+20,0);
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       printf("cdrskin: fixed track size : %.f\n",skin->fixed_size);
 
    } else if( i==argc-1 ||
              (skin->single_track==0 && strchr(argv[i],'=')==NULL 
