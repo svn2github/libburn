@@ -8,7 +8,7 @@
   
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia.pykix.org . It can list the available devices, can
-  blank a CD-RW and can burn to CD-R or CD-RW.
+  blank a CD-RW and can burn to CD-R, CD-RW or DVD+RW.
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
@@ -25,7 +25,7 @@
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
   With that aquired drive you can blank a CD-RW
      libburner_blank_disc()
-  With the aquired drive you can burn to CD-R or blank CD-RW
+  With the aquired drive you can burn to CD-R, blank CD-RW or DVD+RW
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
@@ -258,17 +258,13 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 	struct burn_progress p;
 	int percent = 1;
 
-	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-		usleep(1001);
-
-	while ((disc_state = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-		usleep(1001);
+	disc_state = burn_disc_get_status(drive);
 	printf(
 	    "Drive media status:  %d  (see  libburn/libburn.h  BURN_DISC_*)\n",
 	    disc_state);
 	if (disc_state == BURN_DISC_BLANK) {
 		fprintf(stderr,
-		  "IDLE: Blank CD media detected. Will leave it untouched\n");
+		  "IDLE: Blank media detected. Will leave it untouched\n");
 		return 2;
 	} else if (disc_state == BURN_DISC_FULL ||
 		   disc_state == BURN_DISC_APPENDABLE) {
@@ -287,7 +283,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		return 0;
 	}
 	printf(
-	      "Beginning to %s-blank CD media.\n", (blank_fast?"fast":"full"));
+	      "Beginning to %s-blank media.\n", (blank_fast?"fast":"full"));
 	burn_disc_erase(drive, blank_fast);
 	sleep(1);
 	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
@@ -375,12 +371,8 @@ int libburner_payload(struct burn_drive *drive,
 	  burn_source_free(data_src);
         } /* trackno loop end */
 
-	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-		usleep(100001);
-
 	/* Evaluate drive and media */
-	while ((disc_state = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-		usleep(100001);
+	disc_state = burn_disc_get_status(drive);
 	if (disc_state == BURN_DISC_APPENDABLE) {
 		write_mode_tao = 1;
 	} else if (disc_state != BURN_DISC_BLANK) {
@@ -554,8 +546,8 @@ int libburner_setup(int argc, char **argv)
         printf("Burn a compressed afio archive on-the-fly:\n");
         printf("  ( cd my_directory ; find . -print | afio -oZ - ) | \\\n");
         printf("  %s --drive /dev/hdc -\n", argv[0]);
-        printf("To be read from *not mounted* CD via: afio -tvZ /dev/hdc\n");
-        printf("Program tar would need a clean EOF which our padded CD cannot deliver.\n");
+        printf("To be read from *not mounted* media via: afio -tvZ /dev/hdc\n");
+        printf("Program tar would need a clean EOF which our media cannot deliver.\n");
         if (insuffient_parameters)
             return 6;
     }

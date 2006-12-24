@@ -229,11 +229,6 @@ int telltoc_media(struct burn_drive *drive)
 	enum burn_disc_status s;
 	char profile_name[80];
 
-	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-		usleep(100001);
-	while ((s = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-		usleep(100001);
-
 	printf("Media current: ");
 	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
 	if (profile_no > 0 && ret >0) {
@@ -247,6 +242,7 @@ int telltoc_media(struct burn_drive *drive)
 	/* >>> libburn does not obtain full profile list yet */
 
 	printf("Media status : ");
+	s = burn_disc_get_status(drive);
 	if (s==BURN_DISC_FULL) {
 		printf("is written , is closed\n");
 		media_found = 1;
@@ -294,16 +290,10 @@ int telltoc_toc(struct burn_drive *drive)
 	int num_sessions = 0 , num_tracks = 0 , lba = 0;
 	int track_count = 0;
 	int session_no, track_no;
-	enum burn_disc_status s;
 	struct burn_disc *disc= NULL;
 	struct burn_session **sessions;
 	struct burn_track **tracks;
 	struct burn_toc_entry toc_entry;
-
-	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-		usleep(100001);
-	while ((s = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-		usleep(100001);
 
 	disc = burn_drive_get_disc(drive);
 	if (disc==NULL) {
@@ -359,10 +349,7 @@ int telltoc_msinfo(struct burn_drive *drive,
 	struct burn_toc_entry toc_entry;
 	struct burn_write_opts *o= NULL;
 
-	while (burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-		usleep(100001);
-	while ((s = burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-		usleep(100001);
+	s = burn_disc_get_status(drive);
 	if (s!=BURN_DISC_APPENDABLE) {
 		if (!msinfo_explicit)
 			return 2;
