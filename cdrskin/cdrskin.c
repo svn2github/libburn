@@ -4269,21 +4269,26 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
- struct burn_drive_info *drive_info;
+ struct burn_drive_info *drive_info = NULL;
+ char profile_name[80];
+ 
+ profile_name[0]= 0;
+#ifdef Cdrskin_libburn_has_get_profilE
+ if(skin->grabbed_drive)
+   burn_disc_get_profile(skin->grabbed_drive,&i,profile_name);
+#endif
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
    was_still_default= 1;
 
-#ifdef Cdrskin_allow_libburn_taO
-   if(s  == BURN_DISC_APPENDABLE) {
+   if(s == BURN_DISC_APPENDABLE) {
      strcpy(skin->preskin->write_mode_name,"TAO");
-
      was_still_default= 2; /*<<< prevents trying of SAO if drive dislikes TAO*/
-
-   } else
-#endif
-
+   } else if(strstr(profile_name,"DVD+RW")==profile_name) {
+     strcpy(skin->preskin->write_mode_name,"TAO");
+   } else {
      strcpy(skin->preskin->write_mode_name,"SAO");
+   }
  }
  if(strcmp(skin->preskin->write_mode_name,"RAW/RAW96R")==0) {
    skin->write_type= BURN_WRITE_RAW;
@@ -4308,6 +4313,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
      ClN(printf("cdrskin_debug: WARNING : No drive selected with Cdrskin_activate_write_mode\n"));
    goto it_is_done;
  }
+ drive_info= skin->drives+skin->driveno;
 
  /* <<< this should become a libburn API function.The knowledge about TAO audio
         track block type is quite inappropriate here. It refers to a habit of
@@ -4315,9 +4321,13 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
         the tracklist is rather cdrskin realm. (ponder ...)
  */
 check_with_drive:;
- drive_info= skin->drives+skin->driveno;
  ok= 0;
- if(skin->write_type==BURN_WRITE_RAW)
+ if(strstr(profile_name,"DVD")==profile_name) {
+
+   /* >>> drive_info does not reflect DVD capabilities yet */
+
+   ok= 1;
+ } else if(skin->write_type==BURN_WRITE_RAW)
    ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
  else if(skin->write_type==BURN_WRITE_SAO)
    ok= !!(drive_info->sao_block_types & BURN_BLOCK_SAO);
