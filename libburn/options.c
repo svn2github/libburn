@@ -34,7 +34,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->perform_opc = 1;
 	opts->obs = -1;
 	opts->obs_pad = 0;
-	opts->start_byte = 0;
+	opts->start_byte = -1;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
