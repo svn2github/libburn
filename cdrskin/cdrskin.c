@@ -3993,6 +3993,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  elapsed_total_time= current_time-start_time;
  elapsed_time= current_time-*last_time;
  time_to_tell= (elapsed_time>=1.0)&&(elapsed_total_time>=1.0);
+ written_total_bytes= *last_count; /* to be overwritten by p.sector */
 
 #ifdef Cdrskin_libburn_has_bd_formattinG
  if(drive_status==BURN_DRIVE_FORMATTING)
@@ -4082,7 +4083,6 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  bytes_to_write= ((double) p->sectors)*sector_size;
  written_total_bytes= ((double) p->sector)*sector_size;
  written_bytes= written_total_bytes-*last_count;
-
  if(written_total_bytes<1024*1024) {
 thank_you_for_patience:;
    if(time_to_tell || (skin->is_writing && elapsed_total_time>=1.0)) {
@@ -4125,10 +4125,13 @@ thank_you_for_patience:;
        estim_seconds= 0.0;
    }
  }
- if(elapsed_time>0.0)
+ if(written_bytes==written_total_bytes && elapsed_total_time>0) {
+   measured_speed= measured_total_speed;
+ } else if(elapsed_time>0.0)
    measured_speed= written_bytes/elapsed_time;
  else if(written_bytes>0.0)
    measured_speed= 99.91*Cdrskin_speed_factoR;
+
  if(measured_speed<=0.0 && written_total_bytes>=skin->fixed_size && 
     skin->fixed_size>0) {
    if(!skin->is_writing)

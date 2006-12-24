@@ -1016,6 +1016,11 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		ret = burn_dvd_write_session(o, disc->session[i]);
 		if (ret <= 0)
 			goto ex;
+
+		/* XXX: currently signs an end of session */
+		d->progress.sector = 0;
+		d->progress.start_sector = 0;
+		d->progress.sectors = 0;
 	}
 
 	/* >>> eventual normal  finalization measures */
