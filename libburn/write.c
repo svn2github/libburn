@@ -587,9 +587,6 @@ int burn_disc_init_track_status(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
-	/* ts A61102 */
-	d->busy = BURN_DRIVE_WRITING;
-
 	/* Update progress */
 	d->progress.start_sector = d->nwa;
 	d->progress.sectors = sectors;
@@ -598,6 +595,9 @@ int burn_disc_init_track_status(struct burn_write_opts *o,
 	/* ts A60831: added tnum-line, extended print message on proposal
            by bonfire-app@wanadoo.fr in http://libburn.pykix.org/ticket/58 */
         d->progress.track = tnum;
+
+	/* ts A61102 */
+	d->busy = BURN_DRIVE_WRITING;
 
 	return 1;
 }
@@ -781,6 +781,8 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
+	d->cancel = 0;
+
 	/* init progress before showing the state */
 	d->progress.session = 0;
 	d->progress.sessions = disc->sessions;
@@ -794,6 +796,7 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 	d->progress.start_sector = 0;
 	d->progress.sectors = 0;
 	d->progress.sector = 0;
+	d->progress.track = 0;
 
 	/* ts A61023 */
 	d->progress.buffer_capacity = 0;
@@ -1008,7 +1011,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 	}
 	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
 
-	burn_disc_init_write_status(o, disc);
 	for (i = 0; i < disc->sessions; i++) {
 		/* update progress */
 		d->progress.session = i;
@@ -1054,7 +1056,9 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	burn_message_clear_queue();
 */
 
-	d->cancel = 0;
+	/* ts A61224 */
+	burn_disc_init_write_status(o, disc); /* must be done very early */
+
 	d->buffer = &buf;
 	memset(d->buffer, 0, sizeof(struct buffer));
 	d->rlba = -150;
@@ -1099,8 +1103,6 @@ return crap.  so we send the command, then ignore the result.
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg,0,0);
 	}
-
-	burn_disc_init_write_status(o, disc);
 
 	for (i = 0; i < disc->sessions; i++) {
 		/* update progress */
