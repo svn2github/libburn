@@ -844,7 +844,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	}
 	
 	/* Pad up buffer to next full 32 kB */
-	if (out->bytes > 0 && out->bytes < o->obs) {
+	if (o->obs_pad && out->bytes > 0 && out->bytes < o->obs) {
 		memset(out->data + out->bytes, 0, o->obs - out->bytes);
 		out->sectors += (o->obs - out->bytes) / 2048;
 		out->bytes = o->obs;
@@ -853,7 +853,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	if (ret <= 0)
 		goto ex;
 
-	/* >>> any normal track finalizing */;
+	/* >>> any other normal track finalizing */;
 
 	ret = 1;
 ex:;
@@ -873,7 +873,7 @@ int burn_disc_close_session_dvd_plus_rw(struct burn_write_opts *o,
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	/* This seems to be a quick end : "if (!dvd_compat)" */
 	/* >>> Stop de-icing (ongoing background format) quickly
-	       by mmc_close() i(but with opcode[2]=0).
+	       by mmc_close() (but with opcode[2]=0).
 	       Wait for unit to get ready.
 	       return 1;
 	*/
@@ -995,6 +995,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
+		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
 
 	} else {
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",

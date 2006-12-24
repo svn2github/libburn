@@ -36,6 +36,7 @@ struct burn_write_opts
 	/* ts A61219 : Output block size to trigger buffer flush if hit.
 			 -1 with CD, 32 kB with DVD */
 	int obs;
+	int obs_pad; /* 1=pad up last block to obs */
 
 	/* ts A61222 : Start address for media which allow a choice */
 	off_t start_byte;
