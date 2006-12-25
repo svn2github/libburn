@@ -2330,18 +2330,18 @@ static double Cdrskin_speed_factoR= 150.0*1024.0;
 /** The speed conversion factors consumer x-speed to libburn speed as used with
     burn_drive_set_speed() burn_drive_get_write_speed()
 */
-static double Cdrskin_libburn_cd_speed_factoR= 176.0;
+static double Cdrskin_libburn_cd_speed_factoR= 176.4;
 static double Cdrskin_libburn_dvd_speed_factoR= 1385.0;
 
 /* The effective speed conversion factor for burn_drive_set_speed() */
-static double Cdrskin_libburn_speed_factoR= 176.0;
+static double Cdrskin_libburn_speed_factoR= 176.4;
 
 /** Add-on for burn_drive_set_speed() to accomodate to the slightley oversized
     speed ideas of my LG DVDRAM GSA-4082B. LITE-ON LTR-48125S tolerates it.
 */
-static double Cdrskin_libburn_cd_speed_addoN= 50.0;
+static double Cdrskin_libburn_cd_speed_addoN= 40.0;
 static double Cdrskin_libburn_dvd_speed_addoN= 1.0; /*poor accuracy with 2.4x*/
-static double Cdrskin_libburn_speed_addoN = 50.0;
+static double Cdrskin_libburn_speed_addoN = 40.0;
 
 
 /** The program run control object. Defaults: see Cdrskin_new(). */
