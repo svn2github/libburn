@@ -225,9 +225,9 @@ int telltoc_regrab(struct burn_drive *drive) {
 int telltoc_media(struct burn_drive *drive)
 {
 	int ret, media_found = 0, profile_no = -1;
-	double max_speed = 0.0, min_speed = 0.0;
+	double max_speed = 0.0, min_speed = 0.0, speed_conv;
 	enum burn_disc_status s;
-	char profile_name[80];
+	char profile_name[80], speed_unit[40];
 
 	printf("Media current: ");
 	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
@@ -238,6 +238,13 @@ int telltoc_media(struct burn_drive *drive)
 			printf("%4.4Xh\n", profile_no);
 	} else
 		printf("is not recognizable\n");
+
+	speed_conv = 176.4;
+	strcpy(speed_unit,"176.4 kB/s  (CD, data speed 150 KiB/s)");
+	if (strstr(profile_name, "DVD") == profile_name) {
+		speed_conv = 1385.0;
+		strcpy(speed_unit,"1385.0 kB/s  (DVD)");
+	}
 
 	/* >>> libburn does not obtain full profile list yet */
 
@@ -266,20 +273,29 @@ int telltoc_media(struct burn_drive *drive)
 	} else
 		printf("is not recognizable\n");
 
-	ret= burn_disc_read_atip(drive);
+	ret= burn_drive_get_write_speed(drive);
+	max_speed = ((double ) ret) / speed_conv;
+	ret= burn_drive_get_min_write_speed(drive);
+	min_speed = ((double ) ret) / speed_conv;
+	if (strstr(profile_name, "CD") != profile_name)
+		printf("Drive speed  : max=%.1f  , min=%.1f\n",
+			 max_speed, min_speed);
+	else
+		printf("Avail. speed : max=%.1f  , min=%.1f\n", 
+                         max_speed, min_speed);
+
+	ret = 0;
+	if (media_found)
+		ret= burn_disc_read_atip(drive);
 	if(ret>0) {
 		ret= burn_drive_get_min_write_speed(drive);
-		min_speed = ((double ) ret) / 176.0;
-	}
-	ret= burn_drive_get_write_speed(drive);
-	max_speed = ((double ) ret) / 176.0;
-	if (!media_found)
-		printf("Drive speed  : max=%.f\n", max_speed);
-	else if (min_speed<=0)
-		printf("Media speed  : max=%.f\n", max_speed);
-	else
-		printf("Media speed  : max=%.f , min=%.f\n",
+		min_speed = ((double ) ret) / speed_conv;
+		ret= burn_drive_get_write_speed(drive);
+		max_speed = ((double ) ret) / speed_conv;
+		printf("Media speed  : max=%.1f , min=%.1f\n",
 			max_speed, min_speed);
+	}
+	printf("Speed unit 1x: %s\n", speed_unit);
 
 	return 1;
 }
