@@ -84,6 +84,11 @@ struct scsi_mode_data
 	/* ts A61021 */
 	int min_write_speed;
 
+	/* ts A61225 : Results from ACh GET PERFORMANCE, Type 03h
+	               Speed values go into *_*_speed */
+	int min_end_lba;
+	int max_end_lba;
+
 	int cur_read_speed;
 	int cur_write_speed;
 	int retry_page_length;
