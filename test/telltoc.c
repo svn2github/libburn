@@ -277,7 +277,7 @@ int telltoc_media(struct burn_drive *drive)
 	max_speed = ((double ) ret) / speed_conv;
 	ret= burn_drive_get_min_write_speed(drive);
 	min_speed = ((double ) ret) / speed_conv;
-	if (strstr(profile_name, "CD") != profile_name)
+	if (!media_found)
 		printf("Drive speed  : max=%.1f  , min=%.1f\n",
 			 max_speed, min_speed);
 	else
