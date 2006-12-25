@@ -132,9 +132,12 @@ void spc_sense_caps(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
-	int size;
+	int size, page_length, num_write_speeds = 0, i, speed;
 	unsigned char *page;
 	struct command c;
+
+	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
+	static int speed_debug = 0;
 
 	memcpy(c.opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
 	c.retry = 1;
@@ -150,6 +153,14 @@ void spc_sense_caps(struct burn_drive *d)
 	m = d->mdata;
 	page = c.page->data + 8;
 
+	/* ts A61225 :
+	   Although MODE SENSE indeed belongs to SPC, the returned code page
+	   2Ah is part of MMC-1 to MMC-3. In MMC-1 5.2.3.4. it has 22 bytes,
+	   in MMC-3 6.3.11 there are at least 28 bytes plus a variable length
+	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
+	*/
+	page_length = page[1];
+
 	m->buffer_size = page[12] * 256 + page[13];
 	m->dvdram_read = page[2] & 32;
 	m->dvdram_write = page[3] & 32;
@@ -162,27 +173,54 @@ void spc_sense_caps(struct burn_drive *d)
 	m->cdr_read = page[2] & 1;
 	m->cdr_write = page[3] & 1;
 
+	m->c2_pointers = page[5] & 16;
+	m->valid = 1;
+	m->underrun_proof = page[4] & 128;
+
 	/* ts A61021 : these fields are marked obsolete in MMC 3 */
 	m->max_read_speed = page[8] * 256 + page[9];
 	m->cur_read_speed = page[14] * 256 + page[15];
 
-	/* in MMC-3 : see [30-31] and blocks beginning at [32] */
 	m->max_write_speed = page[18] * 256 + page[19];
-	/* New field to be set by atip */
-	m->min_write_speed = m->max_write_speed;
-
-	/* in MMC-3 : [28-29] */
 	m->cur_write_speed = page[20] * 256 + page[21];
 
-	/* >>> ts A61021 : iterate over all speeds :
-	  data[30-31]: number of speed performance descriptor blocks
-	  data[32-35]: block 0 : [+2-3] speed in kbytes/sec
-	*/
+	/* ts A61021 : New field to be set by atip (or following MMC-3 info) */
+	m->min_write_speed = m->max_write_speed;
 
-	m->c2_pointers = page[5] & 16;
-	m->valid = 1;
-	m->underrun_proof = page[4] & 128;
+
+	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
+	if (page_length < 32) /* no write speed descriptors ? */
+		return;
+
+	m->cur_write_speed = page[28] * 256 + page[29];
+
+	if (speed_debug) 
+	fprintf(stderr, "LIBBURN_DEBUG: cur_write_speed = %d\n",
+		m->cur_write_speed);
+
+	num_write_speeds = page[30] * 256 + page[31];
+	m->max_write_speed = m->min_write_speed = m->cur_write_speed;
+	for (i = 0; i < num_write_speeds; i++) {
+		speed = page[32 + 4*i + 2] * 256 + page[32 + 4*i + 3];
+
+		if (speed_debug) 
+		fprintf(stderr,
+			"LIBBURN_DEBUG: write speed #%d = %d kB/s  (rc %d)\n",
+			i, speed, page[32 + 4*i +1] & 7);
+
+		if (speed > m->max_write_speed)
+			m->max_write_speed = speed;
+		if (speed < m->min_write_speed)
+			m->min_write_speed = speed;
+	}
+
+	if (speed_debug) 
+	fprintf(stderr,
+		"LIBBURN_DEBUG: min_write_speed = %d , max_write_speed = %d\n",
+		m->min_write_speed, m->max_write_speed);
+
 }
+
 
 void spc_sense_error_params(struct burn_drive *d)
 {

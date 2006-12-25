@@ -1152,7 +1152,9 @@ void burn_read_opts_transfer_damaged_blocks(struct burn_read_opts *opts,
 void burn_read_opts_set_hardware_error_retries(struct burn_read_opts *opts,
 					       unsigned char hardware_error_retries);
 
-/** Gets the maximum write speed for a drive
+/** Gets the maximum write speed for a drive and eventually loaded media.
+    The return value might change by the media type of already loaded media,
+    again by call burn_drive_grab() and again by call burn_disc_read_atip(). 
     @param d Drive to query
     @return Maximum write speed in K/s
 */
@@ -1160,8 +1162,9 @@ int burn_drive_get_write_speed(struct burn_drive *d);
 
 
 /* ts A61021 */
-/** Gets the minimum write speed for a drive. This might differ from 
-    burn_drive_get_write_speed() only after burn_disc_read_atip()
+/** Gets the minimum write speed for a drive and eventually loaded media.
+    The return value might change by the media type of already loaded media, 
+    again by call burn_drive_grab() and again by call burn_disc_read_atip().
     @param d Drive to query
     @return Minimum write speed in K/s
 */

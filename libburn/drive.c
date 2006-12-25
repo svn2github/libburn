@@ -226,6 +226,9 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	/* ts A61118 */
 	d->start_unit(d);
 
+	/* ts A61225 : after loading the tray, mode page 2Ah can change */
+	d->getcaps(d);
+
 	/* ts A61202 : gave bit1 of le a meaning */
 	sose = d->silent_on_scsi_error;
 	if (!le)
