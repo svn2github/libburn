@@ -51,4 +51,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d);
 */
 int mmc_setup_drive(struct burn_drive *d);
 
+/* ts A61225 : obtain write speed descriptors via ACh GET PERFORMANCE */
+int mmc_get_write_performance(struct burn_drive *d);
+
 #endif /*__MMC*/

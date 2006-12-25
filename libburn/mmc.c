@@ -94,6 +94,10 @@ static unsigned char MMC_FORMAT_UNIT[] = { 0x04, 0x11, 0, 0, 0, 0 };
 static unsigned char MMC_SET_STREAMING[] =
 	{ 0xB6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* ts A61225 :
+   To obtain write speed descriptors (command can do other things too) */
+static unsigned char MMC_GET_PERFORMANCE[] =
+	{ 0xAC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int mmc_function_spy_do_tell = 0;
 
@@ -878,7 +882,7 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 	char msg[160];
 	unsigned char *pd;
 
-	mmc_function_spy("mmc_format_unit");
+	mmc_function_spy("mmc_set_streaming");
 
 	if (r_speed <= 0)
 		r_speed = 0x10000000; /* ~ 2 TB/s */
@@ -901,10 +905,16 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 	*/
 	pd[0] = 0; /* WRC=0 (Default Rotation Control), RDD=Exact=RA=0 */
 
-	/* >>> This is computed from 4.7e9. Need to obtain media capacity.*/
+	/* Default computed from 4.7e9 */
 	end_lba = 2294921 - 1;
-	/* overstatement (gross or not) works for my NEC, but not for my LG */
-	/* end_lba = 0x10000000; / * ~ 2 TB */
+	if (d->mdata->max_end_lba > 0)
+		end_lba = d->mdata->max_end_lba - 1;
+
+	sprintf(msg, "mmc_set_streaming: end_lba=%lu ,  r=%d ,  w=%d",
+		end_lba, r_speed, w_speed);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
 
 	/* start_lba is 0 , 1000 = 1 second as base time for data rate */
 	for (b = 0; b < 4 ; b++) {
@@ -1185,6 +1195,104 @@ int mmc_format_unit(struct burn_drive *d)
 		ret = spc_test_unit_ready(d);
 	mmc_sync_cache(d);
 	return 1;
+}
+
+
+/* ts A61225 */
+int mmc_get_write_performance(struct burn_drive *d)
+{
+	struct buffer buf;
+	int len, i, b, pass, was_exact_bit = 0, max_descr, num_descr;
+	int exact_bit, read_speed, write_speed;
+	/* if this call delivers usable data then they should override
+	   previously recorded min/max speed and not compete with them */
+	int min_write_speed = 0x7fffffff, max_write_speed = 0;
+	int min_read_speed = 0x7fffffff, max_read_speed = 0;
+	struct command c;
+	unsigned long end_lba;
+	unsigned char *pd;
+
+	/* A61225 : 1 = report about speed descriptors */
+	static int speed_debug = 0;
+
+	mmc_function_spy("mmc_get_write_performance");
+
+	memcpy(c.opcode, MMC_GET_PERFORMANCE, sizeof(MMC_GET_PERFORMANCE));
+	max_descr = ( BUFFER_SIZE - 8 ) / 16 - 1;
+
+	/* >>> future: maintain a list of write descriptors 
+	if (max_descr > d->max_write_descr - d->num_write_descr)
+		max_descr = d->max_write_descr;
+	*/
+
+	c.opcode[8] = ( max_descr >> 8 ) & 0xff;
+	c.opcode[9] = ( max_descr >> 0 ) & 0xff;
+	c.opcode[10] = 3;
+	c.retry = 1;
+	c.oplen = sizeof(MMC_GET_PERFORMANCE);
+	c.page = &buf;
+	c.page->sectors = 0;
+	c.page->bytes = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+	len = (c.page->data[0] << 24)
+		+ (c.page->data[1] << 16)
+		+ (c.page->data[2] << 8)
+		+ c.page->data[3];
+	if (len<12)
+		return 0;
+
+	pd = c.page->data;
+	num_descr = ( len - 4 ) / 16;
+	if (num_descr > max_descr)
+		num_descr = max_descr;
+	for (pass = 0; pass < 2; pass++) for (i = 0; i < num_descr; i++) {
+		exact_bit = !!(pd[8 + i*16] & 2);
+		end_lba = read_speed = write_speed = 0;
+		for (b = 0; b < 4 ; b++) {
+			end_lba     += pd[8 + i*16 +  4 + b] << (24 - 8 * b);
+			read_speed  += pd[8 + i*16 +  8 + b] << (24 - 8 * b);
+			write_speed += pd[8 + i*16 + 12 + b] << (24 - 8 * b);
+		}
+		if (end_lba > 0x7ffffffe)
+			end_lba = 0x7ffffffe;
+
+		if (pass == 0 && speed_debug)
+			fprintf(stderr,
+		"LIBBURN_DEBUG: kB/s: write=%d  read=%d  end=%lu  exact=%d\n",
+				write_speed, read_speed, end_lba, exact_bit);
+
+		if (pass == 0 && !exact_bit)
+	continue;
+		if (pass == 1 && was_exact_bit)
+	continue;
+		was_exact_bit |= exact_bit;
+		if (end_lba > d->mdata->max_end_lba)
+			d->mdata->max_end_lba = end_lba;
+		if (end_lba < d->mdata->min_end_lba)
+			d->mdata->min_end_lba = end_lba;
+		if (write_speed < min_write_speed)
+			min_write_speed = write_speed;
+		if (write_speed > max_write_speed)
+                        max_write_speed = write_speed;
+		if (read_speed < min_read_speed)
+			min_read_speed = read_speed;
+		if (read_speed > max_read_speed)
+                        max_read_speed = read_speed;
+	}
+	if (min_write_speed < 0x7fffffff)
+		d->mdata->min_write_speed = min_write_speed;
+	if (max_write_speed > 0)
+		d->mdata->max_write_speed = max_write_speed;
+	/* there is no mdata->min_read_speed yet 
+	if (min_read_speed < 0x7fffffff)
+		d->mdata->min_read_speed = min_read_speed;
+	*/
+	if (max_read_speed > 0)
+		d->mdata->max_read_speed = max_read_speed;
+	return num_descr;
 }
 
 

@@ -132,7 +132,7 @@ void spc_sense_caps(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
-	int size, page_length, num_write_speeds = 0, i, speed;
+	int size, page_length, num_write_speeds = 0, i, speed, ret;
 	unsigned char *page;
 	struct command c;
 
@@ -174,7 +174,6 @@ void spc_sense_caps(struct burn_drive *d)
 	m->cdr_write = page[3] & 1;
 
 	m->c2_pointers = page[5] & 16;
-	m->valid = 1;
 	m->underrun_proof = page[4] & 128;
 
 	/* ts A61021 : these fields are marked obsolete in MMC 3 */
@@ -187,6 +186,11 @@ void spc_sense_caps(struct burn_drive *d)
 	/* ts A61021 : New field to be set by atip (or following MMC-3 info) */
 	m->min_write_speed = m->max_write_speed;
 
+	/* ts A61225 : for ACh GET PERFORMANCE, Type 03h */
+	m->min_end_lba = 0x7fffffff;
+	m->max_end_lba = 0;
+
+	m->valid = 1;
 
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
 	if (page_length < 32) /* no write speed descriptors ? */
@@ -216,7 +220,14 @@ void spc_sense_caps(struct burn_drive *d)
 
 	if (speed_debug) 
 	fprintf(stderr,
-		"LIBBURN_DEBUG: min_write_speed = %d , max_write_speed = %d\n",
+	"LIBBURN_DEBUG: 5Ah,2Ah min_write_speed = %d , max_write_speed = %d\n",
+		m->min_write_speed, m->max_write_speed);
+
+	ret = mmc_get_write_performance(d);
+
+	if (ret > 0 && speed_debug)
+		fprintf(stderr,
+	  "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
 		m->min_write_speed, m->max_write_speed);
 
 }

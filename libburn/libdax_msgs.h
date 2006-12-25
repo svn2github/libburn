@@ -342,6 +342,10 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020122 (FATAL,HIGH)   = SCSI error on format_unit
  0x00020123 (SORRY,HIGH)   = DVD Media are unsuitable for desired track type
  0x00020124 (SORRY,HIGH)   = SCSI error on set_streaming
+ 0x00020125 (SORRY,HIGH)   = Write start address not supported
+ 0x00020126 (SORRY,HIGH)   = Write start address not properly aligned
+ 0x00020127 (NOTE,HIGH)    = Write start address is ...
+ 0x00020128 (FATAL,HIGH)   = Unsupported inquiry_type with mmc_get_performance
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

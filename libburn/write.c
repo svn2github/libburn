@@ -925,14 +925,15 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 		d->busy = BURN_DRIVE_WRITING;
 	}
 	d->nwa = 0;
-	if (o->start_byte >= 0)
+	if (o->start_byte >= 0) {
 		d->nwa = o->start_byte / 2048;
 
-	sprintf(msg, "Write start address is  %d * 2048", d->nwa);
-	libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020127,
-			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0,0);
+		sprintf(msg, "Write start address is  %d * 2048", d->nwa);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020127,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+	}
 
 	/* >>> perform OPC if needed */;
 
