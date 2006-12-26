@@ -326,6 +326,7 @@ int telltoc_speedlist(struct burn_drive *drive)
 			printf(", %s", sd->profile_name);
 		printf("\n");
 	}
+	burn_drive_free_speedlist(&speed_list);
 	return 1;
 }
 

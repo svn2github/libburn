@@ -433,7 +433,7 @@ struct burn_speed_descriptor {
 	    0 = misc , 1 = mode page 2Ah , 2 = ACh GET PERFORMANCE */
 	int source;
 
-	/** The media type that was reported as current at the time of report
+	/** The media type that was current at the time of report
 	    -2 = state unknown, -1 = no media was loaded , else see
 	    burn_disc_get_profile() */
 	int profile_loaded;
@@ -443,7 +443,7 @@ struct burn_speed_descriptor {
 	    i.e. 2352 raw bytes or 2048 data bytes. -1 = capacity unknown. */
 	int end_lba;
 
-	/** Write speed is given in 1000 bytes/s , 0 = invalid. The numbers
+	/** Speed is given in 1000 bytes/s , 0 = invalid. The numbers
 	    are supposed to be usable with burn_drive_set_speed() */
 	int write_speed;
 	int read_speed;
