@@ -54,6 +54,7 @@ void burn_drive_free(struct burn_drive *d)
 	if (burn_drive_is_open(d))
 		d->release(d);
 	free((void *) d->idata);
+	burn_mdata_free_subs(d->mdata);
 	free((void *) d->mdata);
 	if(d->toc_entry != NULL)
 		free((void *) d->toc_entry);
@@ -144,6 +145,9 @@ int burn_drive_inquire_media(struct burn_drive *d)
 	int loop_count, old_speed = -1234567890, new_speed = -987654321;
 	int old_erasable = -1234567890, new_erasable = -987654321;
 
+	/* ts A61225 : after loading the tray, mode page 2Ah can change */
+	d->getcaps(d);
+
 	/* ts A61020 : d->status was set to BURN_DISC_BLANK as pure guess */
 
 	if (d->mdata->cdr_write || d->mdata->cdrw_write ||
@@ -151,6 +155,8 @@ int burn_drive_inquire_media(struct burn_drive *d)
 
 #ifdef Libburn_grab_release_and_grab_agaiN
 		/* This code demanded the app to release and re-grab. */
+
+		/* ??? ts A61225 : is this safe now (after d->getcaps()) ? */
 
 		d->read_disc_info(d);
 
@@ -225,9 +231,6 @@ int burn_drive_grab(struct burn_drive *d, int le)
 
 	/* ts A61118 */
 	d->start_unit(d);
-
-	/* ts A61225 : after loading the tray, mode page 2Ah can change */
-	d->getcaps(d);
 
 	/* ts A61202 : gave bit1 of le a meaning */
 	sose = d->silent_on_scsi_error;
@@ -1288,5 +1291,113 @@ int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80])
 int burn_drive_wrote_well(struct burn_drive *d)
 {
 	return !d->cancel;
+}
+
+
+/* ts A61226 */
+int burn_speed_descriptor_new(struct burn_speed_descriptor **s,
+			struct burn_speed_descriptor *prev,
+			struct burn_speed_descriptor *next, int flag)
+{
+	struct burn_speed_descriptor *o;
+
+	(*s) = o = malloc(sizeof(struct burn_speed_descriptor));
+	if (o == NULL)
+		return -1;
+	o->source = 0;
+	o->profile_loaded = -2;
+	o->profile_name[0] = 0;
+	o->wrc = 0;
+	o->exact = 0;
+	o->mrw = 0;
+	o->end_lba = -1;
+	o->write_speed = 0;
+	o->read_speed = 0;
+
+	o->prev = prev;
+	if (prev != NULL) {
+		next = prev->next;
+		prev->next = o;
+	} 
+	o->next = next;
+	if (next != NULL)
+		next->prev = o;
+	return 1;
+}
+
+
+/* ts A61226 */
+/* @param flag bit0= destroy whole next-chain of descriptors */
+int burn_speed_descriptor_destroy(struct burn_speed_descriptor **s, int flag)
+{
+	struct burn_speed_descriptor *next, *o;
+
+	if ((*s) == NULL)
+		return 0;
+	if (flag&1)
+		for (o = (*s); o->prev != NULL; o = o->prev);
+	else
+		o = (*s);
+	next = o->next;
+	if (next != NULL)
+		next->prev = o->prev;
+	if (o->prev != NULL)
+		o->prev->next = next;
+	free((char *) (*s));
+	(*s) = NULL;
+	if (flag&1)
+		return burn_speed_descriptor_destroy(&next, flag&1);
+	return 1;
+}
+
+
+/* ts A61226  */
+int burn_speed_descriptor_copy(struct burn_speed_descriptor *from,
+			struct burn_speed_descriptor *to, int flag)
+{
+	to->source = from->source;
+	to->profile_loaded = from->profile_loaded;
+	strcpy(to->profile_name, from->profile_name);
+	to->wrc = from->wrc;
+	to->exact = from->exact;
+	to->mrw = from->mrw;
+	to->end_lba = from->end_lba;
+	to->write_speed = from->write_speed;
+	to->read_speed = from->read_speed;
+	return 1;
+}
+
+
+/* ts A61226 : free dynamically allocated sub data of struct scsi_mode_data */
+int burn_mdata_free_subs(struct scsi_mode_data *m)
+{
+	burn_speed_descriptor_destroy(&(m->speed_descriptors), 1);
+	return 1;
+}
+
+
+/* ts A61226 : API function */
+int burn_drive_get_speedlist(struct burn_drive *d,
+				 struct burn_speed_descriptor **speed_list)
+{
+	int ret;
+	struct burn_speed_descriptor *sd, *csd = NULL;
+
+	(*speed_list) = NULL;
+	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
+		ret = burn_speed_descriptor_new(&csd, NULL, csd, 0);
+		if (ret <= 0)
+			return -1;
+		burn_speed_descriptor_copy(sd, csd, 0);
+	}
+	(*speed_list) = csd;
+	return (csd != NULL);
+}
+
+
+/* ts A61226 : API function */
+int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list)
+{
+	return burn_speed_descriptor_destroy(speed_list, 1);
 }
 

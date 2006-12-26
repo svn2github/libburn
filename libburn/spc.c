@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 
+#include "libburn.h"
 #include "transport.h"
 #include "spc.h"
 #include "mmc.h"
@@ -135,6 +136,7 @@ void spc_sense_caps(struct burn_drive *d)
 	int size, page_length, num_write_speeds = 0, i, speed, ret;
 	unsigned char *page;
 	struct command c;
+	struct burn_speed_descriptor *sd;
 
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
@@ -160,6 +162,9 @@ void spc_sense_caps(struct burn_drive *d)
 	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
 	*/
 	page_length = page[1];
+
+	m->valid = 0;
+	burn_mdata_free_subs(m);
 
 	m->buffer_size = page[12] * 256 + page[13];
 	m->dvdram_read = page[2] & 32;
@@ -192,9 +197,11 @@ void spc_sense_caps(struct burn_drive *d)
 
 	m->valid = 1;
 
+	mmc_get_configuration(d);
+
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
 	if (page_length < 32) /* no write speed descriptors ? */
-		return;
+		goto try_mmc_get_performance;
 
 	m->cur_write_speed = page[28] * 256 + page[29];
 
@@ -212,6 +219,21 @@ void spc_sense_caps(struct burn_drive *d)
 			"LIBBURN_DEBUG: write speed #%d = %d kB/s  (rc %d)\n",
 			i, speed, page[32 + 4*i +1] & 7);
 
+		/* ts A61226 */
+		ret = burn_speed_descriptor_new(&(d->mdata->speed_descriptors),
+				NULL, d->mdata->speed_descriptors, 0);
+		if (ret > 0) {
+			sd = d->mdata->speed_descriptors;
+			sd->source = 1;
+			if (d->current_profile > 0) {
+				sd->profile_loaded = d->current_profile;
+				strcpy(sd->profile_name,
+					d->current_profile_text);
+			}
+			sd->wrc = (( page[32 + 4*i +1] & 7 ) == 1 );
+			sd->write_speed = speed;
+		}
+
 		if (speed > m->max_write_speed)
 			m->max_write_speed = speed;
 		if (speed < m->min_write_speed)
@@ -223,13 +245,13 @@ void spc_sense_caps(struct burn_drive *d)
 	"LIBBURN_DEBUG: 5Ah,2Ah min_write_speed = %d , max_write_speed = %d\n",
 		m->min_write_speed, m->max_write_speed);
 
+try_mmc_get_performance:;
 	ret = mmc_get_write_performance(d);
 
 	if (ret > 0 && speed_debug)
 		fprintf(stderr,
 	  "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
 		m->min_write_speed, m->max_write_speed);
-
 }
 
 
@@ -551,6 +573,7 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	d->idata->valid = 0;
 	d->mdata = malloc(sizeof(struct scsi_mode_data));
 	d->mdata->valid = 0;
+	d->mdata->speed_descriptors = NULL;
 
 	/* ts A61007 : obsolete Assert in drive_getcaps() */
 	if(d->idata == NULL || d->mdata == NULL) {

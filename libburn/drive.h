@@ -10,6 +10,8 @@
 struct burn_drive;
 struct command;
 struct mempage;
+struct scsi_mode_data;
+struct burn_speed_descriptor;
 
 #define LEAD_IN 1
 #define GAP 2
@@ -74,5 +76,19 @@ int burn_drive_inquire_media(struct burn_drive *d);
 
 /* ts A61125 : model aspects of burn_drive_release */
 int burn_drive_mark_unready(struct burn_drive *d);
+
+
+/* ts A61226 */
+int burn_speed_descriptor_new(struct burn_speed_descriptor **s,
+				struct burn_speed_descriptor *prev,
+				struct burn_speed_descriptor *next, int flag);
+
+/* ts A61226 */
+/* @param flag bit0= destroy whole next-chain of descriptors */
+int burn_speed_descriptor_destroy(struct burn_speed_descriptor **s, int flag);
+
+
+/* ts A61226 : free dynamically allocated sub data of struct scsi_mode_data */
+int burn_mdata_free_subs(struct scsi_mode_data *m);
 
 #endif /* __DRIVE */

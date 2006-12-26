@@ -65,6 +65,7 @@ struct burn_scsi_inquiry_data
 	int valid;
 };
 
+
 struct scsi_mode_data
 {
 	int buffer_size;
@@ -88,6 +89,7 @@ struct scsi_mode_data
 	               Speed values go into *_*_speed */
 	int min_end_lba;
 	int max_end_lba;
+	struct burn_speed_descriptor *speed_descriptors;
 
 	int cur_read_speed;
 	int cur_write_speed;

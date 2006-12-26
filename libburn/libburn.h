@@ -414,6 +414,55 @@ struct burn_progress {
 	unsigned buffer_min_fill;
 };
 
+
+/* ts A61226 */
+/** Description of a speed capability as reported by the drive in conjunction
+    with eventually loaded media. There can be more than one such object per
+    drive. So they are chained via .next and .prev , where NULL marks the end
+    of the chain. This list is set up by burn_drive_scan() and gets updated
+    by burn_drive_grab().
+    A copy may be obtained by burn_drive_get_speedlist() and disposed by
+    burn_drive_free_speedlist().
+    For technical background info see SCSI specs MMC and SPC:
+    mode page 2Ah (from SPC 5Ah MODE SENSE) , mmc3r10g.pdf , 6.3.11 Table 364
+    ACh GET PERFORMANCE, Type 03h , mmc5r03c.pdf , 6.8.5.3 Table 312
+*/
+struct burn_speed_descriptor {
+
+	/** Where this info comes from : 
+	    0 = misc , 1 = mode page 2Ah , 2 = ACh GET PERFORMANCE */
+	int source;
+
+	/** The media type that was reported as current at the time of report
+	    -2 = state unknown, -1 = no media was loaded , else see
+	    burn_disc_get_profile() */
+	int profile_loaded;
+	char profile_name[80];
+
+	/** The attributed capacity of appropriate media in logical block units
+	    i.e. 2352 raw bytes or 2048 data bytes. -1 = capacity unknown. */
+	int end_lba;
+
+	/** Write speed is given in 1000 bytes/s , 0 = invalid. The numbers
+	    are supposed to be usable with burn_drive_set_speed() */
+	int write_speed;
+	int read_speed;
+
+	/** Expert info from ACh GET PERFORMANCE and/or mode page 2Ah.
+	    Expect values other than 0 or 1 to get a meaning in future.*/
+	/* Rotational control: 0 = CLV/default , 1 = CAV */
+	int wrc;
+	/* 1 = drive promises reported performance over full media */
+	int exact;
+	/* 1 = suitable for mixture of read and write */
+	int mrw;
+
+	/** List chaining. Use .next until NULL to iterate over the list */
+	struct burn_speed_descriptor *prev;
+	struct burn_speed_descriptor *next;
+};
+
+
 /** Initialize the library.
     This must be called before using any other functions in the library. It
     may be called more than once with no effect.
@@ -735,11 +784,12 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
+    libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW" or
+    0x1a "DVD+RW".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
     @return 1 profile is valid, 0 no profile info available 
-    Note: libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW".
 */
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
 
@@ -1176,6 +1226,31 @@ int burn_drive_get_min_write_speed(struct burn_drive *d);
     @return Maximum read speed in K/s
 */
 int burn_drive_get_read_speed(struct burn_drive *d);
+
+
+/* ts A61226 */
+/** Obtain a copy of the current speed descriptor list. The drive's list gets
+    updated on various occasions such as burn_drive_grab() but the copy
+    obtained here stays untouched. It has to be disposed via
+    burn_drive_free_speedlist() when it is not longer needed. Speeds
+    may appear several times in the list. The list content depends much on
+    drive and media type. It seems that .source == 1 applies mostly to CD media
+    whereas .source == 2 applies to any media.
+    @param d Drive to query
+    @param speed_list The copy. If empty, *speed_list gets returned as NULL.
+    @return 1=success , 0=list empty , <0 severe error
+*/
+int burn_drive_get_speedlist(struct burn_drive *d,
+                             struct burn_speed_descriptor **speed_list);
+
+/* ts A61226 */
+/** Dispose a speed descriptor list copy which was obtained by
+    burn_drive_get_speedlist().
+    @param speed_list The list copy. *speed_list gets set to NULL.
+    @return 1=list disposed , 0= *speedlist was already NULL
+*/
+int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list);
+
 
 /** Gets a copy of the toc_entry structure associated with a track
     @param t Track to get the entry from

@@ -910,7 +910,7 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 	if (d->mdata->max_end_lba > 0)
 		end_lba = d->mdata->max_end_lba - 1;
 
-	sprintf(msg, "mmc_set_streaming: end_lba=%lu ,  r=%d ,  w=%d",
+	sprintf(msg, "mmc_set_streaming: end_lba=%d ,  r=%d ,  w=%d",
 		end_lba, r_speed, w_speed);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -1202,7 +1202,7 @@ int mmc_format_unit(struct burn_drive *d)
 int mmc_get_write_performance(struct burn_drive *d)
 {
 	struct buffer buf;
-	int len, i, b, pass, was_exact_bit = 0, max_descr, num_descr;
+	int len, i, b, max_descr, num_descr, ret;
 	int exact_bit, read_speed, write_speed;
 	/* if this call delivers usable data then they should override
 	   previously recorded min/max speed and not compete with them */
@@ -1211,11 +1211,15 @@ int mmc_get_write_performance(struct burn_drive *d)
 	struct command c;
 	unsigned long end_lba;
 	unsigned char *pd;
+	struct burn_speed_descriptor *sd;
 
 	/* A61225 : 1 = report about speed descriptors */
 	static int speed_debug = 0;
 
 	mmc_function_spy("mmc_get_write_performance");
+
+	if (d->current_profile <= 0)
+		mmc_get_configuration(d);
 
 	memcpy(c.opcode, MMC_GET_PERFORMANCE, sizeof(MMC_GET_PERFORMANCE));
 	max_descr = ( BUFFER_SIZE - 8 ) / 16 - 1;
@@ -1248,7 +1252,7 @@ int mmc_get_write_performance(struct burn_drive *d)
 	num_descr = ( len - 4 ) / 16;
 	if (num_descr > max_descr)
 		num_descr = max_descr;
-	for (pass = 0; pass < 2; pass++) for (i = 0; i < num_descr; i++) {
+	for (i = 0; i < num_descr; i++) {
 		exact_bit = !!(pd[8 + i*16] & 2);
 		end_lba = read_speed = write_speed = 0;
 		for (b = 0; b < 4 ; b++) {
@@ -1259,16 +1263,30 @@ int mmc_get_write_performance(struct burn_drive *d)
 		if (end_lba > 0x7ffffffe)
 			end_lba = 0x7ffffffe;
 
-		if (pass == 0 && speed_debug)
+		if (speed_debug)
 			fprintf(stderr,
 		"LIBBURN_DEBUG: kB/s: write=%d  read=%d  end=%lu  exact=%d\n",
 				write_speed, read_speed, end_lba, exact_bit);
 
-		if (pass == 0 && !exact_bit)
-	continue;
-		if (pass == 1 && was_exact_bit)
-	continue;
-		was_exact_bit |= exact_bit;
+		/* ts A61226 */
+		ret = burn_speed_descriptor_new(&(d->mdata->speed_descriptors),
+				 NULL, d->mdata->speed_descriptors, 0);
+		if (ret > 0) {
+			sd = d->mdata->speed_descriptors;
+			sd->source = 2;
+			if (d->current_profile > 0) {
+				sd->profile_loaded = d->current_profile;
+				strcpy(sd->profile_name,
+					d->current_profile_text);
+			}
+			sd->wrc = (pd[8 + i*16] >> 3 ) & 3;
+			sd->exact = exact_bit;
+			sd->mrw = pd[8 + i*16] & 1;
+			sd->end_lba = end_lba;
+			sd->write_speed = write_speed;
+			sd->read_speed = read_speed;
+		}
+
 		if (end_lba > d->mdata->max_end_lba)
 			d->mdata->max_end_lba = end_lba;
 		if (end_lba < d->mdata->min_end_lba)
