@@ -292,11 +292,40 @@ int telltoc_media(struct burn_drive *drive)
 		min_speed = ((double ) ret) / speed_conv;
 		ret= burn_drive_get_write_speed(drive);
 		max_speed = ((double ) ret) / speed_conv;
-		printf("Media speed  : max=%.1f , min=%.1f\n",
+		printf("Media speed  : max=%.1f  , min=%.1f\n",
 			max_speed, min_speed);
 	}
 	printf("Speed unit 1x: %s\n", speed_unit);
 
+	return 1;
+}
+
+
+int telltoc_speedlist(struct burn_drive *drive)
+{
+	int ret, has_modern_entries = 0;
+	struct burn_speed_descriptor *speed_list, *sd;
+
+	ret = burn_drive_get_speedlist(drive, &speed_list);
+	if (ret <= 0) {
+		fprintf(stderr, "SORRY: Cannot obtain speed list info\n");
+		return 2;
+	}
+	for (sd = speed_list; sd != NULL; sd = sd->next)
+		if (sd->source == 2)
+			has_modern_entries = 1;
+	for (sd = speed_list; sd != NULL; sd = sd->next) {
+		if (has_modern_entries && sd->source < 2)
+	continue;
+		if (sd->write_speed <= 0)
+	continue;
+		printf("Speed descr. : %d kB/s", sd->write_speed);
+		if (sd->end_lba >= 0)
+			printf(", %.f MiB", ((double) sd->end_lba) / 512.0);
+		if (sd->profile_name[0])
+			printf(", %s", sd->profile_name);
+		printf("\n");
+	}
 	return 1;
 }
 
@@ -445,6 +474,7 @@ static int do_media = 0;
 static int do_toc = 0;
 static int do_msinfo = 0;
 static int print_help = 0;
+static int do_speedlist = 0;
 
 
 /** Converts command line arguments into above setup parameters.
@@ -481,6 +511,9 @@ int telltoc_setup(int argc, char **argv)
         } else if (!strcmp(argv[i], "--msinfo")) {
 	    do_msinfo = 1;
 
+        } else if (!strcmp(argv[i], "--speedlist")) {
+	    do_speedlist = 1;
+
         } else if (!strcmp(argv[i], "--toc")) {
 	    do_toc = 1;
 
@@ -497,7 +530,7 @@ int telltoc_setup(int argc, char **argv)
     if (print_help) {
         printf("Usage: %s\n", argv[0]);
         printf("       [--drive <address>|<driveno>|\"-\"]\n");
-        printf("       [--media]  [--toc]  [--msinfo]\n");
+        printf("       [--media]  [--speedlist]  [--toc]  [--msinfo]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
         printf("  %s --drive -\n",argv[0]);
@@ -532,10 +565,11 @@ int main(int argc, char **argv)
 			msinfo_alone = 1;
 	}
 	/* Default option is to do everything if possible */
-    	if (do_media==0 && do_msinfo==0 && do_toc==0 && driveno!=-1) {
+    	if (do_media==0 && do_msinfo==0 && do_speedlist==0 && do_toc==0 
+	    && driveno!=-1) {
 		if(print_help)
 			exit(0);
-		full_default = do_media = do_msinfo = do_toc = 1;
+		full_default = do_media = do_msinfo = do_speedlist= do_toc = 1;
 	}
 
 	fprintf(stderr, "Initializing libburn.pykix.org ...\n");
@@ -562,6 +596,11 @@ int main(int argc, char **argv)
 		ret = telltoc_media(drive_list[driveno].drive);
 		if (ret<=0)
 			{ret = 36; goto release_drive; }
+	}
+	if (do_speedlist) {
+		ret = telltoc_speedlist(drive_list[driveno].drive);
+		if (ret<=0)
+			{ret = 39; goto release_drive; }
 	}
 	if (do_toc) {
 		ret = telltoc_toc(drive_list[driveno].drive);
