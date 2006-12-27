@@ -3551,7 +3551,7 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
              skin->msifile);
      {ret= 0; goto ex;}
    }
-   fprintf(fp,"%d,%d\n",lba,nwa);
+   fprintf(fp,"%d,%d",lba,nwa);
    fclose(fp);
  }
  ret= 1;
