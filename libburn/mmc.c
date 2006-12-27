@@ -604,7 +604,7 @@ void mmc_read_atip(struct burn_drive *d)
 	struct buffer buf;
 	struct command c;
 
-        /* ts A61021 */
+	/* ts A61021 */
 	unsigned char *data;
 	/* Speed values from A1: 
 	   With 4 cdrecord tells "10" or "8" where MMC-1 says "8".
@@ -612,8 +612,10 @@ void mmc_read_atip(struct burn_drive *d)
 	   My CD-R (>=24 speed) tell no A1.
 	   The higher non-MMC-1 values are hearsay.
 	*/
-        static int speed_value[16]= {  0,  2,  4,  6,  10,  -5,  16,  -7,
-				      24, 32, 40, 48, -12, -13, -14, -15};
+	                          /*  0,   2,   4,    6,   10,  -,   16,  -, */
+        static int speed_value[16]= { 0, 353, 706, 1059, 1764, -5, 2824, -7,
+	                   4234, 5646, 7056, 8468, -12, -13, -14, -15};
+	               /*    24,   32,   40,   48,   -,   -,   -,   - */
 
 	mmc_function_spy("mmc_read_atip");
 	memcpy(c.opcode, MMC_GET_ATIP, sizeof(MMC_GET_ATIP));
@@ -636,10 +638,10 @@ void mmc_read_atip(struct burn_drive *d)
 	if (data[6]&4) {
 		if (speed_value[(data[16]>>4)&7] > 0)
 			d->mdata->min_write_speed = 
-				speed_value[(data[16]>>4)&7]*176;
+				speed_value[(data[16]>>4)&7];
 		if (speed_value[(data[16])&15] > 0)
 			d->mdata->max_write_speed = 
-				speed_value[(data[16])&15]*176;
+				speed_value[(data[16])&15];
 	}
 
 #ifdef Burn_mmc_be_verbous_about_atiP
