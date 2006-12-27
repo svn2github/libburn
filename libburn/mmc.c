@@ -636,12 +636,20 @@ void mmc_read_atip(struct burn_drive *d)
 	d->start_lba= burn_msf_to_lba(data[8],data[9],data[10]);
 	d->end_lba= burn_msf_to_lba(data[12],data[13],data[14]);
 	if (data[6]&4) {
-		if (speed_value[(data[16]>>4)&7] > 0)
+		if (speed_value[(data[16]>>4)&7] > 0) {
 			d->mdata->min_write_speed = 
 				speed_value[(data[16]>>4)&7];
-		if (speed_value[(data[16])&15] > 0)
+			if (speed_value[(data[16])&15] <= 0)
+				d->mdata->max_write_speed = 
+					speed_value[(data[16]>>4)&7];
+		}
+		if (speed_value[(data[16])&15] > 0) {
 			d->mdata->max_write_speed = 
 				speed_value[(data[16])&15];
+			if (speed_value[(data[16]>>4)&7] <= 0)
+				d->mdata->min_write_speed = 
+					speed_value[(data[16])&15];
+		}
 	}
 
 #ifdef Burn_mmc_be_verbous_about_atiP
