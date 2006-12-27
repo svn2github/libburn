@@ -3796,6 +3796,12 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    Cdrskin_toc(skin,1);/*cdrecord seems to ignore -toc errors if -atip is ok */
 ex:;
  Cdrskin_release_drive(skin,0);
+
+ /* A61227 :
+    A kindof race condition with -atip on filled CD-RW and following grabs
+    under SuSE 9.3. Waiting seems to help. I suspect the media demon. */
+ usleep(200000);
+
  return(ret);
 }
 
@@ -4759,13 +4765,14 @@ int Cdrskin_eject(struct CdrskiN *skin, int flag)
  if(!skin->do_eject)
    return(1);
 
- /* A60923 :
-    Still not in libburn-0.2.2 : prevent SIGSEV on non-existent drive */
  if(skin->n_drives<=skin->driveno || skin->driveno < 0)
    return(2);
 
- /* <<< A61012 : retry loop might now be obsolete 
+ /* ??? A61012 : retry loop might now be obsolete 
                 (a matching bug in burn_disc_write_sync() was removed ) */
+ /* A61227 : A kindof race condition with -atip -eject on SuSE 9.3. Loop saved
+             me. Waiting seems to help. I suspect the media demon. */
+
  for(i= 0;i<max_try;i++) {
    ret= Cdrskin_grab_drive(skin,2|((i<max_try-1)<<2));
    if(ret>0 || i>=max_try-1)
