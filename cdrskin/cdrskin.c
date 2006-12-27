@@ -2097,6 +2097,7 @@ see_cdrskin_eng_html:;
 #ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-msinfo\t\tretrieve multi-session info for mkisofs >= 1.10\n");
+     fprintf(stderr,"\tmsifile=path\trun -msinfo and copy output to file\n");
 #endif
      fprintf(stderr,"\t-toc\t\tretrieve and print TOC/PMA data\n");
      fprintf(stderr,
@@ -2366,6 +2367,7 @@ struct CdrskiN {
 
  int do_msinfo;
  int msinfo_fd;
+ char msifile[Cdrskin_strleN];
 
  int do_atip;
 
@@ -2490,6 +2492,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_checkdrive= 0;
  o->do_msinfo= 0;
  o->msinfo_fd= -1;
+ o->msifile[0]= 0;
  o->do_atip= 0;
  o->do_blank= 0;
  o->blank_fast= 0;
@@ -3536,6 +3539,21 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
    write(skin->msinfo_fd,msg,strlen(msg));
  } else
    printf("%d,%d\n",lba,nwa);
+
+ if(strlen(skin->msifile)) {
+   FILE *fp;
+
+   fp = fopen(skin->msifile, "w");
+   if(fp==NULL) {
+     if(errno>0)
+       fprintf(stderr,"cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     fprintf(stderr,"cdrskin: FATAL : Cannot write msinfo to file '%s'\n",
+             skin->msifile);
+     {ret= 0; goto ex;}
+   }
+   fprintf(fp,"%d,%d\n",lba,nwa);
+   fclose(fp);
+ }
  ret= 1;
 ex:;
 
@@ -5215,11 +5233,32 @@ gracetime_equals:;
      fprintf(stderr,"cdrskin: SORRY : Option -multi is not available yet.\n");
 #endif
 
+   } else if(strncmp(argv[i],"-msifile=",9)==0) {
+     value_pt= argv[i]+9;
+     goto msifile_equals;
+   } else if(strncmp(argv[i],"msifile=",8)==0) {
+     value_pt= argv[i]+8;
+msifile_equals:;
+#ifdef Cdrskin_libburn_has_multI
+     if(strlen(value_pt)>=sizeof(skin->msifile)) {
+       fprintf(stderr,
+          "cdrskin: FATAL : msifile=... too long. (max: %d, given: %d)\n",
+          sizeof(skin->msifile)-1,strlen(value_pt));
+       return(0);
+     }
+     strcpy(skin->msifile, value_pt);
+     skin->do_msinfo= 1;
+#else
+     fprintf(stderr,
+             "cdrskin: SORRY : Option msifile= is not available.\n");
+     return(0);
+#endif
+
    } else if(strcmp(argv[i],"-msinfo")==0) {
 #ifdef Cdrskin_libburn_has_multI
      skin->do_msinfo= 1;
 #else
-     fprintf(stderr,"cdrskin: SORRY : Option -msinfo is not available yet.\n");
+     fprintf(stderr,"cdrskin: SORRY : Option -msinfo is not available.\n");
      return(0);
 #endif
 
