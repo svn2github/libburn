@@ -1017,7 +1017,7 @@ static char *mmc_obtain_profile_name(int profile_number)
 		texts[0x11] = "DVD-R sequential recording";
 		texts[0x12] = "DVD-RAM";
 		texts[0x13] = "DVD-RW restricted overwrite";
-		texts[0x14] = "DVD-RW sequential overwrite";
+		texts[0x14] = "DVD-RW sequential recording";
 		texts[0x15] = "DVD-R/DL sequential recording";
 		texts[0x16] = "DVD-R/DL layer jump recording";
 		texts[0x1a] = "DVD+RW";
