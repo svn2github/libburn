@@ -18,6 +18,10 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 + -msinfo pushes all other messages to stderr. It works independent of
   other options which would prevent it with cdrecord (-atip, -scanbus, ...)
 
++ DVD+RW writing is like -tao on giant blank CD-RW. 
+  Same with DVD-RW in mode Restricted Overwrite.
+
+
 ------------------------------------------------------------------------------
                                   Changelog
 ------------------------------------------------------------------------------
@@ -2018,28 +2022,310 @@ Removed outdated experiment
 
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.14.111807
 
-2006.12.14.140001  []
+2006.12.14.140001
 + cdrskin-0.2.6/cdrskin/cdrskin.1
 cdrskin-0.2.6/cdrskin/README
 cdrskin-0.2.6/cdrskin/cdrskin_eng.html
 cdrskin-0.2.6/cdrskin/changelog.txt
-Backported manpage to cdrskin-0.2.6 -> pl02
+Backported manpage to cdrskin-0.2.6 -> pl02 and libburn-0.2.6 -> 0.2.6.2
  
 
-  []
+14 Dec 2006  [509]
 cdrskin/cdrskin_eng.html
 Re-arranged examples of documentation commands
 
-  []
+14 Dec 2006  [510]
 cdrskin/cdrskin.1
 Corrected alphabetical sorting error
 
-  []
+14 Dec 2006  [511]
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
+
+14 Dec 2006  [512]
+cdrskin/convert_man_to_html.sh
+Added some meta info to the document header, changed title to "man 1 cdrskin"
+
+14 Dec 2006  [513]
+cdrskin/wiki_plain.txt
+Adapted to existence of man page
+
+15 Dec 2006  [514]
+cdrskin/cdrskin.1
+Clarified drives and their addresses
+
+15 Dec 2006  [515]
+cdrskin/convert_man_to_html.sh
+Adapted to changes in cdrskin.1
+
+15 Dec 2006  [516]
+cdrskin/cdrskin.1
+Introduced term "session"
+
+2006.12.16.090001  [518]
+cdrskin-0.2.6/Makefile.am
++ cdrskin-0.2.6/cdrskin/cdrskin.1
+cdrskin-0.2.6/cdrskin/README
+cdrskin-0.2.6/cdrskin/cdrskin_eng.html
+cdrskin-0.2.6/cdrskin/changelog.txt
+cdrskin-0.2.6/cdrskin/cdrskin_timestamp.h
+Backported manpage to libburn-0.2.6.1 -> libburn-0.2.6.2
+ 
+18 Dec 2006  [519]
+cdrskin/cdrskin.1
+Made several minor clarifications
+
+2006.12.18.123242  [520]
+libburn/mmc.c
+Noted some insight about necessity of OPC gained from growisofs_mmc.cpp
+
+2006.12.20.111932  [522]
+libburn/transport.h
+libburn/options.h
+libburn/options.c
+libburn/write.c
+libburn/sector.c
+libburn/mmc.c
+libburn/libdax_msgs.h
+Prepared experiments for writing to DVD (most easy: DVD+RW)
+
+2006.12.20.142301  [523]
+libburn/write.c
+libburn/libdax_msgs.h
+Refuse to burn audio tracks to DVD
+
+2006.12.20.145222  [524]
+libburn/drive.c
+libburn/mmc.c
+Avoid undefined 43h commands (TOC/ATIP) with non-CD
+
+2006.12.20.170502  [525]
+libburn/mmc.c
+Corrected DVD+RW track number and nwa with 52h READ TRACK INFORMATION
+
+2006.12.20.171230  [526]
+libburn/mmc.c
+Corrected bug reported by gcc -O2
+
+2006.12.20.174016  [527]
+yylibburn/write.c
+Corrected bug reported by gcc -O2
+
+2006.12.20.180214  [528]
+cdrskin/cdrskin.c
+With -atip report "booktype" for DVD media and no questionable ATIP info 
+
+2006.12.20.195421  [529]
+cdrskin/cdrskin.c
+With -atip on DVD report no RAW/RAW96R among "Supported modes"
+
+2006.12.21.122301  [530]
+libburn/write.c
+Removed some debugging messages
+
+2006.12.21.122533  [531]
+cdrskin/cdrskin.c
+DVD speed reporting (and setting for drives which obey BBh SET CD SPEED)
+
+2006.12.21.200556  [532]
+libburn/mmc.c
+libburn/libdax_msgs.h
+DVD speed setting via B6h SET STREAMING, DVD+RW now enabled in vanilla build
+
+2006.12.21.205702  [533]
+Disallowed multi flag with DVD+RW (nurses wrong hopes for now)
+libburn/write.c
+
+21 Dec 2006   [534]
+test/libburner.c
+Report media type, avoid self contradicting messages with DVD+RW --multi
+
+2006.12.21.214641  [535]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/cdrskin_eng.html
+doc/comments
+Some bragging about DVD+RW
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.22.120854
+* Burning of DVD+RW media as single-track TAO-like initial session
+
+
+2006.12.23.102056  [536]
+libburn/libburn.h
+libburn/options.h
+libburn/options.c
+libburn/write.c
+Adjustable write position for DVD+RW: burn_write_opts_set_start_byte()
+
+2006.12.23.102201  [537]
+cdrskin/cdrskin.c
+New option write_start_address=
+
+23 Dec 2006  [538]
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/convert_man_to_html.sh
+Added more info about DVD+RW
+
+2006.12.23.141315  [539]
+libburn/libburn.h
+libburn/drive.c
+libburn/write.c
+cdrskin/cdrskin.c
+New API function to inquire burn success (and avoid confusing messages)
+
+2006.12.23.184353  [540]
+libburn/libburn.h
+libburn/write.c
+cdrskin/cdrskin.c
+More appropriate drive status during format and close of DVD+RW
+
+2006.12.24.140904  [547]
+cdrskin/cdrskin.c
+libburn/write.c
+Fixed a bug with speed measurement at end of DVD+RW burning
+
+2006.12.24.142512  [548]
+libburn/options.h
+libburn/options.c
+libburn/write.c
+Made DVD 32k end padding controllable
+
+2006.12.24.154455  [549]
+cdrskin/cdrskin.c
+Made DVD ignore CD write modes of drive. Made TAO default for DVD+RW.
+
+2006.12.24.182307  [550]
+libburn/write.c
+Bugfix with DVD+RW : progress indicators were initialized too late
+
+2006.12.24.182410  [551]
+libburn/options.c
+Bugfix after changes for DVD+RW: start_byte was initialized 0, but must be -1
+
+24 Dec 2006  [552]
+test/libburner.c
+test/telltoc.c
+Removed unnecessary waiting loops after grab, mentioned DVD+RW
+
+2006.12.25.113534  [553]
+libburn/libburn.h
+libburn/spc.c
+libburn/drive.c
+Ticket 93: write speeds from mode page 2Ah descriptors
+
+25 Dec 2006  [554]
+test/telltoc.c
+Adjusted to new (still immature) speed info semantics
+
+2006.12.25.185747  [555]
+cdrskin/cdrskin.c
+Corrected CD speed conversion factor to 2352*75/1000 = 176.4 kB/s
+
+2006.12.25.190055  [556]
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+libburn/write.c
+libburn/libdax_msgs.h
+Ticket 93: write speeds from ACh GET PERFORMANCE, Type 03h, DVD media capacity
+
+25 Dec 2006  [557]
+test/telltoc.c
+Adjusted to new (more mature) speed info semantics
+
+2006.12.25.190811  [558]
+libburn/transport.h
+Completed revision 556
+
+2006.12.26.170459  [559]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.h
+libburn/drive.c
+libburn/mmc.c
+libburn/spc.c
+New API calls burn_drive_get_speedlist() , burn_drive_free_speedlist()
+
+26 Dec 2006  [560]
+test/telltoc.c
+Enabled report of speed descriptor list
+
+2006.12.26.184321  [561]
+libburn/libburn.h
+test/telltoc.c
+Minor corrections to revisions 559 and 560
+
+2006.12.27.125948  [562]
+libburn/drive.c
+Disabled obsolete drive-media-state workaround. (Spinoff of ticket 93 :))
+
+2006.12.27.130125  [563]
+libburn/mmc.c
+Corrected kB conversion factor to 176.4 with ATIP speed codes
+
+2006.12.27.130239  [564]
+cdrskin/cdrskin.c
+Defended against a race condition on SuSE 9.3 after -atip (hald et.al. ?)
+
+2006.12.27.132653  [565]
+libburn/mmc.c
+Avoided self contradicting result of ATIP speed inquiry
+
+2006.12.27.162846  [566]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Emulated wodim option -msifile=path 
+
+2006.12.27.213729  [567]
+cdrskin/cdrskin.c
+Followed revision 644 of wodim (msifile output without newline)
+
+27 Dec 2006  [568]
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin.1
+Updated about msifile=path
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.27.214424
+* New option -msifile=path from cdrskit/wodim
+
+
+2006.12.29.143734  [569]
+libburn/mmc.c
+Corrected DVD-RW sequential profile name
+
+2006.12.30.001343  [570]
+libburn/mmc.h
+libburn/mmc.c
+libburn/spc.c
+libburn/write.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.c
+Prepared support for DVD-RW in mode Restricted Overwrite
+
+29 Dec 2006  []
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
 
+
+Check wether current_profile is kept up to date with each possible media change
+
+Make drive_info reflect DVD capabilities
+Make proper use of reflected capabilities (e.g. in burn_drive_inquire_media())
+
+Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
+
+
+Sequentially check option list for DVD compliance
+
+
 ------------------------------------ cycle  - cdrskin-0.2.7 - 
+
 
 
 ----------------------------------------- long term intentions:
@@ -2048,11 +2334,9 @@ Next cdrskin-0.2.7 cycle
 Ticket 90: failure on USB
 
   []
-Ticket 92: New ATA driver makes burners appear as /dev/srM
-
-
-  []
 -reset: ioctl(fd,CDROMRESET)  ioctl(fd,SG_SCSI_RESET,SG_SCSI_RESET_DEVICE)
+http://developer.osdl.org/dev/robustmutexes/src/fusyn.hg/Documentation/ioctl/cdrom.txt
+
 
   []
 Open O_EXCL all devices in address resolution chain
