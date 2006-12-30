@@ -887,6 +887,20 @@ int burn_disc_close_session_dvd_plus_rw(struct burn_write_opts *o,
 }
 
 
+/* ts A61228 */
+int burn_disc_close_session_dvd_minus_rw(struct burn_write_opts *o,
+					struct burn_session *s)
+{
+	struct burn_drive *d = o->drive;
+
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
+	if (d->current_profile == 0x13)
+		d->close_track_session(d, 1, 0); /* CLOSE SESSION */
+	d->busy = BURN_DRIVE_WRITING;
+	return 1;
+}
+
+
 /* ts A61218 */
 int burn_dvd_write_session(struct burn_write_opts *o,
 				struct burn_session *s)
@@ -901,6 +915,11 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	}
 	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
 		ret = burn_disc_close_session_dvd_plus_rw(o, s);
+		if (ret <= 0)
+			return 0;
+	} else if (d->current_profile == 0x13) {
+		/* DVD-RW restricted overwrite */
+		ret = burn_disc_close_session_dvd_minus_rw(o, s);
 		if (ret <= 0)
 			return 0;
 	}
@@ -943,6 +962,74 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 }
 
 
+/* ts A61228 : learned much from dvd+rw-tools-7.0/growisofs_mmc.cpp */
+int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
+				struct burn_disc *disc)
+{
+	struct burn_drive *d = o->drive;
+	char msg[160];
+	int ret;
+
+	if (d->current_profile == 0x13) { /* DVD-RW restricted overwrite */
+
+#ifdef NIX
+		/* >>> compose mode page 5 -> spc_select_write_params() */
+		/* learned from transport.hxx : page05_setup()
+		   and mmc3r10g.pdf table 347 */
+
+		o->underrun_proof = 1;
+		o->write_type = 0;  /* packet */
+		o->multi = 0;
+		o->control = (1<<5) | 5; /* Fixed packet, Track mode 5 */
+		>>> make controllable in spc_select_write_params() :
+		>>> c.page->data[10] &= ~(1<<5);                 /* LS_V = 0 */
+		>>> c.page->data[12] = 8;                 /* Data Block Type */
+		>>> .page->data[13] = 0;                        /* Link size */
+
+#endif /* NIX */
+
+		/* ??? urm ... mmc5r03c.pdf 7.5.2 :
+		"For DVD-RW media ... If a medium is in Restricted overwrite
+		 mode, this mode page shall not be used."
+		But growisofs composes a page 5 and sends it.
+		*/
+                d->send_write_parameters(d, o);
+
+		d->busy = BURN_DRIVE_FORMATTING;
+                ret = d->format_unit(d); /* "quick grow" */
+		if (ret <= 0)
+			return 0;
+		d->busy = BURN_DRIVE_WRITING;
+
+	} else {
+		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
+			d->current_profile, d->current_profile_text);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002011e,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0,0);
+		return 0;
+	}
+
+	d->nwa = 0;
+	if (o->start_byte >= 0) {
+		d->nwa = o->start_byte / 32768;
+
+		sprintf(msg, "Write start address is  %d * 32768", d->nwa);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020127,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+	}
+
+	/* >>> perform OPC if needed */;
+
+	/* >>> */;
+
+	return 1;
+}
+
+
 /* ts A61218 */
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
@@ -966,12 +1053,12 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		goto early_failure;
 	}
 
-	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
-
+	if (d->current_profile == 0x1a || d->current_profile == 0x13) {
+		 /* DVD+RW or DVD-RW Restricted Overwrite */
 		if (disc->sessions!=1 || disc->session[0]->tracks>1
 			|| o->multi ) {
 			sprintf(msg,
-		"Burning of DVD+RW is restricted to a single track and session"
+		"Burning is restricted to a single track and no multi-session"
 				);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011f,
@@ -979,6 +1066,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
+	}
+	if (d->current_profile == 0x1a) { /* DVD+RW */
 		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
 			sprintf(msg,
 			  "Write start address not properly aligned to 2048");
@@ -988,7 +1077,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
-
 		ret = burn_disc_setup_dvd_plus_rw(o, disc);
 		if (ret <= 0) {
 			sprintf(msg,
@@ -1000,6 +1088,30 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			goto early_failure;
 		}
 		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
+
+	} else if (d->current_profile == 0x13) { /* DVD-RW Rest. Overwrite */
+		if (o->start_byte >= 0 && (o->start_byte % 32768)) {
+			sprintf(msg,
+			  "Write start address not properly aligned to 32K");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020125,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
+		ret = burn_disc_setup_dvd_minus_rw(o, disc);
+		if (ret <= 0) {
+			sprintf(msg,
+			  "Write preparation setup failed for DVD-RW");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020121,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
+
+		/* ??? is this necessary ? */
+		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 
 	} else {
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",

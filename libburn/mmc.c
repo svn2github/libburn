@@ -37,6 +37,11 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A61219 : Based on knowlege from dvd+rw-tools-7.0 and mmc5r03c.pdf */
 #define Libburn_support_dvd_plus_rW 1
 
+/* ts A61229 */
+/*
+*/
+#define Libburn_support_dvd_minusrw_overW 1
+
 /* Progress report (with Libburn_support_dvd_plus_rW defined):
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
@@ -152,7 +157,8 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
 	c.opcode[1] = 1;
 	if(trackno<=0) {
-		if (d->current_profile == 0x1a) /* DVD+RW */
+		if (d->current_profile == 0x1a || d->current_profile == 0x13)
+				 /* DVD+RW  or DVD-RW restricted overwrite*/
 			c.opcode[5] = 1;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			c.opcode[5] = 0xFF;
@@ -593,9 +599,10 @@ void mmc_read_disc_info(struct burn_drive *d)
 	*/
 	d->bg_format_status = data[7] & 3;
 
-	/* <<< ts A61219 : preliminarily declare all DVD+RW blank,
+	/* ts A61219 : preliminarily declare all DVD+RW blank,
 		(which is not the same as bg_format_status==0 "blank") */
-	if (d->current_profile == 0x1a)
+	/* ts A61229 : same for DVD-RW Restricted overwrite */
+	if (d->current_profile == 0x1a || d->current_profile == 0x13)
 		d->status = BURN_DISC_BLANK;
 }
 
@@ -1079,6 +1086,10 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (cp == 0x1a)
 		d->current_is_supported_profile = 1;
 #endif
+#ifdef Libburn_support_dvd_minusrw_overW
+	if (cp == 0x13)
+		d->current_is_supported_profile = 1;
+#endif
 
 }
 
@@ -1137,7 +1148,8 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 }
 
 
-/* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format() */
+/* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format()
+               and mmc5r03c.pdf, 6.5 FORMAT UNIT */
 int mmc_format_unit(struct burn_drive *d)
 {
 	struct buffer buf;
@@ -1156,10 +1168,10 @@ int mmc_format_unit(struct burn_drive *d)
 	memset(c.page->data, 0, c.page->bytes);
 
 	descr[0] = 0;
+	c.page->data[1] = 0x02;                   /* Immed */
+	c.page->data[3] = 8;                      /* Format descriptor length */
 	if (d->current_profile == 0x1a) { /* DVD+RW */
-		c.page->data[1] = 0x02;          /* Immed */
-		c.page->data[3] = 8;             /* Format descriptor length */
-		/* mmc5r03c.pdf , 6.5.4.2.14 */
+		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		c.page->data[8] = 0x26 << 2;        /* Format type */
 		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
 		if (d->bg_format_status == 1)       /* is partly formatted */
@@ -1173,6 +1185,11 @@ int mmc_format_unit(struct burn_drive *d)
 		}
 		sprintf(descr, "DVD+RW, BGFS %d",
 			d->bg_format_status);
+	} else if (d->current_profile == 0x13) {/*DVD-RW restricted overwrite*/
+		/* 6.5.4.2.8 , DVD-RW Quick Grow Last Border */
+		c.page->data[8] = 0x13 << 2;        /* Format type */
+		c.page->data[11] = 16;              /* Restart bit */
+		sprintf(descr, "DVD-RW, quick grow");
 	} else { 
 
 	/* >>> other formattable types to come */
@@ -1356,6 +1373,58 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_is_supported_profile = 0;
 	d->bg_format_status = -1;
 
+	return 1;
+}
+
+
+/* ts A61229 : outsourced from spc_select_write_params() */
+/* Note: Page data is not zeroed here to allow preset defaults. Thus
+           memset(pd, 0, 2 + d->mdata->write_page_length);
+         is the eventual duty of the caller.
+*/
+int mmc_compose_mode_page_5(struct burn_drive *d,
+				const struct burn_write_opts *o,
+				unsigned char *pd)
+{
+	pd[0] = 5;
+	pd[1] = d->mdata->write_page_length;
+
+	/* ts A61229 */
+	if (d->current_profile == 0x13) {     /* DVD-RW restricted overwrite */
+		/* learned from transport.hxx : page05_setup()
+		   and mmc3r10g.pdf table 347 */
+ 		/* BUFE (burnproof), no LS_V (i.e. default Link Size, i hope),
+		   no simulate, write type 0 = packet */
+		pd[2] = (1 << 6);
+		/* no multi, fixed packet, track mode 5 */
+		pd[3] = (1 << 5) | 5;
+		/* Data Block Type */
+		pd[4] = 8;
+		/* Link size dummy */
+		pd[5] = 0;
+	} else {
+		/* Traditional setup for CD */
+		pd[2] = ((!!o->underrun_proof) << 6)
+			| ((!!o->simulate) << 4)
+			| (o->write_type & 0x0f);
+
+		/* ts A61106 : MMC-1 table 110 : multi==0 or multi==3 */
+		pd[3] = ((3 * !!o->multi) << 6) | (o->control & 0x0f);
+
+		pd[4] = spc_block_type(o->block_type);
+
+		/* ts A61104 */
+		if(!(o->control&4)) /* audio (MMC-1 table 61) */
+			if(o->write_type == BURN_WRITE_TAO)
+				pd[4] = 0; /* Data Block Type: Raw Data */
+
+		pd[14] = 0;     /* audio pause length MSB */
+		pd[15] = 150;	/* audio pause length LSB */
+
+/*XXX need session format! */
+/* ts A61229 : but session format (pd[8]) = 0 seems ok */
+
+	}
 	return 1;
 }
 

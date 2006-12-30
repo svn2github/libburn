@@ -3781,6 +3781,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  }
  if(strstr(profile_name,"DVD")==profile_name) {
    printf("book type:       %s (emulated booktype)\n", profile_name);
+   if(profile_number==0x13)
+     printf(
+       "cdrskin: for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {
@@ -4293,13 +4296,14 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
+ int profile_number= -1;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
  
  profile_name[0]= 0;
 #ifdef Cdrskin_libburn_has_get_profilE
  if(skin->grabbed_drive)
-   burn_disc_get_profile(skin->grabbed_drive,&i,profile_name);
+   burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
 #endif
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
@@ -4308,7 +4312,8 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
    if(s == BURN_DISC_APPENDABLE) {
      strcpy(skin->preskin->write_mode_name,"TAO");
      was_still_default= 2; /*<<< prevents trying of SAO if drive dislikes TAO*/
-   } else if(strstr(profile_name,"DVD+RW")==profile_name) {
+   } else if(strstr(profile_name,"DVD+RW")==profile_name ||
+             profile_number == 0x13) { /* DVD-RW Restricted Overwrite */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
      strcpy(skin->preskin->write_mode_name,"SAO");
