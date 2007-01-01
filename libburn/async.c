@@ -35,12 +35,20 @@ struct erase_opts
 	int fast;
 };
 
+/* ts A61230 */
+struct format_opts
+{
+	struct burn_drive *drive;
+	int flag;
+};
+
 struct write_opts
 {
 	struct burn_drive *drive;
 	struct burn_write_opts *opts;
 	struct burn_disc *disc;
 };
+
 
 struct w_list
 {
@@ -53,6 +61,7 @@ struct w_list
 	{
 		struct scan_opts scan;
 		struct erase_opts erase;
+		struct format_opts format;
 		struct write_opts write;
 	} u;
 };
@@ -222,6 +231,47 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	o.fast = fast;
 	add_worker(drive, (WorkerFunc) erase_worker_func, &o);
 }
+
+
+/* ts A61230 */
+static void *format_worker_func(struct w_list *w)
+{
+	burn_disc_format_sync(w->u.format.drive, w->u.format.flag);
+	remove_worker(pthread_self());
+	return NULL;
+}
+
+
+/* ts A61230 */
+void burn_disc_format(struct burn_drive *drive, int flag)
+{
+	struct format_opts o;
+	char msg[160];
+
+	if ((SCAN_GOING()) || find_worker(drive)) {
+		libdax_msgs_submit(libdax_messenger, drive->global_index,
+			0x00020102,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"A drive operation is still going on (want to format)",
+			0, 0);
+		return;
+	}
+
+	if (drive->current_profile != 0x14) { /* no DVD-RW */
+		sprintf(msg,"Will not format media type %4.4Xh",
+			drive->current_profile);
+		libdax_msgs_submit(libdax_messenger, drive->global_index,
+			0x00020129,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		drive->cancel = 1;
+		return;
+	}
+	o.drive = drive;
+	o.flag = flag;
+	add_worker(drive, (WorkerFunc) format_worker_func, &o);
+}
+
 
 static void *write_disc_worker_func(struct w_list *w)
 {

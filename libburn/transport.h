@@ -224,7 +224,7 @@ struct burn_drive
 	int (*read_buffer_capacity) (struct burn_drive *d);
 
 	/* ts A61220 : format media (e.g. DVD+RW) */
-	int (*format_unit) (struct burn_drive *d);
+	int (*format_unit) (struct burn_drive *d, int flag);
 
 };
 

@@ -447,8 +447,10 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	/* ts A60825 : allow on parole to blank appendable CDs */
 	if ( ! (d->status == BURN_DISC_FULL ||
 		(d->status == BURN_DISC_APPENDABLE &&
-		 ! libburn_back_hack_42) ) )
+		 ! libburn_back_hack_42) ) ) {
+		d->cancel = 1;
 		return;
+	}
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_ERASING;
 	d->erase(d, fast);
@@ -468,6 +470,40 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
 	!d->test_unit_ready(d))
 		sleep(1);
+	d->progress.sector = 0x10000;
+
+	/* ts A61125 : update media state records */
+	burn_drive_mark_unready(d);
+	burn_drive_inquire_media(d);
+}
+
+
+void burn_disc_format_sync(struct burn_drive *d, int flag)
+{
+	int ret;
+
+	d->cancel = 0;
+	d->busy = BURN_DRIVE_FORMATTING;
+	ret = d->format_unit(d, 0);
+	if (ret <= 0)
+		d->cancel = 1;
+	/* reset the progress */
+	d->progress.session = 0;
+	d->progress.sessions = 1;
+	d->progress.track = 0;
+	d->progress.tracks = 1;
+	d->progress.index = 0;
+	d->progress.indices = 1;
+	d->progress.start_sector = 0;
+	d->progress.sectors = 0x10000;
+	d->progress.sector = 0;
+
+	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
+		sleep(1);
+	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
+	!d->test_unit_ready(d))
+		sleep(1);
+
 	d->progress.sector = 0x10000;
 
 	/* ts A61125 : update media state records */

@@ -784,8 +784,8 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
-    libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW" or
-    0x1a "DVD+RW".
+    libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW",
+    0x13 "DVD-RW restricted overwrite" or 0x1a "DVD+RW".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
@@ -841,7 +841,18 @@ void burn_read_opts_free(struct burn_read_opts *opts);
 */
 void burn_disc_erase(struct burn_drive *drive, int fast);
 
-/* ts A61109 : this is defunct */
+
+/* ts A70101 */
+/** Format media for use with libburn. This currently applies only to DVD-RW
+    in state "Sequential Recording" (profile 0014h) which get formatted to
+    state "Restricted Overwrite" (profile 0013h).
+    @param drive The drive with the disc to format.
+    @param flag Unused yet. Submit 0.
+*/
+void burn_disc_format(struct burn_drive *drive, int flag);
+
+
+/* ts A61109 : this was and is defunct */
 /** Read a disc from the drive and write it to an fd pair. The drive must be
     grabbed successfully BEFORE calling this function. Always ensure that the
     drive reports a status of BURN_DISC_FULL before calling this function.
@@ -1136,7 +1147,7 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to
-    choose this address at all (DVD+RW only for now). The address is given in
+    choose this address at all (DVD+-RW only for now). The address is given in
     bytes. If it is not -1 then a write run will fail if choice of start
     address is not supported or if the block alignment of the address is not
     suitable for media and write mode. (Alignment to 32 kB blocks is advised

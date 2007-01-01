@@ -346,6 +346,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020126 (SORRY,HIGH)   = Write start address not properly aligned
  0x00020127 (NOTE,HIGH)    = Write start address is ...
  0x00020128 (FATAL,HIGH)   = Unsupported inquiry_type with mmc_get_performance
+ 0x00020129 (SORRY,HIGH)   = Will not format media type
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

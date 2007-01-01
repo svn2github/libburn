@@ -55,9 +55,15 @@ extern struct libdax_msgs *libdax_messenger;
                functions in dvd+rw-tools are a bit intimidating to the reader.
                I hope it is possible to leave much of this to the drive. 
                And if it fails ... well, it's only speed setting. :))
+   ts A61229 : Burned to several DVD-RW formatted to mode Restricted Overwrite
+               by dvd+rw-format. Needs Libburn_support_dvd_minusrw_overW.
+   ts A61230 : Other than growisofs, libburn does not send a mode page 5 for
+               such DVD-RW (which the MMC-5 standard does deprecate) and it
+               really seems to work without such a page.
+   ts A70101 : Formatted DVD-RW media. Success is varying with media, but
+               dvd+rw-format does not do better with the same media.
+
 Todo:
-   Determine media capacity.
-   Determine drive+media speed options.
    Determine first free lba for appending data. 
    Determine start lba of most recent mkisofs session.
 */
@@ -173,8 +179,9 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 		+ (data[10] << 8) + data[11];
 	*nwa = (data[12] << 24) + (data[13] << 16)
 		+ (data[14] << 8) + data[15];
-	if (d->current_profile == 0x1a) { /* DVD+RW */
-		*nwa = *nwa = 0;
+	if (d->current_profile == 0x1a || d->current_profile == 0x13) {
+		 /* DVD+RW or DVD-RW restricted overwrite */
+		*lba = *nwa = 0;
 	} else if (!(data[7]&1)) {
 		/* ts A61106 :  MMC-1 Table 142 : NWA_V = NWA Valid Flag */
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
@@ -1150,11 +1157,14 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 
 /* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format()
                and mmc5r03c.pdf, 6.5 FORMAT UNIT */
-int mmc_format_unit(struct burn_drive *d)
+/*
+   @param flag unused yet, submit 0
+*/
+int mmc_format_unit(struct burn_drive *d, int flag)
 {
 	struct buffer buf;
 	struct command c;
-	int ret;
+	int ret, tolerate_failure = 0;
 	char msg[160],descr[80];
 
 	mmc_function_spy("mmc_format_unit");
@@ -1183,13 +1193,24 @@ int mmc_format_unit(struct burn_drive *d)
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
 		}
-		sprintf(descr, "DVD+RW, BGFS %d",
-			d->bg_format_status);
+		sprintf(descr, "DVD+RW, BGFS %d", d->bg_format_status);
 	} else if (d->current_profile == 0x13) {/*DVD-RW restricted overwrite*/
+
+		/* >>> check wether READ FORMAT CAPACITIES does report
+		       0x13 formatting. If not, skip this. It seems to work
+		       without formatting on e.g. freshly formatted media. */ 
+		tolerate_failure = 1;
+
 		/* 6.5.4.2.8 , DVD-RW Quick Grow Last Border */
 		c.page->data[8] = 0x13 << 2;        /* Format type */
-		c.page->data[11] = 16;              /* Restart bit */
+		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick grow");
+	} else if (d->current_profile == 0x14) {/*DVD-RW sequential recording*/
+		/* 6.5.4.2.10 , DVD-RW Quick (-> Restricted Overwrite) */
+		/* c.page->data[4-7]==0 : 0 blocks */
+		c.page->data[8] = 0x15 << 2;        /* Format type */
+		c.page->data[11] = 16;              /* block size * 2k */
+		sprintf(descr, "DVD-RW, quick");
 	} else { 
 
 	/* >>> other formattable types to come */
@@ -1204,7 +1225,7 @@ int mmc_format_unit(struct burn_drive *d)
 	}
 
 	d->issue_command(d, &c);
-	if (c.error) {
+	if (c.error && !tolerate_failure) {
 		if (c.sense[2]!=0) {
 			sprintf(msg,
 		"SCSI error on format_unit(%s): key=%X asc=%2.2Xh ascq=%2.2Xh",

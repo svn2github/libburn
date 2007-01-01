@@ -51,6 +51,10 @@ int mmc_read_buffer_capacity(struct burn_drive *d);
 */
 int mmc_setup_drive(struct burn_drive *d);
 
+/* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format()
+               and mmc5r03c.pdf, 6.5 FORMAT UNIT */
+int mmc_format_unit(struct burn_drive *d, int flag);
+
 /* ts A61225 : obtain write speed descriptors via ACh GET PERFORMANCE */
 int mmc_get_write_performance(struct burn_drive *d);
 

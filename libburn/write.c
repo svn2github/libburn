@@ -938,7 +938,7 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
 		d->busy = BURN_DRIVE_FORMATTING;
 		/* start or re-start dvd_plus_rw formatting */
-		ret = d->format_unit(d);
+		ret = d->format_unit(d, 0);
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;
@@ -972,31 +972,17 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 
 	if (d->current_profile == 0x13) { /* DVD-RW restricted overwrite */
 
-#ifdef NIX
-		/* >>> compose mode page 5 -> spc_select_write_params() */
-		/* learned from transport.hxx : page05_setup()
-		   and mmc3r10g.pdf table 347 */
-
-		o->underrun_proof = 1;
-		o->write_type = 0;  /* packet */
-		o->multi = 0;
-		o->control = (1<<5) | 5; /* Fixed packet, Track mode 5 */
-		>>> make controllable in spc_select_write_params() :
-		>>> c.page->data[10] &= ~(1<<5);                 /* LS_V = 0 */
-		>>> c.page->data[12] = 8;                 /* Data Block Type */
-		>>> .page->data[13] = 0;                        /* Link size */
-
-#endif /* NIX */
-
-		/* ??? urm ... mmc5r03c.pdf 7.5.2 :
+		/* ??? mmc5r03c.pdf 7.5.2 :
 		"For DVD-RW media ... If a medium is in Restricted overwrite
 		 mode, this mode page shall not be used."
 		But growisofs composes a page 5 and sends it.
-		*/
+
                 d->send_write_parameters(d, o);
+		*/
 
 		d->busy = BURN_DRIVE_FORMATTING;
-                ret = d->format_unit(d); /* "quick grow" */
+
+                ret = d->format_unit(d, 0); /* "quick grow" */
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;

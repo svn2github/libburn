@@ -91,4 +91,8 @@ int burn_speed_descriptor_destroy(struct burn_speed_descriptor **s, int flag);
 /* ts A61226 : free dynamically allocated sub data of struct scsi_mode_data */
 int burn_mdata_free_subs(struct scsi_mode_data *m);
 
+
+/* ts A61230 */
+void burn_disc_format_sync(struct burn_drive *d, int flag);
+
 #endif /* __DRIVE */

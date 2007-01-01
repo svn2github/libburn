@@ -421,9 +421,10 @@ void spc_select_write_params(struct burn_drive *d,
 	c.page->data[22] = 0;
 	c.page->data[23] = 150;	/* audio pause length */
 
+/*XXX need session format! */
+
 #endif /* ! Libburn_mmc_compose_mode_page_5 */
 
-/*XXX need session format! */
 	c.dir = TO_DRIVE;
 	d->issue_command(d, &c);
 }
