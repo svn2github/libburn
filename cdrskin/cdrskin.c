@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2007 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL. See future commitment below.
 
 A cdrecord compatible command line interface for libburn.
@@ -171,6 +171,7 @@ or
 #define Cdrskin_libburn_has_set_start_bytE 1
 #define Cdrskin_libburn_has_wrote_welL 1
 #define Cdrskin_libburn_has_bd_formattinG 1
+#define Cdrskin_libburn_has_burn_disc_formaT 1
 #endif /* Cdrskin_libburn_0_2_7 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -1826,6 +1827,8 @@ return:
              "\tfast\t\tminimally blank the entire disk\n");
      fprintf(stderr,
           "\tminimal\t\tminimally blank the entire disk\n");
+     fprintf(stderr,
+          "\tformat_overwrite\tformat a DVD-RW to \"Restricted Overwrite\"\n");
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -2374,6 +2377,8 @@ struct CdrskiN {
  int do_blank;
  int blank_fast;
  int no_blank_appendable;
+ int blank_format_type; /* 0=blank, 1 to 255 like with burn_disc_format(flag):
+                           1=format_overwrite, 2=format_sequential */
 
  int do_burn;
  int burnfree;
@@ -2497,6 +2502,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_blank= 0;
  o->blank_fast= 0;
  o->no_blank_appendable= 0;
+ o->blank_format_type= 0;
  o->do_burn= 0;
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
@@ -3834,7 +3840,9 @@ ex:;
                 bit0= do not print message about pseudo-checkdrive
 */
 int Cdrskin_wait_before_action(struct CdrskiN *skin, int flag)
-/* flag: bit0= BLANK rather than write mode */
+/* flag: bit0= BLANK rather than write mode
+         bit1= FORMAT rather than write mode
+*/
 {
  int i;
 
@@ -3849,7 +3857,7 @@ int Cdrskin_wait_before_action(struct CdrskiN *skin, int flag)
    printf(
   "Starting to write CD/DVD at speed %s in %s %s mode for %s session.\n",
           speed_text,(skin->dummy_mode?"dummy":"real"),
-          (flag&1?"BLANK":skin->preskin->write_mode_name),
+          (flag&2?"FORMAT":(flag&1?"BLANK":skin->preskin->write_mode_name)),
           (skin->multi?"multi":"single"));
    printf("Last chance to quit, starting real write in %3d seconds.",
           skin->gracetime);
@@ -3878,8 +3886,14 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  struct burn_progress p;
  struct burn_drive *drive;
- int ret,loop_counter= 0,hint_force= 0;
+ int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
+ int wrote_well= 1;
  double start_time;
+ char *verb= "format", *presperf="blanking", *fmt_text= "format_...";
+ char profile_name[80];
+ static char fmtp[][40]= {
+                    "format_default", "format_overwrite", "format_sequential"};
+ static int fmtp_max= 2;
 
  start_time= Sfile_microtime(0); /* will be refreshed later */
  ret= Cdrskin_grab_drive(skin,0);
@@ -3896,8 +3910,19 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  s= burn_disc_get_status(drive);
 #endif
 
+ profile_name[0]= 0;
+#ifdef Cdrskin_libburn_has_get_profilE
+ if(skin->grabbed_drive)
+   burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
+#endif
+
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
+ do_format= skin->blank_format_type;
+ if(do_format) {
+   verb= "format";
+   presperf= "formatting";
+ }
 
 #ifdef Cdrskin_libburn_has_pretend_fulL
  if(s==BURN_DISC_UNSUITABLE) {
@@ -3911,44 +3936,103 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  }
 #endif /* Cdrskin_libburn_has_pretend_fulL */
 
- if(s!=BURN_DISC_FULL && 
-    (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable)) {
-   Cdrskin_release_drive(skin,0);
-   if(s==BURN_DISC_BLANK) {
+ if(do_format) {
+   if(do_format>=0 && do_format<=fmtp_max)
+     fmt_text= fmtp[do_format];
+   if(do_format!=1) {
+
+     /* >>> other formats to come. At least _sequential */;
+
      fprintf(stderr,
-       "cdrskin: NOTE : blank=... : media was already blank (and still is)\n");
-     return(2);
-   } else if(s==BURN_DISC_APPENDABLE) {
-     fprintf(stderr,
-             "cdrskin: FATAL : blank=... : media is still appendable\n");
+          "cdrskin: SORRY : only blank=%s is implemented yet\n",fmtp[1]);
+     return(0);
+   } else if(profile_number == 0x14) { /* DVD-RW sequential */
+     if(do_format!=2 && do_format!=1)
+       goto unsupported_with_dvd_minus_rw;
+   } else if(profile_number == 0x13) { /* DVD-RW restricted overwrite */
+     if(do_format==2) { /* >>> when re-formatting is implemented:
+                                || (do_format==1 && skin->force_is_set) */
+       ;
+     } else if(do_format!=1) {
+unsupported_with_dvd_minus_rw:;
+       fprintf(stderr,
+           "cdrskin: SORRY : blank=%s : unsupported format type with DVD-RW\n",
+           fmt_text);
+       return(0);
+     } else {
+       fprintf(stderr,
+     "cdrskin: SORRY : blank=format_overwrite : media is already formatted\n");
+/* >>> when re-formatting is implemented
+       fprintf(stderr,
+       "cdrskin: HINT : If you really want to re-format, try option -force\n");
+*/
+       return(2);
+     }
    } else {
      fprintf(stderr,
-             "cdrskin: FATAL : blank=... : no blankworthy disc found\n");
-     if(hint_force)
-       fprintf(stderr,
-    "cdrskin: HINT : If you are certain to have a CD-RW, try option -force\n");
+             "cdrskin: SORRY : blank=%s for now does DVD-RW only\n",fmt_text);
+     return(0);
    }
-   return(0);
- }
- if(!burn_disc_erasable(drive)) {
-   fprintf(stderr,
-           "cdrskin: FATAL : blank=... : media is not erasable\n");
-   return(0);
+   if(s==BURN_DISC_UNSUITABLE)
+     fprintf(stderr,
+         "cdrskin: NOTE : blank=%s accepted not yet suitable media\n",
+         fmt_text);
+ } else {
+   if(s!=BURN_DISC_FULL && 
+      (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable)) {
+     Cdrskin_release_drive(skin,0);
+     if(s==BURN_DISC_BLANK) {
+       fprintf(stderr,
+       "cdrskin: NOTE : blank=... : media was already blank (and still is)\n");
+       return(2);
+     } else if(s==BURN_DISC_APPENDABLE) {
+       fprintf(stderr,
+               "cdrskin: FATAL : blank=... : media is still appendable\n");
+     } else {
+       fprintf(stderr,
+               "cdrskin: FATAL : blank=... : no blankworthy disc found\n");
+       if(hint_force)
+         fprintf(stderr,
+    "cdrskin: HINT : If you are certain to have a CD-RW, try option -force\n");
+     }
+     return(0);
+   }
+   if(!burn_disc_erasable(drive)) {
+     fprintf(stderr,"cdrskin: FATAL : blank=... : media is not erasable\n");
+     return(0);
+   }
  }
  if(skin->dummy_mode) {
    fprintf(stderr,
-           "cdrskin: would have begun to blank disc if not in -dummy mode\n");
+           "cdrskin: would have begun to %s disc if not in -dummy mode\n",
+           verb);
    goto blanking_done;
  }
- fprintf(stderr,"cdrskin: beginning to blank disc\n");
+ fprintf(stderr,"cdrskin: beginning to %s disc\n",verb);
  Cdrskin_adjust_speed(skin,0);
 
 #ifndef Cdrskin_extra_leaN
- Cdrskin_wait_before_action(skin,1);
+ Cdrskin_wait_before_action(skin,1+(!!do_format));
 #endif /* ! Cdrskin_extra_leaN */
 
  skin->drive_is_busy= 1;
- burn_disc_erase(drive,skin->blank_fast);
+ if(do_format==0) {
+   burn_disc_erase(drive,skin->blank_fast);
+
+#ifdef Cdrskin_libburn_has_burn_disc_formaT
+ } else if(do_format==1) {
+   burn_disc_format(drive,0);
+#endif
+
+ } else {
+
+   /* >>> */;
+
+   /* <<< */
+   fprintf(stderr,"cdrskin: SORRY : Format type %d not implemented yet.\n",
+           do_format);
+   ret= 0; goto ex;
+ }
 
  loop_counter= 0;
  start_time= Sfile_microtime(0);
@@ -3960,22 +4044,33 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        if(p.sectors>0) /* i want a display of 1 to 99 percent */
          percent= 1.0+((double) p.sector+1.0)/((double) p.sectors)*98.0;
        fprintf(stderr,
-          "\rcdrskin: blanking ( done %2d%% , %lu seconds elapsed )          ",
-          percent,(unsigned long) (Sfile_microtime(0)-start_time));
+          "\rcdrskin: %s ( done %2d%% , %lu seconds elapsed )          ",
+          presperf,percent,(unsigned long) (Sfile_microtime(0)-start_time));
      }
    sleep(1);
    loop_counter++;
  }
 blanking_done:;
- skin->drive_is_busy= 0;
- if(skin->verbosity>=Cdrskin_verbose_progresS) {
+#ifdef Cdrskin_libburn_has_wrote_welL
+ wrote_well = burn_drive_wrote_well(drive);
+#endif
+ if(wrote_well && skin->verbosity>=Cdrskin_verbose_progresS) {
    fprintf(stderr,
-    "\rcdrskin: blanking done                                             \n");
-   printf("Blanking time:   %.3fs\n",Sfile_microtime(0)-start_time);
-   fflush(stdout);
+           "\rcdrskin: %s done                                        \n",
+           presperf);
+   printf("%s time:   %.3fs\n",(do_format?"Formatting":"Blanking"),
+          Sfile_microtime(0)-start_time);
  }
+ fflush(stdout);
+ if(!wrote_well)
+   fprintf(stderr,
+           "\rcdrskin: %s failed                                      \n",
+           presperf);
+ ret= !!(wrote_well);
+ex:;
+ skin->drive_is_busy= 0;
  Cdrskin_release_drive(skin,0);
- return(1);
+ return(ret);
 }
 
 
@@ -4887,7 +4982,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
  int i,k,ret,source_has_size=0;
  double value,grab_and_wait_value= -1.0;
- char *cpt,*value_pt,adr[Cdrskin_adrleN];
+ char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
 
  /* cdrecord 2.01 options which are not scheduled for implementation, yet */
@@ -5014,23 +5109,33 @@ set_abort_max_wait:;
    } else if(strncmp(argv[i],"blank=",6)==0) {
      cpt= argv[i]+6;
 set_blank:;
+     skin->blank_format_type= 0;
+     blank_mode= cpt;
      if(strcmp(cpt,"all")==0 || strcmp(cpt,"disc")==0 
         || strcmp(cpt,"disk")==0) {
        skin->do_blank= 1;
        skin->blank_fast= 0;
+       blank_mode= "all";
      } else if(strcmp(cpt,"fast")==0 || strcmp(cpt,"minimal")==0) { 
        skin->do_blank= 1;
        skin->blank_fast= 1;
+       blank_mode= "fast";
+     } else if(strcmp(cpt,"format_overwrite")==0) { 
+       skin->do_blank= 1;
+       skin->blank_format_type= 1;
+     } else if(strcmp(cpt,"format_sequential")==0) { 
+       skin->do_blank= 1;
+       skin->blank_format_type= 2;
      } else if(strcmp(cpt,"help")==0) { 
        /* is handled in Cdrpreskin_setup() */;
+ continue;
      } else { 
        fprintf(stderr,"cdrskin: FATAL : blank option '%s' not supported yet\n",
                       cpt);
        return(0);
      }
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: blank mode : blank=%s\n",
-            (skin->blank_fast?"fast":"all"));
+       printf("cdrskin: blank mode : blank=%s\n",blank_mode);
 
    } else if(strcmp(argv[i],"--bragg_with_audio")==0) {
      /* OBSOLETE 0.2.3 : was handled in Cdrpreskin_setup() */;

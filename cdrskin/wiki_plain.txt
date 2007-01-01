@@ -23,8 +23,10 @@ Appending sessions to an unclosed CD is restricted to write mode TAO.
 (Users who have a burner which succeeds with a follow-up session via
 cdrecord -sao : please contact us.)
 
-cdrskin does not provide DVD burning yet. See advise to use dvd+rw-tools
-at the end of this text.
+The development version of cdrskin is able to burn a single track to DVD+RW
+or DVD-RW media.
+For other DVD types and for appending sessions to ISO filesystems see the
+advise to use dvd+rw-tools at the end of this text.
 
 --------------------------------------------------------------------------
 
@@ -191,12 +193,9 @@ They are not compatible or related to cdrecord resp. cdrecord-ProDVD
 (now obsoleted by original source cdrtools cdrecord with identical
 capabilities besides the license key).
 
-If there is sincere and well motivated interest, the cdrskin project could try
-to employ growisofs as DVD burning engine. The cdrskin project would prefer to
-wait for DVD support being included in libburn, though.
-A very limited and specialized cdrecord-compatibility wrapper for growisofs
-serves in my project scdbackup. It is not overly hard to make one that serves
-some very few fixed use cases.
+libburn and thus the cdrskin project are currently aquiring own capabilities
+to burn to DVD media. For now restricted to DVD+RW and DVD-RW and to single
+tracks.
 
 To my knowledge, Linux kernels 2.6 do write to DVD+RW via block devices as
 they would write to a traditional tape device. Try old tape archiver

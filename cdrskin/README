@@ -9,7 +9,7 @@ This all is under GPL.
 Based on and sub project of:
 libburnia.pykix.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
 
 libburnia.pykix.org is inspired by and in other components still containing
 parts of
@@ -27,7 +27,7 @@ cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia.pykix.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
 http://scdbackup.sourceforge.net/cdrskin-0.2.7.tar.gz
-Copyright (C) 2006 Thomas Schmitt
+Copyright (C) 2006-2007 Thomas Schmitt
 
 ------------------------------------------------------------------------------
 
@@ -164,11 +164,11 @@ Thoroughly blank a CD-RW
 Blank CD-RW sufficiently for making it ready for overwrite
     cdrskin -v dev=0,1,0 blank=fast -eject 
 
-Burn image file  my_image.iso  to CD or DVD+RW
+Burn image file  my_image.iso  to CD or DVD+-RW
     cdrskin -v dev=0,1,0 speed=12 fs=8m driveropts=burnfree padsize=300k \
             -eject  my_image.iso 
 
-Burn a compressed afio archive to CD or DVD+RW on-the-fly
+Burn a compressed afio archive to CD or DVD+-RW on-the-fly
     find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 -tao \
                                   driveropts=burnfree padsize=300k - 
 
@@ -212,7 +212,7 @@ Many cdrecord options are still unsupported, though.
 
 If you have use cases for them, please report your wishes and expectations.
 
-DVD support is still immature and restricted to DVD+RW for now. 
+DVD support is still immature and restricted to DVD+-RW for now. 
 
 
 
@@ -397,6 +397,25 @@ Program growisofs can append to an ISO filesystem on DVD+RW by additionally
 manipulating the first session. cdrskin does not want to get involved so deep
 into the format of the burned data. Be advised to use growisofs for the
 task of maintaining extendable ISO-Filesystems on DVD+RW. 
+
+
+                                     DVD-RW
+
+DVD-RW are usable if formatted to state "Restricted Overwrite". They then
+behave much like DVD+RW. See above.
+DVD-RW in state "Sequential" have first to be formatted by
+  cdrskin dev=... -v blank=format_overwrite
+"Sequential" is the state of unused media and of media previously blanked
+or written by cdrecord. dvd+rw-format -blank can also achieve this state.
+(Command  dvd+rw-format -force  can achieve "Restricted Overwrite".)
+  
+Formatting or first use of freshly formatted DVD-RW can produce unusual noises
+from the drive and last several minutes. Depending on mutual compatibility of
+drive and media, formatting can yield unusable media. I finally always got
+them revived again by help of:  cdrecord-2.01.01a23 dev=... -v blank=fast 
+After some tries, they got converted into state "Sequential" from where a
+new try could be made to get them reliably into state "Restricted Overwrite".
+(A similar sequential blank feature with cdrskin is still to come.)
 
 
                         Special compilation variations
