@@ -21,6 +21,9 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 + DVD+RW writing is like -tao on giant blank CD-RW. 
   Same with DVD-RW in mode Restricted Overwrite.
 
++ DVD-RW "Restricted Overwrite" writing is like DVD+RW (i.e. like -tao).
+  Formatting is done via cdrskin-specific blank=format_overwrite and not
+  with option -format.
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -2307,10 +2310,52 @@ libburn/libdax_msgs.h
 cdrskin/cdrskin.c
 Prepared support for DVD-RW in mode Restricted Overwrite
 
-29 Dec 2006  []
+29 Dec 2006  [571]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
+2007.01.01.170824  [572]
+libburn/libburn.h
+libburn/transport.h
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+libburn/async.c
+libburn/drive.h
+libburn/drive.c
+libburn/write.c
+libburn/libdax_msgs.h
+Prepared formatting of DVD-RW
+
+2007.01.01.171725  [573]
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/cdrskin.1
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+Made use of formatting of DVD-RW
+
+2 Jan 2007  [574]
+cdrskin/wiki_plain.txt
+Added links to cdrskin help texts
+
+2007.01.02.090530  [575]
+COPYRIGHT
+README
+cdrskin/cdrskin.c
+Greeting the new year
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2007.01.02.101027
+* Formatting and then burning to DVD-RW like to DVD+RW
+
+  []
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
+
+
+test/libburner.c
+Make use of formatting of DVD-RW
 
 
 Check wether current_profile is kept up to date with each possible media change
