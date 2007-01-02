@@ -44,7 +44,7 @@ The cdrecord-compatible options are listed in the output of
 {{{
 cdrskin -help
 }}}
-where the option "help" has *one* dash. 
+where the option "help" has *one* dash. Online: [http://scdbackup.sourceforge.net/cdrskin_help_devel cdrskin -help]
 For these options you may expect program behavior that is roughly the
 same as described in original  man cdrecord . 
 
@@ -54,7 +54,7 @@ The cdrskin-specific options are listed by
 {{{
 cdrskin --help
 }}}
-where the option "help" has *two* dashes.
+where the option "help" has *two* dashes. Online: [http://scdbackup.sourceforge.net/cdrskin__help_devel cdrskin --help]
 
 Some are very experimental and should only be
 used in coordination with the libburnia developer team.
