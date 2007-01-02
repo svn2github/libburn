@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "January 1, 2007"
+.TH CDRSKIN 1 "January 2, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,7 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD-R, CD-RW or DVD+RW via libburn.
+cdrskin \- burns preformatted data to CD-R, CD-RW or DVD+/-RW via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -28,7 +28,7 @@ cdrskin \- burns preformatted data to CD-R, CD-RW or DVD+RW via libburn.
 .\" respectively.
 .PP 
 \fBcdrskin\fP is a program that provides some of cdrecord's options
-in a compatible way. 
+in a compatible way for CD media. With DVD it has its own ways for now. 
 You do not need to be superuser for its daily usage.
 .PP
 .B Overview of features:
@@ -45,7 +45,7 @@ Multi session on CD (follow-up sessions in TAO only).
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
-Burning of a single data track to DVD+RW.
+Burning of a single data track to DVD+RW or DVD-RW.
 .br
 See section EXAMPLES at the end of this text.
 .PP
@@ -183,7 +183,7 @@ those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix .au and SUN Audio.
 .TP 
 .BI blank= type
-Blank a CD-RW or format a DVD-RW.i
+Blank a CD-RW or format a DVD-RW.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -199,6 +199,7 @@ Minimally blank an entire CD.
 .TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite".
+(Not an original cdrecord option.)
 .RE
 .TP
 .BI \-checkdrive
@@ -460,7 +461,7 @@ Accept only the last argument of the command line as track source address.
 .TP 
 .BI write_start_address= byte_offset
 Set the address on media where to start writing the track. With DVD+RW 
- byte_offset must be aligned to 2 KB blocks. With DVD-RW alignment is 32 kB.
+byte_offset must be aligned to 2 KB blocks. With DVD-RW alignment is 32 kB.
 Other media are not suitable for this option yet.
 .PP
 Alphabetical list of options which are only intended for very special
