@@ -8,7 +8,8 @@
   
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia.pykix.org . It can list the available devices, can
-  blank a CD-RW and can burn to CD-R, CD-RW or DVD+RW.
+  blank a CD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW, DVD+RW
+  or DVD-RW.
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
@@ -25,7 +26,9 @@
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
   With that aquired drive you can blank a CD-RW
      libburner_blank_disc()
-  With the aquired drive you can burn to CD-R, blank CD-RW or DVD+RW
+  or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
+     libburner_format_row()
+  With the aquired drive you can burn to CD-R, CD-RW, DVD+RW, DVD-RW
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
@@ -68,7 +71,8 @@ static unsigned int drive_count;
     finally released */
 static int drive_is_grabbed = 0;
 
-/** A text describing the type of media in aquired drive */
+/** A number and a text describing the type of media in aquired drive */
+static int current_profile= -1;
 static char current_profile_name[80]= {""};
 
 
@@ -93,7 +97,7 @@ int libburner_aquire_by_driveno(int *drive_no);
 */
 int libburner_aquire_drive(char *drive_adr, int *driveno)
 {
-	int ret, x;
+	int ret;
 
 	if(drive_adr != NULL && drive_adr[0] != 0)
 		ret = libburner_aquire_by_adr(drive_adr);
@@ -101,7 +105,8 @@ int libburner_aquire_drive(char *drive_adr, int *driveno)
 		ret = libburner_aquire_by_driveno(driveno);
 	if (ret <= 0)
 		return ret;
-	burn_disc_get_profile(drive_list[0].drive, &x, current_profile_name);
+	burn_disc_get_profile(drive_list[0].drive, &current_profile,
+				 current_profile_name);
 	if (current_profile_name[0])
 		printf("Detected media type: %s\n", current_profile_name);
 	return 1;
@@ -274,7 +279,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		return 0;
 	} else {
 		fprintf(stderr,
-			"FATAL: Cannot recognize drive and media state\n");
+			"FATAL: Unsuitable drive and media state\n");
 		return 0;
 	}
 	if(!burn_disc_erasable(drive)) {
@@ -294,6 +299,46 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		sleep(1);
 	}
 	printf("Done\n");
+	return 1;
+}
+
+
+/** Persistently changes DVD-RW profile 0014h "Sequential Recording"
+    to profile 0013h "Restricted Overwrite" which is usable with libburner.
+
+    Expect a behavior similar to blanking with unusual noises from the drive.
+*/
+int libburner_format_row(struct burn_drive *drive)
+{
+	struct burn_progress p;
+	int percent = 1;
+
+	if (current_profile == 0x13) {
+		fprintf(stderr, "IDLE: DVD-RW media is already formatted\n");
+		return 2;
+	} else if (current_profile != 0x14) {
+		fprintf(stderr, "FATAL: Can only format DVD-RW\n");
+		return 0;
+	}
+	printf("Beginning to format media.\n");
+	burn_disc_format(drive, 0);
+	sleep(1);
+	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
+		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */
+			percent = 1.0 + ((double) p.sector+1.0)
+					 / ((double) p.sectors) * 98.0;
+		printf("Formatting  ( %d%% done )\n", percent);
+		sleep(1);
+	}
+	burn_disc_get_profile(drive_list[0].drive, &current_profile,
+				 current_profile_name);
+	printf("Media type now: %4.4xh  \"%s\"\n",
+		 current_profile, current_profile_name);
+	if (current_profile != 0x13) {
+		fprintf(stderr,
+		  "FATAL: Failed to change media profile to desired value\n");
+		return 0;
+	}
 	return 1;
 }
 
@@ -431,7 +476,8 @@ int libburner_payload(struct burn_drive *drive,
 		burn_track_free(tracklist[trackno]);
 	burn_session_free(session);
 	burn_disc_free(target_disc);
-	if (multi && strcmp(current_profile_name, "DVD+RW") != 0)
+	if (multi && strcmp(current_profile_name, "DVD+RW") != 0 &&
+	    current_profile != 0x13)
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
@@ -490,6 +536,9 @@ int libburner_setup(int argc, char **argv)
                 }
                 strcpy(drive_adr, argv[i]);
             }
+        } else if (!strcmp(argv[i], "--format_overwrite")) {
+            do_blank = 101;
+
         } else if (!strcmp(argv[i], "--multi")) {
 	    do_multi = 1;
 
@@ -528,7 +577,8 @@ int libburner_setup(int argc, char **argv)
     if (print_help || insuffient_parameters ) {
         printf("Usage: %s\n", argv[0]);
         printf("       [--drive <address>|<driveno>|\"-\"]  [--audio]\n");
-        printf("       [--blank_fast|--blank_full]  [--try_to_simulate]\n");
+        printf("       [--blank_fast|--blank_full|--format_overwrite]\n");
+	printf("       [--try_to_simulate]\n");
         printf("       [--multi]  [<one or more imagefiles>|\"-\"]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
@@ -539,7 +589,9 @@ int libburner_setup(int argc, char **argv)
         printf("  %s --drive /dev/hdc my_image_file\n", argv[0]);
         printf("Blank a used CD-RW (is combinable with burning in one run):\n");
         printf("  %s --drive /dev/hdc --blank_fast\n",argv[0]);
-        printf("Burn two audio tracks\n");
+        printf("Format a DVD-RW once before first use with libburner:\n");
+        printf("  %s --drive /dev/hdc --format_overwrite\n", argv[0]);
+        printf("Burn two audio tracks:\n");
         printf("  lame --decode -t /path/to/track1.mp3 track1.cd\n");
         printf("  test/dewav /path/to/track2.wav -o track2.cd\n");
         printf("  %s --drive /dev/hdc --audio track1.cd track2.cd\n", argv[0]);
@@ -547,7 +599,6 @@ int libburner_setup(int argc, char **argv)
         printf("  ( cd my_directory ; find . -print | afio -oZ - ) | \\\n");
         printf("  %s --drive /dev/hdc -\n", argv[0]);
         printf("To be read from *not mounted* media via: afio -tvZ /dev/hdc\n");
-        printf("Program tar would need a clean EOF which our media cannot deliver.\n");
         if (insuffient_parameters)
             return 6;
     }
@@ -588,8 +639,11 @@ int main(int argc, char **argv)
 	if (ret == 2)
 		{ ret = 0; goto release_drive; }
 	if (do_blank) {
-		ret = libburner_blank_disc(drive_list[driveno].drive,
-					  do_blank == 1);
+		if (do_blank > 100)
+			ret = libburner_format_row(drive_list[driveno].drive);
+		else
+			ret = libburner_blank_disc(drive_list[driveno].drive,
+							do_blank == 1);
 		if (ret<=0)
 			{ ret = 36; goto release_drive; }
 	}
