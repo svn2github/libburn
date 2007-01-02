@@ -2194,7 +2194,7 @@ set_severities:;
 
    } else if(strcmp(argv[i],"-version")==0) {
      printf(
-      "Cdrecord 2.01-Emulation Copyright (C) 2006, see libburnia.pykix.org\n");
+ "Cdrecord 2.01-Emulation Copyright (C) 2006-2007, see libburnia.pykix.org\n");
      printf("libburn version   :  %s\n",Cdrskin_libburn_versioN);
 
 #ifndef Cdrskin_extra_leaN

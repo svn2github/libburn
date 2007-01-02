@@ -6,7 +6,7 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburnia.pykix.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
 
 Still containing parts of
 Libburn. By Derek Foreman <derek@signalmarketing.com> and
@@ -19,7 +19,7 @@ commitment as written at the end of this text.
 The rights and merits of the Libburn-copyright holders Derek Foreman and
 Ben Jansens will be duely respected. 
 
-This libburnia.pykix.org toplevel README (C) 2006 Thomas Schmitt 
+This libburnia.pykix.org toplevel README (C) 2006-2007 Thomas Schmitt 
 ------------------------------------------------------------------------------
 
                            Build and Installation
