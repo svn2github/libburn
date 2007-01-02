@@ -411,11 +411,8 @@ or written by cdrecord. dvd+rw-format -blank can also achieve this state.
   
 Formatting or first use of freshly formatted DVD-RW can produce unusual noises
 from the drive and last several minutes. Depending on mutual compatibility of
-drive and media, formatting can yield unusable media. I finally always got
-them revived again by help of:  cdrecord-2.01.01a23 dev=... -v blank=fast 
-After some tries, they got converted into state "Sequential" from where a
-new try could be made to get them reliably into state "Restricted Overwrite".
-(A similar sequential blank feature with cdrskin is still to come.)
+drive and media, formatting can yield unusable media. It seems that those die
+too on blanking by cdrecord or dvd+rw-format. Perils of DVD-RW, i fear.
 
 
                         Special compilation variations

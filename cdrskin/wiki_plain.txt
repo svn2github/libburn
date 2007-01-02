@@ -45,6 +45,7 @@ The cdrecord-compatible options are listed in the output of
 cdrskin -help
 }}}
 where the option "help" has *one* dash. Online: [http://scdbackup.sourceforge.net/cdrskin_help_devel cdrskin -help]
+
 For these options you may expect program behavior that is roughly the
 same as described in original  man cdrecord . 
 
@@ -79,6 +80,22 @@ privileges, i.e. no superuser setuid. It is intended that the sysadmin
 controls drive accessability by rw-permissions of the drive rather than
 by x-permission of the burn binary. To be usable with cdrskin, the drive
 has to offer both, r- and w-permission.
+
+--------------------------------------------------------------------------
+
+Non-cdrecord blank mode blank=format_overwrite is needed to bring a DVD-RW
+disc from its initial profile "Sequential Recording" into profile state
+"Restricted Overwrite". The latter is usable with cdrskin.
+{{{
+cdrskin dev=/dev/sr0 -v blank=format_overwrite
+}}}
+
+DVD-RW "Restricted Overwrite" and DVD+RW appear to cdrskin as blank media
+which are capable of taking only a single track. This track may be positioned
+on a 32KiB aligned address, though.
+{{{
+cdrskin ... write_start_address=2412m ...
+}}}
 
 --------------------------------------------------------------------------
 
