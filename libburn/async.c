@@ -7,9 +7,11 @@
 #include "options.h"
 #include "async.h"
 #include "init.h"
+#include "back_hacks.h"
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
 #include <a ssert.h>
@@ -207,6 +209,9 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 {
 	struct erase_opts o;
 
+	/* A70103 : will be set to 0 by burn_disc_erase_sync() */
+	drive->cancel = 1;
+
 	/* ts A61006 */
 	/* a ssert(drive); */
 	/* a ssert(!SCAN_GOING()); */
@@ -223,6 +228,19 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 			0x00020102,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"A drive operation is still going on (want to erase)",
+			0, 0);
+		return;
+	}
+
+	/* ts A70103 moved up from burn_disc_erase_sync() */
+	/* ts A60825 : allow on parole to blank appendable CDs */
+	if ( ! (drive->status == BURN_DISC_FULL ||
+		(drive->status == BURN_DISC_APPENDABLE &&
+		 ! libburn_back_hack_42) ) ) {
+		libdax_msgs_submit(libdax_messenger, drive->global_index,
+			0x00020130,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive and media state unsuitable for blanking",
 			0, 0);
 		return;
 	}

@@ -25,7 +25,6 @@
 #include "util.h"
 #include "sg.h"
 #include "structure.h"
-#include "back_hacks.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -444,13 +443,6 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	burn_print(1, "erasing drive %s %s\n", d->idata->vendor,
 		   d->idata->product);
 
-	/* ts A60825 : allow on parole to blank appendable CDs */
-	if ( ! (d->status == BURN_DISC_FULL ||
-		(d->status == BURN_DISC_APPENDABLE &&
-		 ! libburn_back_hack_42) ) ) {
-		d->cancel = 1;
-		return;
-	}
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_ERASING;
 	d->erase(d, fast);
@@ -468,7 +460,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
 	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
-	!d->test_unit_ready(d))
+		!d->test_unit_ready(d))
 		sleep(1);
 	d->progress.sector = 0x10000;
 
@@ -503,6 +495,7 @@ void burn_disc_format_sync(struct burn_drive *d, int flag)
 	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
 	!d->test_unit_ready(d))
 		sleep(1);
+	d->sync_cache(d);
 
 	d->progress.sector = 0x10000;
 
