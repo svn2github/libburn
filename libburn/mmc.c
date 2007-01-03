@@ -1158,13 +1158,18 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 /* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format()
                and mmc5r03c.pdf, 6.5 FORMAT UNIT */
 /*
+   >>> A70103
+   >>> This will need an overhaul as soon as all technical questions around
+   >>> formatting are answered. Currently it is a very use case specific
+   >>> all-in-one automat.
+
    @param flag unused yet, submit 0
 */
 int mmc_format_unit(struct burn_drive *d, int flag)
 {
 	struct buffer buf;
 	struct command c;
-	int ret, tolerate_failure = 0;
+	int ret, tolerate_failure = 0, return_immediately = 0;
 	char msg[160],descr[80];
 
 	mmc_function_spy("mmc_format_unit");
@@ -1181,6 +1186,8 @@ int mmc_format_unit(struct burn_drive *d, int flag)
 	c.page->data[1] = 0x02;                   /* Immed */
 	c.page->data[3] = 8;                      /* Format descriptor length */
 	if (d->current_profile == 0x1a) { /* DVD+RW */
+	/* >>> use case: background formatting during write */
+
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		c.page->data[8] = 0x26 << 2;        /* Format type */
 		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
@@ -1194,7 +1201,9 @@ int mmc_format_unit(struct burn_drive *d, int flag)
 				msg, 0,0);
 		}
 		sprintf(descr, "DVD+RW, BGFS %d", d->bg_format_status);
+
 	} else if (d->current_profile == 0x13) {/*DVD-RW restricted overwrite*/
+	/* >>> use case: quick grow formatting during write */
 
 		/* >>> check wether READ FORMAT CAPACITIES does report
 		       0x13 formatting. If not, skip this. It seems to work
@@ -1205,12 +1214,17 @@ int mmc_format_unit(struct burn_drive *d, int flag)
 		c.page->data[8] = 0x13 << 2;        /* Format type */
 		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick grow");
+
 	} else if (d->current_profile == 0x14) {/*DVD-RW sequential recording*/
+	/* >>> use case : transition from Sequential to Overwrite */
+
 		/* 6.5.4.2.10 , DVD-RW Quick (-> Restricted Overwrite) */
 		/* c.page->data[4-7]==0 : 0 blocks */
 		c.page->data[8] = 0x15 << 2;        /* Format type */
 		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick");
+		return_immediately = 1; /* caller must do the waiting */
+
 	} else { 
 
 	/* >>> other formattable types to come */
@@ -1238,9 +1252,13 @@ int mmc_format_unit(struct burn_drive *d, int flag)
 		}
 		return 0;
 	}
-
-	for (ret = 0; ret <= 0 ;)
+	if (return_immediately)
+		return 1;
+	usleep(1000000); /* there seems to be a little race condition */
+	for (ret = 0; ret <= 0 ;) {
+		usleep(50000);
 		ret = spc_test_unit_ready(d);
+	}
 	mmc_sync_cache(d);
 	return 1;
 }
