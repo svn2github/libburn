@@ -74,7 +74,7 @@ static unsigned char MMC_GET_ATIP[] = { 0x43, 2, 4, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_DISC_INFO[] =
 	{ 0x51, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_READ_CD[] = { 0xBE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static unsigned char MMC_ERASE[] = { 0xA1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static unsigned char MMC_BLANK[] = { 0xA1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_SEND_OPC[] = { 0x54, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_SET_SPEED[] =
 	{ 0xBB, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -846,11 +846,11 @@ void mmc_erase(struct burn_drive *d, int fast)
 	struct command c;
 
 	mmc_function_spy("mmc_erase");
-	memcpy(c.opcode, MMC_ERASE, sizeof(MMC_ERASE));
+	memcpy(c.opcode, MMC_BLANK, sizeof(MMC_BLANK));
 	c.opcode[1] = 16;	/* IMMED set to 1 */
 	c.opcode[1] |= !!fast;
 	c.retry = 1;
-	c.oplen = sizeof(MMC_ERASE);
+	c.oplen = sizeof(MMC_BLANK);
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
@@ -1097,6 +1097,10 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (cp == 0x13)
 		d->current_is_supported_profile = 1;
 #endif
+
+	/* >>> see mmc5r03c.pdf 5.2
+	Interpret list of profile and feature descriptors.
+	*/
 
 }
 

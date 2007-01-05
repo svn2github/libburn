@@ -894,8 +894,13 @@ int burn_disc_close_session_dvd_minus_rw(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
-	if (d->current_profile == 0x13)
-		d->close_track_session(d, 1, 0); /* CLOSE SESSION */
+	if (d->current_profile == 0x13) {
+		d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
+
+		/* ??? under what circumstances to use close functiom 011b 
+		       "Finalize disc" ? */
+
+	}
 	d->busy = BURN_DRIVE_WRITING;
 	return 1;
 }
@@ -975,8 +980,16 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 		/* ??? mmc5r03c.pdf 7.5.2 :
 		"For DVD-RW media ... If a medium is in Restricted overwrite
 		 mode, this mode page shall not be used."
-		But growisofs composes a page 5 and sends it.
 
+		But growisofs composes a page 5 and sends it.
+		mmc5r03c.pdf 5.3.16 , table 127 specifies that mode page 5
+		shall be supported with feature 0026h Restricted Overwrite.
+		5.3.22 describes a feature 002Ch Rigid Restrictive Overwrite
+		which seems to apply to DVD-RW and does not mention page 5.
+
+		5.4.14 finally states that profile 0013h includes feature
+		002Ch rather than 0026h.
+		
                 d->send_write_parameters(d, o);
 		*/
 
