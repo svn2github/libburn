@@ -943,7 +943,7 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
 		d->busy = BURN_DRIVE_FORMATTING;
 		/* start or re-start dvd_plus_rw formatting */
-		ret = d->format_unit(d, 0);
+		ret = d->format_unit(d, (off_t) 0, 0);
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;
@@ -995,7 +995,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 
 		d->busy = BURN_DRIVE_FORMATTING;
 
-                ret = d->format_unit(d, 0); /* "quick grow" */
+                ret = d->format_unit(d, (off_t) 0, 0); /* "quick grow" */
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;

@@ -842,14 +842,15 @@ void burn_read_opts_free(struct burn_read_opts *opts);
 void burn_disc_erase(struct burn_drive *drive, int fast);
 
 
-/* ts A70101 */
+/* ts A70101 - A70106 */
 /** Format media for use with libburn. This currently applies only to DVD-RW
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h).
     @param drive The drive with the disc to format.
-    @param flag Unused yet. Submit 0.
+    @param size Unused yet. Submit: (off_t) 0.
+    @param flag Unused yet. Submit: 0.
 */
-void burn_disc_format(struct burn_drive *drive, int flag);
+void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
 
 
 /* ts A61109 : this was and is defunct */

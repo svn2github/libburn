@@ -4021,7 +4021,7 @@ unsupported_with_dvd_minus_rw:;
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1) {
-   burn_disc_format(drive,0);
+   burn_disc_format(drive,(off_t) 0,0);
 #endif
 
  } else {

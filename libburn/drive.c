@@ -470,13 +470,13 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 }
 
 
-void burn_disc_format_sync(struct burn_drive *d, int flag)
+void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
 	int ret;
 
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
-	ret = d->format_unit(d, 0);
+	ret = d->format_unit(d, (off_t) 0, 0);
 	if (ret <= 0)
 		d->cancel = 1;
 	/* reset the progress */

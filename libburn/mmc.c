@@ -1169,11 +1169,12 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 
    @param flag unused yet, submit 0
 */
-int mmc_format_unit(struct burn_drive *d, int flag)
+int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 {
 	struct buffer buf;
 	struct command c;
-	int ret, tolerate_failure = 0, return_immediately = 0;
+	int ret, tolerate_failure = 0, return_immediately = 0, i;
+	off_t num_of_blocks = 0;
 	char msg[160],descr[80];
 
 	mmc_function_spy("mmc_format_unit");
@@ -1189,11 +1190,15 @@ int mmc_format_unit(struct burn_drive *d, int flag)
 	descr[0] = 0;
 	c.page->data[1] = 0x02;                   /* Immed */
 	c.page->data[3] = 8;                      /* Format descriptor length */
+	num_of_blocks = size / 2048;
+	for (i = 0; i < 4; i++)
+		c.page->data[4 + i] = (num_of_blocks >> (24 - 8 * i)) & 0xff;
 	if (d->current_profile == 0x1a) { /* DVD+RW */
 	/* >>> use case: background formatting during write */
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		c.page->data[8] = 0x26 << 2;        /* Format type */
+		/* Note: parameter "size" is ignored here */
 		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
 		if (d->bg_format_status == 1)       /* is partly formatted */
 			c.page->data[11] = 1;       /* Restart bit */

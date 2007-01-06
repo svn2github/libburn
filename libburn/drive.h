@@ -93,6 +93,6 @@ int burn_mdata_free_subs(struct scsi_mode_data *m);
 
 
 /* ts A61230 */
-void burn_disc_format_sync(struct burn_drive *d, int flag);
+void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag);
 
 #endif /* __DRIVE */

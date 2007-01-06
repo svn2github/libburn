@@ -321,7 +321,7 @@ int libburner_format_row(struct burn_drive *drive)
 		return 0;
 	}
 	printf("Beginning to format media.\n");
-	burn_disc_format(drive, 0);
+	burn_disc_format(drive, (off_t) 0, 0);
 	sleep(1);
 	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
 		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */

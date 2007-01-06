@@ -41,6 +41,7 @@ struct erase_opts
 struct format_opts
 {
 	struct burn_drive *drive;
+	off_t size;
 	int flag;
 };
 
@@ -254,14 +255,15 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 /* ts A61230 */
 static void *format_worker_func(struct w_list *w)
 {
-	burn_disc_format_sync(w->u.format.drive, w->u.format.flag);
+	burn_disc_format_sync(w->u.format.drive, w->u.format.size,
+				w->u.format.flag);
 	remove_worker(pthread_self());
 	return NULL;
 }
 
 
 /* ts A61230 */
-void burn_disc_format(struct burn_drive *drive, int flag)
+void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 {
 	struct format_opts o;
 	char msg[160];
@@ -286,6 +288,7 @@ void burn_disc_format(struct burn_drive *drive, int flag)
 		return;
 	}
 	o.drive = drive;
+	o.size = size;
 	o.flag = flag;
 	add_worker(drive, (WorkerFunc) format_worker_func, &o);
 }
