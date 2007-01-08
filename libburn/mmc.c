@@ -1167,6 +1167,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
    >>> formatting are answered. Currently it is a very use case specific
    >>> all-in-one automat.
 
+   @param size The size (in bytes) to be sent with the FORMAT comand
    @param flag unused yet, submit 0
 */
 int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
@@ -1198,8 +1199,10 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		c.page->data[8] = 0x26 << 2;        /* Format type */
+
 		/* Note: parameter "size" is ignored here */
 		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
+
 		if (d->bg_format_status == 1)       /* is partly formatted */
 			c.page->data[11] = 1;       /* Restart bit */
 		else if(d->bg_format_status == 2) { /* format in progress */

@@ -847,8 +847,12 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h).
     @param drive The drive with the disc to format.
-    @param size Unused yet. Submit: (off_t) 0.
-    @param flag Unused yet. Submit: 0.
+    @param size The size in bytes to be used with the format command. It should
+                be divisible by 32*1024. The effect of this parameter may
+                depend on the media profile.
+    @param flag Bitfield for control purposes:
+                bit0= after formatting, write the given number of zero-bytes
+                      to the media and eventually perform preliminary closing.
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
 

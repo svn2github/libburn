@@ -26,6 +26,9 @@
 #include "sg.h"
 #include "structure.h"
 
+/* ts A70107 : to get BE_CANCELLED */
+#include "error.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -198,7 +201,6 @@ int burn_drive_inquire_media(struct burn_drive *d)
 		if (d->current_profile == -1 || d->current_is_cd_profile)
 			d->read_toc(d);
 	}
-	d->busy = BURN_DRIVE_IDLE;
 	return 1;
 }
 
@@ -237,6 +239,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	/* ts A61125 : outsourced media state inquiry aspects */
 	ret = burn_drive_inquire_media(d);
 	d->silent_on_scsi_error = sose;
+	d->busy = BURN_DRIVE_IDLE;
 	return ret;
 }
 
@@ -467,16 +470,31 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	/* ts A61125 : update media state records */
 	burn_drive_mark_unready(d);
 	burn_drive_inquire_media(d);
+	d->busy = BURN_DRIVE_IDLE;
 }
 
-
+/*
+   @param flag: bit0 = fill formatted size with zeros
+*/
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
-	int ret;
+	int ret, buf_secs, err, i, stages = 1, pbase, pfill, pseudo_sector;
+	off_t num_bufs;
+	char msg[80];
+	struct buffer buf;
+
+/*
+#define Libburn_format_ignore_sizE 1
+*/
+#ifdef Libburn_format_ignore_sizE
+	size = 0;
+#else
+	stages = 2 * (flag & 1);
+#endif
 
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
-	ret = d->format_unit(d, (off_t) 0, 0);
+	ret = d->format_unit(d, size, 0);
 	if (ret <= 0)
 		d->cancel = 1;
 	/* reset the progress */
@@ -492,16 +510,67 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
-	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
-	!d->test_unit_ready(d))
+	while ((pseudo_sector = d->get_erase_progress(d)) > 0 ||
+		!d->test_unit_ready(d)) {
+		d->progress.sector = pseudo_sector / stages;
 		sleep(1);
+        }
 	d->sync_cache(d);
 
-	d->progress.sector = 0x10000;
+	if (size <= 0)
+		goto ex;
 
-	/* ts A61125 : update media state records */
+	/* update media state records */
 	burn_drive_mark_unready(d);
 	burn_drive_inquire_media(d);
+	if (flag & 1) {
+		/* write size in zeros */;
+		pbase = 0x8000;
+		pfill = 0xffff - pbase;
+		buf_secs = 16; /* Must not be more than 16 */
+		num_bufs = size / buf_secs / 2048;
+		if (num_bufs <= 0 || num_bufs > 0x7fffffff) {
+			d->cancel = 1;
+			goto ex;
+		}
+
+		/* <<< */
+		sprintf(msg,
+			"Writing %.f sectors of zeros to formatted media\n",
+			(double) num_bufs * (double) buf_secs);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg, 0, 0);
+
+		d->buffer = &buf;
+		memset(d->buffer, 0, sizeof(struct buffer));
+		d->buffer->bytes = buf_secs * 2048;
+		d->buffer->sectors = buf_secs;
+		d->busy = BURN_DRIVE_WRITING;
+		for (i = 0; i < num_bufs; i++) {
+			d->nwa = i * buf_secs;
+			err = d->write(d, d->nwa, d->buffer);
+			if (err == BE_CANCELLED || d->cancel) {
+				d->cancel = 1;
+		break;
+			}
+			d->progress.sector = pbase
+				+ pfill * ((double) i / (double) num_bufs);
+		}
+		d->sync_cache(d);
+		if (d->current_profile == 0x13 || d->current_profile == 0x1a) {
+			/* DVD-RW or DVD+RW */
+			d->busy = BURN_DRIVE_CLOSING_SESSION;
+			/* CLOSE SESSION, 010b */
+			d->close_track_session(d, 1, 0);
+			d->busy = BURN_DRIVE_WRITING;
+		}
+	}
+ex:;
+	d->progress.sector = 0x10000;
+	d->busy = BURN_DRIVE_IDLE;
+	d->buffer = NULL;
 }
 
 enum burn_disc_status burn_disc_get_status(struct burn_drive *d)
