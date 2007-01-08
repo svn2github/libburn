@@ -44,7 +44,8 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG
 
 
 /* The maximum size for a (SCSI) i/o transaction */
-#define BURN_OS_TRANSPORT_BUFFER_SIZE 65536/2
+/* Important : MUST be at least 32768 ! */
+#define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
 
 
 /** To hold all state information of BSD device enumeration
