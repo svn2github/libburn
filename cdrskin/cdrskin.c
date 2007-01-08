@@ -2903,6 +2903,16 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
      ClN(fprintf(stderr,
           "\ncdrskin_debug: ABORT : [%d] Thread rejected: pid=%d, signum=%d\n",
           skin->control_pid,getpid(),signum));
+
+#ifdef Not_yeT
+   /* >>> find more abstract and system independent way to determine 
+          signals which make no sense with a return */
+   if(signum==11) {
+     Cleanup_set_handlers(NULL,NULL,1); /* allow abort */
+     return(0); /* let exit */
+   }
+#endif /* Not_yeT */
+
    return(-2); /* do only process the control thread */
  }
  if(skin->preskin->abort_handler==3)
@@ -4021,7 +4031,7 @@ unsupported_with_dvd_minus_rw:;
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1) {
-   burn_disc_format(drive,(off_t) 0,0);
+   burn_disc_format(drive,(off_t) 128*1024*1024,1);
 #endif
 
  } else {
