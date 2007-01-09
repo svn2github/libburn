@@ -853,6 +853,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
     @param flag Bitfield for control purposes:
                 bit0= after formatting, write the given number of zero-bytes
                       to the media and eventually perform preliminary closing.
+                bit1= insist in size 0 even if there is a better default known
+                bit2= format to maximum available size
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
 

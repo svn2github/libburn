@@ -975,6 +975,19 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 	char msg[160];
 	int ret;
 
+	d->nwa = 0;
+	if (o->start_byte >= 0) {
+		d->nwa = o->start_byte / 32768; /* align to 32 kB */
+
+		sprintf(msg, "Write start address is  %d * 32768", d->nwa);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020127,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+
+		d->nwa *= 16; /* convert to 2048 block units */
+	}
+
 	if (d->current_profile == 0x13) { /* DVD-RW restricted overwrite */
 
 		/* ??? mmc5r03c.pdf 7.5.2 :
@@ -995,7 +1008,9 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 
 		d->busy = BURN_DRIVE_FORMATTING;
 
-                ret = d->format_unit(d, (off_t) 0, 0); /* "quick grow" */
+		/* "quick grow" to at least byte equivalent of d->nwa */
+                ret = d->format_unit(d, (off_t) d->nwa * (off_t) 2048,
+				     (d->nwa > 0) << 3);
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;
@@ -1008,17 +1023,6 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0,0);
 		return 0;
-	}
-
-	d->nwa = 0;
-	if (o->start_byte >= 0) {
-		d->nwa = o->start_byte / 32768;
-
-		sprintf(msg, "Write start address is  %d * 32768", d->nwa);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020127,
-				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0,0);
 	}
 
 	/* >>> perform OPC if needed */;

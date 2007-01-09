@@ -141,6 +141,11 @@ struct burn_drive
 	/* ts A61218 from 46h GET CONFIGURATION  */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
 
+	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
+	int format_descr_type;      /* 1=unformatted, 2=formatted, 3=unclear */
+	off_t format_curr_max_size;  /* meaning depends on format_descr_type */
+	int best_format_type;
+	off_t best_format_size;
 
 	volatile int released;
 

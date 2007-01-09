@@ -65,7 +65,6 @@ extern struct libdax_msgs *libdax_messenger;
 
 Todo:
    Determine first free lba for appending data. 
-   Determine start lba of most recent mkisofs session.
 */
 
 
@@ -109,6 +108,11 @@ static unsigned char MMC_SET_STREAMING[] =
    To obtain write speed descriptors (command can do other things too) */
 static unsigned char MMC_GET_PERFORMANCE[] =
 	{ 0xAC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+/* ts A70108 : To obtain info about drive and media formatting opportunities */
+static unsigned char MMC_READ_FORMAT_CAPACITIES[] =
+	{ 0x23, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 
 static int mmc_function_spy_do_tell = 0;
 
@@ -1104,6 +1108,104 @@ void mmc_get_configuration(struct burn_drive *d)
 
 }
 
+
+/* ts A70108 */
+/* mmc5r03c.pdf 6.24 */
+int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
+{
+	struct buffer buf;
+	int len, type, score, num_descr, max_score = -1, i;
+	off_t size;
+	struct command c;
+	unsigned char *dpt;
+	char msg[160];
+
+	mmc_function_spy("mmc_read_format_capacities");
+
+	d->format_descr_type = 3;
+	d->format_curr_max_size = 0;
+	d->best_format_type = -1;
+	d->best_format_size = 0;
+
+	memcpy(c.opcode, MMC_READ_FORMAT_CAPACITIES,
+		 sizeof(MMC_GET_CONFIGURATION));
+	c.retry = 1;
+	c.oplen = sizeof(MMC_READ_FORMAT_CAPACITIES);
+	c.opcode[7]= 0x02;
+	c.opcode[8]= 0x00; /* accept 512 bytes (not more than 260 possible) */
+	c.page = &buf;
+	c.page->sectors = 0;
+	c.page->bytes = 0;
+	c.dir = FROM_DRIVE;
+
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+
+	len = c.page->data[3];
+	if (len<8)
+		return 0;
+
+	dpt = c.page->data + 4;
+	/* decode 6.24.3.2 Current/Maximum Capacity Descriptor */
+	d->format_descr_type = dpt[4] & 3;
+	d->format_curr_max_size = (((off_t) dpt[0]) << 24)
+		 		  + (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
+
+	sprintf(msg,
+		"Current/Maximum Capacity Descriptor : type = %d : %.f",
+		d->format_descr_type, (double) d->format_curr_max_size);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
+
+	d->format_curr_max_size *= (off_t) 2048;
+
+	/* 6.24.3.3 Formattable Capacity Descriptors */
+	num_descr = (len - 8) / 8;
+	for (i = 0; i < num_descr; i++) {
+		dpt = c.page->data + 12 + 8 * i;
+		size = (((off_t) dpt[0]) << 24)
+			+ (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
+                size *= (off_t) 2048;
+		type = dpt[4] >> 2;
+		
+		sprintf(msg, "Capacity Descriptor %2.2Xh  %.fs = %.1f MB",type,
+			(double) size / 2048 , (double) size / 1024 / 1024);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			 0x00000002,
+			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			 msg, 0, 0);
+
+		if (type == 0x10) { /* full format */
+			score = 1;
+		} else if(type == 0x13) {
+			score = 100;
+		} else if(type == 0x15) {
+			score = 50;
+		} else {
+	continue;
+		}
+		if(type == top_wanted)
+			score+= 1000000000;
+		if (score > max_score) {
+			d->best_format_type = type;
+			d->best_format_size = size;
+			max_score = score;
+		}
+	}
+
+	sprintf(msg,
+		"best_format_type = %2.2Xh , best_format_size = %.f",
+		d->best_format_type, (double) d->best_format_size);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
+
+	return 1;
+}
+
+
 void mmc_sync_cache(struct burn_drive *d)
 {
 	struct command c;
@@ -1168,14 +1270,16 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
    >>> all-in-one automat.
 
    @param size The size (in bytes) to be sent with the FORMAT comand
-   @param flag unused yet, submit 0
+   @param flag bit1= insist in size 0 even if there is a better default known
+               bit2= format to maximum available size
+               bit3= expand format up to at least size
 */
 int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 {
 	struct buffer buf;
 	struct command c;
-	int ret, tolerate_failure = 0, return_immediately = 0, i;
-	off_t num_of_blocks = 0;
+	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
+	off_t num_of_blocks = 0, diff;
 	char msg[160],descr[80];
 
 	mmc_function_spy("mmc_format_unit");
@@ -1198,10 +1302,11 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	/* >>> use case: background formatting during write */
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
-		c.page->data[8] = 0x26 << 2;        /* Format type */
+		format_type = 0x26;
 
-		/* Note: parameter "size" is ignored here */
-		memset(c.page->data + 4, 0xff, 4);  /* maximum blocksize */
+		if ((size <= 0 && !(flag & 2)) || (flag & (4 | 8)))
+			/* maximum capacity */
+			memset(c.page->data + 4, 0xff, 4); 
 
 		if (d->bg_format_status == 1)       /* is partly formatted */
 			c.page->data[11] = 1;       /* Restart bit */
@@ -1217,22 +1322,67 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	} else if (d->current_profile == 0x13) {/*DVD-RW restricted overwrite*/
 	/* >>> use case: quick grow formatting during write */
 
-		/* >>> check wether READ FORMAT CAPACITIES does report
-		       0x13 formatting. If not, skip this. It seems to work
-		       without formatting on e.g. freshly formatted media. */ 
-		tolerate_failure = 1;
-
+		ret = mmc_read_format_capacities(d, 0x13);
+		if (ret > 0) {
+			if (d->best_format_type == 0x13) {
+				if (d->best_format_size <= 0)
+					return 1;
+			} else {
+				/* formatted or intermediate state ? */
+				if (d->format_descr_type == 2 ||
+				    d->format_descr_type == 3)
+					return 1;
+				/* does trying make sense at all ? */
+				tolerate_failure = 1;
+			}
+		}
+		if (d->best_format_type == 0x13 && (flag & (4 | 8))) {
+			num_of_blocks = d->best_format_size / 2048;
+			if (flag & 8) {
+				/* num_of_blocks needed to reach size */
+				diff = (size - d->format_curr_max_size) /32768;
+				if ((size - d->format_curr_max_size) % 32768)
+					diff++;
+				diff *= 16;
+				if (diff < num_of_blocks)
+					num_of_blocks = diff;
+			}
+			if (num_of_blocks > 0)
+				for (i = 0; i < 4; i++)
+					c.page->data[4 + i] =
+					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+		}
 		/* 6.5.4.2.8 , DVD-RW Quick Grow Last Border */
-		c.page->data[8] = 0x13 << 2;        /* Format type */
+		format_type = 0x13;
 		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick grow");
 
 	} else if (d->current_profile == 0x14) {/*DVD-RW sequential recording*/
 	/* >>> use case : transition from Sequential to Overwrite */
 
-		/* 6.5.4.2.10 , DVD-RW Quick (-> Restricted Overwrite) */
+		/* To Restricted Overwrite */
+		/* 6.5.4.2.10 , 15h DVD-RW Quick */
 		/* c.page->data[4-7]==0 : 0 blocks */
-		c.page->data[8] = 0x15 << 2;        /* Format type */
+		/* or 6.5.4.2.5 Format Type = 10h (Full Format) */
+		mmc_read_format_capacities(d, (flag & 4) ? 0x10 : 0x15);
+		if (d->best_format_type == 0x15 ||
+		    d->best_format_type == 0x10) {
+			if ((flag & 4) || d->best_format_type == 0x10) {
+				num_of_blocks = d->best_format_size / 2048;
+				for (i = 0; i < 4; i++)
+					c.page->data[4 + i] =
+					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+			}
+
+		} else {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020131,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"No suitable formatting type offered by drive",
+				0, 0);
+			return 0;
+		}
+		format_type = d->best_format_type;
 		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick");
 		return_immediately = 1; /* caller must do the waiting */
@@ -1246,9 +1396,16 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x0002011e,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0,0);
+			msg, 0, 0);
 		return 0;
 	}
+	c.page->data[8] = format_type << 2;
+
+	sprintf(msg, "Format type %2.2Xh , blocks = %d\n",
+		format_type, (int) num_of_blocks);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			msg, 0, 0);
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {

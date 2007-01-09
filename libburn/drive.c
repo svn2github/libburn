@@ -475,6 +475,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 
 /*
    @param flag: bit0 = fill formatted size with zeros
+                bit1, bit2 are for d->format_unit()
 */
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
@@ -489,12 +490,12 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 #ifdef Libburn_format_ignore_sizE
 	size = 0;
 #else
-	stages = 1 + (flag & 1);
+	stages = 1 + ((flag & 1) && size > 1024 * 1024);
 #endif
 
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
-	ret = d->format_unit(d, size, 0);
+	ret = d->format_unit(d, size, flag & 6);
 	if (ret <= 0)
 		d->cancel = 1;
 	/* reset the progress */
@@ -525,11 +526,11 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	burn_drive_inquire_media(d);
 	if (flag & 1) {
 		/* write size in zeros */;
-		pbase = 0x8000;
+		pbase = 0x8000 + 0x7fff * (stages == 1);
 		pfill = 0xffff - pbase;
 		buf_secs = 16; /* Must not be more than 16 */
 		num_bufs = size / buf_secs / 2048;
-		if (num_bufs <= 0 || num_bufs > 0x7fffffff) {
+		if (num_bufs > 0x7fffffff) {
 			d->cancel = 1;
 			goto ex;
 		}
