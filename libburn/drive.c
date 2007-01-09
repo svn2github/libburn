@@ -489,7 +489,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 #ifdef Libburn_format_ignore_sizE
 	size = 0;
 #else
-	stages = 2 * (flag & 1);
+	stages = 1 + (flag & 1);
 #endif
 
 	d->cancel = 0;
