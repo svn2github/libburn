@@ -199,7 +199,18 @@ Minimally blank an entire CD.
 .TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
-(Note: this is not an original cdrecord option.)
+(Note: format_overwrite* are not original cdrecord options.)
+.TP
+format_overwrite_quickest
+Like format_overwrite without creating a 128 MB trailblazer track.
+Leads to "intermediate" state which only allows sequential write
+beginning from address 0.
+The "intermediate" state ends after the first session of writing data.
+.TP
+format_overwrite_full
+Like format_overwrite but claiming full media size rather than just 128 MB.
+Only a minimal data packet gets written. Much patience is required.
+May lead to media which have very few time overhead before and after write.
 .RE
 .TP
 .BI \-checkdrive

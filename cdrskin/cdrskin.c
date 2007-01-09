@@ -1829,6 +1829,10 @@ return:
           "\tminimal\t\tminimally blank the entire disk\n");
      fprintf(stderr,
           "\tformat_overwrite\tformat a DVD-RW to \"Restricted Overwrite\"\n");
+     fprintf(stderr,
+      "\tformat_overwrite_full\t\tto \"Restricted Overwrite\" in full size\n");
+     fprintf(stderr,
+    "\tformat_overwrite_quickest\tto \"Restricted Overwrite\" intermediate\n");
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -2377,8 +2381,16 @@ struct CdrskiN {
  int do_blank;
  int blank_fast;
  int no_blank_appendable;
- int blank_format_type; /* 0=blank, 1 to 255 like with burn_disc_format(flag):
-                           1=format_overwrite, 2=format_sequential */
+ int blank_format_type; /* 0=blank
+                           bit0-7:
+                           1=format_overwrite
+                             bit8-15: bit0-7 of burn_disc_format(flag)
+                               bit8 = write zeros after formatting
+                               bit9 = insist in size 0
+                               bit10= format to maximum available size
+                           2=format_sequential (unimplemented yet)
+                        */
+ double blank_format_size; /* to be used with burn_disc_format() */
 
  int do_burn;
  int burnfree;
@@ -2503,6 +2515,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->blank_fast= 0;
  o->no_blank_appendable= 0;
  o->blank_format_type= 0;
+ o->blank_format_size= 0.0;
  o->do_burn= 0;
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
@@ -2911,7 +2924,8 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
      Cleanup_set_handlers(NULL,NULL,1); /* allow abort */
      return(0); /* let exit */
    }
-#endif /* Not_yeT */
+#endif
+   usleep(1000000);
 
    return(-2); /* do only process the control thread */
  }
@@ -3928,7 +3942,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
- do_format= skin->blank_format_type;
+ do_format= skin->blank_format_type & 0xff;
  if(do_format) {
    verb= "format";
    presperf= "formatting";
@@ -4031,7 +4045,8 @@ unsupported_with_dvd_minus_rw:;
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1) {
-   burn_disc_format(drive,(off_t) 128*1024*1024,1);
+   burn_disc_format(drive,(off_t) skin->blank_format_size,
+                    (skin->blank_format_type>>8)&0xff);
 #endif
 
  } else {
@@ -5132,7 +5147,16 @@ set_blank:;
        blank_mode= "fast";
      } else if(strcmp(cpt,"format_overwrite")==0) { 
        skin->do_blank= 1;
+       skin->blank_format_type= 1|(1<<8);
+       skin->blank_format_size= 128*1024*1024;
+     } else if(strcmp(cpt,"format_overwrite_full")==0) { 
+       skin->do_blank= 1;
+       skin->blank_format_type= 1|(1<<8)|(1<<10);
+       skin->blank_format_size= 32*1024; /* write just a minimal packet */ 
+     } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
+       skin->do_blank= 1;
        skin->blank_format_type= 1;
+       skin->blank_format_size= 0;
      } else if(strcmp(cpt,"format_sequential")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 2;
