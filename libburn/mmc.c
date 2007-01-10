@@ -1177,11 +1177,14 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			 msg, 0, 0);
 
-		if (type == 0x10) { /* full format */
+		/* Scoring strives for quick intermediate state */
+		if (type == 0x00) { /* full format (with lead out) */
 			score = 1;
-		} else if(type == 0x13) {
+		} else if (type == 0x10) { /* DVD-RW full format */
+			score = 10;
+		} else if(type == 0x13) { /* DVD-RW quick grow last session */
 			score = 100;
-		} else if(type == 0x15) {
+		} else if(type == 0x15) { /* DVD-RW Quick */
 			score = 50;
 		} else {
 	continue;
@@ -1273,12 +1276,20 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
    @param flag bit1= insist in size 0 even if there is a better default known
                bit2= format to maximum available size
                bit3= expand format up to at least size
+               bit4= enforce re-format of (partly) formatted media
 */
 int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 {
 	struct buffer buf;
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
+
+#ifdef Not_yeT
+	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
+#else
+	int full_format_type = 0x10;
+#endif
+
 	off_t num_of_blocks = 0, diff;
 	char msg[160],descr[80];
 
@@ -1293,8 +1304,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	memset(c.page->data, 0, c.page->bytes);
 
 	descr[0] = 0;
-	c.page->data[1] = 0x02;                   /* Immed */
-	c.page->data[3] = 8;                      /* Format descriptor length */
+	c.page->data[1] = 0x02;                  /* Immed */
+	c.page->data[3] = 8;                     /* Format descriptor length */
 	num_of_blocks = size / 2048;
 	for (i = 0; i < 4; i++)
 		c.page->data[4 + i] = (num_of_blocks >> (24 - 8 * i)) & 0xff;
@@ -1308,18 +1319,21 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 			/* maximum capacity */
 			memset(c.page->data + 4, 0xff, 4); 
 
-		if (d->bg_format_status == 1)       /* is partly formatted */
-			c.page->data[11] = 1;       /* Restart bit */
-		else if(d->bg_format_status == 2) { /* format in progress */
+		if(d->bg_format_status == 2) { /* format in progress */
 			strcpy(msg,"FORMAT UNIT ignored. Already in progress");
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020120,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
+			return 2;
 		}
+		if (!(flag & 16))             /* if not re-format is desired */
+			if (d->bg_format_status == 1) /* is partly formatted */
+				c.page->data[11] = 1;         /* Restart bit */
 		sprintf(descr, "DVD+RW, BGFS %d", d->bg_format_status);
 
-	} else if (d->current_profile == 0x13) {/*DVD-RW restricted overwrite*/
+	} else if (d->current_profile == 0x13 && !(flag & 16)) {
+		/*DVD-RW restricted overwrite*/
 	/* >>> use case: quick grow formatting during write */
 
 		ret = mmc_read_format_capacities(d, 0x13);
@@ -1357,17 +1371,23 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		c.page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW, quick grow");
 
-	} else if (d->current_profile == 0x14) {/*DVD-RW sequential recording*/
-	/* >>> use case : transition from Sequential to Overwrite */
+	} else if (d->current_profile == 0x14 ||
+			(d->current_profile == 0x13 && (flag & 16))) {
+		/* DVD-RW sequential recording (or Overwrite for re-format) */
+	/* >>> use case : transition from Sequential to Overwrite
+	                  re-formatting of Overwrite media  */
 
 		/* To Restricted Overwrite */
 		/* 6.5.4.2.10 , 15h DVD-RW Quick */
 		/* c.page->data[4-7]==0 : 0 blocks */
-		/* or 6.5.4.2.5 Format Type = 10h (Full Format) */
-		mmc_read_format_capacities(d, (flag & 4) ? 0x10 : 0x15);
+		/* or 6.5.4.2.1 Format Type = 00h (Full Format) */
+		/* or 6.5.4.2.5 Format Type = 10h (DVD-RW Full Format) */
+		mmc_read_format_capacities(d,
+					(flag & 4) ? full_format_type : 0x15);
 		if (d->best_format_type == 0x15 ||
-		    d->best_format_type == 0x10) {
-			if ((flag & 4) || d->best_format_type == 0x10) {
+		    d->best_format_type == full_format_type) {
+			if ((flag & 4)
+				|| d->best_format_type == full_format_type) {
 				num_of_blocks = d->best_format_size / 2048;
 				for (i = 0; i < 4; i++)
 					c.page->data[4 + i] =

@@ -855,6 +855,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                       to the media and eventually perform preliminary closing.
                 bit1= insist in size 0 even if there is a better default known
                 bit2= format to maximum available size
+                bit3= -reserved-
+                bit4= enforce re-format of (partly) formatted media
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
 

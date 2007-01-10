@@ -3971,12 +3971,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
           "cdrskin: SORRY : only blank=%s is implemented yet\n",fmtp[1]);
      return(0);
    } else if(profile_number == 0x14) { /* DVD-RW sequential */
-     if(do_format!=2 && do_format!=1)
+     if(do_format!=1)
        goto unsupported_with_dvd_minus_rw;
    } else if(profile_number == 0x13) { /* DVD-RW restricted overwrite */
-     if(do_format==2) { /* >>> when re-formatting is implemented:
-                                || (do_format==1 && skin->force_is_set) */
-       ;
+     if(do_format==1 && skin->force_is_set) {
+       /* ok */;
      } else if(do_format!=1) {
 unsupported_with_dvd_minus_rw:;
        fprintf(stderr,
@@ -3986,10 +3985,8 @@ unsupported_with_dvd_minus_rw:;
      } else {
        fprintf(stderr,
      "cdrskin: SORRY : blank=format_overwrite : media is already formatted\n");
-/* >>> when re-formatting is implemented
        fprintf(stderr,
        "cdrskin: HINT : If you really want to re-format, try option -force\n");
-*/
        return(2);
      }
    } else {
@@ -4001,7 +3998,9 @@ unsupported_with_dvd_minus_rw:;
      fprintf(stderr,
          "cdrskin: NOTE : blank=%s accepted not yet suitable media\n",
          fmt_text);
- } else {
+
+ } else { /* do_format */
+
    if(s!=BURN_DISC_FULL && 
       (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable)) {
      Cdrskin_release_drive(skin,0);
@@ -4025,7 +4024,9 @@ unsupported_with_dvd_minus_rw:;
      fprintf(stderr,"cdrskin: FATAL : blank=... : media is not erasable\n");
      return(0);
    }
- }
+
+ } /* ! do_format */
+
  if(skin->dummy_mode) {
    fprintf(stderr,
            "cdrskin: would have begun to %s disc if not in -dummy mode\n",
@@ -4046,7 +4047,7 @@ unsupported_with_dvd_minus_rw:;
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1) {
    burn_disc_format(drive,(off_t) skin->blank_format_size,
-                    (skin->blank_format_type>>8)&0xff);
+            ((skin->blank_format_type>>8)&0xff) | ((!!skin->force_is_set)<<4));
 #endif
 
  } else {
@@ -5151,13 +5152,20 @@ set_blank:;
        skin->blank_format_size= 128*1024*1024;
      } else if(strcmp(cpt,"format_overwrite_full")==0) { 
        skin->do_blank= 1;
+
+#ifdef Not_yeT
+       skin->blank_format_type= 1|(1<<10);
+       skin->blank_format_size= 0;
+#else
        skin->blank_format_type= 1|(1<<8)|(1<<10);
        skin->blank_format_size= 32*1024; /* write just a minimal packet */ 
+#endif
+
      } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1;
        skin->blank_format_size= 0;
-     } else if(strcmp(cpt,"format_sequential")==0) { 
+     } else if(strcmp(cpt,"format_sequential")==0) {/* >>> not yet supported */
        skin->do_blank= 1;
        skin->blank_format_type= 2;
      } else if(strcmp(cpt,"help")==0) { 

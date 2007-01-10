@@ -266,6 +266,7 @@ static void *format_worker_func(struct w_list *w)
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 {
 	struct format_opts o;
+	int ok = 0;
 	char msg[160];
 
 	if ((SCAN_GOING()) || find_worker(drive)) {
@@ -277,7 +278,14 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		return;
 	}
 
-	if (drive->current_profile != 0x14) { /* no DVD-RW */
+	if (drive->current_profile == 0x14)
+		ok = 1; /* DVD-RW sequential */
+	if (drive->current_profile == 0x13 && (flag & 16)) 
+		ok = 1; /* DVD-RW Restricted Overwrite with force bit */
+
+	/* >>> DVD+RW with and without force bit ? */
+
+	if (!ok) {
 		sprintf(msg,"Will not format media type %4.4Xh",
 			drive->current_profile);
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
