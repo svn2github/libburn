@@ -424,10 +424,9 @@ blank=format_overwrite_quickest  uses "DVD-RW Quick" formatting (type 15h) too
 but leaves the media in "intermediate" state. One may only write sequentially
 to such a DVD. This restriction is lifted after the first write session.
 
-blank=format_overwrite_full  uses preferrably "DVD-RW Full Format" (type 10h)
-and writes a single 32 kB block to address 0 (in case only type 15h is
-available). This formatting lasts as long as writing a full DVD but seems
-to yield best quality.
+blank=format_overwrite_full  uses preferrably "Full Format" (type 00h).
+This formatting lasts as long as writing a full DVD. It includes writing of
+lead-out which is said to be good for DVD ROM compatibility. 
 
 
                         Special compilation variations

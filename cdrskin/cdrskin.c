@@ -5152,15 +5152,10 @@ set_blank:;
        skin->blank_format_size= 128*1024*1024;
      } else if(strcmp(cpt,"format_overwrite_full")==0) { 
        skin->do_blank= 1;
-
-#ifdef Not_yeT
        skin->blank_format_type= 1|(1<<10);
+       /* was : 1|(1<<8)|(1<<10); */
        skin->blank_format_size= 0;
-#else
-       skin->blank_format_type= 1|(1<<8)|(1<<10);
-       skin->blank_format_size= 32*1024; /* write just a minimal packet */ 
-#endif
-
+       /* was: 32*1024; / * write just a minimal packet */ 
      } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1;

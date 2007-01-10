@@ -209,8 +209,8 @@ The "intermediate" state ends after the first session of writing data.
 .TP
 format_overwrite_full
 Like format_overwrite but claiming full media size rather than just 128 MB.
-Only a minimal data packet gets written. Much patience is required.
-May lead to media which have very few time overhead before and after write.
+Most traditional formatting is attempted. No data get written. 
+Much patience is required.
 .RE
 .TP
 .BI \-checkdrive
@@ -258,6 +258,9 @@ Assume that the user knows better in situations when cdrskin or libburn are
 insecure about drive or media state. This includes the attempt to blank
 media which are classified as unknown or unsuitable, and the attempt to use
 write modes which libburn believes they are not supported by the drive.
+.br
+Another application is with blank=format_* to enforce re-formatting of media
+which appear to be sufficiently formatted already.
 .br
 Use this only when in urgent need.
 .TP
