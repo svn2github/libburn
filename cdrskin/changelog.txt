@@ -2349,14 +2349,129 @@ Greeting the new year
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2007.01.02.101027
 * Formatting and then burning to DVD-RW like to DVD+RW
 
-  []
+2 Jan 2006  [576]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
+2 Jan 2006  [577]
+cdrskin/wiki_plain.txt
+cdrskin/README
+Some DVD-RW statements
 
+2 Jan 2006  [578]
 test/libburner.c
-Make use of formatting of DVD-RW
+doc/comments
+Made use of formatting of DVD-RW
 
+2 Jan 2006  [579]
+cdrskin/cdrskin.1
+Some DVD-RW statements
+
+2007.01.03.163026  [583]
+libburn/mmc.c
+Made formatting report progress (as good as the drive does)
+
+2007.01.03.164716  [584]
+libburn/async.c
+libburn/drive.c
+Moved blanking suitability test before eventual spwaning of threads
+
+2007.01.05.125715  [587]
+libburn/mmc.c
+libburn/write.c
+Comments and name changes from new findings out of reading MMC-5
+
+2007.01.06.120551  [591]
+libburn/libburn.h
+libburn/transport.h
+libburn/mmc.h
+libburn/mmc.c
+libburn/async.c
+libburn/drive.h
+libburn/drive.c
+libburn/write.c
+cdrskin/cdrskin.c
+test/libburner.c
+New formatting parameter "size". Sorry for changing API. Function is a week old.
+
+8 Jan 2007  [592]
+libburn/os-linux.h
+libburn/os-freebsd.h
+Added note that buffer may not be smaller than 32768
+
+2007.01.08.104222  [593]
+libburn/libburn.h
+libburn/drive.c
+libburn/write.c
+libburn/mmc.c
+Introduced size parameter to DVD-RW formatting plus writing of zeros. 
+
+2007.01.08.104407  [594]
+cdrskin/cdrskin.1
+cdrskin/cdrskin.c
+Using 128 MB of size plus writing of zeros with blank=format_overwrite
+
+2007.01.09.140302  [595]
+libburn/drive.c
+Fixed a SIGFPE with formatting via libburner
+
+9 Jan 2007  [596]
+libburn/libburn.h
+libburn/transport.h
+libburn/libdax_msgs.h
+libburn/drive.c
+libburn/write.c
+libburn/mmc.c
+Enhanced DVD-RW formatting
+
+2007.01.09.211152  [597]
+cdrskin/README
+cdrskin/cdrskin.1
+cdrskin/cdrskin.c
+Now available: "quickest" and "full" formatting for DVD-RW
+
+
+------------------------------------ cycle  - cdrskin-0.2.7 - 2007.01.10.101406
+
+
+10 Jan 2007  [598]
+cdrskin/cdrskin_eng.html
+Updated size estimation of development downloads
+
+10 Jan 2007  [599]
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
+
+  []
+libburn/libburn.h
+libburn/mmc.c
+libburn/drive.c
+libburn/async.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Option -force enables re-formatting
+
+  []
+libburn/mmc.c
+Switched full formatting from type 10h to 00h which includes lead-out
+
+  []
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+Removing writing of dummy data with blank=format_overwrite_full
+
+
+Format DVD+RW ?
+
+Format and use DVD-RAM ?
+
+Load format parameters into struct burn_drive and offer API.
+With full formatting prefer format 10h over 13h or 15h.
+
+Learn about multi-track with DVD-RW Restricted Overwrite.
+
+How to handle finalizing ?
 
 Check wether current_profile is kept up to date with each possible media change
 
