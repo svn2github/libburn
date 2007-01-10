@@ -1823,16 +1823,14 @@ return:
      fprintf(stderr,"\tall\t\tblank the entire disk\n");
      fprintf(stderr,"\tdisc\t\tblank the entire disk\n");
      fprintf(stderr,"\tdisk\t\tblank the entire disk\n");
-     fprintf(stderr,
-             "\tfast\t\tminimally blank the entire disk\n");
-     fprintf(stderr,
-          "\tminimal\t\tminimally blank the entire disk\n");
+     fprintf(stderr,"\tfast\t\tminimally blank the entire disk\n");
+     fprintf(stderr,"\tminimal\t\tminimally blank the entire disk\n");
      fprintf(stderr,
           "\tformat_overwrite\tformat a DVD-RW to \"Restricted Overwrite\"\n");
      fprintf(stderr,
-      "\tformat_overwrite_full\t\tto \"Restricted Overwrite\" in full size\n");
+    "\tformat_overwrite_quickest\tto \"Restricted Overwrite intermediate\"\n");
      fprintf(stderr,
-    "\tformat_overwrite_quickest\tto \"Restricted Overwrite\" intermediate\n");
+          "\tformat_overwrite_full\tfull-size format a DVD-RW or DVD+RW\n");
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -3972,26 +3970,38 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      return(0);
    } else if(profile_number == 0x14) { /* DVD-RW sequential */
      if(do_format!=1)
-       goto unsupported_with_dvd_minus_rw;
+       goto unsupported_format_type;
    } else if(profile_number == 0x13) { /* DVD-RW restricted overwrite */
      if(do_format==1 && skin->force_is_set) {
        /* ok */;
      } else if(do_format!=1) {
-unsupported_with_dvd_minus_rw:;
+unsupported_format_type:;
        fprintf(stderr,
-           "cdrskin: SORRY : blank=%s : unsupported format type with DVD-RW\n",
+          "cdrskin: SORRY : blank=%s : unsupported format and/or media type\n",
            fmt_text);
        return(0);
      } else {
        fprintf(stderr,
-     "cdrskin: SORRY : blank=format_overwrite : media is already formatted\n");
+       "cdrskin: NOTE : blank=format_... : media is already formatted\n");
        fprintf(stderr,
-       "cdrskin: HINT : If you really want to re-format, try option -force\n");
+       "cdrskin: HINT : If you really want to re-format, add option -force\n");
+       return(2);
+     }
+   } else if(profile_number == 0x1a) { /* DVD+RW */
+     if(do_format!=1)
+       goto unsupported_format_type;
+     if(!((skin->blank_format_type>>8)&4)) {
+       fprintf(stderr,
+       "cdrskin: NOTE : blank=format_... : DVD+RW do not need this\n");
+       fprintf(stderr,
+       "cdrskin: HINT : For de-icing use option blank=format_overwrite_full");
+       fprintf(stderr,
+       "cdrskin: HINT : If you really want to re-format, add option -force\n");
        return(2);
      }
    } else {
      fprintf(stderr,
-             "cdrskin: SORRY : blank=%s for now does DVD-RW only\n",fmt_text);
+            "cdrskin: SORRY : blank=%s for now does DVD+/-RW only\n",fmt_text);
      return(0);
    }
    if(s==BURN_DISC_UNSUITABLE)
@@ -4065,12 +4075,12 @@ unsupported_with_dvd_minus_rw:;
  while(burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
    if(loop_counter>0)
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
-       int percent= 50;
+       double percent= 50.0;
 
        if(p.sectors>0) /* i want a display of 1 to 99 percent */
          percent= 1.0+((double) p.sector+1.0)/((double) p.sectors)*98.0;
        fprintf(stderr,
-          "\rcdrskin: %s ( done %2d%% , %lu seconds elapsed )          ",
+          "\rcdrskin: %s ( done %.1f%% , %lu seconds elapsed )          ",
           presperf,percent,(unsigned long) (Sfile_microtime(0)-start_time));
      }
    sleep(1);

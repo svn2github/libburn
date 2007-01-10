@@ -1304,17 +1304,24 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	for (i = 0; i < 4; i++)
 		c.page->data[4 + i] = (num_of_blocks >> (24 - 8 * i)) & 0xff;
 	if (d->current_profile == 0x1a) { /* DVD+RW */
-	/* >>> use case: background formatting during write */
+	/* >>> use case: background formatting during write     !(flag&4)
+	                 de-icing as explicit formatting action (flag&4)
+	*/
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		format_type = 0x26;
 
-		if ((size <= 0 && !(flag & 2)) || (flag & (4 | 8)))
+		if ((size <= 0 && !(flag & 2)) || (flag & (4 | 8))) {
 			/* maximum capacity */
 			memset(c.page->data + 4, 0xff, 4); 
+			num_of_blocks = 0xffffffff;
+		}
 
-		if(d->bg_format_status == 2) { /* format in progress */
-			strcpy(msg,"FORMAT UNIT ignored. Already in progress");
+		if(d->bg_format_status == 2 ||
+			(d->bg_format_status == 3 && !(flag & 16))) {
+			sprintf(msg,"FORMAT UNIT ignored. Already %s.",
+				(d->bg_format_status == 2 ? "in progress" :
+							"completed"));
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020120,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
@@ -1324,7 +1331,10 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		if (!(flag & 16))             /* if not re-format is desired */
 			if (d->bg_format_status == 1) /* is partly formatted */
 				c.page->data[11] = 1;         /* Restart bit */
-		sprintf(descr, "DVD+RW, BGFS %d", d->bg_format_status);
+		sprintf(descr, "DVD+RW (fs=%d,rs=%d)",
+			d->bg_format_status, (c.page->data[11] == 1));
+		if (flag & 4)
+			return_immediately = 1;/* caller must do the waiting */
 
 	} else if (d->current_profile == 0x13 && !(flag & 16)) {
 		/*DVD-RW restricted overwrite*/
@@ -1363,7 +1373,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		/* 6.5.4.2.8 , DVD-RW Quick Grow Last Border */
 		format_type = 0x13;
 		c.page->data[11] = 16;              /* block size * 2k */
-		sprintf(descr, "DVD-RW, quick grow");
+		sprintf(descr, "DVD-RW quick grow");
 
 	} else if (d->current_profile == 0x14 ||
 			(d->current_profile == 0x13 && (flag & 16))) {
@@ -1398,7 +1408,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		}
 		format_type = d->best_format_type;
 		c.page->data[11] = 16;              /* block size * 2k */
-		sprintf(descr, "DVD-RW, quick");
+		sprintf(descr, "DVD-RW %s",
+			format_type == 0x15 ? "quick" : "full");
 		return_immediately = 1; /* caller must do the waiting */
 
 	} else { 
@@ -1415,8 +1426,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	}
 	c.page->data[8] = format_type << 2;
 
-	sprintf(msg, "Format type %2.2Xh , blocks = %d\n",
-		format_type, (int) num_of_blocks);
+	sprintf(msg, "Format type %2.2Xh \"%s\", blocks = %.f\n",
+		format_type, descr, (double) num_of_blocks);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);

@@ -280,10 +280,14 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 
 	if (drive->current_profile == 0x14)
 		ok = 1; /* DVD-RW sequential */
-	if (drive->current_profile == 0x13 && (flag & 16)) 
+	else if (drive->current_profile == 0x13 && (flag & 16)) 
 		ok = 1; /* DVD-RW Restricted Overwrite with force bit */
-
-	/* >>> DVD+RW with and without force bit ? */
+	else if (drive->current_profile == 0x1a) {
+		ok = 1;         /* DVD+RW */
+		size = 0;
+		flag &= ~(2|8); /* no insisting in size 0, no expansion */
+		flag |= 4;      /* format up to maximum size */
+	}
 
 	if (!ok) {
 		sprintf(msg,"Will not format media type %4.4Xh",

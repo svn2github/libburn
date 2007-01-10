@@ -183,7 +183,7 @@ those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix .au and SUN Audio.
 .TP 
 .BI blank= type
-Blank a CD-RW or format a DVD-RW.
+Blank a CD-RW or format a DVD+/-RW.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -202,15 +202,19 @@ Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
 (Note: format_overwrite* are not original cdrecord options.)
 .TP
 format_overwrite_quickest
-Like format_overwrite without creating a 128 MB trailblazer track.
+Like format_overwrite without creating a 128 MB trailblazer session.
 Leads to "intermediate" state which only allows sequential write
 beginning from address 0.
 The "intermediate" state ends after the first session of writing data.
 .TP
 format_overwrite_full
-Like format_overwrite but claiming full media size rather than just 128 MB.
+For DVD-RW this is like format_overwrite but claims full media size
+rather than just 128 MB.
 Most traditional formatting is attempted. No data get written. 
 Much patience is required.
+.br
+For DVD+RW this is the only supported explicit formatting type. It provides
+complete "de-icing" so no reader slips on unwritten data areas.
 .RE
 .TP
 .BI \-checkdrive
