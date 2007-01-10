@@ -1283,15 +1283,9 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	struct buffer buf;
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
-
-#ifdef Not_yeT
-	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
-#else
-	int full_format_type = 0x10;
-#endif
-
 	off_t num_of_blocks = 0, diff;
 	char msg[160],descr[80];
+	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
 	mmc_function_spy("mmc_format_unit");
 	c.retry = 1;
