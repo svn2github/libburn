@@ -537,7 +537,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 
 		/* <<< */
 		sprintf(msg,
-			"Writing %.f sectors of zeros to formatted media\n",
+			"Writing %.f sectors of zeros to formatted media",
 			(double) num_bufs * (double) buf_secs);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00000002,
@@ -1152,7 +1152,7 @@ int burn_drive_find_scsi_equiv(char *path, char adr[])
 	ret = burn_drive_obtain_scsi_adr(path, &bus_no, &host_no, &channel_no,
 					 &target_no, &lun_no);
 	if(ret <= 0) {
-		sprintf(msg,"burn_drive_obtain_scsi_adr( %s ) returns %d\n",
+		sprintf(msg,"burn_drive_obtain_scsi_adr( %s ) returns %d",
 			path, ret);
 		burn_drive_adr_debug_msg(msg, NULL);
 		return 0;
@@ -1239,7 +1239,7 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed)
 }
 
 
-/** Abort any running drive operation and finis libburn.
+/** Abort any running drive operation and finish libburn.
     @param patience Maximum number of seconds to wait for drives to finish
     @param pacifier_func Function to produce appeasing messages. See
                          burn_abort_pacifier() for an example.
