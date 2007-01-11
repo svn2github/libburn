@@ -209,8 +209,38 @@ ex:
 
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
-	if(getpid() != abort_control_pid)
+	if(getpid() != abort_control_pid) {
+
+#ifdef Not_yeT
+		pthread_t thread_id;
+
+		/* >>> need better handling of self-induced SIGs 
+		       like SIGSEGV or SIGFPE.
+		       Like bonking the control thread if it did not show up
+		       after a short while.
+		*/
+
+		/* >>> if this is a non-fatal signal : return -2 */
+
+		thread_id = pthread_self();
+		/* >>> find thread_id  in worker list of async.c */
+		/* >>> if owning a drive : mark idle and canceled
+		       (can't do anything more) */
+
+		usleep(1000000); /* calm down */
+
+ 		/* forward signal to control thread */
+		if (abort_control_pid>1)
+			kill(abort_control_pid, signum);
+
+		/* >>> ??? end thread */;
+
+#else
+		usleep(1000000); /* calm down */
 		return -2;
+#endif /* ! Not_yeT */
+
+	}
 	Cleanup_set_handlers(NULL, NULL, 2);
 	fprintf(stderr,"%sABORT : Trying to shut down drive and library\n",
 		abort_message_prefix);
