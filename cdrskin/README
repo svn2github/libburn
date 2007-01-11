@@ -340,7 +340,7 @@ dev=0,1,0
 dev_translation=+1,0,0+0,1,0
 
 # Some more options
---fifo_start_empty
+fifo_start_at=0
 fs=16m
 
 
@@ -420,9 +420,10 @@ blank=format_overwrite  uses "DVD-RW Quick" formatting (MMC-type 15h)
 and writes a first session of 128 MB. This leads to media which are expandable
 and random addressable by cdrskin.
 
-blank=format_overwrite_quickest  uses "DVD-RW Quick" formatting (type 15h) too
-but leaves the media in "intermediate" state. One may only write sequentially
-to such a DVD. This restriction is lifted after the first write session.
+blank=format_overwrite_quickest  uses "DVD-RW Quick" formatting (type 15h) too,
+but leaves the media in "intermediate" state. In the first session of writing
+one may only write sequentially to such a DVD. After that, it gets random
+addressable by cdrskin.
 
 blank=format_overwrite_full  uses preferrably "Full Format" (type 00h).
 This formatting lasts as long as writing a full DVD. It includes writing of
