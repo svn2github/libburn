@@ -1114,7 +1114,7 @@ void mmc_get_configuration(struct burn_drive *d)
 int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 {
 	struct buffer buf;
-	int len, type, score, num_descr, max_score = -1, i;
+	int len, type, score, num_descr, max_score = -2000000000, i, sign = 1;
 	off_t size;
 	struct command c;
 	unsigned char *dpt;
@@ -1161,6 +1161,9 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 
 	d->format_curr_max_size *= (off_t) 2048;
 
+	if (top_wanted == 0x00 || top_wanted == 0x10)
+		sign = -1; /* the caller clearly desires full format */
+
 	/* 6.24.3.3 Formattable Capacity Descriptors */
 	num_descr = (len - 8) / 8;
 	for (i = 0; i < num_descr; i++) {
@@ -1177,20 +1180,20 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			 msg, 0, 0);
 
-		/* Scoring strives for quick intermediate state */
+		/* Criterion is proximity to quick intermediate state */
 		if (type == 0x00) { /* full format (with lead out) */
-			score = 1;
+			score = 1 * sign;
 		} else if (type == 0x10) { /* DVD-RW full format */
-			score = 10;
+			score = 10 * sign;
 		} else if(type == 0x13) { /* DVD-RW quick grow last session */
-			score = 100;
+			score = 100 * sign;
 		} else if(type == 0x15) { /* DVD-RW Quick */
-			score = 50;
+			score = 50 * sign;
 		} else {
 	continue;
 		}
-		if(type == top_wanted)
-			score+= 1000000000;
+		if (type == top_wanted)
+			score += 1000000000;
 		if (score > max_score) {
 			d->best_format_type = type;
 			d->best_format_size = size;
