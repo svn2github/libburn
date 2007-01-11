@@ -63,9 +63,9 @@ static int signal_list_count= 24;
 
 /* Signals not to be caught */
 static int non_signal_list[]= {
-  SIGKILL, SIGCHLD, SIGSTOP, SIGURG, -1
+  SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH, -1
 };
-static int non_signal_list_count= 4;
+static int non_signal_list_count= 5;
 
 
 #endif /* Cleanup_has_no_libburn_os_H */

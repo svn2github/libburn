@@ -37,10 +37,10 @@
 
 /** To list all signals which shall surely not be caught */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
-SIGKILL, SIGCHLD, SIGSTOP, SIGURG
+SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 
 /* The number of above list items */
-#define BURN_OS_NON_SIGNAL_COUNT 4
+#define BURN_OS_NON_SIGNAL_COUNT 5
 
 
 /* The maximum size for a (SCSI) i/o transaction */
