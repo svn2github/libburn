@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "January 2, 2007"
+.TH CDRSKIN 1 "January 12, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,7 +16,8 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD-R, CD-RW or DVD+/-RW via libburn.
+cdrskin \- burns preformatted data to CD-R, CD-RW, DVD+/-RW, DVD-RAM
+via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -45,7 +46,7 @@ Multi session on CD (follow-up sessions in TAO only).
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
-Burning of a single data track to DVD+RW or DVD-RW.
+Burning of a single data track to DVD+RW, DVD-RW or DVD-RAM.
 .br
 See section EXAMPLES at the end of this text.
 .PP
@@ -107,17 +108,18 @@ Multiple cycles of blanking and overwriting with random numbers might be.
 .PP
 .B Recordable DVD Media:
 .br
-Currently only types DVD+RW and DVD-RW can be burned via cdrskin.
+Currently only types DVD+RW, DVD-RW and DVD-RAM can be burned via cdrskin.
 .br
-DVD+RW media get treated as blank media regardless wether they hold data
-or not. Options -audio and -multi are not allowed. Only one track is allowed.
+DVD+RW and DVD-RAM media get treated as blank media regardless wether they
+hold data or not. They need no special initial formatting.
+Options -audio and -multi are not allowed. Only one track is allowed.
 -toc does not return information about the media content.
 Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
 there is no difference between -sao and -tao. If ever, then -tao will be the
 mode which preserves the current behavior.
 .br
-DVD-RW need to be formatted to state "Restricted Overwrite". They then behave
-much like CD-RW. This formatting can be done by option
+DVD-RW need to be formatted to state "Restricted Overwrite". Then they behave
+much like DVD+RW. This formatting can be done by option
 .B blank=format_overwrite
 It is necessary for unused media, for media written or blanked by cdrecord,
 for media which have been written unformatted by growisofs or blanked by
@@ -478,8 +480,10 @@ interpretation of eventual startup files. See section FILES below.
 Accept only the last argument of the command line as track source address.
 .TP 
 .BI write_start_address= byte_offset
-Set the address on media where to start writing the track. With DVD+RW 
-byte_offset must be aligned to 2 KB blocks. With DVD-RW alignment is 32 kB.
+Set the address on media where to start writing the track. With DVD+RW or
+DVD-RAM byte_offset must be aligned to 2 KB blocks, but better is 32 kB.
+With DVD-RW 32 kB alignment is mandatory.
+.br
 Other media are not suitable for this option yet.
 .PP
 Alphabetical list of options which are only intended for very special

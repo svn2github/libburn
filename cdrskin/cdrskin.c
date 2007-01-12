@@ -3808,10 +3808,15 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      printf("Current: CD-R\n");
  }
  if(strstr(profile_name,"DVD")==profile_name) {
+   /* These are dummy messages for project scdbackup, so its media recognition
+      gets a hint that the media is suitable and not in need of blanking.
+      scdbackup will learn to interpret cdrskin's DVD messages but the
+      current stable version needs to believe it is talking to its own
+      growisofs_wrapper. So this is an emulation of an emulator.
+   */
    printf("book type:       %s (emulated booktype)\n", profile_name);
-   if(profile_number==0x13)
-     printf(
-       "cdrskin: for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
+   if(profile_number==0x13) /* DVD-RW */
+     printf("cdrskin: message for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {
@@ -4443,8 +4448,9 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
    if(s == BURN_DISC_APPENDABLE) {
      strcpy(skin->preskin->write_mode_name,"TAO");
      was_still_default= 2; /*<<< prevents trying of SAO if drive dislikes TAO*/
-   } else if(strstr(profile_name,"DVD+RW")==profile_name ||
-             profile_number == 0x13) { /* DVD-RW Restricted Overwrite */
+   } else if(profile_number==0x1a || profile_number==0x13 ||
+             profile_number==0x12) {
+     /* DVD+RW , DVD-RW Restricted Overwrite , DVD-RAM */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
      strcpy(skin->preskin->write_mode_name,"SAO");

@@ -38,9 +38,11 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_support_dvd_plus_rW 1
 
 /* ts A61229 */
-/*
-*/
 #define Libburn_support_dvd_minusrw_overW 1
+
+/* ts A70112 */
+#define Libburn_support_dvd_raM 1
+
 
 /* Progress report (with Libburn_support_dvd_plus_rW defined):
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
@@ -62,6 +64,7 @@ extern struct libdax_msgs *libdax_messenger;
                really seems to work without such a page.
    ts A70101 : Formatted DVD-RW media. Success is varying with media, but
                dvd+rw-format does not do better with the same media.
+   ts A70112 : Support for writing to DVD-RAM.
 
 Todo:
    Determine first free lba for appending data. 
@@ -167,8 +170,9 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
 	c.opcode[1] = 1;
 	if(trackno<=0) {
-		if (d->current_profile == 0x1a || d->current_profile == 0x13)
-				 /* DVD+RW  or DVD-RW restricted overwrite*/
+		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+		    d->current_profile == 0x12 )
+			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
 			c.opcode[5] = 1;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			c.opcode[5] = 0xFF;
@@ -610,10 +614,13 @@ void mmc_read_disc_info(struct burn_drive *d)
 	*/
 	d->bg_format_status = data[7] & 3;
 
-	/* ts A61219 : preliminarily declare all DVD+RW blank,
-		(which is not the same as bg_format_status==0 "blank") */
-	/* ts A61229 : same for DVD-RW Restricted overwrite */
-	if (d->current_profile == 0x1a || d->current_profile == 0x13)
+	/* Preliminarily declare blank:
+	   ts A61219 : DVD+RW (is not bg_format_status==0 "blank")
+	   ts A61229 : same for DVD-RW Restricted overwrite
+	   ts A70112 : same for DVD-RAM
+	*/
+	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+	    d->current_profile == 0x12)
 		d->status = BURN_DISC_BLANK;
 }
 
@@ -1099,6 +1106,10 @@ void mmc_get_configuration(struct burn_drive *d)
 #endif
 #ifdef Libburn_support_dvd_minusrw_overW
 	if (cp == 0x13)
+		d->current_is_supported_profile = 1;
+#endif
+#ifdef Libburn_support_dvd_raM
+	if (cp == 0x12)
 		d->current_is_supported_profile = 1;
 #endif
 

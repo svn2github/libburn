@@ -434,6 +434,10 @@ void spc_getcaps(struct burn_drive *d)
 	spc_inquiry(d);
 	spc_sense_caps(d);
 	spc_sense_error_params(d);
+
+	/* <<< for debugging. >>> ??? to be fixely included here ?
+	mmc_read_format_capacities(d, -1);
+	*/
 }
 
 /*

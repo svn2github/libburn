@@ -918,7 +918,8 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		if (ret <= 0)
 	break;
 	}
-	if (strcmp(d->current_profile_text,"DVD+RW")==0) {
+	if (d->current_profile == 0x1a) {
+		/* DVD+RW */
 		ret = burn_disc_close_session_dvd_plus_rw(o, s);
 		if (ret <= 0)
 			return 0;
@@ -927,6 +928,9 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		ret = burn_disc_close_session_dvd_minus_rw(o, s);
 		if (ret <= 0)
 			return 0;
+	} else if (d->current_profile == 0x12) {
+		/* DVD-RAM */
+		/* ??? any finalization needed ? */;
 	}
 	return 1;
 }
@@ -1056,13 +1060,14 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		goto early_failure;
 	}
 
-	if (d->current_profile == 0x1a || d->current_profile == 0x13) {
-		 /* DVD+RW or DVD-RW Restricted Overwrite */
+	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+	    d->current_profile == 0x12) {
+		 /* DVD+RW , DVD-RW Restricted Overwrite , DVD-RAM */
 		if (disc->sessions!=1 || disc->session[0]->tracks>1
 			|| o->multi ) {
 			sprintf(msg,
-		"Burning is restricted to a single track and no multi-session"
-				);
+	"Burning is restricted to a single track and no multi-session on %s",
+				d->current_profile_text);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011f,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -1070,7 +1075,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			goto early_failure;
 		}
 	}
-	if (d->current_profile == 0x1a) { /* DVD+RW */
+	if (d->current_profile == 0x1a || d->current_profile == 0x12) { 
+		/* DVD+RW , DVD-RAM */
 		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
 			sprintf(msg,
 			  "Write start address not properly aligned to 2048");
@@ -1080,7 +1086,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
-		ret = burn_disc_setup_dvd_plus_rw(o, disc);
+		ret = 1;
+		if (d->current_profile == 0x1a)
+			ret = burn_disc_setup_dvd_plus_rw(o, disc);
 		if (ret <= 0) {
 			sprintf(msg,
 			  "Write preparation setup failed for DVD+RW");
