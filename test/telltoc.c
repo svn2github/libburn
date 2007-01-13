@@ -321,12 +321,54 @@ int telltoc_speedlist(struct burn_drive *drive)
 	continue;
 		printf("Speed descr. : %d kB/s", sd->write_speed);
 		if (sd->end_lba >= 0)
-			printf(", %.f MiB", ((double) sd->end_lba) / 512.0);
+			printf(", %.1f MiB", ((double) sd->end_lba) / 512.0);
 		if (sd->profile_name[0])
 			printf(", %s", sd->profile_name);
 		printf("\n");
 	}
 	burn_drive_free_speedlist(&speed_list);
+	return 1;
+}
+
+
+int telltoc_formatlist(struct burn_drive *drive)
+{
+	int ret, i, status, num_formats, profile_no, type;
+	off_t size;
+	unsigned dummy;
+	char status_text[80], profile_name[90];
+
+	ret = burn_disc_get_formats(drive, &status, &size, &dummy,
+				 &num_formats);
+	if (ret <= 0) {
+		fprintf(stderr, "SORRY: Cannot obtain format list info\n");
+		return 2;
+	}
+	if (status == BURN_FORMAT_IS_UNFORMATTED)
+		sprintf(status_text, "unformatted, up to %.1f MiB",
+                        ((double) size) / 1024.0 / 1024.0);
+	else if(status == BURN_FORMAT_IS_FORMATTED)
+		sprintf(status_text, "formatted, with %.1f MiB",
+                        ((double) size) / 1024.0 / 1024.0);
+	else if(status == BURN_FORMAT_IS_UNKNOWN) {
+		burn_disc_get_profile(drive, &profile_no, profile_name);
+		if (profile_no > 0)
+			sprintf(status_text, "intermediate or unknown");
+		else
+			sprintf(status_text, "no media or unknown media");
+	} else
+		sprintf(status_text, "illegal status according to MMC-5");
+	printf("Format status: %s\n", status_text);
+
+	for (i = 0; i < num_formats; i++) {
+		ret = burn_disc_get_format_descr(drive, i,
+						 &type, &size, &dummy);
+		if (ret <= 0)
+	continue;
+		printf("Format descr.: %2.2Xh  , %.1f MiB  (%.fs)\n",
+			type, ((double) size) / 1024.0 / 1024.0,
+			((double) size) / 2048.0);
+	}
 	return 1;
 }
 
@@ -475,7 +517,7 @@ static int do_media = 0;
 static int do_toc = 0;
 static int do_msinfo = 0;
 static int print_help = 0;
-static int do_speedlist = 0;
+static int do_capacities = 0;
 
 
 /** Converts command line arguments into above setup parameters.
@@ -512,8 +554,8 @@ int telltoc_setup(int argc, char **argv)
         } else if (!strcmp(argv[i], "--msinfo")) {
 	    do_msinfo = 1;
 
-        } else if (!strcmp(argv[i], "--speedlist")) {
-	    do_speedlist = 1;
+        } else if (!strcmp(argv[i], "--capacities")) {
+	    do_capacities = 1;
 
         } else if (!strcmp(argv[i], "--toc")) {
 	    do_toc = 1;
@@ -531,7 +573,7 @@ int telltoc_setup(int argc, char **argv)
     if (print_help) {
         printf("Usage: %s\n", argv[0]);
         printf("       [--drive <address>|<driveno>|\"-\"]\n");
-        printf("       [--media]  [--speedlist]  [--toc]  [--msinfo]\n");
+        printf("       [--media]  [--capacities]  [--toc]  [--msinfo]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
         printf("  %s --drive -\n",argv[0]);
@@ -566,11 +608,11 @@ int main(int argc, char **argv)
 			msinfo_alone = 1;
 	}
 	/* Default option is to do everything if possible */
-    	if (do_media==0 && do_msinfo==0 && do_speedlist==0 && do_toc==0 
+    	if (do_media==0 && do_msinfo==0 && do_capacities==0 && do_toc==0 
 	    && driveno!=-1) {
 		if(print_help)
 			exit(0);
-		full_default = do_media = do_msinfo = do_speedlist= do_toc = 1;
+		full_default = do_media = do_msinfo = do_capacities= do_toc = 1;
 	}
 
 	fprintf(stderr, "Initializing libburn.pykix.org ...\n");
@@ -598,8 +640,11 @@ int main(int argc, char **argv)
 		if (ret<=0)
 			{ret = 36; goto release_drive; }
 	}
-	if (do_speedlist) {
+	if (do_capacities) {
 		ret = telltoc_speedlist(drive_list[driveno].drive);
+		if (ret<=0)
+			{ret = 39; goto release_drive; }
+		ret = telltoc_formatlist(drive_list[driveno].drive);
 		if (ret<=0)
 			{ret = 39; goto release_drive; }
 	}
