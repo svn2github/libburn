@@ -8,8 +8,8 @@
   
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia.pykix.org . It can list the available devices, can
-  blank a CD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW, DVD+RW
-  or DVD-RW.
+  blank a CD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW, DVD+RW,
+  DVD-RAM or DVD-RW.
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
@@ -28,7 +28,7 @@
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
      libburner_format_row()
-  With the aquired drive you can burn to CD-R, CD-RW, DVD+RW, DVD-RW
+  With the aquired drive you can burn to CD-R, CD-RW, DVD+RW, DVD-RAM, DVD-RW
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
@@ -322,6 +322,7 @@ int libburner_format_row(struct burn_drive *drive)
 	}
 	printf("Beginning to format media.\n");
 	burn_disc_format(drive, (off_t) 0, 0);
+
 	sleep(1);
 	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
 		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */
@@ -476,8 +477,8 @@ int libburner_payload(struct burn_drive *drive,
 		burn_track_free(tracklist[trackno]);
 	burn_session_free(session);
 	burn_disc_free(target_disc);
-	if (multi && strcmp(current_profile_name, "DVD+RW") != 0 &&
-	    current_profile != 0x13)
+	if (multi && current_profile != 0x1a && current_profile != 0x13 &&
+		current_profile != 0x12) /* not with DVD+RW, DVD-RW, DVD-RAM */
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
