@@ -133,10 +133,9 @@ static int linux_sg_accept_any_type = 0;
 */
 static char linux_ata_device_family[80] = {"/dev/hd%c"};
 
-/* >>> Not implemented yet:
-  Set this to 1 in order to get on stderr messages from ata_enumerate()i
-static int linux_ata_enumerate_verbous = 0;
+/* Set this to 1 in order to get on stderr messages from ata_enumerate()
 */
+static int linux_ata_enumerate_verbous = 0;
 
 
 
@@ -413,23 +412,39 @@ static void ata_enumerate(void)
 	int i, fd;
 	char fname[10];
 
+	if (linux_ata_enumerate_verbous)
+	  fprintf(stderr, "libburn_debug: linux_ata_device_family = %s\n",
+		  linux_ata_device_family);
+
 	if (linux_ata_device_family[0] == 0)
 		return;
 
 	for (i = 0; i < 26; i++) {
 		sprintf(fname, linux_ata_device_family, 'a' + i);
+		if (linux_ata_enumerate_verbous)
+		  fprintf(stderr, "libburn_debug: %s : ", fname);
+
 		/* ts A51221 */
-		if (burn_drive_is_banned(fname))
+		if (burn_drive_is_banned(fname)) {
+			if (linux_ata_enumerate_verbous)
+				fprintf(stderr, "not in whitelist\n");
 	continue;
+		}
 		fd = sg_open_drive_fd(fname, 1);
-		if (fd == -1)
+		if (fd == -1) {
+			if (linux_ata_enumerate_verbous)
+				fprintf(stderr,"open failed, errno=%d  '%s'\n",
+					errno, strerror(errno));
 	continue;
+		}
 
 		/* found a drive */
 		ioctl(fd, HDIO_GET_IDENTITY, &tm);
 
 		/* not atapi */
 		if (!(tm.config & 0x8000) || (tm.config & 0x4000)) {
+			if (linux_ata_enumerate_verbous)
+				fprintf(stderr, "not marked as ATAPI\n");
 			sg_close_drive_fd(fname, -1, &fd, 0);
 	continue;
 		}
@@ -437,11 +452,22 @@ static void ata_enumerate(void)
 		/* if SG_IO fails on an atapi device, we should stop trying to 
 		   use hd* devices */
 		if (sgio_test(fd) == -1) {
+			if (linux_ata_enumerate_verbous)
+			  fprintf(stderr,
+				 "FATAL: sgio_test() failed: errno=%d  '%s'\n",
+				 errno, strerror(errno));
 			sg_close_drive_fd(fname, -1, &fd, 0);
 			return;
 		}
-		if (sg_close_drive_fd(fname, -1, &fd, 1) <= 0)
+		if (sg_close_drive_fd(fname, -1, &fd, 1) <= 0) {
+			if (linux_ata_enumerate_verbous)
+			  fprintf(stderr,
+				"cannot close properly, errno=%d  '%s'\n",
+				errno, strerror(errno));
 	continue;
+		}
+		if (linux_ata_enumerate_verbous)
+		  fprintf(stderr, "accepting as drive without SCSI address\n");
 		enumerate_common(fname, -1, -1, -1, -1, -1);
 	}
 }
