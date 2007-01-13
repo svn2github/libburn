@@ -370,17 +370,17 @@ I myself am not into audio. So libburn-hackers@pykix.org might be the
 best address for suggestions, requests and bug reports.
 
 
-                                     DVD+RW
+                             DVD+RW and DVD-RAM
 
-DVD+RW media get treated as blank media regardless wether they hold data
-or not. Options -audio and -multi are not allowed. Only one track is allowed.
--toc does not return information about the media content.
+DVD+RW and DVD-RAM media get treated as blank media regardless wether they
+hold data or not. Options -audio and -multi are not allowed. Only one track
+is allowed. -toc does not return information about the media content.
 Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
 there is no difference between -sao and -tao. If ever, then -tao will be the
 mode which preserves the current behavior.
 
-For DVD+RW, -msinfo alone would not be enough to perform appending of an ISO
-filesystem. The filesystem driver will need a hint to find the start of the
+For these media, -msinfo alone would not be enough to perform appending of an
+ISO filesystem. The filesystem driver will need a hint to find the start of the
 most recent session. For example put an ISO filesystem at address 1 GB:
   mkisofs -C 0,524288 ... | \
   cdrskin dev=/dev/sr0 -v fs=32m -eject speed=4 write_start_address=524288s -
