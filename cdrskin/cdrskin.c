@@ -271,6 +271,9 @@ or
 /** Verbosity level for reporting of debugging messages */
 #define Cdrskin_verbose_debuG 3
 
+/** Verbosity level for fifo debugging */
+#define Cdrskin_verbose_debug_fifO 4
+
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -4338,7 +4341,7 @@ thank_you_for_patience:;
      }
      if(skin->fifo_size>0) {
        sprintf(fifo_text,"(fifo %3d%%) ",fifo_percent);
-       if(skin->verbosity>=Cdrskin_verbose_debuG) {
+       if(skin->verbosity>=Cdrskin_verbose_debug_fifO) {
          fprintf(stderr,
                  "\ncdrskin_debug: fifo >= %9d / %d :  %8.f in, %8.f out\n",
                  fill,space+fill,
