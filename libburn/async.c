@@ -277,6 +277,8 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 			0, 0);
 		return;
 	}
+	if (flag & 128)     /* application prescribed format type */
+		flag |= 16; /* enforce re-format */
 
 	if (drive->current_profile == 0x14)
 		ok = 1; /* DVD-RW sequential */

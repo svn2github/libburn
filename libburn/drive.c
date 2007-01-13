@@ -475,7 +475,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 
 /*
    @param flag: bit0 = fill formatted size with zeros
-                bit1, bit2 , bit4 are for d->format_unit()
+                bit1, bit2 , bit4, bit7 - bit15 are for d->format_unit()
 */
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
@@ -484,20 +484,6 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	char msg[80];
 	struct buffer buf;
 
-/*
-#define Libburn_format_ignore_sizE 1
-*/
-#ifdef Libburn_format_ignore_sizE
-	size = 0;
-#else
-	stages = 1 + ((flag & 1) && size > 1024 * 1024);
-#endif
-
-	d->cancel = 0;
-	d->busy = BURN_DRIVE_FORMATTING;
-	ret = d->format_unit(d, size, flag & 0x16); /* forward bits 1,2,4 */
-	if (ret <= 0)
-		d->cancel = 1;
 	/* reset the progress */
 	d->progress.session = 0;
 	d->progress.sessions = 1;
@@ -508,6 +494,12 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	d->progress.start_sector = 0;
 	d->progress.sectors = 0x10000;
 	d->progress.sector = 0;
+	stages = 1 + ((flag & 1) && size > 1024 * 1024);
+	d->cancel = 0;
+	d->busy = BURN_DRIVE_FORMATTING;
+	ret = d->format_unit(d, size, flag & 0xff96); /* forward bits */
+	if (ret <= 0)
+		d->cancel = 1;
 
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
@@ -573,6 +565,44 @@ ex:;
 	d->busy = BURN_DRIVE_IDLE;
 	d->buffer = NULL;
 }
+
+
+/* ts A70112 API */
+int burn_disc_get_formats(struct burn_drive *d, int *status, off_t *size,
+				unsigned *bl_sas, int *num_formats)
+{
+	int ret;
+
+	*status = 0;
+	*size = 0;
+	*bl_sas = 0;
+	*num_formats = 0;
+	ret = d->read_format_capacities(d, 0x00);
+	if (ret <= 0)
+		return 0;
+	*status = d->format_descr_type;
+	*size = d->format_curr_max_size;
+	*bl_sas = d->format_curr_blsas;
+	*num_formats = d->num_format_descr;
+	return 1;
+}
+
+
+/* ts A70112 API */
+int burn_disc_get_format_descr(struct burn_drive *d, int index,
+				int *type, off_t *size, unsigned *tdp)
+{
+	*type = 0;
+	*size = 0;
+	*tdp = 0;
+	if (index < 0 || index >= d->num_format_descr)
+		return 0;
+	*type = d->format_descriptors[index].type;
+	*size = d->format_descriptors[index].size;
+	*tdp = d->format_descriptors[index].tdp;
+	return 1;
+}
+
 
 enum burn_disc_status burn_disc_get_status(struct burn_drive *d)
 {

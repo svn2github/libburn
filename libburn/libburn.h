@@ -785,7 +785,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
     libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW",
-    0x13 "DVD-RW restricted overwrite" or 0x1a "DVD+RW".
+    0x12 "DVD-RAM", 0x13 "DVD-RW restricted overwrite" or 0x1a "DVD+RW".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
@@ -842,10 +842,11 @@ void burn_read_opts_free(struct burn_read_opts *opts);
 void burn_disc_erase(struct burn_drive *drive, int fast);
 
 
-/* ts A70101 - A70106 */
-/** Format media for use with libburn. This currently applies only to DVD-RW
+/* ts A70101 - A70112 */
+/** Format media for use with libburn. This currently applies to DVD-RW
     in state "Sequential Recording" (profile 0014h) which get formatted to
-    state "Restricted Overwrite" (profile 0013h).
+    state "Restricted Overwrite" (profile 0013h). DVD+RW can be "de-iced"
+    by setting bit2 of flag. Other media cannot be formatted yet. 
     @param drive The drive with the disc to format.
     @param size The size in bytes to be used with the format command. It should
                 be divisible by 32*1024. The effect of this parameter may
@@ -857,8 +858,59 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit2= format to maximum available size
                 bit3= -reserved-
                 bit4= enforce re-format of (partly) formatted media
+                bit7= MMC expert application mode (else libburn tries to
+                      choose a suitable format type):
+                      bit8 to bit15 contain the index of the format to use. See
+                      burn_disc_get_formats(), burn_disc_get_format_descr().
+                      Acceptable types are: 0x00, 0x10, 0x11, 0x13, 0x15, 0x26.
+                      If bit7 is set, bit4 is set automatically.
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
+
+
+/* ts A70112 */
+/** Possible formatting status values */
+#define BURN_FORMAT_IS_UNFORMATTED 1
+#define BURN_FORMAT_IS_FORMATTED   2
+#define BURN_FORMAT_IS_UNKNOWN     3
+
+/** Inquire the formatting status, the associated sizes and the number of
+    available formats.  The info is media specific and stems from MMC command
+    23h READ FORMAT CAPACITY. See mmc5r03c.pdf 6.24 for background details.
+    Media type can be determined via burn_disc_get_profile().
+    @param drive The drive with the disc to format.
+    @param status The current formatting status of the inserted media.
+                  See BURN_FORMAT_IS_* macros. Note: "unknown" is the
+                  legal status for quick formatted, yet unwritten DVD-RW.
+    @param size The size in bytes associated with status.
+                unformatted: the maximum achievable size of the media
+                formatted:   the currently formatted capacity
+                unknown:     maximum capacity of drive or of media
+    @param bl_sas Additional info "Block Length/Spare Area Size".
+                  Expected to be constantly 2048 for non-BD media.
+    @param num_formats The number of available formats. To be used with
+                       burn_disc_get_format_descr() to obtain such a format
+                       and eventually with burn_disc_format() to select one.
+    @return 1 reply is valid , <=0 failure
+*/
+int burn_disc_get_formats(struct burn_drive *drive, int *status, off_t *size,
+				unsigned *bl_sas, int *num_formats);
+
+/** Inquire parameters of an available media format.
+    @param drive The drive with the disc to format.
+    @param index The index of the format item. Beginning with 0 up to reply
+                 parameter from burn_disc_get_formats() : num_formats - 1
+    @param type  The format type.  See mmc5r03c.pdf, 6.5, 04h FORMAT UNIT.
+                 0x00=full, 0x10=CD-RW/DVD-RW full, 0x11=CD-RW/DVD-RW grow,
+                 0x15=DVD-RW quick, 0x13=DVD-RW quick grow,
+                 0x26=DVD+RW background
+    @param size  The maximum size in bytes achievable with this format.
+    @param tdp   Type Dependent Parameter. See mmc5r03c.pdf.
+    @return 1 reply is valid , <=0 failure
+*/
+int burn_disc_get_format_descr(struct burn_drive *drive, int index,
+				int *type, off_t *size, unsigned *tdp);
+
 
 
 /* ts A61109 : this was and is defunct */
@@ -1156,11 +1208,11 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to
-    choose this address at all (DVD+-RW only for now). The address is given in
-    bytes. If it is not -1 then a write run will fail if choice of start
-    address is not supported or if the block alignment of the address is not
-    suitable for media and write mode. (Alignment to 32 kB blocks is advised
-    with DVD media.)
+    choose this address at all (DVD+RW, DVD-RAM, DVD-RW only for now). The
+    address is given in bytes. If it is not -1 then a write run will fail if
+    choice of start address is not supported or if the block alignment of the
+    address is not suitable for media and write mode. (Alignment to 32 kB
+    blocks is advised with DVD media.)
     @param opts The write opts to change
     @param value The address in bytes (-1 = start at default address)
 */
