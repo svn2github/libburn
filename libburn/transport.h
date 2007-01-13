@@ -103,6 +103,20 @@ struct scsi_mode_data
 };
 
 
+/* ts A70112 : represents a single Formattable Capacity Descriptor as of
+               mmc5r03c.pdf 6.24.3.3 . There can at most be 32 of them. */
+struct burn_format_descr {
+	/* format type: e.g 0x00 is "Full", 0x15 is "Quick" */
+	int type;
+
+	/* the size in bytes derived from Number of Blocks */
+	off_t size;
+
+	/* the Type Dependent Parameter (usually the write alignment size) */
+	unsigned tdp;
+};
+
+
 #define LIBBURN_SG_MAX_SIBLINGS 16
 
 /** Gets initialized in enumerate_common() and burn_drive_register() */
@@ -144,8 +158,14 @@ struct burn_drive
 	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
 	int format_descr_type;      /* 1=unformatted, 2=formatted, 3=unclear */
 	off_t format_curr_max_size;  /* meaning depends on format_descr_type */
+	unsigned format_curr_blsas;  /* meaning depends on format_descr_type */
 	int best_format_type;
 	off_t best_format_size;
+
+	/* The complete list of format descriptors as read with 23h */
+	int num_format_descr;
+	struct burn_format_descr format_descriptors[32];
+	
 
 	volatile int released;
 
@@ -230,6 +250,10 @@ struct burn_drive
 
 	/* ts A61220 : format media (e.g. DVD+RW) */
 	int (*format_unit) (struct burn_drive *d, off_t size, int flag);
+
+	/* ts A70108 */
+	/* mmc5r03c.pdf 6.24 : get list of available formats */
+	int (*read_format_capacities) (struct burn_drive *d, int top_wanted);
 
 };
 

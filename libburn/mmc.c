@@ -1135,6 +1135,7 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 
 	d->format_descr_type = 3;
 	d->format_curr_max_size = 0;
+	d->format_curr_blsas = 0;
 	d->best_format_type = -1;
 	d->best_format_size = 0;
 
@@ -1162,6 +1163,7 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 	d->format_descr_type = dpt[4] & 3;
 	d->format_curr_max_size = (((off_t) dpt[0]) << 24)
 		 		  + (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
+	d->format_curr_blsas = (dpt[5] << 16) + (dpt[6] << 8) + dpt[7];
 
 	sprintf(msg,
 		"Current/Maximum Capacity Descriptor : type = %d : %.f",
@@ -1183,9 +1185,17 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 			+ (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
                 size *= (off_t) 2048;
 		type = dpt[4] >> 2;
+
+		if (i < 32) {
+			d->format_descriptors[i].type = type;
+			d->format_descriptors[i].size = size;
+			d->format_descriptors[i].tdp =
+				(dpt[5] << 16) + (dpt[6] << 8) + dpt[7];
+			d->num_format_descr = i + 1;
+		}
 		
 		sprintf(msg, "Capacity Descriptor %2.2Xh  %.fs = %.1f MB",type,
-			(double) size / 2048 , (double) size / 1024 / 1024);
+			((double) size)/2048.0, ((double) size)/1024.0/1024.0);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			 0x00000002,
 			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -1281,22 +1291,20 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 /* ts A61219 : learned much from dvd+rw-tools-7.0: plus_rw_format()
                and mmc5r03c.pdf, 6.5 FORMAT UNIT */
 /*
-   >>> A70103
-   >>> This will need an overhaul as soon as all technical questions around
-   >>> formatting are answered. Currently it is a very use case specific
-   >>> all-in-one automat.
-
    @param size The size (in bytes) to be sent with the FORMAT comand
    @param flag bit1= insist in size 0 even if there is a better default known
                bit2= format to maximum available size
                bit3= expand format up to at least size
                bit4= enforce re-format of (partly) formatted media
+               bit7= bit8 to bit15 contain the index of the format to use
+               bit8-bit15 = see bit7
 */
 int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 {
 	struct buffer buf;
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
+	int index;
 	off_t num_of_blocks = 0, diff;
 	char msg[160],descr[80];
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
@@ -1317,10 +1325,51 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	num_of_blocks = size / 2048;
 	for (i = 0; i < 4; i++)
 		c.page->data[4 + i] = (num_of_blocks >> (24 - 8 * i)) & 0xff;
-	if (d->current_profile == 0x1a) { /* DVD+RW */
-	/* >>> use case: background formatting during write     !(flag&4)
-	                 de-icing as explicit formatting action (flag&4)
-	*/
+	if (flag & 128) { /* explicitely chosen format descriptor */
+		/* use case: the app knows what to do */
+
+		ret = mmc_read_format_capacities(d, -1);
+		if (ret <= 0)
+			goto selected_not_suitable;
+		index = (flag >> 8) & 0xff;
+		if(index < 0 || index > d->num_format_descr) {
+selected_not_suitable:;
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020132,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Selected format is not suitable for libburn",
+				0, 0);
+			return 0;
+		}
+		if (!(d->current_profile == 0x13 ||
+			d->current_profile == 0x14 ||
+			d->current_profile == 0x1a))
+			goto unsuitable_media;
+		      
+		format_type = d->format_descriptors[index].type;
+		if (!(format_type == 0x00 || format_type == 0x10 ||
+		      format_type == 0x11 || format_type == 0x13 ||
+		      format_type == 0x15 || format_type == 0x26))
+			goto selected_not_suitable;
+		if (flag & 4) {
+			num_of_blocks =
+				d->format_descriptors[index].size / 2048;
+			for (i = 0; i < 4; i++)
+				c.page->data[4 + i] =
+					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+		}
+		if (format_type != 0x26)
+			for (i = 0; i < 3; i++)
+				 c.page->data[9 + i] =
+					( d->format_descriptors[index].tdp >>
+					  (16 - 8 * i)) & 0xff;
+		sprintf(descr, "%s (bit7)", d->current_profile_text);
+		return_immediately = 1; /* caller must do the waiting */
+
+	} else if (d->current_profile == 0x1a) { /* DVD+RW */
+		/* use case: background formatting during write     !(flag&4)
+	                     de-icing as explicit formatting action (flag&4)
+		*/
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		format_type = 0x26;
@@ -1352,7 +1401,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 
 	} else if (d->current_profile == 0x13 && !(flag & 16)) {
 		/*DVD-RW restricted overwrite*/
-	/* >>> use case: quick grow formatting during write */
+		/* use case: quick grow formatting during write */
 
 		ret = mmc_read_format_capacities(d, 0x13);
 		if (ret > 0) {
@@ -1392,14 +1441,13 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	} else if (d->current_profile == 0x14 ||
 			(d->current_profile == 0x13 && (flag & 16))) {
 		/* DVD-RW sequential recording (or Overwrite for re-format) */
-	/* >>> use case : transition from Sequential to Overwrite
-	                  re-formatting of Overwrite media  */
+		/* use case : transition from Sequential to Overwrite
+	                      re-formatting of Overwrite media  */
 
 		/* To Restricted Overwrite */
-		/* 6.5.4.2.10 , 15h DVD-RW Quick */
-		/* c.page->data[4-7]==0 : 0 blocks */
-		/* or 6.5.4.2.1 Format Type = 00h (Full Format) */
-		/* or 6.5.4.2.5 Format Type = 10h (DVD-RW Full Format) */
+		/*    6.5.4.2.10 Format Type = 15h (DVD-RW Quick) */
+		/* or 6.5.4.2.1  Format Type = 00h (Full Format) */
+		/* or 6.5.4.2.5  Format Type = 10h (DVD-RW Full Format) */
 		mmc_read_format_capacities(d,
 					(flag & 4) ? full_format_type : 0x15);
 		if (d->best_format_type == 0x15 ||
@@ -1429,7 +1477,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	} else { 
 
 	/* >>> other formattable types to come */
-
+unsuitable_media:;
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
 			d->current_profile, d->current_profile_text);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -1607,6 +1655,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->close_track_session = mmc_close;
 	d->read_buffer_capacity = mmc_read_buffer_capacity;
 	d->format_unit = mmc_format_unit;
+	d->read_format_capacities = mmc_read_format_capacities;
 
 	/* ts A61020 */
 	d->start_lba = -2000000000;
@@ -1619,6 +1668,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
 	d->bg_format_status = -1;
+	d->num_format_descr = 0;
 
 	return 1;
 }
