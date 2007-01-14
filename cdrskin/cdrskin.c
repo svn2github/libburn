@@ -4344,7 +4344,7 @@ thank_you_for_patience:;
        if(skin->verbosity>=Cdrskin_verbose_debug_fifO) {
          fprintf(stderr,
                  "\ncdrskin_debug: fifo >= %9d / %d :  %8.f in, %8.f out\n",
-                 fill,space+fill,
+                 fill,(int) buffer_size,
                  curr_fifo_in-last_fifo_in,curr_fifo_out-last_fifo_out);
          last_fifo_in= curr_fifo_in;
          last_fifo_out= curr_fifo_out;
