@@ -861,7 +861,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	ret = 1;
 ex:;
 	if (ret<=0) {
-		/* >>> any unnormal track finalizing */;
+		d->sync_cache(d); /* burn_write_flush() was not called */
 	}
 	return ret;
 }
