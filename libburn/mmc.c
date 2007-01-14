@@ -1409,10 +1409,12 @@ selected_not_suitable:;
 				if (d->best_format_size <= 0)
 					return 1;
 			} else {
-				/* formatted or intermediate state ? */
-				if (d->format_descr_type == 2 ||
-				    d->format_descr_type == 3)
+				if (d->format_descr_type == 2) /* formatted */
 					return 1;
+				if (d->format_descr_type == 3){/*intermediate*/
+					d->dvd_minus_rw_incomplete = 1;
+					return 1;
+				}
 				/* does trying make sense at all ? */
 				tolerate_failure = 1;
 			}
@@ -1507,7 +1509,8 @@ unsuitable_media:;
 				msg, 0, 0);
 		}
 		return 0;
-	}
+	} else if ((!c.error) && (format_type == 0x13 || format_type == 0x15))
+		d->dvd_minus_rw_incomplete = 1;
 	if (return_immediately)
 		return 1;
 	usleep(1000000); /* there seems to be a little race condition */
@@ -1667,6 +1670,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
+	d->dvd_minus_rw_incomplete = 0;
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
 

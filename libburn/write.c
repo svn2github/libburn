@@ -925,9 +925,11 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 			return 0;
 	} else if (d->current_profile == 0x13) {
 		/* DVD-RW restricted overwrite */
-		ret = burn_disc_close_session_dvd_minus_rw(o, s);
-		if (ret <= 0)
-			return 0;
+		if (d->dvd_minus_rw_incomplete) {
+			ret = burn_disc_close_session_dvd_minus_rw(o, s);
+			if (ret <= 0)
+				return 0;
+		}
 	} else if (d->current_profile == 0x12) {
 		/* DVD-RAM */
 		/* ??? any finalization needed ? */;
