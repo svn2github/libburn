@@ -7,8 +7,9 @@
 
 Its paragon, cdrecord, is a powerful GPL'ed burn program included in Joerg
 Schilling's cdrtools. cdrskin strives to be a second source for the services
-traditionally provided by cdrecord. Currently it does CD-R and CD-RW.
-Its future ability to burn DVD media depends on the development of libburn.
+traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
+Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
+with cdrecord-ProDVD in order to offer TAO-like single track recording.
 
 cdrskin does not contain any bytes copied from cdrecord's sources.
 Many bytes have been copied from the message output of cdrecord
@@ -23,10 +24,9 @@ Appending sessions to an unclosed CD is restricted to write mode TAO.
 (Users who have a burner which succeeds with a follow-up session via
 cdrecord -sao : please contact us.)
 
-The development version of cdrskin is able to burn a single track to DVD+RW
-or DVD-RW media.
-For other DVD types and for appending sessions to ISO filesystems see the
-advise to use dvd+rw-tools at the end of this text.
+For DVD types other than DVD-RAM, DVD+RW, DVD-RW and for appending sessions
+to ISO filesystems on DVD see the advise to use dvd+rw-tools at the end of
+this text.
 
 --------------------------------------------------------------------------
 
@@ -90,7 +90,7 @@ disc from its initial profile "Sequential Recording" into profile state
 cdrskin dev=/dev/sr0 -v blank=format_overwrite
 }}}
 
-DVD-RW "Restricted Overwrite" and DVD+RW appear to cdrskin as blank media
+DVD-RAM, DVD+RW and overwriteable DVD-RW appear to cdrskin as blank media
 which are capable of taking only a single track. This track may be positioned
 on a 32KiB aligned address, though.
 {{{
@@ -200,9 +200,10 @@ for an illustrated example with K3b 0.10 .
 
 DVD advise:
 
-For burning of DVD media the cdrskin project currently advises to use
-Andy Polyakov's dvd+rw-tools which despite their historic name burn
-for me on above burner: DVD+RW, DVD+R, DVD-RW, DVD-R .
+For burning of DVD media other than DVD-RAM, DVD+RW, DVD-RW, the cdrskin
+project currently advises to use Andy Polyakov's dvd+rw-tools which despite
+their historic name burn for me on above burner: DVD-RAM, DVD+RW, DVD+R,
+DVD-RW, DVD-R and are also capable of dual layer and even BD discs. 
 
 http://fy.chalmers.se/~appro/linux/DVD+RW/tools
 
@@ -210,21 +211,12 @@ They are not compatible or related to cdrecord resp. cdrecord-ProDVD
 (now obsoleted by original source cdrtools cdrecord with identical
 capabilities besides the license key).
 
-libburn and thus the cdrskin project are currently aquiring own capabilities
-to burn to DVD media. For now restricted to DVD+RW and DVD-RW and to single
-tracks.
-
-To my knowledge, Linux kernels 2.6 do write to DVD+RW via block devices as
-they would write to a traditional tape device. Try old tape archiver
-commands with addresses like /dev/sr0 or /dev/hdc rather than /dev/mt0 .
-I have heard rumors that DVD-RW in mode "restricted overwrite" would be
-block device ready, too. My burner is not a real friend of DVD-RW and
-in an experiment the burn worked fine - but the result was not identical
-to the stream sent to the device. I had similar failure with DVD-RAM, too.
-
-Beware of the impact of a slow block device on overall system i/o buffering.
-It is wise to curb its input to a speed which it is able to deliver to media.
-Else your i/o dedicated RAM might buffer a big amount of stream data.
+A special feature of dvd+rw-tools is growing of ISO-9660 filesystems on
+overwriteable media. This is not the same as multi-session writing of cdrskin
+with CD media, but retrieves additional information from the existing ISO
+image and finally manipulates the start sectors of this existing image.
+So for growable ISO filesystems on DVD-RAM or DVD+RW growisofs is the only
+choice, currently.
 
 --------------------------------------------------------------------------
 
