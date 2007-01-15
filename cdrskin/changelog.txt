@@ -2442,34 +2442,132 @@ Updated size estimation of development downloads
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
-  []
+2007.01.10.152350  [600]
 libburn/libburn.h
 libburn/mmc.c
 libburn/drive.c
 libburn/async.c
 cdrskin/cdrskin.c
-cdrskin/cdrskin.1
 Option -force enables re-formatting
 
-  []
+2007.01.10.152520  [601]
 libburn/mmc.c
 Switched full formatting from type 10h to 00h which includes lead-out
 
-  []
+2007.01.10.152812  [602]
 cdrskin/cdrskin.c
 cdrskin/cdrskin.1
 cdrskin/README
-Removing writing of dummy data with blank=format_overwrite_full
+Removed writing of dummy data with blank=format_overwrite_full
+
+2007.01.10.204839  [603]
+libburn/mmc.c
+libburn/async.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Enabled explicit full formatting of DVD+RW ("de-icing")
+
+11 Jan  2007  [604]
+cdrskin/README
+Removed outdated option from startup file example
+
+2007.01.11.131106  [605]
+libburn/mmc.c
+With full formatting prefer format 10h over 13h or 15h
+
+2007.01.11.131302  [606]
+libburn/os-linux.h
+libburn/os-freebsd.h
+libburn/cleanup.c
+cdrskin/cleanup.c
+Kept SIGWINCH from spoiling a burn.
+
+2007.01.11.131615  [607]
+libburn/init.c
+Sketched better handling of self-inflicted SIGs
+ 
+2007.01.11.131716  [608]
+libburn/drive.c
+Removed surplus newlines from messages
+
+2007.01.12.162239  [609]
+libburn/write.c
+libburn/spc.c
+libburn/mmc.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Enabled writing to DVD-RAM
+
+2007.01.13.140812  [610] [611]
+libburn/sg-linux.c
+Implemented debugging messages for ATA enumeration
+
+13 Jan 2007  [612]
+cdrskin/cdrskin_eng.html
+cdrskin/README
+Documentation updates about DVD-RAM
+
+2007.01.13.211425  [613]
+libburn/transport.h
+libburn/mmc.c
+Load array of format capacities into struct burn_drive
+
+2007.01.13.211639  [614]
+libburn/libburn.h
+libburn/drive.c
+libburn/async.c
+Introduced API for inspection and selection of format capacities
+
+13 Jan 2007  [615]
+test/telltoc.c
+Added printing of list of available formats
+
+13 Jan 2007  [616]
+test/libburner.c
+Mentioned DVD-RAM where appropriate
+
+2007.01.13.214259  [617]
+cdrskin/cdrskin.c
+Shifted fifo reporting to new 4-times -v verbosity level
+
+2007.01.14.101742  [618]
+cdrskin/cdrskin.c
+Corrected bug with debug messages for fifo
+
+2007.01.14.115347  [619]
+libburn/write.c
+Added missing cache sync in case of aborted DVD-RW burns
+
+2007.01.14.133951  [620]
+libburn/transport.h
+libburn/mmc.c
+libburn/write.c
+Avoided closing of 0x13-DVD-RW sessions which are not intermediate
+
+15 Jan 2007  [621]
+cdrskin/wiki_plain.txt
+Updated about overwriteable DVD and pointer to dvd+rw-tools
 
 
-Format DVD+RW ?
+------------------------------------ cycle  - cdrskin-0.2.7 - 2007.01.15.131357
+* Burning to DVD-RAM
 
-Format and use DVD-RAM ?
 
-Load format parameters into struct burn_drive and offer API.
-With full formatting prefer format 10h over 13h or 15h.
+15 Jan 2007  []
+cdrskin/changelog.txt
+Next cdrskin-0.2.7 cycle
 
-Learn about multi-track with DVD-RW Restricted Overwrite.
+
+Make version number transition to 0.3.0
+
+Post cdrskin/wiki_plain.txt
+
+
+------------------------------- cycle  - cdrskin-0.3.0.pl00 - 
+
+
+
+Format DVD-RAM ?
 
 How to handle finalizing ?
 
@@ -2484,7 +2582,7 @@ Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I nev
 Sequentially check option list for DVD compliance
 
 
------------------------------------- cycle  - cdrskin-0.2.7 - 
+(Learn about multi-track with DVD-RW Restricted Overwrite.) My drives don't offer
 
 
 
