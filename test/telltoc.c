@@ -5,9 +5,9 @@
 /**                               Overview 
   
   telltoc is a minimal demo application for the library libburn as provided
-  on  http://libburn.pykix.org . It can list the available devices, can display
-  some drive properties, the type of media, eventual table of content and
-  multisession info for mkisofs option -C . 
+  on  http://libburnia.pykix.org . It can list the available devices, can
+  display some drive properties, the type of media, eventual table of content
+  and multisession info for mkisofs option -C . 
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburn team as reference application. telltoc.c does indeed
   define the standard way how above gestures can be implemented and stay upward
@@ -615,7 +615,7 @@ int main(int argc, char **argv)
 		full_default = do_media = do_msinfo = do_capacities= do_toc = 1;
 	}
 
-	fprintf(stderr, "Initializing libburn.pykix.org ...\n");
+	fprintf(stderr, "Initializing libburnia.pykix.org ...\n");
 	if (burn_initialize())
 		fprintf(stderr, "Done\n");
 	else {
