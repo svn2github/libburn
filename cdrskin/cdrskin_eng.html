@@ -25,7 +25,7 @@
 <P>
 <H2>Purpose:</H2>
 <UL>
-<LI>Burns preformatted data to CD-R or CD-RW</LI>
+<LI>Burns preformatted data to CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW</LI>
 </UL>
 </P>
 <P>
@@ -56,7 +56,7 @@ A CD recorder suitable for
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.2.6</DT>
+<DT>libburn-0.3.0</DT>
 <DD>(by Derek Foreman, Ben Jansens, and team of libburnia.pykix.org)</DD>
 <DD>transfers data to CD</DD>
 </DL>
@@ -88,6 +88,8 @@ and for data CD projects of <A HREF="http://www.k3b.org">K3b</A>
 (see <A HREF="#examples">examples</A>).
 Suitability for audio CD frontends has been improved much and is now being
 evaluated.<BR>
+DVD are written in a pseudo -tao mode which is very different from the
+write mode used by cdrecord(-ProDVD).<BR>
 Further enhancements depend on people who can describe and discuss their
 wishes as well as on the development of libburn.</DT>
 <BR><BR>
@@ -102,8 +104,10 @@ wishes as well as on the development of libburn.</DT>
 <DT>Make used CD-RW writable again:</DT>
 <DD>$ cdrskin -v dev=/dev/sg1 blank=all -eject</DD>
 <DD>$ cdrskin -v dev=/dev/dvd blank=fast -eject</DD>
+<DT>Format DVD-RW before first use with cdrskin</DT>
+<DD>$ cdrskin -v dev=0,1,0 blank=format_overwrite -eject<DD>
 <DT>Write ISO-9660 filesystem image:</DT>
-<DD>$ cdrskin -v dev=/dev/hdc speed=12 fs=8m driveropts=burnfree -sao -eject padsize=300k my_image.iso</DD>
+<DD>$ cdrskin -v dev=/dev/hdc speed=12 fs=8m driveropts=burnfree -eject padsize=300k my_image.iso</DD>
 <DT>Write compressed afio archive on-the-fly :</DT>
 <DD>$ find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 driveropts=burnfree padsize=300k -tao -</DD>
 <DT>Write audio tracks:</DT>
@@ -153,10 +157,9 @@ rw-permissions and retry the bus scan as non-superuser.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.2.6.pl02.tar.gz">cdrskin-0.2.6.pl02.tar.gz</A>
-(510 KB).
+<DD><A HREF="cdrskin-0.3.0.pl00.tar.gz">cdrskin-0.3.0.pl00.tar.gz</A>
+(540 KB).
 </DD>
-<DD>(Most recent patch: backported man page from cdrskin-0.2.7)</DD>
 <DD>
 The "stable" cdrskin tarballs are source code identical with "stable" 
 libburn releases or with "stabilized" libburn SVN snapshots. They get
@@ -165,14 +168,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.2.6.pl01-x86-suse9_0.tar.gz">
-cdrskin_0.2.6.pl01-x86-suse9_0.tar.gz</A>, (60 KB),
+<DD><A HREF="cdrskin_0.3.0.pl00-x86-suse9_0.tar.gz">
+cdrskin_0.3.0.pl00-x86-suse9_0.tar.gz</A>, (75 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.2.6.pl01-x86-suse9_0-static.tar.gz">
-cdrskin_0.2.6.pl01-x86-suse9_0-static.tar.gz</A>, (260 KB), -static compiled,
+<DD><A HREF="cdrskin_0.3.0.pl00-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.0.pl00-x86-suse9_0-static.tar.gz</A>, (275 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -199,23 +202,15 @@ cdrskin_0.2.6.pl01-x86-suse9_0-static.tar.gz</A>, (260 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.2.4:
+Enhancements towards previous stable version cdrskin-0.2.6:
 <UL>
-<LI>Option <KBD><B>-tao</B></KBD> is fully enabled.<BR>
-    SAO is still the preferred default but TAO is default if a track of
-    unpredicted size is present (stdin, named pipe, ...) or if a follow-up
-    session is written to an appendable CD.
-    (This is an intentional deviation from cdrecord defaults which themselves
-     have changed with the newest cdrecord versions.)
-</LI>
-<LI>Status report during blank, preparation and finalization improved.</LI>
-<LI>Bug fixed: Trailing trash appended to .wav files caused error message
-    and, if exceeding fifo size, could even stall a burn. 
-    (Workaround: disable fifo by <KBD><B>fs=0</B></KBD>)</LI>
-<LI>Bug fixed: False speed with first pacifier cycle. Potential program
-    abort by floating point exception (NaN).</LI>
-<LI>multi-session CDs: <KBD><B>-multi</B></KBD>, <KBD><B>-msinfo</B></KBD>,
-    writing to appendable CDs (for now restricted to write mode TAO).</LI>
+<LI>Improved recognition of unsuitable media types</LI>
+<LI>Ban of chmod u+s is replaced by a loud warning</LI>
+<LI>Detailed man page</LI>
+<LI>Burning to DVD+RW and DVD-RAM as non-multi, non-appending,
+single-track session</LI>
+<LI>Formatting and then burning to DVD-RW like to DVD+RW</LI>
+<LI>Emulation of new wodim option msifile=path</LI>
 </UL>
 </P>
 
@@ -223,23 +218,17 @@ Enhancements towards previous stable version cdrskin-0.2.4:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.2.7 :</H3></DT>
-<DD>Enhancements towards stable version 0.2.6:
+<DT><H3>Development snapshot, version 0.3.1 :</H3></DT>
+<DD>Enhancements towards stable version 0.3.0:
 <UL>
-<LI>Improved recognition of unsuitable media types</LI>
-<LI>Ban of chmod u+s is replaced by a loud warning</LI>
-<LI>Detailed man page (already backported to cdrskin-0.2.6.pl02)</LI>
-<LI>Burning to DVD+RW and DVD-RAM as non-multi, non-appending,
-single-track session</LI>
-<LI>Formatting and then burning to DVD-RW like to DVD+RW</LI>
-<LI>Emulation of new wodim option msifile=path</LI>
+<LI>-none yet-</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.2.7</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.2.7 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.2.7 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.2.7)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.3.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia.pykix.org"> libburnia.pykix.org</A></DT>
@@ -259,15 +248,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.2.7.tar.gz">cdrskin-0.2.7.tar.gz</A>
+<A HREF="cdrskin-0.3.1.tar.gz">cdrskin-0.3.1.tar.gz</A>
 (550 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.2.7-x86-suse9_0.tar.gz">
-cdrskin_0.2.7-x86-suse9_0.tar.gz</A>, (75 KB).
+<DD><A HREF="cdrskin_0.3.1-x86-suse9_0.tar.gz">
+cdrskin_0.3.1-x86-suse9_0.tar.gz</A>, (75 KB).
 </DD>
-<DD><A HREF="cdrskin_0.2.7-x86-suse9_0-static.tar.gz">
-cdrskin_0.2.7-x86-suse9_0-static.tar.gz</A>, (275 KB)
+<DD><A HREF="cdrskin_0.3.1-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.1-x86-suse9_0-static.tar.gz</A>, (275 KB)
 </DD>
 </DL>
 </P>
@@ -334,7 +323,7 @@ is a GUI frontend which uses cdrecord for CD burning.)
 <DD>$ <KBD><B>export SCDBACKUP_USE_CDRSKIN=1</B></KBD></DD>
 <DD>$ <KBD><B>./CONFIGURE_CD</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>cdrskin 0.2.6 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
+<DD><KBD>cdrskin 0.3.0 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
 </DL>
 If your system is stricken with some ill CD device then this can stall
 and you will have to press <KBD>Ctrl+C</KBD> to abort.
