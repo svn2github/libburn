@@ -22,7 +22,7 @@ set -x
 #
 # libburn version used:  http://libburn.pykix.org
 # Downloaded by:
-#  $ svn co http://libburn-svn.pykix.org/trunk libburn_pykix
+#  $ svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
 # packed up in a tarball just to save it from inadverted changes by
 #  $ tar czf libburn_svn.tgz libburn_pykix
 original="./libburn_svn.tgz"
@@ -33,13 +33,12 @@ original="./libburn_svn.tgz"
 # The top level directory in that snapshot is named
 intermediate="./libburn_pykix"
 
-# My changes are in libburn-0.2.3.ts.develop , mainly in ./cdrskin
+# My changes are in libburn-develop , mainly in ./cdrskin
 
-changes="./libburn-0.2.3.ts.develop"
-skin_release="0.2.6"
-patch_level=".pl01"
+changes="./libburn-develop"
+skin_release="0.3.1"
+patch_level=""
 skin_rev="$skin_release""$patch_level"
-
 
 # The result directory and the name of the result tarballs
 target="./cdrskin-${skin_release}"
@@ -53,6 +52,9 @@ compile_dir="$target"
 compile_cmd="./cdrskin/compile_cdrskin.sh"
 compile_static_opts="-static"
 compile_result="cdrskin/cdrskin"
+
+man_to_html_cmd="./cdrskin/convert_man_to_html.sh"
+man_page_html="cdrskin/man_1_cdrskin.html"
 
 bintarget_dynamic="cdrskin_${skin_rev}-x86-suse9_0"
 bintarget_static="$bintarget_dynamic"-static
@@ -122,11 +124,30 @@ do
     rm "$cdrskin_target"/cdrskin_"$i"
   fi
 done
+
+# Remove eventual SVN stuff from cdrskin directory
 for i in .deps .dirstamp .libs
 do
   if test -e "$cdrskin_target"/"$i"
   then
     rm -rf "$cdrskin_target"/"$i"
+  fi
+done
+
+# Remove GIFs of cdrskin_eng.html
+rm "$cdrskin_target"/doener_*.gif
+
+# Remove automatically generated HTML man page
+rm "$cdrskin_target"/man_1_cdrskin.html
+
+# Remove all add_ts_changes_to_libburn besides this one
+for i in "$cdrskin_target"/add_ts_changes_to_libburn*
+do
+  if test $(basename "$0") = $(basename "$i")
+  then
+    dummy=dummy
+  else
+    rm $i
   fi
 done
 
@@ -143,12 +164,6 @@ do
     fi
   fi
 done
-
-## No more : Add own libburn-README in toplevel
-# cp -a "$changes"/README "$target"
-
-## No more : Add modified Makefile.am
-# cp -a "$changes"/Makefile.am "$target"
 
 
 # Make SVN state tarball for the libburn team
@@ -179,18 +194,20 @@ done
 # Pack it up to the new libburn+cdrskin-tarball
 tar czf "$cdrskin_tarball" "$target"
 
-# Produce a static and a dynamic binary
+# Produce a static and a dynamic binary, and a HTML man page
 (
  cd "$compile_dir" || exit 1
  ./configure
  make
- $compile_cmd -do_strip
+ "$compile_cmd" -do_strip
  cp "$compile_result" "../$bintarget_dynamic"
  if test -n "$compile_static_opts"
  then
-   $compile_cmd $compile_static_opts -do_strip
+   "$compile_cmd" $compile_static_opts -do_strip
    cp "$compile_result" "../$bintarget_static"
  fi
+ "$man_to_html_cmd"
+ mv "$man_page_html" ..
 )
 
 # Remove the build area
@@ -203,4 +220,5 @@ rm -rf "$target"
 ls -l "$cdrskin_tarball"
 ls -l "$bintarget_dynamic"
 ls -l "$bintarget_static"
+ls -l $(basename "$man_page_html")
 

@@ -33,13 +33,15 @@ original="./libburn_svn.tgz"
 # The top level directory in that snapshot is named
 intermediate="./libburn_pykix"
 
-# My changes are in libburn-0.2.3.ts.develop , mainly in ./cdrskin
+# My changes are in libburn-develop , mainly in ./cdrskin
 
-changes="./libburn-0.2.3.ts.develop"
-skin_rev="0.2.7"
+changes="./libburn-develop"
+skin_release="0.3.0"
+patch_level=".pl00"
+skin_rev="$skin_release""$patch_level"
 
 # The result directory and the name of the result tarballs
-target="./cdrskin-${skin_rev}"
+target="./cdrskin-${skin_release}"
 cdrskin_tarball="./cdrskin-${skin_rev}.tar.gz"
 cdrskin_tarball_svn="./cdrskin-${skin_rev}.svn.tar.gz"
 
@@ -123,10 +125,7 @@ do
   fi
 done
 
-# Remove automatically generated HTML man page
-rm "$cdrskin_target"/man_1_cdrskin.html
-
-# Remove eventual SVN stuff from cdrskin driectory
+# Remove eventual SVN stuff from cdrskin directory
 for i in .deps .dirstamp .libs
 do
   if test -e "$cdrskin_target"/"$i"
@@ -137,6 +136,20 @@ done
 
 # Remove GIFs of cdrskin_eng.html
 rm "$cdrskin_target"/doener_*.gif
+
+# Remove automatically generated HTML man page
+rm "$cdrskin_target"/man_1_cdrskin.html
+
+# Remove all add_ts_changes_to_libburn besides this one
+for i in "$cdrskin_target"/add_ts_changes_to_libburn*
+do
+  if test $(basename "$0") = $(basename "$i")
+  then
+    dummy=dummy
+  else
+    rm $i
+  fi
+done
 
 # Remove unwanted SVN stuff (TODO: avoid downloading it)
 for i in "$target"/.svn "$target"/*/.svn
@@ -151,12 +164,6 @@ do
     fi
   fi
 done
-
-## No more : Add own libburn-README in toplevel
-# cp -a "$changes"/README "$target"
-
-## No more : Add modified Makefile.am
-# cp -a "$changes"/Makefile.am "$target"
 
 
 # Make SVN state tarball for the libburn team
