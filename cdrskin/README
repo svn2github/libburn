@@ -26,12 +26,12 @@ following possible.
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia.pykix.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.2.7.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.3.1.tar.gz
 Copyright (C) 2006-2007 Thomas Schmitt
 
 ------------------------------------------------------------------------------
 
-On top of libburn there is implemented cdrskin 0.2.7, a limited cdrecord
+On top of libburn there is implemented cdrskin 0.3.1, a limited cdrecord
 compatibility wrapper which allows to use some libburn features from
 the command line.
 Interested users of cdrecord are invited to participate in the development
@@ -59,16 +59,16 @@ systems, including 64 bit systems. (Further reports are welcome.)
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.2.7.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.3.1.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.2.7.tar.gz
-    cd cdrskin-0.2.7
+    tar xzf cdrskin-0.3.1.tar.gz
+    cd cdrskin-0.3.1
 
 Or obtain a libburnia.pykix.org SVN snapshot,
 go into the toplevel directory of the snapshot (e.g.  cd libburn_pykix ),
 and execute the autotools script ./bootstrap . Use autools version >= 1.7 .
 
-Within that toplevel directory of either cdrskin-0.2.7 or libburn then execute:
+Within that toplevel directory of either cdrskin-0.3.1 or libburn then execute:
 
     ./configure
     make
@@ -161,14 +161,17 @@ Obtain some info about the drive and the inserted media
 Thoroughly blank a CD-RW
     cdrskin -v dev=0,1,0 blank=all -eject 
 
+Format DVD-RW before first use with cdrskin
+    cdrskin -v dev=0,1,0 blank=format_overwrite
+
 Blank CD-RW sufficiently for making it ready for overwrite
     cdrskin -v dev=0,1,0 blank=fast -eject 
 
-Burn image file  my_image.iso  to CD or DVD+-RW
+Burn image file  my_image.iso  to CD-R, CD-RW, DVD+RW, DVD-RAM, DVD-RW
     cdrskin -v dev=0,1,0 speed=12 fs=8m driveropts=burnfree padsize=300k \
             -eject  my_image.iso 
 
-Burn a compressed afio archive to CD or DVD+-RW on-the-fly
+Burn a compressed afio archive to any of the above media types on-the-fly
     find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 -tao \
                                   driveropts=burnfree padsize=300k - 
 
@@ -208,11 +211,12 @@ Run a backup :
                                 Restrictions
 
 The major restrictions are lifted now: audio, TAO, multi-session do work.
-Many cdrecord options are still unsupported, though.
 
+Many cdrecord options are still unsupported, though.
 If you have use cases for them, please report your wishes and expectations.
 
-DVD support is still immature and restricted to DVD+-RW for now. 
+DVD support is restricted to single layer overwriteable DVD (-RAM, +RW, -RW)
+for now.
 
 
 
@@ -231,6 +235,10 @@ thankful to Joerg Schilling for every single one of them.
 Actually i, Thomas Schmitt, am a devoted user of cdrecord via my project
 scdbackup which still runs a bit better with cdrecord than with cdrskin. TAO.
 I have the hope that Joerg feels more flattered than annoyed by cdrskin.
+
+Many thanks to Andy Polyakov for his dvd+rw-tools
+  http://fy.chalmers.se/~appro/linux/DVD+RW/tools
+which provide me with examples and pointers into MMC specs for DVD writing.
 
 
                               Drive Addressing

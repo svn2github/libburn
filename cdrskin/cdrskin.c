@@ -124,7 +124,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.2.7"
+#define Cdrskin_prog_versioN "0.3.1"
 #endif
 
 /** The source code release timestamp */
@@ -157,25 +157,18 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_2_6
-#define Cdrskin_libburn_versioN "0.2.6"
+#ifdef Cdrskin_libburn_0_3_0
+#define Cdrskin_libburn_versioN "0.3.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_2_6 */
+#endif /* Cdrskin_libburn_0_3_0 */
 
-#ifdef Cdrskin_libburn_0_2_7
-#define Cdrskin_libburn_versioN "0.2.7"
+#ifdef Cdrskin_libburn_0_3_1
+#define Cdrskin_libburn_versioN "0.3.1"
 #define Cdrskin_libburn_from_pykix_svN 1
-#define Cdrskin_atip_speed_is_oK 1
-#define Cdrskin_no_aftergrab_loopS 1
-#define Cdrskin_libburn_has_get_profilE 1
-#define Cdrskin_libburn_has_set_start_bytE 1
-#define Cdrskin_libburn_has_wrote_welL 1
-#define Cdrskin_libburn_has_bd_formattinG 1
-#define Cdrskin_libburn_has_burn_disc_formaT 1
-#endif /* Cdrskin_libburn_0_2_7 */
+#endif /* Cdrskin_libburn_0_3_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_versioN "0.2.6"
+#define Cdrskin_libburn_versioN "0.3.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
@@ -202,6 +195,15 @@ or
 #define Cdrskin_libburn_has_pretend_fulL 1
 #define Cdrskin_libburn_has_multI 1
 #define Cdrskin_libburn_has_buffer_min_filL 1
+#define Cdrskin_atip_speed_is_oK 1
+#define Cdrskin_libburn_has_get_profilE 1
+#define Cdrskin_libburn_has_set_start_bytE 1
+#define Cdrskin_libburn_has_wrote_welL 1
+#define Cdrskin_libburn_has_bd_formattinG 1
+#define Cdrskin_libburn_has_burn_disc_formaT 1
+
+/* <<< to be removed together with said loops */
+#define Cdrskin_no_aftergrab_loopS 1
 
 #ifdef Cdrskin_new_api_tesT
 
@@ -4338,16 +4340,16 @@ thank_you_for_patience:;
          Cdrfifo_get_counters(skin->fifo,&curr_fifo_in,&curr_fifo_out,0);
          Cdrfifo_get_sizes(skin->fifo,&bs,&fs,0);
        }
-     }
-     if(skin->fifo_size>0) {
-       sprintf(fifo_text,"(fifo %3d%%) ",fifo_percent);
-       if(skin->verbosity>=Cdrskin_verbose_debug_fifO) {
-         fprintf(stderr,
-                 "\ncdrskin_debug: fifo >= %9d / %d :  %8.f in, %8.f out\n",
-                 fill,(int) buffer_size,
-                 curr_fifo_in-last_fifo_in,curr_fifo_out-last_fifo_out);
-         last_fifo_in= curr_fifo_in;
-         last_fifo_out= curr_fifo_out;
+       if(skin->fifo_size>0) {
+         sprintf(fifo_text,"(fifo %3d%%) ",fifo_percent);
+         if(skin->verbosity>=Cdrskin_verbose_debug_fifO) {
+           fprintf(stderr,
+                   "\ncdrskin_debug: fifo >= %9d / %d :  %8.f in, %8.f out\n",
+                   fill,(int) buffer_size,
+                   curr_fifo_in-last_fifo_in,curr_fifo_out-last_fifo_out);
+           last_fifo_in= curr_fifo_in;
+           last_fifo_out= curr_fifo_out;
+         }
        }
      }
      if(skin->supposed_track_idx >= 0 && 

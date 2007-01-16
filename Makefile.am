@@ -101,9 +101,9 @@ test_structest_CPPFLAGS = -Ilibburn
 test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 test_structest_SOURCES = test/structest.c
 
-##  cdrskin construction site - ts A60816
+##  cdrskin construction site - ts A60816 - A70116
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
-cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_2_7
+cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_3_1
 cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
 cdrskin_cdrskin_SOURCES = cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cdrfifo.h cdrskin/cdrskin_timestamp.h
 ##
