@@ -1909,6 +1909,7 @@ Replaced setuid blocker by warning. People must know themselves what they do.
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.09.141837
 * Replaced ban of chmod u+s by loud warning
 
+
 11 Dec 2006  [484]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
@@ -1994,6 +1995,7 @@ Took more care for man page
 
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2006.12.13.221921
 * detailed man page for cdrskin
+
 
 13 Dec 2006  [503]
 cdrskin/changelog.txt
@@ -2349,6 +2351,7 @@ Greeting the new year
 ------------------------------------ cycle  - cdrskin-0.2.7 - 2007.01.02.101027
 * Formatting and then burning to DVD-RW like to DVD+RW
 
+
 2 Jan 2006  [576]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
@@ -2553,18 +2556,89 @@ Updated about overwriteable DVD and pointer to dvd+rw-tools
 * Burning to DVD-RAM
 
 
-15 Jan 2007  []
+15 Jan 2007  [623]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
+2007.01.16.120001  [tag 624]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/changelog.txt
+Made version number transition to 0.3.0
 
-Make version number transition to 0.3.0
+15 Jan 2007 [tag 625]
+- cdrskin/add_ts_changes_to_libburn_0_2_6
+- cdrskin/add_ts_changes_to_libburn_0_2_7
++ cdrskin/add_ts_changes_to_libburn_0_3_0
+Updated cdrskin tarball generator
+
+16 Jan 2007 [tag 626]
+README
+Corrected statement about restriction to CD
+
+16 Jan 2007 [tag 627]
+cdrskin/cdrskin.c
+Silenced a compiler warning
+
+16 Jan 2007 [tag 628]
+cdrskin/README
+Corrected name of tarball
+
+16 Jan 2007 [tag 632]
+test/telltoc.c
+Corrected old libburn.pykix.org URL
+
+16 Jan 2007 [tag 634]
+cdrskin/cdrskin_eng.html
+Updated web page
+
+
+------------------------------- cycle  - cdrskin-0.3.0.pl00 - 2007.01.16.120001
+* Improved recognition of unsuitable media types
+* Replaced ban of chmod u+s by loud warning
+* detailed man page for cdrskin
+* Burning of DVD+RW and DVD-RAM media as single-track TAO-like initial session
+* Formatting and then burning to DVD-RW like to DVD+RW
+* New option -msifile=path from cdrskit/wodim
+
+16 Jan 2007  [629]
+- cdrskin/add_ts_changes_to_libburn_0_2_6
+- cdrskin/add_ts_changes_to_libburn_0_2_7
++ cdrskin/add_ts_changes_to_libburn_0_3_0
++ cdrskin/add_ts_changes_to_libburn_0_3_1
+Updated cdrskin tarball generator
+
+2007.01.16.151041  [630]
+Makefile.am
+configure.ac
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+Made version number transition to 0.3.1
+
+16 Jan 2007  [631]
+test/telltoc.c
+Corrected old libburn.pykix.org URL
+
+16 Jan 2007  [633]
+cdrskin/cdrskin_eng.html
+Corrected typo
+
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.01.16.152345
+
+
+  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.1 cycle
+
 
 Post cdrskin/wiki_plain.txt
-
-
-------------------------------- cycle  - cdrskin-0.3.0.pl00 - 
-
 
 
 Format DVD-RAM ?
