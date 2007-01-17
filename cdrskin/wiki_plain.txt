@@ -154,21 +154,6 @@ $HOME/.cdrskinrc
 
 --------------------------------------------------------------------------
 
-tao_to_sao_tsize=<num> allows the - actually unsupported - cdrecord option
--tao and defines a default track size to be used if - as custom with -tao -
-no option tsize=# is given.
-
-Since -tao is supported in cdrskin-0.2.6 the TAO-to-SAO workaround has become
-quite obsolete. Nevertheless, tao_to_sao_tsize= allows to preset a default
-size for SAO mode which is in effect only if no track size is available.
-
-As in general with cdrskin tsize=# the data source does not have to provide
-the full annouced amount of data. Missing data will be padded up by 0-bytes.
-Surplus data is supposed to cause an error, though. The burn will then
-be a failure in any way.
-
---------------------------------------------------------------------------
-
 dev_translation=<sep><from><sep><to> may be needed to foist cdrskin to
 frontend programs of cdrecord which do *not* ask cdrecord -scanbus but
 which make own assumptions and guesses about cdrecord's device addresses.
