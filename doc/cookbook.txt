@@ -38,24 +38,29 @@ It is advised to set only speeds and sizes which are returned by ACh.
 Optimal performance is promised without any speed setting. But my experiments
 showed that SET STREAMING values persist after media change.
 
-In formatted areas of the media, coarse random access is possible.
+In the formatted area of the media, coarse random access is possible.
 For DVD-RAM and DVD+RW write addresses and data size need to be aligned
 to 2 KiB. For DVD-RW alignment has to be 32 KiB. Within these limitations
 the write address is at the discretion of the sending program.
 Just use 2Ah WRITE to send data.
 (mmc5r03c.pdf, 6.44)
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
 
-Not yet formatted areas may be completely forbidden or they may be allowed
-for sequential writing (DVD-RW Intermediate state) or they may be allowed
-for random access only after the necessary waiting time for formatting to reach
+The size of the formatted area can be inquired by 23h READ FORMAT CAPACITIES.
+The Number Of Blocks value in the Current/Maximum Capacity Descriptor gives
+this size in 2 KiB blocks. But this is true only if Descriptor Type is 10b
+("Formatted Media").
+(mmc5r03c.pdf, 6.24.3.2.1, 6.24.3.2.3)
+
+Not yet formatted area may be completely forbidden or they may be allowed for
+sequential writing (DVD-RW Intermediate state) or they may be allowed for
+random access only after the necessary waiting time for formatting to reach
 the desired address (DVD+RW with background formatting active).
 
 Already written areas can be overwritten without special precaution.
 Blanking a DVD-RW actually destroys its formatting.
-
-When writing is done, it is mandatory to force the drive's buffer to media by
-35h SYNCHRONIZE CACHE.
-(mmc5r03c.pdf, 6.41)
 
 
 Most of the concepts usually expressed in Write Parameters mode page 05h do not
@@ -90,8 +95,8 @@ DVD+RW reaches this state if Background Formatting is allowed to finish without
 being stopped by 5Bh CLOSE TRACK SESSION.
 (mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.14 Format Type = 26h)
 The formatting state of a DVD+RW may be inquired by 51h READ DISC INFORMATION
-requiring Data Type 000b "Standard Disc Information". In the reply, BG Format 3
-indicates fully formatted media.
+requesting Data Type 000b "Standard Disc Information". In the reply,
+BG Format 3 indicates fully formatted media.
 (mmc5r03c.pdf 6.22.3.1.13)
 
 
