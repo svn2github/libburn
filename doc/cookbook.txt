@@ -1,0 +1,257 @@
+-------------------------------------------------------------------------------
+                           Overwriteable DVD Cookbook
+-------------------------------------------------------------------------------
+Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
+backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+and by experiments with drives NEC ND-4570A and LG GSA-4082B.
+
+For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+
+Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
+(mmc5r03c.pdf 6.6.2.1)
+
+DVD-RAM                        0012h
+DVD-RW Restricted Overwrite    0013h
+DVD-RW Sequential Recording    0014h (i.e. unformatted)
+DVD+RW                         001Ah
+
+A short compilation of the write model:
+- Overwriting in general
+
+The recipes described here are depending on formatting state:
+- DVD-RAM, fully formatted DVD+RW or DVD-RW
+- Unformatted DVD+RW
+- Partly formatted DVD+RW
+- Unformatted DVD-RW
+- Partly formatted DVD-RW
+- Intermediate state DVD-RW
+
+-------------------------------------------------------------------------------
+Overwriting in general :
+
+No Write Parameters mode page 05h is to be sent. Speed can be influenced by
+B6h SET STREAMING , speed capabilities can be inquired by ACh GET PERFORMANCE.
+It is advised to set only speeds and sizes which are returned by ACh.
+(mmc5r03c.pdf 6.39 SET STREAMING, 6.8 GET PERFORMANCE)
+Optimal performance is promised without any speed setting. But my experiments
+showed that SET STREAMING values persist after media change.
+
+In formatted areas of the media, coarse random access is possible.
+For DVD-RAM and DVD+RW write addresses and data size need to be aligned
+to 2 KiB. For DVD-RW alignment has to be 32 KiB. Within these limitations
+the write address is at the discretion of the sending program.
+Just use 2Ah WRITE to send data.
+(mmc5r03c.pdf, 6.44)
+
+Not yet formatted areas may be completely forbidden or they may be allowed
+for sequential writing (DVD-RW Intermediate state) or they may be allowed
+for random access only after the necessary waiting time for formatting to reach
+the desired address (DVD+RW with background formatting active).
+
+Already written areas can be overwritten without special precaution.
+Blanking a DVD-RW actually destroys its formatting.
+
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
+
+
+Most of the concepts usually expressed in Write Parameters mode page 05h do not
+apply to the recipes here: Test-Write, Buffer Underrun protection,
+Multi-session, Write Type, Block Type, Track Mode, ...
+There are hints for multi-session formats with DVD-RW but both of my drives
+do not offer "Add Session" Format Types 12h or 14h.
+(mmc5r03c.pdf 6.5.4.2.7 , 6.5.4.2.9)
+
+
+Caution: Drive and media compatibility seems still to be quite an adventure.
+If you experience problems, especially problems with readability, then try
+different drives and media brands. Failure does not necessarily mean that the
+software did anything wrong.
+
+
+-------------------------------------------------------------------------------
+DVD-RAM, fully formatted DVD+RW or DVD-RW :
+
+There is no need for any finalizing other than forcing the drive's buffer to
+media by 35h SYNCHRONIZE CACHE (which is mandatory for writing, anyway).
+(mmc5r03c.pdf, 6.41)
+
+(It seems to do no harm to send to DVD+RW or DVD-RW a 5Bh CLOSE TRACK SESSION
+with Close Function 010b despite there is no session open in this scenario.)
+
+
+Full format is the natural state of DVD-RAM. 
+
+
+DVD+RW reaches this state if Background Formatting is allowed to finish without
+being stopped by 5Bh CLOSE TRACK SESSION.
+(mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.14 Format Type = 26h)
+The formatting state of a DVD+RW may be inquired by 51h READ DISC INFORMATION
+requiring Data Type 000b "Standard Disc Information". In the reply, BG Format 3
+indicates fully formatted media.
+(mmc5r03c.pdf 6.22.3.1.13)
+
+
+DVD-RW reaches this state either by Format Type 00h (or 10h) with maximum
+size given as Number Of Blocks, or by writing sequentially until the disc is
+completely full into an intermediate session opened by format 15h resp. 13h.
+(mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.1, 6.5.4.2.10, 6.5.4.2.8)
+A fully formatted DVD-RW can be recognized by 23h READ FORMAT CAPACITIES. The
+Descriptor Type of the Current/Maximum Capacity Descriptor is 10b ("Formatted
+Media") and 0 blocks are offered with Format Types 13h or 11h.
+(mmc5r03c.pdf, 6.24.3.2.1, 6.24.3.3)
+See also discussion of unformatted or partially formatted DVD-RW below.
+
+
+-------------------------------------------------------------------------------
+Unformatted DVD+RW
+
+This is the state of previously unused DVD+RW media.
+The formatting state of a DVD+RW may be inquired by 51h READ DISC INFORMATION
+requiring Data Type 000b "Standard Disc Information".
+In the reply, BG Format 0 indicates unformatted media (or unsuitable media).
+(mmc5r03c.pdf 6.22.3.1.13)
+
+Formatting has to be started by command 04h FORMAT UNIT, Format Type 26h.
+Different from other format types, 26h allows to send a fantasy size of
+0xffffffff blocks and does not require the caller to know the exact maximum
+size offered with that format.
+(mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.14 Format Type = 26h)
+
+As its name suggests, one has not to wait for background formatting to end
+but may very soon start writing as on formatted media. Random access to
+yet unformatted areas can last long, though.
+
+If backup formatting has been started at the beginning of the session, then
+it may get stopped after the final cache sync by 5Bh CLOSE TRACK SESSION
+with Close Function 010b. 
+(mmc5r03c.pdf 6.3.3.6)
+
+Formatting of DVD+RW is called "de-icing" because unformatted areas offer
+no hold for random access addressing and are thus slippery like ice. One can
+also see a color change from shiny unformatted to more dull formatted media.
+
+
+-------------------------------------------------------------------------------
+Partly formatted DVD+RW :
+
+This state is achieved by stopping background formatting before the media
+was completely formmatted. 
+The formatting state of a DVD+RW is obtained by 51h READ DISC INFORMATION
+requiring Data Type 000b "Standard Disc Information".
+In the reply, BG Format 1 indicates partly formatted media.
+(mmc5r03c.pdf 6.22.3.1.13)
+
+If the data of the session surely fit into the formatted area, then it would
+be unnecessary to restart background formatting.
+But in order to make the DVD+RW surely accept its maximum number of bytes,
+formatting may be restarted by command 04h FORMAT UNIT, Format Type 26h,
+with the Restart bit set and Number of Blocks set to 0xffffffff.
+(mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.14 Format Type = 26h)
+
+From then on, the same rules apply as for previously unformatted DVD+RW.
+
+
+-------------------------------------------------------------------------------
+Unformatted DVD-RW (media profile is 0014h) :
+
+This state is present with previously unused media. It is also present with
+media blanked by programs cdrecord, wodim or dvd+rw-format and with media which
+were sequentially written from blank state.
+Profile transition from formatted 0013h to unformatted 0014h is done by
+A1h BLANK.
+(mmc5r03c.pdf, 6.2)
+
+For becoming overwriteable such media need to be treated by command 04h FORMAT
+UNIT.
+(mmc5r03c.pdf, 6.5)
+The Format Type has to be chosen from the list replied by 23h READ FORMAT
+CAPACITIES. Suitable are Format Types 00h, 10h, 15h.
+(mmc5r03c.pdf 6.24)
+
+Format Types 00h and 10h provide a writeable area of a size given by Number of
+Blocks. Type 00h seems to be the most traditional and complete one. It needs
+no closing of a session at the end of writing.
+The Number Of Blocks may be at most the value reported by 23h READ FORMAT
+CAPACITIES in the entry for the desired format type. Full format is achieved
+by sending exactly the reported value.
+(mmc5r03c.pdf, 6.5.4.2.1 Format Type = 00h, 6.5.4.2.5 Format Type = 10h)
+
+Format Type 15h provides a writeable area of given size too, but this area can
+be expanded by sequential writing and afterwards marked as overwriteable by
+closing the session. It is even allowed to format with size 0 and to leave
+the size claim entirely to a sequential write process beginning at LBA 0.
+(mmc5r03c.pdf, 6.5.4.2.10 Format Type = 15h)
+When writing is done and cache is synced, one should send 5Bh CLOSE TRACK
+SESSION with Close Function 010b in order to bring the session out of
+Intermediate state. 
+(mmc5r03c.pdf 6.3.3.2.3)
+If not written up to the last 32 KiB block, the DVD-RW is only partly formatted
+after that.
+
+
+-------------------------------------------------------------------------------
+Partly formatted DVD-RW (media profile is 0013h) :
+
+This state is achieved by formatting a DVD-RW with a number of blocks which
+is less than offered for the Format Type by the drive's reply to 23h READ
+FORMAT CAPACITIES. If the media was most recently formatted by Format Types
+015h or 013h then it must have got written some bytes and afterwards treated
+by 5Bh CLOSE TRACK SESSION, 010b in order to be partly formatted.
+(mmc5r03c.pdf 6.3.3.2.3 CLOSE TRACK SESSION 010b, 6.24 READ FORMAT CAPACITIES)
+Elsewise the media is in Intermediate state. See below.
+
+If the data of the session surely fit into the formatted area, then it would
+be unnecessary to do any further formatting.
+But in order to make the DVD-RW surely accept its maximum number of bytes,
+partial formatting may be expanded by command 04h FORMAT UNIT, Format Type 13h,
+which is supposed to be offered by the drive in this state. This brings the
+session again into Intermediate state and thus allows expansion by sequential
+writing. As with Format Type 15h it is ok to set Number Of Blocks to 0, so that
+no fixed size formatting work is done and writing can begin soon after.
+(mmc5r03c.pdf, 6.5.4.2.8 Format Type = 13h)
+
+A fully formatted DVD-RW offers 0 blocks with format 13h. It makes not much
+sense to bring such a full session into Intermediate state because no gain in
+size is possible any more. Rather apply recipe "DVD-RAM, fully formatted DVD+RW
+or DVD-RW" above.
+
+When writing is done and cache is synced, one should send 5Bh CLOSE TRACK
+SESSION with Close Function 010b in order to bring the session out of
+Intermediate state. 
+(mmc5r03c.pdf 6.3.3.2.3)
+If not written up to the last 32 KiB block, the DVD-RW is only partly formatted
+after that.
+
+Format Type 13h has been tested only with expanding sessions formatted by 15h.
+Nevertheless it is offered with sessions from 00h and 10h, too.
+According to the specs, Format Type 11h would expand a session by a fixed
+size. This has not been tested yet because it is less appealing than 13h.
+(mmc5r03c.pdf, 6.5.4.2.6 Format Type = 11h)
+
+
+-------------------------------------------------------------------------------
+Intermediate state DVD-RW (media profile is 0013h) :
+
+This state is achieved by formatting a DVD-RW with Format Type 15h or 13h
+without subsequentially writing data and sending 5Bh CLOSE TRACK SESSION
+with Close Function 010b.
+Such media behave very unpleasing with my DVD-ROM drive under Linux 2.4 ide-cd.
+One should therefore better avoid to release media in this state.
+
+This state can be recognized by 23h READ FORMAT CAPACITIES. The Descriptor Type
+of the Current/Maximum Capacity Descriptor is 11b ("Unknown Capacity") and
+no formats 13h or 11h are offered.
+(mmc5r03c.pdf, 6.24.3.2.1, 6.24.3.3)
+
+One may treat such media as if Format Type 15h or 13h had been freshly applied.
+I.e. sequential writing from LBA 0. After cache sync bring the session out
+of Intermediate state by 5Bh CLOSE TRACK SESSION with Close Function 010b.
+(mmc5r03c.pdf 6.3.3.2.3)
+
+
+-------------------------------------------------------------------------------
+
