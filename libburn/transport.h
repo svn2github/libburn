@@ -154,7 +154,7 @@ struct burn_drive
 
 	/* ts A70114 : wether a DVD-RW media holds an incomplete session
 	               (which could need closing after write) */
-	int dvd_minus_rw_incomplete;
+	int needs_close_session;
 
 	/* ts A61218 from 46h GET CONFIGURATION  */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/

@@ -920,12 +920,14 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	}
 	if (d->current_profile == 0x1a) {
 		/* DVD+RW */
-		ret = burn_disc_close_session_dvd_plus_rw(o, s);
-		if (ret <= 0)
-			return 0;
+		if (d->needs_close_session) {
+			ret = burn_disc_close_session_dvd_plus_rw(o, s);
+			if (ret <= 0)
+				return 0;
+		}
 	} else if (d->current_profile == 0x13) {
 		/* DVD-RW restricted overwrite */
-		if (d->dvd_minus_rw_incomplete) {
+		if (d->needs_close_session) {
 			ret = burn_disc_close_session_dvd_minus_rw(o, s);
 			if (ret <= 0)
 				return 0;
@@ -953,6 +955,7 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 		if (ret <= 0)
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;
+		d->needs_close_session = 1;
 	}
 	d->nwa = 0;
 	if (o->start_byte >= 0) {
@@ -1047,6 +1050,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 	char msg[160];
 
+	d->needs_close_session = 0;
 	for (sx = 0; sx < disc->sessions; sx++)
 		for (tx = 0 ; tx < disc->session[sx]->tracks; tx++) {
 			mode = disc->session[sx]->track[tx]->mode;
