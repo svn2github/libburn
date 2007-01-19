@@ -1,3 +1,163 @@
+Content:
+- TAO Multi-Session CD Cookbook
+- Overwriteable DVD Cookbook
+
+-------------------------------------------------------------------------------
+                         TAO Multi-Session CD Cookbook
+-------------------------------------------------------------------------------
+Guided by reading mmc-r10a.pdf , O.8 "Write a Track"
+                               from http://www.t10.org/ftp/t10/drafts/mmc/
+backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+by reading        spc3r23.pdf  from http://www.t10.org/ftp/t10/drafts/spc3/
+and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
+which used in part code from http://icculus.org/burn.
+
+For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+
+Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
+(mmc5r03c.pdf 6.6.2.1)
+
+CD-R                           0009h
+CD-RW                          000ah
+
+The following topics are covered:
+- About blank, appendable and finalized CD media
+- Writing a session to CD
+- Obtaining CD multi-session info for extending ISO-9660 filesystems
+- Obtaining a Table Of Content from CD >>> under construction
+
+
+-------------------------------------------------------------------------------
+About blank, appendable and finalized CD media :
+
+CD media have to be blank or appendable in order to be writeable in TAO mode.
+The according status may be inquired by 51h READ DISC INFORMATION requesting
+Data Type 000b Standard Disc Information, where reply value Disc Status
+indicates:
+00b   blank
+01b   appendable
+10b   finalized
+11b   others (unsuitable for this recipe)
+(mmc5r03c.pdf 6.22.3.1.4)
+
+CDs which are finalized or appendable may be blanked by command A1h BLANK with
+blanking types 000b "Blank the disc" or 001b "Minimally blank the disc".
+The Start Address/Track Number will be ignored so it may well be 0.
+Because the operation is long running it is advised to set the Immed bit and to
+watch the progress by commands 00h TEST UNIT READY and 03h REQUEST SENSE
+with DESC bit set to 0 for fixed format reply.
+It is done when 00h succeeds and 03h reports 0 in PROGRESS INDICATION 
+(byte 1+2 in Table 22 = byte 16+17 SENSE KEY SPECIFIC in table 26).
+(mmc5r03c.pdf 6.2 BLANK)
+(spc3r23.pdf 4.5.2.4.4 table 22, 4.5.3 table 26,
+             6.27 REQUEST SENSE, 6.33 TEST UNIT READY)
+
+
+-------------------------------------------------------------------------------
+Writing a session to CD :
+
+The writing method for blank or appendable media is the same. If the media is
+blank then the new track will be the first and only one in the table of
+content. If the media is appendable then a new session will be opened
+automatically and the new track will be the first and only one in this session.
+
+Speed may be set by BBh SET CD SPEED parameter Drive Write Speed. Note that
+kbytes/sec means 1000 bytes/sec and not 1024/sec. Rotational control should
+be set to 00b. 1x CD speed is 176.4 kbytes/sec. Speed is usually set to the
+next lower possible value by the drive. So it is helpful to add a few 
+kbytes/sec just in case the drive has rounding problems.
+(mmc5r03c.pdf 6.37)
+
+Before writing can occur, a Write Parameters mode page 05h has to be composed
+and transmitted via 55h MODE SELECT. Mode page 05h describes several burn
+parameters:
+ BUFE             Buffer Underrun protection      0=off, 1=on
+ Test Write       -dummy mode for writing         0=off, 1=on
+ Write Type       Packet/TAO/SAO/RAW              01h = TAO
+ Multi-session    Wether to keep appendable       00b = close, 11b = appendable
+ Track Mode       Describes frame type            4 for data , 0 for audio
+ Data Block Type  Layout of payload blocks        8 for 2048 byte data blocks
+                                                  0 for 2352 byte audio blocks
+ Audio Pause Length                               150 = 2 seconds
+Any other parameters may be set to 0.
+Mode page data as of MMC-5 table 644 are preceded by a Mode Parameter Header
+as of SPC-3 table 240. This 8-byte header may be filled with 0s ... obviously.
+(mmc5r03c.pdf 7.5.4 The Mode Page, 4.2.3.4 Table 17 CONTROL = Track Mode)
+(spc3r23.pdf 6.8 MODE SELECT, 7.4.3 Mode parameter header formats)
+
+
+Writing has to begin at the address returned by 52h READ TRACK INFORMATION
+with Address/Number Type set to 01b and Logical Block Address/Track/Session
+Number set to FFh. The Next Writeable Address as of table 500 is the number
+to start writing with.
+(mmc5r03c.pdf 6.27 )
+
+Writing is done by 2Ah WRITE with the Logical Block Address counted up from
+the initial number in sync with the number of blocks written. Only full blocks
+can be written.
+(mmc5r03c.pdf, 6.44)
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
+
+The track has to be closed by 5Bh CLOSE TRACK SESSION Close Function 001b.
+Older MMC specifies a valid Logical Track Number FFh to depict the open track.
+MMC-5 is quite silent about this. FFh works for my drives.
+After that, a new track can be written beginning with sending the mode page 05h
+again (it is not tested wether this can be omitted).
+(mmc5r03c.pdf 6.3.3.1.2)
+
+After the last track of a session, 5Bh CLOSE TRACK SESSION Close Function 010b
+with Logical Track Number 0 closes the session. It depends on the Multi-Session
+value in mode page 05h wether the disc is finalized or stays appendable.
+(mmc5r03c.pdf 6.3.3.1.3)
+
+
+-------------------------------------------------------------------------------
+Obtaining CD multi-session info for extending ISO-9660 filesystems :
+
+Program mkisofs expects two numbers with its option -C which describe the
+situation on an appendable CD which already contains a ISO-9660 filesystem
+in the first track of the last session.
+
+The first number is the Logical Block Address of that track containing the
+existing ISO-9660 filesystem image. This number is needed for mkisofs option
+-M to connect to the existing image. The new image will refer to files in
+the previously existing image. mkisofs option -M needs read access to the
+CD or a blockwise copy of it on hard disk. 
+Untested is Format 0001b which in table 478 promises quick access via
+Start Address of First Track in Last Session.
+(mmc5r03c.pdf 6.26.3.3.1)
+libburn gets the number from its Table Of Content model which is obtained
+by 43h READ TOC/PMA/ATIP, Format 0010b. See below.
+
+The second number is an exact prediction of the Logical Block Address of the
+new track which will contain the newly generated ISO-9660 image.
+Even without option -M this second number is still needed to make the inner
+block address pointers of the image match the Logical Block Addresses on CD.
+
+This number is the address returned by 52h READ TRACK INFORMATION with
+Address/Number Type set to 01b and Logical Block Address/Track/Session
+Number set to FFh. The Next Writeable Address as of table 500 is the number
+to use.
+(mmc5r03c.pdf 6.27 )
+
+
+-------------------------------------------------------------------------------
+>>> Obtaining a Table Of Content from CD :
+
+Table of content information is gained by 43h READ TOC/PMA/ATIP, Format 0010b.
+The number of sessions is given by Last Complete Session Number.
+The number of TOC Track descriptors is: (TOC Data Length - 2)/11 . 
+
+>>> sift out the track entries
+>>> track starts, leadout starts
+
+(mmc5r03c.pdf 6.26.2.5 table 478, 6.26.3.4 )
+
+
 -------------------------------------------------------------------------------
                            Overwriteable DVD Cookbook
 -------------------------------------------------------------------------------
