@@ -254,9 +254,6 @@ void mmc_close(struct burn_drive *d, int session, int track)
 
 	/* ts A61030 : shifted !!session rather than or-ing plain session */
 	c.opcode[2] = ((!!session)<<1) | !!track;
-
-	fprintf(stderr, "LIBBURN_DEBUG: mmc_close %d\n", c.opcode[2]);
-
 	c.opcode[4] = track >> 8;
 	c.opcode[5] = track & 0xFF;
 	c.page = NULL;
