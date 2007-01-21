@@ -386,10 +386,22 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	e[2].control = e[1].control;
 	e[2].adr = 1;
 
+	/* ts A70121 : The pause before the first track is not a Pre-gap.
+	   To count it as part 2 of a Pre-gap is a dirty hack. It also seems
+	   to have caused confusion in dealing with part 1 of an eventual
+	   real Pre-gap. mmc5r03c.pdf 6.33.3.2, 6.33.3.18 .
+	*/
 	tar[0]->pregap2 = 1;
+
 	pform = form;
 	for (i = 0; i < ntr; i++) {
 		type_to_form(tar[i]->mode, &ctladr, &form);
+
+
+		/* ts A70121 : This seems to be thw wrong test. Correct would
+		   be to compare tar[]->mode or bit2 of ctladr.
+		*/ 
+
 		if (pform != form) {
 
 			ret = add_cue(sheet, ctladr | 1, i + 1, 0, form, 0,
@@ -405,6 +417,21 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 / /                      if (!(form & BURN_AUDIO))
 / /                              tar[i]->pregap1 = 1;
 */
+/* ts A70121 : it is unclear why (form & BURN_AUDIO) should prevent pregap1.
+   I believe, correct would be:
+			runtime += 75;
+			tar[i]->pregap1 = 1;
+
+   The test for pform != form is wrong anyway. 
+
+   Next one has to care for Post-gap: table 555 in mmc5r03c.pdf does not
+   show any although 6.33.3.19 would prescribe some.
+
+   Nobody seems to have ever tested this situation, up to now.
+   I shall ban resp. avoid it in cdrskin and libburner. A warning will be
+   placed in libburn.h . Some ban is needed in burn_disc_write().
+*/
+
 			tar[i]->pregap2 = 1;
 		}
 /* XXX HERE IS WHERE WE DO INDICES IN THE CUE SHEET */
@@ -626,12 +653,27 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 			d->rlba += 150;
 
 		if (t->pregap1) {
-			struct burn_track *pt = s->track[tnum - 1];
+
+			struct burn_track *pt;
+			/* ts A70121 : Removed pseudo suicidal initializer 
+				 = s->track[tnum - 1];
+			*/
 
 			if (tnum == 0) {
+
+				/* ts A70121 : This is not possible because
+				   track 1 cannot have a pregap at all.
+				   MMC-5 6.33.3.2 precribes a mandatoy pause
+				   prior to any track 1. Pre-gap is prescribed
+				   for mode changes like audio-to-data.
+				   To set burn_track.pregap1 for track 1 is
+				   kindof a dirty hack.
+				*/
+
 				printf("first track should not have a pregap1\n");
 				pt = t;
-			}
+			} else
+				pt = s->track[tnum - 1]; /* ts A70121 */
 			for (i = 0; i < 75; i++)
 				if (!sector_pregap(o, t->entry->point,
 					           pt->entry->control, pt->mode))
