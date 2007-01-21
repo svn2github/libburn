@@ -202,9 +202,6 @@ or
 #define Cdrskin_libburn_has_bd_formattinG 1
 #define Cdrskin_libburn_has_burn_disc_formaT 1
 
-/* <<< to be removed together with said loops */
-#define Cdrskin_no_aftergrab_loopS 1
-
 #ifdef Cdrskin_new_api_tesT
 
 /* put macros under test caveat here */
@@ -3522,16 +3519,7 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
-
-#ifndef Cdrskin_no_aftergrab_loopS
- while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
-   usleep(100002);
- while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-   usleep(100002);
-#else
  s= burn_disc_get_status(drive);
-#endif /* ! Cdrskin_no_aftergrab_loopS */
-
  if(s!=BURN_DISC_APPENDABLE) {
    Cdrskin_report_disc_status(skin,s,0);
    fprintf(stderr,
@@ -3692,16 +3680,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
-
-#ifndef Cdrskin_no_aftergrab_loopS
- while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
-   usleep(100002);
- while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-   usleep(100002);
-#else
  s= burn_disc_get_status(drive);
-#endif
-
  Cdrskin_report_disc_status(skin,s,0);
  if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable) {
    is_not_really_erasable= 1;
@@ -3932,16 +3911,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
-
-#ifndef Cdrskin_no_aftergrab_loopS
- while(burn_drive_get_status(drive,NULL) != BURN_DRIVE_IDLE)
-   usleep(100002);
- while ((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-   usleep(100002);
-#else
  s= burn_disc_get_status(drive);
-#endif
-
  profile_name[0]= 0;
 #ifdef Cdrskin_libburn_has_get_profilE
  if(skin->grabbed_drive)
@@ -4593,19 +4563,9 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
-
-#ifndef Cdrskin_no_aftergrab_loopS
- while(burn_drive_get_status(drive, NULL) != BURN_DRIVE_IDLE)
-   usleep(100002); /* >>> ??? add a timeout ? */
- while((s= burn_disc_get_status(drive)) == BURN_DISC_UNREADY)
-   usleep(100002); /* >>> ??? add a timeout ? */
-#else
  s= burn_disc_get_status(drive);
-#endif
-
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
-
  ret= Cdrskin_activate_write_mode(skin,s,0);
  if(ret<=0) {
    fprintf(stderr,
