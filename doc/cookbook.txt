@@ -117,8 +117,9 @@ MMC-5 is quite silent about this. FFh works for my drives.
 (mmc5r03c.pdf 6.3.3.1.2)
 
 After that, a new track may be written beginning with sending the mode page 05h
-again (it is not tested wether 05h can be omitted). The track will then be
-added to the session which was opened by the first track.
+again. It is not tested wether 05h can be omitted if Track Mode and Data Block
+Type are the same as with the previous track.
+The new track will be added to the session which was opened by the first track.
 
 After the last track of a session, 5Bh CLOSE TRACK SESSION Close Function 010b
 with Logical Track Number 0 closes the session. It depends on the Multi-Session
