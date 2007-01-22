@@ -1,7 +1,8 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2006-2007 Thomas Schmitt <scdbackup@gmx.net>,
+   provided under GPL
 */
 
 
@@ -349,7 +350,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020129 (SORRY,HIGH)   = Will not format media type
  0x00020130 (SORRY,HIGH)   = Drive and media state unsuitable for blanking
  0x00020131 (SORRY,HIGH)   = No suitable formatting type offered by drive
-
+ 0x00020132 (SORRY,HIGH)   = Selected format is not suitable for libburn
+ 0x00020133 (SORRY,HIGH)   = Cannot mix data and audio in SAO mode
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

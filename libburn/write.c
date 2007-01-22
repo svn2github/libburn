@@ -428,8 +428,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
    show any although 6.33.3.19 would prescribe some.
 
    Nobody seems to have ever tested this situation, up to now.
-   I shall ban resp. avoid it in cdrskin and libburner. A warning will be
-   placed in libburn.h . Some ban is needed in burn_disc_write().
+   It is banned for now in burn_disc_write().
+   Warning have been placed in libburn.h .
 */
 
 			tar[i]->pregap2 = 1;

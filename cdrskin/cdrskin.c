@@ -3900,7 +3900,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
  int wrote_well= 1;
  double start_time;
- char *verb= "format", *presperf="blanking", *fmt_text= "format_...";
+ char *verb= "blank", *presperf="blanking", *fmt_text= "format_...";
  char profile_name[80];
  static char fmtp[][40]= {
                     "format_default", "format_overwrite", "format_sequential"};
@@ -4407,7 +4407,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
- int profile_number= -1;
+ int profile_number= -1, track_type_1, mixed_mode= 0;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
  
@@ -4416,13 +4416,19 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
  if(skin->grabbed_drive)
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
 #endif
+ Cdrtrack_get_track_type(skin->tracklist[0],&track_type_1,&sector_size,0);
+ for(i=1;i<skin->track_counter;i++) {
+   Cdrtrack_get_track_type(skin->tracklist[i],&track_type,&sector_size,0);
+   if(track_type_1!=track_type)
+     mixed_mode= 1;
+ }
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
    was_still_default= 1;
 
-   if(s == BURN_DISC_APPENDABLE) {
+   if(s == BURN_DISC_APPENDABLE || mixed_mode) {
      strcpy(skin->preskin->write_mode_name,"TAO");
-     was_still_default= 2; /*<<< prevents trying of SAO if drive dislikes TAO*/
+     was_still_default= 2; /* prevents trying of SAO if drive dislikes TAO*/
    } else if(profile_number==0x1a || profile_number==0x13 ||
              profile_number==0x12) {
      /* DVD+RW , DVD-RW Restricted Overwrite , DVD-RAM */
@@ -4437,7 +4443,6 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
 
 #ifdef Cdrskin_allow_libburn_taO
  } else if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
-   strcpy(skin->preskin->write_mode_name,"TAO");
    skin->write_type= BURN_WRITE_TAO;
    skin->block_type= BURN_BLOCK_MODE1;
 #endif /* Cdrskin_allow_libburn_taO */
@@ -4470,7 +4475,7 @@ check_with_drive:;
    ok= 1;
  } else if(skin->write_type==BURN_WRITE_RAW)
    ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
- else if(skin->write_type==BURN_WRITE_SAO)
+ else if(skin->write_type==BURN_WRITE_SAO && !mixed_mode)
    ok= !!(drive_info->sao_block_types & BURN_BLOCK_SAO);
  else if(skin->write_type==BURN_WRITE_TAO) {
    block_type_demand= 0;
@@ -4484,6 +4489,14 @@ check_with_drive:;
    ok= ((drive_info->tao_block_types & block_type_demand)==block_type_demand);
  }
 
+ if(skin->write_type==BURN_WRITE_SAO && mixed_mode) {
+   fprintf(stderr,
+          "cdrskin: FATAL : Cannot write mix of data and audio in SAO mode\n");
+#ifdef Cdrskin_allow_libburn_taO
+   fprintf(stderr,"cdrskin: HINT  : Try with option -tao resp. without -sao\n");
+#endif
+   return(0);
+ }
  if(!ok) {
    fprintf(stderr,
            "cdrskin: %s : Drive indicated refusal for write mode %s.\n",
@@ -4541,6 +4554,10 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  ret= burn_disc_add_session(disc,session,BURN_POS_END);
  if(ret==0) {
    fprintf(stderr,"cdrskin: FATAL : cannot add session to disc object.\n");
+burn_failed:;
+   if(skin->verbosity>=Cdrskin_verbose_progresS) 
+     printf("cdrskin: burning failed\n");
+   fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
    return(0);
  }
 
@@ -4552,7 +4569,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
    ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
    if(ret<=0) {
      fprintf(stderr,"cdrskin: FATAL : cannot add track %d to session.\n",i+1);
-     return(0);
+     goto burn_failed;
    }
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
    if(size>0)
@@ -4561,7 +4578,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
 
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
-   return(ret);
+   goto burn_failed;
  drive= skin->drives[skin->driveno].drive;
  s= burn_disc_get_status(drive);
  if(skin->verbosity>=Cdrskin_verbose_progresS)
@@ -4570,7 +4587,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(ret<=0) {
    fprintf(stderr,
            "cdrskin: FATAL : Cannot activate the desired write mode\n");
-   ret= 0; goto ex;
+   goto burn_failed;
  } 
 
 #ifdef Cdrskin_libburn_has_multI
@@ -4582,7 +4599,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
    if(skin->write_type!=BURN_WRITE_TAO) {
      Cdrskin_release_drive(skin,0);
      fprintf(stderr,"cdrskin: FATAL : For now only write mode -tao can be used with appendable disks\n");
-     return(0);
+     goto burn_failed;
    }
 #endif /* ! Cdrskin_allow_sao_for_appendablE */
 
@@ -4592,7 +4609,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
 #endif
    Cdrskin_release_drive(skin,0);
    fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
-   return(0);
+   goto burn_failed;
  }
 
  
@@ -4855,13 +4872,14 @@ fifo_full_at_end:;
  if(wrote_well) {
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
      printf("cdrskin: burning done\n");
- } else {
+ } else
+   ret= 0;
+ex:;
+ if(ret<=0) {
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
      printf("cdrskin: burning failed\n");
    fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
-   ret= 0;
  }
-ex:;
  skin->drive_is_busy= 0;
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(printf("cdrskin_debug: do_eject= %d\n",skin->do_eject));

@@ -110,14 +110,18 @@ enum burn_write_types
 	    currently unsupported
 	*/
 	BURN_WRITE_PACKET,
+
 	/** Track At Once recording.
 	    2s gaps between tracks, no fonky lead-ins
 	*/
 	BURN_WRITE_TAO,
+
 	/** Session At Once.
-	    block type MUST be BURN_BLOCK_SAO
+	    Block type MUST be BURN_BLOCK_SAO
+	    ts A70122 : Currently not capable of mixing data and audio tracks.
 	*/
 	BURN_WRITE_SAO,
+
 	/** Raw disc at once recording.
 	    all subcodes must be provided by lib or user
 	    only raw block types are supported
@@ -925,6 +929,9 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 /** Write a disc in the drive. The drive must be grabbed successfully before
     calling this function. Always ensure that the drive reports a status of
     BURN_DISC_BLANK before calling this function.
+    Note: write_type BURN_WRITE_SAO is currently not capable of writing a mix
+    of data and audio tracks. You must use BURN_WRITE_TAO for such sessions.
+    To be set by burn_write_opts_set_write_type(). 
     @param o The options for the writing operation.
     @param disc The struct burn_disc * that described the disc to be created
 */
@@ -980,7 +987,7 @@ int burn_msf_to_lba(int m, int s, int f);
 */
 void burn_lba_to_msf(int lba, int *m, int *s, int *f);
 
-/** Create a new disc (for DAO recording)*/
+/** Create a new disc */
 struct burn_disc *burn_disc_create(void);
 
 /** Delete disc and decrease the reference count on all its sessions
@@ -988,9 +995,7 @@ struct burn_disc *burn_disc_create(void);
 */
 void burn_disc_free(struct burn_disc *d);
 
-/** Create a new session (For SAO at once recording, or to be added to a 
-    disc for DAO)
-*/
+/** Create a new session */
 struct burn_session *burn_session_create(void);
 
 /** Free a session (and decrease reference count on all tracks inside)
@@ -1145,7 +1150,9 @@ void burn_structure_print_disc(struct burn_disc *d);
 void burn_structure_print_session(struct burn_session *s);
 void burn_structure_print_track(struct burn_track *t);
 
-/** Sets the write type for the write_opts struct
+/** Sets the write type for the write_opts struct.
+    Note: write_type BURN_WRITE_SAO is currently not capable of writing a mix
+    of data and audio tracks. You must use BURN_WRITE_TAO for such sessions.
     @param opts The write opts to change
     @param write_type The write type to use
     @param block_type The block type to use

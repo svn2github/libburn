@@ -323,6 +323,7 @@ static void *write_disc_worker_func(struct w_list *w)
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
 	struct write_opts o;
+	int i, j, mode, mixed_mode = 0;
 
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
@@ -346,6 +347,23 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	/* ts A61009 : obsolete Assert in sector_headers() */
 	if (! burn_disc_write_is_ok(opts, disc)) /* issues own msgs */
 		return;
+
+	/* ts A70122 : libburn SAO code mishandles mode changes */
+	for (i = 0; i < disc->sessions; i++) {
+		if (disc->session[i]->tracks <= 0)
+	continue;
+		mode =  disc->session[i]->track[0]->mode;
+		for (j = 1; j < disc->session[i]->tracks; j++)
+			if (mode != disc->session[i]->track[j]->mode)
+				mixed_mode = 1;
+	}
+	if (mixed_mode && opts->write_type == BURN_WRITE_SAO) {
+		libdax_msgs_submit(libdax_messenger,
+				opts->drive->global_index, 0x00020133,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Cannot mix data and audio in SAO mode", 0, 0);
+		return;
+	}
 
 	o.drive = opts->drive;
 	o.opts = opts;
