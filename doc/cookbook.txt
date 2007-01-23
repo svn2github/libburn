@@ -2,6 +2,7 @@ libburnia.pykix.org Optical Media Rotisserie Recipes as of January 2007
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
+- SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
 
 
@@ -196,6 +197,194 @@ the last session's POINT = A0h and from the track descriptor with the POINT
 value matching the PMIN value of the A0h descriptor.
 Untested is wether POINT = B0h and 52h READ TRACK INFORMATION are always in
 sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
+
+
+-------------------------------------------------------------------------------
+                                 SAO CD Cookbook
+-------------------------------------------------------------------------------
+Guided by reading libburn/*    from http://icculus.org/burn
+backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
+which used in part code from http://icculus.org/burn.
+
+For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+
+Recognition of media type and state (blank, appendable, finalized) is as
+described in the TAO Multi-Session CD Cookbook. See there.
+
+The MMC specs do not give much hint about the combination of SAO and
+multi-session. My drives refused not only on a few experiments which i did
+in libburn but also failed with cdrecord -sao on an appendable CD.
+So for now only blank CD seem to be suitable for SAO writing.  
+
+Different from TAO mode, the whole session layout is announced to the drive by
+sending a Cue Sheet. This implies that the sizes of the tracks have to be known
+in advance, which is a heavy drawback when dealing with track data sources like
+stdin, named pipes or sockets.
+Nevertheless, SAO seems to be best writing mode for audio purposes, as our
+audio expert Lorenzo Taylor found out.
+
+A SAO session in libburn may either consist entirely of audio tracks or
+entirely of data tracks. For mixed sessions, only TAO is usable yet.
+
+- Composing a SAO CD Cue Sheet (either audio or data, but not mixed)
+- Writing the prepared SAO CD session
+- What is known about mixed mode sessions
+
+
+-------------------------------------------------------------------------------
+Composing a Cue Sheet (either audio or data, but not mixed) :
+
+Speed may be set by BBh SET CD SPEED parameter Drive Write Speed. Note that
+kbytes/sec means 1000 bytes/sec and not 1024/sec. Rotational control should
+be set to 00b. 1x CD speed is 176.4 kbytes/sec. Speed is usually set to the
+next lower possible value by the drive. So it is helpful to add a few
+kbytes/sec just in case the drive has rounding problems.
+(mmc5r03c.pdf 6.37)
+
+The Cue Sheet will get submitted to the drive by 5Dh SEND CUE SHEET.
+Each entry of the sheet is of 8 bytes size. Its fields are named
+CTL|ADR, TNO, INDEX, DATA FORM, SCMS, MIN, SEC, FRAME .
+(mmc5r03c.pdf 6.33)
+
+CTL is 40h for data and 00h for audio.
+(mmc5r03c.pdf 6.33.3.4)
+ADR is always 01h.
+TNO is the track number (1 to 99).
+INDEX is a subaddress within tracks. This recipe uses only INDEX 01h within
+tracks.
+(mmc5r03c.pdf 4.2.3.5.2)
+DATA FORM is 00h for audio payload , 10h for data. (01h for audio pause is not
+used in libburn). 
+(mmc5r03c.pdf 6.33.3.11 CD-DA Data Form, 6.33.3.12 CD-ROM mode 1 Form)
+SCMS is always 00h.
+MIN, SEC, FRAME give the MSF address where the described data entity starts.
+LBA = frames - 150, 75 frames = 1 sec , 60 sec = 1 min.
+This address must increase from entry to entry (or at least stay equal).
+
+
+The first entry describes the Lead-in. Its content is 
+(CTL|ADR ,00h,00h,01h,00h,00h,00h,00h)
+With the CTL|ADR for the first track: 41h for data, 01h for audio.
+
+The LBA for the first write is negative: -150. This corresponds to MSF address
+00h:00h:00h. All addresses are to be given in MSF format.
+The first information track on disc is preceded by a pause encoding of 2 sec:
+(CTL|ADR,01h,00h, DATA FORM ,00h,00h,00h,00h) 
+with DATA FORM = 00h for audio and 10h for data. By those 2 seconds the MSF
+address increases to 00h:02h:00h = LBA 0.
+
+Each track is represented by an entry
+(CTL|ADR, TNO ,01h,DATA FORM,00h, MIN , SEC , FRAME)
+TNO gives the track number. MIN, SEC, FRAME give the MSF address which becomes
+the start address of the track. The MSF address is then increased by the size
+of the track (to be used with next track or with lead-out).
+
+At the end of the session there is a lead-out entry
+(CTL|ADR,AAh,01h,01h,00h,MIN,SEC,FRAME)
+marking the end of the last track. (With libburn CTL is as of the last track.)
+
+
+-------------------------------------------------------------------------------
+Writing the prepared session :
+
+As with write mode TAO, speed may be set by BBh SET CD SPEED.
+See TAO Multi-Session CD Cookbook.
+
+Nearly as with TAO a Write Parameters mode page 05h has to be composed and
+transmitted via 55h MODE SELECT. This page describes the following parameters:
+ BUFE             Buffer Underrun protection      0=off, 1=on
+ Test Write       -dummy mode for writing         0=off, 1=on
+ Write Type       Packet/TAO/SAO/RAW              02h = SAO
+ Multi-session    Wether to keep appendable       00b = finalize
+                                                  11b = keep appendable
+ Track Mode       Describes frame type            0 (is ignored)
+ Data Block Type  Layout of payload blocks        0 (is ignored)
+ Audio Pause Length                               150 = 2 seconds (ignored ?)
+Any other parameters may be set to 0.
+Mode page data as of MMC-5 table 644 are preceded by a Mode Parameter Header
+as of SPC-3 table 240. This 8-byte header may be filled with zeros.
+(mmc5r03c.pdf 7.5.4 The Mode Page, 4.2.3.4 Table 17 CONTROL = Track Mode)
+(spc3r23.pdf 6.8 MODE SELECT, 7.4.3 Mode parameter header formats)
+
+The Cue Sheet is submitted to the drive by 5Dh SEND CUE SHEET. Cue Sheet Size
+is 8 times the number of entries.
+(mmc5r03c.pdf 6.33)
+
+Writing is performed by multiple 2Ah WRITE transactions with the Logical
+Block Address counted up from the initial number in sync with the number of
+blocks written. I.e the Transfer Length of the previous 2Ah WRITE has to be
+added to the Logical Block Address for the next 2Ah WRITE. Only full blocks
+can be written.
+(mmc5r03c.pdf, 6.44)
+Writing begins at LBA -150 which is to be transmitted as 4-byte, Big-endian,
+two's-complement. E.g:  -150 = FFh FFh FFh 6Ah. This is the natural form found
+with about any 32-bit processor, so only the endianness has to be taken into
+respect when converting a 32-bit integer into a LBA for command 2Ah WRITE.
+
+
+At first the mandatory pause preceding the first track has to be written as
+150 blocks of the matching sector size: 2048 for data, 2352 for audio.
+By this, the LBA increases from -150 to 0.
+
+Next the tracks' payload is sent. For each track exactly the number of blocks
+has to be transmitted as is announced in the Cue Sheet by the difference
+of the track's own start address and the start address of the next entry in
+the Cue Sheet. After each write the LBA for the next write has to be increased
+by the number of blocks transmitted. Just like with TAO writing.
+
+There is no separator between the tracks of a pure mode SAO session.
+(If the session was mixed mode, there would be extended Pre-gaps and Post-gaps
+between data mode tracks and audio mode tracks.)
+(libburn sends its own buffer to the drive at the end of each track but does
+not sync the drive's chache. It is unclear wether this separation of tracks
+on the level of 2Ah WRITE is necessary with a pure mode session. It does not
+harm in any case and would probably be unavoidable if audio and data tracks
+were mixed.)
+
+When writing of all tracks is done, it is mandatory to force the drive's buffer
+to media by 35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
+
+No further finalization is necessary. (I.e. no 5Bh CLOSE TRACK SESSION.)
+
+
+----------------------------------------------------------------------------
+What is known about mixed mode sessions :
+
+For now, SAO sessions with a mix of data and audio are not supported in
+libburn. Here are the reasons why.
+
+Obviously the code of http://icculus.org/burn is incomplete in this aspect.
+In mmc5r03c.pdf comparison of table 555 and 6.33.3.18 seems self-contradicting.
+(The second Pre-gap in table 555 does not match any of the criteria of
+6.33.3.18. Also, there is no Post-gap shown in table 555 although 6.33.3.19
+would prescribe some.)
+
+If a data track follows an audio track then the data track gets a preceding
+extended Pre-gap:
+(CTL|ADR, TNO ,01h,DATA FORM,00h, MIN , SEC , FRAME)
+with TNO already the number of the data track. The MSF address is to be
+increased by 3 seconds. The first second of the extended Pre-gap needs to be
+written in the audio track's mode and the other 2 seconds are to be written
+in the data track's mode.
+(libburn compares DATA FORM rather than burn_track.mode . Wrong ?)
+(libburn currently does only 2 seconds and the second part of Pre-gap. There is
+an issue with burn_track.pregap1 about this. Seems libburn mistakes the pause
+preceding track 1 for a part 2 of an extended Pre-gap.)
+
+If a data track is followed by an audio track then it gets a Post-gap of at
+least two seconds.
+No example of Post-gap is given for Cue Sheet. Maybe it is to be added to the
+track, or maybe it gets an own Cue Sheet entry ... who knows ?
+(libburn contains write code for pregap1, pregap2 and postgap. But only
+pregap2 ever gets activated. Once hackingly for the first 2 second pause, once
+incompletely for a change of DATA FORM.)
+
+Seems nobody ever tested this. Libburnia simply knows no use case where the
+correctness of Pre-gap and Post-gap would become evident.
 
 
 -------------------------------------------------------------------------------
