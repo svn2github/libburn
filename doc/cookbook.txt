@@ -64,11 +64,11 @@ It is done when 00h succeeds and 03h reports 0 in PROGRESS INDICATION
 Writing a session to CD in TAO mode :
 
 The writing method for blank or appendable media is the same. A new session
-will get automatically by the first track ehen it is written. If the media is
-blank then the new session will be the first and only one in the table of
-content. If the media is appendable then a new session will be appended to
-the existing sessions. In any case the new track will be the first one in
-the new session.
+will get created automatically by the first track when it is written. If the
+media is blank then the new session will be the first and only one in the
+table of content. If the media is appendable then a new session will be
+appended to the existing sessions. In any case the new track will be the
+first one in the new session.
 
 Speed may be set by BBh SET CD SPEED parameter Drive Write Speed. Note that
 kbytes/sec means 1000 bytes/sec and not 1024/sec. Rotational control should
@@ -111,6 +111,10 @@ can be written.
 When writing is done, it is mandatory to force the drive's buffer to media by
 35h SYNCHRONIZE CACHE.
 (mmc5r03c.pdf, 6.41)
+
+A track must at least contain 300 payload blocks: 4 seconds of audio or
+600 KiB of data.
+(mmc5r03c.pdf 6.3.3.1.2)
 
 The track has to be closed by 5Bh CLOSE TRACK SESSION Close Function 001b.
 Older MMC specifies a valid Logical Track Number FFh to depict the open track.
@@ -200,6 +204,8 @@ sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
 
 
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
                                  SAO CD Cookbook
 -------------------------------------------------------------------------------
 Guided by reading libburn/*    from http://icculus.org/burn
@@ -236,13 +242,6 @@ entirely of data tracks. For mixed sessions, only TAO is usable yet.
 
 -------------------------------------------------------------------------------
 Composing a Cue Sheet (either audio or data, but not mixed) :
-
-Speed may be set by BBh SET CD SPEED parameter Drive Write Speed. Note that
-kbytes/sec means 1000 bytes/sec and not 1024/sec. Rotational control should
-be set to 00b. 1x CD speed is 176.4 kbytes/sec. Speed is usually set to the
-next lower possible value by the drive. So it is helpful to add a few
-kbytes/sec just in case the drive has rounding problems.
-(mmc5r03c.pdf 6.37)
 
 The Cue Sheet will get submitted to the drive by 5Dh SEND CUE SHEET.
 Each entry of the sheet is of 8 bytes size. Its fields are named
@@ -282,6 +281,10 @@ TNO gives the track number. MIN, SEC, FRAME give the MSF address which becomes
 the start address of the track. The MSF address is then increased by the size
 of the track (to be used with next track or with lead-out).
 
+A track must at least contain 300 payload blocks: 4 seconds of audio or
+600 KiB of data.
+(mmc5r03c.pdf 6.33.3.6)
+
 At the end of the session there is a lead-out entry
 (CTL|ADR,AAh,01h,01h,00h,MIN,SEC,FRAME)
 marking the end of the last track. (With libburn CTL is as of the last track.)
@@ -290,11 +293,15 @@ marking the end of the last track. (With libburn CTL is as of the last track.)
 -------------------------------------------------------------------------------
 Writing the prepared session :
 
-As with write mode TAO, speed may be set by BBh SET CD SPEED.
-See TAO Multi-Session CD Cookbook.
+Speed may be set by BBh SET CD SPEED parameter Drive Write Speed. Note that
+kbytes/sec means 1000 bytes/sec and not 1024/sec. Rotational control should
+be set to 00b. 1x CD speed is 176.4 kbytes/sec. Speed is usually set to the
+next lower possible value by the drive. So it is helpful to add a few
+kbytes/sec just in case the drive has rounding problems.
+(mmc5r03c.pdf 6.37)
 
-Nearly as with TAO a Write Parameters mode page 05h has to be composed and
-transmitted via 55h MODE SELECT. This page describes the following parameters:
+A Write Parameters mode page 05h has to be composed and transmitted via
+55h MODE SELECT. This page describes the following parameters:
  BUFE             Buffer Underrun protection      0=off, 1=on
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              02h = SAO
@@ -386,6 +393,8 @@ incompletely for a change of DATA FORM.)
 Seems nobody ever tested this. Libburnia simply knows no use case where the
 correctness of Pre-gap and Post-gap would become evident.
 
+
+-------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
                            Overwriteable DVD Cookbook
