@@ -7,12 +7,6 @@ AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([subdir-objects])
 
-dnl A61101 This breaks Linux build (makes 32 bit off_t)
-dnl        http://sourceware.org/autobook/autobook/autobook_96.html says
-dnl        one must include some config.h and this was a pitfall.
-dnl        So why dig the pit at all ?
-dnl AM_CONFIG_HEADER(config.h)
-
 dnl Making releases:
 dnl   BURN_MICRO_VERSION += 1;
 dnl   BURN_INTERFACE_AGE += 1;
@@ -75,12 +69,6 @@ LIBTOOL="$LIBTOOL --silent"
 AC_PROG_INSTALL
 
 AC_CHECK_HEADERS()
-
-AC_CHECK_MEMBER([struct tm.tm_gmtoff],
-	[AC_DEFINE(HAVE_TM_GMTOFF, 1,
-		[Define this if tm structure includes a tm_gmtoff entry.])],
-	,
-	[#include <time.h>])
 
 THREAD_LIBS=-lpthread
 AC_SUBST(THREAD_LIBS)
