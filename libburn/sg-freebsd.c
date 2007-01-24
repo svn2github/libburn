@@ -1,19 +1,5 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
-
-
-/* Revives old enumerate_common(). New version delegates much work
-   to methods in drive, mmc, spc, and sbc .
-*/
-#define Scsi_freebsd_make_own_enumeratE 1
-
-
-/* Revives old scsi_enumerate_drives(). New version delegates most work to
-   sg_give_next_adr().
-*/
-#define Scsi_freebsd_old_scsi_enumeratE 1
-
-
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
@@ -45,6 +31,13 @@
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
+struct burn_drive_enumeration_state {
+	int fd;
+	union ccb ccb;
+	unsigned int i;
+	int skip_device;
+};
+
 static void enumerate_common(char *fname, int bus_no, int host_no,
 			     int channel_no, int target_no, int lun_no);
 
@@ -57,33 +50,20 @@ int burn_drive_is_banned(char *device_address);
 int mmc_function_spy(char * text);
 
 
-#ifdef Scsi_freebsd_old_scsi_enumeratE
-
-int sg_give_next_adr(burn_drive_enumerator_t *idx,
-		     char adr[], int adr_size, int initialize)
-{
-	return (0);
-}
-
-int sg_is_enumerable_adr(char* adr)
-{
-	return (0);
-}
-
-int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
-                       int *target_no, int *lun_no)
-{
-	return (0);
-}
-
-#else /* Scsi_freebsd_old_scsi_enumeratE */
-
 /* ts A61021 : Moved most code from scsi_enumerate_drives under
                sg_give_next_adr() */
 /* Some helper functions for scsi_give_next_adr() */
 
-static int sg_init_enumerator(burn_drive_enumerator_t *idx)
+static int sg_init_enumerator(burn_drive_enumerator_t *idx_)
 {
+	struct burn_drive_enumeration_state *idx;
+	int bufsize;
+
+	idx = malloc(sizeof(*idx));
+	if (idx == NULL) {
+		warnx("can't malloc memory for enumerator");
+		return -1;
+	}
 	idx->skip_device = 0;
 
 	if ((idx->fd = open(XPT_DEVICE, O_RDWR)) == -1) {
@@ -98,12 +78,13 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx)
 	idx->ccb.ccb_h.target_lun = CAM_LUN_WILDCARD;
 
 	idx->ccb.ccb_h.func_code = XPT_DEV_MATCH;
-	idx->bufsize = sizeof(struct dev_match_result) * 100;
-	idx->ccb.cdm.match_buf_len = idx->bufsize;
-	idx->ccb.cdm.matches = (struct dev_match_result *)malloc(idx->bufsize);
+	bufsize = sizeof(struct dev_match_result) * 100;
+	idx->ccb.cdm.match_buf_len = bufsize;
+	idx->ccb.cdm.matches = (struct dev_match_result *)malloc(bufsize);
 	if (idx->ccb.cdm.matches == NULL) {
 		warnx("can't malloc memory for matches");
 		close(idx->fd);
+		free(idx);
 		return -1;
 	}
 	idx->ccb.cdm.num_matches = 0;
@@ -116,12 +97,28 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx)
 	idx->ccb.cdm.num_patterns = 0;
 	idx->ccb.cdm.pattern_buf_len = 0;
 
+	*idx_ = idx;
+
 	return 1;
 }
 
-
-static int sg_next_enumeration_buffer(burn_drive_enumerator_t *idx)
+static void sg_destroy_enumerator(burn_drive_enumerator_t *idx_)
 {
+	struct burn_drive_enumeration_state *idx = *idx_;
+
+	if(idx->fd != -1)
+		close(idx->fd);
+
+	free(idx->ccb.cdm.matches);
+	free(idx);
+
+	*idx_ = NULL;
+}
+
+static int sg_next_enumeration_buffer(burn_drive_enumerator_t *idx_)
+{
+	struct burn_drive_enumeration_state *idx = *idx_;
+
 	/*
 	 * We do the ioctl multiple times if necessary, in case there are
 	 * more than 100 nodes in the EDT.
@@ -152,95 +149,94 @@ static int sg_next_enumeration_buffer(burn_drive_enumerator_t *idx)
     @return 1 = reply is a valid address , 0 = no further address available
            -1 = severe error (e.g. adr_size too small)
 */
-int sg_give_next_adr(burn_drive_enumerator_t *idx,
+int sg_give_next_adr(burn_drive_enumerator_t *idx_,
 		     char adr[], int adr_size, int initialize)
 {
+	struct burn_drive_enumeration_state *idx;
 	int ret;
 
 	if (initialize == 1) {
-		ret = sg_init_enumerator(idx);
+		ret = sg_init_enumerator(idx_);
 		if (ret<=0)
 			return ret;
 	} else if (initialize == -1) {
-		if(idx->fd != -1)
-			close(idx->fd);
-		idx->fd = -1;
+		sg_destroy_enumerator(idx_);
 		return 0;
 	}
 
+	idx = *idx_;
 
-try_item:; /* This spaghetti loop keeps the number of tabs small  */
+	do {
+		if (idx->i >= idx->ccb.cdm.num_matches) {
+			ret = sg_next_enumeration_buffer(idx_);
+			if (ret<=0)
+				return -1;
+			idx->i = 0;
+		} else
+			(idx->i)++;
 
-	/* Loop content from old scsi_enumerate_drives() */
+		while (idx->i < idx->ccb.cdm.num_matches) {
+			switch (idx->ccb.cdm.matches[idx->i].type) {
+			case DEV_MATCH_BUS:
+				break;
+			case DEV_MATCH_DEVICE: {
+				struct device_match_result* result;
 
-	while (idx->i >= idx->ccb.cdm.num_matches) {
-		ret = sg_next_enumeration_buffer(idx);
-		if (ret<=0)
-			return -1;
-		if (!((idx->ccb.ccb_h.status == CAM_REQ_CMP)
-			&& (idx->ccb.cdm.status == CAM_DEV_MATCH_MORE)) )
-			return 0;
-		idx->i = 0;
-	}
+				result = &(idx->ccb.cdm.matches[idx->i].result.device_result);
+				if (result->flags & DEV_RESULT_UNCONFIGURED)
+					idx->skip_device = 1;
+				else
+					idx->skip_device = 0;
+				break;
+			}
+			case DEV_MATCH_PERIPH: {
+				struct periph_match_result* result;
 
-	switch (idx->ccb.cdm.matches[idx->i].type) {
-	case DEV_MATCH_BUS:
-		break;
-	case DEV_MATCH_DEVICE: {
-		struct device_match_result* result;
+				result = &(idx->ccb.cdm.matches[idx->i].result.periph_result);
+				if (idx->skip_device || 
+				    strcmp(result->periph_name, "pass") == 0)
+					break;
+				ret = snprintf(adr, adr_size, "/dev/%s%d",
+					 result->periph_name, result->unit_number);
+				if(ret >= adr_size)
+					return -1;
 
-		result = &(idx->ccb.cdm.matches[i].result.device_result);
-		if (result->flags & DEV_RESULT_UNCONFIGURED)
-			idx->skip_device = 1;
-		else
-			idx->skip_device = 0;
-		break;
-	}
-	case DEV_MATCH_PERIPH: {
-		struct periph_match_result* result;
-		char buf[64];
+				/* Found next enumerable address */
+				return 1;
 
-		result = &(idx->ccb.cdm.matches[i].result.periph_result);
-		if (idx->skip_device || 
-		    strcmp(result->periph_name, "pass") == 0)
-			break;
-		snprintf(buf, sizeof (buf), "/dev/%s%d",
-			 result->periph_name, result->unit_number);
-		if(adr_size <= strlen(buf)
-			return -1;
-		strcpy(adr, buf);
+			}
+			default:
+				/* printf(stderr, "unknown match type\n"); */
+				break;
+			}
+			(idx->i)++;
+		}
+	} while ((idx->ccb.ccb_h.status == CAM_REQ_CMP)
+		&& (idx->ccb.cdm.status == CAM_DEV_MATCH_MORE));
 
-		/* Found next enumerable address */
-		return 1;
-
-	}
-	default:
-		/* printf(stderr, "unknown match type\n"); */
-		break;
-	}
-
-	(idx->i)++;
-	goto try_item; /* Regular function exit is return 1 above  */
+	return 0;
 }
 
 
 int sg_is_enumerable_adr(char* adr)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1;
+	int ret;
 	char buf[64];
 
+	ret = sg_init_enumerator(&idx);
+	if (ret <= 0)
+		return 0;
 	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
-		initialize = 0;
+		ret = sg_give_next_adr(&idx, buf, sizeof(buf), 0);
 		if (ret <= 0)
-	break;
+			break;
 		if (strcmp(adr, buf) == 0) {
-			sg_give_next_adr(&idx, buf, sizeof(buf), -1);
+			sg_destroy_enumerator(&idx);
 			return 1;
 		}
 	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
+	sg_destroy_enumerator(&idx);
 	return (0);
 }
 
@@ -252,31 +248,31 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1;
+	int ret;
 	char buf[64];
 	struct periph_match_result* result;
 
+	ret = sg_init_enumerator(&idx);
+	if (ret <= 0)
+		return 0;
 	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
-		initialize = 0;
+		ret = sg_give_next_adr(&idx, buf, sizeof(buf), 0);
 		if (ret <= 0)
-	break;
-		if (strcmp(adr, buf) != 0)
-	continue;
-		result = &(idx->ccb.cdm.matches[i].result.periph_result);
-		*bus_no = result->path_id;
-		*host_no = result->path_id;
-		*channel_no = 0;
-		*target_no = result->target_id
-		*lun_no = result->target_lun;
-		sg_give_next_adr(&idx, buf, sizeof(buf), -1);
-		return 1;
+			break;
+		if (strcmp(path, buf) == 0) {
+			result = &(idx->ccb.cdm.matches[idx->i].result.periph_result);
+			*bus_no = result->path_id;
+			*host_no = result->path_id;
+			*channel_no = 0;
+			*target_no = result->target_id;
+			*lun_no = result->target_lun;
+			sg_destroy_enumerator(&idx);
+			return 1;
+		}
 	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
+	sg_destroy_enumerator(&idx);
 	return (0);
 }
-
-#endif /* ! Scsi_freebsd_old_scsi_enumeratE */
 
 
 int sg_close_drive(struct burn_drive * d)
@@ -295,125 +291,28 @@ int sg_drive_is_open(struct burn_drive * d)
 
 int scsi_enumerate_drives(void)
 {
-
-#ifdef Scsi_freebsd_old_scsi_enumeratE
-
-	union ccb ccb;
-	int bufsize, fd;
-	unsigned int i;
-	int skip_device = 0;
-
-	if ((fd = open(XPT_DEVICE, O_RDWR)) == -1) {
-		warn("couldn't open %s", XPT_DEVICE);
-		return;
-	}
-
-	bzero(&ccb, sizeof(union ccb));
-
-	ccb.ccb_h.path_id = CAM_XPT_PATH_ID;
-	ccb.ccb_h.target_id = CAM_TARGET_WILDCARD;
-	ccb.ccb_h.target_lun = CAM_LUN_WILDCARD;
-
-	ccb.ccb_h.func_code = XPT_DEV_MATCH;
-	bufsize = sizeof(struct dev_match_result) * 100;
-	ccb.cdm.match_buf_len = bufsize;
-	ccb.cdm.matches = (struct dev_match_result *)malloc(bufsize);
-	if (ccb.cdm.matches == NULL) {
-		warnx("can't malloc memory for matches");
-		close(fd);
-		return;
-	}
-	ccb.cdm.num_matches = 0;
-
-	/*
-	 * We fetch all nodes, since we display most of them in the default
-	 * case, and all in the verbose case.
-	 */
-	ccb.cdm.num_patterns = 0;
-	ccb.cdm.pattern_buf_len = 0;
-
-	/*
-	 * We do the ioctl multiple times if necessary, in case there are
-	 * more than 100 nodes in the EDT.
-	 */
-	do {
-		if (ioctl(fd, CAMIOCOMMAND, &ccb) == -1) {
-			warn("error sending CAMIOCOMMAND ioctl");
-			break;
-		}
-
-		if ((ccb.ccb_h.status != CAM_REQ_CMP)
-		 || ((ccb.cdm.status != CAM_DEV_MATCH_LAST)
-		    && (ccb.cdm.status != CAM_DEV_MATCH_MORE))) {
-			warnx("got CAM error %#x, CDM error %d\n",
-			      ccb.ccb_h.status, ccb.cdm.status);
-			break;
-		}
-
-		for (i = 0; i < ccb.cdm.num_matches; i++) {
-			switch (ccb.cdm.matches[i].type) {
-			case DEV_MATCH_BUS:
-				break;
-			case DEV_MATCH_DEVICE: {
-				struct device_match_result* result;
-
-				result = &ccb.cdm.matches[i].result.device_result;
-
-				if (result->flags & DEV_RESULT_UNCONFIGURED)
-					skip_device = 1;
-				else
-					skip_device = 0;
-
-				break;
-			}
-			case DEV_MATCH_PERIPH: {
-				struct periph_match_result* result;
-				char buf[64];
-
-				result = &ccb.cdm.matches[i].result.periph_result;
-				if (skip_device || strcmp(result->periph_name, "pass") == 0)
-					break;
-				snprintf(buf, sizeof (buf), "/dev/%s%d", result->periph_name, result->unit_number);
-				/* ts A51221 */
-				if (burn_drive_is_banned(buf))
-					break;
-
-				enumerate_common(buf, result->path_id, result->path_id, 0,
-						 result->target_id, result->target_lun);
-				break;
-			}
-			default:
-				fprintf(stdout, "unknown match type\n");
-				break;
-			}
-		}
-
-	} while ((ccb.ccb_h.status == CAM_REQ_CMP)
-		&& (ccb.cdm.status == CAM_DEV_MATCH_MORE));
-
-	close(fd);
-
-#else /* Scsi_freebsd_old_scsi_enumeratE */
-
 	burn_drive_enumerator_t idx;
-	int initialize = 1;
+	int ret;
 	char buf[64];
+	struct periph_match_result* result;
 
+	ret = sg_init_enumerator(&idx);
+	if (ret <= 0)
+		return 0;
 	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
-		initialize = 0;
+		ret = sg_give_next_adr(&idx, buf, sizeof(buf), 0);
 		if (ret <= 0)
-	break;
+			break;
 		if (burn_drive_is_banned(buf))
-	continue; 
-		enumerate_common(buf, idx.result->path_id, idx.result->path_id,
-				0, idx.result->target_id, 
-				idx.result->target_lun);
+			continue; 
+		result = &idx->ccb.cdm.matches[idx->i].result.periph_result;
+		enumerate_common(buf, result->path_id, result->path_id,
+				0, result->target_id, 
+				result->target_lun);
 	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
+	sg_destroy_enumerator(&idx);
 
-#endif /* ! Scsi_freebsd_old_scsi_enumeratE */
-
+	return 1;
 }
 
 
@@ -551,7 +450,10 @@ int sg_grab(struct burn_drive *d)
 
 	mmc_function_spy("sg_grab");
 
-	assert(d->cam == NULL);
+	if (burn_drive_is_open(d)) {
+		d->released = 0;
+		return 1;
+	}
 
 	cam = cam_open_device(d->devname, O_RDWR);
 	if (cam == NULL) {
@@ -591,6 +493,7 @@ int sg_release(struct burn_drive *d)
 	mmc_function_spy("sg_release ----------- closing.");
 
 	sg_close_drive(d);
+	d->released = 1;
 	return 0;
 }
 

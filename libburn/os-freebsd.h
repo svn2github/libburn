@@ -7,10 +7,6 @@
    Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
 */
 
-#ifndef BURN_OS_H_INCLUDED
-#define BURN_OS_H_INCLUDED 1
-
-
 /** List of all signals which shall be caught by signal handlers and trigger
     a graceful abort of libburn. (See man 7 signal.)
 */
@@ -52,14 +48,9 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
     which are now local in sg_enumerate() . So that sg_give_next_adr()
     can work in BSD and sg_enumerate() can use it.
 */
-#define BURN_OS_DEFINE_DRIVE_ENUMERATOR_T \
-struct burn_drive_enumeration_state { \
-        union ccb ccb; \
-        int bufsize, fd; \
-        unsigned int i; \
-        int skip_device; \
-}; \
-typedef struct burn_drive_enumeration_state burn_drive_enumerator_t;
+#define BURN_OS_DEFINE_DRIVE_ENUMERATOR_T  \
+struct burn_drive_enumeration_state; \
+typedef struct burn_drive_enumeration_state *burn_drive_enumerator_t;
 
 
 /* The list of operating system dependent elements in struct burn_drive.
@@ -67,7 +58,4 @@ typedef struct burn_drive_enumeration_state burn_drive_enumerator_t;
 */
 #define BURN_OS_TRANSPORT_DRIVE_ELEMENTS \
 struct cam_device* cam;
-
-
-#endif /* ! BURN_OS_H_INCLUDED */
 
