@@ -317,7 +317,7 @@ void burn_track_clear_isrc(struct burn_track *t)
 
 int burn_track_get_sectors(struct burn_track *t)
 {
-	int size;
+	off_t size;
 	int sectors, seclen;
 
 	seclen = burn_sector_length(t->mode);
