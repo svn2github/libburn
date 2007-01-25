@@ -88,5 +88,8 @@ int burn_track_get_shortage(struct burn_track *t);
 int burn_track_is_open_ended(struct burn_track *t);
 int burn_track_is_data_done(struct burn_track *t);
 
+/* ts A70125 */
+int burn_track_set_sectors(struct burn_track *t, int sectors);
+
 
 #endif /* BURN__STRUCTURE_H */

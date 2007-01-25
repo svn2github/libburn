@@ -298,7 +298,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  struct burn_session *session,
 					  int nwa)
 {
-	int i, m, s, f, form, pform, runtime = -150, ret;
+	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
 	unsigned char ctladr;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
@@ -451,7 +451,20 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		if (ret <= 0)
 			goto failed;
 
-		runtime += burn_track_get_sectors(tar[i]);
+		/* ts A70125 : 
+		   Still not understanding the sense behind linking tracks,
+		   i decided to at least enforce the MMC specs' minimum
+		   track length.
+		*/ 
+		track_length = burn_track_get_sectors(tar[i]);
+		if (track_length < 300) {
+			track_length = 300;
+			if (!tar[i]->pad)
+				tar[i]->pad = 1;
+			burn_track_set_sectors(tar[i], track_length);
+		}
+		runtime += track_length;
+
 /* if we're padding, we'll clear any current shortage.
    if we're not, we'll slip toc entries by a sector every time our
    shortage is more than a sector

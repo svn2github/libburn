@@ -290,6 +290,9 @@ struct burn_source {
 	/** Get the size of the source's data */
 	off_t (*get_size)(struct burn_source *);
 
+	/** Set the size of the source's data */
+	int (*set_size)(struct burn_source *source, off_t size);
+
 	/** Clean up the source specific data */
 	void (*free_data)(struct burn_source *);
 

@@ -71,6 +71,8 @@ static off_t file_size(struct burn_source *source)
 	struct stat buf;
 	struct burn_source_file *fs = source->data;
 
+	if (fs->fixed_size > 0)
+		return fs->fixed_size;
 	if (fstat(fs->datafd, &buf) == -1)
 		return (off_t) 0;
 	/* for now we keep it compatible to the old (int) return value */
@@ -78,6 +80,17 @@ static off_t file_size(struct burn_source *source)
 		return (off_t) 1308622848;
 	return (off_t) buf.st_size;
 }
+
+
+/* ts A70125 */
+static int file_set_size(struct burn_source *source, off_t size)
+{
+	struct burn_source_file *fs = source->data;
+
+	fs->fixed_size = size;
+	return 1;
+}
+
 
 struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 {
@@ -103,12 +116,16 @@ struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 	if (subpath)
 		fs->subfd = fd2;
 
+	/* ts A70125 */
+	fs->fixed_size = 0;
+
 	src = burn_source_new();
 	src->read = file_read;
 	if (subpath)
 		src->read_sub = file_read_sub;
 
 	src->get_size = file_size;
+	src->set_size = file_set_size;
 	src->free_data = file_free;
 	src->data = fs;
 	return src;
@@ -131,6 +148,17 @@ static off_t fd_get_size(struct burn_source *source)
 		return (off_t) 1308622848;
 	return buf.st_size;
 }
+
+
+/* ts A70125 */
+static int fd_set_size(struct burn_source *source, off_t size)
+{
+	struct burn_source_fd *fs = source->data;
+
+	fs->fixed_size = size;
+	return 1;
+}
+
 
 static int fd_read(struct burn_source *source,
 		     unsigned char *buffer,
@@ -180,6 +208,7 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 	if(subfd != -1)
 		src->read = fd_read_sub;
 	src->get_size = fd_get_size;
+	src->set_size = fd_set_size;
 	src->free_data = fd_free_data;
 	src->data = fs;
 	return src;

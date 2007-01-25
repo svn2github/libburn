@@ -317,6 +317,7 @@ void burn_track_clear_isrc(struct burn_track *t)
 
 int burn_track_get_sectors(struct burn_track *t)
 {
+	/* ts A70125 : was int */
 	off_t size;
 	int sectors, seclen;
 
@@ -328,6 +329,22 @@ int burn_track_get_sectors(struct burn_track *t)
 	burn_print(1, "%d sectors of %d length\n", sectors, seclen);
 	return sectors;
 }
+
+
+/* ts A70125 */
+int burn_track_set_sectors(struct burn_track *t, int sectors)
+{
+	off_t size, seclen;
+	int ret;
+
+	seclen = burn_sector_length(t->mode);
+	size = seclen * (off_t) sectors - (off_t) t->offset - (off_t) t->tail;
+	if (size < 0)
+		return 0;
+	ret = t->source->set_size(t->source, size);
+	return ret;
+}
+
 
 /* ts A61031 */
 int burn_track_is_open_ended(struct burn_track *t)
