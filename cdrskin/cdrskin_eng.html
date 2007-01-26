@@ -157,7 +157,7 @@ rw-permissions and retry the bus scan as non-superuser.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.3.0.pl00.tar.gz">cdrskin-0.3.0.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.3.0.pl01.tar.gz">cdrskin-0.3.0.pl01.tar.gz</A>
 (540 KB).
 </DD>
 <DD>
@@ -168,14 +168,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.3.0.pl00-x86-suse9_0.tar.gz">
-cdrskin_0.3.0.pl00-x86-suse9_0.tar.gz</A>, (75 KB),
+<DD><A HREF="cdrskin_0.3.0.pl01-x86-suse9_0.tar.gz">
+cdrskin_0.3.0.pl01-x86-suse9_0.tar.gz</A>, (75 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.3.0.pl00-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.0.pl00-x86-suse9_0-static.tar.gz</A>, (275 KB), -static compiled,
+<DD><A HREF="cdrskin_0.3.0.pl01-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.0.pl01-x86-suse9_0-static.tar.gz</A>, (275 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -213,6 +213,14 @@ single-track session</LI>
 <LI>Emulation of new wodim option msifile=path</LI>
 </UL>
 </P>
+<P>
+Bug fix towards previous patch level 0:
+<UL>
+<LI>Tracks >= 2 GB were only possible via a pipe to stdin but not
+directly from a disk file</LI>
+</UL>
+</P>
+
 
 <HR>
 
