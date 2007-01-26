@@ -21,6 +21,10 @@ struct burn_source *burn_null_source_new(void)
 	src->read_sub = NULL;
 
 	src->get_size = 0;
+
+	/* ts A70126 */
+	src->set_size = NULL;
+
 	src->free_data = NULL;
 	src->data = NULL;
 	return src;
