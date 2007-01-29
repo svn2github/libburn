@@ -573,6 +573,11 @@ were sequentially written from blank state.
 Profile transition from formatted 0013h to unformatted 0014h is done by
 A1h BLANK.
 (mmc5r03c.pdf, 6.2)
+Experiments on my drives indicate that only Blanking Type 000b "Blank the disc"
+achieves neat media. Media blanked via type 001b offer no feature 0021h and
+stall cdrecord or libburn already when those media get examined. growisofs can
+burn them - but only via DAO (feature 002Fh which prescribes Write Type 2).
+(mmc5r03c.pdf 5.3.11, 5.3.25)
 
 For becoming overwriteable such media need to be treated by command 04h FORMAT
 UNIT.
