@@ -44,6 +44,11 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_support_dvd_raM 1
 
 
+/* ts A70129 >>> EXPERIMENTAL
+#define Libburn_support_dvd_r_seQ 1
+*/
+
+
 /* Progress report (with Libburn_support_dvd_plus_rW defined):
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
@@ -590,6 +595,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 */
 
 		d->status = BURN_DISC_BLANK;
+		d->last_track_no = 0;
 		break;
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
@@ -612,6 +618,14 @@ void mmc_read_disc_info(struct burn_drive *d)
 	   3=completed
 	*/
 	d->bg_format_status = data[7] & 3;
+
+	if (d->status == BURN_DISC_BLANK)
+                d->last_track_no = 1; /* The "incomplete track" */
+	else
+		/* ts A70129 : mmc5r03c.pdf 6.22.3.1.7
+		   This includes the "incomplete track" if the disk is
+		   appendable. I.e number of complete tracks + 1. */
+		d->last_track_no = (data[11] << 8) | data[6];
 
 	/* Preliminarily declare blank:
 	   ts A61219 : DVD+RW (is not bg_format_status==0 "blank")
@@ -1066,13 +1080,17 @@ static char *mmc_obtain_profile_name(int profile_number)
 void mmc_get_configuration(struct burn_drive *d)
 {
 	struct buffer buf;
-	int len, cp;
+	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
+	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command c;
 
 	d->current_profile = 0;
         d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
+	d->current_has_feat21h = 0;
+	d->current_feat21h_link_size = -1;
+	d->current_feat2fh_byte4 = -1;
 
 	mmc_function_spy("mmc_get_configuration");
 	memcpy(c.opcode, MMC_GET_CONFIGURATION, sizeof(MMC_GET_CONFIGURATION));
@@ -1087,9 +1105,9 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (c.error)
 		return;
 	len = (c.page->data[0] << 24)
-		+ (c.page->data[1] << 16)
-		+ (c.page->data[2] << 8)
-		+ c.page->data[3];
+		| (c.page->data[1] << 16)
+		| (c.page->data[2] << 8)
+		| c.page->data[3];
 
 	if (len<8)
 		return;
@@ -1112,10 +1130,133 @@ void mmc_get_configuration(struct burn_drive *d)
 		d->current_is_supported_profile = 1;
 #endif
 
-	/* >>> see mmc5r03c.pdf 5.2
-	Interpret list of profile and feature descriptors.
+/* Enable this to get loud and repeated reports about the feature set :
+#define Libburn_print_feature_descriptorS 1
+*/
+	/* ts A70127 : Interpret list of profile and feature descriptors.
+ 	see mmc5r03c.pdf 5.2
+	>>> Ouch: What to do if list is larger than buffer size.
+	          Specs state that the call has to be repeated.
 	*/
+	up_to = c.page->data + (len < BUFFER_SIZE ? len : BUFFER_SIZE);
 
+#ifdef Libburn_print_feature_descriptorS
+	fprintf(stderr,
+	"-----------------------------------------------------------------\n");
+	fprintf(stderr,
+	  "LIBBURN_EXPERIMENTAL : feature list length = %d , shown = %d\n",
+		len, up_to - c.page->data);
+#endif /* Libburn_print_feature_descriptorS */
+
+	for (descr = c.page->data + 8; descr + 3 < up_to; descr += descr_len) {
+		descr_len = 4 + descr[3];
+		feature_code = (descr[0] << 8) | descr[1];
+		if (only_current && !(descr[2] & 1))
+	continue;
+
+#ifdef Libburn_print_feature_descriptorS
+		fprintf(stderr,
+			"LIBBURN_EXPERIMENTAL : %s feature %4.4Xh\n",
+			descr[2] & 1 ? "+" : "-",
+			feature_code);
+#endif /* Libburn_print_feature_descriptorS */
+
+		if (feature_code == 0x0) {
+			prf_end = descr + 4 + descr[3];
+			for (prf = descr + 4; prf + 2 < prf_end; prf += 4) {
+				if (only_current && !(prf[2] & 1))
+			continue;
+				prf_number =  (prf[0] << 8) | prf[1];
+
+#ifdef Libburn_print_feature_descriptorS
+				fprintf(stderr,
+			"LIBBURN_EXPERIMENTAL :   %s profile %4.4Xh  \"%s\"\n",
+					prf[2] & 1 ? "+" : "-",
+					prf_number,
+					mmc_obtain_profile_name(prf_number));
+#endif /* Libburn_print_feature_descriptorS */
+
+			}
+
+		} else if (feature_code == 0x21) {
+			int i;
+
+			d->current_has_feat21h = (descr[2] & 1);
+			for (i = 0; i < descr[7]; i++) {
+				if (i == 0 || descr[8 + i] == 16)
+					d->current_feat21h_link_size = 
+								descr[8 + i];
+
+#ifdef Libburn_print_feature_descriptorS
+				fprintf(stderr,
+				"LIBBURN_EXPERIMENTAL :   + Link Size = %d\n",
+					descr[8 + i]);
+#endif /* Libburn_print_feature_descriptorS */
+
+			}
+
+		} else if (feature_code == 0x2F) {
+			if (descr[2] & 1)
+				d->current_feat2fh_byte4 = descr[4];
+
+#ifdef Libburn_print_feature_descriptorS
+			fprintf(stderr, "LIBBURN_EXPERIMENTAL :     BUF = %d , Test Write = %d , DVD-RW = %d\n",
+				!!(descr[4] & 64), !!(descr[4] & 4),
+				!!(descr[4] & 2));
+#endif /* Libburn_print_feature_descriptorS */
+			
+#ifdef Libburn_print_feature_descriptorS
+		} else if (feature_code == 0x01) {
+			int pys_if_std = 0;
+			char *phys_name = "";
+
+			pys_if_std = (descr[4] << 24) | (descr[5] << 16) |
+					(descr[6] << 8) | descr[9];
+			if (pys_if_std == 1)
+				phys_name = "SCSI Family";
+			else if(pys_if_std == 2)
+				phys_name = "ATAPI";
+			else if(pys_if_std == 3 || pys_if_std == 4 ||
+				 pys_if_std == 6)
+				phys_name = "IEEE 1394 FireWire";
+			else if(pys_if_std == 7)
+				phys_name = "Serial ATAPI";
+			else if(pys_if_std == 7)
+				phys_name = "USB";
+			
+			fprintf(stderr,
+	"LIBBURN_EXPERIMENTAL :     Phys. Interface Standard %Xh \"%s\"\n",
+				pys_if_std, phys_name);
+
+		} else if (feature_code == 0x107) {
+
+			fprintf(stderr, "LIBBURN_EXPERIMENTAL :     CD SPEED = %d , page 2Ah = %d , SET STREAMING = %d\n",
+				!!(descr[4] & 8), !!(descr[4] & 4),
+				!!(descr[4] & 2));
+
+		} else if (feature_code == 0x108 || feature_code == 0x10c) {
+			int i, c_limit;
+
+			fprintf(stderr, "LIBBURN_EXPERIMENTAL :     %s = ", 
+				feature_code == 0x108 ? 
+				"Drive Serial Number" : "Drive Firmware Date");
+			c_limit = descr[3] - 2 * (feature_code == 0x10c);
+			for (i = 0; i < c_limit; i++)
+				if (descr[4 + i] < 0x20 || descr[4 + i] > 0x7e
+					|| descr[4 + i] == '\\')
+					fprintf(stderr,"\\%2.2X",descr[4 + i]);
+				else
+					fprintf(stderr, "%c", descr[4 + i]);
+			fprintf(stderr, "\n");
+
+#endif /* Libburn_print_feature_descriptorS */
+
+		}
+	}
+#ifdef Libburn_support_dvd_r_seQ
+	if ((cp == 0x11 || cp == 0x14) && d->current_has_feat21h)
+		d->current_is_supported_profile = 1;
+#endif
 }
 
 
@@ -1663,15 +1804,19 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->start_lba = -2000000000;
 	d->end_lba = -2000000000;
 
-	/* ts A61201 */
+	/* ts A61201 - A70128 */
 	d->erasable = 0;
 	d->current_profile = -1;
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
+	d->current_has_feat21h = 0;
+	d->current_feat21h_link_size = -1;
+	d->current_feat2fh_byte4 = -1;
 	d->needs_close_session = 0;
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
+	d->last_track_no = 0;
 
 	return 1;
 }
@@ -1702,6 +1847,38 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[4] = 8;
 		/* Link size dummy */
 		pd[5] = 0;
+
+	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11)
+			&& d->current_has_feat21h == 1) { /* ts A70128 */
+		/* learned from transport.hxx : page05_setup()
+		   and mmc5r03c.pdf 7.5, 4.2.3.4 Table 17
+		   and spc3r23.pdf 6.8, 7.4.3 */
+		/* BUFE , LS_V = 1, Test Write, Write Type = 00h Incremental */
+		pd[2] = ((!!o->underrun_proof) << 6)
+			| (1 << 5)
+			| ((!!o->simulate) << 4);
+		/* Multi-session , FP = 1 , Track Mode = 5 */
+		pd[3] = ((3 * !!o->multi) << 6) | (1 << 5) | 5;
+		/* Data Block Type = 8 */
+		pd[4] = 8;
+		/* Link Size */
+		if (d->current_feat21h_link_size >= 0)
+			pd[5] = d->current_feat21h_link_size;
+		else
+			pd[5] = 16;
+		if (d->current_feat21h_link_size != 16) {
+			char msg[80];
+
+			sprintf(msg,
+				"Feature 21h Link Size = %d (expected 16)\n",
+				d->current_feat21h_link_size);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg, 0, 0);
+		}
+		/* Packet Size */
+		pd[13] = 16;
+
 	} else {
 		/* Traditional setup for CD */
 		pd[2] = ((!!o->underrun_proof) << 6)

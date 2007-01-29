@@ -347,6 +347,9 @@ int burn_drive_mark_unready(struct burn_drive *d)
 
 	/* ts A61202 */
 	d->current_profile = -1;
+	d->current_has_feat21h = 0;
+	d->current_feat2fh_byte4 = -1;
+
 	d->status = BURN_DISC_UNREADY;
 	if (d->toc_entry != NULL)
 		free(d->toc_entry);

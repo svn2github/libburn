@@ -152,11 +152,28 @@ struct burn_drive
 	int current_is_cd_profile;
 	int current_is_supported_profile;
 
+	/* ts A70128 : MMC-to-MMC feature info from 46h for DVD-RW.
+           Quite internal. Regard as opaque :)
+	*/
+	/* 1 = incremental recording available, 0 = not available */
+	int current_has_feat21h;
+
+	/* Link Size item number 0 from feature 0021h descriptor */
+	int current_feat21h_link_size;
+
+	/* Flags from feature 002Fh feature descriptor mmc5r03c.pdf 5.3.25 :
+	   bit1= DVD-RW supported
+	   bit2= Test Write available
+	   bit3= DVD-R DL supported
+	   bit6= Buffer Under-run Free recording available (page 05h BUFE)
+	*/
+	int current_feat2fh_byte4;
+
 	/* ts A70114 : wether a DVD-RW media holds an incomplete session
 	               (which could need closing after write) */
 	int needs_close_session;
 
-	/* ts A61218 from 46h GET CONFIGURATION  */
+	/* ts A61218 from 51h READ DISC INFORMATION */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
 
 	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
@@ -181,6 +198,11 @@ struct burn_drive
 	int rlba;		/* relative lba in section */
 	int start_lba;
 	int end_lba;
+
+	/* ts A70129 :
+	   from 51h READ DISC INFORMATION Last Track Number in Last Session */
+	int last_track_no;
+
 	int toc_temp;
 	struct burn_disc *disc;	/* disc structure */
 	int block_types[4];

@@ -195,7 +195,11 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 	/* MMC-1 mentions track number 0xFF for "the incomplete track",
 	   MMC-3 does not. I tried both. 0xFF was in effect when other
 	   bugs finally gave up and made way for readable tracks. */
-	d->close_track_session(o->drive, 0, 0xff); /* tnum+1); */
+	/* ts A70129 
+	   Probably the right value would be d->last_track_no+tnum for
+	   appendables
+	*/
+	d->close_track_session(o->drive, 0, 0xff);
 
 	/* ts A61102 */
 	d->busy = BURN_DRIVE_WRITING;
@@ -676,7 +680,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 				/* ts A70121 : This is not possible because
 				   track 1 cannot have a pregap at all.
-				   MMC-5 6.33.3.2 precribes a mandatoy pause
+				   MMC-5 6.33.3.2 precribes a mandatory pause
 				   prior to any track 1. Pre-gap is prescribed
 				   for mode changes like audio-to-data.
 				   To set burn_track.pregap1 for track 1 is
@@ -865,7 +869,50 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 }
 
 
-/* ts A61218 */
+/* ts A70129 : learned much from dvd+rw-tools-7.0/growisofs_mmc.cpp */
+int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o, int tnum)
+{
+	struct burn_drive *d = o->drive;
+	char msg[160];
+	int ret, lba, nwa;
+
+	d->send_write_parameters(d, o);
+	ret = d->get_nwa(d, -1, &lba, &nwa);
+	sprintf(msg, 
+		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d\n",
+		tnum+1, nwa, ret, d->nwa);
+		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg,0,0);
+	if (nwa > d->nwa)
+		d->nwa = nwa;
+	return 1;
+}
+
+
+/* ts A70129 */
+int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
+					struct burn_session *s, int tnum)
+{
+	struct burn_drive *d = o->drive;
+
+	/* only DVD-R or sequential DVD-RW */
+	if (d->current_has_feat21h != 1) /* only with Incremental writing */
+		return 2;
+
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
+	/* 0xff was a name for the last track in MMC-1 but later
+	   it vanished. One would need to determine the absolute
+	   logical track number in multi-session situations.
+	   Probably: d->last_track_no+tnum
+	*/
+	d->close_track_session(d, 0, 0xff); /* CLOSE TRACK, 001b */
+	d->busy = BURN_DRIVE_WRITING;
+	return 1;
+}
+
+
+/* ts A61218 - A70129 */
 int burn_dvd_write_track(struct burn_write_opts *o,
 				struct burn_session *s, int tnum)
 {
@@ -873,12 +920,17 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 	struct buffer *out = d->buffer;
 	int sectors;
-	int i, open_ended = 0, ret= 0;
+	int i, open_ended = 0, ret= 0, is_flushed = 0;
 
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
 
-	/* >>> any type specific track preparations */;
+	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* DVD-R, DVD-RW Sequential */
+		ret = burn_disc_open_track_dvd_minus_r(o, tnum);
+		if (ret <= 0)
+			goto ex;
+	}
 
 	burn_disc_init_track_status(o, s, tnum, sectors);
 	for (i = 0; open_ended || i < sectors; i++) {
@@ -910,14 +962,19 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	ret = burn_write_flush(o, t);
 	if (ret <= 0)
 		goto ex;
+	is_flushed = 1;
 
-	/* >>> any other normal track finalizing */;
-
+	/* Eventually finalize track */
+	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* DVD-R, DVD-RW Sequential */
+		ret = burn_disc_close_track_dvd_minus_r(o, s, tnum);
+		if (ret != 2)
+			goto ex;
+	}
 	ret = 1;
 ex:;
-	if (ret<=0) {
+	if (!is_flushed)
 		d->sync_cache(d); /* burn_write_flush() was not called */
-	}
 	return ret;
 }
 
@@ -961,6 +1018,22 @@ int burn_disc_close_session_dvd_minus_rw(struct burn_write_opts *o,
 }
 
 
+/* ts A70129 : for profile 0x11 DVD-R and 0x14 DVD-RW Sequential */
+int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
+					struct burn_session *s)
+{
+	struct burn_drive *d = o->drive;
+
+	if (d->current_has_feat21h != 1) /* only for Incremental writing */
+		return 2;
+
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
+	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
+	d->busy = BURN_DRIVE_WRITING;
+	return 1;
+}
+
+
 /* ts A61218 */
 int burn_dvd_write_session(struct burn_write_opts *o,
 				struct burn_session *s)
@@ -968,18 +1041,21 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	int i,ret;
         struct burn_drive *d = o->drive;
 
+	/* >>> open_session ? (maybe with DAO) */
+
 	for (i = 0; i < s->tracks; i++) {
 		ret = burn_dvd_write_track(o, s, i);
 		if (ret <= 0)
 	break;
 	}
-	if (d->current_profile == 0x1a) {
-		/* DVD+RW */
-		if (d->needs_close_session) {
-			ret = burn_disc_close_session_dvd_plus_rw(o, s);
-			if (ret <= 0)
-				return 0;
-		}
+	if ((d->current_profile == 0x11 || d->current_profile == 0x14)) {
+		/* DVD-R , DVD-RW Sequential */
+		ret = burn_disc_close_session_dvd_minus_r(o, s);
+		if (ret <= 0)
+			return 0;
+	} else if (d->current_profile == 0x12) {
+		/* DVD-RAM */
+		/* ??? any finalization needed ? */;
 	} else if (d->current_profile == 0x13) {
 		/* DVD-RW restricted overwrite */
 		if (d->needs_close_session) {
@@ -987,9 +1063,13 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 			if (ret <= 0)
 				return 0;
 		}
-	} else if (d->current_profile == 0x12) {
-		/* DVD-RAM */
-		/* ??? any finalization needed ? */;
+	} else if (d->current_profile == 0x1a) {
+		/* DVD+RW */
+		if (d->needs_close_session) {
+			ret = burn_disc_close_session_dvd_plus_rw(o, s);
+			if (ret <= 0)
+				return 0;
+		}
 	}
 	return 1;
 }
@@ -1067,7 +1147,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 		5.4.14 finally states that profile 0013h includes feature
 		002Ch rather than 0026h.
 		
-                d->send_write_parameters(d, o);
+		d->send_write_parameters(d, o);
 		*/
 
 		d->busy = BURN_DRIVE_FORMATTING;
@@ -1097,7 +1177,24 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 }
 
 
-/* ts A61218 */
+/* ts A70129 */
+int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
+				struct burn_disc *disc)
+{
+	struct burn_drive *d = o->drive;
+
+	if (d->current_has_feat21h) {
+		/* most setup is in burn_disc_setup_track_dvd_minus_r() */;
+	} else {
+		return 0; /* >>> no DAO for now */
+	}
+
+	d->nwa = 0;
+	return 1;
+}
+
+
+/* ts A61218 - A70129 */
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
@@ -1161,7 +1258,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		}
 		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
 
-	} else if (d->current_profile == 0x13) { /* DVD-RW Rest. Overwrite */
+	} else if (d->current_profile == 0x13) {
+		 /* DVD-RW Restricted Overwrite */
 		if (o->start_byte >= 0 && (o->start_byte % 32768)) {
 			sprintf(msg,
 			  "Write start address not properly aligned to 32K");
@@ -1182,9 +1280,31 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			goto early_failure;
 		}
 
-		/* ??? is this necessary ? */
+		/* _Rigid_ Restricted Overwrite demands this */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 
+	} else if ((d->current_profile == 0x11 || d->current_profile == 0x14)
+		   && d->current_has_feat21h == 1) {
+		/* DVD-R , DVD-RW Sequential (for now only Incremental) */
+		if (o->start_byte >= 0) {
+			sprintf(msg, "Write start address not supported");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020124,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
+		ret = burn_disc_setup_dvd_minus_r(o, disc);
+		if (ret <= 0) {
+			sprintf(msg,
+			  "Write preparation setup failed for DVD-R[W]");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020121,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			goto early_failure;
+		}
+		
 	} else {
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
 			d->current_profile, d->current_profile_text);
