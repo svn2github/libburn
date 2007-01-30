@@ -894,10 +894,16 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 					struct burn_session *s, int tnum)
 {
 	struct burn_drive *d = o->drive;
+	char msg[80];
 
 	/* only DVD-R or sequential DVD-RW */
 	if (d->current_has_feat21h != 1) /* only with Incremental writing */
 		return 2;
+
+	sprintf(msg, "Closing track %2.2d  (absolute track number %d)",
+		tnum + 1, d->last_track_no);
+	libdax_msgs_submit(libdax_messenger, o->drive->global_index,0x00020119,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	/* Ignoring tnum here and hoping that d->last_track_no is correct */
@@ -1022,6 +1028,10 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 
 	if (d->current_has_feat21h != 1)
 		return 2; /* only for Incremental writing */
+
+	libdax_msgs_submit(libdax_messenger, o->drive->global_index,0x00020119,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			"Closing session", 0, 0);
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */

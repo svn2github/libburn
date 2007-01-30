@@ -45,11 +45,11 @@ extern struct libdax_msgs *libdax_messenger;
 
 
 /* ts A70129 >>> EXPERIMENTAL UNTESTED
-#define Libburn_support_dvd_r_seQ 1
 */
+#define Libburn_support_dvd_r_seQ 1
 
 
-/* Progress report (with Libburn_support_dvd_plus_rW defined):
+/* Progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
                read TOC or track info. Nevertheless, the written images verify.
@@ -70,6 +70,14 @@ extern struct libdax_msgs *libdax_messenger;
    ts A70101 : Formatted DVD-RW media. Success is varying with media, but
                dvd+rw-format does not do better with the same media.
    ts A70112 : Support for writing to DVD-RAM.
+   ts A70130 : Burned a first non-multi sequential DVD-RW. Feature 0021h
+               Incremental Recording vanishes after that and media thus gets
+               not recognized as suitable any more.
+               After a run with -multi another disc still offers 0021h .
+               dvd+rw-mediainfo shows two tracks. The second, an afio archive
+               is readable by afio. Third and forth veryfy too. Suddenly
+               dvd+rw-mediainfo sees lba 0 with track 2. But #2 still verifies
+               if one knows its address.
 
 Todo:
    Determine first free lba for appending data. 
