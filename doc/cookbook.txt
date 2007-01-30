@@ -670,4 +670,96 @@ of Intermediate state by 5Bh CLOSE TRACK SESSION with Close Function 010b.
 
 
 -------------------------------------------------------------------------------
+                        Sequential DVD-R[W] Cookbook
+                        (emerging, still incomplete)
+-------------------------------------------------------------------------------
+Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
+backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+and by experiments with drives NEC ND-4570A and LG GSA-4082B.
+
+For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+
+Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
+(mmc5r03c.pdf 6.6.2.1)
+DVD-RW Restricted Overwrite    0013h
+DVD-RW Sequential Recording    0014h
+
+-------------------------------------------------------------------------------
+Incremental writing :
+
+There are two approaches for writing to sequential DVD-RW. DAO and Incremental.
+
+Incremental writing allows to produce multi-session DVDs. It is indicated
+by feature 0021h being marked current in the reply of 46h GET CONFIGURATION.
+growisofs inquires 0021h by setting Starting Feature Number to 0x21 and
+Allocation Length to 16 in order to get only this one. The feature descriptor
+begins at byte 8 of the reply. Its availability is indicated by the Current
+Bit. libburn obtains the full feature list for this and other info.
+(mmc5r03c.pdf 5.2.2. Feature Descriptor format, 5.3.11 Feature 0021h,
+ 6.2 46h GET CONFIGURATION, )
+In mode page 05h this method is selected by Write Type 00h. 
+
+>>> speed setting
+
+growisofs fetches a mode page 05h template by MODE SENSE and inserts its own
+parameters.  It sets Multi-session to 11b, unless dvd_compat is nonzero.
+libburn composes its mode page 05h from zero and allows control of
+Multi-Session by the application.
+ BUFE             Buffer Underrun protection      0=off, 1=on
+ LS_V             Link size valid                 1=true
+ Test Write       -dummy mode for writing         0=off, 1=on
+ Write Type       Packet/TAO/SAO/RAW              00h = Incremental (Packet)
+ Multi-session    Wether to keep appendable       00b = finalize(growisofs DAO)
+                                                  11b = keep appendable
+ Track Mode       Describes frame type            5  [*1]
+ Data Block Type  Layout of payload blocks        8  [*2]
+ Link Size        ???                             16 [*3]
+ FP               Fixed Packet Size Bit           1
+ Packet Size                                      16 [*4]  
+(mmc5r03c.pdf 7.5.4 The Mode Page, 4.2.3.4 Table 17 CONTROL = Track Mode)
+(spc3r23.pdf 6.8 MODE SELECT, 7.4.3 Mode parameter header formats)
+[*1:]
+growisofs takes the Track Mode from 52h READ TRACK INFORMATION, Address/Number
+Type 1, Track 1, Track Information Block byte 5 & 0xf.
+(mmc5r03.pdf 6.27)
+The specs predict that this will be Track Mode 4 (6.27.3.8) and also state that
+default is 5 (7.5.4.12). 4 means: uninterrupted, do not copy. 5 means
+increment, do not copy.
+[*2:]
+8 means: 2048 byte data blocks. growisofs sets this value if Data Mode from
+above 52h READ TRACK INFORMATION is 1 or Fh, which is predicted by the specs
+to be always true.
+(mmc5r03.pdf 6.27.3.10)
+[*3:]
+growisofs (transport.hxx) sets Link Size to 16 for profiles 0011h and 0014h.
+libburn now records the first link size from feature 0021h in its burn_drive
+structure. If another link size item is 16, then 16 is used.
+[*4:]
+growisofs takes Packet Size from 52h. Specs predict it will be 16 (= 32 kB).
+(mmc5r03.pdf 7.5.4.16)
+
+The writing process is much like in "Writing a session to CD in TAO mode" :
+Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION.
+Currently full 32 kB buffers get written via 2Ah WRITE.
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
+
+The track has to be closed by 5Bh CLOSE TRACK SESSION Close Function 001b.
+growisofs uses the logical track number for that and not FFh like libburn
+does with TAO CD. So libburn obtains the Last Track Number in Last Session
+from the reply of  51h READ DISC INFORMATION requesting Data Type 000b
+"Standard Disc Information".
+(mmc5r03c.pdf 6.3.3.2.2 CLOSE TRACK, 6.22.3.1.)
+Afterwards 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
+Number 0 closes the session. It depends on the Multi-Session value in mode
+page 05h wether the disc is finalized or stays appendable.
+(mmc5r03c.pdf 6.3.3.2.3)
+
+It has not been tested yet wether multiple tracks are permissible in a single
+session.
+
+-------------------------------------------------------------------------------
 
