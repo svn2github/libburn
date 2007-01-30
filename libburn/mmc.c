@@ -44,7 +44,7 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_support_dvd_raM 1
 
 
-/* ts A70129 >>> EXPERIMENTAL
+/* ts A70129 >>> EXPERIMENTAL UNTESTED
 #define Libburn_support_dvd_r_seQ 1
 */
 
@@ -168,6 +168,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	struct buffer buf;
 	struct command c;
 	unsigned char *data;
+	int i;
 
 	mmc_function_spy("mmc_get_nwa");
 	c.retry = 1;
@@ -178,11 +179,15 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
 		    d->current_profile == 0x12 )
 			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
-			c.opcode[5] = 1;
+			trackno = 1;
+		else if (d->current_profile == 0x11 ||
+			 d->current_profile == 0x14) /* DVD-R[W] Sequential */
+			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
-			c.opcode[5] = 0xFF;
-	} else
-		c.opcode[5] = trackno;
+			trackno = 0xFF;
+	}
+	for (i = 0; i < 4; i++)
+		c.opcode[2 + i] = (trackno >> (24 - 8 * i)) & 0xff;
 	c.page = &buf;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
@@ -538,6 +543,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
 	d->erasable = 0;
+	d->last_track_no = 1;
 
 	/* ts A61202 */
 	d->toc_entries = 0;
@@ -595,7 +601,6 @@ void mmc_read_disc_info(struct burn_drive *d)
 */
 
 		d->status = BURN_DISC_BLANK;
-		d->last_track_no = 0;
 		break;
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
@@ -1816,7 +1821,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->needs_close_session = 0;
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
-	d->last_track_no = 0;
+	d->last_track_no = 1;
 
 	return 1;
 }

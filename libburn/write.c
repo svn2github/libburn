@@ -196,8 +196,7 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 	   MMC-3 does not. I tried both. 0xFF was in effect when other
 	   bugs finally gave up and made way for readable tracks. */
 	/* ts A70129 
-	   Probably the right value would be d->last_track_no+tnum for
-	   appendables
+	   Probably the right value for appendables is d->last_track_no
 	*/
 	d->close_track_session(o->drive, 0, 0xff);
 
@@ -901,13 +900,10 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 		return 2;
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
-	/* 0xff was a name for the last track in MMC-1 but later
-	   it vanished. One would need to determine the absolute
-	   logical track number in multi-session situations.
-	   Probably: d->last_track_no+tnum
-	*/
-	d->close_track_session(d, 0, 0xff); /* CLOSE TRACK, 001b */
+	/* Ignoring tnum here and hoping that d->last_track_no is correct */
+	d->close_track_session(d, 0, d->last_track_no); /* CLOSE TRACK, 001b */
 	d->busy = BURN_DRIVE_WRITING;
+	d->last_track_no++;
 	return 1;
 }
 
@@ -953,7 +949,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		d->progress.sector++;
 	}
 	
-	/* Pad up buffer to next full 32 kB */
+	/* Pad up buffer to next full o->obs (usually 32 kB) */
 	if (o->obs_pad && out->bytes > 0 && out->bytes < o->obs) {
 		memset(out->data + out->bytes, 0, o->obs - out->bytes);
 		out->sectors += (o->obs - out->bytes) / 2048;
@@ -1024,8 +1020,8 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
-	if (d->current_has_feat21h != 1) /* only for Incremental writing */
-		return 2;
+	if (d->current_has_feat21h != 1)
+		return 2; /* only for Incremental writing */
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
@@ -1177,7 +1173,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 }
 
 
-/* ts A70129 */
+/* ts A70129 : for DVD-R[W] Sequential Recoding */
 int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 				struct burn_disc *disc)
 {
@@ -1304,6 +1300,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0,0);
 			goto early_failure;
 		}
+		/* ??? padding needed ??? cowardly doing it for now */
+		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 		
 	} else {
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
