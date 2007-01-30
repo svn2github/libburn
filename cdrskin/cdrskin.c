@@ -2521,7 +2521,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
  o->write_start_address= -1.0;
- o->burnfree= 0;
+ o->burnfree= 1;
  o->do_eject= 0;
  o->eject_device[0]= 0;
  o->source_path[0]= 0;

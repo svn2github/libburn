@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "January 12, 2007"
+.TH CDRSKIN 1 "January 30, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -247,9 +247,10 @@ Be aware that deprecated option --old_pseudo_scsi_adr may change the meaning
 of Bus,Target,Lun addresses.
 .TP
 .BI driveropts= opt
-Set "driveropts=burnfree" to enable the drive's eventual protection mechanism
-against temporary lack of source data (i.e. buffer underrun).
-It is not an error to do this with a drive that has no such capabilities.
+Set "driveropts=noburnfree" to disable the drive's eventual protection
+mechanism against temporary lack of source data (i.e. buffer underrun).
+A drive that announces no such capabilities will not get them enabled anyway,
+even if attempted explicitely via "driveropts=burnfree".
 .TP
 .BI \-dummy
 Try to perform the drive operations without actually affecting the inserted
@@ -465,7 +466,7 @@ fifo_start_at= combine a quick burn start and a large savings buffer to
 compensate for temporary lack of source data. At the beginning of burning,
 the software protection against buffer underun is as weak as the size of
 fifo_start_at= . So it is best if the drive offers hardware protection which
-has to be enabled by driveropts=burnfree.
+is enabled automatically if not driveropts=noburnfree is given.
 .TP
 .BI \--list_ignored_options
 List all ignored cdrecord options. The --options cannot be used as addresses
@@ -604,15 +605,13 @@ cdrskin -v dev=/dev/sr0 blank=format_overwrite
 .br
 cdrskin -v dev=/dev/hdc speed=12 fs=8m \\
 .br
-driveropts=burnfree -sao -eject \\
-.br
-padsize=300k my_image.iso
+-sao -eject padsize=300k my_image.iso
 .SS
 .B Write compressed afio archive on-the-fly:
 .br
 find . | afio -oZ - | \\
 .br
-cdrskin -v dev=0,1,0 fs=32m speed=8 driveropts=burnfree \\
+cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
 padsize=300k -tao -
 .SS
@@ -634,9 +633,7 @@ mkisofs ... -C "$c_values" ...
 .SS
 .B Write audio tracks to CD:
 .br
-cdrskin -v dev=ATA:1,0,0 speed=48 \\
-.br
-driveropts=burnfree -sao \\
+cdrskin -v dev=ATA:1,0,0 speed=48 -sao \\
 .br
 track1.wav track2.au -audio -swab track3.raw
 .br
@@ -691,7 +688,7 @@ Other CD/DVD burn programs:
 .BR wodim (1)
 .br
 .TP
-For DVD burning:
+For DVD burning (also tutor of libburn's DVD capabilities):
 .br
 .BR growisofs (1)
 .br
