@@ -788,6 +788,16 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
 int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 				int trackno, int *lba, int *nwa);
 
+/* ts A70131 */
+/** Read start lba of the first track in the last complete session.
+    This is the first parameter of mkisofs option -C. The second parameter
+    is nwa as obtained by burn_disc_track_lba_nwa() with trackno 0.
+    @param d The drive to query.
+    @param start_lba returns the start address of that track
+    @return <= 0 : failure, 1 = ok 
+*/
+int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
+
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.

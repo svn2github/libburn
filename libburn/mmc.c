@@ -84,6 +84,8 @@ Todo:
 */
 
 
+static unsigned char MMC_GET_MSINFO[] =
+	{ 0x43, 0, 1, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_TOC[] = { 0x43, 2, 2, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_ATIP[] = { 0x43, 2, 4, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_DISC_INFO[] =
@@ -421,6 +423,18 @@ void mmc_read_toc(struct burn_drive *d)
 
 	mmc_function_spy("mmc_read_toc");
 	memcpy(c.opcode, MMC_GET_TOC, sizeof(MMC_GET_TOC));
+	if(!d->current_is_cd_profile) {
+		/* ts A70131 : MMC_GET_TOC uses Response Format 2 
+		   For DVD this fails with 5,24,00 */
+		/* One could try Response Format 0: mmc5r03.pdf 6.26.3.2 */
+		/* One could try
+		   51h READ DISC INFORMATION and 52h READ TRACK INFORMATION
+		   where 51h gives the number of tracks and 52h tells the
+		   session number with each track. */
+
+		/* >>> One must do someting */;
+
+	}
 	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_TOC);
 	c.page = &buf;
@@ -442,7 +456,7 @@ void mmc_read_toc(struct burn_drive *d)
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			 0x0002010d,
 			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-			 "Could not inquire TOC (non-blank DVD media ?)", 0,0);
+			 "Could not inquire TOC", 0,0);
 		d->status = BURN_DISC_UNSUITABLE;
 		d->toc_entries = 0;
 		/* Prefering memory leaks over fandangos */
@@ -540,6 +554,47 @@ void mmc_read_toc(struct burn_drive *d)
 		d->status = BURN_DISC_FULL;
 	toc_find_modes(d);
 }
+
+
+/* ts A70131 : If no TOC is at hand, this tries to get the start of the
+		last complete session (mksifs -c first parameter) */
+int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
+{
+	struct buffer buf;
+	struct command c;
+	unsigned char *tdata;
+
+	mmc_function_spy("mmc_read_multi_session_c");
+
+	/* mmc5r03.pdf 6.26.3.3.3 states that with non-CD this would
+	   be a useless fake always starting at track 1, lba 0.
+	   My drives return useful data, though.
+           MMC-3 states that DVD had not tracks. So maybe this fake is
+	   a legacy ?
+
+	   >>> Possibly one will have to fake this reply from
+	       51h READ DISC INFORMATION and 52h READ TRACK INFORMATION
+	       (I still have to find out what growisofs is using)
+	*/
+	memcpy(c.opcode, MMC_GET_MSINFO, sizeof(MMC_GET_MSINFO));
+	c.retry = 1;
+	c.oplen = sizeof(MMC_GET_MSINFO);
+	c.page = &buf;
+	c.page->bytes = 0;
+	c.page->sectors = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+
+	if (c.error)
+		return 0;
+
+	tdata = c.page->data + 4;
+	*trackno = tdata[2];
+	*start = (tdata[4] << 24) | (tdata[5] << 16)
+		| (tdata[6] << 8) | tdata[7];
+	return 1;
+}
+
 
 void mmc_read_disc_info(struct burn_drive *d)
 {
@@ -1806,6 +1861,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->send_cue_sheet = mmc_send_cue_sheet;
 	d->sync_cache = mmc_sync_cache;
 	d->get_nwa = mmc_get_nwa;
+	d->read_multi_session_c1 = mmc_read_multi_session_c1;
 	d->close_disc = mmc_close_disc;
 	d->close_session = mmc_close_session;
 	d->close_track_session = mmc_close;

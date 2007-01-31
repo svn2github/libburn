@@ -1409,6 +1409,32 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 }
 
 
+/* ts A70131 : new API function */
+int burn_disc_get_msc1(struct burn_drive *d, int *start)
+{
+	int ret, trackno;
+
+	if (burn_drive_is_released(d)) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x0002011b,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Attempt to read track info from ungrabbed drive",
+			0, 0);
+		return -1;
+	}
+	if (d->busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x0002011c,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Attempt to read track info from busy drive",
+			0, 0);
+		return -1;
+	}
+	ret = d->read_multi_session_c1(d, &trackno, start);
+	return ret;
+}
+
+
 /* ts A61202 : New API function */
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80])
 {

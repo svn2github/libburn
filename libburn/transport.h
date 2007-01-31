@@ -250,6 +250,11 @@ struct burn_drive
 	int (*get_erase_progress) (struct burn_drive *);
 	int (*get_nwa) (struct burn_drive *, int trackno, int *lba, int *nwa);
 
+	/* ts A70131 : obtain (possibly fake) TOC number and start lba of
+			first track in last complete session */
+	int (*read_multi_session_c1)(struct burn_drive *d,
+				     int *trackno, int *start);
+
 	/* ts A61009 : removed d in favor of o->drive */
 	/* void (*close_disc) (struct burn_drive * d,
 				 struct burn_write_opts * o);

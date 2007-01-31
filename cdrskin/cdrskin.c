@@ -127,6 +127,9 @@ or
 #ifdef Cdrskin_libburn_0_3_1
 #define Cdrskin_libburn_versioN "0.3.1"
 #define Cdrskin_libburn_from_pykix_svN 1
+
+#define Cdrskin_libburn_has_get_msc1 1
+
 #endif /* Cdrskin_libburn_0_3_1 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -3484,12 +3487,19 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  s= burn_disc_get_status(drive);
  if(s!=BURN_DISC_APPENDABLE) {
    Cdrskin_report_disc_status(skin,s,0);
-   fprintf(stderr,
- "cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) CD\n");
+   fprintf(stderr,"cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) discs\n");
    {ret= 0; goto ex;}
  }
  disc= burn_drive_get_disc(drive);
  if(disc==NULL) {
+
+#ifdef Cdrskin_libburn_has_get_msc1
+   /* No TOC available. Try to inquire directly. */
+   ret= burn_disc_get_msc1(drive,&lba);
+   if(ret>0)
+     goto obtain_nwa;
+#endif /* Cdrskin_libburn_has_get_msc1 */
+
    fprintf(stderr,"cdrskin: FATAL : Cannot obtain info about CD content\n");
    {ret= 0; goto ex;}
  }
@@ -3506,6 +3516,7 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
    {ret= 0; goto ex;}
  }
 
+obtain_nwa:;
  ret= Cdrskin_obtain_nwa(skin,&nwa,flag);
  if(ret<=0) {
    fprintf(stderr,
@@ -4394,8 +4405,9 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
      strcpy(skin->preskin->write_mode_name,"TAO");
      was_still_default= 2; /* prevents trying of SAO if drive dislikes TAO*/
    } else if(profile_number==0x1a || profile_number==0x13 ||
-             profile_number==0x12) {
-     /* DVD+RW , DVD-RW Restricted Overwrite , DVD-RAM */
+             profile_number==0x12 ||
+             profile_number==0x11 || profile_number==0x14) {
+     /* DVD+RW, DVD-RW Restr. Overwrite, DVD-RAM, DVD-R, DVD-RW Sequential */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
      strcpy(skin->preskin->write_mode_name,"SAO");
@@ -4639,9 +4651,6 @@ burn_failed:;
  burn_write_opts_set_perform_opc(o, 0);
 
 #ifdef Cdrskin_libburn_has_multI
- if(skin->multi)
-   fprintf(stderr,
-           "cdrskin: NOTE : Option -multi set. Media will be appendable.\n");
  burn_write_opts_set_multi(o,skin->multi);
 #endif
 

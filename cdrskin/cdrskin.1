@@ -149,8 +149,9 @@ Note: The support for sequentially recordable media is still emerging.
 DVD-R have not been tested yet. If no Incremental Streaming feature (21h)
 is offered, then the media is regarded as unsuitable without further
 explanation. (One can torture DVD-RW to make them offer only DAO (2Fh)).
-Only single-track sessions have been tested yet. Multi-session works but
--toc and -msinfo are not implemented yet.
+Multi-session works, but -toc is not implemented yet. -msinfo works although 
+otherwise predicted by MMC-3 to MMC-5. Be mistrusting when appending a third
+session for the first time with your drive.
 .br
 ---------------
 .br
@@ -165,6 +166,8 @@ It resembles much TAO writing with CD, as it allows track sources of
 unpredicted length and to keep media appendable by option
 .B -multi .
 Only restriction towards CD-RW is the lack of support for -audio tracks.
+Multiple tracks per session are permissible. A reasonable use case for
+this has still to be found, though.
 .br
 (The other write mode, DAO, is not implemented yet. It will allow no -multi and
 only a single track.)
