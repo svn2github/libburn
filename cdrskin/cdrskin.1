@@ -96,7 +96,19 @@ the archivers afio and star. Not suitable seems GNU tar.
 .br
 CD-R can be initially written only once and eventually extended until they
 get closed (or are spoiled because they are overly full). After that they are
-read-only.
+read-only. Closing is done automatically unless option
+.B -multi
+is given which keeps the media appendable.
+.br
+There are two write modes,
+.B -tao
+and
+.B -sao .
+.br
+-tao allows to use track source of unpredictable length (like stdin) and allows
+to write further sessions to appendable media. -sao produces audio sessions
+with seamless tracks but needs predicted track sizes and cannot append sessions
+to media.
 .br
 CD-RW media can be blanked to make them re-usable for another
 round of overwriting. Usually
@@ -106,9 +118,9 @@ Blanking damages the previous content but does not
 make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be.
 .PP
-.B Recordable DVD Media:
+.B Overwriteable DVD Media:
 .br
-Currently only types DVD+RW, DVD-RW and DVD-RAM can be burned via cdrskin.
+Currently only types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
 .br
 DVD+RW and DVD-RAM media get treated as blank media regardless wether they
 hold data or not. They need no special initial formatting.
@@ -118,12 +130,44 @@ Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
 there is no difference between -sao and -tao. If ever, then -tao will be the
 mode which preserves the current behavior.
 .br
-DVD-RW need to be formatted to state "Restricted Overwrite". Then they behave
-much like DVD+RW. This formatting can be done by option
+DVD-RW are sold in state "Sequential Recording". To become suitable for the
+Overwriteable DVD recoding model they need to get formatted to state
+"Restricted Overwrite". Then they behave much like DVD+RW. This formatting
+can be done by option
 .B blank=format_overwrite
-It is necessary for unused media, for media written or blanked by cdrecord,
-for media which have been written unformatted by growisofs or blanked by
-dvd+rw-format -blank. If in doubt, just give it a try.
+.br
+Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin option
+blank=deformat_sequential can bring a DVD-RW out of overwriteable state so
+that it has to be formatted again. If in doubt, just give it a try.
+.PP
+.B Sequentially Recordable DVD Media:
+.br
+---------------
+.br
+Note: The support for sequentially recordable media is still emerging.
+.br
+DVD-R have not been tested yet. If no Incremental Streaming feature (21h)
+is offered, then the media is regarded as unsuitable without further
+explanation. (One can torture DVD-RW to make them offer only DAO (2Fh)).
+Only single-track sessions have been tested yet. Multi-session works but
+-toc and -msinfo are not implemented yet.
+.br
+---------------
+.br
+Currently only DVD-RW (and most probably DVD-R) can be used for the Sequential
+recording model. DVD-RW must be in state "Sequential Recording". The media must
+be either blank or appendable. Newly purchased DVD-RW media are in this state.
+Used DVD-RW get into blank sequential state by option
+.B blank=deformat_sequential .
+.br
+Incremental Streaming is the default write mode if it is offered by the media.
+It resembles much TAO writing with CD, as it allows track sources of
+unpredicted length and to keep media appendable by option
+.B -multi .
+Only restriction towards CD-RW is the lack of support for -audio tracks.
+.br
+(The other write mode, DAO, is not implemented yet. It will allow no -multi and
+only a single track.)
 .PP
 .B Drive preparation and addressing:
 .br
@@ -194,14 +238,15 @@ help
 Print this list of blanking types.
 .TP
 all
-Blank an entire CD.
+Blank an entire CD-RW or an unformatted DVD-RW.
 .TP
 fast
-Minimally blank an entire CD.
+Minimally blank an entire CD-RW or an unformatted DVD-RW.
 .TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
-(Note: format_overwrite* are not original cdrecord options.)
+.br
+(Note: blank=format_overwrite* are not original cdrecord options.)
 .TP
 format_overwrite_quickest
 Like format_overwrite without creating a 128 MB trailblazer session.
@@ -215,8 +260,16 @@ rather than just 128 MB.
 Most traditional formatting is attempted. No data get written. 
 Much patience is required.
 .br
+This option treats already formatted media even if not option -force is given.
+.br
 For DVD+RW this is the only supported explicit formatting type. It provides
 complete "de-icing" so no reader slips on unwritten data areas.
+.TP
+deformat_sequential
+Like blank=all but with the additional ability to blank overwriteable DVD-RW.
+This will destroy their formatting and make them sequentially recordable. 
+.br
+(Note: blank=deformat_sequential is not an original cdrecord option.)
 .RE
 .TP
 .BI \-checkdrive
@@ -591,13 +644,13 @@ cdrskin dev=ATA:1,0,0 -atip
 .br
 cdrskin dev=/dev/hdc -toc
 .SS
-.B Make used CD-RW writable again:
+.B Make used CD-RW or used unformatted DVD-RW writable again:
 .br
 cdrskin -v dev=/dev/sg1 blank=all -eject
 .br
 cdrskin -v dev=/dev/dvd blank=fast -eject
 .SS
-.B Format DVD-RW before first use with cdrskin:
+.B Format DVD-RW to avoid need for blanking before re-use:
 .br
 cdrskin -v dev=/dev/sr0 blank=format_overwrite
 .SS

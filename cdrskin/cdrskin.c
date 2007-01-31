@@ -7,7 +7,7 @@ A cdrecord compatible command line interface for libburn.
 
 This project is neither directed against original cdrecord nor does it exploit
 any source code of said program. It rather tries to be an alternative method
-to burn CD which is not based on the same code as cdrecord.
+to burn CD or DVD, which is not based on the same code as cdrecord.
 See also :  http://scdbackup.sourceforge.net/cdrskin_eng.html
 
 Interested users of cdrecord are encouraged to contribute further option
@@ -33,48 +33,10 @@ The implementation of an option would probably consist of
 See option blank= for an example.
 
 ------------------------------------------------------------------------------
-About compliance with *strong urge* of API towards burn_drive_scan_and_grab() 
 
-For a more comprehensive example of the advised way to behave with libburn
-see  test/libburner.c .
+For a more comprehensive example of the advised way to write an application
+of libburn see  test/libburner.c .
  
-cdrskin was the initiator of the whitelist functionality within libburn.
-Now it has problems to obviously comply with the new API best practice
-presciptions literally. Therefore this explanation:
-
-On start it restricts the library to a single drive if it already knows the
-persistent address by option dev= . This is done with a combination of
-burn_drive_add_whitelist() and burn_drive_scan(). Not compliant to the
-literal strong urge but in fact exactly fulfilling the reason for that
-urge in the API: any scanned drive might be opened exclusively after
-burn_drive_scan(). It is kernel dependent wether this behavior is on, off
-or switchable. The sysdamin will want it on - but only for one drive.
-
-So with dev=... cdrskin complies to the spirit of the strong urge.
-Without dev=... it has to leave out the whitelist in order to enable bus
-scanning and implicit drive address 0. A tradition of 9 months shall not
-be broken. So burns without dev= will stay possible - but harmless only
-on single drive systems.
-
-Burns without dev= resp. with dev=number are harmless on multi-drive systems.
-
-This is because Cdrskin_grab_drive() either drops the unwanted drives or
-it enforces a restart of the library with the desired drive's persistent
-address. This restart then really uses the strongly urged function
-burn_drive_scan_and_grab().
-Thus, cdrskin complies with the new spirit of API by closing down libburn
-or by dropping unused drives as soon as the persistent drive address is
-known and the drive is to be used with a long running operation. To my
-knowlege all long running operations in cdrskin need a grabbed drive.
-
-This spaghetti approach seems necessary to keep small the impact of new API
-urge on cdrskin's stability. cdrskin suffers from having donated the body
-parts which have been transplanted to libburn in order to create
- burn_drive_scan_and_grab() . The desired sysadmin friendlyness was already
-achieved by most cdrskin runs. The remaining problem situations should now
-be defused by releasing any short time grabbed flocks of drives during the
-restart of libburn.
-
 ------------------------------------------------------------------------------
 This program is currently copyright Thomas Schmitt only.
 The copyrights of several components of libburnia.pykix.org are willfully
@@ -2388,7 +2350,7 @@ struct CdrskiN {
                                bit8 = write zeros after formatting
                                bit9 = insist in size 0
                                bit10= format to maximum available size
-                           2=format_sequential (unimplemented yet)
+                           2=deformat_sequential (blank_fast might matter)
                         */
  double blank_format_size; /* to be used with burn_disc_format() */
 
@@ -3900,10 +3862,10 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
  int wrote_well= 1;
  double start_time;
- char *verb= "blank", *presperf="blanking", *fmt_text= "format_...";
+ char *verb= "blank", *presperf="blanking", *fmt_text= "...";
  char profile_name[80];
  static char fmtp[][40]= {
-                    "format_default", "format_overwrite", "format_sequential"};
+                  "format_default", "format_overwrite", "deformat_sequential"};
  static int fmtp_max= 2;
 
  start_time= Sfile_microtime(0); /* will be refreshed later */
@@ -3921,7 +3883,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
  do_format= skin->blank_format_type & 0xff;
- if(do_format) {
+ if(do_format == 1) {
    verb= "format";
    presperf= "formatting";
  }
@@ -3938,29 +3900,28 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  }
 #endif /* Cdrskin_libburn_has_pretend_fulL */
 
- if(do_format) {
+ if(do_format)
    if(do_format>=0 && do_format<=fmtp_max)
      fmt_text= fmtp[do_format];
-   if(do_format!=1) {
 
-     /* >>> other formats to come. At least _sequential */;
+ if(do_format==2) {
+   /* Forceful blanking to Sequential Recording for DVD-R[W] and CD-RW */
 
+   if(!(profile_number == 0x14 || profile_number == 0x13 ||
+        profile_number == 0x11 || profile_number == 0x0a))
+     goto unsupported_format_type;
+   if(s==BURN_DISC_UNSUITABLE)
      fprintf(stderr,
-          "cdrskin: SORRY : only blank=%s is implemented yet\n",fmtp[1]);
-     return(0);
-   } else if(profile_number == 0x14) { /* DVD-RW sequential */
-     if(do_format!=1)
-       goto unsupported_format_type;
-   } else if(profile_number == 0x13) { /* DVD-RW restricted overwrite */
-     if(do_format==1 && skin->force_is_set) {
+         "cdrskin: NOTE : blank=%s accepted not yet suitable media\n",
+         fmt_text);
+
+ } else if (do_format==1) {
+   /* Formatting to become overwriteable for DVD-RW and DVD+RW */
+
+   if(profile_number == 0x14) { /* DVD-RW sequential */
        /* ok */;
-     } else if(do_format!=1) {
-unsupported_format_type:;
-       fprintf(stderr,
-          "cdrskin: SORRY : blank=%s : unsupported format and/or media type\n",
-           fmt_text);
-       return(0);
-     } else {
+   } else if(profile_number == 0x13) { /* DVD-RW restricted overwrite */
+     if(!(skin->force_is_set || ((skin->blank_format_type>>8)&4))) {
        fprintf(stderr,
        "cdrskin: NOTE : blank=format_... : media is already formatted\n");
        fprintf(stderr,
@@ -3968,15 +3929,11 @@ unsupported_format_type:;
        return(2);
      }
    } else if(profile_number == 0x1a) { /* DVD+RW */
-     if(do_format!=1)
-       goto unsupported_format_type;
      if(!((skin->blank_format_type>>8)&4)) {
        fprintf(stderr,
        "cdrskin: NOTE : blank=format_... : DVD+RW do not need this\n");
        fprintf(stderr,
        "cdrskin: HINT : For de-icing use option blank=format_overwrite_full");
-       fprintf(stderr,
-       "cdrskin: HINT : If you really want to re-format, add option -force\n");
        return(2);
      }
    } else {
@@ -3989,7 +3946,8 @@ unsupported_format_type:;
          "cdrskin: NOTE : blank=%s accepted not yet suitable media\n",
          fmt_text);
 
- } else { /* do_format */
+ } else if(do_format==0) {
+   /* Classical blanking of erasable media */
 
    if(s!=BURN_DISC_FULL && 
       (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable)) {
@@ -4015,7 +3973,13 @@ unsupported_format_type:;
      return(0);
    }
 
- } /* ! do_format */
+ } else {
+unsupported_format_type:;
+   fprintf(stderr,
+          "cdrskin: SORRY : blank=%s is unsupported with media type %s\n",
+          fmt_text, profile_name);
+   return(0);
+ }
 
  if(skin->dummy_mode) {
    fprintf(stderr,
@@ -4027,11 +3991,11 @@ unsupported_format_type:;
  Cdrskin_adjust_speed(skin,0);
 
 #ifndef Cdrskin_extra_leaN
- Cdrskin_wait_before_action(skin,1+(!!do_format));
+ Cdrskin_wait_before_action(skin,1+(do_format==1));
 #endif /* ! Cdrskin_extra_leaN */
 
  skin->drive_is_busy= 1;
- if(do_format==0) {
+ if(do_format==0 || do_format==2) {
    burn_disc_erase(drive,skin->blank_fast);
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
@@ -4074,7 +4038,7 @@ blanking_done:;
    fprintf(stderr,
            "\rcdrskin: %s done                                        \n",
            presperf);
-   printf("%s time:   %.3fs\n",(do_format?"Formatting":"Blanking"),
+   printf("%s time:   %.3fs\n",(do_format==1?"Formatting":"Blanking"),
           Sfile_microtime(0)-start_time);
  }
  fflush(stdout);
@@ -5159,9 +5123,10 @@ set_blank:;
        skin->do_blank= 1;
        skin->blank_format_type= 1;
        skin->blank_format_size= 0;
-     } else if(strcmp(cpt,"format_sequential")==0) {/* >>> not yet supported */
+     } else if(strcmp(cpt,"deformat_sequential")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 2;
+       skin->blank_fast= 0;
      } else if(strcmp(cpt,"help")==0) { 
        /* is handled in Cdrpreskin_setup() */;
  continue;
