@@ -3477,7 +3477,7 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
- struct burn_session **sessions;
+ struct burn_session **sessions= NULL;
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
 
@@ -3529,6 +3529,11 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
 obtain_nwa:;
  ret= Cdrskin_obtain_nwa(skin,&nwa,flag);
  if(ret<=0) {
+   if (sessions == NULL) {
+     fprintf(stderr,
+           "cdrskin: SORRY : Cannot obtain next writeable address\n");
+     {ret= 0; goto ex;}
+   }
    fprintf(stderr,
            "cdrskin: NOTE : Guessing next writeable address from leadout\n");
    burn_session_get_leadout_entry(sessions[num_sessions-1],&toc_entry);
