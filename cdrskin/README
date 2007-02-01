@@ -143,6 +143,9 @@ It is not checked for the necessary degree of hacker safety.
 
                                 Usage examples 
 
+For options and recordable media classes see 
+    man 1 cdrskin
+
 Get an overview of cdrecord style addresses of available devices
     cdrskin -scanbus 
     cdrskin dev=ATA -scanbus 
@@ -158,24 +161,34 @@ Obtain some info about the drive
 Obtain some info about the drive and the inserted media
     cdrskin dev=0,1,0 -atip -v
 
-Thoroughly blank a CD-RW
-    cdrskin -v dev=0,1,0 blank=all -eject 
-
-Format DVD-RW before first use with cdrskin
-    cdrskin -v dev=0,1,0 blank=format_overwrite
-
-Blank CD-RW sufficiently for making it ready for overwrite
+Make used CD-RW or used unformatted DVD-RW writeable again
     cdrskin -v dev=0,1,0 blank=fast -eject 
 
-Burn image file  my_image.iso  to CD-R, CD-RW, DVD+RW, DVD-RAM, DVD-RW
+Format DVD-RW to avoid need for blanking before re-use
+    cdrskin -v dev=0,1,0 blank=format_overwrite
+
+De-format DVD-RW to make it capable of multi-session again
+    cdrskin -v dev=/dev/sr0 blank=deformat_sequential
+
+Burn image file  my_image.iso  to media
     cdrskin -v dev=0,1,0 speed=12 fs=8m driveropts=burnfree padsize=300k \
             -eject  my_image.iso 
 
-Burn a compressed afio archive to any of the above media types on-the-fly
+Write several sessions to the same CD or DVD-R[W]
+    cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
+    cdrskin dev=/dev/hdc padsize=300k -multi -tao 2.iso
+    cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.iso
+    cdrskin dev=/dev/hdc padsize=300k -tao 4.iso
+
+Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:
+    c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
+    mkisofs ... -C "$c_values" ...
+
+Burn a compressed afio archive to media on-the-fly
     find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 -tao \
                                   driveropts=burnfree padsize=300k - 
 
-Burn 6 audio tracks from files with different formats to CD.
+Burn 6 audio tracks from files with different formats to CD (not to any DVD).
 Anything except .wav or .au files has to be converted into raw format first.
 See below "Audio CD" for specifications.
     ogg123 -d raw -f track01.cd /path/to/track1.ogg
@@ -409,20 +422,33 @@ task of maintaining extendable ISO-Filesystems on DVD+RW.
 
                                      DVD-RW
 
-DVD-RW are usable if formatted to state "Restricted Overwrite". They then
-behave much like DVD+RW. See above.
-DVD-RW in state "Sequential" have first to be formatted by
-  cdrskin dev=... -v blank=format_overwrite
+DVD-RW are usable if formatted to state "Restricted Overwrite" or if in state
+"Sequential Recording" - provided the "Incremental Streaming" feature (21h) is
+available.
+
 "Sequential" is the state of unused media and of media previously blanked
 or written by cdrecord. dvd+rw-format -blank can also achieve this state.
-(Command  dvd+rw-format -force  can achieve "Restricted Overwrite".)
-  
+The according cdrskin option is blank=deformat_sequential .
+If "Incremental Streaming" is available, then sequential media are capable
+of multi-session like CD-RW. (But not capable of -audio recording.)
+This means they need option -multi to stay appendable, need to be blanked
+to be writeable from start, return useable info with -toc and -msinfo,
+eventually perform appending automatically.
+Without "Incremental Streaming" offered by the drive, they are regarded as
+unsuitable media for now.
+ 
+Overwriteable DVD behave much like DVD+RW. "Restricted" refers only to the
+granularity of random access and block size which have always to be aligned to
+full 32 kB. Sequential DVD-RW are converted into overwriteable DVD-RW by
+  cdrskin dev=... -v blank=format_overwrite
+(Command  dvd+rw-format -force  can achieve "Restricted Overwrite", too.)
+
 Formatting or first use of freshly formatted DVD-RW can produce unusual noises
 from the drive and last several minutes. Depending on mutual compatibility of
 drive and media, formatting can yield unusable media. It seems that those die
-too on blanking by cdrecord or dvd+rw-format. Perils of DVD-RW, i fear.
+too on blanking by cdrecord, dvd+rw-format or cdrskin. Perils of DVD-RW.
 
-There are three formatting variants with cdrskin currently:
+There are three DVD-RW formatting variants with cdrskin currently:
 
 blank=format_overwrite  uses "DVD-RW Quick" formatting (MMC-type 15h)
 and writes a first session of 128 MB. This leads to media which are expandable
@@ -431,11 +457,31 @@ and random addressable by cdrskin.
 blank=format_overwrite_quickest  uses "DVD-RW Quick" formatting (type 15h) too,
 but leaves the media in "intermediate" state. In the first session of writing
 one may only write sequentially to such a DVD. After that, it gets random
-addressable by cdrskin.
+addressable by cdrskin. DVD-ROM drives might show ill behavior with them.
 
 blank=format_overwrite_full  uses preferrably "Full Format" (type 00h).
 This formatting lasts as long as writing a full DVD. It includes writing of
 lead-out which is said to be good for DVD ROM compatibility. 
+
+A de-formatting option is available to make overwriteable DVD-RW sequential:
+
+blank=deformat_sequential  performs thorough blanking of all states of DVD-RW.
+
+blank=all and blank=fast perform the same thorough blanking, but refuse to do
+this with overwriteable DVD-RW, thus preserving their formatting. The specs
+allow minimal blanking but the resulting media on my drives offer no 
+Incremental Streaming afterwards. So even blank=fast will do full blanking. 
+
+
+                                    DVD-R
+
+The specs state that DVD-R behave like sequential DVD-RW except the capability
+to get blanked or formatted. Thus they should be useable like CD-R media (but
+without -audio).
+Blank DVD-R media are accepted as suitable by cdrskin on my drives.
+I got only a few of those one-time recordable media and no real use case.
+So i prefer to start burning my DVD-R only at the end of my endeavor about
+sequential DVD. There's still plenty to do with DVD-RW testing.
 
 
                         Special compilation variations

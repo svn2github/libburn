@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "January 30, 2007"
+.TH CDRSKIN 1 "February 1, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -227,6 +227,8 @@ stereo. For little-endian byte order (which is usual on PCs) use option
 .wav are examined wether they have a header in MS-WAVE format confirming
 those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix .au and SUN Audio.
+.br
+Option -audio may be used only with CD media and not with DVD.
 .TP 
 .BI blank= type
 Blank a CD-RW or format a DVD+/-RW.
@@ -628,7 +630,7 @@ in mode -tao.
 .br
 .SH EXAMPLES
 .SS
-.B Get an overview of drives:
+.B Get an overview of drives and their addresses:
 .br
 cdrskin -scanbus
 .br
@@ -640,7 +642,7 @@ cdrskin --devices
 .br
 cdrskin dev=0,1,0 -checkdrive
 .br
-cdrskin dev=ATA:1,0,0 -atip
+cdrskin dev=ATA:1,0,0 -v -atip
 .br
 cdrskin dev=/dev/hdc -toc
 .SS
@@ -653,6 +655,10 @@ cdrskin -v dev=/dev/dvd blank=fast -eject
 .B Format DVD-RW to avoid need for blanking before re-use:
 .br
 cdrskin -v dev=/dev/sr0 blank=format_overwrite
+.SS
+.B De-format DVD-RW to make it capable of multi-session again:
+.br
+cdrskin -v dev=/dev/sr0 blank=deformat_sequential
 .SS
 .B Write ISO-9660 filesystem image:
 .br
@@ -668,17 +674,17 @@ cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
 padsize=300k -tao -
 .SS
-.B Write several sessions to the same CD:
+.B Write several sessions to the same CD or DVD-R[W]:
 .br
-cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
+cdrskin dev=/dev/hdc -v padsize=300k -multi 1.iso
 .br
-cdrskin dev=/dev/hdc padsize=300k -multi -tao 2.afio
+cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 2.iso
 .br
-cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.afio
+cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 3.iso
 .br
-cdrskin dev=/dev/hdc padsize=300k -tao 4.afio
+cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso
 .SS
-.B Get CD multi-session info for option -C of program mkisofs:
+.B Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:
 .br
 c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)
 .br
