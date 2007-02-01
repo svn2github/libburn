@@ -3953,9 +3953,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
 #ifdef Cdrskin_libburn_has_pretend_fulL
  if(s==BURN_DISC_UNSUITABLE) {
-   if(skin->force_is_set) {
+   if(skin->force_is_set ||
+      profile_number == 0x14 || profile_number == 0x13) {/* allow any DVD-RW */
      fprintf(stderr,
-             "cdrskin: NOTE : -force blank=... : Treating unsuitable media as burn_disc_full\n");
+             "cdrskin: NOTE : %s blank=... : Treating unsuitable media as burn_disc_full\n",
+             (skin->force_is_set?"-force ":"DVD-RW "));
      ret= burn_disc_pretend_full(drive);
      s= burn_disc_get_status(drive);
    } else
