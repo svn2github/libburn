@@ -13,6 +13,9 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 + -sao is default where possible, -tao is default where needed 
   (Note: cdrecord write mode defaults have changed in cdrtools-2.01.01a20)
 
++ driveropts=burnfree is default if the drive supports buffer underrun
+  protection. If desired, use driveropts=noburnfree to disable this feature.
+
 + premature end of source is not an error and leads to full announced tracksize
 
 + -msinfo pushes all other messages to stderr. It works independent of
@@ -24,6 +27,7 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 + DVD-RW "Restricted Overwrite" writing is like DVD+RW (i.e. like -tao).
   Formatting is done via cdrskin-specific blank=format_overwrite and not
   with option -format.
+
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -2352,21 +2356,21 @@ Greeting the new year
 * Formatting and then burning to DVD-RW like to DVD+RW
 
 
-2 Jan 2006  [576]
+2 Jan 2007  [576]
 cdrskin/changelog.txt
 Next cdrskin-0.2.7 cycle
 
-2 Jan 2006  [577]
+2 Jan 2007  [577]
 cdrskin/wiki_plain.txt
 cdrskin/README
 Some DVD-RW statements
 
-2 Jan 2006  [578]
+2 Jan 2007  [578]
 test/libburner.c
 doc/comments
 Made use of formatting of DVD-RW
 
-2 Jan 2006  [579]
+2 Jan 2007  [579]
 cdrskin/cdrskin.1
 Some DVD-RW statements
 
@@ -2604,7 +2608,8 @@ Updated web page
 * detailed man page for cdrskin
 * Burning of DVD+RW and DVD-RAM media as single-track TAO-like initial session
 * Formatting and then burning to DVD-RW like to DVD+RW
-* New option -msifile=path from cdrskit/wodim
+* New option -msifile=path from cdrkit/wodim
+
 
 16 Jan 2007  [629]
 - cdrskin/add_ts_changes_to_libburn_0_2_6
@@ -2633,12 +2638,220 @@ Corrected typo
 ------------------------------------ cycle  - cdrskin-0.3.1 - 2007.01.16.152345
 
 
-  []
+16 Jan 2007  [635]
 cdrskin/changelog.txt
 Next cdrskin-0.3.1 cycle
 
+17 Jan 2007  [636]
+cdrskin/wiki_plain.txt
+Removed paragraph about obsoleted tao_to_sao_tsize=
 
-Post cdrskin/wiki_plain.txt
+18 Jan 2007  [637]
++ doc/cookbook.txt
+Wrote down what i learned from implementing support for overwriteable DVD
+
+18 Jan 2007  [638]
+doc/cookbook.txt
+More info about Current/Maximum Capacity Descriptor
+
+18 Jan 2007  [639]
+doc/cookbook.txt
+Made clarification about formatting state recognition
+
+2007.01.18.211740  [640]
+libburn/transport.h
+libburn/mmc.c
+libburn/write.c
+Kept DVD+RW from stopping BG formatting if it was not started at all
+
+2007.01.19.110510  [641]
+libburn/mmc.c
+Removed forgotten debug message printed to stderr
+
+19 Jan 2007  [642]
+doc/cookbook.txt
+Began to describe TAO multi-session CD writing
+
+20 Jan 2007  [643]
+doc/cookbook.txt
+Changes with CD part. Especially explanation of TOC.
+
+2007.01.21.190928  [644]
+cdrskin/cdrskin.c
+Removed unnecessary after-grab loops
+
+2007.01.21.191058  [645]
+libburn/write.c
+Comments learned from studying MMC-3 and MMC-5 for SAO CD cookbook
+
+21 Jan 2007  [646]
+doc/cookbook.txt
+Clarification about TAO and mode page 05h per track
+
+2007.01.22.114245  [647]
+libburn/libburn.h
+libburn/write.c
+libburn/async.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.c
+Bug fix: Banned mixed mode SAO (because broken in libburn and unclear in MMC)
+
+23 Jan 2007  [648]
+doc/cookbook.txt
+Added SAO CD Cookbook
+
+23 Jan 2007  [649]
+doc/cookbook.txt
+Corrections of typos and text debris
+
+2007.01.25.145846  [652]
+libburn/structure.c
+Bug fix: DVD tracks of defined size >=2GB suffered 32-bit integer wraparound 
+
+2007.01.25.185214  [655]
+libburn/libburn.h
+libburn/write.c
+libburn/structure.h
+libburn/structure.c
+libburn/file.h
+libburn/file.c
+Enforce minimum track length with SAO
+
+2007.01.25.180001  [tag 656]
+libburn_0_3_0_1/libburn/structure.c
+libburn_0_3_0_1/cdrskin/cdrskin_timestamp.h
+libburn_0_3_0_1/cdrskin/README
+Bug fix: DVD tracks of defined size >=2GB suffered 32-bit integer wraparound
+
+26 Jan 2007  [tag 657]
+libburn_0_3_0_1/cdrskin/cdrskin_eng.html
+Mentioned new cdrskin patch level 01
+
+26 Jan 2007  [658]
+cdrskin/cdrskin_eng.html
+Now offering cdrskin-0.3.0.pl01 for download 
+
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.01.26.111920
+
+2007.01.26.173236  [659]
+libburn/file.h
+libburn/file.c
+Unified burn_file_source and burn_fd_source
+
+27 Jan 2007  [660]
+libburn/null.c
+Initialized  member set_size of burn_source within burn_null_source_new()
+
+27 Jan 2007  [tag 661]
+libburn_0_3_0_1/libburn/file.c
+Removed 1.3 GB curbs for sources created by burn_file_source_new()
+
+29 Jan 2007  [662]
+doc/cookbook.txt
+Added a statement about blanking of DVD-RW
+
+2007.01.29.175822  [663]
+libburn/transport.h
+libburn/drive.c
+libburn/write.c
+libburn/mmc.c
+Experiments about list of features and profiles
+
+2007.01.30.165317  [664]
+libburn/write.c
+libburn/mmc.c
+Preparations for DVD-R[W] Sequential Recording
+
+2007.01.30.191740  [665]
+libburn/write.c
+libburn/mmc.c
+First successful multi-session write to a sequential DVD-RW
+
+30 Jan 2007  [666]
+doc/cookbook.txt
+Added snapshot of emerging sequential DVD-R[W] cookbook
+
+2007.01.30.220220  [667]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Enabled Burnfree buffer underrun protection by default
+
+2007.01.31.130100  [668]
+libburn/async.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Blank sequential DVD-RW, deformat overwriteable DVD-RW
+
+2007.01.31.173611  [669]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/mmc.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Provisorily obtain multi-session -C parameters (violates MMC specs but works)
+
+2007.02.01.161634  [670]
+libburn/libburn.h
+libburn/transport.h
+libburn/mmc.c
+test/telltoc.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Obtain TOC from non-CD via 52h READ TRACK INFORMATION
+
+2007.02.01.163511  [671]
+cdrskin/cdrskin.c
+Reacted on justified compiler warning about unitialized sessions variable
+
+2007.02.01.191638  [672]
+libburn/mmc.c
+cdrskin/cdrskin.c
+Allow blanking of DVD-RW which offer no Incremental Streaming
+
+1 Feb 2007  [673]
+cdrskin/cdrskin_eng.html
+cdrskin/README
+cdrskin/cdrskin.1
+Prepared next cdrskin-0.3.1 cycle
+
+1 Feb 2007  []
+cdrskin/changelog.txt
+Prepared next cdrskin-0.3.1 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.01.
+* Burnfree enabled by default
+* Multi-session recording on sequential DVD-RW, including -toc, -msinfo
+
+
+Make mmc_read_multi_session_c1 use TOC if available
+
+
+Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
+
+burn_disc_get_multi_caps(d, multi_session, multi_track, start_adr, alignment)
+
+
+Be clearer about non-Incremental DVD-R[W]
+
+Documentation about multi-session DVD-RW
+
+Check test/libburner and test/telltoc for consequences
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 
+
+
+DVD-R[W] DAO
+
+Remove from README what is also written in the man page.
+
+Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
+
+After cooking: review of -do_diet ?
+
+growisofs.c : _LINUX_CAPABILITY_VERSION CAP_SYS_RAWIO SYS_capset ?
 
 
 Format DVD-RAM ?
