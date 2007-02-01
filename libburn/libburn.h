@@ -241,9 +241,18 @@ enum burn_drive_status
 
 };
 
+    
 /** Information about a track on a disc - this is from the q sub channel of the
     lead-in area of a disc.  The documentation here is very terse.
     See a document such as mmc3 for proper information.
+
+    CAUTION : This structure is prone to future extension !
+
+    Do not restrict your application to unsigned char with any counter like
+    "session", "point", "pmin", ...
+    Do not rely on the current size of a burn_toc_entry. 
+
+    ts A70201 : DVD extension, see below
 */
 struct burn_toc_entry
 {
@@ -267,6 +276,23 @@ struct burn_toc_entry
 	unsigned char psec;
 	/** Track start time frames for normal tracks */
 	unsigned char pframe;
+
+	/* Indicates wether extension data are valid and eventually override
+	   older elements in this structure:
+	     bit0= DVD extension is valid
+	*/
+	unsigned char extensions_valid;  
+
+	/* ts A70201 : DVD extension.
+	   If invalid the members are guaranteed to be 0. */
+	/* Tracks and session numbers are 16 bit. Here are the high bytes. */
+	unsigned char session_msb;
+	unsigned char point_msb;
+	/* pmin, psec, and pframe may be too small if DVD extension is valid */
+	int start_lba; 
+	/* min, sec, and frame may be too small if DVD extension is valid */
+	int track_blocks;
+	
 };
 
 

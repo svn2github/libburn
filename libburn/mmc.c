@@ -150,6 +150,25 @@ int mmc_function_spy_ctrl(int do_tell)
 }
 
 
+/* ts A70201 */
+int mmc_four_char_to_int(unsigned char *data)
+{
+	return (data[0] << 24) | (data[1] << 16) |
+		(data[2] << 8) | data[3];
+}
+
+
+/* ts A70201 */
+int mmc_int_to_four_char(unsigned char *data, int num)
+{
+	data[0] = (num >> 24) & 0xff;
+	data[1] = (num >> 16) & 0xff;
+	data[2] = (num >> 8) & 0xff;
+	data[3] = num & 0xff;
+	return 1;
+}
+
+
 void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 {
 	struct buffer buf;
@@ -171,16 +190,16 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 	d->issue_command(d, &c);
 }
 
-/* ts A61110 : added parameters trackno, lba, nwa. Redefined return value. 
-   @return 1=nwa is valid , 0=nwa is not valid , -1=error */
-int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
+
+/* ts A70201 :
+   Common track info fetcher for mmc_get_nwa() and mmc_fake_toc()
+*/
+int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 {
-	struct buffer buf;
 	struct command c;
-	unsigned char *data;
 	int i;
 
-	mmc_function_spy("mmc_get_nwa");
+	mmc_function_spy("mmc_read_track_info");
 	c.retry = 1;
 	c.oplen = sizeof(MMC_TRACK_INFO);
 	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
@@ -198,10 +217,66 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	}
 	for (i = 0; i < 4; i++)
 		c.opcode[2 + i] = (trackno >> (24 - 8 * i)) & 0xff;
+	c.page = buf;
+	memset(buf->data, 0, BUFFER_SIZE);
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+	return 1;
+}
+
+
+/* ts A61110 : added parameters trackno, lba, nwa. Redefined return value. 
+   @return 1=nwa is valid , 0=nwa is not valid , -1=error */
+/* ts A70201 : outsourced 52h READ TRACK INFO command */
+int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
+{
+	struct buffer buf;
+	int ret;
+
+#ifdef Libburn_get_nwa_standalonE
+	struct command c;
+	int i;
+#endif
+
+	unsigned char *data;
+
+	mmc_function_spy("mmc_get_nwa");
+	if(trackno<=0) {
+		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+		    d->current_profile == 0x12 )
+			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
+			trackno = 1;
+		else if (d->current_profile == 0x11 ||
+			 d->current_profile == 0x14) /* DVD-R[W] Sequential */
+			trackno = d->last_track_no;
+		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
+			trackno = 0xFF;
+	}
+
+#ifdef Libburn_get_nwa_standalonE
+
+	c.retry = 1;
+	c.oplen = sizeof(MMC_TRACK_INFO);
+	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
+	c.opcode[1] = 1;
+	for (i = 0; i < 4; i++)
+		c.opcode[2 + i] = (trackno >> (24 - 8 * i)) & 0xff;
 	c.page = &buf;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 	data = c.page->data;
+
+#else /* Libburn_get_nwa_standalonE */
+
+	ret = mmc_read_track_info(d, trackno, &buf);
+	if (ret <= 0)
+		return ret;
+	data = buf.data;
+
+#endif /* ! Libburn_get_nwa_standalonE */
+
 
 	*lba = (data[8] << 24) + (data[9] << 16)
 		+ (data[10] << 8) + data[11];
@@ -410,9 +485,156 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	return 0;
 }
 
+
+/* ts A70201 : Set up an entry for mmc_fake_toc() */
+int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
+			 int track_number,
+			 unsigned char *size_data, unsigned char *start_data)
+{
+	int min, sec, frames, num;
+
+	/* mark DVD extensions as valid */
+	entry->extensions_valid |= 1; 
+
+	/* defaults are as of mmc5r03.pdf 6.26.3.2.4 Fabricated TOC */
+	entry->session = session_number & 0xff;
+	entry->session_msb = (session_number >> 8) & 0xff;
+	entry->adr = 1;
+	entry->control = 4;
+	entry->tno = 0;
+	entry->point = track_number & 0xff;
+	entry->point_msb = (track_number >> 8) & 0xff;
+	num = (size_data[0] << 24) | (size_data[1] << 16) |
+		(size_data[2] << 8) | size_data[3];
+	entry->track_blocks = num;
+	burn_lba_to_msf(num, &min, &sec, &frames);
+	if (min > 255) {
+		min = 255;
+		sec = 255;
+		frames = 255;
+	}
+	entry->min = min;
+	entry->sec = sec;
+	entry->frame = frames;
+	entry->zero = 0;
+	num = (start_data[0] << 24) | (start_data[1] << 16) |
+		(start_data[2] << 8) | start_data[3];
+	entry->start_lba = num;
+	burn_lba_to_msf(num, &min, &sec, &frames);
+	if (min > 255) {
+		min = 255;
+		sec = 255;
+		frames = 255;
+	}
+	entry->pmin = min;
+	entry->psec = sec;
+	entry->pframe = frames;
+	return 1;
+}
+
+
+/* ts A70131 : compose a disc TOC structure from d->complete_sessions
+               and 52h READ TRACK INFORMATION */
+int mmc_fake_toc(struct burn_drive *d)
+{
+	struct burn_track *track;
+	struct burn_session *session;
+	struct burn_toc_entry *entry;
+	struct buffer buf;
+	int i, session_number, prev_session = -1, ret, lba;
+	unsigned char *tdata, size_data[4], start_data[4];
+
+	if (d->last_track_no <= 0 || d->complete_sessions <= 0 ||
+	    d->status == BURN_DISC_BLANK)
+		return 2;
+	d->disc = burn_disc_create();
+	if (d->disc == NULL)
+		return -1;
+	d->toc_entries = d->last_track_no + d->complete_sessions;
+	d->toc_entry = malloc(d->toc_entries * sizeof(struct burn_toc_entry));
+	if (d->toc_entry == NULL)
+		return -1;
+	memset(d->toc_entry, 0,d->toc_entries * sizeof(struct burn_toc_entry));
+	for (i = 0; i < d->complete_sessions; i++) {
+		session = burn_session_create();
+		burn_disc_add_session(d->disc, session, BURN_POS_END);
+		burn_session_free(session);
+	}
+	memset(size_data, 0, 4);
+	memset(start_data, 0, 4);
+
+	/* Entry Layout :
+		session 1   track 1     entry 0
+		...
+		session 1   track N     entry N-1
+		leadout 1               entry N
+		session 2   track N+1   entry N+1
+		...
+		session 2   track M+1   entry M+1
+		leadout 2               entry M+2
+		session X   track K     entry (K-1)+(X-1)
+		...
+		session X   track i+1   entry i+(X-1)
+		leadout X               entry i+X
+	*/
+	for (i = 0; i < d->last_track_no; i++) {
+		ret = mmc_read_track_info(d, i+1, &buf);
+		if (ret < 0)
+			return ret;
+		if (ret == 0)
+	continue;
+		tdata = buf.data;
+		session_number = (tdata[33] << 8) | tdata[3];
+		if (session_number <= 0)
+	continue;
+
+		if (session_number != prev_session && prev_session > 0) {
+			entry = &(d->toc_entry[(i - 1) + prev_session]);
+			lba = mmc_four_char_to_int(start_data) +
+			      mmc_four_char_to_int(size_data);
+			mmc_int_to_four_char(start_data, lba);
+			mmc_int_to_four_char(size_data, 0);
+			mmc_fake_toc_entry(entry, session_number, 0xA2,
+					 size_data, start_data);
+			entry->min= entry->sec= entry->frame= 0;
+			d->disc->session[prev_session - 1]->leadout_entry =
+									entry;
+		}
+
+		if (session_number > d->disc->sessions)
+	continue;
+
+		entry = &(d->toc_entry[i + session_number - 1]);
+ 		track = burn_track_create();
+		if (track == NULL)
+			return -1;
+		burn_session_add_track(
+			d->disc->session[session_number - 1],
+			track, BURN_POS_END);
+		track->entry = entry;
+		burn_track_free(track);
+
+		memcpy(size_data, tdata + 24, 4);
+		memcpy(start_data, tdata + 8, 4);
+		mmc_fake_toc_entry(entry, session_number, i + 1,
+					 size_data, start_data);
+
+		if (session_number < d->disc->sessions) {
+			if (prev_session != session_number)
+				d->disc->session[session_number - 1]->
+							firsttrack = i+1;
+			d->disc->session[session_number - 1]->lasttrack = i+1;
+		}
+		prev_session = session_number;
+	}
+	return 1;
+}
+
+
 void mmc_read_toc(struct burn_drive *d)
 {
 /* read full toc, all sessions, in m/s/f form, 4k buffer */
+/* ts A70201 : or fake a toc from track information */
 	struct burn_track *track;
 	struct burn_session *session;
 	struct buffer buf;
@@ -422,19 +644,24 @@ void mmc_read_toc(struct burn_drive *d)
 	unsigned char *tdata;
 
 	mmc_function_spy("mmc_read_toc");
-	memcpy(c.opcode, MMC_GET_TOC, sizeof(MMC_GET_TOC));
-	if(!d->current_is_cd_profile) {
+	if (!(d->current_profile == -1 || d->current_is_cd_profile)) {
 		/* ts A70131 : MMC_GET_TOC uses Response Format 2 
 		   For DVD this fails with 5,24,00 */
-		/* One could try Response Format 0: mmc5r03.pdf 6.26.3.2 */
-		/* One could try
-		   51h READ DISC INFORMATION and 52h READ TRACK INFORMATION
-		   where 51h gives the number of tracks and 52h tells the
-		   session number with each track. */
+		/* One could try Response Format 0: mmc5r03.pdf 6.26.3.2
+		   which does not yield the same result wit the same disc
+		   on different drives.
+		*/
+		/* ts A70201 :
+		   This uses the session count from 51h READ DISC INFORMATION
+		   and the track records from 52h READ TRACK INFORMATION
+		*/
+		mmc_fake_toc(d);
 
-		/* >>> One must do someting */;
-
+		if (d->status == BURN_DISC_UNREADY)
+			d->status = BURN_DISC_FULL;
+		return;
 	}
+	memcpy(c.opcode, MMC_GET_TOC, sizeof(MMC_GET_TOC));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_TOC);
 	c.page = &buf;
@@ -461,6 +688,7 @@ void mmc_read_toc(struct burn_drive *d)
 		d->toc_entries = 0;
 		/* Prefering memory leaks over fandangos */
 		d->toc_entry = malloc(sizeof(struct burn_toc_entry));
+		memset(&(d->toc_entry[0]), 0, sizeof(struct burn_toc_entry));
 
 		return;
 	}
@@ -474,6 +702,8 @@ void mmc_read_toc(struct burn_drive *d)
 	a ssert(((dlen - 2) % 11) == 0);
 */
 	d->toc_entry = malloc(d->toc_entries * sizeof(struct burn_toc_entry));
+	for (i = 0; i < d->toc_entries; i++)
+		memset(&(d->toc_entry[i]), 0, sizeof(struct burn_toc_entry));
 	tdata = c.page->data + 4;
 
 	burn_print(12, "TOC:\n");
@@ -497,8 +727,7 @@ void mmc_read_toc(struct burn_drive *d)
 		burn_print(bpl, " MSF(%d:%d:%d)", tdata[4],tdata[5],tdata[6]);
 		burn_print(bpl, " PMSF(%d:%d:%d %d)",
 				tdata[8], tdata[9], tdata[10],
-				burn_msf_to_lba(tdata[8], tdata[9], tdata[10])
-			);
+				burn_msf_to_lba(tdata[8], tdata[9], tdata[10]));
 		burn_print(bpl, " - control %d, adr %d\n", tdata[1] & 0xF,
 			   tdata[1] >> 4);
 
@@ -550,7 +779,8 @@ void mmc_read_toc(struct burn_drive *d)
 	/* ts A61022 */
 	burn_print(bpl, "-----------------------------------\n");
 
-	if (d->status != BURN_DISC_APPENDABLE)
+	/* ts A70131 : was (d->status != BURN_DISC_BLANK) */
+	if (d->status == BURN_DISC_UNREADY)
 		d->status = BURN_DISC_FULL;
 	toc_find_modes(d);
 }
@@ -571,11 +801,13 @@ int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 	   My drives return useful data, though.
            MMC-3 states that DVD had not tracks. So maybe this fake is
 	   a legacy ?
-
-	   >>> Possibly one will have to fake this reply from
-	       51h READ DISC INFORMATION and 52h READ TRACK INFORMATION
-	       (I still have to find out what growisofs is using)
 	*/
+
+	/* >>>
+	   mmc_fake_toc() meanwhile tries to establish a useable TOC.
+	   Evaluate this first before issueing a MMC command.
+	*/
+
 	memcpy(c.opcode, MMC_GET_MSINFO, sizeof(MMC_GET_MSINFO));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_MSINFO);
@@ -602,6 +834,8 @@ void mmc_read_disc_info(struct burn_drive *d)
 	unsigned char *data;
 	struct command c;
 	char msg[160];
+	/* ts A70131 : had to move mmc_read_toc() to end of function */
+	int do_read_toc = 0, session_state;
 
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
@@ -647,10 +881,6 @@ void mmc_read_disc_info(struct burn_drive *d)
 	data = c.page->data;
 	d->erasable = !!(data[2] & 16);
 
-/*
-	fprintf(stderr, "libburn_experimental: data[2]= %d  0x%x\n",
-			(unsigned) data[2], (unsigned) data[2]);
-*/
 	switch (data[2] & 3) {
 	case 0:
 		d->toc_entries = 0;
@@ -668,8 +898,9 @@ void mmc_read_disc_info(struct burn_drive *d)
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
 	case 2:
-		if (d->current_profile == -1 || d->current_is_cd_profile)
-			mmc_read_toc(d);
+		if ((data[2] & 3) == 2)
+			d->status = BURN_DISC_FULL;
+		do_read_toc = 1;
 		break;
 	}
 
@@ -687,13 +918,22 @@ void mmc_read_disc_info(struct burn_drive *d)
 	*/
 	d->bg_format_status = data[7] & 3;
 
-	if (d->status == BURN_DISC_BLANK)
+	if (d->status == BURN_DISC_BLANK) {
                 d->last_track_no = 1; /* The "incomplete track" */
-	else
+		d->complete_sessions = 0;
+	} else {
+		/* ts A70131 : number of non-empty sessions */
+		d->complete_sessions = (data[9] << 8) | data[4];
+		session_state = (data[2] >> 2) & 3;
+		/* mmc5r03c.pdf 6.22.3.1.3 State of Last Session: 3=complete */
+		if (session_state != 3 && d->complete_sessions >= 1)
+			d->complete_sessions--;
+
 		/* ts A70129 : mmc5r03c.pdf 6.22.3.1.7
 		   This includes the "incomplete track" if the disk is
 		   appendable. I.e number of complete tracks + 1. */
 		d->last_track_no = (data[11] << 8) | data[6];
+	}
 
 	/* Preliminarily declare blank:
 	   ts A61219 : DVD+RW (is not bg_format_status==0 "blank")
@@ -703,6 +943,9 @@ void mmc_read_disc_info(struct burn_drive *d)
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
 	    d->current_profile == 0x12)
 		d->status = BURN_DISC_BLANK;
+
+	if (do_read_toc)
+		mmc_read_toc(d);
 }
 
 void mmc_read_atip(struct burn_drive *d)
@@ -1885,6 +2128,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->needs_close_session = 0;
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
+	d->complete_sessions = 0;
 	d->last_track_no = 1;
 
 	return 1;

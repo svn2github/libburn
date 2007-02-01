@@ -199,9 +199,13 @@ struct burn_drive
 	int start_lba;
 	int end_lba;
 
+
+	/* ts A70131 : from 51h READ DISC INFORMATION Number of Sessions (-1)*/
+	int complete_sessions;
 	/* ts A70129 :
 	   from 51h READ DISC INFORMATION Last Track Number in Last Session */
 	int last_track_no;
+
 
 	int toc_temp;
 	struct burn_disc *disc;	/* disc structure */

@@ -375,7 +375,7 @@ int telltoc_formatlist(struct burn_drive *drive)
 
 int telltoc_toc(struct burn_drive *drive)
 {
-	int num_sessions = 0 , num_tracks = 0 , lba = 0;
+	int num_sessions = 0 , num_tracks = 0 , lba = 0, pmin, psec, pframe;
 	int track_count = 0;
 	int session_no, track_no;
 	struct burn_disc *disc= NULL;
@@ -397,27 +397,36 @@ int telltoc_toc(struct burn_drive *drive)
 		for(track_no= 0; track_no<num_tracks; track_no++) {
 			track_count++;
 			burn_track_get_entry(tracks[track_no], &toc_entry);
-			lba= burn_msf_to_lba(toc_entry.pmin, toc_entry.psec,
-						toc_entry.pframe);
+			if (toc_entry.extensions_valid & 1) {
+				/* DVD extension valid */
+				lba = toc_entry.start_lba;
+				burn_lba_to_msf(lba, &pmin, &psec, &pframe);
+			} else {
+				pmin = toc_entry.pmin;
+				psec = toc_entry.psec;
+				pframe = toc_entry.pframe;
+				lba= burn_msf_to_lba(pmin, psec, pframe);
+			}
 			printf("Media content: session %2d  ", session_no+1);
-			printf("track    %2d %s  lba: %9d  %2.2u:%2.2u:%2.2u\n",
+			printf("track    %2d %s  lba: %9d  %4.2d:%2.2d:%2.2d\n",
 				track_count,
 				((toc_entry.control&7)<4?"audio":"data "),
-				lba,
-				toc_entry.pmin,
-				toc_entry.psec,
-				toc_entry.pframe);
+				lba, pmin, psec, pframe);
 		}
 		burn_session_get_leadout_entry(sessions[session_no],
 						&toc_entry);
-		lba = burn_msf_to_lba(toc_entry.pmin,
-					toc_entry.psec, toc_entry.pframe);
+		if (toc_entry.extensions_valid & 1) {
+			lba = toc_entry.start_lba;
+			burn_lba_to_msf(lba, &pmin, &psec, &pframe);
+		} else {
+			pmin = toc_entry.pmin;
+			psec = toc_entry.psec;
+			pframe = toc_entry.pframe;
+			lba= burn_msf_to_lba(pmin, psec, pframe);
+		}
 		printf("Media content: session %2d  ", session_no+1);
-		printf("leadout            lba: %9d  %2.2u:%2.2u:%2.2u\n",
-			lba,
-			toc_entry.pmin,
-			toc_entry.psec,
-			toc_entry.pframe);
+		printf("leadout            lba: %9d  %4.2d:%2.2d:%2.2d\n",
+			lba, pmin, psec, pframe);
 	}
 	if (disc!=NULL)
 		burn_disc_free(disc);
