@@ -1,9 +1,10 @@
-libburnia.pykix.org Optical Media Rotisserie Recipes as of January 2007
+libburnia.pykix.org Optical Media Rotisserie Recipes as of February 2007
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
+- Sequential DVD-R[W] Cookbook (Multi-session only. No DAO for now.)
 
 
 -------------------------------------------------------------------------------
@@ -41,15 +42,16 @@ CD media have to be blank or appendable in order to be writeable in TAO mode.
 The according status may be inquired by 51h READ DISC INFORMATION requesting
 Data Type 000b Standard Disc Information, where reply value Disc Status
 indicates:
-00b   blank
-01b   appendable
-10b   finalized
-11b   others (unsuitable for this recipe)
+ 00b   blank
+ 01b   appendable
+ 10b   finalized
+ 11b   others (unsuitable for this recipe)
 (mmc5r03c.pdf 6.22.3.1.4)
 
 CD-RW which are finalized or appendable may be blanked by command A1h BLANK
 with blanking types 000b "Blank the disc" or 001b "Minimally blank the disc".
 The Start Address/Track Number will be ignored so it may well be 0.
+
 Because the operation is long running it is advised to set the Immed bit and to
 watch the progress by commands 00h TEST UNIT READY and 03h REQUEST SENSE
 with DESC bit set to 0 for fixed format reply.
@@ -670,8 +672,9 @@ of Intermediate state by 5Bh CLOSE TRACK SESSION with Close Function 010b.
 
 
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
                         Sequential DVD-R[W] Cookbook
-                        (emerging, still incomplete)
 -------------------------------------------------------------------------------
 Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
@@ -683,13 +686,54 @@ For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
 
 Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
 (mmc5r03c.pdf 6.6.2.1)
+DVD-R                          0011h
 DVD-RW Restricted Overwrite    0013h
 DVD-RW Sequential Recording    0014h
 
+There are two approaches for writing to sequential DVD-R[W]: DAO and
+Incremental. Not all media and drives offer Incremental which allows multi-
+session as with CD media.
+
+- About overwriteavble, blank, appendable and finalized DVD-R[W] media
+- Incremental writing
+>>> - DAO writing (missing yet)
+- Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems
+- Obtaining a Table Of Content from DVD-R[W]
+
+-------------------------------------------------------------------------------
+About overwriteable, blank, appendable and finalized DVD-R[W] media :
+
+DVD-RW can be either in formatted state Restricted Overwrite or in unformatted
+state Sequential Recording. Sequential media can be either blank, appendable
+or finalized.
+
+Only blank and appendable media are sequentially writeable. For overwriteable
+DVD-RW see the Overwriteable DVD Cookbook.
+
+Overwriteable DVD-RW can be detected by their profile number 0013h in contrast
+to profile number 0014h for sequential DVD-RW.
+The status of sequential media can be inquired like with CD by 51h READ DISC
+INFORMATION requesting Data Type 000b Standard Disc Information, where reply
+value Disc Status indicates:
+ 00b   blank
+ 01b   appendable  
+ 10b   finalized
+ 11b   others (unsuitable for this recipe)
+(mmc5r03c.pdf 6.22.3.1.4)
+
+Finalized, appendable or overwriteable DVD-RW can be brought into blank
+sequential state by command A1h BLANK with blanking type 000b "Blank the disc".
+See TAO Multi-Session CD Cookbook for details about blanking.
+
+Different from CD it seems unwise to use minimal blanking (type 001b) because
+my two DVD drives do not offer the Incremental Streaming feature 0021h with
+DVD-RW which have been treated this way. cdrecord and cdrskin even stall when
+examining these media (exact command and cause is still to be determined).
+(mmc5r03c.pdf 6.2)
+
+
 -------------------------------------------------------------------------------
 Incremental writing :
-
-There are two approaches for writing to sequential DVD-RW. DAO and Incremental.
 
 Incremental writing allows to produce multi-session DVDs. It is indicated
 by feature 0021h being marked current in the reply of 46h GET CONFIGURATION.
@@ -701,7 +745,10 @@ Bit. libburn obtains the full feature list for this and other info.
  6.2 46h GET CONFIGURATION, )
 In mode page 05h this method is selected by Write Type 00h. 
 
->>> speed setting
+Speed can be influenced by B6h SET STREAMING , speed capabilities can be
+inquired by ACh GET PERFORMANCE. It is advised to set only speeds and sizes
+which are returned by ACh.
+(mmc5r03c.pdf 6.39 SET STREAMING, 6.8 GET PERFORMANCE)	
 
 growisofs fetches a mode page 05h template by MODE SENSE and inserts its own
 parameters.  It sets Multi-session to 11b, unless dvd_compat is nonzero.
@@ -742,7 +789,8 @@ growisofs takes Packet Size from 52h. Specs predict it will be 16 (= 32 kB).
 
 The writing process is much like in "Writing a session to CD in TAO mode" :
 Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION.
-Currently full 32 kB buffers get written via 2Ah WRITE.
+libburn writes full 32 kB buffers via 2Ah WRITE.
+(mmc5r03c.pdf, 6.27 READ TRACK INFORMATION, 6.44 WRITE)
 When writing is done, it is mandatory to force the drive's buffer to media by
 35h SYNCHRONIZE CACHE.
 (mmc5r03c.pdf, 6.41)
@@ -760,6 +808,114 @@ page 05h wether the disc is finalized or stays appendable.
 
 It has not been tested yet wether multiple tracks are permissible in a single
 session.
+
+
+-------------------------------------------------------------------------------
+>>> DAO writing :  INCOMPLETE AND YET UNEXPLORED
+
+>>> DAO
+DAO is the mode prescribed by feature 002Fh.
+growisofs is_dao in page 05h sets Write Type to 2 "SAO". It is accompanied 
+by dvd_compat. Thus Multi-session is set to 0.
+
+ Write Type       Packet/TAO/SAO/RAW              02h = DAO (same code as SAO)
+
+>>> only with DAO and leadout : minus_r_reserve_track
+
+
+-------------------------------------------------------------------------------
+Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems :
+
+Like with CD it is necessary to obtain the two numbers for mkisofs option -C
+in order to prepare a ISO-9660 filesystem image which by its inner pointers
+matches the block addresses of the future location on media.
+These are the start address of the first track in the last complete session
+and the predicted start address of the track which will host the new image.
+See TAO Multi-Session CD Cookbook for some more info about mkisofs aspects.
+
+
+The first number may be gained by 43h READ TOC/PMA/ATIP Format 0001b which in
+table 478 promises quick access via Start Address Of First Track In Last
+Session.
+(mmc5r03c.pdf 6.26.2.5 table 478, 6.26.3.3.1)
+Regrettably the MMC-5 specs still define a useless reply for non-CD media
+which obviously stems from MMC-3 times when no multi-session was possible
+with non-CD.
+(mmc5r03c.pdf 6.26.3.3.3)
+Both my drives do give a useful reply with the correct number for appendable
+DVD-RW. But not being backed by the specs this method appears unappealing .
+
+Another approach would be a formatted Table of Content, obtained by 43h READ
+TOC/PMA/ATIP Format 0000b. The specs do not totally outrule that this returns
+useful data with non-CD but they define a crippled TOC for multi-session.
+(mmc5r03c.pdf 6.26.3.2.4)
+My LG drive returns a more detailed TOC, my NEC drive stays with the rather
+suboptimal specs. So one would get different TOCs on different drives.
+Nevertheless, the MMC-5 compliant TOC would return the desired number in
+the Track Start address of the track with the highest number before AAh.
+
+Most stable seems the approach to obtain the desired number from the reply
+of 52h READ TRACK INFORMATION, Address/Number Type 01b. The field Logical Block
+Address/Track/Session has to bear the track number of the first track in the
+last complete session. To determine this number one has to determine the
+number of the last session and the number of the last track from 51h READ DISC
+INFORMATION and to iterate over the tracknumber by 52h READ TRACK INFORMATION
+until the first track with the desired session number appears and reveils
+its start address. 
+(mmc5r03c.pdf 6.22 51h DISC, 6.27 52h TRACK)
+This method is very near to fabricating an own TOC. So libburn does this 
+when inspecting the media. If the first number for -C is needed, libburn
+inquires its TOC model for the address of the first track in the last
+complete session. See below for a detailed description of TOC fabrication.
+
+
+The second -C number is the exact prediction of future track start address. It
+is gained like with CD by 52h READ TRACK INFORMATION Type 01b. Different from
+CD one may not use track number FFh but has to use the Last Track in Last
+Session from 51h READ DISC INFORMATION. 
+(mmc5r03c.pdf 6.22 51h DISC, 6.27 52h TRACK)
+
+
+-------------------------------------------------------------------------------
+Obtaining a Table Of Content from DVD-R[W] :
+
+The raw TOC entries from 43h READ TOC/PMA/ATIP Format 0010b as described with
+CD media are not available with non-CD.
+There is a Format 0000b "Formatted TOC" but this is with non-CD a fictional
+information much at the discretion of the drive. Two drives with the same disc
+may well return different Formatted TOC. They are supposed to be consistent
+only about the last complete session and even there the MMC-5 specification
+6.26.3.2.5 seems to prescribe a structure which does not match the true
+structure of incremental writing to sequential DVD-R[W].
+(mmc5r03c.pdf 6.26.3.2)
+So i prefer not to use this method of getting a TOC.
+
+
+The alternative is to produce an own TOC from information gained by 51h READ
+DISC INFORMATION and by 52h READ TRACK INFORMATION which reveil a CD-like
+structure of sessions and 1:n related tracks.
+
+51h READ DISC INFORMATION Data Type 000b, fields Number of Sessions (Least
+Significant Byte) and Number of Sessions (Most Significant Byte) give the
+number of sessions. The last complete session number of an appendable disc
+is one less because there is an incomplete session at its end. libburn only
+records complete sessions in its TOC model.
+libburn uses Last Track in Last Session as a hint for the range of track
+numbers.
+(mmc5r03c.pdf 6.22)
+
+Next step ist to iterate from 1 up to the last track number and to obtain
+the according track info by 52h READ TRACK INFORMATION. Each track tells its
+Session Number (LSB at byte 2, MSB at 33), its Logical Track Start Address,
+its Logical Track Size, and much more which is not needed for a fake CD TOC.
+One may analyze the track info more finely but for this special purpose
+it is enough to discard the tracks which do not belong to complete sessions.
+(mmc5r03c.pdf 6.27)
+
+At the end of each session libburn inserts fake leadout entries into its TOC
+model. Their start address is computed from the start and size of the last
+track of the session.
+
 
 -------------------------------------------------------------------------------
 
