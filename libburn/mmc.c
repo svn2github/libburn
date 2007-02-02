@@ -786,28 +786,59 @@ void mmc_read_toc(struct burn_drive *d)
 }
 
 
-/* ts A70131 : If no TOC is at hand, this tries to get the start of the
-		last complete session (mksifs -c first parameter) */
+/* ts A70131 : This tries to get the start of the last complete session */
+/* man mkisofs , option -C :
+   The first number is the sector number of the first sector in
+   the last session of the disk that should be appended to.
+*/
 int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 {
 	struct buffer buf;
 	struct command c;
 	unsigned char *tdata;
+	int num_sessions, session_no, num_tracks;
+	struct burn_disc *disc;
+	struct burn_session **sessions;
+	struct burn_track **tracks;
+	struct burn_toc_entry toc_entry;
 
-	mmc_function_spy("mmc_read_multi_session_c");
+	mmc_function_spy("mmc_read_multi_session_c1");
 
+	/* First try to evaluate the eventually loaded TOC before issueing
+	   a MMC command. This search obtains the first track of the last
+	   complete session which has a track.
+	*/
+	*trackno = 0;
+	disc = burn_drive_get_disc(d);
+	if (disc == NULL)
+		goto inquire_drive;
+	sessions = burn_disc_get_sessions(disc, &num_sessions);
+	for (session_no = 0; session_no<num_sessions; session_no++) {
+		tracks = burn_session_get_tracks(sessions[session_no],
+						&num_tracks);
+		if (tracks == NULL || num_tracks <= 0)
+	continue;
+		burn_track_get_entry(tracks[0], &toc_entry);
+		if (toc_entry.extensions_valid & 1) { /* DVD extension valid */
+			*start = toc_entry.start_lba;
+			*trackno = (toc_entry.point_msb << 8)| toc_entry.point;
+		} else {
+			*start = burn_msf_to_lba(toc_entry.pmin,
+					toc_entry.psec, toc_entry.pframe);
+			*trackno = toc_entry.point;
+		}
+	}
+	burn_disc_free(disc);
+	if(*trackno > 0)
+		return 1;
+
+inquire_drive:;
 	/* mmc5r03.pdf 6.26.3.3.3 states that with non-CD this would
 	   be a useless fake always starting at track 1, lba 0.
 	   My drives return useful data, though.
-           MMC-3 states that DVD had not tracks. So maybe this fake is
-	   a legacy ?
+	   MMC-3 states that DVD had no tracks. So maybe this mandatory fake
+	   is a forgotten legacy ?
 	*/
-
-	/* >>>
-	   mmc_fake_toc() meanwhile tries to establish a useable TOC.
-	   Evaluate this first before issueing a MMC command.
-	*/
-
 	memcpy(c.opcode, MMC_GET_MSINFO, sizeof(MMC_GET_MSINFO));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_MSINFO);
@@ -822,8 +853,7 @@ int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 
 	tdata = c.page->data + 4;
 	*trackno = tdata[2];
-	*start = (tdata[4] << 24) | (tdata[5] << 16)
-		| (tdata[6] << 8) | tdata[7];
+	*start = mmc_four_char_to_int(tdata + 4);
 	return 1;
 }
 

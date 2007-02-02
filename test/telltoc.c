@@ -437,13 +437,8 @@ int telltoc_toc(struct burn_drive *drive)
 int telltoc_msinfo(struct burn_drive *drive, 
 			int msinfo_explicit, int msinfo_alone)
 {
-	int num_sessions, session_no, ret, num_tracks;
-	int nwa = -123456789, lba = -123456789, aux_lba, lout_lba;
+	int ret, lba, nwa = -123456789, aux_lba;
 	enum burn_disc_status s;
-	struct burn_disc *disc= NULL;
-	struct burn_session **sessions;
-	struct burn_track **tracks;
-	struct burn_toc_entry toc_entry;
 	struct burn_write_opts *o= NULL;
 
 	s = burn_disc_get_status(drive);
@@ -459,29 +454,12 @@ int telltoc_msinfo(struct burn_drive *drive,
 	   The first number is the sector number of the first sector in
 	   the last session of the disk that should be appended to.
 	*/
-	disc = burn_drive_get_disc(drive);
-	if (disc==NULL) {
-		fprintf(stderr,"SORRY: Cannot obtain info about CD content\n");
-		return 2;
-	}
-	sessions = burn_disc_get_sessions(disc, &num_sessions);
-	for (session_no = 0; session_no<num_sessions; session_no++) {
-		tracks = burn_session_get_tracks(sessions[session_no],
-						&num_tracks);
-		if (tracks==NULL || num_tracks<=0)
-	continue;
-		burn_track_get_entry(tracks[0], &toc_entry);
-		lba= burn_msf_to_lba(toc_entry.pmin, toc_entry.psec,
-						toc_entry.pframe);
-	}
-	if(lba==-123456789) {
-		fprintf(stderr,"SORRY: Cannot find any track on media\n");
+	ret = burn_disc_get_msc1(drive, &lba);
+	if (ret <= 0) {
+		fprintf(stderr,
+			"SORRY: Cannot obtain start address of last session\n");
 		{ ret = 0; goto ex; }
 	}
-	/* Prepare a qualified guess as fallback for nwa inquiry */
-	burn_session_get_leadout_entry(sessions[num_sessions-1], &toc_entry);
-	lout_lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,
-					toc_entry.pframe);
 
 	/* man mkisofs , option -C :
 	   The second  number is the starting sector number of the new session.
@@ -498,21 +476,15 @@ int telltoc_msinfo(struct burn_drive *drive,
 	telltoc_regrab(drive); /* necessary to calm down my NEC drive */
 	if(ret<=0) {
 		fprintf(stderr,
-		   "NOTE: Guessing next writeable address from leadout\n");
-		if(num_sessions>0)
-			nwa= lout_lba+6900;
-		else
-			nwa= lout_lba+11400;
+			"SORRY: Cannot obtain next writeable address\n");
+		{ ret = 0; goto ex; }
 	}
 
 	if (!msinfo_alone)
 		printf("Media msinfo : mkisofs ... -C ");
 	printf("%d,%d\n",lba,nwa);
-
 	ret = 1;
 ex:;
-	if (disc!=NULL)
-		burn_disc_free(disc);
 	if (o!=NULL)
 		burn_write_opts_free(o);
 	return ret;
