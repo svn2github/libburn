@@ -47,7 +47,8 @@ then
   -e 's/In general there are two types of tracks: data and audio./\&nbsp;<BR>In general there are two types of tracks: data and audio./' \
   -e 's/While audio tracks just contain a given/\&nbsp;<BR>While audio tracks just contain a given/' \
   -e 's/<b>Recordable CD Media:<\/b>/\&nbsp;<BR><b>Recordable CD Media:<\/b>/' \
-  -e 's/<b>Recordable DVD Media:<\/b>/\&nbsp;<BR><b>Recordable DVD Media:<\/b>/' \
+  -e 's/<b>Overwriteable DVD Media:<\/b>/\&nbsp;<BR><b>Overwriteable DVD Media:<\/b>/' \
+  -e 's/<b>Sequentially Recordable DVD Media:<\/b>/\&nbsp;<BR><b>Sequentially Recordable DVD Media:<\/b>/' \
   -e 's/<b>Drive preparation and addressing:<\/b>/\&nbsp;<BR><b>Drive preparation and addressing:<\/b>/' \
   -e 's/If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
   -e 's/^Alphabetical list of options/\&nbsp;<BR>Alphabetical list of options/' \
