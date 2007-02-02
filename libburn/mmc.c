@@ -589,12 +589,13 @@ int mmc_fake_toc(struct burn_drive *d)
 	continue;
 
 		if (session_number != prev_session && prev_session > 0) {
+			/* leadout entry previous session */
 			entry = &(d->toc_entry[(i - 1) + prev_session]);
 			lba = mmc_four_char_to_int(start_data) +
 			      mmc_four_char_to_int(size_data);
 			mmc_int_to_four_char(start_data, lba);
 			mmc_int_to_four_char(size_data, 0);
-			mmc_fake_toc_entry(entry, session_number, 0xA2,
+			mmc_fake_toc_entry(entry, prev_session, 0xA2,
 					 size_data, start_data);
 			entry->min= entry->sec= entry->frame= 0;
 			d->disc->session[prev_session - 1]->leadout_entry =
@@ -619,13 +620,22 @@ int mmc_fake_toc(struct burn_drive *d)
 		mmc_fake_toc_entry(entry, session_number, i + 1,
 					 size_data, start_data);
 
-		if (session_number < d->disc->sessions) {
-			if (prev_session != session_number)
-				d->disc->session[session_number - 1]->
-							firsttrack = i+1;
-			d->disc->session[session_number - 1]->lasttrack = i+1;
-		}
+		if (prev_session != session_number)
+			d->disc->session[session_number - 1]->firsttrack = i+1;
+		d->disc->session[session_number - 1]->lasttrack = i+1;
 		prev_session = session_number;
+	}
+	if (prev_session > 0 && prev_session <= d->disc->sessions) {
+		/* leadout entry of last session of closed disc */
+		entry = &(d->toc_entry[(d->last_track_no - 1) + prev_session]);
+		lba = mmc_four_char_to_int(start_data) +
+		      mmc_four_char_to_int(size_data);
+		mmc_int_to_four_char(start_data, lba);
+		mmc_int_to_four_char(size_data, 0);
+		mmc_fake_toc_entry(entry, prev_session, 0xA2,
+				 size_data, start_data);
+		entry->min= entry->sec= entry->frame= 0;
+		d->disc->session[prev_session - 1]->leadout_entry = entry;
 	}
 	return 1;
 }
@@ -897,21 +907,6 @@ void mmc_read_disc_info(struct burn_drive *d)
 	data = c.page->data;
 	d->erasable = !!(data[2] & 16);
 
-	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
-		&& ! d->current_is_supported_profile) {
-		if (!d->silent_on_scsi_error) {
-			sprintf(msg,
-				"Unsuitable media detected. Profile %4.4Xh  %s",
-				d->current_profile, d->current_profile_text);
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				 0x0002011e,
-				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				 msg, 0,0);
-		}
-		d->status = BURN_DISC_UNSUITABLE;
-		return;
-	}
-
 	switch (data[2] & 3) {
 	case 0:
 		d->toc_entries = 0;
@@ -929,10 +924,31 @@ void mmc_read_disc_info(struct burn_drive *d)
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
 	case 2:
-		if ((data[2] & 3) == 2)
+		if ((data[2] & 3) == 2) {
 			d->status = BURN_DISC_FULL;
+#ifdef Libburn_support_dvd_r_seQ
+			/* offers no feature 0021h now but might do if blank */
+			if (d->current_profile == 0x14) /* DVD-RW */
+				d->current_is_supported_profile = 1;
+#endif
+		}
 		do_read_toc = 1;
 		break;
+	}
+
+	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
+		&& ! d->current_is_supported_profile) {
+		if (!d->silent_on_scsi_error) {
+			sprintf(msg,
+				"Unsuitable media detected. Profile %4.4Xh  %s",
+				d->current_profile, d->current_profile_text);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x0002011e,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				 msg, 0,0);
+		}
+		d->status = BURN_DISC_UNSUITABLE;
+		return;
 	}
 
 	/* >>> ts A61217 : Note for future
@@ -1596,6 +1612,7 @@ void mmc_get_configuration(struct burn_drive *d)
 		}
 	}
 #ifdef Libburn_support_dvd_r_seQ
+	/* might get adjusted later by mmc_read_disc_info() */
 	if ((cp == 0x11 || cp == 0x14) && d->current_has_feat21h)
 		d->current_is_supported_profile = 1;
 #endif
