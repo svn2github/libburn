@@ -66,7 +66,7 @@ More than one track can be burned by a single run of cdrskin.
 In the terms of the MMC standard all tracks written by the same run constitute
 a \fBsession\fP.
 .br
-CDs can be kept appendable so that further tracks can
+Some media types can be kept appendable so that further tracks can
 be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
 content (TOC) on media and can be retrieved via cdrskin option -toc.
@@ -74,7 +74,7 @@ These informations are also used by the operating systems' CD-ROM read drivers.
 .PP
 In general there are two types of tracks: data and audio. They differ in
 sector size, throughput and readability via the systems' CD-ROM drivers
-resp. by music CD players.
+resp. by music CD players. With DVD there is only type data.
 .br
 If not explicitely option -audio is given, then any track is burned as type
 data, unless the track source is a file with suffix ".wav" or ".au" and has a
@@ -120,28 +120,6 @@ Blanking damages the previous content but does not
 make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be.
 .PP
-.B Overwriteable DVD Media:
-.br
-Currently only types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
-.br
-DVD+RW and DVD-RAM media get treated as blank media regardless wether they
-hold data or not. They need no special initial formatting.
-Options -audio and -multi are not allowed. Only one track is allowed.
--toc does not return information about the media content.
-Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
-there is no difference between -sao and -tao. If ever, then -tao will be the
-mode which preserves the current behavior.
-.br
-DVD-RW are sold in state "Sequential Recording". To become suitable for the
-Overwriteable DVD recoding model they need to get formatted to state
-"Restricted Overwrite". Then they behave much like DVD+RW. This formatting
-can be done by option
-.B blank=format_overwrite
-.br
-Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin option
-blank=deformat_sequential can bring a DVD-RW out of overwriteable state so
-that it has to be formatted again. If in doubt, just give it a try.
-.PP
 .B Sequentially Recordable DVD Media:
 .br
 ---------------
@@ -161,15 +139,37 @@ Used DVD-RW get into blank sequential state by option
 .B blank=deformat_sequential .
 .br
 Incremental Streaming is the default write mode if it is offered by the media.
-It resembles much TAO writing with CD, as it allows track sources of
-unpredicted length and to keep media appendable by option
+It may be selected explicitely by option -tao as it resembles much TAO writing
+with CD by allowing track sources of unpredicted length and to keep media
+appendable by option
 .B -multi .
 Only restriction towards CD-RW is the lack of support for -audio tracks.
-Multiple tracks per session are permissible. A reasonable use case for
-this has still to be found, though.
+Multiple tracks per session are permissible.
 .br
 (The other write mode, DAO, is not implemented yet. It will allow no -multi and
-only a single track.)
+only a single track. It will be selected explicitely by option -sao or by
+default if no Incremental writing is available.)
+.PP
+.B Overwriteable DVD Media:
+.br
+Currently only types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
+.br
+DVD+RW and DVD-RAM media get treated as blank media regardless wether they
+hold data or not. They need no special initial formatting.
+Options -audio and -multi are not allowed. Only one track is allowed.
+-toc does not return information about the media content.
+Currently there is no difference between -sao and -tao. If ever, then -tao
+will be the mode which preserves the current behavior.
+.br
+DVD-RW are sold in state "Sequential Recording". To become suitable for the
+Overwriteable DVD recording model they need to get formatted to state
+"Restricted Overwrite". Then they behave much like DVD+RW. This formatting
+can be done by option
+.B blank=format_overwrite .
+.br
+Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin option
+blank=deformat_sequential can bring a DVD-RW out of overwriteable state so
+that it has to be formatted again. If in doubt, just give it a try.
 .PP
 .B Drive preparation and addressing:
 .br
@@ -281,7 +281,7 @@ Retrieve some info about the addressed drive.
 Exits with non-zero value if the drive cannot be found and opened.
 .TP
 .BI \-dao
-Alias for option -sao. Write disk in Session at Once mode.
+Alias for option -sao. Write disc in Session at Once mode.
 .TP
 .BI \-data
 Subsequent tracks are data tracks. This option is default and only needed
@@ -315,7 +315,7 @@ media. There is no guarantee that this will work with a particular drive
 in a particular write mode. Blanking is prevented reliably, though.
 .TP
 .BI \-eject
-Eject the disk after work is done.
+Eject the disc after work is done.
 .TP
 .BI \-force
 Assume that the user knows better in situations when cdrskin or libburn are
@@ -365,9 +365,10 @@ start address of the next session to be appended. The string is empty if
 the most recent session was not written with option -multi.
 .TP
 .BI \-multi
-This option keeps the CD appendable after the current session has been written.
-Without it the disk gets closed and may not be written any more  - unless it
-is a CD-RW and gets blanked which causes loss of its content.
+This option keeps the CD or DVD-R[W] appendable after the current session has
+been written.
+Without it the disc gets closed and may not be written any more  - unless it
+is a -RW and gets blanked which causes loss of its content.
 .br
 The following sessions can only be written in -tao mode.
 .br
@@ -395,14 +396,14 @@ gets reset to padsize=0 after that next track is written. It may be set
 again before the next track argument. About size specifiers, see option fs=.
 .TP
 .BI \-raw96r
-Write disk in RAW/RAW96R mode. This mode allows to put more payload bytes
+Write CD in RAW/RAW96R mode. This mode allows to put more payload bytes
 into a CD sector but obviously at the cost of error correction. It can only
 be used for tracks of fixely predicted size. Some drives allow this mode but
 then behave strange or even go bad for the next few attempts to burn a CD.
 One should use it only if inavoidable.
 .TP
 .BI \-sao
-Write disk in Session At Once mode. This mode is able to put several audio
+Write disc in Session At Once mode. This mode is able to put several audio
 tracks on CD without producing audible gaps between them. It can only 
 be used for tracks of fixely predicted size. This implies that track arguments
 which depict stdin or named pipes need to be preceeded by option tsize= or
@@ -423,7 +424,8 @@ Bus,Target,Lun Number) 'Vendor' 'Mode' 'Revision'
 .TP
 .BI speed= number
 Set speed of drive. With data CD, 1x speed corresponds to a throughput of
-150 kB/s. It is not an error to set a speed higher than is suitable for drive
+150,000 bytes/second. With DVD, 1x = 1,385,000 bytes/second.
+It is not an error to set a speed higher than is suitable for drive
 and media. One should stay within a realistic speed range, though.
 .TP
 .BI \-swab
@@ -435,13 +437,13 @@ Less guesswork is needed if track sources are in format MS-WAVE in a file with
 suffix ".wav".
 .TP
 .BI \-tao
-Write disk in Track At Once (TAO) mode. This mode can be used with track
+Write disc in Track At Once (TAO) mode. This mode can be used with track
 sources of unpredictable size, like standard input or named pipes. It is
-also the only mode that can be used for writing to appendable CD which
-already hold data.
+also the only mode that can be used for writing to appendable CD or DVD-R[W]
+which already hold data.
 .TP
 .BI \-toc
-Print the table of content (TOC) which describes the tracks recorded on CD.
+Print the table of content (TOC) which describes the tracks recorded on disc.
 The output contains all info from option -atip plus lines which begin with
 "track:", the track number, the word "lba:" and a number which gives the
 start address of the track. Addresses are counted in CD sectors which with
