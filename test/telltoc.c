@@ -228,6 +228,7 @@ int telltoc_media(struct burn_drive *drive)
 	double max_speed = 0.0, min_speed = 0.0, speed_conv;
 	enum burn_disc_status s;
 	char profile_name[80], speed_unit[40];
+	struct burn_multi_caps *caps;
 
 	printf("Media current: ");
 	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
@@ -272,6 +273,44 @@ int telltoc_media(struct burn_drive *drive)
 			printf("is not erasable\n");	
 	} else
 		printf("is not recognizable\n");
+
+	ret = burn_disc_get_multi_caps(drive, BURN_WRITE_NONE, &caps, 0);
+	if (ret > 0) {
+		printf("Write multi  : ");
+		printf("%s multi-session , ",
+			 caps->multi_session == 1 ? "allows" : "prohibits");
+		if (caps->multi_track)
+			printf("allows multiple tracks\n");
+		else
+			printf("enforces single track\n");
+		printf("Write start  : ");
+		if (caps->start_adr == 1)
+			printf(
+			"allows addresses [%.f , %.f]s , alignment=%.fs\n",
+				(double) caps->start_range_low / 2048 ,
+				(double) caps->start_range_high / 2048 ,
+				(double) caps->start_alignment / 2048 );
+		else
+			printf("prohibits write start addressing\n");
+		printf("Write modes  : ");
+		if (caps->might_do_tao)
+			printf("TAO%s",
+				caps->advised_write_mode == BURN_WRITE_TAO ?
+				" (advised)" : "");
+		if (caps->might_do_sao)
+			printf("%sSAO%s",
+				caps->might_do_tao ? " , " : "",
+				caps->advised_write_mode == BURN_WRITE_SAO ?
+				" (advised)" : "");
+		if (caps->might_do_raw)
+			printf("%sRAW%s",
+				caps->might_do_tao | caps->might_do_sao ?
+				" , " : "",
+				caps->advised_write_mode == BURN_WRITE_RAW ?
+				" (advised)" : "");
+		printf("\n");
+		burn_disc_free_multi_caps(&caps);
+	}
 
 	ret= burn_drive_get_write_speed(drive);
 	max_speed = ((double ) ret) / speed_conv;

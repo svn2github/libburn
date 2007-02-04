@@ -1709,6 +1709,8 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 			score = 100 * sign;
 		} else if(type == 0x15) { /* DVD-RW Quick */
 			score = 50 * sign;
+		} else if(type == 0x26) { /* DVD+RW */
+			score = 1 * sign;
 		} else {
 	continue;
 		}

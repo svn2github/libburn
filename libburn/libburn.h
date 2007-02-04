@@ -126,7 +126,14 @@ enum burn_write_types
 	    all subcodes must be provided by lib or user
 	    only raw block types are supported
 	*/
-	BURN_WRITE_RAW
+	BURN_WRITE_RAW,
+
+	/** In replies this indicates that not any writing will work.
+	    As parameter for inquiries it indicates that no particular write
+            mode shall is specified.
+	    Do not use for setting a write mode for burning. It won't work.
+	*/
+	BURN_WRITE_NONE
 };
 
 /** Data format to send to the drive */
@@ -1254,11 +1261,11 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to
-    choose this address at all (DVD+RW, DVD-RAM, DVD-RW only for now). The
-    address is given in bytes. If it is not -1 then a write run will fail if
-    choice of start address is not supported or if the block alignment of the
-    address is not suitable for media and write mode. (Alignment to 32 kB
-    blocks is advised with DVD media.)
+    choose this address at all (DVD+RW, DVD-RAM, formatted DVD-RW only for
+    now). The address is given in bytes. If it is not -1 then a write run
+    will fail if choice of start address is not supported or if the block
+    alignment of the address is not suitable for media and write mode.
+    (Alignment to 32 kB blocks is advised with DVD media.)
     @param opts The write opts to change
     @param value The address in bytes (-1 = start at default address)
 */
@@ -1368,6 +1375,93 @@ int burn_drive_get_speedlist(struct burn_drive *d,
     @return 1=list disposed , 0= *speedlist was already NULL
 */
 int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list);
+
+
+/* ts A70203 */
+/** The reply structure for burn_disc_get_multi_caps() */
+struct burn_multi_caps {
+
+	/* Multi-session capability allows to keep the media appendable after
+	   writing a session. It also guarantees that the drive will be able
+	   to predict and use the appropriate Next Writeable Address to place
+	   the next session on the media without overwriting the existing ones.
+	    1= media may be kept appendable by burn_write_opts_set_multi(o,1)
+ 	    0= media will not be apendable appendable
+	*/
+	int multi_session;
+
+	/* Multi-track capability allows to write more than one track source
+	   during a single session. The written tracks can later be found in
+	   libburn's TOC model with their start addresses and sizes.
+	    1= multiple tracks per session are allowed
+	    0= only one track per session allowed
+	*/
+	int multi_track;
+
+	/* Start-address capability allows to set a non-zero address with
+	   burn_write_opts_set_start_byte(). Eventually this has to respect
+	   .start_alignment and .start_range_low, .start_range_high in this
+	   structure.
+	    1= non-zero start address is allowed
+            0= only start address 0 is allowed (to depict the drive's own idea
+               about the appropriate write start)
+	*/
+	int start_adr;
+
+	/** The alignment for start addresses.
+	    ( start_address % start_alignment ) must be 0.
+	*/
+	off_t start_alignment;
+
+	/** The lowest permissible start address.
+	*/
+	off_t start_range_low;
+
+	/** The highest addressable start address.
+	*/
+	off_t start_range_high;
+
+	/** Potential availability of write modes
+  	     2= available, no size prediction necessary
+	     1= available, needs exact size prediction
+	     0= not available
+	    With CD media (profiles 0x09 and 0x0a) check also the elements
+	    *_block_types of the according write mode.
+	*/
+	int might_do_tao;
+	int might_do_sao;
+	int might_do_raw;
+	
+	/* Advised write mode.
+	*/
+	enum burn_write_types advised_write_mode;
+
+	/* Write mode as given by parameter wt of burn_disc_get_multi_caps().
+	*/
+	enum burn_write_types selected_write_mode;
+};
+
+/** Allocates a struct burn_multi_caps (see above) and fills it with values
+    which are appropriate for the drive and the loaded media. The drive
+    must be grabbed for this call. The returned structure has to be disposed
+    via burn_disc_free_multi_caps() when no longer needed.
+    @param d The drive to inquire
+    @param wt With BURN_WRITE_NONE the best capabilities of all write modes
+              get returned. If set to a write mode like BURN_WRITE_TAO the
+              capabilities with that particular mode are returned.  
+    @param caps returns the info structure
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return < 0 : error , 0 : writing seems impossible , 1 : writing possible 
+*/
+int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
+			 struct burn_multi_caps **caps, int flag);
+
+/** Removes from memory a multi session info structure which was returned by
+    burn_disc_get_multi_caps(). The pointer *caps gets set o NULL.
+    @param caps the info structure to dispose (note: pointer to pointer)
+    @return 0 : *caps was already NULL, 1 : memory object was disposed
+*/
+int burn_disc_free_multi_caps(struct burn_multi_caps **caps);
 
 
 /** Gets a copy of the toc_entry structure associated with a track

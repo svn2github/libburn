@@ -1558,3 +1558,111 @@ int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list)
 	return burn_speed_descriptor_destroy(speed_list, 1);
 }
 
+
+/* ts A70203 : API function */
+int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
+                         struct burn_multi_caps **caps, int flag)
+{
+	enum burn_disc_status s;
+	struct burn_multi_caps *o;
+	int status, num_formats, ret, type, i;
+	off_t size;
+	unsigned dummy;
+
+	*caps = NULL;
+	s = burn_disc_get_status(d);
+	if(s == BURN_DISC_UNGRABBED)
+		return -1;
+	*caps = o = (struct burn_multi_caps *)
+		malloc(sizeof(struct burn_multi_caps));
+	if(*caps == NULL)
+		return -1;
+	/* Default says nothing is available */
+	o->multi_session = o->multi_track = 0;
+	o-> start_adr = 0;
+	o->start_alignment = o->start_range_low = o->start_range_high = 0;
+	o->might_do_tao = o->might_do_sao = o->might_do_raw = 0;
+	o->advised_write_mode = BURN_WRITE_NONE;
+	o->selected_write_mode = wt;
+	
+	if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
+		return 0;
+	} else if (s == BURN_DISC_APPENDABLE &&
+		 (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)) {
+		return 0;
+	} else if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
+		 /* CD-R , CD-RW */
+		if (d->block_types[BURN_WRITE_TAO]) {
+			o->multi_session = o->multi_track = 1;
+			o->might_do_tao = 2;
+			if (o->advised_write_mode == BURN_WRITE_NONE)
+				o->advised_write_mode = BURN_WRITE_TAO;
+		}
+		if (d->block_types[BURN_WRITE_SAO]) {
+			o->multi_session = o->multi_track = 1;
+			o->might_do_sao = 1;
+			if (o->advised_write_mode == BURN_WRITE_NONE)
+				o->advised_write_mode = BURN_WRITE_SAO;
+		}
+		if (d->block_types[BURN_WRITE_RAW]) {
+			o->might_do_raw = 1;
+			if (o->advised_write_mode == BURN_WRITE_NONE)
+				o->advised_write_mode = BURN_WRITE_RAW;
+		}
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* DVD-R , sequential DVD-RW */
+		if (d->current_has_feat21h) {
+			o->multi_session = o->multi_track = 1;
+			o->might_do_tao = 2;
+			o->advised_write_mode = BURN_WRITE_TAO;
+		}
+	} else if (d->current_profile == 0x12 || d->current_profile == 0x13 ||
+			d->current_profile == 0x1a) {
+		/* DVD-RAM, overwriteable DVD-RW, DVD+RW */
+		o->start_adr = 1;
+		ret = burn_disc_get_formats(d, &status, &size, &dummy,
+					&num_formats);
+		if (ret == 1) {
+			if (status == BURN_FORMAT_IS_FORMATTED)
+				o->start_range_high = size;
+			if (d->current_profile == 0x13) {
+				o->start_alignment = 32 * 1024;
+				for (i = 0; i < num_formats; i++) {
+					ret = burn_disc_get_format_descr(d, i,
+						&type, &size, &dummy);
+					if (ret <= 0)
+				continue;
+					if (type == 0x13) /* expandable */
+				break;
+				}
+				if (i >= num_formats) /* not expandable */
+					o->start_range_high -= 32 * 1024;
+			} else {
+				o->start_alignment = 2 * 1024;
+				if (d->best_format_size - 2048 >
+							 o->start_range_high)
+					o->start_range_high =
+						d->best_format_size - 2048;
+			}
+		}
+		o->might_do_tao = 2;
+		o->advised_write_mode = BURN_WRITE_TAO;
+	} else /* unknown media */
+		return 0;
+		
+	if (s == BURN_DISC_APPENDABLE)
+		o->might_do_sao = o->might_do_raw = 0;
+	return 1;
+}
+
+
+/* ts A70203 : API function */
+int burn_disc_free_multi_caps(struct burn_multi_caps **caps)
+{
+	if (*caps == NULL)
+		return 0;
+	free((char *) *caps);
+	*caps = NULL;
+	return 1;
+}
+

@@ -331,6 +331,13 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	struct write_opts o;
 	int i, j, mode, mixed_mode = 0;
 
+	/* For the next lines any return indicates failure */
+	opts->drive->cancel = 1;
+
+	/* ts A70203 : people have been warned in API specs */
+	if (opts->write_type == BURN_WRITE_NONE)
+		return;
+
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
 	/* a ssert(!find_worker(opts->drive)); */
@@ -370,6 +377,8 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 				"Cannot mix data and audio in SAO mode", 0, 0);
 		return;
 	}
+
+	opts->drive->cancel = 0; /* End of the return = failure area */
 
 	o.drive = opts->drive;
 	o.opts = opts;
