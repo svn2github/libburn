@@ -162,10 +162,11 @@ struct burn_drive
 	int current_feat21h_link_size;
 
 	/* Flags from feature 002Fh feature descriptor mmc5r03c.pdf 5.3.25 :
-	   bit1= DVD-RW supported
-	   bit2= Test Write available
-	   bit3= DVD-R DL supported
-	   bit6= Buffer Under-run Free recording available (page 05h BUFE)
+	     bit1= DVD-RW supported
+	     bit2= Test Write available
+	     bit3= DVD-R DL supported
+	     bit6= Buffer Under-run Free recording available (page 05h BUFE)
+	   Value -1 indicates that no 002Fh was current in the features list.
 	*/
 	int current_feat2fh_byte4;
 
@@ -250,6 +251,10 @@ struct burn_drive
 	void (*send_write_parameters) (struct burn_drive *,
 				       const struct burn_write_opts *);
 	void (*send_cue_sheet) (struct burn_drive *, struct cue_sheet *);
+
+	/* ts A70205 : Announce size of a DVD-R[W] DAO session. */
+	int (*reserve_track) (struct burn_drive *d, off_t size);
+
 	void (*sync_cache) (struct burn_drive *);
 	int (*get_erase_progress) (struct burn_drive *);
 	int (*get_nwa) (struct burn_drive *, int trackno, int *lba, int *nwa);

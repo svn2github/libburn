@@ -78,9 +78,14 @@ extern struct libdax_msgs *libdax_messenger;
                is readable by afio. Third and forth veryfy too. Suddenly
                dvd+rw-mediainfo sees lba 0 with track 2. But #2 still verifies
                if one knows its address.
+   ts A70203 : DVD-RW need to get blanked fully. Then feature 0021h persists.
+               Meanwhile Incremental streaming is supported like CD TAO:
+               with unpredicted size, multi-track, multi-session.
+   ts A70205 : Beginning to implement DVD-R[W] DAO : single track and session,
+               size prediction mandatory.
 
 Todo:
-   Determine first free lba for appending data. 
+   Determine first free lba for appending data on overwriteables. 
 */
 
 
@@ -130,6 +135,10 @@ static unsigned char MMC_GET_PERFORMANCE[] =
 /* ts A70108 : To obtain info about drive and media formatting opportunities */
 static unsigned char MMC_READ_FORMAT_CAPACITIES[] =
 	{ 0x23, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+/* ts A70205 : To describe the layout of a DVD-R[W] DAO session */
+static unsigned char MMC_RESERVE_TRACK[] =
+	{ 0x53, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 static int mmc_function_spy_do_tell = 0;
@@ -188,6 +197,31 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 	c.dir = TO_DRIVE;
 	memcpy(c.page->data, s->data, c.page->bytes);
 	d->issue_command(d, &c);
+}
+
+
+/* ts A70205 : Announce size of a DVD-R[W] DAO session.
+   @param size The size in bytes to be announced to the drive.
+               It will get rounded up to align to 32 KiB.
+*/
+int mmc_reserve_track(struct burn_drive *d, off_t size)
+{
+	struct command c;
+	int lba;
+
+	mmc_function_spy("mmc_reserve_track");
+	c.retry = 1;
+	c.oplen = sizeof(MMC_RESERVE_TRACK);
+	memcpy(c.opcode, MMC_RESERVE_TRACK, sizeof(MMC_RESERVE_TRACK));
+
+	/* Nice rounding trick learned from dvd+rw-tools */
+	lba = ((size + (off_t) 0x7fff) >> 11) & ~0xf;
+	mmc_int_to_four_char(c.opcode+5, lba);
+
+	c.page = NULL;
+	c.dir = NO_TRANSFER;
+	d->issue_command(d, &c);
+	return !!c.error;
 }
 
 
@@ -2152,6 +2186,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->perform_opc = mmc_perform_opc;
 	d->set_speed = mmc_set_speed;
 	d->send_cue_sheet = mmc_send_cue_sheet;
+	d->reserve_track = mmc_reserve_track;
 	d->sync_cache = mmc_sync_cache;
 	d->get_nwa = mmc_get_nwa;
 	d->read_multi_session_c1 = mmc_read_multi_session_c1;
