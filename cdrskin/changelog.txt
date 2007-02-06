@@ -21,13 +21,14 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 + -msinfo pushes all other messages to stderr. It works independent of
   other options which would prevent it with cdrecord (-atip, -scanbus, ...)
 
-+ DVD+RW writing is like -tao on giant blank CD-RW. 
-  Same with DVD-RW in mode Restricted Overwrite.
-
-+ DVD-RW "Restricted Overwrite" writing is like DVD+RW (i.e. like -tao).
-  Formatting is done via cdrskin-specific blank=format_overwrite and not
-  with option -format.
-
++ DVD track sources get not concateneated to a single track. In general DVD
+  writing is quite different from cdrecord-ProDVD:
+  DVD-RW "Disc-at-once" (-sao) is nearest to cdrecord-ProDVD's methods.
+  DVD-RW "Incremental Streaming" (-tao) on unformatted media allows
+  multi-session and track sources of unpredictable size.
+  Writing DVD-RAM, DVD+RW and "Restricted Overwrite" DVD-RW is like -tao on
+  blank CD. Formatting is done via cdrskin-specific blank=format_overwrite
+  and not with option -format.
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -2816,34 +2817,110 @@ cdrskin/README
 cdrskin/cdrskin.1
 Prepared next cdrskin-0.3.1 cycle
 
-1 Feb 2007  []
+1 Feb 2007  [674]
 cdrskin/changelog.txt
 Prepared next cdrskin-0.3.1 cycle
 
+1 Feb 2007  [675] [676]
+cdrskin/cdrskin.1
+Mentioned DVD-RW multi-session in overview of features
 
------------------------------------- cycle  - cdrskin-0.3.1 - 2007.02.01.
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.01.203057
 * Burnfree enabled by default
 * Multi-session recording on sequential DVD-RW, including -toc, -msinfo
 
 
+2 Feb 2007  [677]
+cdrskin/convert_man_to_html.sh
+Some sed expressions for beautification 
+
+2 Feb 2007  [678]
+doc/cookbook.txt
+Updated about DVD-R[W] blanking, multi-session info and TOC
+
+2007.02.02.151327  [679]
+libburn/mmc.c
+test/telltoc.c
 Make mmc_read_multi_session_c1 use TOC if available
 
+2007.02.02.173345  [680]
+libburn/mmc.c
+cdrskin/cdrskin.c
+Improved classification and TOC of finalized DVD-R[W] media
 
-Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.02.183755
 
-burn_disc_get_multi_caps(d, multi_session, multi_track, start_adr, alignment)
+3 Feb 2007  [681]
+cdrskin/cdrskin.1
+cdrskin/wiki_plain.txt
+Mentioned DVD-RW multi-session
+
+2007.02.03.205526 (comitted 4 Feb 2007) [682]
+libburn/libburn.h
+libburn/mmc.c
+libburn/drive.c
+libburn/async.c
+test/telltoc.c
+New in API : struct burn_multi_caps and burn_disc_get_multi_caps()
+
+2007.02.05.132335  [683]
+libburn/transport.h
+libburn/mmc.c
+Preparations for DVD-R[W] DAO
+
+2007.02.06.130410  [684]
+libburn/libburn.h
+libburn/mmc.c
+libburn/write.c
+libburn/drive.c
+libburn/libdax_msgs.h
+Implemented DVD-R[W] DAO as BURN_WRITE_SAO
+
+2007.02.06.170621  [685]
+libburn/write.c
+libburn/mmc.c
+Beautification of debugging messages
+
+2007.02.06.174320  [686]
+cdrskin/cdrskin.c
+tao_to_sao_tsize= for DVD-R[W] DAO
+
+2007.02.06.185534  [687]
+libburn/async.c
+cdrskin/cdrskin.c
+Enabled fast blank for DVD-R[W]
+
+6 Feb 2007  [688]
+cdrskin/cdrskin.1
+Clarified CD and DVD peculiarities
+
+6 Feb 2007  [689]
+doc/cookbook.txt
+Described DVD-R[W] DAO mode
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.06.200802
+* DVD-R[W] Disk-at-once writing
+
+  []
+cdrskin/README
+cdrskin/changelog.txt
+cdrskin/cdrskin_eng.html
+Nect cdrskin-0.3.1 cycle
 
 
-Be clearer about non-Incremental DVD-R[W]
+forceful blanking of blank media in burn_disc_erase()
 
-Documentation about multi-session DVD-RW
+What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
+
+growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
 
 Check test/libburner and test/telltoc for consequences
 
+Test with DVD-R
+
 ------------------------------------ cycle  - cdrskin-0.3.1 - 
 
-
-DVD-R[W] DAO
+Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
 
 Remove from README what is also written in the man page.
 

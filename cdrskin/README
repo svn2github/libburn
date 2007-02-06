@@ -423,8 +423,7 @@ task of maintaining extendable ISO-Filesystems on DVD+RW.
                                      DVD-RW
 
 DVD-RW are usable if formatted to state "Restricted Overwrite" or if in state
-"Sequential Recording" - provided the "Incremental Streaming" feature (21h) is
-available.
+"Sequential Recording".
 
 "Sequential" is the state of unused media and of media previously blanked
 or written by cdrecord. dvd+rw-format -blank can also achieve this state.
@@ -434,8 +433,10 @@ of multi-session like CD-RW. (But not capable of -audio recording.)
 This means they need option -multi to stay appendable, need to be blanked
 to be writeable from start, return useable info with -toc and -msinfo,
 eventually perform appending automatically.
-Without "Incremental Streaming" offered by the drive, they are regarded as
-unsuitable media for now.
+Without "Incremental Streaming" offered by the drive, only write mode DAO is
+available with sequential DVD-RW. It only works with blank media, allows only
+one single track, no -multi, and demands a fixely predicted track size.
+(growisofs uses it with DVD-RW if option -dvd-compat is given.)
  
 Overwriteable DVD behave much like DVD+RW. "Restricted" refers only to the
 granularity of random access and block size which have always to be aligned to
@@ -463,14 +464,15 @@ blank=format_overwrite_full  uses preferrably "Full Format" (type 00h).
 This formatting lasts as long as writing a full DVD. It includes writing of
 lead-out which is said to be good for DVD ROM compatibility. 
 
-A de-formatting option is available to make overwriteable DVD-RW sequential:
+De-formatting options are available to make overwriteable DVD-RW sequential:
 
 blank=deformat_sequential  performs thorough blanking of all states of DVD-RW.
-
 blank=all and blank=fast perform the same thorough blanking, but refuse to do
 this with overwriteable DVD-RW, thus preserving their formatting. The specs
 allow minimal blanking but the resulting media on my drives offer no 
-Incremental Streaming afterwards. So even blank=fast will do full blanking. 
+Incremental Streaming afterwards. So blank=fast will do full blanking. 
+
+blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 
 
                                     DVD-R
