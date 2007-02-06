@@ -248,10 +248,6 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 		return;
 	}
 
-	/* ts A70131 : i get awful results with fast blanking DVD-RW */
-	if (drive->current_profile == 0x13 || drive->current_profile == 0x14)
-		fast = 0;
-
 	o.drive = drive;
 	o.fast = fast;
 	add_worker(drive, (WorkerFunc) erase_worker_func, &o);

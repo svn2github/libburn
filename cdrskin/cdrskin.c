@@ -1813,6 +1813,10 @@ return:
     "\tformat_overwrite_quickest\tto \"Restricted Overwrite intermediate\"\n");
      fprintf(stderr,
           "\tformat_overwrite_full\tfull-size format a DVD-RW or DVD+RW\n");
+     fprintf(stderr,
+          "\tdeformat_sequential\tfully blank, even formatted DVD-RW\n");
+     fprintf(stderr,
+          "\tdeformat_sequential_quickest\tminimally blank, even DVD-RW\n");
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -3985,12 +3989,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    /* Forceful blanking to Sequential Recording for DVD-R[W] and CD-RW */
 
    if(!(profile_number == 0x14 || profile_number == 0x13 ||
-        profile_number == 0x11 || profile_number == 0x0a))
+        profile_number == 0x0a))
      goto unsupported_format_type;
-   if(s==BURN_DISC_UNSUITABLE)
-     fprintf(stderr,
-         "cdrskin: NOTE : blank=%s accepted not yet suitable media\n",
-         fmt_text);
 
  } else if (do_format==1) {
    /* Formatting to become overwriteable for DVD-RW and DVD+RW */
@@ -4049,6 +4049,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      fprintf(stderr,"cdrskin: FATAL : blank=... : media is not erasable\n");
      return(0);
    }
+   if(profile_number == 0x14 || profile_number == 0x13)
+     skin->blank_fast= 0; /* only with deformat_sequential_quickest */
 
  } else {
 unsupported_format_type:;
@@ -4082,10 +4084,6 @@ unsupported_format_type:;
 #endif
 
  } else {
-
-   /* >>> */;
-
-   /* <<< */
    fprintf(stderr,"cdrskin: SORRY : Format type %d not implemented yet.\n",
            do_format);
    ret= 0; goto ex;
@@ -5261,6 +5259,10 @@ set_blank:;
        skin->do_blank= 1;
        skin->blank_format_type= 2;
        skin->blank_fast= 0;
+     } else if(strcmp(cpt,"deformat_sequential_quickest")==0) {
+       skin->do_blank= 1;
+       skin->blank_format_type= 2;
+       skin->blank_fast= 1;
      } else if(strcmp(cpt,"help")==0) { 
        /* is handled in Cdrpreskin_setup() */;
  continue;
