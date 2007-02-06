@@ -691,12 +691,14 @@ DVD-RW Restricted Overwrite    0013h
 DVD-RW Sequential Recording    0014h
 
 There are two approaches for writing to sequential DVD-R[W]: DAO and
-Incremental. Not all media and drives offer Incremental which allows multi-
-session as with CD media.
+Incremental. Not all media and drives offer Incremental which allows 
+multi-session as with CD media and does not demand a predicted track size.
+DAO seems to be the older method. It allows only one single session and
+track and it demands an exactly predicted track size.
 
 - About overwriteavble, blank, appendable and finalized DVD-R[W] media
 - Incremental writing
->>> - DAO writing (missing yet)
+- DAO writing
 - Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems
 - Obtaining a Table Of Content from DVD-R[W]
 
@@ -725,10 +727,9 @@ Finalized, appendable or overwriteable DVD-RW can be brought into blank
 sequential state by command A1h BLANK with blanking type 000b "Blank the disc".
 See TAO Multi-Session CD Cookbook for details about blanking.
 
-Different from CD it seems unwise to use minimal blanking (type 001b) because
-my two DVD drives do not offer the Incremental Streaming feature 0021h with
-DVD-RW which have been treated this way. cdrecord and cdrskin even stall when
-examining these media (exact command and cause is still to be determined).
+After minimal blanking (type 001b) DVD-RW my two drives do not offer the
+Incremental Streaming feature 0021h the media any more. Full blanking (000b)
+brings back this feature.
 (mmc5r03c.pdf 6.2)
 
 
@@ -758,7 +759,7 @@ Multi-Session by the application.
  LS_V             Link size valid                 1=true
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              00h = Incremental (Packet)
- Multi-session    Wether to keep appendable       00b = finalize(growisofs DAO)
+ Multi-session    Wether to keep appendable       00b = finalize
                                                   11b = keep appendable
  Track Mode       Describes frame type            5  [*1]
  Data Block Type  Layout of payload blocks        8  [*2]
@@ -801,26 +802,70 @@ does with TAO CD. So libburn obtains the Last Track Number in Last Session
 from the reply of  51h READ DISC INFORMATION requesting Data Type 000b
 "Standard Disc Information".
 (mmc5r03c.pdf 6.3.3.2.2 CLOSE TRACK, 6.22.3.1.)
-Afterwards 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
+
+Multiple tracks are permissible in a single session. After all of them have
+been written, 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
 Number 0 closes the session. It depends on the Multi-Session value in mode
 page 05h wether the disc is finalized or stays appendable.
 (mmc5r03c.pdf 6.3.3.2.3)
 
-It has not been tested yet wether multiple tracks are permissible in a single
-session.
-
 
 -------------------------------------------------------------------------------
->>> DAO writing :  INCOMPLETE AND YET UNEXPLORED
+DAO writing :
 
->>> DAO
-DAO is the mode prescribed by feature 002Fh.
-growisofs is_dao in page 05h sets Write Type to 2 "SAO". It is accompanied 
-by dvd_compat. Thus Multi-session is set to 0.
+DAO is the mode described by feature 002Fh. This feature also gives information
+about capabilities for Burnfree (BUF), Test Write and DVD-RW.
+(mmc5r03c.pdf 5.3.25)
+Experiments with growisofs showed that the track size needs to be predicted
+and may not be exceeded during the write process. (growisofs ran into SCSI
+errors with piped non-ISO-9660 images and with piped ISO-9660 which have
+trailing data.)
 
+Speed can be influenced by B6h SET STREAMING , speed capabilities can be
+inquired by ACh GET PERFORMANCE. It is advised to set only speeds and sizes
+which are returned by ACh.
+(mmc5r03c.pdf 6.39 SET STREAMING, 6.8 GET PERFORMANCE)	
+
+The mode page 05h to be sent :
+ BUFE             Buffer Underrun protection      0=off, 1=on
+ LS_V             Link size valid                 0=false [*3]
+ Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              02h = DAO (same code as SAO)
+ Multi-session    Wether to keep appendable       00b = finalize
+ Track Mode       Describes frame type            5  [*1]
+ Data Block Type  Layout of payload blocks        8  [*2]
+ Link Size        ???                             0 [*3]
+ FP               Fixed Packet Size Bit           0 [*3]
+ Packet Size                                      0 [*3]  
+(mmc5r03c.pdf 7.5.4 The Mode Page, 4.2.3.4 Table 17 CONTROL = Track Mode)
+(spc3r23.pdf 6.8 MODE SELECT, 7.4.3 Mode parameter header formats)
+[*1:]
+growisofs takes the Track Mode from 52h READ TRACK INFORMATION, Address/Number
+Type 1, Track 1, Track Information Block byte 5 & 0xf.
+(mmc5r03.pdf 6.27)
+[*2:]
+8 means: 2048 byte data blocks. growisofs sets this value if Data Mode from
+above 52h READ TRACK INFORMATION is 1 or Fh, which is predicted by the specs
+to be always true. (If not: growisofs aborts.)
+(mmc5r03.pdf 6.27.3.10)
+[*3:]
+Link Size, Packet Size and their companions only apply to Write Type 00h.
 
->>> only with DAO and leadout : minus_r_reserve_track
+The session layout must be described by 53h RESERVE TRACK, RMZ=ARSV=0.
+Reservation size should better already be aligned to 32 KiB. It has not been
+tested yet, what happens if not enough data get written.
+(mmc5r03c.pdf 6.31)
+
+Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION.
+The reply is supposed to be 0. libburn writes full 32 kB buffers via 2Ah WRITE.
+(mmc5r03c.pdf, 6.27 READ TRACK INFORMATION, 6.44 WRITE)
+If the track source delivers less than the announced size then libburn pads up
+by zeros.
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf, 6.41)
+
+No further finalization is necessary. (I.e. no 5Bh CLOSE TRACK SESSION.)
 
 
 -------------------------------------------------------------------------------
@@ -904,7 +949,7 @@ libburn uses Last Track in Last Session as a hint for the range of track
 numbers.
 (mmc5r03c.pdf 6.22)
 
-Next step ist to iterate from 1 up to the last track number and to obtain
+Next step is to iterate from 1 up to the last track number and to obtain
 the according track info by 52h READ TRACK INFORMATION. Each track tells its
 Session Number (LSB at byte 2, MSB at 33), its Logical Track Start Address,
 its Logical Track Size, and much more which is not needed for a fake CD TOC.
