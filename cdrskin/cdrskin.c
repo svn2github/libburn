@@ -130,6 +130,7 @@ or
 
 #define Cdrskin_libburn_has_get_msc1 1
 #define Cdrskin_libburn_has_toc_entry_extensionS 1
+#define Cdrskin_libburn_has_get_multi_capS 1
 
 #endif /* Cdrskin_libburn_0_3_1 */
 
@@ -741,6 +742,7 @@ struct CdrtracK {
  int source_fd;
  int is_from_stdin;
  double fixed_size;
+ double tao_to_sao_tsize;
  double padding;
  int set_by_padsize;
  int sector_pad_up; /* enforce single sector padding */
@@ -793,10 +795,10 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  struct CdrtracK *o;
  int ret,skin_track_type;
  int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
-                        double *fixed_size, double *padding,
-                        int *set_by_padsize, int *track_type,
-                        int *track_type_by_default, int *swap_audio_bytes,
-                        int flag);
+                        double *fixed_size, double *tao_to_sao_tsize,
+                        double *padding, int *set_by_padsize,
+                        int *track_type, int *track_type_by_default,
+                        int *swap_audio_bytes, int flag);
  int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
                           int *fifo_size, int *fifo_start_at, int flag);
 
@@ -809,6 +811,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->source_fd= -1;
  o->is_from_stdin= !!(flag&2);
  o->fixed_size= 0.0;
+ o->tao_to_sao_tsize= 0.0;
  o->padding= 0.0;
  o->set_by_padsize= 0;
  o->sector_pad_up= Cdrskin_all_tracks_with_sector_paD;
@@ -825,7 +828,8 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->ff_fifo= NULL;
  o->ff_idx= -1;
  o->libburn_track= NULL;
- ret= Cdrskin_get_source(boss,o->source_path,&(o->fixed_size),&(o->padding),
+ ret= Cdrskin_get_source(boss,o->source_path,&(o->fixed_size),
+                         &(o->tao_to_sao_tsize),&(o->padding),
                          &(o->set_by_padsize),&(skin_track_type),
                          &(o->track_type_by_default),&(o->swap_audio_bytes),
                          0);
@@ -898,6 +902,7 @@ int Cdrtrack_get_track_type(struct CdrtracK *o, int *track_type,
                       rather than the predicted fixed_size (if available).
                       padding returns the difference from number of written
                       bytes.
+                bit1= size returns fixed_size, padding returns tao_to_sao_tsize
 */
 int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
                       double *sector_size, int flag)
@@ -916,7 +921,8 @@ int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
    fprintf(stderr,"cdrskin_debug: sizeof(off_t)=%d\n",
                   sizeof(off_t));
 */
- }
+ } else if(flag&2)
+   *padding= track->tao_to_sao_tsize;
 
 #endif
  *sector_size= track->sector_size;
@@ -1286,6 +1292,14 @@ flag:
    fprintf(stderr,"cdrskin_debug: enforcing -pad on last -audio track\n");
  track->sector_pad_up= 1;
  return(1);
+}
+
+
+int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
+{
+ if(track->fixed_size<=0.0)
+   track->fixed_size= track->tao_to_sao_tsize;
+ return(track->fixed_size>0.0);
 }
 
 
@@ -2574,13 +2588,14 @@ int Cdrskin_set_msinfo_fd(struct CdrskiN *skin, int result_fd, int flag)
 
 /** Return information about current track source */
 int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
-                       double *fixed_size, double *padding,
-                       int *set_by_padsize, int *track_type,
-                       int *track_type_by_default, int *swap_audio_bytes,
-                       int flag)
+                       double *fixed_size, double *tao_to_sao_tsize,
+                       double *padding, int *set_by_padsize,
+                       int *track_type, int *track_type_by_default,
+                       int *swap_audio_bytes, int flag)
 {
  strcpy(source_path,skin->source_path);
  *fixed_size= skin->fixed_size;
+ *tao_to_sao_tsize = skin->tao_to_sao_tsize;
  *padding= skin->padding;
  *set_by_padsize= skin->set_by_padsize;
  *track_type= skin->track_type;
@@ -4433,31 +4448,65 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
- int profile_number= -1, track_type_1, mixed_mode= 0;
+ int profile_number= -1, track_type_1, mixed_mode= 0, unpredicted_size= 0, ret;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
+ int might_do_tao= 0, might_do_sao= 1;
+ double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
+#ifdef Cdrskin_libburn_has_get_multi_capS
+ struct burn_multi_caps *caps = NULL;
+#endif
  
  profile_name[0]= 0;
 #ifdef Cdrskin_libburn_has_get_profilE
  if(skin->grabbed_drive)
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
 #endif
- Cdrtrack_get_track_type(skin->tracklist[0],&track_type_1,&sector_size,0);
- for(i=1;i<skin->track_counter;i++) {
+
+#ifdef Cdrskin_allow_libburn_taO
+ might_do_tao= 1;
+#endif
+#ifdef Cdrskin_libburn_has_get_multi_capS
+ ret = burn_disc_get_multi_caps(skin->grabbed_drive,BURN_WRITE_NONE,&caps,0);
+ if (ret<0) {
+   fprintf(stderr,
+          "cdrskin: FATAL : Cannot obtain write mode capabilities of drive\n");
+   return(0);
+ } else if(ret==0) {
+   fprintf(stderr,
+      "cdrskin: SORRY : Cannot find any suitable write mode for this media\n");
+   return(0);
+ }
+ might_do_tao= caps->might_do_tao;
+ might_do_sao= caps->might_do_sao;
+#endif
+
+ for(i=0;i<skin->track_counter;i++) {
    Cdrtrack_get_track_type(skin->tracklist[i],&track_type,&sector_size,0);
-   if(track_type_1!=track_type)
+   if(i==0)
+     track_type_1= track_type;
+   else if(track_type_1!=track_type)
      mixed_mode= 1;
+   Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
+                     &tao_to_sao_tsize,&dummy,2);
+   if(fixed_size<=0)
+     unpredicted_size= 1+(tao_to_sao_tsize<=0);
  }
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
    was_still_default= 1;
 
-   if(s == BURN_DISC_APPENDABLE || mixed_mode) {
+   if((s == BURN_DISC_APPENDABLE || mixed_mode) && might_do_tao) {
      strcpy(skin->preskin->write_mode_name,"TAO");
      was_still_default= 2; /* prevents trying of SAO if drive dislikes TAO*/
-   } else if(profile_number==0x1a || profile_number==0x13 ||
-             profile_number==0x12 ||
-             profile_number==0x11 || profile_number==0x14) {
+   } else if(unpredicted_size && might_do_tao) {
+     strcpy(skin->preskin->write_mode_name,"TAO");
+     if(unpredicted_size>1)
+       was_still_default= 2; /* prevents trying of SAO */
+   } else if((profile_number==0x1a || profile_number==0x13 ||
+              profile_number==0x12 ||
+              profile_number==0x11 || profile_number==0x14)
+             && might_do_tao) {
      /* DVD+RW, DVD-RW Restr. Overwrite, DVD-RAM, DVD-R, DVD-RW Sequential */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
@@ -4499,7 +4548,11 @@ check_with_drive:;
 
    /* >>> drive_info does not reflect DVD capabilities yet */
 
-   ok= 1;
+   ok= 0;
+   if(skin->write_type==BURN_WRITE_SAO && might_do_sao)
+     ok= 1;
+   if(skin->write_type==BURN_WRITE_TAO && might_do_tao)
+     ok= 1;
  } else if(skin->write_type==BURN_WRITE_RAW)
    ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
  else if(skin->write_type==BURN_WRITE_SAO && !mixed_mode)
@@ -4519,9 +4572,19 @@ check_with_drive:;
  if(skin->write_type==BURN_WRITE_SAO && mixed_mode) {
    fprintf(stderr,
           "cdrskin: FATAL : Cannot write mix of data and audio in SAO mode\n");
-#ifdef Cdrskin_allow_libburn_taO
-   fprintf(stderr,"cdrskin: HINT  : Try with option -tao resp. without -sao\n");
-#endif
+   if(might_do_tao)
+     fprintf(stderr,
+             "cdrskin: HINT  : Try with option -tao resp. without -sao\n");
+   return(0);
+ }
+ if(skin->write_type==BURN_WRITE_SAO && unpredicted_size>1) {
+   fprintf(stderr,
+           "cdrskin: FATAL : At least one track has no predictable size.\n");
+   fprintf(stderr,
+           "cdrskin: HINT  : Use tsize= or tao_to_sao_tsize= to announce the track size\n");
+   if(might_do_tao)
+     fprintf(stderr,
+             "cdrskin: HINT  : or try with option -tao resp. without -sao\n");
    return(0);
  }
  if(!ok) {
@@ -4531,24 +4594,36 @@ check_with_drive:;
            skin->preskin->write_mode_name);
    if(! skin->force_is_set) {
      if(was_still_default==1) {
-       if(skin->write_type==BURN_WRITE_RAW ||
-          skin->write_type==BURN_WRITE_SAO) {
+       was_still_default= 2; /* do not try more than once */
+       if((skin->write_type==BURN_WRITE_RAW ||
+           skin->write_type==BURN_WRITE_SAO) && might_do_tao) {
          skin->write_type= BURN_WRITE_TAO;
          skin->block_type= BURN_BLOCK_MODE1;
          strcpy(skin->preskin->write_mode_name,"TAO");
-       } else {
+         goto check_with_drive;
+       } else if (might_do_sao) {
          skin->write_type= BURN_WRITE_SAO;
          skin->block_type= BURN_BLOCK_SAO;
          strcpy(skin->preskin->write_mode_name,"SAO");
+         goto check_with_drive;
        }
-       was_still_default= 2; /* do not try more than once */
-       goto check_with_drive;
      }
      fprintf(stderr,"cdrskin: HINT : If you are certain that the drive will do, try option -force\n");
      return(0);
    }
  }
 it_is_done:;
+ if(skin->write_type==BURN_WRITE_SAO && unpredicted_size==1)
+   for(i= 0; i<skin->track_counter; i++) {
+     Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
+                        &tao_to_sao_tsize,&dummy,2);
+     if(fixed_size<=0.0 && tao_to_sao_tsize>0.0) {
+       printf(
+        "cdrskin: NOTE : augmenting non-tao write mode by tao_to_sao_tsize\n");
+       printf("cdrskin: NOTE : fixed size : %.f\n",tao_to_sao_tsize);
+       Cdrtrack_activate_tao_tsize(skin->tracklist[i],0);
+     }
+   }
  if(skin->verbosity>=Cdrskin_verbose_cmD)
    printf("cdrskin: write type : %s\n", skin->preskin->write_mode_name);
  return(1);
@@ -4576,6 +4651,20 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
 
  printf("cdrskin: beginning to burn disk\n");
 
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   goto burn_failed;
+ drive= skin->drives[skin->driveno].drive;
+ s= burn_disc_get_status(drive);
+ if(skin->verbosity>=Cdrskin_verbose_progresS)
+   Cdrskin_report_disc_status(skin,s,0);
+ ret= Cdrskin_activate_write_mode(skin,s,0);
+ if(ret<=0) {
+   fprintf(stderr,
+           "cdrskin: FATAL : Cannot activate the desired write mode\n");
+   goto burn_failed;
+ } 
+
  disc= burn_disc_create();
  session= burn_session_create();
  ret= burn_disc_add_session(disc,session,BURN_POS_END);
@@ -4587,7 +4676,6 @@ burn_failed:;
    fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
    return(0);
  }
-
  skin->fixed_size= 0.0;
  for(i=0;i<skin->track_counter;i++) {
    hflag= (skin->verbosity>=Cdrskin_verbose_debuG);
@@ -4602,20 +4690,6 @@ burn_failed:;
    if(size>0)
      skin->fixed_size+= size+padding;
  }
-
- ret= Cdrskin_grab_drive(skin,0);
- if(ret<=0)
-   goto burn_failed;
- drive= skin->drives[skin->driveno].drive;
- s= burn_disc_get_status(drive);
- if(skin->verbosity>=Cdrskin_verbose_progresS)
-   Cdrskin_report_disc_status(skin,s,0);
- ret= Cdrskin_activate_write_mode(skin,s,0);
- if(ret<=0) {
-   fprintf(stderr,
-           "cdrskin: FATAL : Cannot activate the desired write mode\n");
-   goto burn_failed;
- } 
 
 #ifdef Cdrskin_libburn_has_multI
  if (s == BURN_DISC_APPENDABLE) {
@@ -5605,33 +5679,7 @@ track_too_large:;
          }
        }
      }
-     if(! source_has_size) {
-       if(skin->fixed_size<=0.0) {
-         if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
-           /* with TAO it is ok to have an undefined track length */;
 
-#ifdef Cdrskin_allow_libburn_taO
-         } else if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
-           strcpy(skin->preskin->write_mode_name,"TAO");
-#endif
-
-         } else if(skin->tao_to_sao_tsize>0.0) {
-           skin->fixed_size= skin->tao_to_sao_tsize;
-           printf(
-        "cdrskin: NOTE : augmenting non-tao write mode by tao_to_sao_tsize\n");
-           printf("cdrskin: NOTE : fixed size : %.f\n",skin->fixed_size);
-         } else {
-           fprintf(stderr,
-#ifdef Cdrskin_allow_libburn_taO
-           "cdrskin: FATAL : Track source '%s' needs -tao or tsize= or tao_to_sao_tsize=\n",
-#else
-           "cdrskin: FATAL : Track source '%s' needs a fixed tsize= or tao_to_sao_tsize=\n",
-#endif
-                   skin->source_path);
-           return(0);
-         }
-       }
-     }
      if(skin->track_counter>=Cdrskin_track_maX) {
        fprintf(stderr,"cdrskin: FATAL : too many tracks given. (max %d)\n",
                Cdrskin_track_maX);
