@@ -880,7 +880,7 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	d->send_write_parameters(d, o);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
-		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d\n",
+		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
 		tnum+1, nwa, ret, d->nwa);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);

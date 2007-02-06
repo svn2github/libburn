@@ -1787,7 +1787,7 @@ void mmc_sync_cache(struct burn_drive *d)
 
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			   "\nsyncing cache", 0, 0);
+			   "syncing cache", 0, 0);
 
 	d->issue_command(d, &c);
 }
