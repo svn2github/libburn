@@ -1590,6 +1590,8 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	} else if (s == BURN_DISC_APPENDABLE &&
 		 (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)) {
 		return 0;
+	} else if (wt == BURN_WRITE_RAW && !d->current_is_cd_profile) {
+		return 0;
 	} else if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
 		 /* CD-R , CD-RW */
 		if (d->block_types[BURN_WRITE_TAO]) {
@@ -1609,13 +1611,21 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 			if (o->advised_write_mode == BURN_WRITE_NONE)
 				o->advised_write_mode = BURN_WRITE_RAW;
 		}
+		if (wt == BURN_WRITE_RAW)
+			o->multi_session = o->multi_track = 0;
 	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
 		/* DVD-R , sequential DVD-RW */
+		if (s == BURN_DISC_BLANK) {
+			o->might_do_sao = 1;
+			o->advised_write_mode = BURN_WRITE_SAO;
+		}
 		if (d->current_has_feat21h) {
 			o->multi_session = o->multi_track = 1;
 			o->might_do_tao = 2;
 			o->advised_write_mode = BURN_WRITE_TAO;
 		}
+		if (wt == BURN_WRITE_SAO)
+			o->multi_session = o->multi_track = 0;
 	} else if (d->current_profile == 0x12 || d->current_profile == 0x13 ||
 			d->current_profile == 0x1a) {
 		/* DVD-RAM, overwriteable DVD-RW, DVD+RW */

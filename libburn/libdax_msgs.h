@@ -352,6 +352,12 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020131 (SORRY,HIGH)   = No suitable formatting type offered by drive
  0x00020132 (SORRY,HIGH)   = Selected format is not suitable for libburn
  0x00020133 (SORRY,HIGH)   = Cannot mix data and audio in SAO mode
+ 0x00020134 (NOTE,HIGH)    = Defaulted TAO to DAO
+ 0x00020135 (SORRY,HIGH)   = Cannot perform TAO, job unsuitable for DAO
+ 0x00020136 (SORRY,HIGH)   = DAO Burning restricted to single fixed size track
+ 0x00020137 (HINT,HIGH)    = TAO would be possible
+ 0x00020138 (FATAL,HIGH)   = Cannot reserve track
+
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

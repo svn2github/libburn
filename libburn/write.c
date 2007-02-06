@@ -869,22 +869,40 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 
 
 /* ts A70129 : learned much from dvd+rw-tools-7.0/growisofs_mmc.cpp */
-int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o, int tnum)
+int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
+					struct burn_session *s, int tnum)
 {
 	struct burn_drive *d = o->drive;
 	char msg[160];
 	int ret, lba, nwa;
+	off_t size;
 
 	d->send_write_parameters(d, o);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
 		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d\n",
 		tnum+1, nwa, ret, d->nwa);
-		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
-				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-				msg,0,0);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);
 	if (nwa > d->nwa)
 		d->nwa = nwa;
+
+	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
+ 		/* Round track size up to 32 KiB and reserve track */
+		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+			 * (off_t) 2048;
+		size = (size + (off_t) 0x7fff) & ~((off_t) 0x7fff);
+		ret = d->reserve_track(d, size);
+		if (ret <= 0) {
+			sprintf(msg, "Cannot reserve track of %.f bytes",
+				(double) size);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020138,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0,0);
+			return 0;
+		}
+	}
 	return 1;
 }
 
@@ -896,8 +914,8 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 	char msg[80];
 
-	/* only DVD-R or sequential DVD-RW */
-	if (d->current_has_feat21h != 1) /* only with Incremental writing */
+	/* only with Incremental writing */
+	if (o->write_type != BURN_WRITE_TAO)
 		return 2;
 
 	sprintf(msg, "Closing track %2.2d  (absolute track number %d)",
@@ -929,7 +947,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 
 	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
 		/* DVD-R, DVD-RW Sequential */
-		ret = burn_disc_open_track_dvd_minus_r(o, tnum);
+		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
 	}
@@ -1026,8 +1044,9 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
-	if (d->current_has_feat21h != 1)
-		return 2; /* only for Incremental writing */
+	/* only for Incremental writing */
+	if (o->write_type != BURN_WRITE_TAO)
+		return 2;
 
 	libdax_msgs_submit(libdax_messenger, o->drive->global_index,0x00020119,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
@@ -1047,7 +1066,7 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	int i,ret;
         struct burn_drive *d = o->drive;
 
-	/* >>> open_session ? (maybe with DAO) */
+	/* >>> open_session ? */
 
 	for (i = 0; i < s->tracks; i++) {
 		ret = burn_dvd_write_track(o, s, i);
@@ -1189,11 +1208,7 @@ int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 
-	if (d->current_has_feat21h) {
-		/* most setup is in burn_disc_setup_track_dvd_minus_r() */;
-	} else {
-		return 0; /* >>> no DAO for now */
-	}
+	/* most setup is in burn_disc_setup_track_dvd_minus_r() */;
 
 	d->nwa = 0;
 	return 1;
@@ -1204,7 +1219,7 @@ int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
-	int i, ret, sx, tx, mode, exotic_track = 0;
+	int i, ret, sx, tx, mode, exotic_track = 0, dao_is_ok;
 	struct burn_drive *d = o->drive;
 	char msg[160];
 
@@ -1289,9 +1304,47 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		/* _Rigid_ Restricted Overwrite demands this */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 
-	} else if ((d->current_profile == 0x11 || d->current_profile == 0x14)
-		   && d->current_has_feat21h == 1) {
-		/* DVD-R , DVD-RW Sequential (for now only Incremental) */
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* DVD-R , DVD-RW Sequential */
+		dao_is_ok =
+			(disc->sessions == 1 &&
+			 disc->session[0]->tracks == 1 &&
+			 (! burn_track_is_open_ended(
+						disc->session[0]->track[0])) &&
+			 (!o->multi) && d->status == BURN_DISC_BLANK
+			);
+		if (o->write_type == BURN_WRITE_TAO && 
+		    !d->current_has_feat21h) {
+			if (dao_is_ok) {
+				o->write_type = BURN_WRITE_SAO;
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x00020134,
+				  LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				  "Defaulted TAO to DAO (lack of feature 21h)",
+				  0, 0);
+			} else {
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x00020135,
+				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+	"Cannot perform TAO (lack of feature 21h), job unsuitable for DAO",
+				  0, 0);
+				goto early_failure;
+			}
+		} else if (o->write_type == BURN_WRITE_SAO && !dao_is_ok) {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020136,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"DAO burning is restricted to a single fixed size track and no multi-session",
+				0,0);
+			if (d->current_has_feat21h)
+				libdax_msgs_submit(libdax_messenger,
+					d->global_index, 0x00020137,
+					LIBDAX_MSGS_SEV_HINT,
+					LIBDAX_MSGS_PRIO_HIGH,
+				"TAO would be possible and could do the job",
+					0,0);
+			goto early_failure;
+		}
 		if (o->start_byte >= 0) {
 			sprintf(msg, "Write start address not supported");
 			libdax_msgs_submit(libdax_messenger, d->global_index,

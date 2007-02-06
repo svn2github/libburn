@@ -107,24 +107,31 @@ struct burn_write_opts;
 enum burn_write_types
 {
 	/** Packet writing.
-	    currently unsupported
+	      currently unsupported, (for DVD Incremental Streaming use TAO)
 	*/
 	BURN_WRITE_PACKET,
 
-	/** Track At Once recording.
-	    2s gaps between tracks, no fonky lead-ins
+	/** With CD:                     Track At Once recording
+	      2s gaps between tracks, no fonky lead-ins
+
+	    With sequential DVD-R[W]:    Incremental Streaming
+	    With DVD-RAM/+RW:            Random Writeable (used sequentially)
+	    With overwriteable DVD-RW:   Rigid Restricted Overwrite 
 	*/
 	BURN_WRITE_TAO,
 
-	/** Session At Once.
-	    Block type MUST be BURN_BLOCK_SAO
-	    ts A70122 : Currently not capable of mixing data and audio tracks.
+	/** With CD:                     Session At Once
+	      Block type MUST be BURN_BLOCK_SAO
+	      ts A70122: Currently not capable of mixing data and audio tracks.
+
+	    With sequential DVD-R[W]:    Disc-at-once, DAO
+	      Single session, single track, fixed size mandatory, (-dvd-compat)
 	*/
 	BURN_WRITE_SAO,
 
-	/** Raw disc at once recording.
-	    all subcodes must be provided by lib or user
-	    only raw block types are supported
+	/** With CD: Raw disc at once recording.
+	      all subcodes must be provided by lib or user
+	      only raw block types are supported
 	*/
 	BURN_WRITE_RAW,
 
@@ -1385,6 +1392,10 @@ struct burn_multi_caps {
 	   writing a session. It also guarantees that the drive will be able
 	   to predict and use the appropriate Next Writeable Address to place
 	   the next session on the media without overwriting the existing ones.
+	   It does not guarantee that the selected write type is able to do
+	   an appending session after the next session. (E.g. CD SAO is capable
+	   of multi-session by keeping a disc appendable. But .might_do_sao
+	   will be 0 afterwards, when checking the appendable media.)
 	    1= media may be kept appendable by burn_write_opts_set_multi(o,1)
  	    0= media will not be apendable appendable
 	*/
@@ -1447,7 +1458,7 @@ struct burn_multi_caps {
     via burn_disc_free_multi_caps() when no longer needed.
     @param d The drive to inquire
     @param wt With BURN_WRITE_NONE the best capabilities of all write modes
-              get returned. If set to a write mode like BURN_WRITE_TAO the
+              get returned. If set to a write mode like BURN_WRITE_SAO the
               capabilities with that particular mode are returned.  
     @param caps returns the info structure
     @param flag Bitfield for control purposes (unused yet, submit 0)

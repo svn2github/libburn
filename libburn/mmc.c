@@ -208,20 +208,27 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 {
 	struct command c;
 	int lba;
+	char msg[80];
 
 	mmc_function_spy("mmc_reserve_track");
 	c.retry = 1;
 	c.oplen = sizeof(MMC_RESERVE_TRACK);
 	memcpy(c.opcode, MMC_RESERVE_TRACK, sizeof(MMC_RESERVE_TRACK));
 
-	/* Nice rounding trick learned from dvd+rw-tools */
+	/* Round to 32 KiB and divide by 2048
+	   (by nice binary rounding trick learned from dvd+rw-tools) */
 	lba = ((size + (off_t) 0x7fff) >> 11) & ~0xf;
 	mmc_int_to_four_char(c.opcode+5, lba);
+
+	sprintf(msg, "reserving track of %d blocks", lba);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
 
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
-	return !!c.error;
+	return !c.error;
 }
 
 
@@ -1521,6 +1528,10 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (cp == 0x12)
 		d->current_is_supported_profile = 1;
 #endif
+#ifdef Libburn_support_dvd_r_seQ
+	if (cp == 0x11 || cp == 0x14)
+		d->current_is_supported_profile = 1;
+#endif
 
 /* Enable this to get loud and repeated reports about the feature set :
 #define Libburn_print_feature_descriptorS 1
@@ -1645,11 +1656,6 @@ void mmc_get_configuration(struct burn_drive *d)
 
 		}
 	}
-#ifdef Libburn_support_dvd_r_seQ
-	/* might get adjusted later by mmc_read_disc_info() */
-	if ((cp == 0x11 || cp == 0x14) && d->current_has_feat21h)
-		d->current_is_supported_profile = 1;
-#endif
 }
 
 
@@ -1778,6 +1784,11 @@ void mmc_sync_cache(struct burn_drive *d)
 	c.oplen = sizeof(MMC_SYNC_CACHE);
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
+
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   "\nsyncing cache", 0, 0);
+
 	d->issue_command(d, &c);
 }
 
@@ -2232,8 +2243,8 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 	pd[0] = 5;
 	pd[1] = d->mdata->write_page_length;
 
-	/* ts A61229 */
-	if (d->current_profile == 0x13) {     /* DVD-RW restricted overwrite */
+	if (d->current_profile == 0x13) {
+		/* A61229 : DVD-RW restricted overwrite */
 		/* learned from transport.hxx : page05_setup()
 		   and mmc3r10g.pdf table 347 */
  		/* BUFE (burnproof), no LS_V (i.e. default Link Size, i hope),
@@ -2247,11 +2258,28 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[5] = 0;
 
 	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11)
-			&& d->current_has_feat21h == 1) { /* ts A70128 */
-		/* learned from transport.hxx : page05_setup()
+		&& o->write_type == BURN_WRITE_SAO) {
+		/* ts A70205 : DVD-R[W} : Disc-at-once, DAO */
+		/* Learned from dvd+rw-tools and mmc5r03c.pdf .
+		   See doc/cookbook.txt for more detailed references. */
+
+		/* BUFE , LS_V = 0, Test Write, Write Type = 2 SAO (DAO) */
+		pd[2] = ((!!o->underrun_proof) << 6)
+			| ((!!o->simulate) << 4)
+			| 2;
+		/* No multi-session , FP = 0 , Track Mode = 5 */
+		pd[3] = 5;
+		/* Data Block Type = 8 */
+		pd[4] = 8;
+
+	} else if (d->current_profile == 0x14 || d->current_profile == 0x11) {
+		/* ts A70128 : DVD-R[W] Incremental Streaming */
+		/* Learned from transport.hxx : page05_setup()
 		   and mmc5r03c.pdf 7.5, 4.2.3.4 Table 17
 		   and spc3r23.pdf 6.8, 7.4.3 */
-		/* BUFE , LS_V = 1, Test Write, Write Type = 00h Incremental */
+
+		/* BUFE , LS_V = 1, Test Write,
+		   Write Type = 0 Packet/Incremental */
 		pd[2] = ((!!o->underrun_proof) << 6)
 			| (1 << 5)
 			| ((!!o->simulate) << 4);
@@ -2279,6 +2307,7 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 
 	} else {
 		/* Traditional setup for CD */
+
 		pd[2] = ((!!o->underrun_proof) << 6)
 			| ((!!o->simulate) << 4)
 			| (o->write_type & 0x0f);
