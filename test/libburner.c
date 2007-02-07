@@ -261,13 +261,15 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 {
 	enum burn_disc_status disc_state;
 	struct burn_progress p;
-	int percent = 1;
+	double percent = 1.0;
 
 	disc_state = burn_disc_get_status(drive);
 	printf(
 	    "Drive media status:  %d  (see  libburn/libburn.h  BURN_DISC_*)\n",
 	    disc_state);
-	if (disc_state == BURN_DISC_BLANK) {
+	if (current_profile == 0x13) {
+		; /* formatted DVD-RW will get blanked to sequential state */
+	} else if (disc_state == BURN_DISC_BLANK) {
 		fprintf(stderr,
 		  "IDLE: Blank media detected. Will leave it untouched\n");
 		return 2;
@@ -295,7 +297,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */
 			percent = 1.0 + ((double) p.sector+1.0)
 					 / ((double) p.sectors) * 98.0;
-		printf("Blanking  ( %d%% done )\n", percent);
+		printf("Blanking  ( %.1f%% done )\n", percent);
 		sleep(1);
 	}
 	printf("Done\n");
@@ -311,7 +313,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 int libburner_format_row(struct burn_drive *drive)
 {
 	struct burn_progress p;
-	int percent = 1;
+	double percent = 1.0;
 
 	if (current_profile == 0x13) {
 		fprintf(stderr, "IDLE: DVD-RW media is already formatted\n");
@@ -328,7 +330,7 @@ int libburner_format_row(struct burn_drive *drive)
 		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */
 			percent = 1.0 + ((double) p.sector+1.0)
 					 / ((double) p.sectors) * 98.0;
-		printf("Formatting  ( %d%% done )\n", percent);
+		printf("Formatting  ( %.1f%% done )\n", percent);
 		sleep(1);
 	}
 	burn_disc_get_profile(drive_list[0].drive, &current_profile,
@@ -351,6 +353,9 @@ int libburner_format_row(struct burn_drive *drive)
 
     In case of external signals expect abort handling of an ongoing burn to
     last up to a minute. Wait the normal burning timespan before any kill -9.
+
+    For simplicity, this function allows memory leaks in case of failure.
+    In apps which do not abort immediately, one should clean up better.
 */
 int libburner_payload(struct burn_drive *drive, 
 		      char source_adr[][4096], int source_adr_count,
@@ -364,9 +369,9 @@ int libburner_payload(struct burn_drive *drive,
 	struct burn_track *track, *tracklist[99];
 	struct burn_progress progress;
 	time_t start_time;
-	int last_sector = 0, padding = 0, trackno, write_mode_tao = 0, fd;
+	int last_sector = 0, padding = 0, trackno, unpredicted_size = 0, fd;
 	off_t fixed_size;
-	char *adr;
+	char *adr, reasons[1024];
 	struct stat stbuf;
 
 	if (all_tracks_type != BURN_AUDIO) {
@@ -395,7 +400,7 @@ int libburner_payload(struct burn_drive *drive,
 					fixed_size = stbuf.st_size;
 	  }
 	  if (fixed_size==0)
-		write_mode_tao = 1;
+		unpredicted_size = 1;
 	  data_src = NULL;
 	  if (fd>=0)
 	  	data_src = burn_fd_source_new(fd, -1, fixed_size);
@@ -419,9 +424,8 @@ int libburner_payload(struct burn_drive *drive,
 
 	/* Evaluate drive and media */
 	disc_state = burn_disc_get_status(drive);
-	if (disc_state == BURN_DISC_APPENDABLE) {
-		write_mode_tao = 1;
-	} else if (disc_state != BURN_DISC_BLANK) {
+	if (disc_state != BURN_DISC_BLANK &&
+	    disc_state != BURN_DISC_APPENDABLE) {
 		if (disc_state == BURN_DISC_FULL) {
 			fprintf(stderr, "FATAL: Closed media with data detected. Need blank or appendable media.\n");
 			if (burn_disc_erasable(drive))
@@ -437,18 +441,17 @@ int libburner_payload(struct burn_drive *drive,
 	burn_options = burn_write_opts_new(drive);
 	burn_write_opts_set_perform_opc(burn_options, 0);
 	burn_write_opts_set_multi(burn_options, !!multi);
-	if (write_mode_tao)
-		burn_write_opts_set_write_type(burn_options,
-					BURN_WRITE_TAO, BURN_BLOCK_MODE1);
-	else
-		burn_write_opts_set_write_type(burn_options,
-					BURN_WRITE_SAO, BURN_BLOCK_SAO);
 	if(simulate_burn)
 		printf("\n*** Will TRY to SIMULATE burning ***\n\n");
 	burn_write_opts_set_simulate(burn_options, simulate_burn);
-	burn_structure_print_disc(target_disc);
 	burn_drive_set_speed(drive, 0, 0);
 	burn_write_opts_set_underrun_proof(burn_options, 1);
+	if (burn_write_opts_auto_write_type(burn_options, target_disc,
+					reasons, 0) == BURN_WRITE_NONE) {
+		fprintf(stderr, "FATAL: Failed to find a suitable write mode with this media.\n");
+		fprintf(stderr, "Reasons given:\n%s\n", reasons);
+		return 0;
+	}
 
 	printf("Burning starts. With e.g. 4x media expect up to a minute of zero progress.\n");
 	start_time = time(0);
@@ -462,7 +465,7 @@ int libburner_payload(struct burn_drive *drive,
 			printf(
 			     "Thank you for being patient since %d seconds.\n",
 			     (int) (time(0) - start_time));
-		else if(write_mode_tao)
+		else if(unpredicted_size)
 			printf("Track %d : sector %d\n", progress.track+1,
 				progress.sector);
 		else
