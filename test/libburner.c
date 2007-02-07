@@ -8,8 +8,9 @@
   
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia.pykix.org . It can list the available devices, can
-  blank a CD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW, DVD+RW,
-  DVD-RAM or DVD-RW.
+  blank a CD-RW or DVD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW,
+  DVD+RW, DVD-RAM or DVD-RW. Not tested: DVD-R. Not supported yet: DVD+R [DL].
+
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
@@ -593,9 +594,11 @@ int libburner_setup(int argc, char **argv)
         printf("  %s --drive /dev/hdc my_image_file\n", argv[0]);
         printf("Blank a used CD-RW (is combinable with burning in one run):\n");
         printf("  %s --drive /dev/hdc --blank_fast\n",argv[0]);
-        printf("Format a DVD-RW once before first use with libburner:\n");
+        printf("Blank a used DVD-RW (is combinable with burning in one run):\n");
+        printf("  %s --drive /dev/hdc --blank_full\n",argv[0]);
+        printf("Format a DVD-RW to avoid need for blanking before re-use:\n");
         printf("  %s --drive /dev/hdc --format_overwrite\n", argv[0]);
-        printf("Burn two audio tracks:\n");
+        printf("Burn two audio tracks (to CD only):\n");
         printf("  lame --decode -t /path/to/track1.mp3 track1.cd\n");
         printf("  test/dewav /path/to/track2.wav -o track2.cd\n");
         printf("  %s --drive /dev/hdc --audio track1.cd track2.cd\n", argv[0]);

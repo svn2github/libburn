@@ -6,8 +6,8 @@
    @section intro Introduction
 
 Libburnia is an open-source project for reading, mastering and writing
-optical discs. For now this means only CD-R and CD-RW.
-Support for DVD+RW and DVD-RW is emerging.
+optical discs. For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW.
+DVD-R is untested yet.
 
 
 The project comprises of several more or less interdependent parts which
@@ -82,9 +82,8 @@ languages and development tools.
 
 libburner is a minimal demo application for the library libburn 
 (see: libburn/libburn.h) as provided on  http://libburn.pykix.org .
-It can list the available devices, can blank a CD-RW and
-can burn to CD-R or CD-RW.
-New: burning to DVD+/-RW (single data track, single session only).
+It can list the available devices, can blank a CD-RW or DVD-RW and
+can burn to CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW.
 
 It's main purpose, nevertheless, is to show you how to use libburn and also
 to serve the libburnia team as reference application. libburner does indeed
@@ -95,8 +94,9 @@ stay upward compatible for a good while.
 <pre>
 Usage: test/libburner
        [--drive <address>|<driveno>|"-"]  [--audio]
-       [--blank_fast|--blank_full]  [--try_to_simulate]
-       [--multi]  [one or more imagefiles|"-"]
+       [--blank_fast|--blank_full|--format_overwrite]
+       [--try_to_simulate]
+       [--multi]  [<one or more imagefiles>|"-"]
 Examples
 A bus scan (needs rw-permissions to see a drive):
   test/libburner --drive -
@@ -106,22 +106,27 @@ Burn a file to drive chosen by persistent address, close:
   test/libburner --drive /dev/hdc my_image_file
 Blank a used CD-RW (is combinable with burning in one run):
   test/libburner --drive /dev/hdc --blank_fast
-Burn two audio tracks
+Blank a used DVD-RW (is combinable with burning in one run):
+  test/libburner --drive /dev/hdc --blank_full
+Format a DVD-RW to avoid need for blanking before re-use:
+  test/libburner --drive /dev/hdc --format_overwrite
+Burn two audio tracks (to CD only):
   lame --decode -t /path/to/track1.mp3 track1.cd
   test/dewav /path/to/track2.wav -o track2.cd
   test/libburner --drive /dev/hdc --audio track1.cd track2.cd
 Burn a compressed afio archive on-the-fly:
   ( cd my_directory ; find . -print | afio -oZ - ) | \
   test/libburner --drive /dev/hdc -
-To be read from *not mounted* CD via: afio -tvZ /dev/hdc
-Program tar would need a clean EOF which our padded CD cannot deliver.
+To be read from *not mounted* media via: afio -tvZ /dev/hdc
 </pre>
 libburner has two companions, telltoc and dewav, which help to perform some
 peripheral tasks of burning.
 
 telltoc prints a table of content (sessions, tracks and leadouts), it tells
-about type and state of CD media, and also is able to provide the necessary
-multi-session information for program mkisofs option -C. 
+about type and state of media, and also is able to provide the necessary
+multi-session information for program mkisofs option -C. Especially helpful
+are its predictions with "Write multi" and "Write modes" where availability
+of "TAO" indicates that tracks of unpredicted length can be written.
 See: test/telltoc --help.
 
 dewav extracts raw byte-swapped audio data from files of format .wav (MS WAVE)
