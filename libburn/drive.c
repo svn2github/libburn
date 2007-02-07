@@ -1584,6 +1584,8 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	o->might_do_tao = o->might_do_sao = o->might_do_raw = 0;
 	o->advised_write_mode = BURN_WRITE_NONE;
 	o->selected_write_mode = wt;
+	o->current_profile = d->current_profile;
+	o->current_is_cd_profile = d->current_is_cd_profile;
 	
 	if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
 		return 0;
@@ -1662,6 +1664,13 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		
 	if (s == BURN_DISC_APPENDABLE)
 		o->might_do_sao = o->might_do_raw = 0;
+
+	if (wt == BURN_WRITE_TAO && !o->might_do_tao)
+		return 0;
+	else if (wt == BURN_WRITE_SAO && !o->might_do_sao)
+		return 0;
+	else if (wt == BURN_WRITE_RAW && !o->might_do_raw)
+		return 0;
 	return 1;
 }
 
@@ -1676,3 +1685,36 @@ int burn_disc_free_multi_caps(struct burn_multi_caps **caps)
 	return 1;
 }
 
+
+/* ts A70207 : evaluate write mode related peculiarities of a disc */
+int burn_disc_get_write_mode_demands(struct burn_disc *disc,
+			struct burn_disc_mode_demands *result, int flag)
+{
+	struct burn_session *session;
+	struct burn_track *track;
+	int i, j, mode;
+
+	memset((char *) result, 0, sizeof(struct burn_disc_mode_demands));
+	if (disc->sessions > 1)
+		result->multi_session = 1;
+	for (i = 0; i < disc->sessions; i++) {
+		session = disc->session[i];
+		if (session->tracks <= 0)
+	continue;
+		mode = session->track[0]->mode;
+		if (session->tracks > 1)
+			result->multi_track = 1;
+		for (j = 0; j < session->tracks; j++) {
+			track = session->track[j];
+			if (burn_track_is_open_ended(track))
+				result->unknown_track_size = 1;
+			if (mode != track->mode)
+				result->mixed_mode = 1;
+			if (track->mode != BURN_MODE1)
+				result->exotic_track = 1;
+			if (track->mode == BURN_AUDIO)
+				result->audio = 1;
+		}
+	}
+	return (disc->sessions > 0);
+}

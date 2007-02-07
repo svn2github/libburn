@@ -1215,6 +1215,22 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
 				   enum burn_write_types write_type,
 				   int block_type);
 
+/* ts A70207 */
+/** As an alternative to burn_write_opts_set_write_type() this function tries
+    to find a suitable write type and block type for a given write job
+    described by opts and disc. To be used after all other setups have been
+    made, i.e. immediately before burn_disc_write().
+    @param opts The nearly complete write opts to change
+    @param disc The already composed session and track model
+    @param reasons This text string collects reasons for decision resp. failure
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return Chosen write type. BURN_WRITE_NONE on failure.
+*/
+enum burn_write_types burn_write_opts_auto_write_type(
+          struct burn_write_opts *opts, struct burn_disc *disc,
+          char reasons[1024], int flag);
+
+
 /** Supplies toc entries for writing - not normally required for cd mastering
     @param opts The write opts to change
     @param count The number of entries
@@ -1385,7 +1401,8 @@ int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list);
 
 
 /* ts A70203 */
-/** The reply structure for burn_disc_get_multi_caps() */
+/** The reply structure for burn_disc_get_multi_caps()
+*/
 struct burn_multi_caps {
 
 	/* Multi-session capability allows to keep the media appendable after
@@ -1442,14 +1459,20 @@ struct burn_multi_caps {
 	int might_do_tao;
 	int might_do_sao;
 	int might_do_raw;
-	
-	/* Advised write mode.
+
+	/** Advised write mode.
 	*/
 	enum burn_write_types advised_write_mode;
 
-	/* Write mode as given by parameter wt of burn_disc_get_multi_caps().
+	/** Write mode as given by parameter wt of burn_disc_get_multi_caps().
 	*/
 	enum burn_write_types selected_write_mode;
+
+	/** Profile number which was current when the reply was generated */
+	int current_profile;
+
+	/** Wether the current profile indicates CD media. 1=yes, 0=no */
+	int current_is_cd_profile;
 };
 
 /** Allocates a struct burn_multi_caps (see above) and fills it with values
@@ -1459,7 +1482,8 @@ struct burn_multi_caps {
     @param d The drive to inquire
     @param wt With BURN_WRITE_NONE the best capabilities of all write modes
               get returned. If set to a write mode like BURN_WRITE_SAO the
-              capabilities with that particular mode are returned.  
+              capabilities with that particular mode are returned and the
+              return value is 0 if the desired mode is not possible.
     @param caps returns the info structure
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return < 0 : error , 0 : writing seems impossible , 1 : writing possible 

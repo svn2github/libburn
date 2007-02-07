@@ -95,4 +95,17 @@ int burn_mdata_free_subs(struct scsi_mode_data *m);
 /* ts A61230 */
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag);
 
+
+/* ts A70207 : evaluate write mode related peculiarities of a disc */
+struct burn_disc_mode_demands {
+	int multi_session;
+	int multi_track;
+	int unknown_track_size;
+	int mixed_mode;
+	int audio;
+	int exotic_track;
+};
+int burn_disc_get_write_mode_demands(struct burn_disc *disc,
+			 struct burn_disc_mode_demands *result, int flag);
+
 #endif /* __DRIVE */
