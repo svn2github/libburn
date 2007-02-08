@@ -2012,6 +2012,8 @@ set_dev:;
          " --no_rc            as first argument: do not read startup files\n");
      printf(" --old_pseudo_scsi_adr  use and report literal Bus,Target,Lun\n");
      printf("                    rather than real SCSI and pseudo ATA.\n");
+     printf(" --prodvd_cli_compatible  react on some DVD types more like\n");
+     printf("                    cdrecord-ProDVD with blank= and -multi\n");
      printf(
           " --single_track     accept only last argument as source_address\n");
 
@@ -2349,6 +2351,7 @@ struct CdrskiN {
  int dummy_mode;
  int force_is_set;
  int single_track;
+ int prodvd_cli_compatible;
 
  int do_devices;
 
@@ -2488,6 +2491,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->dummy_mode= 0;
  o->force_is_set= 0;
  o->single_track= 0;
+ o->prodvd_cli_compatible= 0;
  o->do_devices= 0;
  o->do_scanbus= 0;
  o->do_checkdrive= 0;
@@ -4027,7 +4031,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    /* Classical blanking of erasable media */
 
    if(s!=BURN_DISC_FULL && 
-      (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable)) {
+      (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable) &&
+      !(profile_number == 0x13 && skin->prodvd_cli_compatible)) {
      Cdrskin_release_drive(skin,0);
      if(s==BURN_DISC_BLANK) {
        fprintf(stderr,
@@ -4049,7 +4054,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      fprintf(stderr,"cdrskin: FATAL : blank=... : media is not erasable\n");
      return(0);
    }
-   if(profile_number == 0x14 || profile_number == 0x13)
+   if((profile_number == 0x14 || profile_number == 0x13) &&
+      !skin->prodvd_cli_compatible)
      skin->blank_fast= 0; /* only with deformat_sequential_quickest */
 
  } else {
@@ -4449,7 +4455,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
  int profile_number= -1, track_type_1, mixed_mode= 0, unpredicted_size= 0, ret;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
- int might_do_tao= 0, might_do_sao= 1;
+ int might_do_tao= 0, might_do_sao= 1, allows_multi= 1;
  double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
 #ifdef Cdrskin_libburn_has_get_multi_capS
  struct burn_multi_caps *caps = NULL;
@@ -4473,10 +4479,12 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
  } else if(ret==0) {
    fprintf(stderr,
       "cdrskin: SORRY : Cannot find any suitable write mode for this media\n");
+   burn_disc_free_multi_caps(&caps);
    return(0);
  }
  might_do_tao= caps->might_do_tao;
  might_do_sao= caps->might_do_sao;
+ burn_disc_free_multi_caps(&caps);
 #endif
 
  for(i=0;i<skin->track_counter;i++) {
@@ -4610,6 +4618,25 @@ check_with_drive:;
      return(0);
    }
  }
+
+#ifdef Cdrskin_libburn_has_get_multi_capS
+ ret = burn_disc_get_multi_caps(skin->grabbed_drive,skin->write_type,&caps,0);
+ if (ret>0)
+   allows_multi= caps->multi_session;
+ burn_disc_free_multi_caps(&caps);
+#endif
+ if(skin->multi && !allows_multi) {
+   if(skin->prodvd_cli_compatible) {
+     skin->multi= 0;
+     if(skin->verbosity>=Cdrskin_verbose_progresS)
+       fprintf(stderr, "cdrskin: NOTE : Ignored option -multi.\n");
+   } else {
+     fprintf(stderr,
+ "cdrskin: SORRY : Cannot keep this media appendable after write by -multi\n");
+     return(0);
+   }
+ }
+
 it_is_done:;
  if(skin->write_type==BURN_WRITE_SAO && unpredicted_size==1)
    for(i= 0; i<skin->track_counter; i++) {
@@ -4656,6 +4683,16 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  s= burn_disc_get_status(drive);
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
+
+#ifdef Cdrskin_allow_libburn_taO
+ if (s!=BURN_DISC_APPENDABLE && s!=BURN_DISC_BLANK) {
+#else
+ if (s!=BURN_DISC_BLANK) {
+#endif
+   Cdrskin_release_drive(skin,0);
+   fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
+   goto burn_failed;
+ }
  ret= Cdrskin_activate_write_mode(skin,s,0);
  if(ret<=0) {
    fprintf(stderr,
@@ -4689,9 +4726,7 @@ burn_failed:;
      skin->fixed_size+= size+padding;
  }
 
-#ifdef Cdrskin_libburn_has_multI
- if (s == BURN_DISC_APPENDABLE) {
-
+ if (s==BURN_DISC_APPENDABLE) {
 #ifdef Cdrskin_allow_sao_for_appendablE
    ;
 #else
@@ -4701,16 +4736,7 @@ burn_failed:;
      goto burn_failed;
    }
 #endif /* ! Cdrskin_allow_sao_for_appendablE */
-
- } else if (s != BURN_DISC_BLANK) {
-#else
- if (s != BURN_DISC_BLANK) {
-#endif
-   Cdrskin_release_drive(skin,0);
-   fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
-   goto burn_failed;
  }
-
  
 #ifndef Cdrskin_extra_leaN
 
@@ -5545,6 +5571,9 @@ set_padsize:;
      skin->set_by_padsize= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        printf("cdrskin: padding : %.f\n",skin->padding);
+
+   } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
+     skin->prodvd_cli_compatible= 1;
 
    } else if(strcmp(argv[i],"-raw96r")==0) {
      /* is handled in Cdrpreskin_setup() */;
