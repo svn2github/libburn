@@ -420,25 +420,25 @@ into the format of the burned data. Be advised to use growisofs for the
 task of maintaining extendable ISO-Filesystems on DVD+RW. 
 
 
-                                     DVD-RW
+                               DVD-RW and DVD-R
 
 DVD-RW are usable if formatted to state "Restricted Overwrite" or if in state
-"Sequential Recording".
+"Sequential Recording". DVD-R are always in sequential state.
 
 "Sequential" is the state of unused media and of media previously blanked
 or written by cdrecord. dvd+rw-format -blank can also achieve this state.
 The according cdrskin option is blank=deformat_sequential .
 If "Incremental Streaming" is available, then sequential media are capable
-of multi-session like CD-RW. (But not capable of -audio recording.)
+of multi-session like CD-R[W]. (But not capable of -audio recording.)
 This means they need option -multi to stay appendable, need to be blanked
 to be writeable from start, return useable info with -toc and -msinfo,
 eventually perform appending automatically.
 Without "Incremental Streaming" offered by the drive, only write mode DAO is
-available with sequential DVD-RW. It only works with blank media, allows only
+available with sequential DVD-R[W]. It only works with blank media, allows only
 one single track, no -multi, and demands a fixely predicted track size.
-(growisofs uses it with DVD-RW if option -dvd-compat is given.)
+(growisofs uses it with DVD-R[W] if option -dvd-compat is given.)
  
-Overwriteable DVD behave much like DVD+RW. "Restricted" refers only to the
+Overwriteable DVD-RW behave much like DVD+RW. "Restricted" refers only to the
 granularity of random access and block size which have always to be aligned to
 full 32 kB. Sequential DVD-RW are converted into overwriteable DVD-RW by
   cdrskin dev=... -v blank=format_overwrite
@@ -473,17 +473,6 @@ allow minimal blanking but the resulting media on my drives offer no
 Incremental Streaming afterwards. So blank=fast will do full blanking. 
 
 blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
-
-
-                                    DVD-R
-
-The specs state that DVD-R behave like sequential DVD-RW except the capability
-to get blanked or formatted. Thus they should be useable like CD-R media (but
-without -audio).
-Blank DVD-R media are accepted as suitable by cdrskin on my drives.
-I got only a few of those one-time recordable media and no real use case.
-So i prefer to start burning my DVD-R only at the end of my endeavor about
-sequential DVD. There's still plenty to do with DVD-RW testing.
 
 
                         Special compilation variations

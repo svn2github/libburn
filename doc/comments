@@ -6,9 +6,9 @@
    @section intro Introduction
 
 Libburnia is an open-source project for reading, mastering and writing
-optical discs. For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW.
-DVD-R is untested yet.
+optical discs. For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW, DVD-R.
 
+Not supported yet are DVD+R, any dual layer media, HD-DVD, BD (blue ray).
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -20,9 +20,9 @@ we would need : login on a development machine resp. a live OS on CD or DVD,
 advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
 volunteers for testing of realistic use cases.
 
-We have a workable code base for burning data and audio CDs. The burn API is
-quite comprehensively documented and can be used to build a presentable
-application.
+We have a workable code base for burning data and audio CDs and many DVD types.
+The burn API is quite comprehensively documented and can be used to build a
+presentable application.
 We have a functional binary which emulates the core use cases of cdrecord in
 order to prove that usability, and in order to allow you to explore libburn's
 scope by help of existing cdrecord frontends.
@@ -32,7 +32,10 @@ scope by help of existing cdrecord frontends.
 - libburn  is the library by which preformatted data get onto optical media.
            It uses either /dev/sgN (e.g. on kernel 2.4 with ide-scsi) or
            /dev/hdX (e.g. on kernel 2.6).
-           libburn is the foundation of our cdrecord emulation.
+           libburn is the foundation of our cdrecord emulation. Its code is
+           independent of cdrecord. Its DVD capabilities are learned from
+           studying the code of dvd+rw-tools and MMC-5 specs. No code but only
+           the pure SCSI knowledge has been taken from dvd+rw-tools, though.
 
 - libisofs is the library to pack up hard disk files and directories into a
            ISO 9660 disk image. This may then be brought to CD via libburn.
@@ -41,15 +44,18 @@ scope by help of existing cdrecord frontends.
 - cdrskin  is a limited cdrecord compatibility wrapper for libburn.
            cdrecord is a powerful GPL'ed burn program included in Joerg
            Schilling's cdrtools. cdrskin strives to be a second source for
-           the services traditionally provided by cdrecord.
+           the services traditionally provided by cdrecord. Additionally it
+           provides libburn's DVD capabilities, where only -sao is compatible
+           with cdrecord.
            cdrskin does not contain any bytes copied from cdrecord's sources.
            Many bytes have been copied from the message output of cdrecord
            runs, though.
            See cdrskin/README for more.
 
 - "test"   is a collection of application gestures and examples given by the
-           authors of the library features. The main API example of libburn
-           is named test/libburner.c .
+           authors of the library features. The burn API example of libburn
+           is named test/libburner.c . The API for media information inquiry is
+           demonstrated in test/telltoc.c .
            Explore these examples if you look for inspiration.
 
 We plan to be a responsive upstream. Bear with us.
@@ -83,7 +89,7 @@ languages and development tools.
 libburner is a minimal demo application for the library libburn 
 (see: libburn/libburn.h) as provided on  http://libburn.pykix.org .
 It can list the available devices, can blank a CD-RW or DVD-RW and
-can burn to CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW.
+can burn to CD-R, CD-RW, DVD-RAM, DVD+RW, DVD-RW, DVD-R.
 
 It's main purpose, nevertheless, is to show you how to use libburn and also
 to serve the libburnia team as reference application. libburner does indeed

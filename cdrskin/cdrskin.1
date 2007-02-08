@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "February 1, 2007"
+.TH CDRSKIN 1 "February 8, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -44,9 +44,11 @@ or in Session at Once mode for seamless tracks.
 .br
 Multi session on CD (follow-up sessions in TAO only)
 .br
-and on DVD-RW (untested yet: on DVD-R).
+and on DVD-RW or DVD-R (in Incremental write mode only).
 .br
-Burning of a single data track to DVD+RW, DVD-RW, DVD-RAM.
+Single session on DVD-RW or DVD-R (Disk-at-once)
+.br
+or on overwriteable DVD+RW, DVD-RW, DVD-RAM.
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
@@ -125,13 +127,13 @@ Multiple cycles of blanking and overwriting with random numbers might be.
 ---------------
 .br
 Note: The support for sequentially recordable media is still emerging.
-DVD-R have not been tested yet.
 .br
 ---------------
 .br
-Currently only DVD-RW (and most probably DVD-R) can be used for the Sequential
-recording model. DVD-RW must be in state "Sequential Recording". The media must
-be either blank or appendable. Newly purchased DVD-RW media are in this state.
+Currently only DVD-RW and DVD-R can be used for the Sequential recording model.
+DVD-RW must be in state "Sequential Recording".
+The media must be either blank or appendable.
+Newly purchased DVD-RW and DVD-R media are in this state.
 Used DVD-RW get into blank sequential state by option
 .B blank=deformat_sequential .
 .br

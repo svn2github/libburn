@@ -54,7 +54,8 @@ See README file there.
                         Overview of libburnia.pykix.org 
 
 libburnia.pykix.org is an open-source software project for reading, mastering
-and writing optical discs. For now this means only CD-R and CD-RW.
+and writing optical discs.
+For now this means only CD media and all single layer DVD media except DVD+R.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -66,10 +67,10 @@ we would need : login on a development machine resp. a live OS on CD or DVD,
 advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
 volunteers for testing of realistic use cases.
 
-We do have a workable code base for burning data CDs, though. The burn API is
-quite comprehensively documented and can be used to build a presentable
-application.
-We do have a functional binary which emulates parts of cdrecord in order to
+We have a workable code base for burning CD and most single layer DVD, though.
+The burn API is quite comprehensively documented and can be used to build a
+presentable application.
+We have a functional binary which emulates parts of cdrecord in order to
 prove that usability, and in order to allow you to explore libburnia's scope
 by help of existing cdrecord frontends.
 
@@ -78,20 +79,25 @@ The project components (list subject to growth, hopefully):
 - libburn  is the library by which preformatted data get onto optical media.
            It uses either /dev/sgN (e.g. on kernel 2.4 with ide-scsi) or
            /dev/hdX (e.g. on kernel 2.6).
-           libburn is the foundation of our cdrecord emulation.
+           libburn is the foundation of our cdrecord emulation. Its code is
+           independent of cdrecord. Its DVD capabilities are learned from
+           studying the code of dvd+rw-tools and MMC-5 specs. No code but only
+           the pure SCSI knowledge has been taken from dvd+rw-tools, though.
 
 - libisofs is the library to pack up hard disk files and directories into a
-           ISO 9660 disk image. This may then be brought to CD via libburn.
+           ISO 9660 disk image. This may then be brought to media via libburn.
            libisofs is to be the foundation of our upcoming mkisofs emulation.
 
 - cdrskin  is a limited cdrecord compatibility wrapper for libburn.
            Cdrecord is a powerful GPL'ed burn program included in Joerg
            Schilling's cdrtools. cdrskin strives to be a second source for
-           the services traditionally provided by cdrecord.
+           the services traditionally provided by cdrecord. Additionally it
+           provides libburn's DVD capabilities, where only -sao is compatible
+           with cdrecord.
            cdrskin does not contain any bytes copied from cdrecord's sources.
            Many bytes have been copied from the message output of cdrecord
            runs, though.
-           See cdrskin/README for more.
+           See cdrskin/README and man cdrskin/cdrskin.1 for more.
 
 - test     is a collection of application gestures and examples given by the
            authors of the library features. The main API example for libburn
@@ -177,6 +183,14 @@ Project history as far as known to me:
 - 28th November 2006 the umbrella project which encloses both, libisofs and
   libburn, is now called libburnia. For the origin of this name, see 
   http://en.wikipedia.org/wiki/Liburnians .
+
+- 16th January 2007 release of libburn-0.3.0 and cdrskin-0.3.0 . Now the scope
+  is widened to a first class of DVD media: overwriteable single layer types
+  DVD-RAM, DVD+RW, DVD-RW. This is not a cdrecord emulation but rather inspired
+  by dvd+rw-tools' "poor man" writing facility for this class of media.
+  Taking a bow towards Andy Polyakov.
+
+- Upcoming release will cover sequential DVD-RW and DVD-R.
 
 
 ------------------------------------------------------------------------------
