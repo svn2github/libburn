@@ -10,8 +10,9 @@ Schilling's cdrtools. cdrskin strives to be a second source for the services
 traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
 Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
 with cdrecord-ProDVD in order to offer TAO-like single track recording.
-The current development version handles sequential DVD-RW like CD-RW with TAO
-and multi-session.
+The current development version handles sequential DVD-R[W] like CD-R[W]
+with TAO and multi-session. Additionally it offers cdrecord-like mode DAO with
+DVD-R[W].
 
 cdrskin does not contain any bytes copied from cdrecord's sources.
 Many bytes have been copied from the message output of cdrecord
@@ -22,13 +23,13 @@ About libburn API for burning CD: http://libburnia-api.pykix.org
 
 --------------------------------------------------------------------------
 
-Appending sessions to an unclosed CD is restricted to write mode TAO.
-(Users who have a burner which succeeds with a follow-up session via
+Appending sessions to an unclosed CD or DVD-R[W] is restricted to write mode
+TAO. (Users who have a burner which succeeds with a follow-up session on CD via
 cdrecord -sao : please contact us.)
 
-For DVD types other than DVD-RAM, DVD+RW, DVD-RW and for appending sessions
-to ISO filesystems on DVD other than DVD-RW see the advise to use dvd+rw-tools
-at the end of this text.
+For DVD types other than DVD-RAM, DVD+RW, DVD-RW, DVD-R and for appending
+sessions to ISO filesystems on DVD other than DVD-RW, DVD-R see the advise
+to use dvd+rw-tools at the end of this text.
 
 --------------------------------------------------------------------------
 
@@ -85,9 +86,15 @@ has to offer both, r- and w-permission.
 
 --------------------------------------------------------------------------
 
-Non-cdrecord blank mode blank=format_overwrite is needed to bring a DVD-RW
+The DVD capabilities of cdrskin differ from those of cdrecord-ProDVD. cdrskin
+lacks of support for DVD+R and for dual layer DVD media. On the other hand it
+offers TAO-like multi-session with DVD-R[W] and TAO-like single session with
+overwriteable DVD media. It also offers DAO on DVD-R[W] which is probably the
+same as the traditional cdrecord-ProDVD write mode.
+
+Non-cdrecord blank mode blank=format_overwrite brings a DVD-RW
 disc from its initial profile "Sequential Recording" into profile state
-"Restricted Overwrite". The latter is usable with cdrskin.
+"Restricted Overwrite".
 {{{
 cdrskin dev=/dev/sr0 -v blank=format_overwrite
 }}}
@@ -98,6 +105,22 @@ on a 32KiB aligned address, though.
 {{{
 cdrskin ... write_start_address=2412m ...
 }}}
+
+Non-cdrecord blank mode blank=deformat_sequential brings an overwriteable
+DVD-RW back into state "Sequential Recording" with the capability of doing
+multi-session, if the drive is capable of "Incremental Streaming"
+(MMC feature 21h).
+
+Used sequential DVD-RW media may be blanked by blank=fast or blank=all which
+normally both do full blanking.
+
+blank=deformat_sequential does minimal blanking of DVD-RW which usually yields
+media incapable of "Incremental Streaming".
+
+Option --prodvd_cli_compatible activates blank=fast and blank=all for
+overwriteable DVD-RW which normally ignore those two options. It also makes
+option -multi tolerable with media and write modes which are not suitable for
+multi-session. (The default behavior of cdrskin deems me to be preferrable.)
 
 --------------------------------------------------------------------------
 
@@ -187,7 +210,7 @@ for an illustrated example with K3b 0.10 .
 
 DVD advise:
 
-For burning of DVD media other than DVD-RAM, DVD+RW, DVD-RW, the cdrskin
+For burning of DVD media other than DVD-RAM, DVD+RW, DVD-RW, DVD-R, the cdrskin
 project currently advises to use Andy Polyakov's dvd+rw-tools which despite
 their historic name burn for me on above burner: DVD-RAM, DVD+RW, DVD+R,
 DVD-RW, DVD-R and are also capable of dual layer and even BD discs. 
@@ -205,7 +228,7 @@ image and finally manipulates the start sectors of this existing image.
 So for growable ISO filesystems on DVD-RAM or DVD+RW growisofs is the only
 choice, currently.
 
-With sequential DVD-RW the development version of cdrskin can offer
+With sequential DVD-R[W] the development version of cdrskin can offer
 multi-session together with associated options blank=, -multi, -msinfo and
 -toc. Thus sequential DVD-RW behave much like large CD-RW with possibly more
 than 99 tracks.
