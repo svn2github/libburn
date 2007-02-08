@@ -4452,10 +4452,10 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
                                 int flag)
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
- int profile_number= -1, track_type_1, mixed_mode= 0, unpredicted_size= 0, ret;
+ int profile_number= -1, track_type_1= 0, mixed_mode= 0, unpredicted_size= 0;
+ int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
- int might_do_tao= 0, might_do_sao= 1, allows_multi= 1;
  double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
 #ifdef Cdrskin_libburn_has_get_multi_capS
  struct burn_multi_caps *caps = NULL;
