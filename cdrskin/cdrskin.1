@@ -556,7 +556,7 @@ fifo_start_at= . So it is best if the drive offers hardware protection which
 is enabled automatically if not driveropts=noburnfree is given.
 .TP
 .BI \--list_ignored_options
-List all ignored cdrecord options. The --options cannot be used as addresses
+List all ignored cdrecord options. The "-" options cannot be used as addresses
 of track sources. No track source address may begin with a text equal to an
 option which ends by "=". The list is ended by an empty line.
 .TP
@@ -573,7 +573,7 @@ Option -multi with unsuitable media is not an error but simply has no effect.
 Options blank=fast and blank=all deformat overwriteable DVD-RW media.
 .br
 Option blank=fast does indeed minmal blanking with DVD-RW. This may yield media
-which can only do DAO but not Incremental streaming.
+which can only do DAO but not Incremental Streaming.
 .TP
 .BI \--single_track
 Accept only the last argument of the command line as track source address.
@@ -698,9 +698,9 @@ cdrskin dev=/dev/hdc -toc
 .SS
 .B Make used CD-RW or used unformatted DVD-RW writable again:
 .br
-cdrskin -v dev=/dev/sg1 blank=all -eject
+cdrskin -v dev=/dev/sg1 blank=fast -eject
 .br
-cdrskin -v dev=/dev/dvd blank=fast -eject
+cdrskin -v dev=/dev/dvd blank=all -eject
 .SS
 .B Format DVD-RW to avoid need for blanking before re-use:
 .br

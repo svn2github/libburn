@@ -4,7 +4,7 @@ Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
-- Sequential DVD-R[W] Cookbook (Multi-session only. No DAO for now.)
+- Sequential DVD-R[W] Cookbook
 
 
 -------------------------------------------------------------------------------
@@ -696,7 +696,7 @@ multi-session as with CD media and does not demand a predicted track size.
 DAO seems to be the older method. It allows only one single session and
 track and it demands an exactly predicted track size.
 
-- About overwriteavble, blank, appendable and finalized DVD-R[W] media
+- About overwriteable, blank, appendable and finalized DVD-R[W] media
 - Incremental writing
 - DAO writing
 - Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems
