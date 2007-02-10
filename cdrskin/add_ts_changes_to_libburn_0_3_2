@@ -20,24 +20,26 @@ set -x
 # The script is to be run in the directory above the toplevel
 # directory of libburn resp. cdrskin development.
 #
-# libburn version used:  http://libburn.pykix.org
+
+# The top level directory in the SVN snapshot is named
+intermediate="./libburn_pykix"
+
+# libburn source used:  http://libburnia.pykix.org
 # Downloaded by:
-#  $ svn co http://libburn-svn.pykix.org/libburn/trunk libburn_pykix
+#  $ svn co http://libburnia-svn.pykix.org/libburn/tags/... $intermediate
 # packed up in a tarball just to save it from inadverted changes by
-#  $ tar czf libburn_svn.tgz libburn_pykix
-original="./libburn_svn.tgz"
+#  $ tar czf libburn_svn.tgz $intermediate
+original="./libburn_svn_release.tgz"
 # Historic moments:
 # original="./libburn_svn_A60815.tgz"
 # original="./libburn_cdrskin_A60819.tgz"
 
-# The top level directory in that snapshot is named
-intermediate="./libburn_pykix"
 
-# My changes are in libburn-develop , mainly in ./cdrskin
+# My changes are in $changes , mainly in $changes/cdrskin
+changes="./libburn-release"
 
-changes="./libburn-develop"
-skin_release="0.3.1"
-patch_level=""
+skin_release="0.3.2"
+patch_level=".pl00"
 skin_rev="$skin_release""$patch_level"
 
 # The result directory and the name of the result tarballs
