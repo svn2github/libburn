@@ -83,6 +83,7 @@ extern struct libdax_msgs *libdax_messenger;
                with unpredicted size, multi-track, multi-session.
    ts A70205 : Beginning to implement DVD-R[W] DAO : single track and session,
                size prediction mandatory.
+   ts A70208 : Finally made tests with DVD-R. Worked exactly as new DVD-RW.
 
 Todo:
    Determine first free lba for appending data on overwriteables. 
