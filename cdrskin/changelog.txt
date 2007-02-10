@@ -26,9 +26,10 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
   DVD-RW "Disc-at-once" (-sao) is nearest to cdrecord-ProDVD's methods.
   DVD-RW "Incremental Streaming" (-tao) on unformatted media allows
   multi-session and track sources of unpredictable size.
-  Writing DVD-RAM, DVD+RW and "Restricted Overwrite" DVD-RW is like -tao on
-  blank CD. Formatting is done via cdrskin-specific blank=format_overwrite
-  and not with option -format.
+  Writing DVD-RAM, DVD+RW and "Restricted Overwrite" DVD-RW is like single
+  track -tao on blank CD. Formatting is done via cdrskin-specific
+  blank=format_overwrite and not with option -format.
+
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -2901,12 +2902,115 @@ Described DVD-R[W] DAO mode
 ------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.06.200802
 * DVD-R[W] Disk-at-once writing
 
-  []
+6 Feb 2007  [690]
 cdrskin/README
 cdrskin/changelog.txt
 cdrskin/cdrskin_eng.html
-Nect cdrskin-0.3.1 cycle
+Next cdrskin-0.3.1 cycle
 
+2007.02.07.162836  [691]
+libburn/libburn.h
+libburn/drive.h
+libburn/drive.c
+libburn/options.c
+libburn/libdax_msgs.h
+New API function burn_write_opts_auto_write_type()
+
+7 Feb 2007  [692]
+test/libburner.c
+Made use of burn_write_opts_auto_write_type()
+
+7 Feb 2007  [693]
+test/libburner.c
+doc/comments
+Updated documentation aspects
+
+8 Feb 2007  [694]
+README
+doc/comments
+cdrskin/cdrskin.1
+cdrskin/README
+Finally made tests with DVD-R. They burn indeed like DVD-RW.
+
+2007.02.08.210744  [695]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --prodvd_cli_compatible
+
+8 Feb 2007  [696]
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+Mentioned DVD-R
+
+2007.02.08.225208  [697]
+cdrskin/cdrskin.c
+Silenced compiler warning
+
+
+------------------------------------ cycle  - cdrskin-0.3.1 - 2007.02.09.074058
+
+9 Feb 2006  [698]
+cdrskin/cdrskin_eng.html
+Added special thanks towards Andy Polyakov
+
+9 Feb 2006  [699]
+cdrskin/cdrskin.1
+doc/cookbook.txt
+Small corrections in documentation
+
+10 Feb 2007  [tag 701] [705]
+- cdrskin/add_ts_changes_to_libburn_0_3_0
+- cdrskin/add_ts_changes_to_libburn_0_3_1
++ cdrskin/add_ts_changes_to_libburn_0_3_2
++ cdrskin/add_ts_changes_to_libburn_0_3_3
+Updated cdrskin tarball generator
+
+2007.02.10.120001 [tag 702] [704]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+10 Feb 2007  [tag 703] []
+cdrskin/changelog.txt
+Documented changes and 0.3.2 release timestamp
+
+
+----------------------------- release  - cdrskin-0.3.2.pl00 - 2007.02.10.120001
+* Burnfree enabled by default
+* Multi-session recording on sequential DVD-R[W], including -toc, -msinfo
+* DVD-R[W] Disk-at-once recording
+
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.02.
+
+10 Feb 2007  [706]
+libburn/mmc.c
+Added a comment about DVD-R
+
+
+===============================================================================
+                                    TODO
+===============================================================================
+
+
+Bug reports to post after release:
+
+See A70205_to_cdwrite_growisofs_dao_pitfalls
+    A70208_to_cdwrite_cdrecord_error_messages
+    A70209_to_cdrskit_error_messages
+
+
+Make profile 0010h DVD-ROM suitable , full , not erasable
+
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 
 
 forceful blanking of blank media in burn_disc_erase()
 
@@ -2914,13 +3018,15 @@ What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 
 growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
 
-Check test/libburner and test/telltoc for consequences
+cdrskin: prevent usage of burn drive as track source
 
-Test with DVD-R
+move tao_to_sao_tsize into libburn and let cdrskin use auto write mode
 
------------------------------------- cycle  - cdrskin-0.3.1 - 
 
 Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
+
+Make wide use of burn_disc_write_mode_demands()
+
 
 Remove from README what is also written in the man page.
 
@@ -2935,22 +3041,14 @@ Format DVD-RAM ?
 
 How to handle finalizing ?
 
-Check wether current_profile is kept up to date with each possible media change
-
-Make drive_info reflect DVD capabilities
-Make proper use of reflected capabilities (e.g. in burn_drive_inquire_media())
-
 Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
-
 
 Sequentially check option list for DVD compliance
 
 
-(Learn about multi-track with DVD-RW Restricted Overwrite.) My drives don't offer
-
-
-
 ----------------------------------------- long term intentions:
+
+http://burbon04.gmxhome.de/linux/CDREncryption.html
 
   []
 Ticket 90: failure on USB
@@ -2978,4 +3076,7 @@ Clear outdated persistent read buffer after small CD image was read (ticket 57)
   []
 Enable multi-session for write modes other than TAO
 
-
+===============================================================================
+                   This is the dirty end of the todo list.
+          For most recent changelog entries scroll up about 100 lines.
+===============================================================================
