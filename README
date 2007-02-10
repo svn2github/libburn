@@ -67,7 +67,7 @@ we would need : login on a development machine resp. a live OS on CD or DVD,
 advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
 volunteers for testing of realistic use cases.
 
-We have a workable code base for burning CD and most single layer DVD, though.
+We have a workable code base for burning CD and most single layer DVD.
 The burn API is quite comprehensively documented and can be used to build a
 presentable application.
 We have a functional binary which emulates parts of cdrecord in order to
@@ -190,7 +190,9 @@ Project history as far as known to me:
   by dvd+rw-tools' "poor man" writing facility for this class of media.
   Taking a bow towards Andy Polyakov.
 
-- Upcoming release will cover sequential DVD-RW and DVD-R.
+- 11th February 2007 version 0.3.2 covers sequential DVD-RW and DVD-R with
+  multi-session and with DAO.
+  This means all single layer DVD media except DVD+R are supported now.
 
 
 ------------------------------------------------------------------------------

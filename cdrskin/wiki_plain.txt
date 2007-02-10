@@ -10,9 +10,8 @@ Schilling's cdrtools. cdrskin strives to be a second source for the services
 traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
 Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
 with cdrecord-ProDVD in order to offer TAO-like single track recording.
-The current development version handles sequential DVD-R[W] like CD-R[W]
-with TAO and multi-session. Additionally it offers cdrecord-like mode DAO with
-DVD-R[W].
+Sequential DVD-R[W] are handled like CD-R[W] with TAO and multi-session.
+Additionally cdrskin offers cdrecord-ProDVD-like mode DAO with DVD-R[W].
 
 cdrskin does not contain any bytes copied from cdrecord's sources.
 Many bytes have been copied from the message output of cdrecord
@@ -228,10 +227,11 @@ image and finally manipulates the start sectors of this existing image.
 So for growable ISO filesystems on DVD-RAM or DVD+RW growisofs is the only
 choice, currently.
 
-With sequential DVD-R[W] the development version of cdrskin can offer
-multi-session together with associated options blank=, -multi, -msinfo and
--toc. Thus sequential DVD-RW behave much like large CD-RW with possibly more
-than 99 tracks.
+
+cdrskin can offer DVD multi-session only with sequential DVD-R[W]. Associated
+options blank=, -multi, -msinfo and -toc are available in this case. Thus
+sequential DVD-RW behave much like large CD-RW with possibly more than 99
+tracks.
 
 --------------------------------------------------------------------------
 
