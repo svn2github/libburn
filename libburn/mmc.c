@@ -917,7 +917,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 	struct command c;
 	char msg[160];
 	/* ts A70131 : had to move mmc_read_toc() to end of function */
-	int do_read_toc = 0, session_state;
+	int do_read_toc = 0, session_state, disc_status;
 
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
@@ -949,7 +949,12 @@ void mmc_read_disc_info(struct burn_drive *d)
 	data = c.page->data;
 	d->erasable = !!(data[2] & 16);
 
-	switch (data[2] & 3) {
+ 	disc_status = data[2] & 3;
+	if (d->current_profile == 0x10) { /* DVD-ROM */
+		disc_status = 2; /* always full and finalized */
+		d->erasable = 0; /* never erasable */
+	}
+	switch (disc_status) {
 	case 0:
 		d->toc_entries = 0;
 		d->start_lba = burn_msf_to_lba(data[17], data[18], data[19]);
@@ -966,14 +971,8 @@ void mmc_read_disc_info(struct burn_drive *d)
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
 	case 2:
-		if ((data[2] & 3) == 2) {
+		if (disc_status == 2)
 			d->status = BURN_DISC_FULL;
-#ifdef Libburn_support_dvd_r_seQ
-			/* offers no feature 0021h now but might do if blank */
-			if (d->current_profile == 0x14) /* DVD-RW */
-				d->current_is_supported_profile = 1;
-#endif
-		}
 		do_read_toc = 1;
 		break;
 	}
@@ -1530,7 +1529,7 @@ void mmc_get_configuration(struct burn_drive *d)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_r_seQ
-	if (cp == 0x11 || cp == 0x14)
+	if (cp == 0x10 || cp == 0x11 || cp == 0x14) /* DVD-ROM,DVD-R,DVD-RW */
 		d->current_is_supported_profile = 1;
 #endif
 
