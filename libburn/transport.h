@@ -206,6 +206,12 @@ struct burn_drive
 	/* ts A70129 :
 	   from 51h READ DISC INFORMATION Last Track Number in Last Session */
 	int last_track_no;
+	/* ts A70212 : from various sources : free space on media (in bytes)
+	               With CD this might change after particular write
+	               parameters have been set and nwa has been inquired.
+	               (e.g. by d->send_write_parameters() ; d->get_nwa()).
+	*/
+	off_t media_capacity_remaining;
 
 
 	int toc_temp;

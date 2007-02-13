@@ -1402,7 +1402,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 			0, 0);
 		return -1;
 	}
-	if (o!=NULL)
+	if (o != NULL)
 		d->send_write_parameters(d, o);
 	ret = d->get_nwa(d, trackno, lba, nwa);
 	return ret;
@@ -1432,6 +1432,23 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start)
 	}
 	ret = d->read_multi_session_c1(d, &trackno, start);
 	return ret;
+}
+
+
+/* ts A70213 : new API function */
+off_t burn_disc_available_space(struct burn_drive *d,
+				 struct burn_write_opts *o)
+{
+	int lba, nwa;
+
+	if (burn_drive_is_released(d))
+		return d->media_capacity_remaining;
+	if (d->busy != BURN_DRIVE_IDLE)
+		return d->media_capacity_remaining;
+	if (o != NULL)
+		d->send_write_parameters(d, o);
+	d->get_nwa(d, -1, &lba, &nwa);
+	return d->media_capacity_remaining;
 }
 
 

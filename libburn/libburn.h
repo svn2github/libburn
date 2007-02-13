@@ -838,11 +838,27 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 */
 int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
 
+
+/* ts A70213 */
+/** Return the best possible estimation of the currently available capacity of
+    the media. This might depend on particular write option settings. For
+    inquiring the space with such a set of options, the drive has to be
+    grabbed and BURN_DRIVE_IDLE. If not, then one will only get a canned value
+    from the most recent automatic inquiry (e.g. during last drive grabbing).
+    @param d The drive to query.
+    @param o If not NULL: write parameters to be set on drive before query
+    @return number of most probably available free bytes
+*/
+off_t burn_disc_available_space(struct burn_drive *d,
+                                struct burn_write_opts *o);
+
+
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
     libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW",
-    0x12 "DVD-RAM", 0x13 "DVD-RW restricted overwrite" or 0x1a "DVD+RW".
+    0x11 "DVD-R", 0x12 "DVD-RAM", 0x13 "DVD-RW restricted overwrite",
+    0x14 "DVD-RW Sequential Recording" or 0x1a "DVD+RW".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)

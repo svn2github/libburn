@@ -251,8 +251,10 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 		    d->current_profile == 0x12 )
 			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
 			trackno = 1;
-		else if (d->current_profile == 0x11 ||
-			 d->current_profile == 0x14) /* DVD-R[W] Sequential */
+		else if (d->current_profile == 0x10 ||
+			 d->current_profile == 0x11 ||
+			 d->current_profile == 0x14)
+			/* DVD-ROM ,  DVD-R[W] Sequential */
 			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			trackno = 0xFF;
@@ -275,13 +277,7 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 {
 	struct buffer buf;
-	int ret;
-
-#ifdef Libburn_get_nwa_standalonE
-	struct command c;
-	int i;
-#endif
-
+	int ret, num;
 	unsigned char *data;
 
 	mmc_function_spy("mmc_get_nwa");
@@ -290,43 +286,27 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 		    d->current_profile == 0x12 )
 			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
 			trackno = 1;
-		else if (d->current_profile == 0x11 ||
-			 d->current_profile == 0x14) /* DVD-R[W] Sequential */
+		else if (d->current_profile == 0x10 ||
+			 d->current_profile == 0x11 ||
+			 d->current_profile == 0x14)
+			/* DVD-ROM, DVD-R[W] Sequential */
 			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			trackno = 0xFF;
 	}
-
-#ifdef Libburn_get_nwa_standalonE
-
-	c.retry = 1;
-	c.oplen = sizeof(MMC_TRACK_INFO);
-	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
-	c.opcode[1] = 1;
-	for (i = 0; i < 4; i++)
-		c.opcode[2 + i] = (trackno >> (24 - 8 * i)) & 0xff;
-	c.page = &buf;
-	c.dir = FROM_DRIVE;
-	d->issue_command(d, &c);
-	data = c.page->data;
-
-#else /* Libburn_get_nwa_standalonE */
 
 	ret = mmc_read_track_info(d, trackno, &buf);
 	if (ret <= 0)
 		return ret;
 	data = buf.data;
 
-#endif /* ! Libburn_get_nwa_standalonE */
-
-
-	*lba = (data[8] << 24) + (data[9] << 16)
-		+ (data[10] << 8) + data[11];
-	*nwa = (data[12] << 24) + (data[13] << 16)
-		+ (data[14] << 8) + data[15];
-	if (d->current_profile == 0x1a || d->current_profile == 0x13) {
-		 /* DVD+RW or DVD-RW restricted overwrite */
-		*lba = *nwa = 0;
+	*lba = mmc_four_char_to_int(data + 8);
+	*nwa = mmc_four_char_to_int(data + 12);
+	num = mmc_four_char_to_int(data + 16);
+	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+	    d->current_profile == 0x12) {
+		 /* overwriteable */
+		*lba = *nwa = num = 0;
 	} else if (!(data[7]&1)) {
 		/* ts A61106 :  MMC-1 Table 142 : NWA_V = NWA Valid Flag */
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
@@ -334,6 +314,8 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 			   "mmc_get_nwa: Track Info Block: NWA_V == 0", 0, 0);
 		return 0;
 	}
+	if (num > 0)
+		d->media_capacity_remaining = ((off_t) num) * ((off_t) 2048);
 	return 1;
 }
 
@@ -546,8 +528,7 @@ int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
 	entry->tno = 0;
 	entry->point = track_number & 0xff;
 	entry->point_msb = (track_number >> 8) & 0xff;
-	num = (size_data[0] << 24) | (size_data[1] << 16) |
-		(size_data[2] << 8) | size_data[3];
+	num = mmc_four_char_to_int(size_data);
 	entry->track_blocks = num;
 	burn_lba_to_msf(num, &min, &sec, &frames);
 	if (min > 255) {
@@ -559,8 +540,7 @@ int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
 	entry->sec = sec;
 	entry->frame = frames;
 	entry->zero = 0;
-	num = (start_data[0] << 24) | (start_data[1] << 16) |
-		(start_data[2] << 8) | start_data[3];
+	num = mmc_four_char_to_int(start_data);
 	entry->start_lba = num;
 	burn_lba_to_msf(num, &min, &sec, &frames);
 	if (min > 255) {
@@ -644,8 +624,15 @@ int mmc_fake_toc(struct burn_drive *d)
 									entry;
 		}
 
-		if (session_number > d->disc->sessions)
+		if (session_number > d->disc->sessions) {
+			if (i == d->last_track_no - 1) {
+				/* ts A70212 : Last track field Free Blocks */
+				d->media_capacity_remaining =
+				  ((off_t) mmc_four_char_to_int(tdata + 16)) *
+				  ((off_t) 2048);
+			}	
 	continue;
+		}
 
 		entry = &(d->toc_entry[i + session_number - 1]);
  		track = burn_track_create();
@@ -924,6 +911,9 @@ void mmc_read_disc_info(struct burn_drive *d)
 	d->erasable = 0;
 	d->last_track_no = 1;
 
+	/* ts A70212 */
+	d->media_capacity_remaining = 0;
+
 	/* ts A61202 */
 	d->toc_entries = 0;
 	if (d->status == BURN_DISC_EMPTY)
@@ -1006,6 +996,15 @@ void mmc_read_disc_info(struct burn_drive *d)
 	*/
 	d->bg_format_status = data[7] & 3;
 
+	/* Preliminarily declare blank:
+	   ts A61219 : DVD+RW (is not bg_format_status==0 "blank")
+	   ts A61229 : same for DVD-RW Restricted overwrite
+	   ts A70112 : same for DVD-RAM
+	*/
+	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+	    d->current_profile == 0x12)
+		d->status = BURN_DISC_BLANK;
+
 	if (d->status == BURN_DISC_BLANK) {
                 d->last_track_no = 1; /* The "incomplete track" */
 		d->complete_sessions = 0;
@@ -1022,15 +1021,6 @@ void mmc_read_disc_info(struct burn_drive *d)
 		   appendable. I.e number of complete tracks + 1. */
 		d->last_track_no = (data[11] << 8) | data[6];
 	}
-
-	/* Preliminarily declare blank:
-	   ts A61219 : DVD+RW (is not bg_format_status==0 "blank")
-	   ts A61229 : same for DVD-RW Restricted overwrite
-	   ts A70112 : same for DVD-RAM
-	*/
-	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-	    d->current_profile == 0x12)
-		d->status = BURN_DISC_BLANK;
 
 	if (do_read_toc)
 		mmc_read_toc(d);
@@ -1503,10 +1493,7 @@ void mmc_get_configuration(struct burn_drive *d)
 
 	if (c.error)
 		return;
-	len = (c.page->data[0] << 24)
-		| (c.page->data[1] << 16)
-		| (c.page->data[2] << 8)
-		| c.page->data[3];
+	len = mmc_four_char_to_int(c.page->data);
 
 	if (len<8)
 		return;
@@ -1743,14 +1730,20 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 		/* Criterion is proximity to quick intermediate state */
 		if (type == 0x00) { /* full format (with lead out) */
 			score = 1 * sign;
+			if(d->current_profile == 0x12 &&
+			   d->media_capacity_remaining == 0)
+				d->media_capacity_remaining = size;
 		} else if (type == 0x10) { /* DVD-RW full format */
 			score = 10 * sign;
 		} else if(type == 0x13) { /* DVD-RW quick grow last session */
 			score = 100 * sign;
 		} else if(type == 0x15) { /* DVD-RW Quick */
 			score = 50 * sign;
+			if(d->current_profile == 0x13)
+				d->media_capacity_remaining = size;
 		} else if(type == 0x26) { /* DVD+RW */
 			score = 1 * sign;
+			d->media_capacity_remaining = size;
 		} else {
 	continue;
 		}
@@ -2226,6 +2219,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->num_format_descr = 0;
 	d->complete_sessions = 0;
 	d->last_track_no = 1;
+	d->media_capacity_remaining = 0;
 
 	return 1;
 }

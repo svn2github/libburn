@@ -318,7 +318,7 @@ void spc_sense_write_params(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
-	int size;
+	int size, dummy;
 	unsigned char *page;
 	struct command c;
 
@@ -343,6 +343,22 @@ void spc_sense_write_params(struct burn_drive *d)
 	m->write_page_length = page[1];
 	m->write_page_valid = 1;
 	mmc_read_disc_info(d);
+
+	/* ts A70212 : try to setup d->media_capacity_remaining */
+	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
+	    d->current_profile == 0x12)
+		d->read_format_capacities(d, -1);
+	else if (d->status == BURN_DISC_BLANK ||
+	     (d->current_is_cd_profile && d->status == BURN_DISC_APPENDABLE)) {
+		d->get_nwa(d, -1, &dummy, &dummy);
+	}
+	/* others are hopefully up to date from mmc_read_disc_info() */
+
+/*
+        fprintf(stderr, "LIBBURN_DEBUG: media_capacity_remaining = %.f\n",
+                (double) d->media_capacity_remaining);
+*/
+
 }
 
 
@@ -434,10 +450,6 @@ void spc_getcaps(struct burn_drive *d)
 	spc_inquiry(d);
 	spc_sense_caps(d);
 	spc_sense_error_params(d);
-
-	/* <<< for debugging. >>> ??? to be fixely included here ?
-	mmc_read_format_capacities(d, -1);
-	*/
 }
 
 /*
