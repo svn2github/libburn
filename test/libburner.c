@@ -9,7 +9,7 @@
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia.pykix.org . It can list the available devices, can
   blank a CD-RW or DVD-RW, can format a DVD-RW, and can burn to CD-R, CD-RW,
-  DVD+RW, DVD-RAM or DVD-RW. Not tested: DVD-R. Not supported yet: DVD+R [DL].
+  DVD+RW, DVD-RAM or DVD-RW. Not supported yet: DVD+R [DL].
 
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
@@ -306,8 +306,9 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 }
 
 
-/** Persistently changes DVD-RW profile 0014h "Sequential Recording"
-    to profile 0013h "Restricted Overwrite" which is usable with libburner.
+/** Persistently changes DVD-RW profile 0014h "Sequential Recording" to
+    profile 0013h "Restricted Overwrite" which needs no blanking for re-use
+    but is not capable of multi-session.
 
     Expect a behavior similar to blanking with unusual noises from the drive.
 */
