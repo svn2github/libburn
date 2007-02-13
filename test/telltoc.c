@@ -200,11 +200,11 @@ int telltoc_aquire_by_driveno(int *driveno, int silent_drive)
 }
 
 
-
 /** This gesture is necessary to get my NEC DVD_RW ND-4570A out of a state
-    of noisy overexcitement after it was inquired for Next Writeable Address.
+    of noisy overexcitement after its tray was loaded and it then was inquired
+    for Next Writeable Address.
     The noise then still lasts 20 seconds. Same with cdrecord -toc, btw.
-    It opens a small gap for losing the drive to another libburn instance.
+    This opens a small gap for losing the drive to another libburn instance.
     Not a problem in telltoc. This is done as very last drive operation.
     Eventually the other libburn instance will have the same sanitizing effect.
 */
@@ -226,6 +226,7 @@ int telltoc_media(struct burn_drive *drive)
 {
 	int ret, media_found = 0, profile_no = -1;
 	double max_speed = 0.0, min_speed = 0.0, speed_conv;
+	off_t available = 0;
 	enum burn_disc_status s;
 	char profile_name[80], speed_unit[40];
 	struct burn_multi_caps *caps;
@@ -251,16 +252,16 @@ int telltoc_media(struct burn_drive *drive)
 
 	printf("Media status : ");
 	s = burn_disc_get_status(drive);
-	if (s==BURN_DISC_FULL) {
+	if (s == BURN_DISC_FULL) {
 		printf("is written , is closed\n");
 		media_found = 1;
-	} else if (s==BURN_DISC_APPENDABLE) {
+	} else if (s == BURN_DISC_APPENDABLE) {
 		printf("is written , is appendable\n");
 		media_found = 1;
-	} else if (s==BURN_DISC_BLANK) {
+	} else if (s == BURN_DISC_BLANK) {
 		printf("is blank\n");
 		media_found = 1;
-	} else if (s==BURN_DISC_EMPTY)
+	} else if (s == BURN_DISC_EMPTY)
 		printf("is not present\n");
 	else
 		printf("is not recognizable\n");
@@ -276,6 +277,7 @@ int telltoc_media(struct burn_drive *drive)
 
 	ret = burn_disc_get_multi_caps(drive, BURN_WRITE_NONE, &caps, 0);
 	if (ret > 0) {
+		/* Media appears writeable */
 		printf("Write multi  : ");
 		printf("%s multi-session , ",
 			 caps->multi_session == 1 ? "allows" : "prohibits");
@@ -310,11 +312,15 @@ int telltoc_media(struct burn_drive *drive)
 				" (advised)" : "");
 		printf("\n");
 		burn_disc_free_multi_caps(&caps);
+		available = burn_disc_available_space(drive, NULL);
+		printf("Write space  : %.1f MiB  (%.fs)\n",
+			((double) available) / 1024.0 / 1024.0,
+			((double) available) / 2048.0);
 	}
 
-	ret= burn_drive_get_write_speed(drive);
+	ret = burn_drive_get_write_speed(drive);
 	max_speed = ((double ) ret) / speed_conv;
-	ret= burn_drive_get_min_write_speed(drive);
+	ret = burn_drive_get_min_write_speed(drive);
 	min_speed = ((double ) ret) / speed_conv;
 	if (!media_found)
 		printf("Drive speed  : max=%.1f  , min=%.1f\n",
@@ -325,11 +331,11 @@ int telltoc_media(struct burn_drive *drive)
 
 	ret = 0;
 	if (media_found)
-		ret= burn_disc_read_atip(drive);
+		ret = burn_disc_read_atip(drive);
 	if(ret>0) {
-		ret= burn_drive_get_min_write_speed(drive);
+		ret = burn_drive_get_min_write_speed(drive);
 		min_speed = ((double ) ret) / speed_conv;
-		ret= burn_drive_get_write_speed(drive);
+		ret = burn_drive_get_write_speed(drive);
 		max_speed = ((double ) ret) / speed_conv;
 		printf("Media speed  : max=%.1f  , min=%.1f\n",
 			max_speed, min_speed);
@@ -503,7 +509,7 @@ int telltoc_msinfo(struct burn_drive *drive,
 	/* man mkisofs , option -C :
 	   The second  number is the starting sector number of the new session.
 	*/
-	/* Set some write opts to be sent to drive. LG GSA-4082B needs it. */
+	/* Set some roughly suitable write opts to be sent to drive. */
 	o= burn_write_opts_new(drive);
  	if(o!=NULL) {
    		burn_write_opts_set_perform_opc(o, 0);
