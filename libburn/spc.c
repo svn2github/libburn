@@ -441,9 +441,6 @@ void spc_getcaps(struct burn_drive *d)
 }
 
 /*
-only called when a blank is present, so we set type to blank
-(on the last pass)
-
 don't check totally stupid modes (raw/raw0)
 some drives say they're ok, and they're not.
 */
@@ -453,12 +450,24 @@ void spc_probe_write_modes(struct burn_drive *d)
 	struct buffer buf;
 	int try_write_type = 1;
 	int try_block_type = 0;
-	int key, asc, ascq;
+	int key, asc, ascq, useable_write_type = -1, useable_block_type = -1;
+	int last_try = 0;
 	struct command c;
 
-	while (try_write_type != 4) {
+	/* ts A70213 : added pseudo try_write_type 4 to set a suitable mode */
+	while (try_write_type != 5) {
 		burn_print(9, "trying %d, %d\n", try_write_type,
 			   try_block_type);
+
+		/* ts A70213 */
+		if (try_write_type == 4) {
+			/* Pseudo write type NONE . Set a useable write mode */
+			if (useable_write_type == -1)
+	break;
+			try_write_type = useable_write_type;
+			try_block_type = useable_block_type;
+			last_try= 1;
+		}
 		memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
 		c.retry = 1;
 		c.oplen = sizeof(SPC_MODE_SELECT);
@@ -483,6 +492,9 @@ void spc_probe_write_modes(struct burn_drive *d)
 		d->issue_command(d, &c);
 		d->silent_on_scsi_error = 0;
 
+		if (last_try)
+	break;
+
 		key = c.sense[2];
 		asc = c.sense[12];
 		ascq = c.sense[13];
@@ -498,6 +510,15 @@ void spc_probe_write_modes(struct burn_drive *d)
 			else
 				d->block_types[try_write_type] |=
 					1 << try_block_type;
+
+			/* ts A70213 */
+			if ((useable_write_type < 0 && try_write_type > 0) ||
+			    (try_write_type == 1 && try_block_type == 8)) {
+			 	/* Packet is not supported yet.
+				   Prefer TAO MODE_1. */
+				useable_write_type = try_write_type;
+				useable_block_type = try_block_type;
+			} 
 		}
 		switch (try_block_type) {
 		case 0:
