@@ -131,7 +131,8 @@ or
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
-/* no novelties yet */
+#define Cdrskin_libburn_has_set_filluP 1
+#define Cdrskin_libburn_has_get_spacE 1
 
 #endif /* Cdrskin_libburn_0_3_3 */
 
@@ -1307,6 +1308,12 @@ int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
 }
 
 
+int Cdrtrack_get_sectors(struct CdrtracK *track, int flag)
+{
+ return(burn_track_get_sectors(track->libburn_track));
+}
+
+
 #ifndef Cdrskin_extra_leaN
 
 /** Try to read bytes from the track's fifo outlet and eventually discard
@@ -2002,6 +2009,9 @@ set_dev:;
       " fifo_start_at=<number> do not wait for full fifo but start burning\n");
      printf(
          "                    as soon as the given number of bytes is read\n");
+#ifdef Cdrskin_libburn_has_set_filluP
+     printf(" --fill_up_media    cause the last track to have maximum size\n");
+#endif
      printf(
           " grab_drive_and_wait=<num>  grab drive, wait given number of\n");
      printf(
@@ -2033,6 +2043,11 @@ set_dev:;
           " tao_to_sao_tsize=<num>  substitute -tao by -sao and eventually\n");
      printf("                    augment input from \"-\" by tsize=<num>\n");
      printf("                    (set tao_to_sao_tsize=0 to disable it)\n");
+#endif
+
+#ifdef Cdrskin_libburn_has_get_spacE
+     printf(
+ " --tell_media_space  prints maximum number of writeable data blocks\n");
 #endif
 
      printf(
@@ -2310,9 +2325,12 @@ ex:;
 */
 
 
-/** Limit to prevent int rollovers within libburn as long as not everything is
-    changed to 64 bit off_t : 2 GB minus 800 MB for eventual computations. */
+/** <<< Hopefully obsolete:
+    Limit to prevent int rollovers within libburn as long as not everything is
+    changed to 64 bit off_t : 2 GB minus 800 MB for eventual computations.
 #define Cdrskin_tracksize_maX 1308622848
+*/
+#define Cdrskin_tracksize_maX 1024.0*1024.0*1024.0*1024.0
 
 
 /* Some constants obtained by hearsay and experiments */
@@ -2384,6 +2402,7 @@ struct CdrskiN {
  double blank_format_size; /* to be used with burn_disc_format() */
 
  int do_burn;
+ int tell_media_space; /* actually do not burn but tell the available space */
  int burnfree;
  /** The write mode (like SAO or RAW96/R). See libburn. 
      Controled by preskin->write_mode_name */
@@ -2405,6 +2424,7 @@ struct CdrskiN {
  double fixed_size;
  double padding;
  int set_by_padsize;
+ int fill_up_media;
 
  /** track_type may be set to BURN_MODE1, BURN_AUDIO, etc. */
  int track_type;
@@ -2509,6 +2529,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->blank_format_type= 0;
  o->blank_format_size= 0.0;
  o->do_burn= 0;
+ o->tell_media_space= 0;
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
@@ -2520,6 +2541,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->fixed_size= 0.0;
  o->padding= 0.0;
  o->set_by_padsize= 0;
+ o->fill_up_media= 0;
  o->track_type= BURN_MODE1;
  o->swap_audio_bytes= 1;   /* cdrecord default is big-endian (msb_first) */
  o->track_type_by_default= 1;
@@ -3493,125 +3515,6 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 }
 
 
-/** Print lba of first track of last session and Next Writeable Address of
-    the next unwritten session.
-*/
-int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
-{
- int num_sessions, session_no, ret, num_tracks;
- int nwa= -123456789, lba= -123456789, aux_lba;
- char msg[80];
- enum burn_disc_status s;
- struct burn_drive *drive;
- struct burn_disc *disc= NULL;
- struct burn_session **sessions= NULL;
- struct burn_track **tracks;
- struct burn_toc_entry toc_entry;
-
- ret= Cdrskin_grab_drive(skin,0);
- if(ret<=0)
-   return(ret);
- drive= skin->drives[skin->driveno].drive;
- s= burn_disc_get_status(drive);
- if(s!=BURN_DISC_APPENDABLE) {
-   Cdrskin_report_disc_status(skin,s,0);
-   fprintf(stderr,"cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) discs\n");
-   {ret= 0; goto ex;}
- }
- disc= burn_drive_get_disc(drive);
- if(disc==NULL) {
-
-#ifdef Cdrskin_libburn_has_get_msc1
-   /* No TOC available. Try to inquire directly. */
-   ret= burn_disc_get_msc1(drive,&lba);
-   if(ret>0)
-     goto obtain_nwa;
-#endif /* Cdrskin_libburn_has_get_msc1 */
-
-   fprintf(stderr,"cdrskin: FATAL : Cannot obtain info about CD content\n");
-   {ret= 0; goto ex;}
- }
- sessions= burn_disc_get_sessions(disc,&num_sessions);
- for(session_no= 0; session_no<num_sessions; session_no++) {
-   tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
-   if(tracks==NULL || num_tracks<=0)
- continue;
-   burn_track_get_entry(tracks[0],&toc_entry);
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
-   if(toc_entry.extensions_valid&1) { /* DVD extension valid */
-     lba= toc_entry.start_lba;
-   } else {
-#else
-   {
-#endif
-
-     lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
-   }
- }
- if(lba==-123456789) {
-   fprintf(stderr,"cdrskin: FATAL : Cannot find any track on CD\n");
-   {ret= 0; goto ex;}
- }
-
-obtain_nwa:;
- ret= Cdrskin_obtain_nwa(skin,&nwa,flag);
- if(ret<=0) {
-   if (sessions == NULL) {
-     fprintf(stderr,
-           "cdrskin: SORRY : Cannot obtain next writeable address\n");
-     {ret= 0; goto ex;}
-   }
-   fprintf(stderr,
-           "cdrskin: NOTE : Guessing next writeable address from leadout\n");
-   burn_session_get_leadout_entry(sessions[num_sessions-1],&toc_entry);
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
-   if(toc_entry.extensions_valid&1) { /* DVD extension valid */
-     aux_lba= toc_entry.start_lba;
-   } else {
-#else
-   {
-#endif
-     aux_lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
-   }
-   if(num_sessions>0)
-     nwa= aux_lba+6900;
-   else
-     nwa= aux_lba+11400;
- }
- if(skin->msinfo_fd>=0) {
-   sprintf(msg,"%d,%d\n",lba,nwa);
-   write(skin->msinfo_fd,msg,strlen(msg));
- } else
-   printf("%d,%d\n",lba,nwa);
-
- if(strlen(skin->msifile)) {
-   FILE *fp;
-
-   fp = fopen(skin->msifile, "w");
-   if(fp==NULL) {
-     if(errno>0)
-       fprintf(stderr,"cdrskin: %s (errno=%d)\n", strerror(errno), errno);
-     fprintf(stderr,"cdrskin: FATAL : Cannot write msinfo to file '%s'\n",
-             skin->msifile);
-     {ret= 0; goto ex;}
-   }
-   fprintf(fp,"%d,%d",lba,nwa);
-   fclose(fp);
- }
- ret= 1;
-ex:;
-
- /* must calm down my NEC ND-4570A afterwards */
- if(skin->verbosity>=Cdrskin_verbose_debuG)
-   ClN(fprintf(stderr,"cdrskin_debug: doing extra release-grab cycle\n"));
- Cdrskin_release_drive(skin,0);
- Cdrskin_grab_drive(skin,0);
-
- Cdrskin_release_drive(skin,0);
- return(ret);
-}
-
-
 /** Perform -toc under control of Cdrskin_atip().
     @param flag Bitfield for control purposes:
                 bit0= do not list sessions separately (do it cdrecord style)
@@ -4378,10 +4281,10 @@ thank_you_for_patience:;
        fixed_size= skin->fixed_size;
        padding= skin->padding;
      }
-     if(fixed_size) {
-       sprintf(mb_text,"%4d of %4d",
-               (int) (written_total_bytes/1024.0/1024.0),
-               (int) ((fixed_size+padding)/1024.0/1024.0));
+     if(fixed_size || (skin->fill_up_media &&
+                       skin->supposed_track_idx==skin->track_counter-1)) {
+       sprintf(mb_text,"%4d of %4d",(int) (written_total_bytes/1024.0/1024.0),
+        Cdrtrack_get_sectors(skin->tracklist[skin->supposed_track_idx],0)/512);
      } else
        sprintf(mb_text,"%4d",(int) (written_total_bytes/1024.0/1024.0));
      speed_factor= Cdrskin_speed_factoR*sector_size/2048;
@@ -4678,8 +4581,13 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
  double sectors;
 
- printf("cdrskin: beginning to burn disk\n");
-
+ printf("cdrskin: beginning to %s disc\n",
+        skin->tell_media_space?"estimate":"burn");
+ if(skin->fill_up_media && skin->multi) {
+   fprintf(stderr,
+           "cdrskin: NOTE : Option --fill_up_media disabled option -multi\n");
+   skin->multi= 0;
+ }
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
    goto burn_failed;
@@ -4790,11 +4698,13 @@ burn_failed:;
    }
  }
 
- Cdrskin_wait_before_action(skin,0);
- ret= Cdrskin_fill_fifo(skin,0);
- if(ret<=0) {
-   fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
-   goto ex;
+ if(!skin->tell_media_space) {
+   Cdrskin_wait_before_action(skin,0);
+   ret= Cdrskin_fill_fifo(skin,0);
+   if(ret<=0) {
+     fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
+     goto ex;
+   }
  }
 
 #endif /* ! Cdrskin_extra_leaN */
@@ -4806,9 +4716,11 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_multI
  burn_write_opts_set_multi(o,skin->multi);
 #endif
-
 #ifdef Cdrskin_libburn_has_set_start_bytE
  burn_write_opts_set_start_byte(o, skin->write_start_address);
+#endif
+#ifdef Cdrskin_libburn_has_set_filluP
+ burn_write_opts_set_fillup(o, skin->fill_up_media);
 #endif
 
  burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
@@ -4818,6 +4730,27 @@ burn_failed:;
    burn_write_opts_set_simulate(o, 1);
  }
  burn_write_opts_set_underrun_proof(o,skin->burnfree);
+
+
+ if(skin->tell_media_space || skin->track_counter<=0) {
+   /* write capacity estimation and return without actual burning */
+#ifdef Cdrskin_libburn_has_get_spacE
+   off_t free_space;
+   char msg[80];
+
+   free_space= burn_disc_available_space(drive,o);
+   sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
+   if(skin->msinfo_fd>=0) {
+     write(skin->msinfo_fd,msg,strlen(msg));
+   } else
+     printf("%s",msg);
+#endif /* Cdrskin_libburn_has_get_spacE */
+   if(skin->track_counter>0)
+     fprintf(stderr,
+         "cdrskin: NOTE : Burn run suppressed by option --tell_media_space\n");
+   {ret= 1; goto ex;}
+ }
+
 
  Cdrskin_adjust_speed(skin,0);
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
@@ -5014,6 +4947,125 @@ ex:;
    Cdrtrack_cleanup(skin->tracklist[i],0);
  burn_session_free(session);
  burn_disc_free(disc);
+ return(ret);
+}
+
+
+/** Print lba of first track of last session and Next Writeable Address of
+    the next unwritten session.
+*/
+int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
+{
+ int num_sessions, session_no, ret, num_tracks;
+ int nwa= -123456789, lba= -123456789, aux_lba;
+ char msg[80];
+ enum burn_disc_status s;
+ struct burn_drive *drive;
+ struct burn_disc *disc= NULL;
+ struct burn_session **sessions= NULL;
+ struct burn_track **tracks;
+ struct burn_toc_entry toc_entry;
+
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   return(ret);
+ drive= skin->drives[skin->driveno].drive;
+ s= burn_disc_get_status(drive);
+ if(s!=BURN_DISC_APPENDABLE) {
+   Cdrskin_report_disc_status(skin,s,0);
+   fprintf(stderr,"cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) discs\n");
+   {ret= 0; goto ex;}
+ }
+ disc= burn_drive_get_disc(drive);
+ if(disc==NULL) {
+
+#ifdef Cdrskin_libburn_has_get_msc1
+   /* No TOC available. Try to inquire directly. */
+   ret= burn_disc_get_msc1(drive,&lba);
+   if(ret>0)
+     goto obtain_nwa;
+#endif /* Cdrskin_libburn_has_get_msc1 */
+
+   fprintf(stderr,"cdrskin: FATAL : Cannot obtain info about CD content\n");
+   {ret= 0; goto ex;}
+ }
+ sessions= burn_disc_get_sessions(disc,&num_sessions);
+ for(session_no= 0; session_no<num_sessions; session_no++) {
+   tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
+   if(tracks==NULL || num_tracks<=0)
+ continue;
+   burn_track_get_entry(tracks[0],&toc_entry);
+#ifdef Cdrskin_libburn_has_toc_entry_extensionS
+   if(toc_entry.extensions_valid&1) { /* DVD extension valid */
+     lba= toc_entry.start_lba;
+   } else {
+#else
+   {
+#endif
+
+     lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
+   }
+ }
+ if(lba==-123456789) {
+   fprintf(stderr,"cdrskin: FATAL : Cannot find any track on CD\n");
+   {ret= 0; goto ex;}
+ }
+
+obtain_nwa:;
+ ret= Cdrskin_obtain_nwa(skin,&nwa,flag);
+ if(ret<=0) {
+   if (sessions == NULL) {
+     fprintf(stderr,
+           "cdrskin: SORRY : Cannot obtain next writeable address\n");
+     {ret= 0; goto ex;}
+   }
+   fprintf(stderr,
+           "cdrskin: NOTE : Guessing next writeable address from leadout\n");
+   burn_session_get_leadout_entry(sessions[num_sessions-1],&toc_entry);
+#ifdef Cdrskin_libburn_has_toc_entry_extensionS
+   if(toc_entry.extensions_valid&1) { /* DVD extension valid */
+     aux_lba= toc_entry.start_lba;
+   } else {
+#else
+   {
+#endif
+     aux_lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
+   }
+   if(num_sessions>0)
+     nwa= aux_lba+6900;
+   else
+     nwa= aux_lba+11400;
+ }
+ if(skin->msinfo_fd>=0) {
+   sprintf(msg,"%d,%d\n",lba,nwa);
+   write(skin->msinfo_fd,msg,strlen(msg));
+ } else
+   printf("%d,%d\n",lba,nwa);
+
+ if(strlen(skin->msifile)) {
+   FILE *fp;
+
+   fp = fopen(skin->msifile, "w");
+   if(fp==NULL) {
+     if(errno>0)
+       fprintf(stderr,"cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     fprintf(stderr,"cdrskin: FATAL : Cannot write msinfo to file '%s'\n",
+             skin->msifile);
+     {ret= 0; goto ex;}
+   }
+   fprintf(fp,"%d,%d",lba,nwa);
+   fclose(fp);
+ }
+ ret= 1;
+ex:;
+
+ /* must calm down my NEC ND-4570A afterwards */
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,"cdrskin_debug: doing extra release-grab cycle\n"));
+ Cdrskin_release_drive(skin,0);
+ Cdrskin_grab_drive(skin,0);
+
+ Cdrskin_release_drive(skin,0);
  return(ret);
 }
 
@@ -5432,6 +5484,13 @@ set_driveropts:;
    } else if(strcmp(argv[i],"--fifo_per_track")==0) {
      skin->fifo_per_track= 1;
 
+#ifdef Cdrskin_libburn_has_set_filluP
+   } else if(strcmp(argv[i],"--fill_up_media")==0) {
+     skin->fill_up_media= 1;
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       printf("cdrskin: will fill up last track to full free media space\n");
+#endif
+
    } else if(strcmp(argv[i],"-force")==0) {
      skin->force_is_set= 1;
 
@@ -5640,6 +5699,11 @@ set_speed:;
        printf("cdrskin: replace -tao by -sao with fixed size : %.f\n",
 #endif
               skin->tao_to_sao_tsize);
+
+#ifdef Cdrskin_libburn_has_get_spacE
+   } else if(strcmp(argv[i],"--tell_media_space")==0) {
+     skin->tell_media_space= 1;
+#endif
 
    } else if(strcmp(argv[i],"-toc")==0) {
      skin->do_atip= 2;
@@ -5949,7 +6013,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 8; goto ex;}
  }
- if(skin->do_burn) {
+ if(skin->do_burn || skin->tell_media_space) {
    if(skin->n_drives<=0)
      {*exit_value= 10; goto no_drive;}
    ret= Cdrskin_burn(skin,0);
@@ -5976,7 +6040,7 @@ int main(int argc, char **argv)
 
  /* For -msinfo: Redirect normal stdout to stderr */
  for(i=1; i<argc; i++)
-   if(strcmp(argv[i],"-msinfo")==0)
+   if(strcmp(argv[i],"-msinfo")==0 || strcmp(argv[i],"--tell_media_space")==0)
  break;
  if(i<argc) {
    result_fd= dup(1);

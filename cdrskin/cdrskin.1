@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "February 8, 2007"
+.TH CDRSKIN 1 "February 14, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -370,8 +370,8 @@ Note: msifile=path is actually an option of wodim and not of cdrecord.
 .BI \-msinfo
 Retrieve multi-session info for preparing a follow-up session by option -C
 of programs mkisofs or genisoimage. Print result to standard output.
-This option redirects to stderr all
-message output besides its own result string, which consists of two numbers.
+This option redirects to stderr all message output except the one of option
+--tell_media_space and its own result string, which consists of two numbers.
 The result string shall be used as argument of option -C with said programs.
 It gives the start address of the most recent session and the predicted
 start address of the next session to be appended. The string is empty if
@@ -591,6 +591,24 @@ for best DVD-ROM compatibility.
 If the track source delivers less bytes than announced then the missing ones
 will be filled with zeros.
 .TP 
+.BI --tell_media_space
+Prepare a recording session, do not perform it but rather inquire the
+maximum number of 2048 byte data blocks which may be written in
+the current state of media with the prepared setup. So this option disables
+recording of data. It does allow blanking, though, and will measure space
+afterwards.
+.br
+It is not mandatory to give track sources but their nature may influence
+the available capacity. So for most realistic results one may set up
+the full burn session and add --tell_media_space. But if one has to expect
+a cdrskin version prior to 0.3.3 no track source should be given in order
+to start no involuntary burn session.
+In this case set at least -sao or -tao explicitely.
+.br
+The result gets printed to standard output.
+This option redirects to stderr all message output except its own result
+string and eventual output of -msinfo.
+.TP 
 .BI write_start_address= byte_offset
 Set the address on media where to start writing the track. With DVD+RW or
 DVD-RAM byte_offset must be aligned to 2 KB blocks, but better is 32 kB.
@@ -641,6 +659,15 @@ Disable fifo despite any fs=.
 .TP
 .BI \--fifo_per_track
 Use a separate fifo for each track.
+.TP
+.BI \--fill_up_media
+.B Caution:
+Option is still immature and likely to change.
+Problems arose with sequential DVD-RW.
+.br
+Expand the last track of the session to occupy all remaining free space on
+the media.
+This option overrides option -multi.
 .TP
 .BI grab_drive_and_wait= seconds
 Open the addressed drive, wait the given number of seconds, release the drive,
