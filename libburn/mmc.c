@@ -163,8 +163,7 @@ int mmc_function_spy_ctrl(int do_tell)
 /* ts A70201 */
 int mmc_four_char_to_int(unsigned char *data)
 {
-	return (data[0] << 24) | (data[1] << 16) |
-		(data[2] << 8) | data[3];
+	return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
 }
 
 
@@ -316,6 +315,11 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	}
 	if (num > 0)
 		d->media_capacity_remaining = ((off_t) num) * ((off_t) 2048);
+
+/*
+	fprintf(stderr, "LIBBURN_DEBUG: track info data[16..19] = %2.2X %2.2X %2.2X %2.2X\n", data[16], data[17], data[18], data[19]);
+*/
+
 	return 1;
 }
 
@@ -565,10 +569,21 @@ int mmc_fake_toc(struct burn_drive *d)
 	struct buffer buf;
 	int i, session_number, prev_session = -1, ret, lba;
 	unsigned char *tdata, size_data[4], start_data[4];
+	char msg[160];
 
 	if (d->last_track_no <= 0 || d->complete_sessions <= 0 ||
 	    d->status == BURN_DISC_BLANK)
 		return 2;
+	if (d->last_track_no > BURN_MMC_FAKE_TOC_MAX_SIZE) {
+		sprintf(msg,
+			"Too many logical tracks recorded (%d , max. %d)\n",
+			d->last_track_no, BURN_MMC_FAKE_TOC_MAX_SIZE);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x0002012c,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				 msg, 0,0);
+		return 0;
+	}
 	d->disc = burn_disc_create();
 	if (d->disc == NULL)
 		return -1;
@@ -601,10 +616,8 @@ int mmc_fake_toc(struct burn_drive *d)
 	*/
 	for (i = 0; i < d->last_track_no; i++) {
 		ret = mmc_read_track_info(d, i+1, &buf);
-		if (ret < 0)
+		if (ret <= 0)
 			return ret;
-		if (ret == 0)
-	continue;
 		tdata = buf.data;
 		session_number = (tdata[33] << 8) | tdata[3];
 		if (session_number <= 0)
