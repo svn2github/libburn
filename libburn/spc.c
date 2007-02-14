@@ -362,23 +362,16 @@ void spc_sense_write_params(struct burn_drive *d)
 }
 
 
-/* ts A61229 */
-#define Libburn_mmc_compose_mode_page_5 1
-
-
 /* remark ts A61104 :
 Although command MODE SELECT is SPC, the content of the
 Write Parameters Mode Page (05h) is MMC (Table 108 in MMC-1). 
-Thus the filling of the mode page should be done by a mmc_ function.
+Thus the filling of the mode page is done by mmc_compose_mode_page_5().
 */
 void spc_select_write_params(struct burn_drive *d,
 			     const struct burn_write_opts *o)
 {
 	struct buffer buf;
 	struct command c;
-#ifndef Libburn_mmc_compose_mode_page_5
-	int bufe, sim;
-#endif
 
 	/* ts A61007 : All current callers are safe. */
 	/* a ssert(o->drive == d); */
@@ -407,39 +400,9 @@ void spc_select_write_params(struct burn_drive *d,
 	burn_print(12, "using write page length %d (valid %d)\n",
 		   d->mdata->write_page_length, d->mdata->write_page_valid);
 
-#ifdef Libburn_mmc_compose_mode_page_5
-
 	/* ts A61229 */
 	if (mmc_compose_mode_page_5(d, o, c.page->data + 8) <= 0)
 		return;
-
-#else 
-
-	c.page->data[8] = 5;
-	c.page->data[9] = d->mdata->write_page_length;
-
-	bufe = o->underrun_proof;
-	sim = o->simulate;
-	c.page->data[10] = (bufe << 6)
-		+ (sim << 4)
-		+ o->write_type;
-
-	/* ts A61106 : MMC-1 table 110 : multi==0 or multi==3 */
-	c.page->data[11] = ((3 * !!o->multi) << 6) | o->control;
-
-	c.page->data[12] = spc_block_type(o->block_type);
-
-	/* ts A61104 */
-	if(!(o->control&4)) /* audio (MMC-1 table 61) */
-		if(o->write_type == BURN_WRITE_TAO) /* ??? for others too ? */
-			c.page->data[12] = 0; /* Data Block Type: Raw Data */
-
-	c.page->data[22] = 0;
-	c.page->data[23] = 150;	/* audio pause length */
-
-/*XXX need session format! */
-
-#endif /* ! Libburn_mmc_compose_mode_page_5 */
 
 	c.dir = TO_DRIVE;
 	d->issue_command(d, &c);
