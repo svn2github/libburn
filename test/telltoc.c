@@ -230,6 +230,7 @@ int telltoc_media(struct burn_drive *drive)
 	enum burn_disc_status s;
 	char profile_name[80], speed_unit[40];
 	struct burn_multi_caps *caps;
+	struct burn_write_opts *o = NULL;
 
 	printf("Media current: ");
 	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
@@ -311,11 +312,27 @@ int telltoc_media(struct burn_drive *drive)
 				caps->advised_write_mode == BURN_WRITE_RAW ?
 				" (advised)" : "");
 		printf("\n");
-		burn_disc_free_multi_caps(&caps);
-		available = burn_disc_available_space(drive, NULL);
+		o= burn_write_opts_new(drive);
+		if (o != NULL) {
+			burn_write_opts_set_perform_opc(o, 0);
+ 			if(caps->advised_write_mode == BURN_WRITE_TAO)
+   				burn_write_opts_set_write_type(o,
+					BURN_WRITE_TAO, BURN_BLOCK_MODE1);
+			else if (caps->advised_write_mode == BURN_WRITE_SAO)
+				burn_write_opts_set_write_type(o,
+					BURN_WRITE_SAO, BURN_BLOCK_SAO);
+			else {
+				burn_write_opts_free(o);
+				o = NULL;
+			}
+		}
+		available = burn_disc_available_space(drive, o);
 		printf("Write space  : %.1f MiB  (%.fs)\n",
 			((double) available) / 1024.0 / 1024.0,
 			((double) available) / 2048.0);
+		burn_disc_free_multi_caps(&caps);
+		if (o != NULL)
+			burn_write_opts_free(o);
 	}
 
 	ret = burn_drive_get_write_speed(drive);
@@ -530,7 +547,7 @@ int telltoc_msinfo(struct burn_drive *drive,
 	printf("%d,%d\n",lba,nwa);
 	ret = 1;
 ex:;
-	if (o!=NULL)
+	if (o != NULL)
 		burn_write_opts_free(o);
 	return ret;
 }
