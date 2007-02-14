@@ -1311,6 +1311,20 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 
 
+/* ts A70213 */
+/** Caution: still immature and likely to change. Problems arose with
+    sequential DVD-RW.
+
+    Controls wether the whole available space of the media shall be filled up
+    by the last track of the last session.
+    @param opts The write opts to change
+    @param fill_up_media If 1 : fill up by last track, if 0 = do not fill up
+*/
+void burn_write_opts_set_fillup(struct burn_write_opts *opts,
+                                int fill_up_media);
+
+
+
 /** Sets whether to read in raw mode or not
     @param opts The read opts to change
     @param raw_mode If non-zero, reading will be done in raw mode, so that everything in the data tracks on the

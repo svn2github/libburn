@@ -41,6 +41,9 @@ struct burn_write_opts
 	/* ts A61222 : Start address for media which allow a choice */
 	off_t start_byte;
 
+	/* ts A70213 : Wether to fill up the while available space on media */
+	int fill_up_media;
+
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
 	unsigned char mediacatalog[13];

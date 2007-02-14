@@ -1712,6 +1712,8 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 	int i, j, mode;
 
 	memset((char *) result, 0, sizeof(struct burn_disc_mode_demands));
+	if (disc == NULL)
+		return 2;
 	if (disc->sessions > 1)
 		result->multi_session = 1;
 	for (i = 0; i < disc->sessions; i++) {

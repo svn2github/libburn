@@ -37,6 +37,7 @@
 #include "sg.h"
 #include "write.h"
 #include "options.h"
+#include "structure.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -706,14 +707,21 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 		/* ts A61103 */
 		ret = d->get_nwa(d, -1, &lba, &nwa);
+
+		/* ts A70213: CD-TAO: eventually expand size of track to max */
+		burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
+
+		/* <<< */
 		sprintf(msg, 
-			"pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d\n",
-			tnum+1, nwa, ret, d->nwa);
+	"TAO pre-track %2.2d : get_nwa(%d)=%d, d=%d , demand=%.f , cap=%.f\n",
+	tnum+1, nwa, ret, d->nwa, (double) burn_track_get_sectors(t) * 2048.0,
+	(double) d->media_capacity_remaining);
 		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg,0,0);
 		if (nwa > d->nwa)
 			d->nwa = nwa;
+
 	}
 
 /* user data */
@@ -838,6 +846,8 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 				struct burn_disc *disc)
 {
 	struct burn_drive *d = o->drive;
+	struct burn_track *t = NULL;
+	int sx, tx;
 
 	d->cancel = 0;
 
@@ -861,6 +871,15 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 	d->progress.buffer_available = 0;
 	d->progress.buffered_bytes = 0;
 	d->progress.buffer_min_fill = 0xffffffff;
+
+	/* Set eventual media fill up for last track only */
+	for (sx = 0; sx < disc->sessions; sx++)
+		for (tx = 0 ; tx < disc->session[sx]->tracks; tx++) {
+			t = disc->session[sx]->track[tx];
+			burn_track_set_fillup(t, 0);
+		}
+	if (o->fill_up_media && t != NULL)
+		burn_track_set_fillup(t, 1);
 
 	d->busy = BURN_DRIVE_WRITING;
 
@@ -886,6 +905,8 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);
 	if (nwa > d->nwa)
 		d->nwa = nwa;
+	/* ts A70214 : eventually adjust already expanded size of track */
+	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
  		/* Round track size up to 32 KiB and reserve track */
@@ -942,8 +963,25 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	int sectors;
 	int i, open_ended = 0, ret= 0, is_flushed = 0;
 
+	/* ts A70213 : eventually expand size of track to max */
+	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
+
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
+
+	/* <<< */
+	{
+		char msg[160];
+
+		sprintf(msg,
+		 "DVD pre-track %2.2d : demand=%.f%s, cap=%.f\n",
+			tnum+1, (double) sectors * 2048.0,
+			(open_ended ? " (open ended)" : ""),
+			(double) d->media_capacity_remaining);
+		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg,0,0);
+	}
 
 	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
 		/* DVD-R, DVD-RW Sequential */
@@ -1464,11 +1502,16 @@ return crap.  so we send the command, then ignore the result.
 		d->send_write_parameters(d, o);
 
 		ret = d->get_nwa(d, -1, &lba, &nwa);
-		sprintf(msg, "Inquired nwa: %d  (ret=%d)", nwa, ret);
+		sprintf(msg,
+			"SAO|RAW: Inquired nwa: %d , ret= %d , cap=%.f\n",
+			nwa, ret, (double) d->media_capacity_remaining);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg,0,0);
+
+		/* >>> ts A70212 : CD-DAO/SAO : eventually expand size of last track to maximum */;
+
 	}
 
 	for (i = 0; i < disc->sessions; i++) {

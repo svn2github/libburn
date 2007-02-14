@@ -36,6 +36,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->obs = -1;
 	opts->obs_pad = 0;
 	opts->start_byte = -1;
+	opts->fill_up_media = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -258,6 +259,14 @@ no_write_mode:;
 	burn_write_opts_set_write_type(opts,
 				BURN_WRITE_TAO, BURN_BLOCK_MODE1);
 	return BURN_WRITE_TAO;
+}
+
+
+/* ts A70213 : new API function */
+void burn_write_opts_set_fillup(struct burn_write_opts *opts,int fill_up_media)
+{
+	opts->fill_up_media = !!fill_up_media;
+	return;
 }
 
 

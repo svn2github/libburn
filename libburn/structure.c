@@ -113,6 +113,10 @@ struct burn_track *burn_track_create(void)
 	t->mode = BURN_MODE1;
 	t->isrc.has_isrc = 0;
 	t->pad = 1;
+
+	/* ts A70213 */
+	t->fill_up_media = 0;
+
 	t->entry = NULL;
 	t->source = NULL;
 	t->eos = 0;
@@ -342,6 +346,36 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 	if (size < 0)
 		return 0;
 	ret = t->source->set_size(t->source, size);
+	return ret;
+}
+
+
+/* ts A70213 */
+int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
+{
+	t->fill_up_media = fill_up_media;
+	return 1;
+}
+
+
+/* ts A70213 */
+/**
+  @param flag bit0= force new size even if existing track size is larger
+*/
+int burn_track_apply_fillup(struct burn_track *t, off_t max_size, int flag)
+{
+	int max_sectors, ret;
+
+	if (t->fill_up_media <= 0)
+		return 2;
+	max_sectors = max_size / 2048;
+	if (burn_track_get_sectors(t) < max_sectors || (flag & 1)) {
+		ret = burn_track_set_sectors(t, max_sectors);
+
+		/* <<< */
+		fprintf(stderr, "LIBBURN_DEBUG: Setting total track size to %ds (payload %ds)\n", max_sectors, (int) (t->source->get_size(t->source)/2048));
+
+	}
 	return ret;
 }
 

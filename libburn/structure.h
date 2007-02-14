@@ -27,6 +27,10 @@ struct burn_track
 	int tailcount;
 	/** 1 means Pad with zeros, 0 means start reading the next track */
 	int pad;
+
+	/* ts A70213 : wether to expand this track to full available media */
+	int fill_up_media;
+
 	/** Data source */
 	struct burn_source *source;
 	/** End of Source flag */
@@ -90,6 +94,11 @@ int burn_track_is_data_done(struct burn_track *t);
 
 /* ts A70125 */
 int burn_track_set_sectors(struct burn_track *t, int sectors);
+
+/* ts A70213 */
+int burn_track_set_fillup(struct burn_track *t, int fill_up_media);
+int burn_track_apply_fillup(struct burn_track *t, off_t max_size, int flag);
+
 
 
 #endif /* BURN__STRUCTURE_H */
