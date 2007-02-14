@@ -69,4 +69,6 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
                             unsigned char *pd);
 
 
+#define BURN_MMC_FAKE_TOC_MAX_SIZE 1000
+
 #endif /*__MMC*/
