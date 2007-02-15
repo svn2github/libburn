@@ -1313,7 +1313,7 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 
 /* ts A70213 */
 /** Caution: still immature and likely to change. Problems arose with
-    sequential DVD-RW.
+    sequential DVD-RW on one drive.
 
     Controls wether the whole available space of the media shall be filled up
     by the last track of the last session.
@@ -1522,7 +1522,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 			 struct burn_multi_caps **caps, int flag);
 
 /** Removes from memory a multi session info structure which was returned by
-    burn_disc_get_multi_caps(). The pointer *caps gets set o NULL.
+    burn_disc_get_multi_caps(). The pointer *caps gets set to NULL.
     @param caps the info structure to dispose (note: pointer to pointer)
     @return 0 : *caps was already NULL, 1 : memory object was disposed
 */
