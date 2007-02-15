@@ -212,6 +212,8 @@ struct burn_drive
 	               (e.g. by d->send_write_parameters() ; d->get_nwa()).
 	*/
 	off_t media_capacity_remaining;
+	/* ts A70215 : if > 0 : first lba on media that is too high for write*/
+	int media_lba_limit;
 
 
 	int toc_temp;

@@ -313,11 +313,15 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 			   "mmc_get_nwa: Track Info Block: NWA_V == 0", 0, 0);
 		return 0;
 	}
-	if (num > 0)
+	if (num > 0) {
 		d->media_capacity_remaining = ((off_t) num) * ((off_t) 2048);
+		d->media_lba_limit = *nwa + num;
+	} else
+		d->media_lba_limit = 0;
 
 /*
-	fprintf(stderr, "LIBBURN_DEBUG: track info data[16..19] = %2.2X %2.2X %2.2X %2.2X\n", data[16], data[17], data[18], data[19]);
+	fprintf(stderr, "LIBBURN_DEBUG: media_lba_limit= %d\n",
+		 d->media_lba_limit);
 */
 
 	return 1;
@@ -456,6 +460,21 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 
 	if (cancelled)
 		return BE_CANCELLED;
+
+	/* ts A70215 */
+	if (d->media_lba_limit > 0 && start >= d->media_lba_limit) {
+		char msg[160];
+
+		sprintf(msg,
+		"Exceeding range of permissible write addresses (%d >= %d)",
+				start, d->media_lba_limit);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002012d,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		d->cancel = 1; /* No need for mutexing because atomic */
+		return BE_CANCELLED;
+	}
 
 	len = buf->sectors;
 
@@ -643,6 +662,7 @@ int mmc_fake_toc(struct burn_drive *d)
 				d->media_capacity_remaining =
 				  ((off_t) mmc_four_char_to_int(tdata + 16)) *
 				  ((off_t) 2048);
+				d->media_lba_limit = 0;
 			}	
 	continue;
 		}
@@ -924,8 +944,9 @@ void mmc_read_disc_info(struct burn_drive *d)
 	d->erasable = 0;
 	d->last_track_no = 1;
 
-	/* ts A70212 */
+	/* ts A70212 - A70215 */
 	d->media_capacity_remaining = 0;
+	d->media_lba_limit = 0;
 
 	/* ts A61202 */
 	d->toc_entries = 0;
@@ -1665,7 +1686,7 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 {
 	struct buffer buf;
 	int len, type, score, num_descr, max_score = -2000000000, i, sign = 1;
-	off_t size;
+	off_t size, num_blocks;
 	struct command c;
 	unsigned char *dpt;
 	char msg[160];
@@ -1720,9 +1741,8 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 	num_descr = (len - 8) / 8;
 	for (i = 0; i < num_descr; i++) {
 		dpt = c.page->data + 12 + 8 * i;
-		size = (((off_t) dpt[0]) << 24)
-			+ (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
-                size *= (off_t) 2048;
+		num_blocks = mmc_four_char_to_int(dpt);
+		size = num_blocks * (off_t) 2048;
 		type = dpt[4] >> 2;
 
 		if (i < 32) {
@@ -1744,19 +1764,24 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 		if (type == 0x00) { /* full format (with lead out) */
 			score = 1 * sign;
 			if(d->current_profile == 0x12 &&
-			   d->media_capacity_remaining == 0)
+			   d->media_capacity_remaining == 0) {
 				d->media_capacity_remaining = size;
+				d->media_lba_limit = num_blocks;
+			}
 		} else if (type == 0x10) { /* DVD-RW full format */
 			score = 10 * sign;
 		} else if(type == 0x13) { /* DVD-RW quick grow last session */
 			score = 100 * sign;
 		} else if(type == 0x15) { /* DVD-RW Quick */
 			score = 50 * sign;
-			if(d->current_profile == 0x13)
+			if(d->current_profile == 0x13) {
 				d->media_capacity_remaining = size;
+				d->media_lba_limit = num_blocks;
+			}
 		} else if(type == 0x26) { /* DVD+RW */
 			score = 1 * sign;
 			d->media_capacity_remaining = size;
+			d->media_lba_limit = num_blocks;
 		} else {
 	continue;
 		}
@@ -2233,6 +2258,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->complete_sessions = 0;
 	d->last_track_no = 1;
 	d->media_capacity_remaining = 0;
+	d->media_lba_limit = 0;
 
 	return 1;
 }
