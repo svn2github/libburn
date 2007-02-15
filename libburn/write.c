@@ -966,6 +966,15 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
 
+	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* DVD-R, DVD-RW Sequential */
+		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
+		if (ret <= 0)
+			goto ex;
+	}
+
+	sectors = burn_track_get_sectors(t);
+	open_ended = burn_track_is_open_ended(t);
 	/* <<< */
 	{
 		char msg[160];
@@ -980,15 +989,6 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 				msg,0,0);
 	}
 
-	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
-		/* DVD-R, DVD-RW Sequential */
-		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
-		if (ret <= 0)
-			goto ex;
-	}
-
-	sectors = burn_track_get_sectors(t);
-	open_ended = burn_track_is_open_ended(t);
 
 	/* >>> ts A70215 : what about offset padding ? */
 
