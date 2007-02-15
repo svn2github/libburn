@@ -346,6 +346,7 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 	if (size < 0)
 		return 0;
 	ret = t->source->set_size(t->source, size);
+	t->open_ended = (t->source->get_size(t->source) <= 0);
 	return ret;
 }
 
@@ -354,6 +355,7 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
 {
 	t->fill_up_media = fill_up_media;
+	t->open_ended = 0;
 	return 1;
 }
 
@@ -364,17 +366,20 @@ int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
 */
 int burn_track_apply_fillup(struct burn_track *t, off_t max_size, int flag)
 {
-	int max_sectors, ret;
+	int max_sectors, ret = 2;
+	char msg[160];
 
 	if (t->fill_up_media <= 0)
 		return 2;
 	max_sectors = max_size / 2048;
 	if (burn_track_get_sectors(t) < max_sectors || (flag & 1)) {
+		sprintf(msg, "Setting total track size to %ds (payload %ds)\n",
+		    max_sectors, (int) (t->source->get_size(t->source)/2048));
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			msg, 0, 0);
 		ret = burn_track_set_sectors(t, max_sectors);
-
-		/* <<< */
-		fprintf(stderr, "LIBBURN_DEBUG: Setting total track size to %ds (payload %ds)\n", max_sectors, (int) (t->source->get_size(t->source)/2048));
-
+		t->open_ended = 0;
 	}
 	return ret;
 }
