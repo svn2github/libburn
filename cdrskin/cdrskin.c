@@ -4360,7 +4360,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
 {
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
  int profile_number= -1, track_type_1= 0, mixed_mode= 0, unpredicted_size= 0;
- int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret;
+ int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret, current_is_cd= 1;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
  double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
@@ -4372,6 +4372,8 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
 #ifdef Cdrskin_libburn_has_get_profilE
  if(skin->grabbed_drive)
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
+ if(profile_number!=0x09 && profile_number!=0x0a)
+   current_is_cd= 0;
 #endif
 
 #ifdef Cdrskin_allow_libburn_taO
@@ -4402,20 +4404,28 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
      mixed_mode= 1;
    Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
                      &tao_to_sao_tsize,&dummy,2);
-   if(fixed_size<=0)
+
+   /* <<< until CD-SAO does fill-up: filluped last CD track length undefined */
+   if(fixed_size<=0 &&
+      !(current_is_cd==0 && skin->fill_up_media && i==skin->track_counter-1))
      unpredicted_size= 1+(tao_to_sao_tsize<=0);
  }
 
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
    was_still_default= 1;
 
-   if((s == BURN_DISC_APPENDABLE || mixed_mode) && might_do_tao) {
+   if((s==BURN_DISC_APPENDABLE || mixed_mode ||
+       (current_is_cd && skin->fill_up_media)  ) && might_do_tao) {
      strcpy(skin->preskin->write_mode_name,"TAO");
      was_still_default= 2; /* prevents trying of SAO if drive dislikes TAO*/
    } else if(unpredicted_size && might_do_tao) {
      strcpy(skin->preskin->write_mode_name,"TAO");
      if(unpredicted_size>1)
        was_still_default= 2; /* prevents trying of SAO */
+   } else if(s==BURN_DISC_BLANK && skin->track_counter==1 &&
+             skin->fill_up_media && might_do_sao && !current_is_cd) {
+     /* to avoid problems on my NEC with blank DVD-RW and TAO fill_up_media */
+     strcpy(skin->preskin->write_mode_name,"SAO");
    } else if((profile_number==0x1a || profile_number==0x13 ||
               profile_number==0x12 ||
               profile_number==0x11 || profile_number==0x14)
@@ -4747,7 +4757,8 @@ burn_failed:;
 #endif /* Cdrskin_libburn_has_get_spacE */
    if(skin->track_counter>0)
      fprintf(stderr,
-         "cdrskin: NOTE : Burn run suppressed by option --tell_media_space\n");
+       "cdrskin: NOTE : %s burn run suppressed by option --tell_media_space\n",
+       skin->preskin->write_mode_name);
    {ret= 1; goto ex;}
  }
 

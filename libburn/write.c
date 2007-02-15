@@ -966,9 +966,6 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
 
-	sectors = burn_track_get_sectors(t);
-	open_ended = burn_track_is_open_ended(t);
-
 	/* <<< */
 	{
 		char msg[160];
@@ -989,6 +986,11 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		if (ret <= 0)
 			goto ex;
 	}
+
+	sectors = burn_track_get_sectors(t);
+	open_ended = burn_track_is_open_ended(t);
+
+	/* >>> ts A70215 : what about offset padding ? */
 
 	burn_disc_init_track_status(o, s, tnum, sectors);
 	for (i = 0; open_ended || i < sectors; i++) {
@@ -1011,6 +1013,8 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		d->progress.sector++;
 	}
 	
+	/* >>> ts A70215 : what about tail padding ? */
+
 	/* Pad up buffer to next full o->obs (usually 32 kB) */
 	if (o->obs_pad && out->bytes > 0 && out->bytes < o->obs) {
 		memset(out->data + out->bytes, 0, o->obs - out->bytes);
@@ -1257,7 +1261,7 @@ int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
-	int i, ret, sx, tx, mode, exotic_track = 0, dao_is_ok;
+	int i, ret, sx, tx, mode, exotic_track = 0, dao_is_ok, o_end;
 	struct burn_drive *d = o->drive;
 	char msg[160];
 
@@ -1344,11 +1348,13 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
 		/* DVD-R , DVD-RW Sequential */
+		o_end = burn_track_is_open_ended(disc->session[0]->track[0]);
+		if(o->fill_up_media)
+			o_end = 0;
 		dao_is_ok =
 			(disc->sessions == 1 &&
 			 disc->session[0]->tracks == 1 &&
-			 (! burn_track_is_open_ended(
-						disc->session[0]->track[0])) &&
+			 (!o_end) &&
 			 (!o->multi) && d->status == BURN_DISC_BLANK
 			);
 		if (o->write_type == BURN_WRITE_TAO && 

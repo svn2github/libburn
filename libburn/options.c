@@ -173,6 +173,9 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value)
 
 
 /* ts A70207 API */
+/* @param flag Bitfield for control purposes
+               bit0=do not look for suitable type but check preset type in opts
+*/
 enum burn_write_types burn_write_opts_auto_write_type(
 		struct burn_write_opts *opts, struct burn_disc *disc,
 		char reasons[1024], int flag)
@@ -184,7 +187,9 @@ enum burn_write_types burn_write_opts_auto_write_type(
 	char *reason_pt;
 
 	reasons[0] = 0;
-	ret = burn_disc_get_write_mode_demands(disc, &demands, 0);
+
+	ret = burn_disc_get_write_mode_demands(disc, &demands,
+			 			!!opts->fill_up_media);
 	if (ret <= 0) {
 		strcat(reasons, "cannot recognize job demands, ");
 		return BURN_WRITE_NONE;
@@ -201,7 +206,8 @@ enum burn_write_types burn_write_opts_auto_write_type(
 			strcat(reasons, "exotic track prohibited by non-CD, ");
 		return BURN_WRITE_NONE;
 	}
-	
+	if ((flag & 1) && opts->write_type != BURN_WRITE_SAO)
+		goto try_tao;
 	ret = burn_disc_get_multi_caps(d, BURN_WRITE_SAO, &caps, 0);
 	if (ret < 0) {
 no_caps:;
@@ -212,28 +218,33 @@ no_caps:;
 				0, 0);
 		strcat(reasons, "cannot inquire write mode capabilities, ");
 		return BURN_WRITE_NONE;
-	} if (ret > 0) {
-		reason_pt = reasons + strlen(reasons);
-		strcat(reasons, "SAO: ");
-		if ((opts->multi || demands.multi_session) &&
-		    !caps->multi_session)
-			strcat(reasons, "multi session capability lacking, ");
-		if (demands.multi_track && !caps->multi_track)
-			strcat(reasons, "multi track capability lacking, ");
-		if (demands.unknown_track_size)
-			strcat(reasons, "track size unpredictable, ");
-		if (demands.mixed_mode)
-			strcat(reasons, "tracks of different modes mixed, ");
-		if (strcmp(reason_pt, "SAO: ") != 0)
-			goto no_sao;
-		burn_write_opts_set_write_type(opts,
-					BURN_WRITE_SAO, BURN_BLOCK_SAO);
-		return BURN_WRITE_SAO;
-	} else
+	} else if (ret == 0) {
 		strcat(reasons, "SAO: no SAO offered by drive and media, ");
+		goto no_sao;
+	}
+	reason_pt = reasons + strlen(reasons);
+	strcat(reasons, "SAO: ");
+	if ((opts->multi || demands.multi_session) &&
+	    !caps->multi_session)
+		strcat(reasons, "multi session capability lacking, ");
+	if (demands.multi_track && !caps->multi_track)
+		strcat(reasons, "multi track capability lacking, ");
+	if (demands.unknown_track_size)
+		strcat(reasons, "track size unpredictable, ");
+	if (demands.mixed_mode)
+		strcat(reasons, "tracks of different modes mixed, ");
+	if (d->current_is_cd_profile && opts->fill_up_media)
+		strcat(reasons, "cd sao cannot do media fill up yet, ");
+	if (strcmp(reason_pt, "SAO: ") != 0)
+		goto no_sao;
+	burn_write_opts_set_write_type(opts, BURN_WRITE_SAO, BURN_BLOCK_SAO);
+	return BURN_WRITE_SAO;
 no_sao:;
 	burn_disc_free_multi_caps(&caps);
 	strcat(reasons, "\n");
+try_tao:;
+	if ((flag & 1) && opts->write_type != BURN_WRITE_TAO)
+		goto no_tao;
 	reason_pt = reasons + strlen(reasons);
 	strcat(reasons, "TAO: ");
 	ret = burn_disc_get_multi_caps(d, BURN_WRITE_TAO, &caps, 0);
@@ -241,24 +252,37 @@ no_sao:;
 		goto no_caps;
 	if (ret == 0) {	
 		strcat(reasons, "no TAO offered by drive and media, ");
-no_write_mode:;
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x0002012b,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Drive offers no suitable write mode with this job",
-			0, 0);
-		return BURN_WRITE_NONE;
+		goto no_tao;
 	}
 	if ((opts->multi || demands.multi_session) && !caps->multi_session)
 		strcat(reasons, "multi session capability lacking, ");
 	if (demands.multi_track && !caps->multi_track)
 		strcat(reasons, "multi track capability lacking, ");
+
+	if (d->current_is_cd_profile) {
+
+		/* >>> check block types */;
+
+	}
+
 	if (strcmp(reason_pt, "TAO: ") != 0)
-		goto no_write_mode;
+		goto no_tao;
 	/* ( TAO data/audio block size will be handled automatically ) */
 	burn_write_opts_set_write_type(opts,
 				BURN_WRITE_TAO, BURN_BLOCK_MODE1);
 	return BURN_WRITE_TAO;
+no_tao:;
+	if (!d->current_is_cd_profile)
+		goto no_write_mode;
+
+	/* >>> evaluate RAW modes */;
+
+no_write_mode:;
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002012b,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive offers no suitable write mode with this job",
+			0, 0);
+	return BURN_WRITE_NONE;
 }
 
 

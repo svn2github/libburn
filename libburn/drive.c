@@ -1703,13 +1703,15 @@ int burn_disc_free_multi_caps(struct burn_multi_caps **caps)
 }
 
 
-/* ts A70207 : evaluate write mode related peculiarities of a disc */
+/* ts A70207 : evaluate write mode related peculiarities of a disc
+   @param flag bit0= fill_up_media is active
+*/
 int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 			struct burn_disc_mode_demands *result, int flag)
 {
 	struct burn_session *session;
 	struct burn_track *track;
-	int i, j, mode;
+	int i, j, mode, unknown_track_sizes = 0, last_track_is_unknown = 0;
 
 	memset((char *) result, 0, sizeof(struct burn_disc_mode_demands));
 	if (disc == NULL)
@@ -1725,8 +1727,12 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 			result->multi_track = 1;
 		for (j = 0; j < session->tracks; j++) {
 			track = session->track[j];
-			if (burn_track_is_open_ended(track))
+			if (burn_track_is_open_ended(track)) {
 				result->unknown_track_size = 1;
+				unknown_track_sizes++;
+				last_track_is_unknown = 1;
+			} else
+				last_track_is_unknown = 0;
 			if (mode != track->mode)
 				result->mixed_mode = 1;
 			if (track->mode != BURN_MODE1)
@@ -1734,6 +1740,10 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 			if (track->mode == BURN_AUDIO)
 				result->audio = 1;
 		}
+	}
+	if (flag&1) {/* fill_up_media will define the size of the last track */
+		if (unknown_track_sizes == 1 && last_track_is_unknown)
+			result->unknown_track_size = 0;
 	}
 	return (disc->sessions > 0);
 }
