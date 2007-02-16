@@ -461,7 +461,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		   track length.
 		*/ 
 		track_length = burn_track_get_sectors(tar[i]);
-		if (track_length < 300) {
+		if (track_length < 300 && !burn_track_is_open_ended(tar[i])) {
 			track_length = 300;
 			if (!tar[i]->pad)
 				tar[i]->pad = 1;
