@@ -503,8 +503,6 @@ static int all_tracks_type = BURN_MODE1;
 
 
 /** Converts command line arguments into above setup parameters.
-    drive_adr[] must provide at least BURN_DRIVE_ADR_LEN bytes.
-    source_adr[] must provide at least 4096 bytes.
 */
 int libburner_setup(int argc, char **argv)
 {
