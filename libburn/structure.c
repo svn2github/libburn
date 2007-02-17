@@ -355,7 +355,8 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
 {
 	t->fill_up_media = fill_up_media;
-	t->open_ended = 0;
+	if (fill_up_media)
+		t->open_ended = 0;
 	return 1;
 }
 
