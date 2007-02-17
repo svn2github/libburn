@@ -276,7 +276,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		return 2;
 	} else if (disc_state == BURN_DISC_FULL ||
 		   disc_state == BURN_DISC_APPENDABLE) {
-		; /* this is what libburn is willing to blank */
+		; /* this is what libburner is willing to blank */
 	} else if (disc_state == BURN_DISC_EMPTY) {
 		fprintf(stderr,"FATAL: No media detected in drive\n");
 		return 0;

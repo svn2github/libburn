@@ -3939,7 +3939,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
    if(s!=BURN_DISC_FULL && 
       (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable) &&
-      !(profile_number == 0x13 && skin->prodvd_cli_compatible)) {
+      (profile_number!=0x13 || !skin->prodvd_cli_compatible) &&
+      (s!=BURN_DISC_BLANK || !skin->force_is_set)) {
      Cdrskin_release_drive(skin,0);
      if(s==BURN_DISC_BLANK) {
        fprintf(stderr,

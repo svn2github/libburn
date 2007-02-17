@@ -279,6 +279,9 @@ complete "de-icing" so no reader slips on unwritten data areas.
 deformat_sequential
 Like blank=all but with the additional ability to blank overwriteable DVD-RW.
 This will destroy their formatting and make them sequentially recordable. 
+Another peculiarity is the ability to blank media which appear already blank.
+This is similar to option -force but does not try to blank media other than
+recognizable CD-RW and DVD-RW.
 .br
 (Note: blank=deformat_sequential* are not original cdrecord options.)
 .TP
@@ -336,9 +339,10 @@ insecure about drive or media state. This includes the attempt to blank
 media which are classified as unknown or unsuitable, and the attempt to use
 write modes which libburn believes they are not supported by the drive.
 .br
-Another application is with blank=format_* to enforce re-formatting of media
-which appear to be sufficiently formatted already.
+Another application is to enforce blanking or re-formatting of media
+which appear to be in the desired blank or format state already.
 .br
+.B Caution:
 Use this only when in urgent need.
 .TP
 .BI fs= size
@@ -661,13 +665,16 @@ Disable fifo despite any fs=.
 Use a separate fifo for each track.
 .TP
 .BI \--fill_up_media
-.B Caution:
-Option is still immature and likely to change.
-Problems arose with sequential DVD-RW on one drive.
-.br
 Expand the last track of the session to occupy all remaining free space on
 the media.
-This option overrides option -multi.
+.br
+This option overrides option -multi. It will not fill up media if option -sao
+is given with CD media.
+.br
+.B Caution:
+This option might increase read compatibility with DVD-ROM drives but
+with some DVD recorders and media types it might also fail to produce readable
+media at all. "Your mileage may vary".
 .TP
 .BI grab_drive_and_wait= seconds
 Open the addressed drive, wait the given number of seconds, release the drive,

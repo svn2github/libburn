@@ -236,10 +236,17 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	/* ts A70103 moved up from burn_disc_erase_sync() */
 	/* ts A60825 : allow on parole to blank appendable CDs */
 	/* ts A70131 : allow blanking of overwriteable DVD-RW (profile 0x13) */
-	if ( ! (drive->status == BURN_DISC_FULL ||
-		(drive->status == BURN_DISC_APPENDABLE &&
-		 ! libburn_back_hack_42) ||
-		drive->current_profile == 0x13 ) ) {
+	/* ts A70216 : allow blanking of CD-RW or DVD-RW in any regular state
+	               and of any kind of full media */
+	if ((drive->current_profile != 0x0a &&
+	     drive->current_profile != 0x13 &&
+	     drive->current_profile != 0x14 &&
+	     drive->status != BURN_DISC_FULL)
+	    ||
+	    (drive->status != BURN_DISC_FULL &&
+	     drive->status != BURN_DISC_APPENDABLE &&
+	     drive->status != BURN_DISC_BLANK)
+	   ) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020130,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
