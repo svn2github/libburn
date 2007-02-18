@@ -2977,7 +2977,7 @@ cdrskin/wiki_plain.txt
 cdrskin/cdrskin_eng.html
 Made number transition and activated development documentation
 
-10 Feb 2007  [tag 703] []
+10 Feb 2007  [tag 703] [707]
 cdrskin/changelog.txt
 Documented changes and 0.3.2 release timestamp
 
@@ -2987,35 +2987,163 @@ Documented changes and 0.3.2 release timestamp
 * Multi-session recording on sequential DVD-R[W], including -toc, -msinfo
 * DVD-R[W] Disk-at-once recording
 
-
------------------------------------- cycle  - cdrskin-0.3.3 - 2007.02.
-
 10 Feb 2007  [706]
 libburn/mmc.c
 Added a comment about DVD-R
+
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.02.10.190528
+
+
+12 Feb 2007  [708]
+cdrskin/cdrskin.1
+Being exacting about on-the-fly and DVD-RW
+
+
+12 Feb 2007  [709]
+cdrskin/cdrskin_eng.html
+Updated list of keywords
+
+2007.02.12.142245  [710]
+libburn/mmc.c
+Made profile 0010h DVD-ROM suitable,full,not erasable. So it delivers a TOC.
+
+
+2007.02.13.115459  [711]
+libburn/spc.c
+Set a suitable page 05h after spc_probe_write_modes()
+
+2007.02.13.143718  [712]
+libburn/libburn.h
+libburn/transport.h
+libburn/mmc.c
+libburn/spc.c
+libburn/drive.c
+Mew API function burn_disc_available_space()
+
+13 Feb 2007  [713]
+test/libburner.c
+Removed or updated outdated restriction statements
+
+13 Feb 2007  [714]
+test/telltoc.c
+Applied new API function burn_disc_available_space()
+
+2007.02.14.120213 [715]
+libburn/spc.c
+Removed outdated ifdef
+
+14 Feb 2007 [716]
+test/telltoc.c
+Set the advised write mode before inquiring media space
+
+2007.02.14.121440  [717]
+libburn/libdax_msgs.h
+libburn/mmc.c
+Handle eventual ridiculously high d->last_track_no
+
+2007.02.14.122218  [718]
+libburn/mmc.h
+Forgotten part of revision 718
+
+2007.02.14.202944  [719]
+libburn/libburn.h
+libburn/options.h
+libburn/options.c
+libburn/structure.h
+libburn/structure.c
+libburn/write.c
+libburn/drive.c
+Optional padding up to full media size when closing (incomplete yet)
+
+2007.02.14.203635  [720]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New options --fill_up_media and --tell_media_space
+
+2007.02.15.201506  [722]
+libburn/options.c
+libburn/drive.c
+cdrskin/cdrskin.c
+libburn/write.c
+Took fill_up_media into respect with automatic write mode decisions
+
+2007.02.15.201651  [723]
+libburn/transport.h
+libburn/mmc.c
+libburn/libdax_msgs.h
+Installed a guardian for predicted track end
+
+2007.02.15.201757  [724]
+libburn/structure.c
+Corrected bug about open_ended filluped tracks
+
+15 Feb 2007  [725]
+libburn/libburn.h
+cdrskin/cdrskin.1
+Clarifications about current state of fillup
+
+2007.02.15.203448  [726]
+libburn/write.c
+Repaired debugging message spoiled by uninitialized variable
+
+2007.02.16.111941  [728]
+libburn/write.c
+Corrected CD TAO bug introduced with DVD bug fix 724 and CD SAO change 655
+
+2007.02.17.085118  [729]
+libburn/structure.c
+Another bug fix for revision 724
+
+2007.02.17.085533  [730]
+libburn/async.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+test/libburner.c
+Allowed forceful blanking of blank media in burn_disc_erase()
+
+17 Feb 2007  [731]
+test/libburner.c
+Removed unprecise unnecessary comment
+
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.02.17.121238
+* New option --tell_media_space tells the maximum size for the next burn
+
+
+2007.02.18.094414 [732]
+libburn/libburn.h
+Clarified usage comment with burn_drive_info_free() (see ticket 98)
+
+ []
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.3 cycle
+
+
+
+libburn/mmc.h
+Adjusted maximum realistic number of tracks to MMC specs
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
-
-Bug reports to post after release:
-
-See A70205_to_cdwrite_growisofs_dao_pitfalls
-    A70208_to_cdwrite_cdrecord_error_messages
-    A70209_to_cdrskit_error_messages
-
-
-Make profile 0010h DVD-ROM suitable , full , not erasable
-
-
 ------------------------------------ cycle  - cdrskin-0.3.3 - 
 
-forceful blanking of blank media in burn_disc_erase()
+Questions to post:
+    A70211_to_cdwrite_growisofs_question_finalizing
+
+
+Test libburner write mode selection
+
+
 
 What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 
+How to handle finalizing ?
 growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
 
 cdrskin: prevent usage of burn drive as track source
@@ -3039,7 +3167,6 @@ growisofs.c : _LINUX_CAPABILITY_VERSION CAP_SYS_RAWIO SYS_capset ?
 
 Format DVD-RAM ?
 
-How to handle finalizing ?
 
 Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
 

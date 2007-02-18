@@ -172,8 +172,8 @@ Overwriteable DVD recording model they need to get formatted to state
 can be done by option
 .B blank=format_overwrite .
 .br
-Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin option
-blank=deformat_sequential can bring a DVD-RW out of overwriteable state so
+Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin
+can bring a DVD-RW out of overwriteable state so
 that it has to be formatted again. If in doubt, just give it a try.
 .PP
 .B Drive preparation and addressing:
@@ -606,10 +606,11 @@ It is not mandatory to give track sources but their nature may influence
 the available capacity. So for most realistic results one may set up
 the full burn session and add --tell_media_space. But if one has to expect
 a cdrskin version prior to 0.3.3 no track source should be given in order
-to start no involuntary burn session.
+not to start an involuntary burn session.
 In this case set at least -sao or -tao explicitely.
 .br
-The result gets printed to standard output.
+The result gets printed to standard output. It is 0 or empty if no writing
+is possible with the given options.
 This option redirects to stderr all message output except its own result
 string and eventual output of -msinfo.
 .TP 
@@ -770,9 +771,17 @@ cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso
 .SS
 .B Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:
 .br
-c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)
+c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
 .br
 mkisofs ... -C "$c_values" ...
+.SS
+.B Inquire free space on media for a -tao -multi run:
+.br
+x=$(cdrskin dev=/dev/sr0 -tao -multi \\
+.br
+--tell_media_space 2>/dev/null)
+.br
+echo "Available: $x blocks of 2048 data bytes"
 .SS
 .B Write audio tracks to CD:
 .br
