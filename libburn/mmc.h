@@ -69,6 +69,7 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
                             unsigned char *pd);
 
 
-#define BURN_MMC_FAKE_TOC_MAX_SIZE 1000
+/* mmc5r03c.pdf 4.3.4.4.1 d) "The maximum number of RZones is 2 302." */
+#define BURN_MMC_FAKE_TOC_MAX_SIZE 2302
 
 #endif /*__MMC*/
