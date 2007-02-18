@@ -674,7 +674,9 @@ int burn_drive_scan(struct burn_drive_info *drive_infos[],
 int burn_drive_info_forget(struct burn_drive_info *drive_info, int force);
 
 
-/** Free a burn_drive_info array returned by burn_drive_scan
+/** When no longer needed, free a whole burn_drive_info array which was
+    returned by burn_drive_scan().
+    For freeing single drive array elements use burn_drive_info_forget().
 */
 void burn_drive_info_free(struct burn_drive_info drive_infos[]);
 
