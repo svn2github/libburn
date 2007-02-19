@@ -4285,7 +4285,9 @@ thank_you_for_patience:;
      if(fixed_size || (skin->fill_up_media &&
                        skin->supposed_track_idx==skin->track_counter-1)) {
        sprintf(mb_text,"%4d of %4d",(int) (written_total_bytes/1024.0/1024.0),
-        Cdrtrack_get_sectors(skin->tracklist[skin->supposed_track_idx],0)/512);
+               (int) ((double) Cdrtrack_get_sectors(
+                          skin->tracklist[skin->supposed_track_idx],0)*
+                      sector_size/1024.0/1024.0));
      } else
        sprintf(mb_text,"%4d",(int) (written_total_bytes/1024.0/1024.0));
      speed_factor= Cdrskin_speed_factoR*sector_size/2048;
