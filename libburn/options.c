@@ -173,9 +173,6 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value)
 
 
 /* ts A70207 API */
-/* @param flag Bitfield for control purposes
-               bit0=do not look for suitable type but check preset type in opts
-*/
 enum burn_write_types burn_write_opts_auto_write_type(
 		struct burn_write_opts *opts, struct burn_disc *disc,
 		char reasons[1024], int flag)
@@ -183,41 +180,45 @@ enum burn_write_types burn_write_opts_auto_write_type(
 	struct burn_multi_caps *caps = NULL;
 	struct burn_drive *d = opts->drive;
 	struct burn_disc_mode_demands demands;
-	int ret;
+	enum burn_write_types wt;
+	int ret, would_do_sao = 0;
 	char *reason_pt;
 
 	reasons[0] = 0;
 
-	ret = burn_disc_get_write_mode_demands(disc, &demands,
+	ret = burn_disc_get_write_mode_demands(disc, opts, &demands,
 			 			!!opts->fill_up_media);
 	if (ret <= 0) {
 		strcat(reasons, "cannot recognize job demands, ");
-		return BURN_WRITE_NONE;
+		{wt = BURN_WRITE_NONE; goto ex;}
 	}
 	if (demands.exotic_track && !d->current_is_cd_profile) {
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020123,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"DVD Media are unsuitable for desired track type",
-			0, 0);
+		if (!(flag & 2))
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020123,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			    "DVD Media are unsuitable for desired track type",
+				0, 0);
 		if (demands.audio)
 			strcat(reasons, "audio track prohibited by non-CD, ");
 		else
 			strcat(reasons, "exotic track prohibited by non-CD, ");
-		return BURN_WRITE_NONE;
+		{wt = BURN_WRITE_NONE; goto ex;}
 	}
 	if ((flag & 1) && opts->write_type != BURN_WRITE_SAO)
 		goto try_tao;
+	burn_disc_free_multi_caps(&caps);
 	ret = burn_disc_get_multi_caps(d, BURN_WRITE_SAO, &caps, 0);
 	if (ret < 0) {
 no_caps:;
-		libdax_msgs_submit(libdax_messenger, d->global_index,
+		if (!(flag & 2))
+			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002012a,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				"Cannot inquire write mode capabilities",
 				0, 0);
 		strcat(reasons, "cannot inquire write mode capabilities, ");
-		return BURN_WRITE_NONE;
+		{wt = BURN_WRITE_NONE; goto ex;}
 	} else if (ret == 0) {
 		strcat(reasons, "SAO: no SAO offered by drive and media, ");
 		goto no_sao;
@@ -227,26 +228,42 @@ no_caps:;
 	if ((opts->multi || demands.multi_session) &&
 	    !caps->multi_session)
 		strcat(reasons, "multi session capability lacking, ");
+	if (demands.will_append)
+		strcat(reasons, "appended session capability lacking, ");
 	if (demands.multi_track && !caps->multi_track)
 		strcat(reasons, "multi track capability lacking, ");
-	if (demands.unknown_track_size)
+	if (demands.unknown_track_size == 1)
 		strcat(reasons, "track size unpredictable, ");
 	if (demands.mixed_mode)
 		strcat(reasons, "tracks of different modes mixed, ");
+	if (demands.exotic_track)
+		strcat(reasons, "non-audio, non-data track, ");
+	else if (d->current_is_cd_profile)
+		if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
+			demands.block_types)
+			strcat(reasons, "drive dislikes block type, ");
 	if (d->current_is_cd_profile && opts->fill_up_media)
 		strcat(reasons, "cd sao cannot do media fill up yet, ");
 	if (strcmp(reason_pt, "SAO: ") != 0)
 		goto no_sao;
-	burn_write_opts_set_write_type(opts, BURN_WRITE_SAO, BURN_BLOCK_SAO);
-	return BURN_WRITE_SAO;
+	would_do_sao = 1;
+	if (demands.unknown_track_size == 2 && !(flag & 1)) {
+		strcat(reasons, "would have to use default track sizes, ");
+		goto no_sao;
+	}
+do_sao:;
+	if (!(flag & 1))
+		burn_write_opts_set_write_type(
+					opts, BURN_WRITE_SAO, BURN_BLOCK_SAO);
+	{wt = BURN_WRITE_SAO; goto ex;}
 no_sao:;
-	burn_disc_free_multi_caps(&caps);
 	strcat(reasons, "\n");
 try_tao:;
 	if ((flag & 1) && opts->write_type != BURN_WRITE_TAO)
-		goto no_tao;
+		goto try_raw;
 	reason_pt = reasons + strlen(reasons);
 	strcat(reasons, "TAO: ");
+	burn_disc_free_multi_caps(&caps);
 	ret = burn_disc_get_multi_caps(d, BURN_WRITE_TAO, &caps, 0);
 	if (ret < 0)
 		goto no_caps;
@@ -258,31 +275,57 @@ try_tao:;
 		strcat(reasons, "multi session capability lacking, ");
 	if (demands.multi_track && !caps->multi_track)
 		strcat(reasons, "multi track capability lacking, ");
-
-	if (d->current_is_cd_profile) {
-
-		/* >>> check block types */;
-
-	}
-
+	if (demands.exotic_track)
+		strcat(reasons, "non-audio, non-data track, ");
+	if (d->current_is_cd_profile)
+		if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
+			demands.block_types)
+			strcat(reasons, "drive dislikes block type, ");
 	if (strcmp(reason_pt, "TAO: ") != 0)
 		goto no_tao;
 	/* ( TAO data/audio block size will be handled automatically ) */
-	burn_write_opts_set_write_type(opts,
-				BURN_WRITE_TAO, BURN_BLOCK_MODE1);
-	return BURN_WRITE_TAO;
+	if (!(flag & 1))
+		burn_write_opts_set_write_type(
+				opts, BURN_WRITE_TAO, BURN_BLOCK_MODE1);
+	{wt = BURN_WRITE_TAO; goto ex;}
 no_tao:;
+	if (would_do_sao && !(flag &1))
+		goto do_sao;
 	if (!d->current_is_cd_profile)
 		goto no_write_mode;
+	strcat(reasons, "\n");
+try_raw:;
+	if ((flag & 1) && opts->write_type != BURN_WRITE_RAW)
+		goto no_write_mode;
 
-	/* >>> evaluate RAW modes */;
+	if (!(flag & 1)) /* For now: no automatic raw write modes */
+		goto no_write_mode;
+
+	reason_pt = reasons + strlen(reasons);
+	strcat(reasons, "RAW: ");
+	if (!d->current_is_cd_profile)
+		strcat(reasons, "prohibited by non-CD, ");
+	if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
+	    demands.block_types)
+		strcat(reasons, "drive dislikes block type, ");
+	if (strcmp(reason_pt, "RAW: ") != 0)
+		goto no_write_mode;
+
+	/*  For now: no setting of raw write modes */
+
+	{wt = BURN_WRITE_RAW; goto ex;}
 
 no_write_mode:;
-	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002012b,
+	if (!(flag & (1 | 2)))
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002012b,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive offers no suitable write mode with this job",
 			0, 0);
-	return BURN_WRITE_NONE;
+	wt = BURN_WRITE_NONE;
+ex:;
+	burn_disc_free_multi_caps(&caps);
+	return wt;
 }
 
 

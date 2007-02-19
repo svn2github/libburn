@@ -116,6 +116,8 @@ struct burn_track *burn_track_create(void)
 
 	/* ts A70213 */
 	t->fill_up_media = 0;
+	/* ts A70218 */
+	t->default_size = 0;
 
 	t->entry = NULL;
 	t->source = NULL;
@@ -351,6 +353,13 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 }
 
 
+/* ts A70218 */
+int burn_track_set_size(struct burn_track *t, off_t size)
+{
+	return t->source->set_size(t->source, size);
+}
+
+
 /* ts A70213 */
 int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
 {
@@ -391,6 +400,22 @@ int burn_track_is_open_ended(struct burn_track *t)
 {
 	return !!t->open_ended;
 }
+
+
+/* ts A70218 : API */
+int burn_track_set_default_size(struct burn_track *t, off_t size)
+{
+	t->default_size = size;
+	return 1;
+}
+
+
+/* ts A70218 */
+off_t burn_track_get_default_size(struct burn_track *t)
+{
+	return t->default_size;
+}
+
 
 /* ts A61101 : API function */
 int burn_track_get_counters(struct burn_track *t, 

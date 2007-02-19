@@ -997,6 +997,23 @@ int burn_disc_get_format_descr(struct burn_drive *drive, int index,
 */
 void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 
+
+/* ts A70219 */
+/** Examines a completed setup for burn_disc_write() wether it is permissible
+    with drive and media. This function is called by burn_disc_write() but
+    an application might be interested in this check in advance.
+    @param o The options for the writing operation.
+    @param disc The descrition of the disc to be created
+    @param reasons Eventually returns a list of rejection reason statements
+    @param silent 1= do not issue error messages , 0= report severe problems
+*/
+int burn_precheck_write( struct burn_write_opts *o, struct burn_disc *disc,
+                        char reasons[1024], int silent);
+
+/* <<< enabling switch for internal usage and trust in this functiion */
+#define Libburn_precheck_write_ruleS 1
+
+
 /** Write a disc in the drive. The drive must be grabbed successfully before
     calling this function. Always ensure that the drive reports a status of
     BURN_DISC_BLANK before calling this function.
@@ -1177,6 +1194,20 @@ struct burn_disc *burn_drive_get_disc(struct burn_drive *d);
 enum burn_source_status burn_track_set_source(struct burn_track *t,
 					      struct burn_source *s);
 
+
+/* ts A70218 */
+/** Set a default track size to be used only if the track turns out to be of
+    unpredictable length and if the effective write type demands a fixed size.
+    This can be useful to enable write types CD SAO or DVD DAO together with
+    a track source like stdin. If the track source delivers fewer bytes than
+    announced then the track will be padded up with zeros.
+    @param t The track to change
+    @param size The size to set
+    @return 0=failure 1=sucess
+*/
+int burn_track_set_default_size(struct burn_track *t, off_t size);
+
+
 /** Free a burn_source (decrease its refcount and maybe free it)
 	@param s Source to free
 */
@@ -1195,6 +1226,7 @@ struct burn_source *burn_file_source_new(const char *path,
                 If this value is 0, the size will be determined from datafd.
 */
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
+
 
 /** Tells how long a track will be on disc
     >>> NOTE: Not reliable with tracks of undefined length
@@ -1241,7 +1273,9 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
     @param opts The nearly complete write opts to change
     @param disc The already composed session and track model
     @param reasons This text string collects reasons for decision resp. failure
-    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @param flag Bitfield for control purposes:
+                bit0= do not choose type but check the one that is already set
+                bit1= do not issue error messages via burn_msgs queue
     @return Chosen write type. BURN_WRITE_NONE on failure.
 */
 enum burn_write_types burn_write_opts_auto_write_type(
@@ -1446,7 +1480,7 @@ struct burn_multi_caps {
 	   of multi-session by keeping a disc appendable. But .might_do_sao
 	   will be 0 afterwards, when checking the appendable media.)
 	    1= media may be kept appendable by burn_write_opts_set_multi(o,1)
- 	    0= media will not be apendable appendable
+ 	    0= media will not be appendable
 	*/
 	int multi_session;
 

@@ -100,12 +100,15 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag);
 struct burn_disc_mode_demands {
 	int multi_session;
 	int multi_track;
-	int unknown_track_size;
+	int unknown_track_size; /* 0=known, 1=unknown, 2=unknown+defaulted */
 	int mixed_mode;
 	int audio;
 	int exotic_track;
+	int block_types;
+	int will_append; /* because of media state or multi session disc */
 };
 int burn_disc_get_write_mode_demands(struct burn_disc *disc,
-			 struct burn_disc_mode_demands *result, int flag);
+			struct burn_write_opts *opts,
+			struct burn_disc_mode_demands *result, int flag);
 
 #endif /* __DRIVE */

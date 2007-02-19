@@ -15,7 +15,8 @@ int burn_sector_length(int trackmode);
 int burn_subcode_length(int trackmode);
 
 /* ts A61009 */
-int burn_disc_write_is_ok(struct burn_write_opts *o, struct burn_disc *disc);
+int burn_disc_write_is_ok(struct burn_write_opts *o, struct burn_disc *disc,
+			int flag);
 
 void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc);
 int burn_write_leadin(struct burn_write_opts *o,

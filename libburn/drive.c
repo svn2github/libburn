@@ -29,6 +29,9 @@
 /* ts A70107 : to get BE_CANCELLED */
 #include "error.h"
 
+/* ts A70219 : for burn_disc_get_write_mode_demands() */
+#include "options.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -1707,15 +1710,21 @@ int burn_disc_free_multi_caps(struct burn_multi_caps **caps)
    @param flag bit0= fill_up_media is active
 */
 int burn_disc_get_write_mode_demands(struct burn_disc *disc,
+			struct burn_write_opts *opts,
 			struct burn_disc_mode_demands *result, int flag)
 {
 	struct burn_session *session;
 	struct burn_track *track;
 	int i, j, mode, unknown_track_sizes = 0, last_track_is_unknown = 0;
+	enum burn_disc_status s;
+	
 
 	memset((char *) result, 0, sizeof(struct burn_disc_mode_demands));
 	if (disc == NULL)
 		return 2;
+	s = burn_disc_get_status(opts->drive);
+	if (s == BURN_DISC_APPENDABLE || disc->sessions > 1)
+		result->will_append = 1;
 	if (disc->sessions > 1)
 		result->multi_session = 1;
 	for (i = 0; i < disc->sessions; i++) {
@@ -1728,17 +1737,27 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 		for (j = 0; j < session->tracks; j++) {
 			track = session->track[j];
 			if (burn_track_is_open_ended(track)) {
-				result->unknown_track_size = 1;
+				if (burn_track_get_default_size(track) > 0) {
+					if (result->unknown_track_size == 0)
+						result->unknown_track_size = 2;
+				} else
+					result->unknown_track_size = 1;
 				unknown_track_sizes++;
 				last_track_is_unknown = 1;
 			} else
 				last_track_is_unknown = 0;
 			if (mode != track->mode)
 				result->mixed_mode = 1;
-			if (track->mode != BURN_MODE1)
-				result->exotic_track = 1;
-			if (track->mode == BURN_AUDIO)
+			if (track->mode == BURN_MODE1) {
+				result->block_types |= BURN_BLOCK_MODE1;
+			} else if (track->mode == BURN_AUDIO) {
 				result->audio = 1;
+				result->block_types |= BURN_BLOCK_RAW0;
+				result->exotic_track = 1;
+			} else {
+				result->block_types |= opts->block_type;
+				result->exotic_track = 1;
+			}
 		}
 	}
 	if (flag&1) {/* fill_up_media will define the size of the last track */
