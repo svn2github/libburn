@@ -201,11 +201,11 @@ tar czf "$cdrskin_tarball" "$target"
  cd "$compile_dir" || exit 1
  ./configure
  make
- "$compile_cmd" -do_strip
+ "$compile_cmd" -O2 -do_strip
  cp "$compile_result" "../$bintarget_dynamic"
  if test -n "$compile_static_opts"
  then
-   "$compile_cmd" $compile_static_opts -do_strip
+   "$compile_cmd" $compile_static_opts -O2 -do_strip
    cp "$compile_result" "../$bintarget_static"
  fi
  "$man_to_html_cmd"
