@@ -1005,12 +1005,13 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
     @param o The options for the writing operation.
     @param disc The descrition of the disc to be created
     @param reasons Eventually returns a list of rejection reason statements
-    @param silent 1= do not issue error messages , 0= report severe problems
+    @param silent 1= do not issue error messages , 0= report problems
+    @return 1 ok, -1= no recordable media detected, 0= other failure
 */
-int burn_precheck_write( struct burn_write_opts *o, struct burn_disc *disc,
+int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
                         char reasons[1024], int silent);
 
-/* <<< enabling switch for internal usage and trust in this functiion */
+/* <<< enabling switch for internal usage and trust in this function */
 #define Libburn_precheck_write_ruleS 1
 
 
@@ -1276,6 +1277,7 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
     @param flag Bitfield for control purposes:
                 bit0= do not choose type but check the one that is already set
                 bit1= do not issue error messages via burn_msgs queue
+                      (is automatically set with bit0)
     @return Chosen write type. BURN_WRITE_NONE on failure.
 */
 enum burn_write_types burn_write_opts_auto_write_type(
@@ -1516,6 +1518,7 @@ struct burn_multi_caps {
 	off_t start_range_high;
 
 	/** Potential availability of write modes
+	     3= allowed but not to be chosen automatically
   	     2= available, no size prediction necessary
 	     1= available, needs exact size prediction
 	     0= not available
@@ -1526,7 +1529,9 @@ struct burn_multi_caps {
 	int might_do_sao;
 	int might_do_raw;
 
-	/** Advised write mode.
+	/** Generally advised write mode.
+	    Not necessarily the one chosen by burn_write_opts_auto_write_type()
+	    because the burn_disc structure might impose particular demands.
 	*/
 	enum burn_write_types advised_write_mode;
 

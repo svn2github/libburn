@@ -1256,18 +1256,24 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 {
 	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;
-	char msg[160];
+	char msg[160], *reason_pt;
+	int no_media = 0;
+
+	reason_pt= reasons;
+	reasons[0] = 0;
 
 	/* check write mode against write job */
-	reasons[0] = 0;
-	wt = burn_write_opts_auto_write_type(o, disc, reasons,
-						 1 | ((!!silent) << 1));
-	if (wt == BURN_WRITE_NONE)
-		return 0;
+	wt = burn_write_opts_auto_write_type(o, disc, reasons, 1);
+	if (wt == BURN_WRITE_NONE) {
+		if (strncmp(reasons, "MEDIA: ", 7)==0)
+			no_media = 1;
+		goto ex;
+	}
 
 	sprintf(reasons, "%s: ", d->current_profile_text);
+	reason_pt= reasons + strlen(reasons);
 	if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
-		if (! burn_disc_write_is_ok(o, disc, (!!silent) << 1))
+		if (!burn_disc_write_is_ok(o, disc, (!!silent) << 1))
 			strcat(reasons, "unsuitable track mode found, ");
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
@@ -1293,9 +1299,25 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 		strcat(reasons, "no suitable media profile detected, ");
-	}
-	if (strlen(reasons) > strlen(d->current_profile_text) + 2)
 		return 0;
+	}
+ex:;
+	if (reason_pt[0]) {
+		if (no_media) {
+			if (!silent)
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x0002013a,
+				  LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				  "No suitable media detected", 0, 0);
+			return -1;
+		}
+		if (!silent)
+			libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x00020139,
+				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				  "Write job parameters are unsuitable", 0, 0);
+		return 0;
+	}
 	return 1;
 }
 

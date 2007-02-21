@@ -356,6 +356,7 @@ int burn_track_set_sectors(struct burn_track *t, int sectors)
 /* ts A70218 */
 int burn_track_set_size(struct burn_track *t, off_t size)
 {
+	t->open_ended = (size <= 0);
 	return t->source->set_size(t->source, size);
 }
 

@@ -133,6 +133,7 @@ or
 */
 #define Cdrskin_libburn_has_set_filluP 1
 #define Cdrskin_libburn_has_get_spacE 1
+#define Cdrskin_libburn_write_mode_ruleS 1
 
 #endif /* Cdrskin_libburn_0_3_3 */
 
@@ -177,7 +178,6 @@ or
 #ifdef Cdrskin_new_api_tesT
 
 /* put macros under test caveat here */
-#define Cdrskin_allow_sao_for_appendablE 1
 
 #endif /* Cdrskin_new_api_tesT */
 
@@ -455,13 +455,6 @@ int Sfile_multi_read_argv(char *progname, char **filenames, int filename_count,
    continue;
        {ret= 0; goto ex;}
      }
-
-#ifdef Cdrskin_new_api_tesT
-     if(pass>0)
-       fprintf(stderr,"cdrskin: DEBUG : Reading arguments from file '%s'\n",
-                      filenames[i]);
-#endif
-
      line_no= 0;
      while(Sfile_fgets(buf,sizeof(buf)-1,fp)!=NULL) {
        line_no++;
@@ -922,10 +915,6 @@ int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
    burn_track_get_counters(track->libburn_track,&readcounter,&writecounter);
    *size= readcounter;
    *padding= writecounter-readcounter;
-/*
-   fprintf(stderr,"cdrskin_debug: sizeof(off_t)=%d\n",
-                  sizeof(off_t));
-*/
  } else if(flag&2)
    *padding= track->tao_to_sao_tsize;
 
@@ -1244,6 +1233,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  }
  burn_track_define_data(tr,0,(int) lib_padding,sector_pad_up,
                         track->track_type);
+ burn_track_set_default_size(tr, (off_t) track->tao_to_sao_tsize);
  burn_track_set_byte_swap(tr,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
  fixed_size= track->fixed_size;
@@ -1300,12 +1290,16 @@ flag:
 }
 
 
+#ifndef Cdrskin_libburn_write_mode_ruleS
+
 int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
 {
  if(track->fixed_size<=0.0)
    track->fixed_size= track->tao_to_sao_tsize;
  return(track->fixed_size>0.0);
 }
+
+#endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
 
 int Cdrtrack_get_sectors(struct CdrtracK *track, int flag)
@@ -1523,13 +1517,6 @@ int Cdrpreskin_destroy(struct CdrpreskiN **preskin, int flag)
 int Cdrpreskin_set_severities(struct CdrpreskiN *preskin, char *queue_severity,
                               char *print_severity, int flag)
 {
-/*
- if(preskin->verbosity>=Cdrskin_verbose_debuG)
-   fprintf(stderr,
-           "cdrskin: DEBUG : queue_severity='%s'  print_severity='%s'\n",
-           queue_severity,print_severity);
-*/
- 
  if(queue_severity!=NULL)
    strcpy(preskin->queue_severity,queue_severity);
  if(print_severity!=NULL)
@@ -1845,10 +1832,13 @@ return:
      o->scan_demands_drive= 1;
 
    } else if(strcmp(argv[i],"--devices")==0) {
+#ifndef Cdrskin_extra_leaN
      printf("Note: If this hangs for a while then there is a drive with\n");
      printf("      unexpected problems (e.g. ill DMA).\n");
      printf("      One may exclude such a device file by removing r- and w-\n");
      printf("      permissions for all cdrskin users.\n");
+#endif /* ! Cdrskin_extra_leaN */
+
      o->no_whitelist= 1;
 
    } else if(strncmp(argv[i],"dev_translation=",16)==0) {
@@ -2192,7 +2182,7 @@ see_cdrskin_eng_html:;
 
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      (o->verbosity)++;
-     printf("cdrskin: verbosity level : %d\n",o->verbosity);
+     ClN(printf("cdrskin: verbosity level : %d\n",o->verbosity));
 set_severities:;
      if(o->verbosity>=Cdrskin_verbose_debuG)
        Cdrpreskin_set_severities(o,"NEVER","DEBUG",0);
@@ -2479,8 +2469,10 @@ struct CdrskiN {
  int drive_is_busy; /* Wether drive was told to do something cancel-worthy */
  struct burn_drive *grabbed_drive;
 
+#ifndef Cdrskin_extra_leaN
  /** Abort test facility */
  double abort_after_bytecount; 
+#endif /* ! Cdrskin_extra_leaN */
 
 
  /** Some intermediate option info which is stored until setup finalization */
@@ -2567,7 +2559,9 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->drive_is_grabbed= 0;
  o->drive_is_busy= 0;
  o->grabbed_drive= NULL;
+#ifndef Cdrskin_extra_leaN
  o->abort_after_bytecount= -1.0;
+#endif /* ! Cdrskin_extra_leaN */
  o->tao_to_sao_tsize= 0.0;
  o->stdin_source_used= 0;
 
@@ -3166,7 +3160,7 @@ wrong_devno:;
  }
  if(strlen(synthetic_adr)>0) {
    if(skin->verbosity>=Cdrskin_verbose_cmD)
-     printf("cdrskin: converted address '%s' to '%s'\n",adr,synthetic_adr);
+    ClN(printf("cdrskin: converted address '%s' to '%s'\n",adr,synthetic_adr));
    ret= Cdrskin_driveno_of_location(skin,synthetic_adr,driveno,0);
    if(ret<=0) {
      fprintf(stderr,
@@ -3176,8 +3170,8 @@ wrong_devno:;
    }
  }
  if((*driveno)>=skin->n_drives || (*driveno)<0) {
-   fprintf(stderr,"cdrskin: obtained drive number  %d  from '%s'\n",
-                  *driveno,adr);
+   ClN(fprintf(stderr,"cdrskin: obtained drive number  %d  from '%s'\n",
+               *driveno,adr));
    goto wrong_devno;
  }
  return(1);
@@ -3446,7 +3440,7 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  char btldev[Cdrskin_adrleN];
 
  if(!(flag&1))
-   printf("cdrskin: pseudo-checkdrive on drive %d\n",skin->driveno);
+   ClN(printf("cdrskin: pseudo-checkdrive on drive %d\n",skin->driveno));
  if(skin->driveno>=skin->n_drives || skin->driveno<0) {
    fprintf(stderr,"cdrskin: FATAL : there is no drive #%d\n",skin->driveno);
    {ret= 0; goto ex;}  
@@ -3630,7 +3624,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  int profile_number= 0;
  char profile_name[80];
 
- printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno);
+ ClN(printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno));
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
    return(ret);
@@ -3884,7 +3878,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 #ifdef Cdrskin_libburn_has_pretend_fulL
  if(s==BURN_DISC_UNSUITABLE) {
    if(skin->force_is_set) {
-     fprintf(stderr,"cdrskin: NOTE : -force blank=... : Treating unsuitable media as burn_disc_full\n");
+     ClN(fprintf(stderr,"cdrskin: NOTE : -force blank=... : Treating unsuitable media as burn_disc_full\n"));
      ret= burn_disc_pretend_full(drive);
      s= burn_disc_get_status(drive);
    } else
@@ -4353,6 +4347,84 @@ ex:;
 }
 
 
+#ifdef Cdrskin_libburn_write_mode_ruleS
+
+/** After everything else about burn_write_opts and burn_disc is set up, this
+    call determines the effective write mode and checks wether the drive
+    promises to support it.
+*/
+int Cdrskin_activate_write_mode(struct CdrskiN *skin,
+                                struct burn_write_opts *opts,
+                                struct burn_disc *disc,
+                                int flag)
+{
+ int profile_number= -1, current_is_cd= 1, ret, was_still_default= 0;
+ char profile_name[80], reasons[1024];
+ enum burn_disc_status s= BURN_DISC_UNGRABBED;
+ enum burn_write_types wt;
+
+ profile_name[0]= 0;
+ if(skin->grabbed_drive) {
+   burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
+   s= burn_disc_get_status(skin->grabbed_drive);
+ }
+ if(profile_number!=0x09 && profile_number!=0x0a)
+   current_is_cd= 0;
+ if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
+   was_still_default= 1;
+   wt= burn_write_opts_auto_write_type(opts, disc, reasons, 0);
+   if(wt==BURN_WRITE_NONE) {
+     if(strncmp(reasons,"MEDIA: ",7)==0)
+       ret= -1;
+     else
+       ret= 0;
+     goto report_failure;
+   }
+   skin->write_type= wt;
+   if(wt==BURN_WRITE_RAW)
+     strcpy(skin->preskin->write_mode_name,"RAW/RAW96R");
+   else if(wt==BURN_WRITE_TAO)
+     strcpy(skin->preskin->write_mode_name,"TAO");
+   else if(wt==BURN_WRITE_SAO)
+     strcpy(skin->preskin->write_mode_name,"SAO");
+   else
+     sprintf(skin->preskin->write_mode_name,"LIBBURN/%d", (int) wt);
+ }
+ if(strcmp(skin->preskin->write_mode_name,"RAW/RAW96R")==0) {
+   skin->write_type= BURN_WRITE_RAW;
+   skin->block_type= BURN_BLOCK_RAW96R;
+ } else if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
+   skin->write_type= BURN_WRITE_TAO;
+   skin->block_type= BURN_BLOCK_MODE1;
+ } else if(strncmp(skin->preskin->write_mode_name,"LIBBURN/",8)==0) {
+   skin->block_type= BURN_BLOCK_MODE1;
+ } else {
+   strcpy(skin->preskin->write_mode_name,"SAO");
+   skin->write_type= BURN_WRITE_SAO;
+   skin->block_type= BURN_BLOCK_SAO;
+ }
+ if(!was_still_default)
+   burn_write_opts_set_write_type(opts,skin->write_type,skin->block_type);
+ ret = burn_precheck_write(opts,disc,reasons,0);
+ if(ret<=0) {
+report_failure:;
+   if(ret!=-1)
+     fprintf(stderr,"cdrskin: Reason: %s\n",reasons);
+   fprintf(stderr,"cdrskin: Media : %s%s\n",
+             s==BURN_DISC_BLANK?"blank ":
+             s==BURN_DISC_APPENDABLE?"appendable ":
+             s==BURN_DISC_FULL?"** closed ** ":"",
+             profile_name[0]?profile_name:
+             s==BURN_DISC_EMPTY?"no media":"unknown media");
+   return(0);
+ }
+ if(skin->verbosity>=Cdrskin_verbose_cmD)
+   printf("cdrskin: Write type : %s\n", skin->preskin->write_mode_name);
+ return(1);
+}
+
+#else /* Cdrskin_libburn_write_mode_ruleS */
+
 /** Determines the effective write mode and checks wether the drive promises
     to support it.
     @param s state of target media, obtained from burn_disc_get_status(), 
@@ -4574,6 +4646,8 @@ it_is_done:;
  return(1);
 }
 
+#endif /* ! Cdrskin_libburn_write_mode_ruleS */
+
 
 /** Burn data via libburn according to the parameters set in skin.
     @return <=0 error, 1 success
@@ -4597,8 +4671,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  printf("cdrskin: beginning to %s disc\n",
         skin->tell_media_space?"estimate":"burn");
  if(skin->fill_up_media && skin->multi) {
-   fprintf(stderr,
-           "cdrskin: NOTE : Option --fill_up_media disabled option -multi\n");
+   ClN(fprintf(stderr,
+           "cdrskin: NOTE : Option --fill_up_media disabled option -multi\n"));
    skin->multi= 0;
  }
  ret= Cdrskin_grab_drive(skin,0);
@@ -4609,6 +4683,9 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,0);
 
+
+#ifndef Cdrskin_libburn_write_mode_ruleS
+
 #ifdef Cdrskin_allow_libburn_taO
  if (s!=BURN_DISC_APPENDABLE && s!=BURN_DISC_BLANK) {
 #else
@@ -4618,12 +4695,16 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
    goto burn_failed;
  }
+
  ret= Cdrskin_activate_write_mode(skin,s,0);
  if(ret<=0) {
    fprintf(stderr,
            "cdrskin: FATAL : Cannot activate the desired write mode\n");
    goto burn_failed;
- } 
+ }
+
+#endif /* ! Cdrskin_libburn_write_mode_ruleS */
+
 
  disc= burn_disc_create();
  session= burn_session_create();
@@ -4651,6 +4732,7 @@ burn_failed:;
      skin->fixed_size+= size+padding;
  }
 
+#ifndef Cdrskin_libburn_write_mode_ruleS
  if (s==BURN_DISC_APPENDABLE) {
 #ifdef Cdrskin_allow_sao_for_appendablE
    ;
@@ -4662,7 +4744,36 @@ burn_failed:;
    }
 #endif /* ! Cdrskin_allow_sao_for_appendablE */
  }
+#endif /* ! Cdrskin_libburn_write_mode_ruleS */
  
+ o= burn_write_opts_new(drive);
+ burn_write_opts_set_perform_opc(o, 0);
+
+#ifdef Cdrskin_libburn_has_multI
+ burn_write_opts_set_multi(o,skin->multi);
+#endif
+#ifdef Cdrskin_libburn_has_set_start_bytE
+ burn_write_opts_set_start_byte(o, skin->write_start_address);
+#endif
+#ifdef Cdrskin_libburn_has_set_filluP
+ burn_write_opts_set_fillup(o, skin->fill_up_media);
+#endif
+
+ if(skin->dummy_mode) {
+   fprintf(stderr,
+           "cdrskin: NOTE : -dummy mode will prevent actual writing\n");
+   burn_write_opts_set_simulate(o, 1);
+ }
+ burn_write_opts_set_underrun_proof(o,skin->burnfree);
+
+#ifdef Cdrskin_libburn_write_mode_ruleS
+ ret= Cdrskin_activate_write_mode(skin,o,disc,0);
+ if(ret<=0)
+   goto burn_failed;
+#else /* Cdrskin_libburn_write_mode_ruleS */
+ burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
+#endif
+
 #ifndef Cdrskin_extra_leaN
 
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
@@ -4711,42 +4822,12 @@ burn_failed:;
    }
  }
 
- if(!skin->tell_media_space) {
-   Cdrskin_wait_before_action(skin,0);
-   ret= Cdrskin_fill_fifo(skin,0);
-   if(ret<=0) {
-     fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
-     goto ex;
-   }
- }
-
 #endif /* ! Cdrskin_extra_leaN */
-
-
- o= burn_write_opts_new(drive);
- burn_write_opts_set_perform_opc(o, 0);
-
-#ifdef Cdrskin_libburn_has_multI
- burn_write_opts_set_multi(o,skin->multi);
-#endif
-#ifdef Cdrskin_libburn_has_set_start_bytE
- burn_write_opts_set_start_byte(o, skin->write_start_address);
-#endif
-#ifdef Cdrskin_libburn_has_set_filluP
- burn_write_opts_set_fillup(o, skin->fill_up_media);
-#endif
-
- burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
- if(skin->dummy_mode) {
-   fprintf(stderr,
-           "cdrskin: NOTE : -dummy mode will prevent actual writing\n");
-   burn_write_opts_set_simulate(o, 1);
- }
- burn_write_opts_set_underrun_proof(o,skin->burnfree);
 
 
  if(skin->tell_media_space || skin->track_counter<=0) {
    /* write capacity estimation and return without actual burning */
+
 #ifdef Cdrskin_libburn_has_get_spacE
    off_t free_space;
    char msg[80];
@@ -4758,6 +4839,7 @@ burn_failed:;
    } else
      printf("%s",msg);
 #endif /* Cdrskin_libburn_has_get_spacE */
+
    if(skin->track_counter>0)
      fprintf(stderr,
        "cdrskin: NOTE : %s burn run suppressed by option --tell_media_space\n",
@@ -4765,6 +4847,14 @@ burn_failed:;
    {ret= 1; goto ex;}
  }
 
+#ifndef Cdrskin_extra_leaN
+ Cdrskin_wait_before_action(skin,0);
+ ret= Cdrskin_fill_fifo(skin,0);
+ if(ret<=0) {
+   fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
+   goto ex;
+ }
+#endif /* ! Cdrskin_extra_leaN */
 
  Cdrskin_adjust_speed(skin,0);
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
@@ -4798,6 +4888,11 @@ burn_failed:;
      Cdrskin_burn_pacifier(skin,drive_status,&p,start_time,&last_time,
                            &total_count,&last_count,&min_buffer_fill,0);
 
+   if(max_track<skin->supposed_track_idx)
+      max_track= skin->supposed_track_idx;
+
+
+#ifndef Cdrskin_extra_leaN
 
    /* <<< debugging : artificial abort without a previous signal */;
    if(skin->abort_after_bytecount>=0.0 && 
@@ -4812,11 +4907,6 @@ burn_failed:;
       exit(1);
    }
 
-
-   if(max_track<skin->supposed_track_idx)
-      max_track= skin->supposed_track_idx;
-
-#ifndef Cdrskin_extra_leaN
    if(skin->fifo==NULL || fifo_disabled) {
      usleep(20000);
    } else {
@@ -5033,8 +5123,8 @@ obtain_nwa:;
            "cdrskin: SORRY : Cannot obtain next writeable address\n");
      {ret= 0; goto ex;}
    }
-   fprintf(stderr,
-           "cdrskin: NOTE : Guessing next writeable address from leadout\n");
+   ClN(fprintf(stderr,
+       "cdrskin: NOTE : Guessing next writeable address from leadout\n"));
    burn_session_get_leadout_entry(sessions[num_sessions-1],&toc_entry);
 #ifdef Cdrskin_libburn_has_toc_entry_extensionS
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
@@ -5113,9 +5203,9 @@ int Cdrskin_eject(struct CdrskiN *skin, int flag)
    if(ret>0 || i>=max_try-1)
  break;
    if(skin->verbosity>=Cdrskin_verbose_progresS)
-     fprintf(stderr,
+     ClN(fprintf(stderr,
           "cdrskin: NOTE : Attempt #%d of %d failed to grab drive for eject\n",
-          i+1,max_try);
+          i+1,max_try));
    usleep(1000000);
  }
  if(ret>0) {
@@ -5273,6 +5363,7 @@ no_volunteer:;
  continue;
    }
 
+#ifndef Cdrskin_extra_leaN
    if(strncmp(argv[i],"abort_after_bytecount=",22)==0) {
      skin->abort_after_bytecount= Scanf_io_size(argv[i]+22,0);
      fprintf(stderr,
@@ -5280,11 +5371,15 @@ no_volunteer:;
              skin->abort_after_bytecount);
 
    } else if(strcmp(argv[i],"--abort_handler")==0) {
+#else /* ! Cdrskin_extra_leaN */
+   if(strcmp(argv[i],"--abort_handler")==0) {
+#endif
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"-abort_max_wait=",16)==0) {
      value_pt= argv[i]+16;
      goto set_abort_max_wait;
+
    } else if(strncmp(argv[i],"abort_max_wait=",15)==0) {
      value_pt= argv[i]+15;
 set_abort_max_wait:;
@@ -5301,20 +5396,21 @@ set_abort_max_wait:;
             skin->abort_max_wait);
      }
 
+
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strcmp(argv[i],"--any_track")==0) {
      skin->single_track= -1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf(
-    "cdrskin: --any_track : will accept any unknown option as track source\n");
+       ClN(printf(
+   "cdrskin: --any_track : will accept any unknown option as track source\n"));
 
    } else if(strcmp(argv[i],"-atip")==0) {
      if(skin->do_atip<1)
        skin->do_atip= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: will put out some -atip style lines\n");
+       ClN(printf("cdrskin: will put out some -atip style lines\n"));
 
    } else if(strcmp(argv[i],"-audio")==0) {
      skin->track_type= BURN_AUDIO;
@@ -5368,7 +5464,7 @@ set_blank:;
        return(0);
      }
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: blank mode : blank=%s\n",blank_mode);
+       ClN(printf("cdrskin: blank mode : blank=%s\n",blank_mode));
 
    } else if(strcmp(argv[i],"--bragg_with_audio")==0) {
      /* OBSOLETE 0.2.3 : was handled in Cdrpreskin_setup() */;
@@ -5414,7 +5510,7 @@ set_blank:;
      if(ret<=0)
        return(0);
 
-#endif /* Cdrskin_extra_leaN */
+#endif /* ! Cdrskin_extra_leaN */
 
 
    } else if(strncmp(argv[i],"-dev=",5)==0) {
@@ -5440,12 +5536,12 @@ set_driveropts:;
      if(strcmp(value_pt,"burnfree")==0 || strcmp(value_pt,"burnproof")==0) {
        skin->burnfree= 1;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
-         printf("cdrskin: burnfree : on\n");
+         ClN(printf("cdrskin: burnfree : on\n"));
      } else if(strcmp(argv[i]+11,"noburnfree")==0 ||
                strcmp(argv[i]+11,"noburnproof")==0 ) {
        skin->burnfree= 0;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
-         printf("cdrskin: burnfree : off\n");
+         ClN(printf("cdrskin: burnfree : off\n"));
      } else if(strcmp(argv[i]+11,"help")==0) {
        /* handled in Cdrpreskin_setup() */;
      } else 
@@ -5457,7 +5553,7 @@ set_driveropts:;
    } else if(strcmp(argv[i],"-eject")==0) {
      skin->do_eject= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: eject after work : on\n");
+       ClN(printf("cdrskin: eject after work : on\n"));
 
    } else if(strncmp(argv[i],"eject_device=",13)==0) {
      if(strlen(argv[i]+13)>=sizeof(skin->eject_device)) {
@@ -5469,10 +5565,10 @@ set_driveropts:;
      strcpy(skin->eject_device,argv[i]+13);
      if(skin->verbosity>=Cdrskin_verbose_cmD)
 #ifdef Cdrskin_burn_drive_eject_brokeN
-       printf("cdrskin: eject_device : %s\n",skin->eject_device);
+       ClN(printf("cdrskin: eject_device : %s\n",skin->eject_device));
 #else
-       printf("cdrskin: ignoring obsolete  eject_device=%s\n",
-              skin->eject_device);
+       ClN(printf("cdrskin: ignoring obsolete  eject_device=%s\n",
+              skin->eject_device));
 #endif
 
 
@@ -5482,7 +5578,7 @@ set_driveropts:;
      skin->fifo_enabled= 0;
      skin->fifo_size= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: option fs=... disabled\n");
+       ClN(printf("cdrskin: option fs=... disabled\n"));
 
    } else if(strcmp(argv[i],"--fifo_start_empty")==0) { /* obsoleted */
      skin->fifo_start_at= 0;
@@ -5498,15 +5594,20 @@ set_driveropts:;
    } else if(strcmp(argv[i],"--fifo_per_track")==0) {
      skin->fifo_per_track= 1;
 
+#endif /* ! Cdrskin_extra_leaN */
+
 #ifdef Cdrskin_libburn_has_set_filluP
    } else if(strcmp(argv[i],"--fill_up_media")==0) {
      skin->fill_up_media= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: will fill up last track to full free media space\n");
+       ClN(printf(
+               "cdrskin: will fill up last track to full free media space\n"));
 #endif
 
    } else if(strcmp(argv[i],"-force")==0) {
      skin->force_is_set= 1;
+
+#ifndef Cdrskin_extra_leaN
 
    } else if(strncmp(argv[i],"-fs=",4)==0) {
      value_pt= argv[i]+4;
@@ -5553,7 +5654,7 @@ gracetime_equals:;
              "cdrskin: NOTE : lean version ignores option: '%s'\n",
              argv[i]);
 
-#endif /*  Cdrskin_extra_leaN */
+#endif /* Cdrskin_extra_leaN */
 
      
    } else if(strcmp(argv[i],"--help")==0) {
@@ -5627,7 +5728,7 @@ msifile_equals:;
    } else if(strcmp(argv[i],"-nopad")==0) {
      skin->padding= 0.0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: padding : off\n");
+       ClN(printf("cdrskin: padding : off\n"));
 
    } else if(strcmp(argv[i],"--old_pseudo_scsi_adr")==0) {
      /* is handled in Cdrpreskin_setup() */;
@@ -5636,7 +5737,7 @@ msifile_equals:;
      skin->padding= 15*2048;
      skin->set_by_padsize= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: padding : %.f\n",skin->padding);
+       ClN(printf("cdrskin: padding : %.f\n",skin->padding));
 
    } else if(strncmp(argv[i],"-padsize=",9)==0) {
      value_pt= argv[i]+9;
@@ -5647,7 +5748,7 @@ set_padsize:;
      skin->padding= Scanf_io_size(argv[i]+8,0);
      skin->set_by_padsize= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: padding : %.f\n",skin->padding);
+       ClN(printf("cdrskin: padding : %.f\n",skin->padding));
 
    } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
      skin->prodvd_cli_compatible= 1;
@@ -5664,8 +5765,8 @@ set_padsize:;
    } else if(strcmp(argv[i],"--single_track")==0) {
      skin->single_track= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf(
- "cdrskin: --single_track : will only accept last argument as track source\n");
+       ClN(printf(
+"cdrskin: --single_track : will only accept last argument as track source\n"));
 
    } else if(strncmp(argv[i],"-speed=",7)==0) {
      value_pt= argv[i]+7;
@@ -5682,7 +5783,7 @@ set_speed:;
      /* >>> cdrecord speed=0 -> minimum speed , libburn -> maximum speed */;
 
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: speed : %f\n",skin->x_speed);
+       ClN(printf("cdrskin: speed : %f\n",skin->x_speed));
 
    } else if(strcmp(argv[i],"-swab")==0) {
      skin->swap_audio_bytes= 0;
@@ -5697,7 +5798,7 @@ set_speed:;
        fprintf(stderr,"cdrskin: HINT : Try option  tao_to_sao_tsize=650m\n");
        return(0);
      }
-     printf("cdrskin: NOTE : substituting mode -tao by mode -sao\n");
+     ClN(printf("cdrskin: NOTE : substituting mode -tao by mode -sao\n"));
      strcpy(skin->preskin->write_mode_name,"SAO");
 
 #endif /* ! Cdrskin_allow_libburn_taO */
@@ -5706,6 +5807,8 @@ set_speed:;
      skin->tao_to_sao_tsize= Scanf_io_size(argv[i]+17,0);
      if(skin->tao_to_sao_tsize>Cdrskin_tracksize_maX)
        goto track_too_large;
+
+#ifndef Cdrskin_extra_leaN
      if(skin->verbosity>=Cdrskin_verbose_cmD)
 #ifdef Cdrskin_allow_libburn_taO
        printf("cdrskin: size default for non-tao write modes: %.f\n",
@@ -5713,6 +5816,7 @@ set_speed:;
        printf("cdrskin: replace -tao by -sao with fixed size : %.f\n",
 #endif
               skin->tao_to_sao_tsize);
+#endif /* ! Cdrskin_extra_leaN */
 
 #ifdef Cdrskin_libburn_has_get_spacE
    } else if(strcmp(argv[i],"--tell_media_space")==0) {
@@ -5722,7 +5826,7 @@ set_speed:;
    } else if(strcmp(argv[i],"-toc")==0) {
      skin->do_atip= 2;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: will put out some -atip style lines plus -toc\n");
+       ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
 
    } else if(strncmp(argv[i],"-tsize=",7)==0) {
      value_pt= argv[i]+7;
@@ -5737,7 +5841,7 @@ track_too_large:;
        return(0);
      }
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: fixed track size : %.f\n",skin->fixed_size);
+       ClN(printf("cdrskin: fixed track size : %.f\n",skin->fixed_size));
 
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
@@ -5748,7 +5852,8 @@ track_too_large:;
    } else if(strncmp(argv[i],"write_start_address=",20)==0) {
      skin->write_start_address= Scanf_io_size(argv[i]+20,0);
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-       printf("cdrskin: fixed track size : %.f\n",skin->fixed_size);
+       ClN(printf("cdrskin: write start address : %.f\n",
+                  skin->write_start_address));
 
    } else if( i==argc-1 ||
              (skin->single_track==0 && strchr(argv[i],'=')==NULL 
@@ -5831,6 +5936,7 @@ ignore_unknown:;
  if(flag&1) /* no finalizing yet */
    return(1);
 
+#ifndef Cdrskin_extra_leaN
  if(skin->verbosity>=Cdrskin_verbose_cmD) {
    if(skin->preskin->abort_handler==1)
      printf("cdrskin: installed abort handler.\n");
@@ -5843,6 +5949,7 @@ ignore_unknown:;
    else if(skin->preskin->abort_handler==-1)
      printf("cdrskin: will install abort handler in eventual burn loop.\n");
  }
+#endif /* ! Cdrskin_extra_leaN */
 
  if(strlen(skin->preskin->raw_device_adr)>0 ||
     strlen(skin->preskin->device_adr)>0) {
@@ -5921,8 +6028,9 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
 #endif
 
  if(strlen((*preskin)->device_adr)>0) {       /* disable scan for all others */
-   printf("cdrskin: NOTE : greying out all drives besides given dev='%s'\n",
-          (*preskin)->device_adr);
+   ClN(printf(
+       "cdrskin: NOTE : greying out all drives besides given dev='%s'\n",
+       (*preskin)->device_adr));
    burn_drive_add_whitelist((*preskin)->device_adr);
  }
 
@@ -6107,7 +6215,7 @@ int main(int argc, char **argv)
  if(ret<=0)
    {exit_value= 3; goto ex;}
  if(skin->verbosity>=Cdrskin_verbose_cmD)
-   printf("cdrskin: called as :  %s\n",argv[0]);
+   ClN(printf("cdrskin: called as :  %s\n",argv[0]));
 
  if(skin->verbosity>=Cdrskin_verbose_debuG) {
 #ifdef Cdrskin_oldfashioned_api_usE

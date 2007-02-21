@@ -1677,6 +1677,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 						d->best_format_size - 2048;
 			}
 		}
+		o->might_do_sao = 3;
 		o->might_do_tao = 2;
 		o->advised_write_mode = BURN_WRITE_TAO;
 	} else /* unknown media */

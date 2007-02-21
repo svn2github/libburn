@@ -369,8 +369,8 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	/* ts A70219 : intended to replace all further tests here and many
 	               tests in burn_*_write_sync()
 	*/
-	strcpy(reasons, "Write job parameters seem unsuitable:\n");
-	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 0)
+	strcpy(reasons, "Write job parameters are unsuitable:\n");
+	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
 	     == BURN_WRITE_NONE) {
 
 #ifndef Libburn_precheck_write_ruleS
