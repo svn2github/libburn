@@ -1252,7 +1252,7 @@ int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 
 /* ts A70219 : API */
 int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
-				 char reasons[1024], int silent)
+				 char reasons[BURN_REASONS_LEN], int silent)
 {
 	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;

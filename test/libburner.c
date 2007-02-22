@@ -373,7 +373,7 @@ int libburner_payload(struct burn_drive *drive,
 	time_t start_time;
 	int last_sector = 0, padding = 0, trackno, unpredicted_size = 0, fd;
 	off_t fixed_size;
-	char *adr, reasons[1024];
+	char *adr, reasons[BURN_REASONS_LEN];
 	struct stat stbuf;
 
 	if (all_tracks_type != BURN_AUDIO) {

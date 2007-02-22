@@ -4359,7 +4359,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin,
                                 int flag)
 {
  int profile_number= -1, current_is_cd= 1, ret, was_still_default= 0;
- char profile_name[80], reasons[1024];
+ char profile_name[80], reasons[BURN_REASONS_LEN];
  enum burn_disc_status s= BURN_DISC_UNGRABBED;
  enum burn_write_types wt;
 

@@ -998,6 +998,14 @@ int burn_disc_get_format_descr(struct burn_drive *drive, int index,
 void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 
 
+
+/* ts A70222 */
+/** The length of a rejection reasons string for burn_precheck_write() and
+    burn_write_opts_auto_write_type() .
+*/
+#define BURN_REASONS_LEN 4096
+
+
 /* ts A70219 */
 /** Examines a completed setup for burn_disc_write() wether it is permissible
     with drive and media. This function is called by burn_disc_write() but
@@ -1009,7 +1017,7 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
     @return 1 ok, -1= no recordable media detected, 0= other failure
 */
 int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
-                        char reasons[1024], int silent);
+                        char reasons[BURN_REASONS_LEN], int silent);
 
 /* <<< enabling switch for internal usage and trust in this function */
 #define Libburn_precheck_write_ruleS 1
@@ -1266,6 +1274,7 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
 				   enum burn_write_types write_type,
 				   int block_type);
 
+
 /* ts A70207 */
 /** As an alternative to burn_write_opts_set_write_type() this function tries
     to find a suitable write type and block type for a given write job
@@ -1282,7 +1291,7 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
 */
 enum burn_write_types burn_write_opts_auto_write_type(
           struct burn_write_opts *opts, struct burn_disc *disc,
-          char reasons[1024], int flag);
+          char reasons[BURN_REASONS_LEN], int flag);
 
 
 /** Supplies toc entries for writing - not normally required for cd mastering

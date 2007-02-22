@@ -179,7 +179,7 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value)
 */
 enum burn_write_types burn_write_opts_auto_write_type(
 		struct burn_write_opts *opts, struct burn_disc *disc,
-		char reasons[1024], int flag)
+		char reasons[BURN_REASONS_LEN], int flag)
 {
 	struct burn_multi_caps *caps = NULL;
 	struct burn_drive *d = opts->drive;

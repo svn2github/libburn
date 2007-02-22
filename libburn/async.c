@@ -333,7 +333,7 @@ static void *write_disc_worker_func(struct w_list *w)
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
 	struct write_opts o;
-	char reasons[1024+80];
+	char reasons[BURN_REASONS_LEN+80];
 #ifndef Libburn_precheck_write_ruleS
 	int i, j, mode, mixed_mode = 0;
 #endif
