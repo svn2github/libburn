@@ -241,7 +241,8 @@ no_caps:;
 		strcat(reasons, "appended session capability lacking, ");
 	if (demands.multi_track && !caps->multi_track)
 		strcat(reasons, "multi track capability lacking, ");
-	if (demands.unknown_track_size == 1)
+	if (demands.unknown_track_size == 1 &&
+	    (caps->might_do_sao == 1 || caps->might_do_sao == 3))
 		strcat(reasons, "track size unpredictable, ");
 	if (demands.mixed_mode)
 		strcat(reasons, "tracks of different modes mixed, ");
@@ -256,10 +257,11 @@ no_caps:;
 	if (strcmp(reason_pt, "SAO: ") != 0)
 		goto no_sao;
 	would_do_sao = 1;
-	if (demands.unknown_track_size == 2 && !(flag & 1)) {
+	if (demands.unknown_track_size == 2 && (!(flag & 1)) &&
+	    (caps->might_do_sao == 1 || caps->might_do_sao == 3)) {
 		strcat(reasons, "would have to use default track sizes, ");
 		goto no_sao;
-	} else if (caps->might_do_sao == 3 && !(flag & 1))
+	} else if (caps->might_do_sao >= 3 && !(flag & 1))
 		goto try_tao;
 do_sao:;
 	if (!(flag & 1))

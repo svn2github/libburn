@@ -1518,7 +1518,8 @@ struct burn_multi_caps {
 	off_t start_range_high;
 
 	/** Potential availability of write modes
-	     3= allowed but not to be chosen automatically
+	     4= needs no size prediction, not to be chosen automatically
+	     3= needs size prediction, not to be chosen automatically
   	     2= available, no size prediction necessary
 	     1= available, needs exact size prediction
 	     0= not available
