@@ -1689,7 +1689,9 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 	off_t size, num_blocks;
 	struct command c;
 	unsigned char *dpt;
+/* <<<
 	char msg[160];
+*/
 
 	mmc_function_spy("mmc_read_format_capacities");
 
@@ -1725,12 +1727,14 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 		 		  + (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
 	d->format_curr_blsas = (dpt[5] << 16) + (dpt[6] << 8) + dpt[7];
 
+/* <<<
 	sprintf(msg,
 		"Current/Maximum Capacity Descriptor : type = %d : %.f",
 		d->format_descr_type, (double) d->format_curr_max_size);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   msg, 0, 0);
+*/
 
 	d->format_curr_max_size *= (off_t) 2048;
 
@@ -1753,12 +1757,14 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 			d->num_format_descr = i + 1;
 		}
 		
+/* <<<
 		sprintf(msg, "Capacity Descriptor %2.2Xh  %.fs = %.1f MB",type,
 			((double) size)/2048.0, ((double) size)/1024.0/1024.0);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			 0x00000002,
 			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			 msg, 0, 0);
+*/
 
 		/* Criterion is proximity to quick intermediate state */
 		if (type == 0x00) { /* full format (with lead out) */
@@ -1794,12 +1800,14 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 		}
 	}
 
+/* <<<
 	sprintf(msg,
 		"best_format_type = %2.2Xh , best_format_size = %.f",
 		d->best_format_type, (double) d->best_format_size);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   msg, 0, 0);
+*/
 
 	return 1;
 }
