@@ -847,6 +847,9 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
     inquiring the space with such a set of options, the drive has to be
     grabbed and BURN_DRIVE_IDLE. If not, then one will only get a canned value
     from the most recent automatic inquiry (e.g. during last drive grabbing).
+    An eventual start address from burn_write_opts_set_start_byte() will be
+    subtracted from the obtained capacity estimation. Negative results get
+    defaulted to 0.
     @param d The drive to query.
     @param o If not NULL: write parameters to be set on drive before query
     @return number of most probably available free bytes

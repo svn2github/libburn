@@ -1445,12 +1445,18 @@ off_t burn_disc_available_space(struct burn_drive *d,
 	int lba, nwa;
 
 	if (burn_drive_is_released(d))
-		return d->media_capacity_remaining;
+		goto ex;
 	if (d->busy != BURN_DRIVE_IDLE)
-		return d->media_capacity_remaining;
+		goto ex;
 	if (o != NULL)
 		d->send_write_parameters(d, o);
 	d->get_nwa(d, -1, &lba, &nwa);
+ex:;
+	if (o->start_byte > 0) {
+		if (o->start_byte > d->media_capacity_remaining)
+			return 0;
+		return d->media_capacity_remaining - o->start_byte;
+	}
 	return d->media_capacity_remaining;
 }
 
