@@ -50,6 +50,10 @@ static char abort_message_prefix[81] = {"libburn : "};
 static pid_t abort_control_pid= 0;
 
 
+/* ts A70223 : wether implemented untested profiles are supported */
+int burn_support_untested_profiles = 0;
+
+
 /* ts A60925 : ticket 74 */
 /** Create the messenger object for libburn. */
 int burn_msgs_initialize(void)
@@ -73,6 +77,7 @@ int burn_initialize(void)
 
 	if (burn_running)
 		return 1;
+	burn_support_untested_profiles = 0;
 	ret = burn_msgs_initialize();
 	if (ret <= 0)
 		return 0;
@@ -272,5 +277,12 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 	abort_message_prefix[sizeof(abort_message_prefix)-1] = 0;
 	abort_control_pid= getpid();
 	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler, mode|4);
+}
+
+
+/* ts A70223 : API */
+void burn_allow_untested_profiles(int yes)
+{
+	burn_support_untested_profiles = !!yes;
 }
 
