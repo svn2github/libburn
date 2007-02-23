@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "February 15, 2007"
+.TH CDRSKIN 1 "February 23, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -629,6 +629,14 @@ Establish default signal handling not to leave a drive in busy state
 but rather to shut it down and to wait until it has ended the final operations.
 This option is only needed for revoking eventual --ignore_signals or
 --no_abort_handler.
+.TP
+.BI \--allow_untested_media
+Enable the use of media profiles which have been implemented but not yet
+tested. Currently this applies to : profile 0015h , DVD-R/DL Sequential
+(will probably ignore -multi).
+.br
+If you really test such media, then please report the outcome on
+libburn-hackers@pykix.org 
 .TP
 .BI dev_translation= <sep><from><sep><to>
 Set drive address alias. This was necessary before cdrskin-0.2.4 to manually

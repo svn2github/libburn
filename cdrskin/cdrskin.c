@@ -134,6 +134,7 @@ or
 #define Cdrskin_libburn_has_set_filluP 1
 #define Cdrskin_libburn_has_get_spacE 1
 #define Cdrskin_libburn_write_mode_ruleS 1
+#define Cdrskin_libburn_has_allow_untested_profileS 1
 
 #endif /* Cdrskin_libburn_0_3_3 */
 
@@ -1391,6 +1392,9 @@ struct CdrpreskiN {
  /** Wether to allow user provided addresses like #4 */
  int allow_fd_source;
 
+ /** Wether to support media types which are implemented but yet untested */
+ int allow_untested_media;
+
  /** Wether an option is given which needs a full bus scan */
  int no_whitelist;
 
@@ -1462,6 +1466,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->abort_handler= 3;
  o->allow_setuid= 0;
  o->allow_fd_source= 0;
+ o->allow_untested_media= 0;
  o->no_whitelist= 0;
  o->no_convert_fs_adr= 0;
 #ifdef Cdrskin_libburn_has_convert_scsi_adR
@@ -1794,6 +1799,9 @@ return:
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      o->allow_setuid= 1;
 
+   } else if(strcmp(argv[i],"--allow_untested_media")==0) {
+     o->allow_untested_media= 1;
+
    } else if(strcmp(argv[i],"blank=help")==0 ||
              strcmp(argv[i],"-blank=help")==0) {
 
@@ -1973,6 +1981,8 @@ set_dev:;
      printf(" --abort_handler    do not leave the drive in busy state\n");
      printf(
         " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
+     printf(
+        " --allow_untested_media   enable implemented untested media types\n");
      printf(
          " --any_track        allow source_addresses to match '^-.' or '='\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
@@ -2273,6 +2283,10 @@ dev_too_long:;
 #endif /* Cdrskin_libburn_has_convert_fs_adR */
 
  }
+
+#ifdef Cdrskin_libburn_has_allow_untested_profileS
+ burn_allow_untested_profiles(!!o->allow_untested_media);
+#endif
 
  /* A60927 : note to myself : no "ret= 1;" here. It breaks --help , -version */
 
@@ -3660,7 +3674,10 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    fflush(stdout);
    fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
    {ret= 0; goto ex;}
- } 
+ }
+#ifdef Cdrskin_libburn_has_allow_untested_profileS
+ burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
+#endif
  ret= Cdrskin_grab_drive(skin,1); /* uses burn_drive_scan_and_grab() */
  if(ret<=0)
    return(ret);
@@ -3675,6 +3692,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
    {ret= 0; goto ex;}
  } 
+#ifdef Cdrskin_libburn_has_allow_untested_profileS
+ burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
+#endif
  if(strlen(skin->preskin->device_adr)>0)
    burn_drive_add_whitelist(skin->preskin->device_adr);
  while(!burn_drive_scan(&(skin->drives),&(skin->n_drives)))
@@ -4503,9 +4523,10 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
      strcpy(skin->preskin->write_mode_name,"SAO");
    } else if((profile_number==0x1a || profile_number==0x13 ||
               profile_number==0x12 ||
-              profile_number==0x11 || profile_number==0x14)
+              profile_number==0x11 || profile_number==0x14 ||
+              profile_number==0x15)
              && might_do_tao) {
-     /* DVD+RW, DVD-RW Restr. Overwrite, DVD-RAM, DVD-R, DVD-RW Sequential */
+     /* DVD+RW, DVD-RW Restr. Overwrite, DVD-RAM, DVD-R[W][/DL] Sequential */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
      strcpy(skin->preskin->write_mode_name,"SAO");
@@ -4667,7 +4688,12 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
  double sectors;
+ char *doing;
 
+ if(skin->tell_media_space)
+   doing= "estimating";
+ else
+   doing= "burning";
  printf("cdrskin: beginning to %s disc\n",
         skin->tell_media_space?"estimate":"burn");
  if(skin->fill_up_media && skin->multi) {
@@ -4713,8 +4739,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin: FATAL : cannot add session to disc object.\n");
 burn_failed:;
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
-     printf("cdrskin: burning failed\n");
-   fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
+     printf("cdrskin: %s failed\n", doing);
+   fprintf(stderr,"cdrskin: FATAL : %s failed.\n", doing);
    return(0);
  }
  skin->fixed_size= 0.0;
@@ -5040,8 +5066,8 @@ fifo_full_at_end:;
 ex:;
  if(ret<=0) {
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
-     printf("cdrskin: burning failed\n");
-   fprintf(stderr,"cdrskin: FATAL : burning failed.\n");
+     printf("cdrskin: %s failed\n",doing);
+   fprintf(stderr,"cdrskin: FATAL : %s failed.\n",doing);
  }
  skin->drive_is_busy= 0;
  if(skin->verbosity>=Cdrskin_verbose_debuG)
@@ -5398,6 +5424,9 @@ set_abort_max_wait:;
 
 
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
+     /* is handled in Cdrpreskin_setup() */;
+
+   } else if(strcmp(argv[i],"--allow_untested_media")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strcmp(argv[i],"--any_track")==0) {
