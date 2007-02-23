@@ -1641,8 +1641,9 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		}
 		if (wt == BURN_WRITE_RAW)
 			o->multi_session = o->multi_track = 0;
-	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
-		/* DVD-R , sequential DVD-RW */
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+			d->current_profile == 0x15) {
+		/* DVD-R , sequential DVD-RW , DVD-R/DL Sequential */
 		if (s == BURN_DISC_BLANK) {
 			o->might_do_sao = 1;
 			o->advised_write_mode = BURN_WRITE_SAO;

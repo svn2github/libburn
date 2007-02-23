@@ -21,6 +21,10 @@
 #include "options.h"
 
 
+/* ts A70223 : in init.c */
+extern int burn_support_untested_profiles;
+
+
 #ifdef Libburn_log_in_and_out_streaM
 /* <<< ts A61031 */
 #include <sys/types.h>
@@ -252,7 +256,8 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 			trackno = 1;
 		else if (d->current_profile == 0x10 ||
 			 d->current_profile == 0x11 ||
-			 d->current_profile == 0x14)
+			 d->current_profile == 0x14 ||
+			 d->current_profile == 0x15)
 			/* DVD-ROM ,  DVD-R[W] Sequential */
 			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
@@ -287,7 +292,8 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 			trackno = 1;
 		else if (d->current_profile == 0x10 ||
 			 d->current_profile == 0x11 ||
-			 d->current_profile == 0x14)
+			 d->current_profile == 0x14 ||
+			 d->current_profile == 0x15)
 			/* DVD-ROM, DVD-R[W] Sequential */
 			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
@@ -1552,6 +1558,8 @@ void mmc_get_configuration(struct burn_drive *d)
 #ifdef Libburn_support_dvd_r_seQ
 	if (cp == 0x10 || cp == 0x11 || cp == 0x14) /* DVD-ROM,DVD-R,DVD-RW */
 		d->current_is_supported_profile = 1;
+	if (cp == 0x15 && burn_support_untested_profiles) /* DVD-R/DL */
+		d->current_is_supported_profile = 1;
 #endif
 
 /* Enable this to get loud and repeated reports about the feature set :
@@ -2251,7 +2259,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->start_lba = -2000000000;
 	d->end_lba = -2000000000;
 
-	/* ts A61201 - A70128 */
+	/* ts A61201 - A70223*/
 	d->erasable = 0;
 	d->current_profile = -1;
 	d->current_profile_text[0] = 0;
@@ -2298,9 +2306,10 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		/* Link size dummy */
 		pd[5] = 0;
 
-	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11)
+	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11 ||
+			d->current_profile == 0x15)
 		&& o->write_type == BURN_WRITE_SAO) {
-		/* ts A70205 : DVD-R[W} : Disc-at-once, DAO */
+		/* ts A70205 : DVD-R[W][/DL] : Disc-at-once, DAO */
 		/* Learned from dvd+rw-tools and mmc5r03c.pdf .
 		   See doc/cookbook.txt for more detailed references. */
 
@@ -2313,8 +2322,9 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		/* Data Block Type = 8 */
 		pd[4] = 8;
 
-	} else if (d->current_profile == 0x14 || d->current_profile == 0x11) {
-		/* ts A70128 : DVD-R[W] Incremental Streaming */
+	} else if (d->current_profile == 0x14 || d->current_profile == 0x11 ||
+			d->current_profile == 0x15) {
+		/* ts A70128 : DVD-R[W][/DL] Incremental Streaming */
 		/* Learned from transport.hxx : page05_setup()
 		   and mmc5r03c.pdf 7.5, 4.2.3.4 Table 17
 		   and spc3r23.pdf 6.8, 7.4.3 */

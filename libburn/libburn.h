@@ -589,6 +589,19 @@ void burn_set_verbosity(int level);
 void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
 
 
+/* ts A70223 */
+/** Allows the use of media types which are implemented in libburn but not yet
+    tested. The list of those untested profiles is subject to change.
+    Currently it contains: 0x15 "DVD-R/DL Sequential".
+    If you really test such media, then please report the outcome on
+    libburn-hackers@pykix.org
+    If ever then this call should be done soon after burn_initialize() before
+    any drive scanning.
+    @param yes 1=allow all implemented profiles, 0=only tested media (default)
+*/
+void burn_allow_untested_profiles(int yes);
+
+
 /* ts A60823 */
 /** Aquire a drive with known persistent address.This is the sysadmin friendly
     way to open one drive and to leave all others untouched. It bundles

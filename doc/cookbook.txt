@@ -689,6 +689,7 @@ Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
 DVD-R                          0011h
 DVD-RW Restricted Overwrite    0013h
 DVD-RW Sequential Recording    0014h
+(DVD-R/DL Sequential Recording 0015h untested, might be single-session only)
 
 There are two approaches for writing to sequential DVD-R[W]: DAO and
 Incremental. Not all media and drives offer Incremental which allows 
@@ -701,6 +702,7 @@ track and it demands an exactly predicted track size.
 - DAO writing
 - Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems
 - Obtaining a Table Of Content from DVD-R[W]
+- Hearsay about DVD-R/DL (Dual Layer)
 
 -------------------------------------------------------------------------------
 About overwriteable, blank, appendable and finalized DVD-R[W] media :
@@ -960,6 +962,25 @@ it is enough to discard the tracks which do not belong to complete sessions.
 At the end of each session libburn inserts fake leadout entries into its TOC
 model. Their start address is computed from the start and size of the last
 track of the session.
+
+
+-------------------------------------------------------------------------------
+Hearsay about DVD-R/DL (Dual Layer) :
+
+DVD-R/DL can assume profile 0015h DVD-R Dual Layer Sequential which is supposed
+to behave like DVD-R or 0016h DVD-R Dual Layer Jump which has no counterpart
+with DVD-R.
+
+A half-sentence in mmc5r03c.pdf 6.3.3.3.3 might indicate that closing a session
+by 5Bh CLOSE TRACK SESSION Close Function 010b overrides the multi-session bits
+in mode page 5.
+growisofs applies this function in case of not DAO, though. A comment in
+growisofs_mmc.cpp states: "// DVD-R DL Seq has no notion of multi-session".
+I am not reading this from the specs - but not explicitely the contrary either.
+
+For now libburn will close the session but there is a macro prepared in
+libburn/write.c Libburn_dvd_r_dl_multi_no_close_sessioN which will suppress
+close session if multi-session is demanded.
 
 
 -------------------------------------------------------------------------------

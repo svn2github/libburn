@@ -6,6 +6,16 @@
 /* ts A61009 */
 /* #include <a ssert.h> */
 
+/* mmc5r03c.pdf 6.3.3.3.3: DVD-R DL: Close Function 010b: Close Session
+     "When the recording mode is Incremental Recording,
+      the disc is single session."
+   Enable this macro to get away from growisofs which uses Close Session
+   but also states "// DVD-R DL Seq has no notion of multi-session".
+
+     #define Libburn_dvd_r_dl_multi_no_close_sessioN 1
+
+*/
+
 
 /* ts A61106 : Deliberate defect provocation macros
                DO NOT DEFINE THESE IF YOU WANT SUCCESSFUL TAO !
@@ -969,8 +979,9 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
 
-	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
-		/* DVD-R, DVD-RW Sequential */
+	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+	    d->current_profile == 0x15) {
+		/* DVD-R, DVD-RW Sequential, DVD-R/DL Sequential */
 		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
@@ -1030,8 +1041,9 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	is_flushed = 1;
 
 	/* Eventually finalize track */
-	if (d->current_profile == 0x11 || d->current_profile == 0x14) {
-		/* DVD-R, DVD-RW Sequential */
+	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+	    d->current_profile == 0x15) {
+		/* DVD-R, DVD-RW Sequential, DVD-R/DL Sequential */
 		ret = burn_disc_close_track_dvd_minus_r(o, s, tnum);
 		if (ret != 2)
 			goto ex;
@@ -1083,7 +1095,7 @@ int burn_disc_close_session_dvd_minus_rw(struct burn_write_opts *o,
 }
 
 
-/* ts A70129 : for profile 0x11 DVD-R and 0x14 DVD-RW Sequential */
+/* ts A70129 : for profile 0x11 DVD-R, 0x14 DVD-RW Seq, 0x15 DVD-R/DL Seq */
 int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 					struct burn_session *s)
 {
@@ -1092,6 +1104,11 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 	/* only for Incremental writing */
 	if (o->write_type != BURN_WRITE_TAO)
 		return 2;
+
+#ifdef Libburn_dvd_r_dl_multi_no_close_sessioN
+	if (d->current_profile == 0x15 && o->multi)
+		return 2;
+#endif
 
 	libdax_msgs_submit(libdax_messenger, o->drive->global_index,0x00020119,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
@@ -1118,8 +1135,9 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		if (ret <= 0)
 	break;
 	}
-	if ((d->current_profile == 0x11 || d->current_profile == 0x14)) {
-		/* DVD-R , DVD-RW Sequential */
+	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+	    d->current_profile == 0x15) {
+		/* DVD-R , DVD-RW Sequential, DVD-R/DL Sequential */
 		ret = burn_disc_close_session_dvd_minus_r(o, s);
 		if (ret <= 0)
 			return 0;
@@ -1287,7 +1305,9 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 		if (o->start_byte >= 0 && (o->start_byte % 32768))
 			strcat(reasons,
 			  "write start address not properly aligned to 32k, ");
-	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+			d->current_profile == 0x15) {
+		/* DVD-R* Sequential */
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
 	} else {
@@ -1433,8 +1453,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		/* _Rigid_ Restricted Overwrite demands this */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 
-	} else if (d->current_profile == 0x11 || d->current_profile == 0x14) {
-		/* DVD-R , DVD-RW Sequential */
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+			d->current_profile == 0x15) {
+		/* DVD-R , DVD-RW Sequential , DVD-R/DL Sequential */
 		t = disc->session[0]->track[0];
 		o_end = ( burn_track_is_open_ended(t) && !o->fill_up_media );
 		default_size = burn_track_get_default_size(t);
