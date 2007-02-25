@@ -33,4 +33,16 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
                            int tnum);
 int burn_write_close_session(struct burn_write_opts *o,struct burn_session *s);
 
+
+
+/* mmc5r03c.pdf 6.3.3.3.3: DVD-R DL: Close Function 010b: Close Session
+     "When the recording mode is Incremental Recording,
+      the disc is single session."
+   Enable this macro to get away from growisofs which uses Close Session
+   but also states "// DVD-R DL Seq has no notion of multi-session".
+
+     #define Libburn_dvd_r_dl_multi_no_close_sessioN 1
+
+*/
+
 #endif /* BURN__WRITE_H */

@@ -6,16 +6,6 @@
 /* ts A61009 */
 /* #include <a ssert.h> */
 
-/* mmc5r03c.pdf 6.3.3.3.3: DVD-R DL: Close Function 010b: Close Session
-     "When the recording mode is Incremental Recording,
-      the disc is single session."
-   Enable this macro to get away from growisofs which uses Close Session
-   but also states "// DVD-R DL Seq has no notion of multi-session".
-
-     #define Libburn_dvd_r_dl_multi_no_close_sessioN 1
-
-*/
-
 
 /* ts A61106 : Deliberate defect provocation macros
                DO NOT DEFINE THESE IF YOU WANT SUCCESSFUL TAO !

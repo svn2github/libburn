@@ -32,6 +32,9 @@
 /* ts A70219 : for burn_disc_get_write_mode_demands() */
 #include "options.h"
 
+/* A70225 : to learn about eventual Libburn_dvd_r_dl_multi_no_close_sessioN */
+#include "write.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -1649,7 +1652,11 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 			o->advised_write_mode = BURN_WRITE_SAO;
 		}
 		if (d->current_has_feat21h) {
-			o->multi_session = o->multi_track = 1;
+#ifndef Libburn_dvd_r_dl_multi_no_close_sessioN
+			if (d->current_profile != 0x15)
+#endif
+				o->multi_session = 1;
+			o->multi_track = 1;
 			o->might_do_tao = 2;
 			o->advised_write_mode = BURN_WRITE_TAO;
 		}
@@ -1686,6 +1693,13 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		}
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
+		o->advised_write_mode = BURN_WRITE_TAO;
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* DVD+R , DVD+R/DL */
+		o->multi_session = 1;
+		o->multi_track = 1;
+		o->might_do_tao = 2;
+		o->might_do_sao = 1;
 		o->advised_write_mode = BURN_WRITE_TAO;
 	} else /* unknown media */
 		return 0;
