@@ -5,7 +5,7 @@ Content:
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
 - Sequential DVD-R[W] Cookbook
-
+- >>> DVD+R Cookbook (emerging, totally untested yet)
 
 -------------------------------------------------------------------------------
                          TAO Multi-Session CD Cookbook
@@ -973,7 +973,7 @@ with DVD-R.
 
 A half-sentence in mmc5r03c.pdf 6.3.3.3.3 might indicate that closing a session
 by 5Bh CLOSE TRACK SESSION Close Function 010b overrides the multi-session bits
-in mode page 5.
+in mode page 05h.
 growisofs applies this function in case of not DAO, though. A comment in
 growisofs_mmc.cpp states: "// DVD-R DL Seq has no notion of multi-session".
 I am not reading this from the specs - but not explicitely the contrary either.
@@ -982,6 +982,110 @@ For now libburn will close the session but there is a macro prepared in
 libburn/write.c Libburn_dvd_r_dl_multi_no_close_sessioN which will suppress
 close session if multi-session is demanded.
 
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+                     INCOMPLETE, YET TOTALLY UNTESTED
+
+                              DVD+R Cookbook
+-------------------------------------------------------------------------------
+Inspired by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+backed by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
+
+For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+
+Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
+(mmc5r03c.pdf 6.6.2.1)
+DVD+R                          001bh
+DVD+R/DL                       002bh
+
+- About empty, appendable and finalized DVD+R
+- Writing a Pseudo Session to DVD+R
+- >>> Obtaining multi-session info for extending ISO-9660 filesystems
+- >>> Obtaining a Table Of Content from CD
+- >>> Hearsay about DVD+R/DL (Dual Layer) :
+
+-------------------------------------------------------------------------------
+About blank, appendable and finalized DVD+R :
+
+In the beginning a DVD+R holds an empty session and the Incomplete Fragment.
+From these one may spawn reserved fragments or one may write directly to
+the incomplete fragment. As soon as this is done the empty session becomes the
+open session which finally needs to get closed. By closing fragments and
+session a new empty session with empty Incomplete Fragment gets spawned.
+So the disc stays appendable.
+
+A DVD+R may hold 153 closed sessions with a single track each.
+The open session may hold up to 15 open fragments. But on closure of the
+session those fragments together form a single logical track.  So one will
+usually only use a single fragment for sequential writing. 
+(mmc5r03c.pdf 4.3.6.2)
+
+The disc may get finalized by another close command so that no more data can
+be written.
+(mmc5r03c.pdf 6.3.3.4.4) 
+
+
+-------------------------------------------------------------------------------
+Writing a Pseudo Session to DVD+R :
+
+Session writing has to be pseudo because only one logical track per session
+can be distinguished. So actually there have to be written multiple sessions
+to mark multiple tracks. The pseudo session cannot get marked on disc and thus
+the tracks of a pseudo session cannot be grouped accordingly in a TOC.
+
+Speed can be influenced by B6h SET STREAMING , speed capabilities can be
+inquired by ACh GET PERFORMANCE. It is advised to set only speeds and sizes
+which are returned by ACh.
+(mmc5r03c.pdf 6.39 SET STREAMING, 6.8 GET PERFORMANCE)	
+
+No mode page 05h is to be sent.
+growisofs sends a page but the specs clearly state that one shall not do.
+(mmc5r03c.pdf 7.5.3)
+
+It is optional wether a track size is reserved in advance or not. Eventually
+this is done by 53h RESERVE TRACK, RMZ=ARSV=0. Reservation size should better
+already be aligned to 32 KiB.
+(mmc5r03c.pdf 6.31)
+The specs promise to pad up the track if not enough data get written.
+(mmc5r03c.pdf 6.3.3.4.2)
+
+Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION
+with track number FFh.
+(mmc5r03c.pdf 6.27)
+Since the fixely set write type is 16-block packet, full 32 kB buffers have
+to be transmitted via 2Ah WRITE.
+(mmc5r03c.pdf 4.3.6.2.2)
+
+When writing is done, it is mandatory to force the drive's buffer to media by
+35h SYNCHRONIZE CACHE.
+(mmc5r03c.pdf 6.41)
+
+The written fragment (i.e. track-to-be) has to be closed by 5Bh CLOSE TRACK
+SESSION Close Function 001b.
+(mmc5r03c.pdf 6.3.3.4.2)
+libburn obtains the necessary logical track number from Last Track Number in
+Last Session from the reply of 51h READ DISC INFORMATION requesting
+Data Type 000b.
+(mmc5r03c.pdf 6.22) 
+After each track 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
+Number 0 closes the DVD+R session but keeps the media appendable.
+(mmc5r03c.pdf 6.3.3.4.3)
+
+
+Eventually 5Bh CLOSE TRACK SESSION Close Function 101b is used to finalize
+the media with minimal radius. After that the disc is not appendable any more !
+(mmc5r03c.pdf 6.3.3.4.4) 
+
+
+-------------------------------------------------------------------------------
+Hearsay about DVD+R/DL (Dual Layer) :
+
+>>>
 
 -------------------------------------------------------------------------------
 

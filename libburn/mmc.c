@@ -89,8 +89,6 @@ extern struct libdax_msgs *libdax_messenger;
                size prediction mandatory.
    ts A70208 : Finally made tests with DVD-R. Worked exactly as new DVD-RW.
 
-Todo:
-   Determine first free lba for appending data on overwriteables. 
 */
 
 
@@ -242,7 +240,6 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 {
 	struct command c;
-	int i;
 
 	mmc_function_spy("mmc_read_track_info");
 	c.retry = 1;
@@ -263,8 +260,7 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			trackno = 0xFF;
 	}
-	for (i = 0; i < 4; i++)
-		c.opcode[2 + i] = (trackno >> (24 - 8 * i)) & 0xff;
+	mmc_int_to_four_char(c.opcode + 2, trackno);
 	c.page = buf;
 	memset(buf->data, 0, BUFFER_SIZE);
 	c.dir = FROM_DRIVE;
@@ -285,26 +281,11 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	unsigned char *data;
 
 	mmc_function_spy("mmc_get_nwa");
-	if(trackno<=0) {
-		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-		    d->current_profile == 0x12 )
-			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
-			trackno = 1;
-		else if (d->current_profile == 0x10 ||
-			 d->current_profile == 0x11 ||
-			 d->current_profile == 0x14 ||
-			 d->current_profile == 0x15)
-			/* DVD-ROM, DVD-R[W] Sequential */
-			trackno = d->last_track_no;
-		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
-			trackno = 0xFF;
-	}
 
 	ret = mmc_read_track_info(d, trackno, &buf);
 	if (ret <= 0)
 		return ret;
 	data = buf.data;
-
 	*lba = mmc_four_char_to_int(data + 8);
 	*nwa = mmc_four_char_to_int(data + 12);
 	num = mmc_four_char_to_int(data + 16);
@@ -375,6 +356,11 @@ void mmc_close_session(struct burn_write_opts *o)
 	mmc_close(d, 1, 0);
 }
 
+/* ts A70227 : extended meaning of session to address all possible values
+               of 5Bh CLOSE TRACK SESSION to address any Close Function.
+               @param session contains the two high bits of Close Function
+               @param track if not 0: sets the lowest bit of Close Function
+*/
 void mmc_close(struct burn_drive *d, int session, int track)
 {
 	struct command c;
@@ -385,8 +371,8 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	c.oplen = sizeof(MMC_CLOSE);
 	memcpy(c.opcode, MMC_CLOSE, sizeof(MMC_CLOSE));
 
-	/* ts A61030 : shifted !!session rather than or-ing plain session */
-	c.opcode[2] = ((!!session)<<1) | !!track;
+	/* (ts A61030 : shifted !!session rather than or-ing plain session ) */
+	c.opcode[2] = ((session & 3) << 1) | !!track;
 	c.opcode[4] = track >> 8;
 	c.opcode[5] = track & 0xFF;
 	c.page = NULL;
@@ -431,14 +417,8 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	memcpy(c.opcode, MMC_WRITE_12, sizeof(MMC_WRITE_12));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_WRITE_12);
-	c.opcode[2] = start >> 24;
-	c.opcode[3] = (start >> 16) & 0xFF;
-	c.opcode[4] = (start >> 8) & 0xFF;
-	c.opcode[5] = start & 0xFF;
-	c.opcode[6] = len >> 24;
-	c.opcode[7] = (len >> 16) & 0xFF;
-	c.opcode[8] = (len >> 8) & 0xFF;
-	c.opcode[9] = len & 0xFF;
+	mmc_int_to_four_char(c.opcode + 2, start);
+	mmc_int_to_four_char(c.opcode + 6, len);
 	c.page = buf;
 	c.dir = TO_DRIVE;
 
@@ -491,10 +471,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	memcpy(c.opcode, MMC_WRITE_10, sizeof(MMC_WRITE_10));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_WRITE_10);
-	c.opcode[2] = start >> 24;
-	c.opcode[3] = (start >> 16) & 0xFF;
-	c.opcode[4] = (start >> 8) & 0xFF;
-	c.opcode[5] = start & 0xFF;
+	mmc_int_to_four_char(c.opcode + 2, start);
 	c.opcode[6] = 0;
 	c.opcode[7] = (len >> 8) & 0xFF;
 	c.opcode[8] = len & 0xFF;
@@ -1561,6 +1538,11 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (cp == 0x15 && burn_support_untested_profiles) /* DVD-R/DL */
 		d->current_is_supported_profile = 1;
 #endif
+#ifdef Libburn_support_dvd_plusR
+	if ((cp == 0x1b || cp == 0x2b) &&
+	    burn_support_untested_profiles) /* DVD+R , DVD+R/DL */
+		d->current_is_supported_profile = 1;
+#endif
 
 /* Enable this to get loud and repeated reports about the feature set :
 #define Libburn_print_feature_descriptorS 1
@@ -1916,8 +1898,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	c.page->data[1] = 0x02;                  /* Immed */
 	c.page->data[3] = 8;                     /* Format descriptor length */
 	num_of_blocks = size / 2048;
-	for (i = 0; i < 4; i++)
-		c.page->data[4 + i] = (num_of_blocks >> (24 - 8 * i)) & 0xff;
+	mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+
 	if (flag & 128) { /* explicitely chosen format descriptor */
 		/* use case: the app knows what to do */
 
@@ -1947,9 +1929,7 @@ selected_not_suitable:;
 		if (flag & 4) {
 			num_of_blocks =
 				d->format_descriptors[index].size / 2048;
-			for (i = 0; i < 4; i++)
-				c.page->data[4 + i] =
-					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+			mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
 		}
 		if (format_type != 0x26)
 			for (i = 0; i < 3; i++)
@@ -2024,9 +2004,8 @@ selected_not_suitable:;
 					num_of_blocks = diff;
 			}
 			if (num_of_blocks > 0)
-				for (i = 0; i < 4; i++)
-					c.page->data[4 + i] =
-					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+				mmc_int_to_four_char(c.page->data + 4,
+							num_of_blocks);
 		}
 		/* 6.5.4.2.8 , DVD-RW Quick Grow Last Border */
 		format_type = 0x13;
@@ -2050,9 +2029,8 @@ selected_not_suitable:;
 			if ((flag & 4)
 				|| d->best_format_type == full_format_type) {
 				num_of_blocks = d->best_format_size / 2048;
-				for (i = 0; i < 4; i++)
-					c.page->data[4 + i] =
-					(num_of_blocks >> (24 - 8 * i)) & 0xff;
+				mmc_int_to_four_char(c.page->data + 4,
+							num_of_blocks);
 			}
 
 		} else {
@@ -2356,6 +2334,10 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		/* Packet Size */
 		pd[13] = 16;
 
+	} else if (d->current_profile == 0x1a || d->current_profile == 0x1b ||
+	           d->current_profile == 0x2b || d->current_profile == 0x12) {
+		/* not with DVD+R[W][/DL] or DVD-RAM */;
+		return 0;
 	} else {
 		/* Traditional setup for CD */
 

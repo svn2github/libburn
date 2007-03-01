@@ -890,6 +890,84 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 }
 
 
+/* ts A70219 : API */
+int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
+				 char reasons[BURN_REASONS_LEN], int silent)
+{
+	enum burn_write_types wt;
+	struct burn_drive *d = o->drive;
+	char msg[160], *reason_pt;
+	int no_media = 0;
+
+	reason_pt= reasons;
+	reasons[0] = 0;
+
+	/* check write mode against write job */
+	wt = burn_write_opts_auto_write_type(o, disc, reasons, 1);
+	if (wt == BURN_WRITE_NONE) {
+		if (strncmp(reasons, "MEDIA: ", 7)==0)
+			no_media = 1;
+		goto ex;
+	}
+
+	sprintf(reasons, "%s: ", d->current_profile_text);
+	reason_pt= reasons + strlen(reasons);
+	if (d->status == BURN_DISC_UNSUITABLE)
+		goto unsuitable_profile;
+	if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
+		if (!burn_disc_write_is_ok(o, disc, (!!silent) << 1))
+			strcat(reasons, "unsuitable track mode found, ");
+		if (o->start_byte >= 0)
+			strcat(reasons, "write start address not supported, ");
+	} else if (d->current_profile == 0x1a || d->current_profile == 0x12) { 
+		/* DVD+RW , DVD-RAM */
+		if (o->start_byte >= 0 && (o->start_byte % 2048))
+			strcat(reasons,
+			 "write start address not properly aligned to 2048, ");
+	} else if (d->current_profile == 0x13) {
+		/* DVD-RW Restricted Overwrite */
+		if (o->start_byte >= 0 && (o->start_byte % 32768))
+			strcat(reasons,
+			  "write start address not properly aligned to 32k, ");
+	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+	           d->current_profile == 0x15 ||
+	           d->current_profile == 0x1b || d->current_profile == 0x2b ) {
+		/* DVD-R* Sequential , DVD+R[/DL] */
+		if (o->start_byte >= 0)
+			strcat(reasons, "write start address not supported, ");
+	} else {
+unsuitable_profile:;
+		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
+			d->current_profile, d->current_profile_text);
+		if (!silent)
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002011e,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		strcat(reasons, "no suitable media profile detected, ");
+		return 0;
+	}
+ex:;
+	if (reason_pt[0]) {
+		if (no_media) {
+			if (!silent)
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x0002013a,
+				  LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				  "No suitable media detected", 0, 0);
+			return -1;
+		}
+		if (!silent)
+			libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x00020139,
+				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				  "Write job parameters are unsuitable", 0, 0);
+		return 0;
+	}
+	return 1;
+}
+
+
 /* ts A70129 : learned much from dvd+rw-tools-7.0/growisofs_mmc.cpp */
 int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 					struct burn_session *s, int tnum)
@@ -912,6 +990,46 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
+ 		/* Round track size up to 32 KiB and reserve track */
+		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+			 * (off_t) 2048;
+		size = (size + (off_t) 0x7fff) & ~((off_t) 0x7fff);
+		ret = d->reserve_track(d, size);
+		if (ret <= 0) {
+			sprintf(msg, "Cannot reserve track of %.f bytes",
+				(double) size);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020138,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+/* ts A70226 */
+int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
+					struct burn_session *s, int tnum)
+{
+	struct burn_drive *d = o->drive;
+	char msg[160];
+	int ret, lba, nwa;
+	off_t size;
+
+	ret = d->get_nwa(d, -1, &lba, &nwa);
+	sprintf(msg, 
+		"DVD+R pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
+		tnum+1, nwa, ret, d->nwa);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);
+	if (nwa > d->nwa)
+		d->nwa = nwa;
+	/* ts A70214 : eventually adjust already expanded size of track */
+	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
+
+	if (o->write_type == BURN_WRITE_SAO) {
  		/* Round track size up to 32 KiB and reserve track */
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
 			 * (off_t) 2048;
@@ -956,6 +1074,28 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 }
 
 
+/* ts A70226 */
+int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
+					struct burn_session *s, int tnum)
+{
+	struct burn_drive *d = o->drive;
+	char msg[80];
+
+	sprintf(msg,
+		"Closing track %2.2d  (absolute track and session number %d)",
+		tnum + 1, d->last_track_no);
+	libdax_msgs_submit(libdax_messenger, o->drive->global_index,0x00020119,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
+
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
+	d->close_track_session(d, 0, d->last_track_no); /* CLOSE TRACK, 001b */
+	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
+	d->busy = BURN_DRIVE_WRITING;
+	d->last_track_no++;
+	return 1;
+}
+
+
 /* ts A61218 - A70129 */
 int burn_dvd_write_track(struct burn_write_opts *o,
 				struct burn_session *s, int tnum)
@@ -973,6 +1113,11 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	    d->current_profile == 0x15) {
 		/* DVD-R, DVD-RW Sequential, DVD-R/DL Sequential */
 		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
+		if (ret <= 0)
+			goto ex;
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* DVD+R , DVD+R/DL */
+		ret = burn_disc_open_track_dvd_plus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
 	}
@@ -1035,7 +1180,12 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	    d->current_profile == 0x15) {
 		/* DVD-R, DVD-RW Sequential, DVD-R/DL Sequential */
 		ret = burn_disc_close_track_dvd_minus_r(o, s, tnum);
-		if (ret != 2)
+		if (ret <= 0)
+			goto ex;
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* DVD+R , DVD+R/DL */
+		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum);
+		if (ret <= 0)
 			goto ex;
 	}
 	ret = 1;
@@ -1148,6 +1298,8 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 			if (ret <= 0)
 				return 0;
 		}
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* DVD+R , DVD+R/DL do each track as an own session */;
 	}
 	return 1;
 }
@@ -1258,76 +1410,30 @@ int burn_disc_setup_dvd_minus_r(struct burn_write_opts *o,
 }
 
 
-/* ts A70219 : API */
-int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
-				 char reasons[BURN_REASONS_LEN], int silent)
+/* ts A70226 : for DVD+R , DVD+R/DL */
+int burn_disc_setup_dvd_plus_r(struct burn_write_opts *o,
+				struct burn_disc *disc)
 {
-	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;
-	char msg[160], *reason_pt;
-	int no_media = 0;
 
-	reason_pt= reasons;
-	reasons[0] = 0;
+	/* most setup is in burn_disc_setup_track_dvd_plus_r() */;
 
-	/* check write mode against write job */
-	wt = burn_write_opts_auto_write_type(o, disc, reasons, 1);
-	if (wt == BURN_WRITE_NONE) {
-		if (strncmp(reasons, "MEDIA: ", 7)==0)
-			no_media = 1;
-		goto ex;
-	}
+	d->nwa = 0;
+	return 1;
+}
 
-	sprintf(reasons, "%s: ", d->current_profile_text);
-	reason_pt= reasons + strlen(reasons);
-	if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
-		if (!burn_disc_write_is_ok(o, disc, (!!silent) << 1))
-			strcat(reasons, "unsuitable track mode found, ");
-		if (o->start_byte >= 0)
-			strcat(reasons, "write start address not supported, ");
-	} else if (d->current_profile == 0x1a || d->current_profile == 0x12) { 
-		/* DVD+RW , DVD-RAM */
-		if (o->start_byte >= 0 && (o->start_byte % 2048))
-			strcat(reasons,
-			 "write start address not properly aligned to 2048, ");
-	} else if (d->current_profile == 0x13) {
-		/* DVD-RW Restricted Overwrite */
-		if (o->start_byte >= 0 && (o->start_byte % 32768))
-			strcat(reasons,
-			  "write start address not properly aligned to 32k, ");
-	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
-			d->current_profile == 0x15) {
-		/* DVD-R* Sequential */
-		if (o->start_byte >= 0)
-			strcat(reasons, "write start address not supported, ");
-	} else {
-		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
-			d->current_profile, d->current_profile_text);
-		if (!silent)
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x0002011e,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-		strcat(reasons, "no suitable media profile detected, ");
-		return 0;
-	}
-ex:;
-	if (reason_pt[0]) {
-		if (no_media) {
-			if (!silent)
-				libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x0002013a,
-				  LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-				  "No suitable media detected", 0, 0);
-			return -1;
-		}
-		if (!silent)
-			libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x00020139,
-				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				  "Write job parameters are unsuitable", 0, 0);
-		return 0;
-	}
+
+/* ts A70229 */
+int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
+{
+	struct burn_drive *d = o->drive;
+
+	if (o->multi)
+		return 2;
+	d->busy = BURN_DRIVE_CLOSING_SESSION;
+	/* CLOSE SESSION, 101b, Finalize with minimal radius */
+	d->close_track_session(d, 2, 1);  /* (2<<1)|1 = 5 */
+	d->busy = BURN_DRIVE_WRITING;
 	return 1;
 }
 
@@ -1534,6 +1640,38 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		/* ??? padding needed ??? cowardly doing it for now */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 		
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* DVD+R , DVD+R/DL */
+		t = disc->session[0]->track[0];
+		o_end = ( burn_track_is_open_ended(t) && !o->fill_up_media );
+		default_size = burn_track_get_default_size(t);
+
+#ifndef Libburn_precheck_write_ruleS
+		/* >>> oldfashioned checks hopefully never re-enabled */
+#endif /* ! Libburn_precheck_write_ruleS */
+
+		if (o->write_type == BURN_WRITE_SAO && o_end) {
+			sprintf(msg, "Activated track default size %.f",
+				(double) default_size);
+			libdax_msgs_submit(libdax_messenger,
+				  d->global_index, 0x0002012e,
+				  LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				  msg, 0, 0);
+			burn_track_set_size(t, default_size);
+		}
+		ret = burn_disc_setup_dvd_plus_r(o, disc);
+		if (ret <= 0) {
+			sprintf(msg,
+			  "Write preparation setup failed for DVD+R");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020121,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			goto early_failure;
+		}
+		/* ??? padding needed ??? cowardly doing it for now */
+		o->obs_pad = 1; /* fill-up track's last 32k buffer */
+
 #ifndef Libburn_precheck_write_ruleS
 	/* <<< covered by burn_precheck_write() */
 	} else {
@@ -1564,8 +1702,11 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		d->progress.sectors = 0;
 	}
 
-	/* >>> eventual normal  finalization measures */
-
+	if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		ret = burn_disc_finalize_dvd_plus_r(o);
+		if (ret <= 0)
+			goto ex;
+	}
 	ret = 1;
 ex:;
 
