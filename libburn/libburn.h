@@ -877,6 +877,8 @@ off_t burn_disc_available_space(struct burn_drive *d,
     libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW",
     0x11 "DVD-R", 0x12 "DVD-RAM", 0x13 "DVD-RW restricted overwrite",
     0x14 "DVD-RW Sequential Recording" or 0x1a "DVD+RW".
+    If enabled by burn_allow_untested_profiles() it also writes to profile
+    0x15 "DVD-R/DL Sequential Recording".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
@@ -929,6 +931,7 @@ void burn_read_opts_free(struct burn_read_opts *opts);
     @param drive The drive with which to erase a disc.
     @param fast Nonzero to do a fast erase, where only the disc's headers are
                 erased; zero to erase the entire disc.
+                With DVD-RW, fast blanking yields media capable only of DAO.
 */
 void burn_disc_erase(struct burn_drive *drive, int fast);
 
@@ -1041,7 +1044,7 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 
 /** Write a disc in the drive. The drive must be grabbed successfully before
     calling this function. Always ensure that the drive reports a status of
-    BURN_DISC_BLANK before calling this function.
+    BURN_DISC_BLANK ot BURN_DISC_APPENDABLE before calling this function.
     Note: write_type BURN_WRITE_SAO is currently not capable of writing a mix
     of data and audio tracks. You must use BURN_WRITE_TAO for such sessions.
     To be set by burn_write_opts_set_write_type(). 
@@ -1386,6 +1389,14 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 void burn_write_opts_set_fillup(struct burn_write_opts *opts,
                                 int fill_up_media);
 
+
+/* ts A70303 */
+/** Eventually makes libburn ignore the failure of some conformance checks:
+    - the check wether CD write+block type is supported by the drive
+    @param opts The write opts to change
+    @param use_force 1=ignore above checks, 0=refuse work on failed check
+*/
+void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
 
 
 /** Sets whether to read in raw mode or not

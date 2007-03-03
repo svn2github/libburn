@@ -37,6 +37,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->obs_pad = 0;
 	opts->start_byte = -1;
 	opts->fill_up_media = 0;
+	opts->force_is_set = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -288,7 +289,7 @@ try_tao:;
 		strcat(reasons, "multi track capability lacking, ");
 	if (demands.exotic_track)
 		strcat(reasons, "non-audio, non-data track, ");
-	if (d->current_is_cd_profile)
+	if (d->current_is_cd_profile && !opts->force_is_set)
 		if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
 			demands.block_types)
 			strcat(reasons, "drive dislikes block type, ");
@@ -347,6 +348,13 @@ void burn_write_opts_set_fillup(struct burn_write_opts *opts,int fill_up_media)
 {
 	opts->fill_up_media = !!fill_up_media;
 	return;
+}
+
+
+/* ts A70303: API */
+void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force)
+{
+	opts->force_is_set = !!use_force;
 }
 
 

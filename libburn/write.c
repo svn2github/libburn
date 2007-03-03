@@ -1089,7 +1089,11 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
 
 	d->busy = BURN_DRIVE_CLOSING_SESSION;
 	d->close_track_session(d, 0, d->last_track_no); /* CLOSE TRACK, 001b */
+
+	/* Each session becomes a single logical track. So to distinguish them,
+	   it is mandatory to close the session together with each track. */
 	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
+
 	d->busy = BURN_DRIVE_WRITING;
 	d->last_track_no++;
 	return 1;

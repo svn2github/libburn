@@ -135,6 +135,7 @@ or
 #define Cdrskin_libburn_has_get_spacE 1
 #define Cdrskin_libburn_write_mode_ruleS 1
 #define Cdrskin_libburn_has_allow_untested_profileS 1
+#define Cdrskin_libburn_has_set_forcE 1
 
 #endif /* Cdrskin_libburn_0_3_3 */
 
@@ -4785,6 +4786,9 @@ burn_failed:;
 #endif
 #ifdef Cdrskin_libburn_has_set_filluP
  burn_write_opts_set_fillup(o, skin->fill_up_media);
+#endif
+#ifdef Cdrskin_libburn_has_set_forcE
+ burn_write_opts_set_force(o, !!skin->force_is_set);
 #endif
 
  if(skin->dummy_mode) {
