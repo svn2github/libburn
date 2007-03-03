@@ -247,8 +247,8 @@ no_caps:;
 		strcat(reasons, "track size unpredictable, ");
 	if (demands.mixed_mode)
 		strcat(reasons, "tracks of different modes mixed, ");
-	if (demands.exotic_track)
-		strcat(reasons, "non-audio, non-data track, ");
+	if (demands.exotic_track && !d->current_is_cd_profile)
+		strcat(reasons, "non-data track on non-cd, ");
 	else if (d->current_is_cd_profile)
 		if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
 			demands.block_types)
@@ -287,8 +287,8 @@ try_tao:;
 		strcat(reasons, "multi session capability lacking, ");
 	if (demands.multi_track && !caps->multi_track)
 		strcat(reasons, "multi track capability lacking, ");
-	if (demands.exotic_track)
-		strcat(reasons, "non-audio, non-data track, ");
+	if (demands.exotic_track && !d->current_is_cd_profile)
+		strcat(reasons, "non-data track on non-cd, ");
 	if (d->current_is_cd_profile && !opts->force_is_set)
 		if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
 			demands.block_types)
@@ -315,7 +315,7 @@ try_raw:;
 	reason_pt = reasons + strlen(reasons);
 	strcat(reasons, "RAW: ");
 	if (!d->current_is_cd_profile)
-		strcat(reasons, "write type RAW prohibited by non-CD, ");
+		strcat(reasons, "write type RAW prohibited by non-cd, ");
 	else if (d->status != BURN_DISC_BLANK)
 		strcat(reasons, "write type RAW works only on blank media, ");
 	else if ((d->block_types[BURN_WRITE_TAO] & demands.block_types) !=
