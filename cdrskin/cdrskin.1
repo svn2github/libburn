@@ -54,6 +54,18 @@ Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
 See section EXAMPLES at the end of this text.
 .PP
+.B General information paragraphs:
+.br
+Track recording model
+.br
+Recordable CD Media
+.br
+Sequentially Recordable DVD Media
+.br
+Overwriteable DVD Media
+.br
+Drive preparation and addressing
+.PP
 .B Track recording model:
 .br
 The input-output entities which get processed are called tracks.
@@ -131,16 +143,9 @@ Newly purchased DVD-RW and DVD-R media are in this state.
 Used DVD-RW get into blank sequential state by option
 .B blank=deformat_sequential .
 .br
-Incremental Streaming is the default write mode if it is offered by the media.
-It may be selected explicitely by option
-.B -tao
-as it resembles much CD TAO by allowing track sources of
-unpredicted length and to keep media appendable by option
-.B -multi .
-The only restriction towards CD-R[W] is the lack of support for -audio tracks.
-Multiple tracks per session are permissible.
+Two write modes may be available:
 .br
-The other write mode, DAO, has many restrictions. It does not work with
+Mode DAO has many restrictions. It does not work with
 appendable media, allows no -multi and only a single track. The size of the
 track needs to be known in advance. So either its source has to be a disk file
 of recognizable size or the size has to be announced explicitely by options
@@ -148,12 +153,21 @@ of recognizable size or the size has to be announced explicitely by options
 or
 .B tao_to_sao_tsize= .
 .br
-DAO is the default mode for media which do not offer feature 21h Incremental
-Streaming. It may also be selected explicitely by option
+DAO is the only mode for media which do not offer feature 21h Incremental
+Streaming. DAO may also be selected explicitely by option
 .B -sao .
-.br
 Program growisofs uses DAO on sequential DVD-R[W] media for maximum
 DVD-ROM/-Video compatibility.
+.br
+The other mode, Incremental Streaming, is the default write mode if
+it is available and if the restrictions of DAO would prevent the job.
+Incremental Streaming may be selected explicitely by option
+.B -tao
+as it resembles much CD TAO by allowing track sources of
+unpredicted length and to keep media appendable by option
+.B -multi .
+The only restriction towards CD-R[W] is the lack of support for -audio tracks.
+Multiple tracks per session are permissible.
 .PP
 .B Overwriteable DVD Media:
 .br
@@ -184,7 +198,9 @@ by a run of \fBcdrskin --devices\fP.
 .br
 On Linux, they are device files which traditionally do not offer
 w-permissions for normal users. Because libburn needs rw-permission,
-it might be only the superuser who is able to get this list without further
+it might be only the
+.B superuser
+who is able to get this list without further
 precautions.
 .br
 It is consensus that \fBchmod a+rw /dev/sg0\fP or \fBchmod a+rw /dev/hdc\fP
