@@ -129,6 +129,9 @@ struct burn_drive
 	int lun;
 	char *devname;
 
+	/* ts A70302: mmc5r03c.pdf 5.3.2 Physical Interface Standard */
+	int phys_if_std;   /* 1=SCSI, 2=ATAPI, 3,4,6=FireWire, 7=SATA, 8=USB */
+	char phys_if_name[80];  /* MMC-5 5.3.2 table 91 , e.g. "SCSI Family" */ 
 
 	/* see os.h for name of particular os-*.h where this is defined */
 	BURN_OS_TRANSPORT_DRIVE_ELEMENTS	

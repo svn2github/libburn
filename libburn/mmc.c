@@ -1489,6 +1489,8 @@ void mmc_get_configuration(struct burn_drive *d)
 	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command c;
+	int phys_if_std = 0;
+	char *phys_name = "";
 
 	d->current_profile = 0;
         d->current_profile_text[0] = 0;
@@ -1619,28 +1621,29 @@ void mmc_get_configuration(struct burn_drive *d)
 				!!(descr[4] & 2));
 #endif /* Libburn_print_feature_descriptorS */
 			
-#ifdef Libburn_print_feature_descriptorS
 		} else if (feature_code == 0x01) {
-			int pys_if_std = 0;
-			char *phys_name = "";
-
-			pys_if_std = (descr[4] << 24) | (descr[5] << 16) |
+			phys_if_std = (descr[4] << 24) | (descr[5] << 16) |
 					(descr[6] << 8) | descr[9];
-			if (pys_if_std == 1)
+			if (phys_if_std == 1)
 				phys_name = "SCSI Family";
-			else if(pys_if_std == 2)
+			else if(phys_if_std == 2)
 				phys_name = "ATAPI";
-			else if(pys_if_std == 3 || pys_if_std == 4 ||
-				 pys_if_std == 6)
+			else if(phys_if_std == 3 || phys_if_std == 4 ||
+				 phys_if_std == 6)
 				phys_name = "IEEE 1394 FireWire";
-			else if(pys_if_std == 7)
+			else if(phys_if_std == 7)
 				phys_name = "Serial ATAPI";
-			else if(pys_if_std == 7)
+			else if(phys_if_std == 8)
 				phys_name = "USB";
 			
+			d->phys_if_std = phys_if_std;
+			strcpy(d->phys_if_name, phys_name);
+
+#ifdef Libburn_print_feature_descriptorS
+
 			fprintf(stderr,
 	"LIBBURN_EXPERIMENTAL :     Phys. Interface Standard %Xh \"%s\"\n",
-				pys_if_std, phys_name);
+				phys_if_std, phys_name);
 
 		} else if (feature_code == 0x107) {
 
@@ -2232,6 +2235,11 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->read_buffer_capacity = mmc_read_buffer_capacity;
 	d->format_unit = mmc_format_unit;
 	d->read_format_capacities = mmc_read_format_capacities;
+
+
+	/* ts A70302 */
+	d->phys_if_std = -1;
+	d->phys_if_name[0] = 0;
 
 	/* ts A61020 */
 	d->start_lba = -2000000000;
