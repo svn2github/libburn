@@ -4812,10 +4812,12 @@ burn_failed:;
    for(i=0;i<skin->track_counter;i++) {
      Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
      if(size<=0) {
-       printf("Track %-2.2d: data  unknown length",i+1);
+       printf("Track %-2.2d: %s unknown length",
+              i+1,(sector_size==2048?"data ":"audio"));
      } else {
        mb= size/1024.0/1024.0;
-       printf("Track %-2.2d: data %5d MB        ",i+1,mb);
+       printf("Track %-2.2d: %s %4d MB        ",
+              i+1,(sector_size==2048?"data ":"audio"),mb);
      }
      if(padding>0)
        printf(" padsize:  %.f KB\n",padding/1024.0);

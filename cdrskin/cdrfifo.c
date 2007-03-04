@@ -38,7 +38,9 @@
 #define Cdrfifo_ffd_maX 100
 
 
-/* 1= enable , 0= disable status messages to stderr */
+/* 1= enable , 0= disable status messages to stderr
+   2= report each 
+*/
 static int Cdrfifo_debuG= 0;
 
 
@@ -82,6 +84,8 @@ struct CdrfifO {
 
  /* index of first byte in buffer which does not belong to predecessor fd */
  int follow_up_eop[Cdrfifo_ffd_maX];
+ /* if follow_up_eop[i]==buffer_size : read_idx was 0 when this was set */
+ int follow_up_was_full_buffer[Cdrfifo_ffd_maX];
 
  /* index of first byte in buffer which belongs to [this] fd pair */
  int follow_up_sod[Cdrfifo_ffd_maX];
@@ -99,6 +103,9 @@ struct CdrfifO {
  /* (simultaneous) peer chaining */
  struct CdrfifO *next;
  struct CdrfifO *prev;
+
+ /* rank in peer chain */
+ int chain_idx;
 };
 
 
@@ -155,11 +162,13 @@ int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,
  for(i= 0; i<Cdrfifo_ffd_maX; i++) {
    o->follow_up_fds[i][0]= o->follow_up_fds[i][1]= -1;
    o->follow_up_eop[i]= o->follow_up_sod[i]= -1;
+   o->follow_up_was_full_buffer[i]= 0;
    o->follow_up_in_limits[i]= -1.0;
  }
  o->follow_up_fd_counter= 0;
  o->follow_up_fd_idx= -1;
  o->next= o->prev= NULL;
+ o->chain_idx= 0;
  o->buffer= TSOB_FELD(char,buffer_size);
  if(o->buffer==NULL)
    goto failed;
@@ -299,10 +308,16 @@ int Cdrfifo_attach_follow_up_fds(struct CdrfifO *o, int source_fd, int dest_fd,
 */
 int Cdrfifo_attach_peer(struct CdrfifO *o, struct CdrfifO *next, int flag)
 {
+ int idx;
+ struct CdrfifO *s;
+
+ for(s= o;s->prev!=NULL;s= s->prev); /* determine start of o-chain */
  for(;o->next!=NULL;o= o->next);          /* determine end of o-chain */
  for(;next->prev!=NULL;next= next->prev); /* determine start of next-chain */
  next->prev= o;
  o->next= next;
+ for(idx= 0;s!=NULL;s= s->next)
+   s->chain_idx= idx++;
  return(1);
 }
 
@@ -408,10 +423,26 @@ int Cdrfifo_eop_adjust(struct CdrfifO *o,int *buffer_fill, int *eop_idx,
  for(i=0; i<=o->follow_up_fd_idx; i++) {
    if(o->follow_up_eop[i]>=0 && o->follow_up_eop[i]>=o->read_idx) {
      eop_is_near= 1;
-     valid_fill= o->follow_up_eop[i]-o->read_idx;
+     if(o->follow_up_eop[i]<o->buffer_size || o->read_idx>0) {
+       valid_fill= o->follow_up_eop[i]-o->read_idx;
+       o->follow_up_was_full_buffer[i]= 0;
+     } else {
+       /*
+        If an input fd change hit exactly the buffer end then follow_up_eop
+        points to buffer_size and not to 0. So it is time to switch output
+        pipes unless this is immediately after follow_up_eop was set and
+        read_idx was 0 (... if this is possible at all while write_idx is 0).
+        follow_up_was_full_buffer was set in this case and gets invalid as
+        soon as a non-0 read_idx is detected (see above).
+       */
+       if(o->follow_up_was_full_buffer[i])
+         valid_fill= o->buffer_size;
+       else
+         valid_fill= 0; /* the current pipe is completely served */
+     }
      if(valid_fill==0)
        *eop_idx= i;
-     else if(valid_fill<=o->chunk_size)
+     else if(valid_fill<o->chunk_size)
        eop_is_near= 2; /* for debugging. to carry a break point */
  break;
    }
@@ -436,7 +467,7 @@ static int Cdrfifo_setup_try(struct CdrfifO *o, struct timeval start_tv,
 */
 {
  int buffer_space,buffer_fill,eop_reached= -1,eop_is_near= 0,was_closed;
- int fd_buffer_fill;
+ int fd_buffer_fill, eop_reached_counter= 0;
  struct timeval current_tv;
  struct timezone tz;
  double diff_time,diff_counter,limit,min_wait_time;
@@ -465,21 +496,26 @@ setup_try:;
 
    if(eop_reached>=0) { /* switch to next output fd */
       o->dest_fd= o->follow_up_fds[eop_reached][1];
+       if(Cdrfifo_debuG)
+         fprintf(stderr,"\ncdrfifo %d: new fifo destination fd : %d\n",
+                        o->chain_idx,o->dest_fd);
       o->read_idx= o->follow_up_sod[eop_reached];
       o->follow_up_eop[eop_reached]= -1;
       eop_is_near= 0;
       eop_reached= -1;
+      eop_reached_counter= 0;
       goto setup_try;
    } else {
      /* work is really done */
      if((!was_closed) && ((flag&1)||Cdrfifo_debuG))
        fprintf(stderr,
-            "\ncdrfifo_debug:  w=%d r=%d | b=%d s=%d | i=%.f o=%.f (done)\n",
-            o->write_idx,o->read_idx,buffer_fill,buffer_space,
+            "\ncdrfifo %d:  w=%d r=%d | b=%d s=%d | i=%.f o=%.f (done)\n",
+            o->chain_idx,o->write_idx,o->read_idx,buffer_fill,buffer_space,
             o->in_counter,o->out_counter);
      return(2);
    }
- }
+ } else if(eop_reached>=0)
+   eop_reached_counter++;
  if(o->interval_counter>0) {
    if(o->total_min_fill>buffer_fill && o->source_fd>=0)
      o->total_min_fill= buffer_fill;
@@ -581,7 +617,8 @@ return: <0 = error , 0 = idle , 1 = did some work
    if(ret==-1) {
 
      /* >>> handle broken pipe */;
-     fprintf(stderr,"\ncdrfifo: on write: errno=%d , \"%s\"\n",errno,
+     fprintf(stderr,"\ncdrfifo %d: on write: errno=%d , \"%s\"\n",
+                    o->chain_idx,errno,
                     errno==0?"-no error code available-":strerror(errno));
 
      if(!(flag&4))
@@ -613,22 +650,31 @@ after_write:;
    if(ret==-1) {
 
      /* >>> handle input error */;
-     fprintf(stderr,"\ncdrfifo: on read: errno=%d , \"%s\"\n",errno,
+     fprintf(stderr,"\ncdrfifo %d: on read: errno=%d , \"%s\"\n",
+                    o->chain_idx,errno,
                     errno==0?"-no error code available-":strerror(errno));
 
      o->source_fd= -1;
    } else if(ret==0) { /* eof */
      /* activate eventual follow-up source fd */
      if(Cdrfifo_debuG || (flag&1))
-       fprintf(stderr,"\ncdrfifo: on read(%d,buffer,%d): eof\n",
-               o->source_fd,can_read);
+       fprintf(stderr,"\ncdrfifo %d: on read(%d,buffer,%d): eof\n",
+               o->chain_idx,o->source_fd,can_read);
      if(o->follow_up_fd_idx+1 < o->follow_up_fd_counter) {
        idx= ++(o->follow_up_fd_idx);
        o->source_fd= o->follow_up_fds[idx][0];
        /* End-Of-Previous */
-       if(o->write_idx==0)
+       if(o->write_idx==0) {
          o->follow_up_eop[idx]= o->buffer_size;
-       else
+
+         /* A70304 : can this happen ? */
+         o->follow_up_was_full_buffer[idx]= (o->read_idx==0);
+
+         if(Cdrfifo_debuG || (flag&1))
+           fprintf(stderr,"\ncdrfifo %d: write_idx 0 on eop: read_idx= %d\n",
+                          o->chain_idx,o->read_idx);
+
+       } else
          o->follow_up_eop[idx]= o->write_idx;
        /* Start-Of-Data . Try to start at next full chunk */
        sod= o->write_idx;
@@ -644,7 +690,8 @@ after_write:;
        o->fd_in_counter= 0;
        o->fd_in_limit= o->follow_up_in_limits[idx];
        if(Cdrfifo_debuG || (flag&1))
-         fprintf(stderr,"\ncdrfio: new fifo source fd : %d\n",o->source_fd);
+         fprintf(stderr,"\ncdrfifo %d: new fifo source fd : %d\n",
+                        o->chain_idx,o->source_fd);
      } else {
        o->source_fd= -1;
      }
@@ -777,13 +824,13 @@ ex:;
  } else
    elapsed= wait_usec;
  if(elapsed>=wait_usec) {
-   if((flag&1)||Cdrfifo_debuG) {
+   if((flag&1)||Cdrfifo_debuG>=2) {
      fprintf(stderr,"\n");
      for(ff= o; ff!=NULL; ff= ff->next) {
        buffer_space= Cdrfifo_tell_buffer_space(ff,0);
        fprintf(stderr,
-               "cdrfifo_debug:  w=%d r=%d | b=%d s=%d | i=%.f o=%.f\n",
-               ff->write_idx,ff->read_idx,
+               "cdrfifo %d:  w=%d r=%d | b=%d s=%d | i=%.f o=%.f\n",
+               ff->chain_idx,ff->write_idx,ff->read_idx,
                ff->buffer_size-buffer_space,buffer_space,
                ff->in_counter,ff->out_counter);
      }
@@ -876,6 +923,76 @@ double Scanf_io_size(char *text, int flag)
 
 
 /* This is a hardcoded test mock-up for two simultaneous fifos of which the
+   one runs with block size 2048 and feeds the other which runs with 2352.
+   Both fifos have the same number of follow_up pipes (tracks) which shall
+   be connected 1-to-1.
+*/
+int Test_mixed_bs(char **paths, int path_count,
+                  int fs_size, double speed_limit, double interval, int flag)
+/*
+ bit0= debugging verbousity
+*/
+{
+ int fd_in[100],fd_out[100],ret,pipe_fds[100][2],real_out[100];
+ int i,iv,stall_counter= 0,cycle_counter= 0.0;
+ char buf[10240], target_path[80];
+ double in_counter, out_counter, prev_in= -1.0, prev_out= -1.0;
+ struct CdrfifO *ff_in= NULL, *ff_out= NULL;
+
+ if(path_count<1)
+   return(2);
+ Cdrfifo_new(&ff_in,fd_in[0],fd_out[0],2048,fs_size,0);
+ for(i= 0; i<path_count; i++) {
+   fd_in[2*i]= open(paths[i],O_RDONLY);
+   if(fd_in[2*i]==-1)
+     return(0);
+   if(pipe(pipe_fds[2*i])==-1)
+     return(-1);
+   fd_out[2*i]= pipe_fds[2*i][1];
+   if(i==0)
+     ret= Cdrfifo_new(&ff_in,fd_in[2*i],fd_out[2*i],2048,fs_size,0);
+   else
+     ret= Cdrfifo_attach_follow_up_fds(ff_in,fd_in[2*i],fd_out[2*i],0);
+   if(ret<=0)
+     return(ret);
+   fd_in[2*i+1]= pipe_fds[2*i][0];
+   sprintf(target_path,"/dvdbuffer/fifo_mixed_bs_test_%d",i);
+   fd_out[2*i+1]= open(target_path,O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+   if(i==0)
+     ret= Cdrfifo_new(&ff_out,fd_in[2*i+1],fd_out[2*i+1],2352,fs_size,0);
+   else
+     ret= Cdrfifo_attach_follow_up_fds(ff_out,fd_in[2*i+1],fd_out[2*i+1],0);
+   if(ret<=0)
+     return(ret);
+   fprintf(stderr,"test_mixed_bs: %d : %2d fifo %2d pipe %2d fifo %2d : %s\n",
+           i, fd_in[2*i],fd_out[2*i],fd_in[2*i+1],fd_out[2*i+1], target_path);
+ }
+ Cdrfifo_attach_peer(ff_in,ff_out,0);
+ 
+
+ /* Let the fifos work */
+ iv= interval*1e6;
+ while(1) {
+   ret= Cdrfifo_try_to_work(ff_in,iv,NULL,NULL,flag&1);
+   if(ret<0 || ret==2) { /* <0 = error , 2 = work is done */
+     fprintf(stderr,"\ncdrfifo %d: fifo ended work with ret=%d\n",
+                    ff_in->chain_idx,ret);
+     if(ret<0)
+       return(-7);
+ break;
+   }
+   cycle_counter++;
+   Cdrfifo_get_counters(ff_in, &in_counter, &out_counter, 0);
+   if(prev_in == in_counter && prev_out == out_counter)
+     stall_counter++;
+   prev_in= in_counter;
+   prev_out= out_counter;
+ }
+ return(1);
+}
+
+
+/* This is a hardcoded test mock-up for two simultaneous fifos of which the
    first one simulates the cdrskin fifo feeding libburn and the second one 
    simulates libburn and the burner at given speed. Both have two fd pairs
    (i.e. tracks). The tracks are read from  /u/test/cdrskin/in_[12]  and
@@ -933,7 +1050,8 @@ int Test_multi(int fs_size, double speed_limit, double interval, int flag)
  while(1) {
    ret= Cdrfifo_try_to_work(ff1,iv,NULL,NULL,flag&1);
    if(ret<0 || ret==2) { /* <0 = error , 2 = work is done */
-     fprintf(stderr,"\ncdrfifo: fifo ended work with ret=%d\n",ret);
+     fprintf(stderr,"\ncdrfifo %d: fifo ended work with ret=%d\n",
+                    ff1->chain_idx,ret);
      if(ret<0)
        return(-7);
  break;
@@ -992,6 +1110,13 @@ int main(int argc, char **argv)
    } else if(strncmp(argv[i],"vb=",3)==0) {
      sscanf(argv[i]+3,"%d",&verbous);
 
+   } else if(strcmp(argv[i],"-mixed_bs_test")==0) {
+
+     ret= Test_mixed_bs(argv+i+1,argc-i-1,
+                        (int) fs_value,speed_limit,interval,(verbous>=2));
+     fprintf(stderr,"Test_mixed_bs(): ret= %d\n",ret);
+     exit(ret<0);
+
    } else if(strcmp(argv[i],"-multi_test")==0) {
 
      if(speed_limit==0.0)
@@ -1035,7 +1160,7 @@ int main(int argc, char **argv)
  if(speed_limit!=0.0)
    Cdrfifo_set_speed_limit(ff,speed_limit,0);
  if(fill_buffer) {
-   ret= Cdrfifo_fill(ff,0);
+   ret= Cdrfifo_fill(ff,0,0);
    if(ret<=0) {
      fprintf(stderr,
              "cdrfifo: FATAL : initial filling of fifo buffer failed\n");
