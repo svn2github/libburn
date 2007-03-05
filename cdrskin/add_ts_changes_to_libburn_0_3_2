@@ -39,7 +39,7 @@ original="./libburn_svn_release.tgz"
 changes="./libburn-release"
 
 skin_release="0.3.2"
-patch_level=".pl00"
+patch_level=".pl01"
 skin_rev="$skin_release""$patch_level"
 
 # The result directory and the name of the result tarballs
