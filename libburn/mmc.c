@@ -1541,8 +1541,8 @@ void mmc_get_configuration(struct burn_drive *d)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_plus_R
-	if ((cp == 0x1b || cp == 0x2b) &&
-	    burn_support_untested_profiles) /* DVD+R , DVD+R/DL */
+	if (cp == 0x1b || (cp == 0x2b && burn_support_untested_profiles))
+						/* DVD+R , DVD+R/DL */
 		d->current_is_supported_profile = 1;
 #endif
 

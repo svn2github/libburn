@@ -5,7 +5,7 @@ Content:
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
 - Sequential DVD-R[W] Cookbook
-- >>> DVD+R Cookbook (emerging, totally untested yet)
+- DVD+R Cookbook (still emerging)
 
 -------------------------------------------------------------------------------
                          TAO Multi-Session CD Cookbook
@@ -987,7 +987,7 @@ close session if multi-session is demanded.
 
 -------------------------------------------------------------------------------
 
-                     INCOMPLETE, YET TOTALLY UNTESTED
+                              INCOMPLETE YET
 
                               DVD+R Cookbook
 -------------------------------------------------------------------------------
@@ -1077,6 +1077,8 @@ Number 0 closes the DVD+R session but keeps the media appendable.
 (mmc5r03c.pdf 6.3.3.4.3)
 
 
+>>> This is not tested yet. growisofs has code for that gesture but explicitly 
+    avoids to use it. Instead it recommends to fill up the media with zeros.
 Eventually 5Bh CLOSE TRACK SESSION Close Function 101b is used to finalize
 the media with minimal radius. After that the disc is not appendable any more !
 (mmc5r03c.pdf 6.3.3.4.4) 
