@@ -1432,6 +1432,9 @@ int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
 {
 	struct burn_drive *d = o->drive;
 
+	/* <<< FOR NOW: avoid finalizing media */
+	return 3;
+
 	if (o->multi)
 		return 2;
 	d->busy = BURN_DRIVE_CLOSING_SESSION;

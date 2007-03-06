@@ -47,11 +47,11 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70112 */
 #define Libburn_support_dvd_raM 1
 
-
-/* ts A70129 >>> EXPERIMENTAL UNTESTED
-*/
+/* ts A70129 */
 #define Libburn_support_dvd_r_seQ 1
 
+/* ts A70306 >>> UNTESTED */
+#define Libburn_support_dvd_plus_R 1
 
 /* Progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
@@ -1540,7 +1540,7 @@ void mmc_get_configuration(struct burn_drive *d)
 	if (cp == 0x15 && burn_support_untested_profiles) /* DVD-R/DL */
 		d->current_is_supported_profile = 1;
 #endif
-#ifdef Libburn_support_dvd_plusR
+#ifdef Libburn_support_dvd_plus_R
 	if ((cp == 0x1b || cp == 0x2b) &&
 	    burn_support_untested_profiles) /* DVD+R , DVD+R/DL */
 		d->current_is_supported_profile = 1;
