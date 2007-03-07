@@ -171,10 +171,12 @@ unpredicted length and to keep media appendable by option
 The only restriction towards CD-R[W] is the lack of support for -audio tracks.
 Multiple tracks per session are permissible.
 .br
-The write modes for DVD+R both resemble DVD-R Incremental Streaming except
-that with DVD+R each track gets wrapped in an own session. -sao does
-reserve a track size whereas -tao writes the tracks open ended. They do not
-make much difference in respect to the result, though.
+The write modes for DVD+R resemble those with DVD-R except that with DVD+R
+each track gets wrapped in an own session.
+.br
+Quite deliberately write mode -sao insists in the tradition of a predicted
+track size and blank media, whereas -tao writes the tracks open ended and
+allows appendable media.
 .br
 Currently DVD+R are always kept appendable regardless wether -multi is given
 or not. This might change in future so it is strongly advised to already now
@@ -661,8 +663,11 @@ This option is only needed for revoking eventual --ignore_signals or
 .TP
 .BI \--allow_untested_media
 Enable the use of media profiles which have been implemented but not yet
-tested. Currently this applies to : profile 0015h , DVD-R/DL Sequential
-(will not allow -multi) and to profile 002Bh, DVD+R/DL.
+tested. Currently this applies to :
+.br
+Profile 0015h , DVD-R/DL Sequential (will not allow -multi).
+.br
+Profile 002Bh , DVD+R/DL.
 .br
 If you really test such media, then please report the outcome on
 libburn-hackers@pykix.org 
@@ -796,7 +801,7 @@ cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
 -tao padsize=300k -
 .SS
-.B Write several sessions to the same CD or DVD-R[W]:
+.B Write multi-session to the same CD, DVD-R[W] or DVD+R:
 .br
 cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso
 .br
@@ -806,7 +811,7 @@ cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 3.iso
 .br
 cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso
 .SS
-.B Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:
+.B Get multi-session info for option -C of program mkisofs:
 .br
 c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
 .br

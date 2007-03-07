@@ -704,6 +704,7 @@ track and it demands an exactly predicted track size.
 - Obtaining a Table Of Content from DVD-R[W]
 - Hearsay about DVD-R/DL (Dual Layer)
 
+
 -------------------------------------------------------------------------------
 About overwriteable, blank, appendable and finalized DVD-R[W] media :
 
@@ -872,6 +873,7 @@ No further finalization is necessary. (I.e. no 5Bh CLOSE TRACK SESSION.)
 
 -------------------------------------------------------------------------------
 Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems :
+(valid for DVD+R too)
 
 Like with CD it is necessary to obtain the two numbers for mkisofs option -C
 in order to prepare a ISO-9660 filesystem image which by its inner pointers
@@ -924,7 +926,8 @@ Session from 51h READ DISC INFORMATION.
 
 
 -------------------------------------------------------------------------------
-Obtaining a Table Of Content from DVD-R[W] :
+Obtaining a Table Of Content from DVD-R[W]:
+(valid for DVD+R too)
 
 The raw TOC entries from 43h READ TOC/PMA/ATIP Format 0010b as described with
 CD media are not available with non-CD.
@@ -1005,9 +1008,12 @@ DVD+R/DL                       002bh
 
 - About empty, appendable and finalized DVD+R
 - Writing a Pseudo Session to DVD+R
-- >>> Obtaining multi-session info for extending ISO-9660 filesystems
-- >>> Obtaining a Table Of Content from CD
 - >>> Hearsay about DVD+R/DL (Dual Layer) :
+
+The following two chapters of the Sequential DVD-R[W] Cookbook are valid for
+DVD+R media too:
+- Obtaining DVD-R[W] multi-session info for extending ISO-9660 filesystems
+- Obtaining a Table Of Content from DVD-R[W]
 
 -------------------------------------------------------------------------------
 About blank, appendable and finalized DVD+R :

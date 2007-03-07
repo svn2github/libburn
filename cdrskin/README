@@ -174,13 +174,13 @@ Burn image file  my_image.iso  to media
     cdrskin -v dev=0,1,0 speed=12 fs=8m driveropts=burnfree padsize=300k \
             -eject  my_image.iso 
 
-Write several sessions to the same CD or DVD-R[W]
+Write multi-session to the same CD , DVD-R[W] or DVD+R
     cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
     cdrskin dev=/dev/hdc padsize=300k -multi -tao 2.iso
     cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.iso
     cdrskin dev=/dev/hdc padsize=300k -tao 4.iso
 
-Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:
+Get multi-session info for option -C of program mkisofs:
     c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
     mkisofs ... -C "$c_values" ...
 
@@ -223,13 +223,11 @@ Run a backup :
 
                                 Restrictions
 
-The major restrictions are lifted now: audio, TAO, multi-session do work.
-
-Many cdrecord options are still unsupported, though.
+Many cdrecord options are still unsupported.
 If you have use cases for them, please report your wishes and expectations.
 
-DVD support is restricted to single layer overwriteable DVD (-RAM, +RW, -RW)
-for now.
+DVD support is restricted to single layer DVD for now. Double layer media
+are implemented but untested.
 
 
 
@@ -244,9 +242,6 @@ Do not bother Joerg Schilling with any cdrskin problems.
 cdrskin does not contain any bytes copied from cdrecord's sources. Many bytes
 have been copied from the message output of cdrecord runs, though. I am
 thankful to Joerg Schilling for every single one of them.
-
-Actually i, Thomas Schmitt, am a devoted user of cdrecord via my project
-scdbackup which still runs a bit better with cdrecord than with cdrskin. TAO.
 I have the hope that Joerg feels more flattered than annoyed by cdrskin.
 
 Many thanks to Andy Polyakov for his dvd+rw-tools
@@ -474,6 +469,13 @@ Incremental Streaming afterwards. So blank=fast will do full blanking.
 
 blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 
+
+                                  DVD+R 
+
+From the view of cdrskin they behave much like DVD-R. Each track gets wrapped
+into an own session, though.
+
+------------------------------------------------------------------------------
 
                         Special compilation variations
 

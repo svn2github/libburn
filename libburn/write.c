@@ -1029,7 +1029,8 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 	/* ts A70214 : eventually adjust already expanded size of track */
 	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
 
-	if (o->write_type == BURN_WRITE_SAO) {
+	if (o->write_type == BURN_WRITE_SAO &&
+	    ! burn_track_is_open_ended(s->track[tnum])) {
  		/* Round track size up to 32 KiB and reserve track */
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
 			 * (off_t) 2048;
