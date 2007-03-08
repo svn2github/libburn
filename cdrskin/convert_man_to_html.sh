@@ -43,12 +43,15 @@ then
   -e 's/<h1 align=center>CDRSKIN<\/h1>/<h1 align=center>man 1 cdrskin<\/h1>/' \
   -e 's/<body>/<body BGCOLOR="#F5DEB3" TEXT=#000000 LINK=#0000A0 VLINK=#800000>/' \
   -e 's/<b>Overview of features:<\/b>/\&nbsp;<BR><b>Overview of features:<\/b>/' \
+  -e 's/<b>General information paragraphs:<\/b>/\&nbsp;<BR><b>General information paragraphs:<\/b>/' \
   -e 's/<b>Track recording model:<\/b>/\&nbsp;<BR><b>Track recording model:<\/b>/' \
   -e 's/In general there are two types of tracks: data and audio./\&nbsp;<BR>In general there are two types of tracks: data and audio./' \
   -e 's/While audio tracks just contain a given/\&nbsp;<BR>While audio tracks just contain a given/' \
+  -e 's/<b>Write mode selection:<\/b>/\&nbsp;<BR><b>Write mode selection:<\/b>/' \
   -e 's/<b>Recordable CD Media:<\/b>/\&nbsp;<BR><b>Recordable CD Media:<\/b>/' \
   -e 's/<b>Overwriteable DVD Media:<\/b>/\&nbsp;<BR><b>Overwriteable DVD Media:<\/b>/' \
   -e 's/<b>Sequentially Recordable DVD Media:<\/b>/\&nbsp;<BR><b>Sequentially Recordable DVD Media:<\/b>/' \
+  -e 's/The write modes for DVD+R/\&nbsp;<BR>The write modes for DVD+R/' \
   -e 's/<b>Drive preparation and addressing:<\/b>/\&nbsp;<BR><b>Drive preparation and addressing:<\/b>/' \
   -e 's/If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
   -e 's/^Alphabetical list of options/\&nbsp;<BR>Alphabetical list of options/' \
@@ -60,7 +63,7 @@ then
 
   chmod u+rw,go+r,go-w "$htmlpage"
   echo "Emerged file:"
-  ls -l "$htmlpage"
+  ls -lL "$htmlpage"
 
 else
 

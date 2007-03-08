@@ -58,6 +58,8 @@ See section EXAMPLES at the end of this text.
 .br
 Track recording model
 .br
+Write mode selection
+.br
 Recordable CD Media
 .br
 Sequentially Recordable DVD Media
@@ -107,6 +109,16 @@ Another type of data track content are archive formats which originally
 have been developed for magnetic tapes. Only formats which mark a detectable
 end-of-archive in their data are suitable, though. Well tested are
 the archivers afio and star. Not suitable seems GNU tar.
+.PP
+.B Write mode selection:
+.br
+If none of the options -dao, -tao or -sao is given then the program will
+try to choose a write mode which matches the defined recording job,
+the capabilities of the drive and the state of the present media.
+.br
+So the mentioning of write modes in the following paragraphs and in the
+examples is not so much a demand that the user shall choose one explicitely,
+but rather an illustration of what to expect with particular media types.
 .PP
 .B Recordable CD Media:
 .br
@@ -454,14 +466,17 @@ then behave strange or even go bad for the next few attempts to burn a CD.
 One should use it only if inavoidable.
 .TP
 .BI \-sao
-Write CD in Session At Once mode, resp. a sequential DVD-R[W] in Disc-at-once
-(DAO) mode.
+Write CD in Session At Once mode, a sequential DVD-R[W] in Disc-at-once
+(DAO) mode, or a DVD+R.
 .br
 With CD this mode is able to put several audio tracks on media without
 producing audible gaps between them.
 .br
 With DVD-R[W] this mode can only write a single track.
 No -multi is allowed with DVD-R[W] -sao.
+.br
+-sao is permissible with overwriteable DVD and with DVD+R but actually only
+imposes restrictions without providing known advantages. 
 .br
 -sao can only be used for tracks of fixely predicted size. This implies that
 track arguments which depict stdin or named pipes need to be preceeded by
@@ -497,8 +512,9 @@ Less guesswork is needed if track sources are in format MS-WAVE in a file with
 suffix ".wav".
 .TP
 .BI \-tao
-Write CD in Track At Once (TAO) mode, resp. sequential DVD-R[W] in Incremental
-Streaming mode. This mode also applies pro-forma to overwriteable DVD media.
+Write CD in Track At Once (TAO) mode, sequential DVD-R[W] in Incremental
+Streaming mode, or DVD+R without traditional -sao restrictions.
+This mode also applies pro-forma to overwriteable DVD media.
 .br
 Mode -tao can be used with track sources of unpredictable size, like standard
 input or named pipes. It is also the only mode that can be used for writing
