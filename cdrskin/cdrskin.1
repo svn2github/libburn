@@ -580,6 +580,20 @@ contain a "=" character.
 By default such arguments are seen as misspelled options. It is nevertheless
 not possible to use one of the options listed with --list_ignored_options.
 .TP
+.BI assert_write_lba= block_number | byte_address
+Abort if the write address given with this option is not the same as predicted
+immediately before the write session starts. This option can ensure that a
+start address which was presumed by a formatter like mkisofs -C is really used
+by the drive for writing.
+assert_write_lba=0 effectively demands blank media and excludes appendables.
+.br
+Block numbering is peculiar: If the last character of the option string is
+a letter [a-zA-Z] then the usual unit scaling by "s", "k", "m", etc. applies
+and the result is divided by 2048. Else the number value of the string is
+taken as plain block number with block size 2048 byte.
+(E.g ...=1000 or ...=1000s means block 1000, ...=1m means block
+512, ...=4096b means block number 2)
+.TP
 .BI \--demand_a_drive
 Exit with a nonzero value if no drive can be found during a bus scan.
 .TP

@@ -249,6 +249,7 @@ or
 
 
 #include <stdio.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -1986,6 +1987,8 @@ set_dev:;
         " --allow_untested_media   enable implemented untested media types\n");
      printf(
          " --any_track        allow source_addresses to match '^-.' or '='\n");
+     printf(
+         " assert_write_lba=<lba>  abort if not next write address == lba\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
      printf(" --devices          list accessible devices (tells /dev/...)\n");
      printf(
@@ -2416,6 +2419,7 @@ struct CdrskiN {
  int multi;
 
  double write_start_address;
+ int assert_write_lba;
 
  int do_eject;
  char eject_device[Cdrskin_strleN];
@@ -2541,6 +2545,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
  o->write_start_address= -1.0;
+ o->assert_write_lba= -1;
  o->burnfree= 1;
  o->do_eject= 0;
  o->eject_device[0]= 0;
@@ -3498,11 +3503,22 @@ ex:;
 }
 
 
+/** Predict address block number where the next write will go to
+    @param flag Bitfield for control purposes:
+                bit0= do not return nwa from eventual write_start_address
+    @return <=0 error, 1 nwa from drive , 2 nwa from write_start_address
+*/
 int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 {
  int ret,lba;
  struct burn_drive *drive;
  struct burn_write_opts *o= NULL;
+
+ if(skin->write_start_address>=0 && !(flag&1)) {
+   /* (There is no sense in combining random addressing with audio) */
+   *nwa= skin->write_start_address/2048;
+   return(2);
+ }
 
  /* Set write opts in order to provoke MODE SELECT. LG GSA-4082B needs it. */
  drive= skin->drives[skin->driveno].drive;
@@ -4858,6 +4874,18 @@ burn_failed:;
 
 #endif /* ! Cdrskin_extra_leaN */
 
+ ret= Cdrskin_obtain_nwa(skin, &nwa,0);
+ if(ret<=0)
+   nwa= -1;
+ if(skin->assert_write_lba>=0 && nwa!=skin->assert_write_lba) {
+   fprintf(stderr,
+       "cdrskin: FATAL : Option assert_write_lba= demands block number %10d\n",
+       skin->assert_write_lba);
+   fprintf(stderr,
+       "cdrskin: FATAL : but predicted actual write start address is   %10d\n",
+       nwa);
+   {ret= 0; goto ex;}
+ }
 
  if(skin->tell_media_space || skin->track_counter<=0) {
    /* write capacity estimation and return without actual burning */
@@ -4891,11 +4919,8 @@ burn_failed:;
 #endif /* ! Cdrskin_extra_leaN */
 
  Cdrskin_adjust_speed(skin,0);
- if(skin->verbosity>=Cdrskin_verbose_progresS) {
-   ret= Cdrskin_obtain_nwa(skin, &nwa,0);
-   if(ret>0)
-     printf("Starting new track at sector: %d\n",nwa);
- }
+ if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0)
+   printf("Starting new track at sector: %d\n",nwa);
  skin->drive_is_busy= 1;
  burn_disc_write(o, disc);
  if(skin->preskin->abort_handler==-1)
@@ -5321,7 +5346,7 @@ sorry_failed_to_eject:;
 */
 int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
- int i,k,ret,source_has_size=0;
+ int i,k,l,ret,source_has_size=0;
  double value,grab_and_wait_value= -1.0;
  char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
@@ -5442,6 +5467,14 @@ set_abort_max_wait:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf(
    "cdrskin: --any_track : will accept any unknown option as track source\n"));
+
+   } else if(strncmp(argv[i],"assert_write_lba=",17)==0) {
+     value_pt= argv[i]+17;
+     value= Scanf_io_size(value_pt,0);
+     l= strlen(value_pt);
+     if(l>1) if(isalpha(value_pt[l-1]))
+       value/= 2048.0;
+     skin->assert_write_lba= value; 
 
    } else if(strcmp(argv[i],"-atip")==0) {
      if(skin->do_atip<1)
