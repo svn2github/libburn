@@ -119,6 +119,29 @@ multi-session. (The default behavior of cdrskin deems me to be preferrable.)
 
 --------------------------------------------------------------------------
 
+assert_write_lba=<lba> allows to ensure that the start block address which
+was used with the formatter program (e.g. mkisofs -C) matches the start block
+address which will be used by the upcoming burn.
+
+E.g. cdrskin aborts with an error message if 
+{{{
+assert_write_lba=0
+}}}
+is given but an appendable media is to be burned which would start ati
+block 68432.
+
+
+An ISO-9660 file system image must be prepared according to a particular
+block address on media. If the prepared address and the real address on media
+do not match then the filesystem will not be mountable or may even cause system
+trouble.
+
+A sequential archive format like afio or star will not necessarily need such
+a coordination of addresses. It might nevertheless be confusing to a reader
+if the archive does not start at block 0.
+
+--------------------------------------------------------------------------
+
 fifo_start_at=<num> is a throughput enhancer for unsteady data streams
 like they are produced by a compressing archiver program when piping to
 CD on-the-fly. It makes better use of the general property of a FIFO 
