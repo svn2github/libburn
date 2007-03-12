@@ -38,8 +38,8 @@ original="./libburn_svn_release.tgz"
 # My changes are in $changes , mainly in $changes/cdrskin
 changes="./libburn-release"
 
-skin_release="0.3.2"
-patch_level=".pl01"
+skin_release="0.3.4"
+patch_level=".pl00"
 skin_rev="$skin_release""$patch_level"
 
 # The result directory and the name of the result tarballs
