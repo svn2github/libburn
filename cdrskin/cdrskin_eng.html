@@ -2,7 +2,7 @@
 
 <HEAD>
 <META NAME="description" CONTENT="cdrskin, a limited cdrecord compatibility wrapper for libburn">
-<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, cdrecord, compatible, scdbackup">
+<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, cdrecord, compatible, scdbackup">
 <META NAME="robots" CONTENT="follow">
 <TITLE>cdrskin homepage english</TITLE>
 </HEAD>
@@ -24,9 +24,8 @@
 
 <P>
 <H2>Purpose:</H2>
-<UL>
-<LI>Burns preformatted data to CD-R, CD-RW, DVD-R, DVD-RW, DVD-RAM, DVD+RW</LI>
-</UL>
+Burns preformatted data to CD and single layer DVD media:<BR>
+CD-R, DVD-R, DVD+R, CD-RW, DVD-RW, DVD-RAM, DVD+RW
 </P>
 <P>
 
@@ -35,8 +34,9 @@
 <P>
 <H2>Hardware requirements:</H2>
 A CD/DVD recorder suitable for 
-<A HREF="http://libburnia.pykix.org">libburnia.pykix.org</A> 
-(SCSI or IDE/ATAPI writers compliant to standard MMC-3 or higher).
+<A HREF="http://libburnia.pykix.org">libburnia.pykix.org</A> <BR>
+(SCSI , ATA , USB , or SATA writers compliant to standard MMC-3 for CD
+and to MMC-5 for DVD).
 <BR>
 </P>
 
@@ -44,7 +44,7 @@ A CD/DVD recorder suitable for
 <H2>Software requirements :</H2>
 <DL>
 <DT>Linux kernel 2.4 or higher</DT>
-<DD>With kernel 2.4 the drive has to be under ide-scsi emulation.</DD>
+<DD>With kernel 2.4 an ATA drive has to be under ide-scsi emulation.</DD>
 <DD>With kernel 2.6 the drive should not be under ide-scsi.</DD>
 <DT>libpthread</DT>
 <DD>is supposed to be a standard system component.</DD>
@@ -56,7 +56,7 @@ A CD/DVD recorder suitable for
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.3.2</DT>
+<DT>libburn-0.3.4</DT>
 <DD>(by Derek Foreman, Ben Jansens, and team of libburnia.pykix.org)</DD>
 <DD>transfers data to CD</DD>
 </DL>
@@ -94,10 +94,15 @@ can use this write mode, too.<BR>
 Further enhancements depend on people who can describe and discuss their
 wishes as well as on the development of libburn.</DT>
 <BR><BR>
-<DT>Get an overview of drives and their addresses:</DT>
-<DD>$<KBD>&nbsp;cdrskin -scanbus</KBD></DD>
-<DD>$<KBD>&nbsp;cdrskin dev=ATA -scanbus</KBD></DD>
-<DD>$<KBD>&nbsp;cdrskin --devices</KBD></DD>
+<DT>Get an overview of drives and their addresses</DT>
+<DD>#<KBD>&nbsp;cdrskin -scanbus</KBD></DD>
+<DD>#<KBD>&nbsp;cdrskin dev=ATA -scanbus</KBD></DD>
+<DD>#<KBD>&nbsp;cdrskin --devices</KBD></DD>
+<DT>Being superuser avoids permission problems with /dev/sgN resp. /dev/hdX .
+</DT>
+<DT>Ordinary users should then get granted rw access to the /dev files
+as listed by option --devices.</DT>
+<DT>&nbsp;</DT>
 
 <DT>Get info about a particular drive or loaded media:</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=0,1,0 -checkdrive</KBD></DD>
@@ -124,7 +129,7 @@ wishes as well as on the development of libburn.</DT>
 <DD><KBD>&nbsp;&nbsp;cdrskin -v dev=0,1,0 fs=32m speed=8 \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;-tao padsize=300k -</KBD></DD>
 
-<DT>Write several sessions to the same CD or DVD-R[W]:</DT>
+<DT>Write several sessions to the same CD, DVD-R[W] or DVD+R:</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso</KBD>
 </DD>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 2.iso</KBD>
@@ -133,9 +138,14 @@ wishes as well as on the development of libburn.</DT>
 </DD>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso</KBD></DD>
 
-<DT>Get CD or DVD-R[W] multi-session info for option -C of program mkisofs:</DT>
+<DT>Get multi-session info for option -C of program mkisofs:</DT>
 <DD>$<KBD>&nbsp;c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)</KBD></DD>
 <DD>$<KBD>&nbsp;mkisofs ... -C "$c_values" ...</KBD></DD>
+
+<DT>Inquire free space on media for a -tao -multi run:</DT>
+<DD>$<KBD>&nbsp;x=$(cdrskin dev=/dev/sr0 -tao -multi \</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;--tell_media_space 2>/dev/null)</KBD></DD>
+<DD>$<KBD>&nbsp;echo "Available: $x blocks of 2048 data bytes"</KBD></DD>
 
 <DT>Write audio tracks to CD:</DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=ATA:1,0,0 speed=48 -sao \</KBD></DD>
@@ -163,34 +173,12 @@ man cdrecord</A></KBD></DD>
 </DL>
 </P>
 
-<P>
-<H2>Known deficiencies:</H2>
-<UL>
-<DT></DT>
-<LI>
-Appending sessions to unclosed media is restricted to write mode TAO.
-</LI>
-<LI>
-cdrskin -scanbus or --devices hangs for quite a while if there is 
-a CD drive which does not work properly (e.g. because it has individual
-problems with DMA). 
-So if the superuser gets no result with cdrskin --devices then one should
-disable DMA with the problematic CD drives
-(like: <KBD>hdparm -d0 /dev/hdd</KBD> )
-and try again.<BR>
-In severe cases it might be necessary to guess the device name /dev/sgN resp.
-/dev/hdX of the non-ill burner if it cannot be found otherwise among its
-ill peers. Alternatively one can guess the address of the ill device, remove
-rw-permissions and retry the bus scan as non-superuser.
-</UL>
-</P>
-
 <HR>
 
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.3.2.pl01.tar.gz">cdrskin-0.3.2.pl01.tar.gz</A>
+<DD><A HREF="cdrskin-0.3.4.pl00.tar.gz">cdrskin-0.3.4.pl00.tar.gz</A>
 (570 KB).
 </DD>
 <DD>
@@ -201,14 +189,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.3.2.pl01-x86-suse9_0.tar.gz">
-cdrskin_0.3.2.pl01-x86-suse9_0.tar.gz</A>, (80 KB),
+<DD><A HREF="cdrskin_0.3.4.pl00-x86-suse9_0.tar.gz">
+cdrskin_0.3.4.pl00-x86-suse9_0.tar.gz</A>, (80 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.3.2.pl01-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.2.pl01-x86-suse9_0-static.tar.gz</A>, (285 KB), -static compiled,
+<DD><A HREF="cdrskin_0.3.4.pl00-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.4.pl00-x86-suse9_0-static.tar.gz</A>, (285 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -235,36 +223,38 @@ cdrskin_0.3.2.pl01-x86-suse9_0-static.tar.gz</A>, (285 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.3.0:
+Enhancements towards previous stable version cdrskin-0.3.2:
 <UL>
-<LI>Burnfree enabled by default</LI>
-<LI>Multi-session burning to DVD-R
-and sequential (i.e. unformatted) DVD-RW</LI>
-<LI>Option -toc with sequential DVD-R[W]</LI>
-<LI>Options -msinfo and msifile= with appendable DVD-R[W]</LI>
-<LI>Single session DAO write mode with DVD-R[W]</LI>
+<LI>Multi-session burning to DVD+R</LI>
+<LI>New option --tell_media_space tells the maximum size for the next burn</LI>
+<LI>New option assert_write_lba= prevents inadverted writing to appendable
+<LI>Bug fix: Multi-track runs with fifo could stall in rare cases</LI>
 </UL>
-Bug fixes towards cdrskin-0.3.2.pl00:
+
+<!--
+ Bug fixes towards cdrskin-0.3.4.pl00:
 <UL>
-<LI>Multi-track runs with fifo could stall in rare cases</LI>
+<LI>none yet</LI>
 </UL>
+-->
+
 </P>
 
 <HR>
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.3.3 :</H3></DT>
-<DD>Enhancements towards stable version 0.3.2:
+<DT><H3>Development snapshot, version 0.3.5 :</H3></DT>
+<DD>Enhancements towards stable version 0.3.4.pl00:
 <UL>
-<LI>New option --tell_media_space tells the maximum size for the next burn</LI>
+<LI>none yet</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.3.3</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.3 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.3 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.3)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.3.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia.pykix.org"> libburnia.pykix.org</A></DT>
@@ -284,15 +274,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.3.3.tar.gz">cdrskin-0.3.3.tar.gz</A>
+<A HREF="cdrskin-0.3.5.tar.gz">cdrskin-0.3.5.tar.gz</A>
 (570 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.3.3-x86-suse9_0.tar.gz">
-cdrskin_0.3.3-x86-suse9_0.tar.gz</A>, (80 KB).
+<DD><A HREF="cdrskin_0.3.5-x86-suse9_0.tar.gz">
+cdrskin_0.3.5-x86-suse9_0.tar.gz</A>, (80 KB).
 </DD>
-<DD><A HREF="cdrskin_0.3.3-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.3-x86-suse9_0-static.tar.gz</A>, (280 KB)
+<DD><A HREF="cdrskin_0.3.5-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.5-x86-suse9_0-static.tar.gz</A>, (280 KB)
 </DD>
 </DL>
 </P>
@@ -363,7 +353,7 @@ is a GUI frontend which uses cdrecord for CD burning.)
 <DD>$ <KBD><B>export SCDBACKUP_USE_CDRSKIN=1</B></KBD></DD>
 <DD>$ <KBD><B>./CONFIGURE_CD</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>cdrskin 0.3.2 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
+<DD><KBD>cdrskin 0.3.4 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
 </DL>
 If your system is stricken with some ill CD device then this can stall
 and you will have to press <KBD>Ctrl+C</KBD> to abort.
@@ -422,8 +412,8 @@ Contact me. Let's see what we can achieve.
 <BR>
 <BR>
 libburn and cdrskin are now mature enough to substitute cdrecord in its
-major use cases of CD burning. It is possible to foist cdrskin on various
-software packages if it gets falsely named "cdrecord".
+major use cases of CD and DVD burning. It is possible to foist cdrskin on
+various software packages if it gets falsely named "cdrecord".
 I do not encourage this approach, but of course such a replacement
 opportunity is the goal of a cdrecord compatibility wrapper.
 <BR>

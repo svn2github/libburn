@@ -192,7 +192,10 @@ Project history as far as known to me:
 
 - 11th February 2007 version 0.3.2 covers sequential DVD-RW and DVD-R with
   multi-session and with DAO.
-  This means all single layer DVD media except DVD+R are supported now.
+
+- 12th March 2007 version 0.3.4 supports DVD+R and thus covers all single layer
+  DVD media. Code for double layer DVD+/-R is implemented but awaits a tester
+  yet.
 
 
 ------------------------------------------------------------------------------

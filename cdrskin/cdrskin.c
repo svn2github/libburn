@@ -86,7 +86,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.3.3"
+#define Cdrskin_prog_versioN "0.3.5"
 #endif
 
 /** The source code release timestamp */
@@ -119,39 +119,37 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_3_2
-#define Cdrskin_libburn_versioN "0.3.2"
+#ifdef Cdrskin_libburn_0_3_4
+#define Cdrskin_libburn_versioN "0.3.4"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_3_2 */
+#endif /* Cdrskin_libburn_0_3_4 */
 
-#ifdef Cdrskin_libburn_0_3_3
-#define Cdrskin_libburn_versioN "0.3.3"
+#ifdef Cdrskin_libburn_0_3_5
+#define Cdrskin_libburn_versioN "0.3.5"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
-#define Cdrskin_libburn_has_set_filluP 1
-#define Cdrskin_libburn_has_get_spacE 1
-#define Cdrskin_libburn_write_mode_ruleS 1
-#define Cdrskin_libburn_has_allow_untested_profileS 1
-#define Cdrskin_libburn_has_set_forcE 1
 
-#endif /* Cdrskin_libburn_0_3_3 */
+#endif /* Cdrskin_libburn_0_3_5 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_versioN "0.3.2"
+#define Cdrskin_libburn_versioN "0.3.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
 #ifdef Cdrskin_libburn_from_pykix_svN
 #ifndef Cdrskin_oldfashioned_api_usE
 
+/* 0.2.2 */
 #define Cdrskin_libburn_does_ejecT 1
 #define Cdrskin_libburn_has_drive_get_adR 1
 #define Cdrskin_progress_track_does_worK 1
 #define Cdrskin_is_erasable_on_load_does_worK 1
 #define Cdrskin_grab_abort_does_worK 1
+
+/* 0.2.4 */
 #define Cdrskin_allow_libburn_taO 1
 #define Cdrskin_libburn_has_is_enumerablE 1
 #define Cdrskin_libburn_has_convert_fs_adR 1
@@ -164,18 +162,31 @@ or
 #define Cdrskin_libburn_has_burn_disc_unsuitablE 1
 #define Cdrskin_libburn_has_read_atiP 1
 #define Cdrskin_libburn_has_buffer_progresS 1
+
+/* 0.2.6 */
 #define Cdrskin_libburn_has_pretend_fulL 1
 #define Cdrskin_libburn_has_multI 1
 #define Cdrskin_libburn_has_buffer_min_filL 1
+
+/* 0.3.0 */
 #define Cdrskin_atip_speed_is_oK 1
 #define Cdrskin_libburn_has_get_profilE 1
 #define Cdrskin_libburn_has_set_start_bytE 1
 #define Cdrskin_libburn_has_wrote_welL 1
 #define Cdrskin_libburn_has_bd_formattinG 1
 #define Cdrskin_libburn_has_burn_disc_formaT 1
+
+/* 0.3.2 */
 #define Cdrskin_libburn_has_get_msc1 1
 #define Cdrskin_libburn_has_toc_entry_extensionS 1
 #define Cdrskin_libburn_has_get_multi_capS 1
+
+/* 0.3.4 */
+#define Cdrskin_libburn_has_set_filluP 1
+#define Cdrskin_libburn_has_get_spacE 1
+#define Cdrskin_libburn_write_mode_ruleS 1
+#define Cdrskin_libburn_has_allow_untested_profileS 1
+#define Cdrskin_libburn_has_set_forcE 1
 
 #ifdef Cdrskin_new_api_tesT
 
