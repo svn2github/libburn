@@ -23,13 +23,17 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 
 + DVD track sources get not concateneated to a single track. In general DVD
   writing is quite different from cdrecord-ProDVD:
-  DVD-RW "Disc-at-once" (-sao) is nearest to cdrecord-ProDVD's methods.
-  DVD-RW "Incremental Streaming" (-tao) on unformatted media allows
+  DVD-R[W] "Disc-at-once" (-sao) is nearest to cdrecord-ProDVD's methods.
+  DVD-R[W] "Incremental Streaming" (-tao) on unformatted media allows
   multi-session and track sources of unpredictable size.
   Writing DVD-RAM, DVD+RW and "Restricted Overwrite" DVD-RW is like single
   track -tao on blank CD. Formatting is done via cdrskin-specific
   blank=format_overwrite and not with option -format.
 
++ DVD-RW get blanked fast only with option blank=deformat_sequential_quickest .
+  Option blank=fast is the same as blank=all in order to achieve media which
+  are capable of Incremental Streaming.
+  
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -2987,6 +2991,7 @@ Documented changes and 0.3.2 release timestamp
 * Multi-session recording on sequential DVD-R[W], including -toc, -msinfo
 * DVD-R[W] Disk-at-once recording
 
+
 10 Feb 2007  [706]
 libburn/mmc.c
 Added a comment about DVD-R
@@ -3111,33 +3116,284 @@ Removed unprecise unnecessary comment
 * New option --tell_media_space tells the maximum size for the next burn
 
 
-2007.02.18.094414 [732]
+2007.02.18.094414  [732]
 libburn/libburn.h
 Clarified usage comment with burn_drive_info_free() (see ticket 98)
 
- []
+18 Feb 2007  [733]
 cdrskin/cdrskin.1
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.3 cycle
 
 
-
+2007.02.18.094858  [734]
 libburn/mmc.h
 Adjusted maximum realistic number of tracks to MMC specs
+
+2007.02.19.184132  [735]
+cdrskin/cdrskin.c
+Repaired slightly broken pacifier track size display with -audio
+
+2007.02.19.225102  [736]
+libburn/libburn.h
+libburn/async.c
+libburn/structure.h
+libburn/structure.c
+libburn/write.h
+libburn/write.c
+libburn/drive.h
+libburn/drive.c
+libburn/options.c
+libburn/libdax_msgs.h
+Re-arranged checking and defaulting of write parameters
+=
+New API function burn_track_set_default_size()
+New API function burn_precheck_write()
+Make wide use of burn_disc_write_mode_demands()
+
+2007.02.21.205244  [737]
+libburn/libburn.h
+libburn/async.c
+libburn/drive.c
+libburn/options.c
+libburn/structure.c
+libburn/write.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.c
+Moved tao_to_sao_tsize into libburn, let cdrskin use auto_write_type and precheck
+
+21 Feb 2007  [738]
+cdrskin/add_ts_changes_to_libburn_0_3_3
+cdrskin/add_ts_changes_to_libburn_0_3_2
+Added -O2 to binary production
+
+2007.02.22.072700  [739]
+libburn/libburn.h
+libburn/drive.c
+libburn/options.c
+Re-enabled overwriteable pseudo-pseudo-SAO with unpredicted track size
+
+2007.02.22.073157  [740]
+libburn/mmc.c
+Disabled debugging messages about format descriptors
+
+2007.02.22.094939  [741]
+libburn/libburn.h
+libburn/options.c
+libburn/write.c
+libburn/async.c
+test/libburner.c
+cdrskin/cdrskin.c
+Macro for length of rejection reasons string (old size is still safe)
+
+2007.02.22.113016  [742]
+libburn/libburn.h
+libburn/drive.c
+Made burn_disc_available_space() take into respect burn_write_opts_set_start_byte()
+
+2007.02.23.190937  [743]
+libburn/libburn.h
+libburn/drive.c
+libburn/mmc.c
+libburn/write.c
+doc/cookbook.txt
+Enabled DVD-R/DL Sequential via burn_allow_untested_profiles()
+
+2007.02.23.191117  [744]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Enabled DVD-R/DL Sequential via --allow_untested_media_types
+
+2007.02.23.193427  [745]
+libburn/init.c
+Forgotten source file for revision 743
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.02.24.102731
+
+
+2007.02.25.112733  [746]
+libburn/write.h
+libburn/write.c
+libburn/drive.c
+cdrskin/cdrskin.1
+Took into respect deliberate lack of DVD-R/DL multi session capability
+
+2007.03.01.120945  [747]
+libburn/drive.c
+libburn/mmc.c
+libburn/write.c
+cdrskin/cdrskin.c
+doc/cookbook.txt
+Preparations for supporting DVD+R[/DL]
+
+3 Mar 2007  [748]
+cdrskin/cdrskin.1
+Updated DVD-R[W] write mode description
+
+2007.03.03.141240  [749]
+libburn/transport.h
+libburn/mmc.c
+Determine physical interface SCSI,ATA,SATA,USB,... (for future use)
+
+2007.03.03.141435  [750]
+libburn/libburn.h
+libburn/write.c
+libburn/options.h
+libburn/options.c
+cdrskin/cdrskin.c
+Re-enabled -force with write modes which seem unavailable
+
+2007.03.03.151812  [751]
+libburn/options.c
+Fixed bug introduced with rev 736ff which prevented audio CD burning
+
+2007.03.04.184720  [752]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.c
+Fifo got stuck if sum of processed track sizes was exactly aligned to fifo size
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.03.04.185202
+* Bug fix: Multi-track runs with fifo could stall in rare cases
+
+5 Mar 2007  [753]
+cdrskin/cdrskin_eng.html
+cdrskin/add_ts_changes_to_libburn_0_3_2
+Released cdrskin-0.3.2.pl01
+
+2007.03.06.195203  [754]
+libburn/mmc.c
+libburn/write.c
+Enabled DVD+R, DVD+R DL via --allow_untested_media_types, always -multi for now
+
+2007.03.06.205312  [755]
+libburn/mmc.c
+cdrskin/cdrskin.1
+doc/cookbook.txt
+doc/comments
+Enabled DVD+R as tested media (-multi is still always on)
+
+2007.03.07.151514  [756]
+libburn/write.c
+cdrskin/cdrskin.1
+cdrskin/README
+doc/cookbook.txt
+Some adjustments for DVD+R recording
+
+2007.03.07.151514  [756]
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.3 cycle
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.03.07.155750
+* Multi-session burning to DVD+R
+
+
+8 Mar 2007  [757]
+cdrskin/cdrskin.1
+cdrskin/convert_man_to_html.sh
+cdrskin/wiki_plain.txt
+Polished documentation
+
+2007.03.09.134622  [758]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option assert_write_lba= 
+
+10 Mar 2007  [759]
+cdrskin/cdrskin.1
+cdrskin/wiki_plain.txt
+Polished documentation
+
+
+------------------------------------ cycle  - cdrskin-0.3.3 - 2007.03.10.
+* New option assert_write_lba=
+
+2007.03.12.110001  [tag 761]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.3.4 and activated development documentation
+
+12 Mar 2007  [tag 762]
+- cdrskin/add_ts_changes_to_libburn_0_3_2
+- cdrskin/add_ts_changes_to_libburn_0_3_3
++ cdrskin/add_ts_changes_to_libburn_0_3_4
++ cdrskin/add_ts_changes_to_libburn_0_3_5
+Updated cdrskin tarball generator
+
+12 Mar 2007  [tag 763]
+cdrskin/changelog.txt
+Documented most recent changes
+
+12 Mar 2007  [tag 764]
+README
+Removed redundant sentence
+
+----------------------------- release  - cdrskin-0.3.4.pl00 - 2007.03.12.110001
+* Multi-session burning to DVD+R
+* New option --tell_media_space tells the maximum size for the next burn
+* New option assert_write_lba=
+* Bug fix: Multi-track runs with fifo could stall in rare cases
+
+
+2007.03.12.155600 [765]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.3.5
+
+12 Mar 2007  [766]
+- cdrskin/add_ts_changes_to_libburn_0_3_2
+- cdrskin/add_ts_changes_to_libburn_0_3_3
++ cdrskin/add_ts_changes_to_libburn_0_3_4
++ cdrskin/add_ts_changes_to_libburn_0_3_5
+Updated cdrskin tarball generator
+
+
+------------------------------------ cycle  - cdrskin-0.3.5 - 2006.03.12.
+
+14 Mar 2007  [767]
+cdrskin/cdrskin_eng.html
+Corrected truncated sentence and file sizes
+
+14 Mar 2007  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
+
+  []
+libburn/libburn.h
+libburn/init.c
+libburn/sg-linux.c
+cdrskin/cdrskin.c
+New option drive_scsi_dev_family=sr|scd|sg
+
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
------------------------------------- cycle  - cdrskin-0.3.3 - 
+------------------------------------ cycle  - cdrskin-0.3.5 - 
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
 
-Questions to post:
-    A70211_to_cdwrite_growisofs_question_finalizing
+
+Recognize kernel 2.6. Use /dev/sr by default ? Default burn_preset_device_open(2,...) ?
+https://bugzilla.novell.com/show_bug.cgi?id=226019
 
 
-Test libburner write mode selection
+cdrskin: prevent usage of burn drive as track source
 
 
 
@@ -3146,17 +3402,7 @@ What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 How to handle finalizing ?
 growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
 
-cdrskin: prevent usage of burn drive as track source
-
-move tao_to_sao_tsize into libburn and let cdrskin use auto write mode
-
-
 Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
-
-Make wide use of burn_disc_write_mode_demands()
-
-
-Remove from README what is also written in the man page.
 
 Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
 
@@ -3164,8 +3410,13 @@ After cooking: review of -do_diet ?
 
 growisofs.c : _LINUX_CAPABILITY_VERSION CAP_SYS_RAWIO SYS_capset ?
 
+Questions to post:
+    A70211_to_cdwrite_growisofs_question_finalizing
+
+
 
 Format DVD-RAM ?
+Disable error checking with DVD-RAM.
 
 
 Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
@@ -3174,8 +3425,6 @@ Sequentially check option list for DVD compliance
 
 
 ----------------------------------------- long term intentions:
-
-http://burbon04.gmxhome.de/linux/CDREncryption.html
 
   []
 Ticket 90: failure on USB
@@ -3190,7 +3439,6 @@ Open O_EXCL all devices in address resolution chain
 (Might help with non-standard hdX device siblings)
 
   []
-Convert libburn_experimental: into LIBDAX_MSGS_SEV_DEBUG
 Convert burn_print() into libdax_msgs_submit()
 
   []
@@ -3200,8 +3448,6 @@ Test unlocking of single drive by burn_drive_grab(), burn_drive_release()
   []
 Clear outdated persistent read buffer after small CD image was read (ticket 57)
 
-  []
-Enable multi-session for write modes other than TAO
 
 ===============================================================================
                    This is the dirty end of the todo list.
