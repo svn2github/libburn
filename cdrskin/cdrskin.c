@@ -131,6 +131,7 @@ or
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
+#define Cdrskin_libburn_preset_device_familY 1
 
 #endif /* Cdrskin_libburn_0_3_5 */
 
@@ -1427,8 +1428,13 @@ struct CdrpreskiN {
  /** Wether to abort when a busy drive is encountered during bus scan */
  int abort_on_busy_drive;
 
- /** Wether to try to avoid collisions when opening drives */
+ /** Linux specific : Wether to try to avoid collisions when opening drives */
  int drive_exclusive;
+
+ /** Linux specific : Device file address family to use :
+     0=default , 1=sr , 2=scd , 4=sg */
+ int drive_scsi_dev_family;
+ 
 
  /** Wether to try to wait for unwilling drives to become willing to open */
  int drive_blocking;
@@ -1490,6 +1496,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->scan_demands_drive= 0;
  o->abort_on_busy_drive= 0;
  o->drive_exclusive= 1;
+ o->drive_scsi_dev_family= 0;
  o->drive_blocking= 0;
  strcpy(o->write_mode_name,"DEFAULT");
 
@@ -1959,6 +1966,17 @@ set_dev:;
    } else if(strcmp(argv[i],"--drive_not_exclusive")==0) {
      o->drive_exclusive= 0;
 
+   } else if(strncmp(argv[i],"drive_scsi_dev_family=",22)==0) {
+     value_pt= argv[i]+22;
+     if(strcmp(value_pt,"sr")==0)
+       o->drive_scsi_dev_family= 1;
+     else if(strcmp(value_pt,"scd")==0)
+       o->drive_scsi_dev_family= 2;
+     else if(strcmp(value_pt,"sg")==0)
+       o->drive_scsi_dev_family= 4;
+     else
+       o->drive_scsi_dev_family= 0;
+
    } else if(strcmp(argv[i],"--drive_scsi_exclusive")==0) {
      o->drive_exclusive= 2;
 
@@ -2011,6 +2029,9 @@ set_dev:;
      printf("                    (might be stalled by a busy hard disk)\n");
      printf(" --drive_not_exclusive  do not ask kernel to prevent opening\n");
      printf("                    busy drives. Effect is kernel dependend.\n");
+     printf(
+         " drive_scsi_dev_family=<sr|scd|sg|default> select Linux device\n");
+     printf("                    file family to be used for (pseudo-)SCSI.\n");
      printf(
          " --drive_scsi_exclusive  try to exclusively reserve device files\n");
      printf("                    /dev/srN, /dev/scdM, /dev/stK of drive.\n");
@@ -5608,6 +5629,16 @@ set_blank:;
    } else if(strcmp(argv[i],"--drive_not_exclusive")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strncmp(argv[i],"drive_scsi_dev_family=",22)==0) {
+     /* is handled in Cdrpreskin_setup() */;
+     if(skin->verbosity>=Cdrskin_verbose_debuG &&
+        skin->preskin->drive_scsi_dev_family!=0)
+       ClN(fprintf(stderr,"cdrskin_debug: drive_scsi_dev_family= %d\n",
+                        skin->preskin->drive_scsi_dev_family));
+
+   } else if(strcmp(argv[i],"--drive_scsi_exclusive")==0) {
+     /* is handled in Cdrpreskin_setup() */;
+
    } else if(strncmp(argv[i],"-driveropts=",12)==0) {
      value_pt= argv[i]+12;
      goto set_driveropts;
@@ -6103,10 +6134,14 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  *exit_value= 0;
 
 #ifndef Cdrskin_libburn_no_burn_preset_device_opeN
- burn_preset_device_open((*preskin)->drive_exclusive,
+ burn_preset_device_open((*preskin)->drive_exclusive
+#ifdef Cdrskin_libburn_preset_device_familY
+                         | ((*preskin)->drive_scsi_dev_family<<2)
+#endif
+                         ,
                          (*preskin)->drive_blocking,
                          (*preskin)->abort_on_busy_drive);
-#endif
+#endif /* ! Cdrskin_libburn_no_burn_preset_device_opeN */
 
  if(strlen((*preskin)->device_adr)>0) {       /* disable scan for all others */
    ClN(printf(

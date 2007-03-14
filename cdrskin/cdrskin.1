@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "March 6, 2007"
+.TH CDRSKIN 1 "March 14, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -724,6 +724,13 @@ This is not guaranteed to work with all drivers. Some need nonblocking i/o.
 .BI \--drive_not_exclusive
 Linux specific: Do not ask the operating system to prevent opening busy drives.
 Wether this leads to senseful behavior depends on operating system and kernel.
+.TP
+.BI drive_scsi_dev_family= sr | scd | sg
+Linux specific: Select a SCSI device file family to be used for drive command
+transactions. Normally this is /dev/sgN but on modern kernels it might be
+helpful to use drive_scsi_dev_family=sr in order to meet other programs at
+a common device file for each drive. On kernel 2.4 this will find no drives.
+Device file family /dev/hdX on kernel 2.6 is not affected by this setting.
 .TP
 .BI \--drive_scsi_exclusive
 Linux specific:

@@ -572,13 +572,20 @@ void burn_set_verbosity(int level);
     after burn_initialize() and before any bus scan. But not mandatory at all.
     Parameter value 1 enables a feature, 0 disables.  
     Default is (1,0,0). Have a good reason before you change it.
-    @param exclusive 1 = Try to open only devices which are not marked as busy
+    @param exclusive Linux only:
+                     0 = no attempt to make drive access exclusive.
+                     1 = Try to open only devices which are not marked as busy
                      and try to mark them busy if opened sucessfully. (O_EXCL)
                      There are kernels which simply don't care about O_EXCL.
                      Some have it off, some have it on, some are switchable.
                      2 = in case of a SCSI device, also try to open exclusively
-                     the matching /dev/sr, /dev/scd and /dev/st .
-                     0 = no attempt to make drive access exclusive.
+                         the matching /dev/sr, /dev/scd and /dev/st .
+                     One may select a device SCSI file family by adding
+                      0 = default family
+                      4 = /dev/sr%d
+                      8 = /dev/scd%d
+                     16 = /dev/sg%d
+                     Do not use other values !
     @param blocking  Try to wait for drives which do not open immediately but
                      also do not return an error as well. (O_NONBLOCK)
                      This might stall indefinitely with /dev/hdX hard disks.

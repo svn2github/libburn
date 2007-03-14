@@ -105,16 +105,9 @@ static int linux_sg_enumerate_debug = 0;
    address parameters Host, Channel, Id, Lun and also Bus.
    E.g.: "/dev/sg%d"
 */
-/* NEW INFO: If hard disks at /dev/sr allow ioctl(CDROM_DRIVE_STATUS), they
-             are in danger.
-             If you want it less dangerous:
-               #undef CDROM_DRIVE_STATUS
-             but then you might need linux_sg_accept_any_type = 1 which
-             is _more dangerous_.
+/* sr%d is supposed to map only CD-ROM style devices. Additionally a test
+   with ioctl(CDROM_DRIVE_STATUS) is made to assert that it is such a drive,
 */
-/* !!! DO NOT SET TO sr%d UNLESS YOU PROTECTED ALL INDISPENSIBLE DEVICES
-       by chmod -rw . A test wether non-CD devices are properly excluded would
-       be well needed though. Heroic disks, scanners, etc. wanted !!! */
 static char linux_sg_device_family[80] = {"/dev/sg%d"};
 
 
@@ -171,9 +164,11 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 /* >>> ts A61115 : this needs mending. A Linux aspect shows up in cdrskin. */
 /* ts A60813 : storage objects are in libburn/init.c
    wether to use O_EXCL
+   what device family to use : 0=default, 1=sr, 2=scd, (3=st), 4=sg
    wether to use O_NOBLOCK with open(2) on devices
    wether to take O_EXCL rejection as fatal error */
 extern int burn_sg_open_o_excl;
+extern int burn_sg_use_family;
 extern int burn_sg_open_o_nonblock;
 extern int burn_sg_open_abort_busy;
 
@@ -187,6 +182,21 @@ int mmc_function_spy(char * text);
 /* PORTING:   Private functions. Port only if needed by public functions    */
 /*            (Public functions are listed below)                           */
 /* ------------------------------------------------------------------------ */
+
+/* This installs (much too often) the device file family if one was
+   chosen explicitely by burn_preset_device_open()
+*/
+void sg_select_device_family(void)
+{
+	if (burn_sg_use_family == 1)
+		strcpy(linux_sg_device_family, "/dev/sr%d");
+	else if (burn_sg_use_family == 2)
+		strcpy(linux_sg_device_family, "/dev/scd%d");
+	else if (burn_sg_use_family == 3)
+		strcpy(linux_sg_device_family, "/dev/st%d");
+	else if (burn_sg_use_family == 4)
+		strcpy(linux_sg_device_family, "/dev/sg%d");
+}
 
 
 static int sgio_test(int fd)
@@ -352,6 +362,7 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/st%d", 
 				  "/dev/sg%d", ""};
 
+        sg_select_device_family();
 	if (linux_sg_device_family[0] == 0)
 		return 1;
 
@@ -482,6 +493,8 @@ static void sg_enumerate(void)
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[10];
 
+        sg_select_device_family();
+
 	if (linux_sg_enumerate_debug)
 	  fprintf(stderr, "libburn_debug: linux_sg_device_family = %s\n",
 		  linux_sg_device_family);
@@ -519,6 +532,16 @@ static void sg_enumerate(void)
 		  	  fprintf(stderr,
 			    "ioctl(SG_GET_SCSI_ID) failed, errno=%d  '%s' , ",
 			    errno, strerror(errno));
+
+			if (sgio_test(fd) == -1) {
+				if (linux_sg_enumerate_debug)
+			  		fprintf(stderr,
+				 "FATAL: sgio_test() failed: errno=%d  '%s'",
+						errno, strerror(errno));
+
+				sg_close_drive_fd(fname, -1, &fd, 0);
+	continue;
+			}
 
 #ifdef CDROM_DRIVE_STATUS
 			/* ts A61211 : not widening old acceptance range */
@@ -698,6 +721,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	if (initialize == -1)
 		return 0;
 
+        sg_select_device_family();
 	if (linux_sg_device_family[0] == 0)
 		sg_limit = 0;
 	if (linux_ata_device_family[0] == 0)
