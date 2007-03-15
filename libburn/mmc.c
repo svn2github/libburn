@@ -1514,7 +1514,7 @@ void mmc_get_configuration(struct burn_drive *d)
 		return;
 	len = mmc_four_char_to_int(c.page->data);
 
-	if (len<8)
+	if (len < 8 || len > 4096)
 		return;
 	cp = (c.page->data[6]<<8) | c.page->data[7];
 	d->current_profile = cp;
@@ -1695,7 +1695,7 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 	d->best_format_size = 0;
 
 	memcpy(c.opcode, MMC_READ_FORMAT_CAPACITIES,
-		 sizeof(MMC_GET_CONFIGURATION));
+		 sizeof(MMC_READ_FORMAT_CAPACITIES));
 	c.retry = 1;
 	c.oplen = sizeof(MMC_READ_FORMAT_CAPACITIES);
 	c.opcode[7]= 0x02;
