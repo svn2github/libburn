@@ -40,7 +40,7 @@ static unsigned char SPC_MODE_SELECT[] =
 static unsigned char SPC_REQUEST_SENSE[] = { 0x03, 0, 0, 0, 18, 0 };
 static unsigned char SPC_TEST_UNIT_READY[] = { 0x00, 0, 0, 0, 0, 0 };
 
-int spc_test_unit_ready(struct burn_drive *d)
+int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 {
 	struct command c;
 
@@ -50,10 +50,40 @@ int spc_test_unit_ready(struct burn_drive *d)
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
-	if (c.error)
+	if (c.error) {
+		*key= c.sense[2];
+		*asc= c.sense[12];
+		*ascq= c.sense[13];
 		return (c.sense[2] & 0xF) == 0;
+	}
 	return 1;
 }
+
+int spc_test_unit_ready(struct burn_drive *d)
+{
+	int key,asc,ascq;
+
+	return spc_test_unit_ready_r(d, &key, &asc, &ascq);
+}
+
+
+/* ts A70315 */
+/** Wait until the drive state becomes clear in or until max_usec elapsed */
+int spc_wait_unit_attention(struct burn_drive *d, int max_sec)
+{
+	int i, ret, key, asc, ascq;
+
+	for(i=0; i < max_sec; i++) {
+		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
+		if(ret > 0 || key!=0x2 || asc!=0x4) /* ready or error */
+	break;
+		usleep(1000000);
+	}
+	if (i < max_sec)
+		return (ret > 0);
+	return 0;
+}
+
 
 void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 {

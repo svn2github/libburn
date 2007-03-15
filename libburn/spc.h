@@ -20,7 +20,15 @@ void spc_probe_write_modes(struct burn_drive *);
 void spc_request_sense(struct burn_drive *d, struct buffer *buf);
 int spc_block_type(enum burn_block_types b);
 int spc_get_erase_progress(struct burn_drive *d);
+
+/* ts A70315 : test_unit_ready with result parameters */
+int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq);
+
 int spc_test_unit_ready(struct burn_drive *d);
+
+/* ts A70315 */
+/** Wait until the drive state becomes clear in or until max_sec elapsed */
+int spc_wait_unit_attention(struct burn_drive *d, int max_sec);
 
 /* ts A61021 : the spc specific part of sg.c:enumerate_common()
 */

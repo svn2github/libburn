@@ -3,9 +3,11 @@
 /* scsi block commands */
 
 #include <string.h>
+#include <unistd.h>
 
 #include "transport.h"
 #include "sbc.h"
+#include "spc.h"
 #include "options.h"
 
 /* spc command set */
@@ -23,6 +25,7 @@ void sbc_load(struct burn_drive *d)
 	c.dir = NO_TRANSFER;
 	c.page = NULL;
 	d->issue_command(d, &c);
+	spc_wait_unit_attention(d, 60);
 }
 
 void sbc_eject(struct burn_drive *d)
