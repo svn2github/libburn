@@ -71,6 +71,7 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <sys/poll.h>
 #include <linux/hdreg.h>
 #include <stdlib.h>
+#include <sys/utsname.h>
 #include <scsi/sg.h>
 #include <scsi/scsi.h>
 
@@ -104,15 +105,22 @@ static int linux_sg_enumerate_debug = 0;
    in the range of 0 to 31 . The resulting addresses must provide SCSI
    address parameters Host, Channel, Id, Lun and also Bus.
    E.g.: "/dev/sg%d"
-*/
-/* sr%d is supposed to map only CD-ROM style devices. Additionally a test
+   sr%d is supposed to map only CD-ROM style devices. Additionally a test
    with ioctl(CDROM_DRIVE_STATUS) is made to assert that it is such a drive,
+
+   This initial setting may be overridden in sg_select_device_family() by 
+   settings made via burn_preset_device_open().
 */
 static char linux_sg_device_family[80] = {"/dev/sg%d"};
 
+/* Set this to 1 if you want the default linux_sg_device_family chosen
+   depending on kernel release: sg for <2.6 , sr for >=2.6
+*/
+static int linux_sg_auto_family = 1;
+
 
 /* Set this to 1 in order to accept any TYPE_* (see scsi/scsi.h) */
-/* NEW INFO: Try with 0 first. There is hope via CDROM_DRIVE_STATUS. */
+/* But try with 0 first. There is hope via CDROM_DRIVE_STATUS. */
 /* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL INDISPENSIBLE DEVICES
        chmod -rw !!! */
 static int linux_sg_accept_any_type = 0;
@@ -183,11 +191,31 @@ int mmc_function_spy(char * text);
 /*            (Public functions are listed below)                           */
 /* ------------------------------------------------------------------------ */
 
-/* This installs (much too often) the device file family if one was
-   chosen explicitely by burn_preset_device_open()
+/* ts A70314 */
+/* This installs the device file family if one was chosen explicitely
+   by burn_preset_device_open()
 */
 void sg_select_device_family(void)
 {
+
+	/* >>> ??? do we need a mutex here ? */
+	/* >>> (It might be concurrent but is supposed to have always
+	        the same effect. Any race condition should be harmless.) */
+
+	if (linux_sg_auto_family) {
+		int use_sr_family = 0;
+		struct utsname buf;
+
+		if (uname(&buf) != -1)
+			if (strcmp(buf.release, "2.6") >= 0)
+				use_sr_family = 1;
+		if (use_sr_family)
+			strcpy(linux_sg_device_family, "/dev/sr%d");
+		else
+			strcpy(linux_sg_device_family, "/dev/sg%d");
+		linux_sg_auto_family = 0;
+	}
+
 	if (burn_sg_use_family == 1)
 		strcpy(linux_sg_device_family, "/dev/sr%d");
 	else if (burn_sg_use_family == 2)
