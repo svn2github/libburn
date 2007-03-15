@@ -2260,6 +2260,16 @@ final_checks:;
  if(flag&1)
    goto ex;
 
+#ifndef Cdrskin_libburn_no_burn_preset_device_opeN
+ burn_preset_device_open(o->drive_exclusive
+#ifdef Cdrskin_libburn_preset_device_familY
+                         | (o->drive_scsi_dev_family<<2)
+#endif
+                         ,
+                         o->drive_blocking,
+                         o->abort_on_busy_drive);
+#endif /* ! Cdrskin_libburn_no_burn_preset_device_opeN */
+
  if(strlen(o->raw_device_adr)>0 && !o->no_whitelist) {
    int driveno,hret;
    char *adr,buf[Cdrskin_adrleN];
@@ -6132,16 +6142,6 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
 
  *o= NULL;
  *exit_value= 0;
-
-#ifndef Cdrskin_libburn_no_burn_preset_device_opeN
- burn_preset_device_open((*preskin)->drive_exclusive
-#ifdef Cdrskin_libburn_preset_device_familY
-                         | ((*preskin)->drive_scsi_dev_family<<2)
-#endif
-                         ,
-                         (*preskin)->drive_blocking,
-                         (*preskin)->abort_on_busy_drive);
-#endif /* ! Cdrskin_libburn_no_burn_preset_device_opeN */
 
  if(strlen((*preskin)->device_adr)>0) {       /* disable scan for all others */
    ClN(printf(
