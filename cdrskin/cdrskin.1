@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "March 14, 2007"
+.TH CDRSKIN 1 "March 15, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -727,10 +727,12 @@ Wether this leads to senseful behavior depends on operating system and kernel.
 .TP
 .BI drive_scsi_dev_family= sr | scd | sg
 Linux specific: Select a SCSI device file family to be used for drive command
-transactions. Normally this is /dev/sgN but on modern kernels it might be
-helpful to use drive_scsi_dev_family=sr in order to meet other programs at
-a common device file for each drive. On kernel 2.4 this will find no drives.
-Device file family /dev/hdX on kernel 2.6 is not affected by this setting.
+transactions. Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
+on kernels >= 2.6 . This option allows to explicitely override that default
+in order to meet other programs at a common device file for each drive.
+On kernel 2.4 family sr will find no drives.
+.br
+Device file family /dev/hdX on kernel >= 2.6 is not affected by this setting.
 .TP
 .BI \--drive_scsi_exclusive
 Linux specific:
