@@ -3367,17 +3367,51 @@ Updated cdrskin tarball generator
 cdrskin/cdrskin_eng.html
 Corrected truncated sentence and file sizes
 
-14 Mar 2007  []
+14 Mar 2007  [768]
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
-  []
+2007.03.14.133618  [769]
 libburn/libburn.h
 libburn/init.c
 libburn/sg-linux.c
 cdrskin/cdrskin.c
+cdrskin/cdrskin.1
 New option drive_scsi_dev_family=sr|scd|sg
 
+2007.03.15.194531  [770]
+libburn/drive.c
+React properly on drive stating that it cannot write any media
+
+2007.03.15.195005  [771]
+libburn/spc.h
+libburn/spc.c
+libburn/sbc.c
+After loading tray wait for unit to become ready or to report some clear error
+
+2007.03.15.195251  [772]
+cdrskin/cdrskin.c
+Moved manual device family decision to a sufficiently early stage
+
+2007.03.15.195428  [773]
+libburn/mmc.c
+Kept mmc_get_configuration() from believing the announcement of 1 GB reply
+
+2007.03.15.195534  [774]
+libburn/sg-linux.c
+Trying to recognize kernel >= 2.6 and use /dev/sr by default
+
+15 Mar 2007  [775]
+cdrskin/cdrskin.1
+Updated drive_scsi_dev_family=
+
+  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
+
+------------------------------------ cycle  - cdrskin-0.3.5 - 
+* Usage of /dev/srN rather than /dev/sgN on Linux >= 2.6
+* New option drive_scsi_dev_family=sr|scd|sg
 
 
 ===============================================================================
@@ -3389,7 +3423,7 @@ cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
 
-Recognize kernel 2.6. Use /dev/sr by default ? Default burn_preset_device_open(2,...) ?
+Default burn_preset_device_open(2,...) on kernel >= 2.6 ?
 https://bugzilla.novell.com/show_bug.cgi?id=226019
 
 
