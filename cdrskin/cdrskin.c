@@ -296,6 +296,11 @@ or
 #endif
 
 
+/** If tsize= sets a value smaller than media capacity divided by this
+    number then there will be a warning and gracetime set at least to 15 */
+#define Cdrskin_minimum_tsize_quotienT 2048.0
+
+
 /* --------------------------------------------------------------------- */
 
 /* Imported from scdbackup-0.8.5/src/cd_backup_planer.c */
@@ -2473,6 +2478,8 @@ struct CdrskiN {
  */
  char source_path[Cdrskin_strleN];
  double fixed_size;
+ double smallest_tsize;
+ int has_open_ended_track;
  double padding;
  int set_by_padsize;
  int fill_up_media;
@@ -2593,6 +2600,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->eject_device[0]= 0;
  o->source_path[0]= 0;
  o->fixed_size= 0.0;
+ o->smallest_tsize= -1.0;
+ o->has_open_ended_track= 0;
  o->padding= 0.0;
  o->set_by_padsize= 0;
  o->fill_up_media= 0;
@@ -3874,6 +3883,44 @@ ex:;
 
 #ifndef Cdrskin_extra_leaN
 
+/* A70324: proposal by Eduard Bloch */
+int Cdrskin_warn_of_mini_tsize(struct CdrskiN *skin, int flag)
+{
+ off_t media_space= 0;
+ enum burn_disc_status s;
+ struct burn_drive *drive;
+
+#ifdef Cdrskin_libburn_has_get_spacE
+ if(skin->multi || skin->has_open_ended_track || skin->smallest_tsize<0)
+   return(1);
+ drive= skin->drives[skin->driveno].drive;
+ s= burn_disc_get_status(drive);
+ if(s!=BURN_DISC_BLANK)
+   return(1);
+ media_space= burn_disc_available_space(drive, NULL);
+ if(media_space<=0 || 
+    skin->smallest_tsize >= media_space / Cdrskin_minimum_tsize_quotienT)
+   return(1);
+ fprintf(stderr,"\n");
+ fprintf(stderr,"\n");
+ fprintf(stderr,
+         "cdrskin: WARNING: Very small track size set by option tsize=\n");
+ fprintf(stderr,
+         "cdrskin:          Track size %.1f MB <-> media capacity %.1f MB\n",
+         skin->smallest_tsize/1024.0/1024.0,
+         ((double) media_space)/1024.0/1024.0);
+ fprintf(stderr,"\n");
+ fprintf(stderr,
+         "cdrskin: Will wait at least 15 seconds until real burning starts\n");
+ fprintf(stderr,"\n");
+ if(skin->gracetime<15)
+   skin->gracetime= 15;
+   
+#endif /* Cdrskin_libburn_has_get_spacE */
+ return(1);
+}
+
+
 /** Emulate the gracetime= behavior of cdrecord 
     @param flag Bitfield for control purposes:
                 bit0= do not print message about pseudo-checkdrive
@@ -3884,6 +3931,8 @@ int Cdrskin_wait_before_action(struct CdrskiN *skin, int flag)
 */
 {
  int i;
+
+ Cdrskin_warn_of_mini_tsize(skin,0);
 
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
    char speed_text[80];
@@ -4817,6 +4866,8 @@ burn_failed:;
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
    if(size>0)
      skin->fixed_size+= size+padding;
+   else
+     skin->has_open_ended_track= 1;
  }
 
 #ifndef Cdrskin_libburn_write_mode_ruleS
@@ -5964,6 +6015,8 @@ track_too_large:;
      }
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: fixed track size : %.f\n",skin->fixed_size));
+     if(skin->smallest_tsize<0 || skin->smallest_tsize>skin->fixed_size)
+       skin->smallest_tsize= skin->fixed_size;
 
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
