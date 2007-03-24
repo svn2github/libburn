@@ -1458,10 +1458,12 @@ off_t burn_disc_available_space(struct burn_drive *d,
 		d->send_write_parameters(d, o);
 	d->get_nwa(d, -1, &lba, &nwa);
 ex:;
-	if (o->start_byte > 0) {
-		if (o->start_byte > d->media_capacity_remaining)
-			return 0;
-		return d->media_capacity_remaining - o->start_byte;
+	if (o != NULL) {
+		if (o->start_byte > 0) {
+			if (o->start_byte > d->media_capacity_remaining)
+				return 0;
+			return d->media_capacity_remaining - o->start_byte;
+		}
 	}
 	return d->media_capacity_remaining;
 }
