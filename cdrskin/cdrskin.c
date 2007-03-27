@@ -552,6 +552,25 @@ int Sfile_home_adr_s(char *filename, char *fileadr, int fa_size, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
+/* <<< Preliminary sketch : to go into libburn later */
+/* Learned from reading growisofs.c , 
+   watching mkisofs, and viewing its results via od -c */
+/* @return 0=no size found , 1=*size_in_bytes is valid */
+int Scan_for_iso_size(unsigned char data[2048], double *size_in_bytes,
+                      int flag)
+{
+ double sectors= 0.0;
+
+ if(data[0]!=1)
+   return(0);
+ if(strncmp((char *) (data+1),"CD001",5)!=0)
+   return(0);
+ sectors=  data[80] | (data[81]<<8) | (data[82]<<16) | (data[83]<<24); 
+ *size_in_bytes= sectors*2048.0;
+ return(1);
+}
+
+
 /* --------------------------------------------------------------------- */
 
 /** Address translation table for users/applications which do not look
@@ -769,6 +788,9 @@ struct CdrtracK {
  int track_type_by_default;
  int swap_audio_bytes;
 
+ /** Eventually detected data image size */
+ double data_image_size;
+
  /* wether the data source is a container of defined size with possible tail */
  int extracting_container;
 
@@ -837,6 +859,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->sector_size= 2048.0;
  o->track_type_by_default= 1;
  o->swap_audio_bytes= 0;
+ o->data_image_size= -1.0;
  o->extracting_container= 0;
  o->fifo_enabled= 0;
  o->fifo= NULL;
@@ -846,6 +869,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->ff_fifo= NULL;
  o->ff_idx= -1;
  o->libburn_track= NULL;
+
  ret= Cdrskin_get_source(boss,o->source_path,&(o->fixed_size),
                          &(o->tao_to_sao_tsize),&(o->padding),
                          &(o->set_by_padsize),&(skin_track_type),
@@ -1172,6 +1196,7 @@ int Cdrtrack_attach_fifo(struct CdrtracK *track, int *outlet_fd,
 int Cdrtrack_fill_fifo(struct CdrtracK *track, int flag)
 {
  int ret,buffer_fill,buffer_space;
+ double data_image_size;
 
  if(track->fifo==NULL || track->fifo_start_at==0)
    return(2);
@@ -1195,6 +1220,9 @@ int Cdrtrack_fill_fifo(struct CdrtracK *track, int flag)
      return(0);
    }
  }
+ ret= Cdrfifo_get_iso_fs_size(track->fifo,&data_image_size,0);
+ if(ret>0)
+   track->data_image_size= data_image_size;
  return(1);
 }
 
@@ -5009,6 +5037,18 @@ burn_failed:;
    fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
    goto ex;
  }
+
+ /* <<< provisory for testing only */
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   for(i=0;i<skin->track_counter;i++) {
+     if(skin->tracklist[i]->data_image_size>=0.0)
+       fprintf(stderr,
+          "cdrskin: DEBUG: track %2.2d : ISO size %.fs (= %.fb)\n",
+          i+1,
+          skin->tracklist[i]->data_image_size/2048.0,
+          skin->tracklist[i]->data_image_size);
+   }
+
 #endif /* ! Cdrskin_extra_leaN */
 
  Cdrskin_adjust_speed(skin,0);

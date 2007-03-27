@@ -117,6 +117,11 @@ int Cdrfifo_get_cdr_counters(struct CdrfifO *o,
                              double *empty_counter, double *full_counter, 
                              int flag);
 
+/** Inquire the eventually detected size of an eventual ISO-9660 file system
+    @return 0=no ISO resp. size detected, 1=size_in_bytes is valid
+*/
+int Cdrfifo_get_iso_fs_size(struct CdrfifO *o, double *size_in_bytes,int flag);
+
 
 /** Check for pending data at the fifo's source file descriptor and wether the
     fifo is ready to take them. Simultaneously check the buffer for existing

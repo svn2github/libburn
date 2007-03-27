@@ -77,6 +77,8 @@ struct CdrfifO {
  double empty_counter;
  double full_counter;
 
+ /* eventual ISO-9660 image size obtained from first 64k of input */
+ double iso_fs_size; 
 
  /* (sequential) fd chaining */
  /* fds: 0=source, 1=dest  */
@@ -159,6 +161,7 @@ int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,
  o->get_counter= 0.0;
  o->empty_counter= 0.0;
  o->full_counter= 0.0;
+ o->iso_fs_size= -1.0;
  for(i= 0; i<Cdrfifo_ffd_maX; i++) {
    o->follow_up_fds[i][0]= o->follow_up_fds[i][1]= -1;
    o->follow_up_eop[i]= o->follow_up_sod[i]= -1;
@@ -390,6 +393,13 @@ int Cdrfifo_get_min_fill(struct CdrfifO *o, int *total_min_fill,
 }
 
 
+int Cdrfifo_get_iso_fs_size(struct CdrfifO *o, double *size_in_bytes, int flag)
+{
+ *size_in_bytes= o->iso_fs_size;
+ return(o->iso_fs_size>=2048);
+}
+
+
 /** Get counters which are mentioned by cdrecord at the end of burning.
     It still has to be examined wether they mean what i believe they do.
 */
@@ -398,7 +408,7 @@ int Cdrfifo_get_cdr_counters(struct CdrfifO *o,
                              double *empty_counter, double *full_counter,
                              int flag)
 {
- *put_counter= o->put_counter;;
+ *put_counter= o->put_counter;
  *get_counter= o->get_counter;
  *empty_counter= o->empty_counter;
  *full_counter= o->full_counter;
@@ -870,6 +880,24 @@ int Cdrfifo_fill(struct CdrfifO *o, int size, int flag)
    if(ret==2)
  break;
  }
+
+#ifndef Cdrfifo_standalonE
+ { int Scan_for_iso_size(unsigned char data[2048], double *size_in_bytes,
+                         int flag);
+   int i;
+   double size;
+
+   /* try to obtain an ISO-9660 file system size */
+   for(i= 0; i<32*2048 && i+2048<=fill; i+=2048) {
+     ret= Scan_for_iso_size((unsigned char *) (o->buffer+i), &size, 0);
+     if(ret<=0)
+   continue;
+     o->iso_fs_size= size;
+   break;
+   }
+ }
+#endif
+
  o->total_min_fill= fill;
  o->interval_min_fill= fill;
  return(1);
