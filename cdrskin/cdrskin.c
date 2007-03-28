@@ -777,6 +777,7 @@ struct CdrtracK {
  int trackno;
   
  char source_path[Cdrskin_strleN];
+ char original_source_path[Cdrskin_strleN];
  int source_fd;
  int is_from_stdin;
  double fixed_size;
@@ -808,7 +809,6 @@ struct CdrtracK {
  /** fd[0] of the fifo pipe. This is from where libburn reads its data. */
  int fifo_outlet_fd;
  int fifo_size;
- int fifo_start_at;
 
  /** The possibly external fifo object which knows the real input fd and
      the fd[1] of the pipe. */
@@ -829,14 +829,13 @@ int Cdrtrack_set_track_type(struct CdrtracK *o, int track_type, int flag);
     @param boss The cdrskin control object (corresponds to session)
     @param trackno The index in the cdrskin tracklist array (is not constant)
     @param flag Bitfield for control purposes:
-                bit0= set fifo_start_at to 0
                 bit1= track is originally stdin
 */
 int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                  int trackno, int flag)
 {
  struct CdrtracK *o;
- int ret,skin_track_type;
+ int ret,skin_track_type,fifo_start_at;
  int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
                         double *fixed_size, double *tao_to_sao_tsize,
                         int *use_data_image_size,
@@ -852,6 +851,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->boss= boss;
  o->trackno= trackno;
  o->source_path[0]= 0;
+ o->original_source_path[0]= 0;
  o->source_fd= -1;
  o->is_from_stdin= !!(flag&2);
  o->fixed_size= 0.0;
@@ -870,7 +870,6 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->fifo= NULL;
  o->fifo_outlet_fd= -1;
  o->fifo_size= 0;
- o->fifo_start_at= -1;
  o->ff_fifo= NULL;
  o->ff_idx= -1;
  o->libburn_track= NULL;
@@ -882,17 +881,16 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                          0);
  if(ret<=0)
    goto failed;
+ strcpy(o->original_source_path,o->source_path);
  Cdrtrack_set_track_type(o,skin_track_type,0);
 
 #ifndef Cdrskin_extra_leaN
  ret= Cdrskin_get_fifo_par(boss, &(o->fifo_enabled),&(o->fifo_size),
-                           &(o->fifo_start_at),0);
+                           &fifo_start_at,0);
  if(ret<=0)
    goto failed;
 #endif /* ! Cdrskin_extra_leaN */
 
- if(flag&1)
-   o->fifo_start_at= 0;
  return(1);
 failed:;
  Cdrtrack_destroy(track,0);
@@ -970,6 +968,16 @@ int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
 
 #endif
  *sector_size= track->sector_size;
+ return(1);
+}
+
+
+int Cdrtrack_get_source_path(struct CdrtracK *track,
+              char **source_path, int *source_fd, int *is_from_stdin, int flag)
+{
+ *source_path= track->original_source_path;
+ *source_fd= track->source_fd;
+ *is_from_stdin= track->is_from_stdin;
  return(1);
 }
 
@@ -1284,20 +1292,20 @@ int Cdrtrack_attach_fifo(struct CdrtracK *track, int *outlet_fd,
     exhausted.
     @return <=0 error, 1 success
 */
-int Cdrtrack_fill_fifo(struct CdrtracK *track, int flag)
+int Cdrtrack_fill_fifo(struct CdrtracK *track, int fifo_start_at, int flag)
 {
  int ret,buffer_fill,buffer_space;
  double data_image_size;
 
- if(track->fifo==NULL || track->fifo_start_at==0)
+ if(track->fifo==NULL || fifo_start_at==0)
    return(2);
- if(track->fifo_start_at>0 && track->fifo_start_at<track->fifo_size)
+ if(fifo_start_at>0 && fifo_start_at<track->fifo_size)
    printf(
       "cdrskin: NOTE : Input buffer will be initially filled up to %d bytes\n",
-      track->fifo_start_at);
+      fifo_start_at);
  printf("Waiting for reader process to fill input buffer ... ");
  fflush(stdout);
- ret= Cdrfifo_fill(track->fifo,track->fifo_start_at,0);
+ ret= Cdrfifo_fill(track->fifo,fifo_start_at,0);
  if(ret<=0)
    return(ret);
 
@@ -2291,6 +2299,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\t-audio\t\tSubsequent tracks are CD-DA audio tracks\n");
      fprintf(stderr,
             "\t-data\t\tSubsequent tracks are CD-ROM data mode 1 (default)\n");
+     fprintf(stderr,
+           "\t-isosize\tUse iso9660 file system size for next data track\n");
      fprintf(stderr,"\t-pad\t\tpadsize=30k\n");
      fprintf(stderr,
         "\t-nopad\t\tDo not pad (default, but applies only to data tracks)\n");
@@ -2891,7 +2901,7 @@ int Cdrskin_fill_fifo(struct CdrskiN *skin, int flag)
 {
  int ret;
 
- ret= Cdrtrack_fill_fifo(skin->tracklist[0],0);
+ ret= Cdrtrack_fill_fifo(skin->tracklist[0],skin->fifo_start_at,0);
  if(ret<=0)
    return(ret);
  printf("input buffer ready.\n");
@@ -4987,6 +4997,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
  char *doing;
+ char *source_path;
+ int source_fd, is_from_stdin;
 
  if(skin->tell_media_space)
    doing= "estimating";
@@ -5053,13 +5065,12 @@ burn_failed:;
    }
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                      &use_data_image_size,0);
-   if(use_data_image_size==1)
+   if(use_data_image_size==1) { /* still unfulfilled -isosize demand pending */
      needs_early_fifo_fill= 1;
-   else if(size>0)
+   } else if(size>0)
      skin->fixed_size+= size+padding;
-   else {
+   else
      skin->has_open_ended_track= 1;
-   }
  }
 
 #ifndef Cdrskin_libburn_write_mode_ruleS
@@ -5080,9 +5091,21 @@ burn_failed:;
     determination via fifo content.
  */
  if(needs_early_fifo_fill && !skin->tell_media_space) {
+   int start_memorized;
+
+   start_memorized= skin->fifo_start_at;
+   /* try  ISO-9660 size recognition via fifo */
+   if(32*2048<=skin->fifo_size)
+     skin->fifo_start_at= 32*2048;
+   else
+     skin->fifo_start_at= skin->fifo_size;
    ret= Cdrskin_fill_fifo(skin,0);
    if(ret<=0)
      goto fifo_filling_failed;
+   if((start_memorized>skin->fifo_start_at || start_memorized<=0) &&
+      skin->fifo_start_at<skin->fifo_size)
+     needs_early_fifo_fill= 2; /* continue filling fifo at normal stage */
+   skin->fifo_start_at= start_memorized;
  }
  skin->fixed_size= 0.0;
  skin->has_open_ended_track= 0;
@@ -5094,8 +5117,12 @@ burn_failed:;
    ret= Cdrtrack_activate_image_size(skin->tracklist[i],&size,
                                      !!skin->tell_media_space);
    if(ret<=0) {
+     Cdrtrack_get_source_path(skin->tracklist[i],
+                              &source_path,&source_fd,&is_from_stdin,0);
      fprintf(stderr,
-             "cdrskin: FATAL : cannot determine -isosize of track source\n");
+           "cdrskin: FATAL : cannot determine -isosize of track source\n");
+     fprintf(stderr,
+           "cdrskin:         '%s'\n", source_path);
      {ret= 0; goto ex;}
    }
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
@@ -5184,7 +5211,7 @@ burn_failed:;
 
 #ifndef Cdrskin_extra_leaN
  Cdrskin_wait_before_action(skin,0);
- if(needs_early_fifo_fill)
+ if(needs_early_fifo_fill==1)
    ret= 1;
  else
    ret= Cdrskin_fill_fifo(skin,0);

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "March 15, 2007"
+.TH CDRSKIN 1 "March 28, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -407,6 +407,22 @@ option fifo_start_at=size.
 .TP
 .BI gracetime= seconds
 Set the grace time before starting to write. (Default is 0)
+.TP
+.BI -isosize
+The next track following this option will try to obtain its source size from
+the header information out of the first few blocks of the source data.
+If these blocks indicate an ISO-9660 filesystem then its declared size
+will be used under the assumption that it is a single session filesystem.
+.br
+If not, then the burn run will be aborted.
+.br
+The range of -isosize is exactly one track. Further tracks may be preceeded
+by further -isosize options, though. At least 15 blocks of padding will be
+added to each -isosize track. But be advised to use padsize=300k.
+.br
+This option can be performed on track sources which are regular files or block
+devices. For the first track of the session it can be performed on any type
+of source if there is a fifo of at least 64 kB. See option fs= .
 .TP
 .BI msifile= path
 Run option -msinfo and copy the result line into the file given by path.
@@ -908,7 +924,7 @@ fs=16m
 .br
 .SH SEE ALSO
 .TP
-Formatting track sources for cdrskin:
+Formatting data track sources for cdrskin:
 .br
 .BR mkisofs (8),
 .BR genisoimage (8),
