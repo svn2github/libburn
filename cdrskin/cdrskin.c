@@ -952,11 +952,12 @@ int Cdrtrack_get_track_type(struct CdrtracK *o, int *track_type,
                 bit1= size returns fixed_size, padding returns tao_to_sao_tsize
 */
 int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
-                      double *sector_size, int flag)
+                      double *sector_size, int *use_data_image_size, int flag)
 {
 
  *size= track->fixed_size;
  *padding= track->padding;
+ *use_data_image_size= track->use_data_image_size;
 #ifdef Cdrskin_allow_libburn_taO
  if((flag&1) && track->libburn_track!=NULL) {
    off_t readcounter= 0,writecounter= 0;
@@ -1354,19 +1355,21 @@ int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
 
 #endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
-
+/* @param flag bit0=use *size_used and not the detected data image size
+*/
 int Cdrtrack_activate_image_size(struct CdrtracK *track, double *size_used,
                                  int flag)
 {
- *size_used= track->data_image_size;
+ if(!(flag&1))
+   *size_used= track->data_image_size;
  if(track->use_data_image_size==0)
    return(2);
- if(track->data_image_size<=0)
+ if(*size_used<=0)
    return(0);
- track->fixed_size= track->data_image_size;
+ track->fixed_size= *size_used;
  if(track->libburn_track!=NULL) {
 #ifdef Cdrskin_libburn_has_track_set_sizE
-   burn_track_set_size(track->libburn_track, (off_t) track->data_image_size);
+   burn_track_set_size(track->libburn_track, (off_t) *size_used);
 #else
    fprintf(stderr,
            "cdrskin: SORRY : libburn version is too old for -isosize\n");
@@ -4264,7 +4267,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  double elapsed_time,elapsed_total_time,current_time;
  double estim_time,estim_minutes,estim_seconds,percent;
  int ret,fifo_percent,fill,space,advance_interval=0,new_mb,old_mb,time_to_tell;
- int fs,bs,old_track_idx,buffer_fill,formatting= 0;
+ int fs,bs,old_track_idx,buffer_fill,formatting= 0,use_data_image_size;
  char fifo_text[80],mb_text[40];
  char *debug_mark= ""; /* use this to prepend a marker text for experiments */
 
@@ -4348,7 +4351,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
 
  if(old_track_idx>=0 && old_track_idx<skin->supposed_track_idx) {
    Cdrtrack_get_size(skin->tracklist[old_track_idx],&fixed_size,&padding,
-                     &sector_size,1);
+                     &sector_size,&use_data_image_size,1);
    if(skin->verbosity>=Cdrskin_verbose_progresS)
      printf("\n");
    printf("%sTrack %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
@@ -4360,7 +4363,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  if(skin->supposed_track_idx>=0 && 
     skin->supposed_track_idx<skin->track_counter)
    Cdrtrack_get_size(skin->tracklist[skin->supposed_track_idx],&fixed_size,
-                     &padding,&sector_size,0);
+                     &padding,&sector_size,&use_data_image_size,0);
 
  bytes_to_write= ((double) p->sectors)*sector_size;
  written_total_bytes= ((double) p->sector)*sector_size;
@@ -4633,6 +4636,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
  int profile_number= -1, track_type_1= 0, mixed_mode= 0, unpredicted_size= 0;
  int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret, current_is_cd= 1;
+ int use_data_image_size;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
  double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
@@ -4675,7 +4679,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
    else if(track_type_1!=track_type)
      mixed_mode= 1;
    Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
-                     &tao_to_sao_tsize,&dummy,2);
+                     &tao_to_sao_tsize,&dummy,&use_data_image_size,2);
 
    /* <<< until CD-SAO does fill-up: filluped last CD track length undefined */
    if(fixed_size<=0 &&
@@ -4853,13 +4857,14 @@ it_is_done:;
 
 int Cdrskin_announce_tracks(struct CdrskiN *skin, int flag)
 {
- int i,mb;
+ int i,mb,use_data_image_size;
  double size,padding,sector_size= 2048.0;
  double sectors;
 
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
    for(i=0;i<skin->track_counter;i++) {
-     Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
+     Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
+                       &use_data_image_size,0);
      if(size<=0) {
        printf("Track %-2.2d: %s unknown length",
               i+1,(sector_size==2048?"data ":"audio"));
@@ -4924,6 +4929,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  struct burn_drive *drive;
  int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
  int fifo_disabled= 0,fifo_percent,total_min_fill,min_buffer_fill= 101;
+ int use_data_image_size, needs_early_fifo_fill= 0;
  double put_counter,get_counter,empty_counter,full_counter;
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
@@ -4992,11 +4998,15 @@ burn_failed:;
      fprintf(stderr,"cdrskin: FATAL : cannot add track %d to session.\n",i+1);
      goto burn_failed;
    }
-   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
+   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
+                     &use_data_image_size,0);
    if(size>0)
      skin->fixed_size+= size+padding;
-   else
+   else {
      skin->has_open_ended_track= 1;
+     if(use_data_image_size)
+       needs_early_fifo_fill= 1;
+   }
  }
 
 #ifndef Cdrskin_libburn_write_mode_ruleS
@@ -5012,6 +5022,38 @@ burn_failed:;
 #endif /* ! Cdrskin_allow_sao_for_appendablE */
  }
 #endif /* ! Cdrskin_libburn_write_mode_ruleS */
+
+ /* Final decision on track size has to be made after eventual -isosize
+    determination via fifo content.
+ */
+ if(needs_early_fifo_fill && !skin->tell_media_space) {
+   ret= Cdrskin_fill_fifo(skin,0);
+   if(ret<=0)
+     goto fifo_filling_failed;
+ }
+ skin->fixed_size= 0.0;
+ skin->has_open_ended_track= 0;
+ for(i=0;i<skin->track_counter;i++) {
+   size= 1024*1024; /* a dummy size in case of skin->tell_media_space */
+   ret= Cdrtrack_activate_image_size(skin->tracklist[i],&size,
+                                     !!skin->tell_media_space);
+   if(ret<=0) {
+     fprintf(stderr,
+             "cdrskin: FATAL : cannot determine -isosize of track source\n");
+     {ret= 0; goto ex;}
+   }
+   if(size>0.0 && skin->verbosity>=Cdrskin_verbose_debuG)
+     ClN(fprintf(stderr,
+            "cdrskin: DEBUG: track %2.2d : %s %.fs (= %.fb)\n",
+            i+1,(ret==1?"activated -isosize":"ignored image size"),
+            size/2048.0,size));
+   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
+                     &use_data_image_size,0);
+   if(size>0)
+     skin->fixed_size+= size+padding;
+   else
+     skin->has_open_ended_track= 1;
+ }
  
  o= burn_write_opts_new(drive);
  burn_write_opts_set_perform_opc(o, 0);
@@ -5086,38 +5128,17 @@ burn_failed:;
 
 #ifndef Cdrskin_extra_leaN
  Cdrskin_wait_before_action(skin,0);
- ret= Cdrskin_fill_fifo(skin,0);
+ if(needs_early_fifo_fill)
+   ret= 1;
+ else
+   ret= Cdrskin_fill_fifo(skin,0);
  if(ret<=0) {
+fifo_filling_failed:;
    fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
    goto ex;
  }
 
 #endif /* ! Cdrskin_extra_leaN */
-
- /* Final decision on track size has to be made after eventual -isosize
-    determination via fifo content. This makes best sense if the automated
-    write mode decision is done afterwards in libburn, not before in cdrskin.
- */
- skin->fixed_size= 0.0;
- skin->has_open_ended_track= 0;
- for(i=0;i<skin->track_counter;i++) {
-   ret= Cdrtrack_activate_image_size(skin->tracklist[i],&size,0);
-   if(ret<=0) {
-     fprintf(stderr,
-             "cdrskin: FATAL : cannot determine -isosize of track source\n");
-     {ret= 0; goto ex;}
-   }
-   if(size>0.0 && skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(fprintf(stderr,
-            "cdrskin: DEBUG: track %2.2d : %s %.fs (= %.fb)\n",
-            i+1,(ret==1?"activated -isosize":"ignored image size"),
-            size/2048.0,size));
-   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,0);
-   if(size>0)
-     skin->fixed_size+= size+padding;
-   else
-     skin->has_open_ended_track= 1;
- }
 
  Cdrskin_adjust_speed(skin,0);
 
@@ -5219,7 +5240,8 @@ burn_failed:;
    printf("Track 01: Total bytes read/written: %.f/%.f (%.f sectors).\n",
           total_count,total_count,total_count/sector_size);
  } else {
-   Cdrtrack_get_size(skin->tracklist[max_track],&size,&padding,&sector_size,1);
+   Cdrtrack_get_size(skin->tracklist[max_track],&size,&padding,&sector_size,
+                     &use_data_image_size,1);
    printf(
          "Track %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
          max_track+1,size,size+padding,(size+padding)/sector_size);
