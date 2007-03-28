@@ -792,7 +792,7 @@ struct CdrtracK {
  /** Eventually detected data image size */
  double data_image_size;
  /** Wether to demand a detected data image size and use it (or else abort) */
- int use_data_image_size;
+ int use_data_image_size; /* 0=no, 1=size not defined yet, 2=size defined */
 
  /* wether the data source is a container of defined size with possible tail */
  int extracting_container;
@@ -1056,12 +1056,88 @@ ex:
 }
 
 
+/* @param flag bit0=set *size_used as the detected data image size
+*/
+int Cdrtrack_activate_image_size(struct CdrtracK *track, double *size_used,
+                                 int flag)
+{
+ if(flag&1)
+   track->data_image_size= *size_used;
+ else
+   *size_used= track->data_image_size;
+ if(track->use_data_image_size!=1)
+   return(2);
+ if(*size_used<=0)
+   return(0);
+ track->fixed_size= *size_used;
+ track->use_data_image_size= 2;
+ if(track->libburn_track!=NULL) {
+#ifdef Cdrskin_libburn_has_track_set_sizE
+   burn_track_set_size(track->libburn_track, (off_t) *size_used);
+#else
+   fprintf(stderr,
+           "cdrskin: SORRY : libburn version is too old for -isosize\n");
+   return(0);
+#endif
+ }
+ /* man cdrecord prescribes automatic -pad with -isosize. 
+    cdrskin obeys only if the current padding is less than that. */
+ if(track->padding<15*2048) {
+   track->padding= 15*2048;
+   track->set_by_padsize= 0;
+ }
+ track->extracting_container= 1;
+ if(track->ff_fifo!=NULL)
+   Cdrfifo_set_fd_in_limit(track->ff_fifo,track->fixed_size,track->ff_idx,0);
+ return(1);
+}
+
+
+int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
+{
+ struct stat stbuf;
+ char secbuf[2048];
+ int ret,got,i;
+ double size;
+
+ if(fstat(fd,&stbuf)==-1)
+   return(0);
+ if((stbuf.st_mode&S_IFMT)!=S_IFREG && (stbuf.st_mode&S_IFMT)!=S_IFBLK)
+   return(2);
+ for(i=0;i<32 && track->data_image_size<=0;i++) {
+   for(got= 0; got<2048;got+= ret) {
+     ret= read(fd, secbuf+got, 2048-got);
+     if(ret<=0)
+       return(0);
+   }
+   ret= Scan_for_iso_size((unsigned char *) secbuf, &size, 0);
+   if(ret<=0)
+ continue;
+   track->data_image_size= size;
+   if(track->use_data_image_size) {
+     Cdrtrack_activate_image_size(track,&size,1);
+     track->fixed_size= size;
+     track->use_data_image_size= 2;
+   }
+ }
+ ret= lseek(fd, (off_t) 0, SEEK_SET);
+ if(ret!=0) {
+   fprintf(stderr,
+        "cdrskin: FATAL : Cannot lseek() to 0 after -isosize determination\n");
+   if(errno!=0)
+     fprintf(stderr, "cdrskin: errno=%d : %s\n", errno, strerror(errno));
+   return(-1);
+ }
+ return(track->data_image_size>0);
+}
+
+
 /** Deliver an open file descriptor corresponding to the source path of track.
     @return <=0 error, 1 success
 */
 int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
 {
- int is_wav= 0, size_from_file= 0;
+ int is_wav= 0, size_from_file= 0, ret;
  off_t xtr_size= 0;
  struct stat stbuf;
 
@@ -1086,9 +1162,18 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
                     errno==0?"-no error code available-":strerror(errno));
      return(0);
    }
-   if(track->fixed_size<=0) {
+   if(track->use_data_image_size==1 && xtr_size<=0) {
+     ret= Cdrtrack_seek_isosize(track,*fd,0);
+     if(ret==-1)
+       return(-1);
+   } else if(track->fixed_size<=0) {
+
+     /* >>> ??? is it intentional that tsize overrides .wav header ? */
      if(xtr_size>0) {
+
        track->fixed_size= xtr_size;
+       if(track->use_data_image_size==1)
+         track->use_data_image_size= 2; /* count this as image size found */
        size_from_file= 1;
      } else {
        if(fstat(*fd,&stbuf)!=-1) {
@@ -1354,38 +1439,6 @@ int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
 }
 
 #endif /* ! Cdrskin_libburn_write_mode_ruleS */
-
-/* @param flag bit0=use *size_used and not the detected data image size
-*/
-int Cdrtrack_activate_image_size(struct CdrtracK *track, double *size_used,
-                                 int flag)
-{
- if(!(flag&1))
-   *size_used= track->data_image_size;
- if(track->use_data_image_size==0)
-   return(2);
- if(*size_used<=0)
-   return(0);
- track->fixed_size= *size_used;
- if(track->libburn_track!=NULL) {
-#ifdef Cdrskin_libburn_has_track_set_sizE
-   burn_track_set_size(track->libburn_track, (off_t) *size_used);
-#else
-   fprintf(stderr,
-           "cdrskin: SORRY : libburn version is too old for -isosize\n");
-   return(0);
-#endif
- }
- /* man cdrecord prescribes automatic -pad with -isosize. 
-    cdrskin obeys only if the current padding is less than that. */
- if(track->padding<15*2048) {
-   track->padding= 15*2048;
-   track->set_by_padsize= 0;
- }
- track->extracting_container= 1;
- Cdrfifo_set_fd_in_limit(track->ff_fifo,track->fixed_size,track->ff_idx,0);
- return(1);
-}
 
 
 int Cdrtrack_get_sectors(struct CdrtracK *track, int flag)
@@ -5000,12 +5053,12 @@ burn_failed:;
    }
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                      &use_data_image_size,0);
-   if(size>0)
+   if(use_data_image_size==1)
+     needs_early_fifo_fill= 1;
+   else if(size>0)
      skin->fixed_size+= size+padding;
    else {
      skin->has_open_ended_track= 1;
-     if(use_data_image_size)
-       needs_early_fifo_fill= 1;
    }
  }
 
@@ -5034,7 +5087,10 @@ burn_failed:;
  skin->fixed_size= 0.0;
  skin->has_open_ended_track= 0;
  for(i=0;i<skin->track_counter;i++) {
-   size= 1024*1024; /* a dummy size in case of skin->tell_media_space */
+   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
+                     &use_data_image_size,0);
+   if(use_data_image_size==1 && size<=0 && skin->tell_media_space)
+     size= 1024*1024; /* a dummy size */
    ret= Cdrtrack_activate_image_size(skin->tracklist[i],&size,
                                      !!skin->tell_media_space);
    if(ret<=0) {
@@ -5042,13 +5098,12 @@ burn_failed:;
              "cdrskin: FATAL : cannot determine -isosize of track source\n");
      {ret= 0; goto ex;}
    }
-   if(size>0.0 && skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(fprintf(stderr,
-            "cdrskin: DEBUG: track %2.2d : %s %.fs (= %.fb)\n",
-            i+1,(ret==1?"activated -isosize":"ignored image size"),
-            size/2048.0,size));
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                      &use_data_image_size,0);
+   if(use_data_image_size==2 && skin->verbosity>=Cdrskin_verbose_debuG)
+     ClN(fprintf(stderr,
+            "cdrskin: DEBUG: track %2.2d : activated -isosize %.fs (= %.fb)\n",
+            i+1, size/2048.0,size));
    if(size>0)
      skin->fixed_size+= size+padding;
    else
@@ -5099,11 +5154,12 @@ burn_failed:;
    {ret= 0; goto ex;}
  }
 
+#ifndef Cdrskin_extra_leaN
+ Cdrskin_announce_tracks(skin,0);
+#endif
+
  if(skin->tell_media_space || skin->track_counter<=0) {
    /* write capacity estimation and return without actual burning */
-#ifndef Cdrskin_extra_leaN
-   Cdrskin_announce_tracks(skin,0);
-#endif
 
 #ifdef Cdrskin_libburn_has_get_spacE
    {
@@ -5141,10 +5197,6 @@ fifo_filling_failed:;
 #endif /* ! Cdrskin_extra_leaN */
 
  Cdrskin_adjust_speed(skin,0);
-
-#ifndef Cdrskin_extra_leaN
- Cdrskin_announce_tracks(skin,0);
-#endif
 
  if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0)
    printf("Starting new track at sector: %d\n",nwa);
