@@ -882,6 +882,8 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  if(ret<=0)
    goto failed;
  strcpy(o->original_source_path,o->source_path);
+ if(o->fixed_size>0.0)
+   o->extracting_container= 1;
  Cdrtrack_set_track_type(o,skin_track_type,0);
 
 #ifndef Cdrskin_extra_leaN
