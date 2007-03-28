@@ -1242,7 +1242,6 @@ enum burn_source_status burn_track_set_source(struct burn_track *t,
 */
 int burn_track_set_default_size(struct burn_track *t, off_t size);
 
-
 /** Free a burn_source (decrease its refcount and maybe free it)
 	@param s Source to free
 */
@@ -1261,6 +1260,16 @@ struct burn_source *burn_file_source_new(const char *path,
                 If this value is 0, the size will be determined from datafd.
 */
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
+
+
+/* ts A70328 */
+/** Sets a fixed track size after the data source object has already been
+    created.
+    @param t The track to poperate on
+    @param size the number of bytes to use as track size
+    @return <=0 indicates failure , >0 success
+*/
+int burn_track_set_size(struct burn_track *t, off_t size);
 
 
 /** Tells how long a track will be on disc
