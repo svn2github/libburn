@@ -34,6 +34,10 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
   Option blank=fast is the same as blank=all in order to achieve media which
   are capable of Incremental Streaming.
   
++ It has not been evaluated how far -isosize is compatible with the original
+  cdrecord option. man cdrecord forbids stdin as source, cdrskin allows it
+  if a fifo is used.
+
 
 ------------------------------------------------------------------------------
                                   Changelog
@@ -3405,13 +3409,70 @@ Trying to recognize kernel >= 2.6 and use /dev/sr by default
 cdrskin/cdrskin.1
 Updated drive_scsi_dev_family=
 
-  []
+15 Mar 2007  [776]
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
 ------------------------------------ cycle  - cdrskin-0.3.5 - 
 * Usage of /dev/srN rather than /dev/sgN on Linux >= 2.6
 * New option drive_scsi_dev_family=sr|scd|sg
+
+
+18 Mar 2007  [777]
+cdrskin/cdrskin_eng.html
+Mentioned new sr behavior
+
+2007.03.24.093238  [785]
+libburn/drive.c
+Fixed bug with burn_disc_available_space(...,NULL)
+
+2007.03.24.093623  [786]
+cdrskin/cdrskin.c
+Warning of very small tsize= settings. (Proposal by Eduard Bloch)
+
+2007.03.27.213543  [787]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+cdrskin/cdrfifo.c
+Preparations for option -isosize via fifo (only a debug message yet)
+
+2007.03.28.100934  [788]
+libburn/libburn.h
+libburn/structure.c
+cdrskin/cdrskin.c
+Enabled -isosize for first track by help of fifo and without seeking
+
+2007.03.28.111739  [789]
+cdrskin/cdrskin.c
+Silenced error condition about -sao with stdin and -isosize
+
+2007.03.28.160503  [790]
+cdrskin/cdrskin.c
+Enabled -isosize with S_IFREG or S_IFBLK files and without fifo
+
+2007.03.28.182419  [791]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Made fifo based -isosize read 64k first and the rest only at normal stage
+
+2007.03.28.202802  [792]
+cdrskin/cdrskin.c
+Silenced error message if tsize= is smaller than source is willing to deliver
+
+
+29 Mar 2007  []
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.5 - 
+* Option -isosize is supported now
+
+
+  []
+libburn/write.c
+Allowing to finalize DVD+R
 
 
 ===============================================================================
@@ -3423,12 +3484,10 @@ cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
 
-Default burn_preset_device_open(2,...) on kernel >= 2.6 ?
-https://bugzilla.novell.com/show_bug.cgi?id=226019
-
 
 cdrskin: prevent usage of burn drive as track source
 
+Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
 
 
 What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
@@ -3436,9 +3495,6 @@ What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 How to handle finalizing ?
 growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
 
-Make wide use of mmc_four_char_to_int(), mmc_int_to_four_char()
-
-Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
 
 After cooking: review of -do_diet ?
 
