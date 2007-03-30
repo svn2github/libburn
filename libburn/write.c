@@ -1075,9 +1075,31 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 }
 
 
+/* ts A70229 */
+int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
+{
+	struct burn_drive *d = o->drive;
+
+	libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			"Finalizing DVD+R ...", 0, 0);
+
+	/* CLOSE SESSION, 101b, Finalize with minimal radius */
+	d->close_track_session(d, 2, 1);  /* (2<<1)|1 = 5 */
+
+	libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			"... finalizing DVD+R done               ", 0, 0);
+
+	return 1;
+}
+
+
 /* ts A70226 */
 int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
-					struct burn_session *s, int tnum)
+			struct burn_session *s, int tnum, int is_last_track)
 {
 	struct burn_drive *d = o->drive;
 	char msg[80];
@@ -1093,8 +1115,11 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
 
 	/* Each session becomes a single logical track. So to distinguish them,
 	   it is mandatory to close the session together with each track. */
-	d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
 
+	if (is_last_track && !o->multi) 
+		burn_disc_finalize_dvd_plus_r(o);
+	else
+ 		d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
 	d->busy = BURN_DRIVE_WRITING;
 	d->last_track_no++;
 	return 1;
@@ -1103,7 +1128,7 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
 
 /* ts A61218 - A70129 */
 int burn_dvd_write_track(struct burn_write_opts *o,
-				struct burn_session *s, int tnum)
+			struct burn_session *s, int tnum, int is_last_track)
 {
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
@@ -1189,7 +1214,8 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 			goto ex;
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
-		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum);
+		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum,
+							 is_last_track);
 		if (ret <= 0)
 			goto ex;
 	}
@@ -1268,7 +1294,7 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 
 /* ts A61218 */
 int burn_dvd_write_session(struct burn_write_opts *o,
-				struct burn_session *s)
+				struct burn_session *s, int is_last_session)
 {
 	int i,ret;
         struct burn_drive *d = o->drive;
@@ -1276,7 +1302,8 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	/* >>> open_session ? */
 
 	for (i = 0; i < s->tracks; i++) {
-		ret = burn_dvd_write_track(o, s, i);
+		ret = burn_dvd_write_track(o, s, i,
+			is_last_session && i == (s->tracks - 1));
 		if (ret <= 0)
 	break;
 	}
@@ -1424,24 +1451,6 @@ int burn_disc_setup_dvd_plus_r(struct burn_write_opts *o,
 	/* most setup is in burn_disc_setup_track_dvd_plus_r() */;
 
 	d->nwa = 0;
-	return 1;
-}
-
-
-/* ts A70229 */
-int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
-{
-	struct burn_drive *d = o->drive;
-
-	/* <<< FOR NOW: avoid finalizing media */
-	return 3;
-
-	if (o->multi)
-		return 2;
-	d->busy = BURN_DRIVE_CLOSING_SESSION;
-	/* CLOSE SESSION, 101b, Finalize with minimal radius */
-	d->close_track_session(d, 2, 1);  /* (2<<1)|1 = 5 */
-	d->busy = BURN_DRIVE_WRITING;
 	return 1;
 }
 
@@ -1700,7 +1709,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		d->progress.session = i;
 		d->progress.tracks = disc->session[i]->tracks;
 
-		ret = burn_dvd_write_session(o, disc->session[i]);
+		ret = burn_dvd_write_session(o, disc->session[i],
+					i == (disc->sessions - 1));
 		if (ret <= 0)
 			goto ex;
 

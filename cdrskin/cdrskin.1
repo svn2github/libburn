@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "March 28, 2007"
+.TH CDRSKIN 1 "March 30, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -190,12 +190,6 @@ DVD+R.
 Quite deliberately write mode -sao insists in the tradition of a predicted
 track size and blank media, whereas -tao writes the tracks open ended and
 allows appendable media.
-.br
-Currently DVD+R are always kept appendable regardless wether -multi is given
-or not. This might change in future so it is strongly advised to already now
-use
-.B -multi
-whenever the disc shall be kept appendable.
 .PP
 .B Overwriteable DVD Media:
 .br
@@ -418,7 +412,7 @@ If not, then the burn run will be aborted.
 .br
 The range of -isosize is exactly one track. Further tracks may be preceeded
 by further -isosize options, though. At least 15 blocks of padding will be
-added to each -isosize track. But be advised to use padsize=300k.
+added to each -isosize track. But be advised to rather use padsize=300k.
 .br
 This option can be performed on track sources which are regular files or block
 devices. For the first track of the session it can be performed on any type
