@@ -1719,12 +1719,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		d->progress.start_sector = 0;
 		d->progress.sectors = 0;
 	}
-
-	if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
-		ret = burn_disc_finalize_dvd_plus_r(o);
-		if (ret <= 0)
-			goto ex;
-	}
 	ret = 1;
 ex:;
 
