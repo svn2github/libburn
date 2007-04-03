@@ -3400,7 +3400,7 @@ wrong_devno:;
 int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
                               char btldev[Cdrskin_adrleN], int flag)
 {
- int k,ret,still_untranslated= 1,hret;
+ int k,ret,still_untranslated= 1,hret,k_start;
  char *loc= NULL,buf[Cdrskin_adrleN],adr[Cdrskin_adrleN];
 
  if(driveno<0 || driveno>skin->n_drives)
@@ -3441,12 +3441,17 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
  }
 #endif
 
- if(strncmp(loc,"/dev/sg",7)==0) {
-   for(k= 7;loc[k]!=0;k++)
+ k_start= 0;
+ if(strncmp(loc,"/dev/sg",7)==0 || strncmp(loc,"/dev/sr",7)==0)
+   k_start= 7;
+ if(strncmp(loc,"/dev/scd",8)==0)
+   k_start= 8;
+ if(k_start>0) {
+   for(k= k_start;loc[k]!=0;k++)
      if(loc[k]<'0' || loc[k]>'9')
    break;
-   if(loc[k]==0 && k>7) {
-     sprintf(btldev,"1,%s,0",loc+7);
+   if(loc[k]==0 && k>k_start) {
+     sprintf(btldev,"1,%s,0",loc+k_start);
      {ret= 1; goto adr_translation;}
    }
  }
