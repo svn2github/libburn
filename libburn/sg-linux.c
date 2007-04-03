@@ -267,6 +267,75 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 }
 
 
+/* ts A60925 : ticket 74 */
+static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
+{
+	int ret, os_errno, sevno= LIBDAX_MSGS_SEV_DEBUG;
+	char msg[4096+100];
+
+	if(*fd < 0)
+		return(0);
+	ret = close(*fd);
+	*fd = -1337;
+	if(ret != -1)
+		return 1;
+	os_errno= errno;
+
+	if (fname != NULL)
+		sprintf(msg, "Encountered error when closing drive '%s'",
+			fname);
+	else
+		sprintf(msg, "Encountered error when closing drive");
+
+	if (sorry)
+		sevno = LIBDAX_MSGS_SEV_SORRY;
+	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
+			sevno, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno, 0);
+	return 0;	
+}
+
+
+/* ts A70401 : 
+   In http://lkml.org/lkml/2007/3/31/187 , Alan Cox demands usage of 
+   SG_IO on block devices and of fcntl rather than O_EXCL. 
+   fcntl() has the unappealing property to work only after open().
+   So libburn will by default use open(O_EXCL) first and afterwards
+   as second assertion will use fcntl(F_SETLK).
+*/
+int sg_fcntl_lock(int *fd, char *fd_name)
+{
+
+#define Libburn_sg_with_fcntl_locK 1
+#ifdef Libburn_sg_with_fcntl_locK
+
+	struct flock lockthing;
+	char msg[81];
+	int ret;
+
+	memset(&lockthing, 0, sizeof(lockthing));
+	lockthing.l_type = F_WRLCK;
+	lockthing.l_whence = SEEK_SET;
+	lockthing.l_start = 0;
+	lockthing.l_len = 0;
+/*
+	fprintf(stderr,"LIBBURN_EXPERIMENTAL: fcntl(%d, F_SETLK, )\n", *fd);
+*/
+	ret = fcntl(*fd, F_SETLK, &lockthing);
+	if (ret == -1) {
+		sprintf(msg, "Failed to fcntl-lock device '%s'",fd_name);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020005,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, errno, 0);
+		close(*fd);
+		*fd = -1;
+		return(0);
+	}
+	
+#endif /* Libburn_sg_with_fcntl_locK */
+	return(1);
+}
+
+
 /* ts A60926 */
 static int sg_open_drive_fd(char *fname, int scan_mode)
 {
@@ -315,35 +384,8 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 				msg, errno, 0);
 		return -1;
 	}
+	sg_fcntl_lock(&fd, fname);
 	return fd;
-}
-
-
-/* ts A60925 : ticket 74 */
-static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
-{
-	int ret, os_errno, sevno= LIBDAX_MSGS_SEV_DEBUG;
-	char msg[4096+100];
-
-	if(*fd < 0)
-		return(0);
-	ret = close(*fd);
-	*fd = -1337;
-	if(ret != -1)
-		return 1;
-	os_errno= errno;
-
-	if (fname != NULL)
-		sprintf(msg, "Encountered error when closing drive '%s'",
-			fname);
-	else
-		sprintf(msg, "Encountered error when closing drive");
-
-	if (sorry)
-		sevno = LIBDAX_MSGS_SEV_SORRY;
-	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
-			sevno, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno, 0);
-	return 0;	
 }
 
 
@@ -873,6 +915,8 @@ int sg_grab(struct burn_drive *d)
 
 		fd = open(d->devname, open_mode);
 		os_errno = errno;
+		if (fd >= 0)
+			sg_fcntl_lock(&fd, d->devname);
 	} else
 		fd= d->fd;
 
