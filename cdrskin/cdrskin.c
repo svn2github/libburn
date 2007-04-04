@@ -1565,6 +1565,9 @@ struct CdrpreskiN {
  /** Linux specific : Wether to try to avoid collisions when opening drives */
  int drive_exclusive;
 
+ /** Linux specific : Wether to obtain an exclusive drive lock via fcntl() */
+ int drive_fcntl_f_setlk;
+
  /** Linux specific : Device file address family to use :
      0=default , 1=sr , 2=scd , 4=sg */
  int drive_scsi_dev_family;
@@ -1630,6 +1633,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->scan_demands_drive= 0;
  o->abort_on_busy_drive= 0;
  o->drive_exclusive= 1;
+ o->drive_fcntl_f_setlk= 1;
  o->drive_scsi_dev_family= 0;
  o->drive_blocking= 0;
  strcpy(o->write_mode_name,"DEFAULT");
@@ -2099,6 +2103,13 @@ set_dev:;
 
    } else if(strcmp(argv[i],"--drive_not_exclusive")==0) {
      o->drive_exclusive= 0;
+     o->drive_fcntl_f_setlk= 0;
+
+   } else if(strcmp(argv[i],"--drive_not_f_setlk")==0) {
+     o->drive_fcntl_f_setlk= 0;
+
+   } else if(strcmp(argv[i],"--drive_not_o_excl")==0) {
+     o->drive_exclusive= 0;
 
    } else if(strncmp(argv[i],"drive_scsi_dev_family=",22)==0) {
      value_pt= argv[i]+22;
@@ -2161,7 +2172,9 @@ set_dev:;
      printf("                    (might be triggered by a busy hard disk)\n");
      printf(" --drive_blocking   try to wait for busy drive to become free\n");
      printf("                    (might be stalled by a busy hard disk)\n");
-     printf(" --drive_not_exclusive  do not ask kernel to prevent opening\n");
+     printf(" --drive_not_exclusive  combined not_o_excl and not_f_setlk.\n");
+     printf(" --drive_not_f_setlk  do not obtain exclusive lock via fcntl.\n");
+     printf(" --drive_not_o_excl   do not ask kernel to prevent opening\n");
      printf("                    busy drives. Effect is kernel dependend.\n");
      printf(
          " drive_scsi_dev_family=<sr|scd|sg|default> select Linux device\n");
@@ -2400,6 +2413,7 @@ final_checks:;
  burn_preset_device_open(o->drive_exclusive
 #ifdef Cdrskin_libburn_preset_device_familY
                          | (o->drive_scsi_dev_family<<2)
+                         | ((!!o->drive_fcntl_f_setlk)<<5)
 #endif
                          ,
                          o->drive_blocking,
@@ -5908,7 +5922,9 @@ set_blank:;
    } else if(strcmp(argv[i],"--drive_blocking")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"--drive_not_exclusive")==0) {
+   } else if(strcmp(argv[i],"--drive_not_exclusive")==0 ||
+             strcmp(argv[i],"--drive_not_f_setlk")==0 ||
+             strcmp(argv[i],"--drive_not_o_excl")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"drive_scsi_dev_family=",22)==0) {

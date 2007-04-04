@@ -171,11 +171,13 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 /* >>> ts A61115 : this needs mending. A Linux aspect shows up in cdrskin. */
 /* ts A60813 : storage objects are in libburn/init.c
-   wether to use O_EXCL
+   wether to use O_EXCL with open(2) of devices
+   wether to use fcntl(,F_SETLK,) after open(2) of devices
    what device family to use : 0=default, 1=sr, 2=scd, (3=st), 4=sg
    wether to use O_NOBLOCK with open(2) on devices
    wether to take O_EXCL rejection as fatal error */
 extern int burn_sg_open_o_excl;
+extern int burn_sg_fcntl_f_setlk;
 extern int burn_sg_use_family;
 extern int burn_sg_open_o_nonblock;
 extern int burn_sg_open_abort_busy;
@@ -304,13 +306,12 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 */
 int sg_fcntl_lock(int *fd, char *fd_name)
 {
-
-#define Libburn_sg_with_fcntl_locK 1
-#ifdef Libburn_sg_with_fcntl_locK
-
 	struct flock lockthing;
 	char msg[81];
 	int ret;
+
+	if (!burn_sg_fcntl_f_setlk)
+		return 1;
 
 	memset(&lockthing, 0, sizeof(lockthing));
 	lockthing.l_type = F_WRLCK;
@@ -330,9 +331,7 @@ int sg_fcntl_lock(int *fd, char *fd_name)
 		*fd = -1;
 		return(0);
 	}
-	
-#endif /* Libburn_sg_with_fcntl_locK */
-	return(1);
+	return 1;
 }
 
 

@@ -26,8 +26,12 @@ struct libdax_msgs *libdax_messenger= NULL;
 
 int burn_running = 0;
 
-/* ts A60813 : Linux: wether to use O_EXCL and/or O_NONBLOCK in libburn/sg.c */
+/* ts A60813 : Linux: wether to use O_EXCL on open() of device files */
 int burn_sg_open_o_excl = 1;
+
+/* ts A70403 : Linux: wether to use fcntl(,F_SETLK,)
+                      after open() of device files  */
+int burn_sg_fcntl_f_setlk = 1;
 
 /* ts A70314 : Linux: what device family to use :
     0= default family
@@ -128,11 +132,11 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy)
 	/* a ssert(burn_running); */
 	if (!burn_running)
 		return;	
-
-	burn_sg_open_o_excl= exclusive & 3;
-	burn_sg_use_family= (exclusive >> 2) & 15;
-	burn_sg_open_o_nonblock= !blocking;
-	burn_sg_open_abort_busy= !!abort_on_busy;
+	burn_sg_open_o_excl = exclusive & 3;
+	burn_sg_fcntl_f_setlk = !!(exclusive & 32);
+	burn_sg_use_family = (exclusive >> 2) & 15;
+	burn_sg_open_o_nonblock = !blocking;
+	burn_sg_open_abort_busy = !!abort_on_busy;
 }
 
 

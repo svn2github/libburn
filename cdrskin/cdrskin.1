@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "March 30, 2007"
+.TH CDRSKIN 1 "April 03, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -732,6 +732,13 @@ Linux specific: Try to wait for a busy drive to become free.
 This is not guaranteed to work with all drivers. Some need nonblocking i/o.
 .TP
 .BI \--drive_not_exclusive
+Linux specific: Combine --drive_not_f_setlk and --drive_not_o_excl.
+.TP
+.BI \--drive_not_f_setlk
+Linux specific: Do not try to get exclusive lock on drive device file via
+fcntl(2).
+.TP
+.BI \--drive_not_o_excl
 Linux specific: Do not ask the operating system to prevent opening busy drives.
 Wether this leads to senseful behavior depends on operating system and kernel.
 .TP

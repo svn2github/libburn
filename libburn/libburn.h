@@ -586,6 +586,8 @@ void burn_set_verbosity(int level);
                       8 = /dev/scd%d
                      16 = /dev/sg%d
                      Do not use other values !
+                     Add 32 to demand an exclusive lock by fcntl(,F_SETLK,)
+                     after open() has succeeded.
     @param blocking  Try to wait for drives which do not open immediately but
                      also do not return an error as well. (O_NONBLOCK)
                      This might stall indefinitely with /dev/hdX hard disks.
@@ -772,8 +774,8 @@ int burn_drive_grab(struct burn_drive *drive, int load);
 
 
 /** Release a drive. This should not be done until the drive is no longer
-    busy (see burn_drive_get_status). The drive is (O_EXCL) unlocked
-    afterwards.
+    busy (see burn_drive_get_status).
+    Linux: The drive is unlocked afterwards. (O_EXCL , F_SETLK).
 	@param drive The drive to release.
 	@param eject Nonzero to make the drive eject the disc in it.
 */
