@@ -753,8 +753,8 @@ Device file family /dev/hdX on kernel >= 2.6 is not affected by this setting.
 .TP
 .BI \--drive_scsi_exclusive
 Linux specific:
-Try to exclusively reserve device files /dev/srN, /dev/scdM, /dev/stK of drive.
-this would be helpful to protect against collisions with program growisofs.
+Try to exclusively reserve device files /dev/srN, /dev/scdM, /dev/sgK of drives.
+This would be helpful to protect against collisions with program growisofs.
 Regrettably on Linux kernel 2.4 with ide-scsi emulation this seems not to
 work. Wether it becomes helpful with new Linux systems has to be evaluated.
 .TP

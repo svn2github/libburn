@@ -75,11 +75,10 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <scsi/sg.h>
 #include <scsi/scsi.h>
 
-/* ts A61211 : to recognize CD devices on /dev/sr* */
+/* ts A61211 : to eventually recognize CD devices on /dev/sr* */
 #include <linux/cdrom.h>
 
 
-/* ts A61211 : preparing for exploration of recent Linux ATA adventures */
 /** PORTING : Device file families for bus scanning and drive access.
     Both device families must support the following ioctls:
       SG_IO,
@@ -169,7 +168,6 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 			     int channel_no, int target_no, int lun_no);
 
 
-/* >>> ts A61115 : this needs mending. A Linux aspect shows up in cdrskin. */
 /* ts A60813 : storage objects are in libburn/init.c
    wether to use O_EXCL with open(2) of devices
    wether to use fcntl(,F_SETLK,) after open(2) of devices
@@ -197,14 +195,22 @@ int mmc_function_spy(char * text);
 /* This installs the device file family if one was chosen explicitely
    by burn_preset_device_open()
 */
-void sg_select_device_family(void)
+static void sg_select_device_family(void)
 {
 
 	/* >>> ??? do we need a mutex here ? */
 	/* >>> (It might be concurrent but is supposed to have always
 	        the same effect. Any race condition should be harmless.) */
 
-	if (linux_sg_auto_family) {
+	if (burn_sg_use_family == 1)
+		strcpy(linux_sg_device_family, "/dev/sr%d");
+	else if (burn_sg_use_family == 2)
+		strcpy(linux_sg_device_family, "/dev/scd%d");
+	else if (burn_sg_use_family == 3)
+		strcpy(linux_sg_device_family, "/dev/st%d");
+	else if (burn_sg_use_family == 4)
+		strcpy(linux_sg_device_family, "/dev/sg%d");
+	else if (linux_sg_auto_family) {
 		int use_sr_family = 0;
 		struct utsname buf;
 
@@ -217,15 +223,6 @@ void sg_select_device_family(void)
 			strcpy(linux_sg_device_family, "/dev/sg%d");
 		linux_sg_auto_family = 0;
 	}
-
-	if (burn_sg_use_family == 1)
-		strcpy(linux_sg_device_family, "/dev/sr%d");
-	else if (burn_sg_use_family == 2)
-		strcpy(linux_sg_device_family, "/dev/scd%d");
-	else if (burn_sg_use_family == 3)
-		strcpy(linux_sg_device_family, "/dev/st%d");
-	else if (burn_sg_use_family == 4)
-		strcpy(linux_sg_device_family, "/dev/sg%d");
 }
 
 
@@ -279,16 +276,14 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 		return(0);
 	ret = close(*fd);
 	*fd = -1337;
-	if(ret != -1)
+	if(ret != -1) {
+		/* ts A70409 : DDLP */
+		/* >>> release single lock on fname */
 		return 1;
+	}
 	os_errno= errno;
 
-	if (fname != NULL)
-		sprintf(msg, "Encountered error when closing drive '%s'",
-			fname);
-	else
-		sprintf(msg, "Encountered error when closing drive");
-
+	sprintf(msg, "Encountered error when closing drive '%s'", fname);
 	if (sorry)
 		sevno = LIBDAX_MSGS_SEV_SORRY;
 	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
@@ -298,13 +293,11 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 
 
 /* ts A70401 : 
-   In http://lkml.org/lkml/2007/3/31/187 , Alan Cox demands usage of 
-   SG_IO on block devices and of fcntl rather than O_EXCL. 
    fcntl() has the unappealing property to work only after open().
    So libburn will by default use open(O_EXCL) first and afterwards
-   as second assertion will use fcntl(F_SETLK).
+   as second assertion will use fcntl(F_SETLK). One lock more should not harm.
 */
-int sg_fcntl_lock(int *fd, char *fd_name)
+static int sg_fcntl_lock(int *fd, char *fd_name)
 {
 	struct flock lockthing;
 	char msg[81];
@@ -329,6 +322,10 @@ int sg_fcntl_lock(int *fd, char *fd_name)
 				msg, errno, 0);
 		close(*fd);
 		*fd = -1;
+
+		/* ts A70409 : DDLP */
+		/* >>> release single lock on fd_name */
+
 		return(0);
 	}
 	return 1;
@@ -340,6 +337,9 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 {
 	int open_mode = O_RDWR, fd;
 	char msg[81];
+
+	/* ts A70409 : DDLP */
+	/* >>> obtain single lock on fname */
 
 	/* ts A60813 - A60927
 	   O_EXCL with devices is a non-POSIX feature
@@ -389,13 +389,15 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 
 
 /* ts A60926 */
-static int sg_release_siblings(int sibling_fds[], int *sibling_count)
+static int sg_release_siblings(int sibling_fds[],
+				char sibling_fnames[][BURN_OS_SG_MAX_NAMELEN],
+				int *sibling_count)
 {
 	int i;
 	char msg[81];
 
 	for(i= 0; i < *sibling_count; i++)
-		sg_close_drive_fd(NULL, -1, &(sibling_fds[i]), 0);
+		sg_close_drive_fd(sibling_fnames[i], -1, &(sibling_fds[i]), 0);
 	if(*sibling_count > 0) {
 		sprintf(msg, "Closed %d O_EXCL scsi siblings", *sibling_count);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020007,
@@ -413,7 +415,8 @@ static int sg_close_drive(struct burn_drive *d)
 
 	if (!burn_drive_is_open(d))
 		return 0;
-	sg_release_siblings(d->sibling_fds, &(d->sibling_count));
+	sg_release_siblings(d->sibling_fds, d->sibling_fnames,
+				&(d->sibling_count));
 	ret = sg_close_drive_fd(d->devname, d->global_index, &(d->fd), 0);
 	return ret;
 }
@@ -421,15 +424,19 @@ static int sg_close_drive(struct burn_drive *d)
 
 /* ts A60926 */
 static int sg_open_scsi_siblings(char *path, int driveno,
-			  int sibling_fds[], int *sibling_count,
-			  int host_no, int channel_no, int id_no, int lun_no)
+			int sibling_fds[],
+			char sibling_fnames[][BURN_OS_SG_MAX_NAMELEN],
+			int *sibling_count,
+			int host_no, int channel_no, int id_no, int lun_no)
 {
 	int tld, i, ret, fd, i_bus_no = -1;
 	int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char msg[161], fname[81];
+	struct stat stbuf;
+	dev_t last_rdev;
 
-	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/st%d", 
-				  "/dev/sg%d", ""};
+	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/sg%d", ""};
+					/* ts A70609: removed "/dev/st%d" */
 
         sg_select_device_family();
 	if (linux_sg_device_family[0] == 0)
@@ -438,13 +445,18 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 	if(host_no < 0 || id_no < 0 || channel_no < 0 || lun_no < 0)
 		return(2);
 	if(*sibling_count > 0)
-		sg_release_siblings(sibling_fds, sibling_count);
+		sg_release_siblings(sibling_fds, sibling_fnames,
+					sibling_count);
 		
 	for (tld = 0; tldev[tld][0] != 0; tld++) {
 		if (strcmp(tldev[tld], linux_sg_device_family)==0)
 	continue;
 		for (i = 0; i < 32; i++) {
 			sprintf(fname, tldev[tld], i);
+			if(stat(fname, &stbuf) != -1)
+		continue;
+			if (*sibling_count > 0 && last_rdev == stbuf.st_rdev)
+		continue;
 			ret = sg_obtain_scsi_adr(fname, &i_bus_no, &i_host_no,
 				&i_channel_no, &i_target_no, &i_lun_no);
 			if (ret <= 0)
@@ -458,7 +470,7 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 			if (fd < 0)
 				goto failed;
 
-			if (*sibling_count>=LIBBURN_SG_MAX_SIBLINGS) {
+			if (*sibling_count>=BURN_OS_SG_MAX_SIBLINGS) {
 				sprintf(msg, "Too many scsi siblings of '%s'",
 					path);
 				libdax_msgs_submit(libdax_messenger,
@@ -468,18 +480,20 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 				goto failed;
 			}
 			sprintf(msg, "Opened O_EXCL scsi sibling '%s' of '%s'",
-				 fname, path);
+				fname, path);
 			libdax_msgs_submit(libdax_messenger, driveno,
 				0x00020004,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			sibling_fds[*sibling_count] = fd;
+			strcpy(sibling_fnames[*sibling_count], fname);
 			(*sibling_count)++;
+			last_rdev= stbuf.st_rdev;
 		}
 	}
 	return 1;
 failed:;
-	sg_release_siblings(sibling_fds, sibling_count);
+	sg_release_siblings(sibling_fds, sibling_fnames, sibling_count);
 	return 0;
 }
 
@@ -557,10 +571,11 @@ static void ata_enumerate(void)
 static void sg_enumerate(void)
 {
 	struct sg_scsi_id sid;
-	int i, fd, sibling_fds[LIBBURN_SG_MAX_SIBLINGS], sibling_count= 0, ret;
+	int i, fd, sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0, ret;
 	int sid_ret = 0;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[10];
+	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
 
         sg_select_device_family();
 
@@ -673,7 +688,8 @@ static void sg_enumerate(void)
 		/* ts A60927 : trying to do locking with growisofs */
 		if(burn_sg_open_o_excl>1) {
 			ret = sg_open_scsi_siblings(
-					fname, -1, sibling_fds, &sibling_count,
+					fname, -1, sibling_fds, sibling_fnames,
+					&sibling_count,
 					sid.host_no, sid.channel,
 					sid.scsi_id, sid.lun);
 			if (ret<=0) {
@@ -683,7 +699,8 @@ static void sg_enumerate(void)
 	continue;
 			}
 			/* the final occupation will be done in sg_grab() */
-			sg_release_siblings(sibling_fds, &sibling_count);
+			sg_release_siblings(sibling_fds, sibling_fnames,
+						&sibling_count);
 		}
 #ifdef SCSI_IOCTL_GET_BUS_NUMBER
 		if(bus_no == -1)
@@ -737,7 +754,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	/* Adapter specific handles and data */
 	out.fd = -1337;
 	out.sibling_count = 0;
-	for(i= 0; i<LIBBURN_SG_MAX_SIBLINGS; i++)
+	for(i= 0; i<BURN_OS_SG_MAX_SIBLINGS; i++)
 		out.sibling_fds[i] = -1337;
 
 	/* PORTING: ---------------- end of non portable part ------------ */
@@ -901,12 +918,15 @@ int sg_grab(struct burn_drive *d)
    		<<< debug: for tracing calls which might use open drive fds */
 		mmc_function_spy("sg_grab ----------- opening");
 
+		/* ts A70409 : DDLP */
+		/* >>> obtain single lock on d->devname */
+
 		/* ts A60926 */
 		if(burn_sg_open_o_excl>1) {
 			fd = -1;
 			ret = sg_open_scsi_siblings(d->devname,
 					d->global_index,d->sibling_fds,
-					&(d->sibling_count),
+					d->sibling_fnames,&(d->sibling_count),
 					d->host, d->channel, d->id, d->lun);
 			if(ret <= 0)
 				goto drive_is_in_use;
@@ -1140,6 +1160,9 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	if (l > 0 && strncmp(path, linux_ata_device_family, l) == 0 
 	    && path[7] >= 'a' && path[7] <= 'z' && path[8] == 0)
 		return 0; /* on RIP 14 all hdx return SCSI adr 0,0,0,0 */
+
+	/* ts A70409 : DDLP */
+	/* >>> obtain single lock on path */
 
 	fd = open(path, O_RDONLY | O_NONBLOCK);
 	if(fd < 0)

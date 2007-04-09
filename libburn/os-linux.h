@@ -52,6 +52,10 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 typedef int burn_drive_enumerator_t;
 
 
+/* Parameters for sibling list. See sibling_fds, sibling_fnames */
+#define BURN_OS_SG_MAX_SIBLINGS 5
+#define BURN_OS_SG_MAX_NAMELEN 16
+
 /* The list of operating system dependent elements in struct burn_drive.
    Usually they are initialized in  sg-*.c:enumerate_common().
 */
@@ -60,5 +64,7 @@ int fd; \
  \
 /* ts A60926 : trying to lock against growisofs /dev/srN, /dev/scdN */ \
 int sibling_count; \
-int sibling_fds[LIBBURN_SG_MAX_SIBLINGS];
+int sibling_fds[BURN_OS_SG_MAX_SIBLINGS]; \
+/* ts A70409 : DDLP */ \
+char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
 

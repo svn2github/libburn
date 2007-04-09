@@ -117,8 +117,6 @@ struct burn_format_descr {
 };
 
 
-#define LIBBURN_SG_MAX_SIBLINGS 16
-
 /** Gets initialized in enumerate_common() and burn_drive_register() */
 struct burn_drive
 {
