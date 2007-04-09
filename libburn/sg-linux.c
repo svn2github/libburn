@@ -433,7 +433,7 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 	int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char msg[161], fname[81];
 	struct stat stbuf;
-	dev_t last_rdev;
+	dev_t last_rdev = 0;
 
 	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/sg%d", ""};
 					/* ts A70609: removed "/dev/st%d" */
@@ -453,7 +453,7 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 	continue;
 		for (i = 0; i < 32; i++) {
 			sprintf(fname, tldev[tld], i);
-			if(stat(fname, &stbuf) != -1)
+			if(stat(fname, &stbuf) == -1)
 		continue;
 			if (*sibling_count > 0 && last_rdev == stbuf.st_rdev)
 		continue;
