@@ -366,6 +366,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020139 (SORRY,HIGH)   = Write job parameters are unsuitable
  0x0002013a (FATAL,HIGH)   = No suitable media detected
  0x0002013b (FATAL,HIGH)   = Failed to fcntl-lock device
+ 0x0002013c (SORRY,HIGH)   = Malformed capabilities page 2Ah received
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

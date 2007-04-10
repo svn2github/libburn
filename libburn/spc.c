@@ -171,6 +171,7 @@ void spc_sense_caps(struct burn_drive *d)
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
 
+	memset(&buf, 0, sizeof(buf));
 	memcpy(c.opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
 	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SENSE);
@@ -180,6 +181,8 @@ void spc_sense_caps(struct burn_drive *d)
 	c.page->sectors = 0;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
+	if (c.error)
+		memset(&buf, 0, sizeof(buf));
 
 	size = c.page->data[0] * 256 + c.page->data[1];
 	m = d->mdata;
@@ -241,6 +244,18 @@ void spc_sense_caps(struct burn_drive *d)
 
 	num_write_speeds = page[30] * 256 + page[31];
 	m->max_write_speed = m->min_write_speed = m->cur_write_speed;
+
+        if (32 + 4 * num_write_speeds > page_length + 2) {
+		char msg[161];
+
+		sprintf(msg, "Malformed capabilities page 2Ah received (len=%d, #speeds=%d)", page_length, num_write_speeds);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002013c,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		return;
+	}
+
 	for (i = 0; i < num_write_speeds; i++) {
 		speed = page[32 + 4*i + 2] * 256 + page[32 + 4*i + 3];
 
