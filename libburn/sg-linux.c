@@ -1149,7 +1149,7 @@ ex:;
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
-	int fd, ret, l;
+	int fd, ret, l, open_mode = O_RDWR | O_NONBLOCK;
 	struct my_scsi_idlun {
 		int x;
 		int host_unique_id;
@@ -1164,7 +1164,12 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	/* ts A70409 : DDLP */
 	/* >>> obtain single lock on path */
 
-	fd = open(path, O_RDONLY | O_NONBLOCK);
+	if(burn_sg_open_o_excl)
+		open_mode |= O_EXCL;
+	fd = open(path, open_mode);
+	if(fd < 0)
+		return 0;
+	sg_fcntl_lock(&fd, path);
 	if(fd < 0)
 		return 0;
 
