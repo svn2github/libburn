@@ -134,7 +134,7 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy)
 		return;	
 	burn_sg_open_o_excl = exclusive & 3;
 	burn_sg_fcntl_f_setlk = !!(exclusive & 32);
-	burn_sg_use_family = (exclusive >> 2) & 15;
+	burn_sg_use_family = (exclusive >> 2) & 7;
 	burn_sg_open_o_nonblock = !blocking;
 	burn_sg_open_abort_busy = !!abort_on_busy;
 }
