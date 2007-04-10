@@ -3365,7 +3365,7 @@ Made number transition to 0.3.5
 Updated cdrskin tarball generator
 
 
------------------------------------- cycle  - cdrskin-0.3.5 - 2006.03.12.
+------------------------------------ cycle  - cdrskin-0.3.5 - 2007.03.12.160658
 
 14 Mar 2007  [767]
 cdrskin/cdrskin_eng.html
@@ -3413,7 +3413,7 @@ Updated drive_scsi_dev_family=
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
------------------------------------- cycle  - cdrskin-0.3.5 - 
+------------------------------------ cycle  - cdrskin-0.3.5 - 2007.03.16.001311
 * Usage of /dev/srN rather than /dev/sgN on Linux >= 2.6
 * New option drive_scsi_dev_family=sr|scd|sg
 
@@ -3460,19 +3460,68 @@ cdrskin/cdrskin.c
 Silenced error message if tsize= is smaller than source is willing to deliver
 
 
-29 Mar 2007  []
+------------------------------------ cycle  - cdrskin-0.3.5 - 2007.03.28.212322
+* Option -isosize is supported now
+
+
+29 Mar 2007  [793]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
+2007.03.30.201034  [794]
+libburn/write.c
+cdrskin/cdrskin.1
+Allowed finalizing of DVD+R
 
------------------------------------- cycle  - cdrskin-0.3.5 - 
-* Option -isosize is supported now
+2007.03.30.214657  [795]
+libburn/write.c
+Avoided unconditional finalizing of DVD+R
+
+2007.04.03.140356  [796]
+libburn/sg-linux.c
+Added fcntl() locking to O_EXCL locking
+
+2007.04.03.145637  [797]
+cdrskin/cdrskin.c
+Make --old_pseudo_scsi_adr -scanbus work with any drive_scsi_dev_family=
+
+2007.04.03.145806  [798]
+libburn/libdax_msgs.h
+Added fcntl() locking to O_EXCL locking
+
+2007.04.04.184341  [799]
+libburn/libburn.h
+libburn/init.c
+libburn/sg-linux.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin options --drive_not_f_setlk and --drive_not_o_excl 
+
+6 Apr 2007  [801]
+test/libburner.c
+Updated media list in introduction comment
+
+2007.04.09.105543  [802]
+libburn/transport.h
+libburn/os-linux.h
+libburn/sg-linux.c
+cdrskin/cdrskin.1
+Cleaned up scsi sibling management, sketched grafting of DDLP
+
+2007.04.09.111215  [803]
+libburn/sg-linux.c
+Reacted on compiler warning about last_rdev, fixed fresh typo bug
+
+
+------------------------------------ cycle  - cdrskin-0.3.5 - 2007.04.09.112127
+* DVD+R now get finalized (if not -multi is given)
 
 
   []
-libburn/write.c
-Allowing to finalize DVD+R
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
+
 
 
 ===============================================================================
