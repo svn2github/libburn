@@ -79,6 +79,11 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <linux/cdrom.h>
 
 
+/** Indication of the Linux kernel this software is running on */
+/* -1 = not evaluated , 0 = unrecognizable , 1 = 2.4 , 2 = 2.6 */
+static int sg_kernel_age = -1;
+
+
 /** PORTING : Device file families for bus scanning and drive access.
     Both device families must support the following ioctls:
       SG_IO,
@@ -191,6 +196,24 @@ int mmc_function_spy(char * text);
 /*            (Public functions are listed below)                           */
 /* ------------------------------------------------------------------------ */
 
+/* ts A70413 */
+/* This finds out wether the software is running on kernel >= 2.6
+*/
+static void sg_evaluate_kernel(void)
+{
+	struct utsname buf;
+	if (sg_kernel_age >= 0)
+		return;
+
+	sg_kernel_age = 0;
+	if (uname(&buf) == -1)
+		return;
+	sg_kernel_age = 1;
+	if (strcmp(buf.release, "2.6") >= 0)
+		sg_kernel_age = 2;
+}
+
+
 /* ts A70314 */
 /* This installs the device file family if one was chosen explicitely
    by burn_preset_device_open()
@@ -211,13 +234,8 @@ static void sg_select_device_family(void)
 	else if (burn_sg_use_family == 4)
 		strcpy(linux_sg_device_family, "/dev/sg%d");
 	else if (linux_sg_auto_family) {
-		int use_sr_family = 0;
-		struct utsname buf;
-
-		if (uname(&buf) != -1)
-			if (strcmp(buf.release, "2.6") >= 0)
-				use_sr_family = 1;
-		if (use_sr_family)
+		sg_evaluate_kernel();
+		if (sg_kernel_age >= 2)
 			strcpy(linux_sg_device_family, "/dev/sr%d");
 		else
 			strcpy(linux_sg_device_family, "/dev/sg%d");
@@ -277,7 +295,7 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 	ret = close(*fd);
 	*fd = -1337;
 	if(ret != -1) {
-		/* ts A70409 : DDLP */
+		/* ts A70409 : DDLP-B */
 		/* >>> release single lock on fname */
 		return 1;
 	}
@@ -297,7 +315,7 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
    So libburn will by default use open(O_EXCL) first and afterwards
    as second assertion will use fcntl(F_SETLK). One lock more should not harm.
 */
-static int sg_fcntl_lock(int *fd, char *fd_name)
+static int sg_fcntl_lock(int *fd, char *fd_name, int l_type, int verbous)
 {
 	struct flock lockthing;
 	char msg[81];
@@ -307,23 +325,28 @@ static int sg_fcntl_lock(int *fd, char *fd_name)
 		return 1;
 
 	memset(&lockthing, 0, sizeof(lockthing));
-	lockthing.l_type = F_WRLCK;
+	lockthing.l_type = l_type;
 	lockthing.l_whence = SEEK_SET;
 	lockthing.l_start = 0;
 	lockthing.l_len = 0;
 /*
-	fprintf(stderr,"LIBBURN_EXPERIMENTAL: fcntl(%d, F_SETLK, )\n", *fd);
+        fprintf(stderr,"LIBBURN_EXPERIMENTAL: fcntl(%d, F_SETLK, %s)\n",
+                *fd, l_type == F_WRLCK ? "F_WRLCK" : "F_RDLCK");
 */
+
 	ret = fcntl(*fd, F_SETLK, &lockthing);
 	if (ret == -1) {
-		sprintf(msg, "Failed to fcntl-lock device '%s'",fd_name);
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020005,
-				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+		if (verbous) {
+			sprintf(msg, "Device busy. Failed to fcntl-lock '%s'",
+					fd_name);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020008,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, errno, 0);
+		}
 		close(*fd);
 		*fd = -1;
 
-		/* ts A70409 : DDLP */
+		/* ts A70409 : DDLP-B */
 		/* >>> release single lock on fd_name */
 
 		return(0);
@@ -338,7 +361,7 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 	int open_mode = O_RDWR, fd;
 	char msg[81];
 
-	/* ts A70409 : DDLP */
+	/* ts A70409 : DDLP-B */
 	/* >>> obtain single lock on fname */
 
 	/* ts A60813 - A60927
@@ -350,17 +373,22 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 	/* ts A60813
 	   O_NONBLOCK was already hardcoded in ata_ but not in sg_.
 	   There must be some reason for this. So O_NONBLOCK is
-	   default mode for both now. Disable on own risk. */
+	   default mode for both now. Disable on own risk.
+	   ts A70411
+           Switched to O_NDELAY for LKML statement 2007/4/11/141 by Alan Cox:
+	   "open() has side effects. The CD layer allows you to open
+            with O_NDELAY if you want to avoid them." 
+	*/
 	if(burn_sg_open_o_nonblock)
-		open_mode |= O_NONBLOCK;
+		open_mode |= O_NDELAY;
 
 /* <<< debugging
 	fprintf(stderr,
 		"\nlibburn: experimental: o_excl= %d , o_nonblock= %d, abort_on_busy= %d\n",
 	burn_sg_open_o_excl,burn_sg_open_o_nonblock,burn_sg_open_abort_busy);
 	fprintf(stderr,
-		"libburn: experimental: O_EXCL= %d , O_NONBLOCK= %d\n",
-		!!(open_mode&O_EXCL),!!(open_mode&O_NONBLOCK));
+		"libburn: experimental: O_EXCL= %d , O_NDELAY= %d\n",
+		!!(open_mode&O_EXCL),!!(open_mode&O_NDELAY));
 */
           
 	fd = open(fname, open_mode);
@@ -379,11 +407,11 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 			return -1;
 		sprintf(msg, "Failed to open device '%s'",fname);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020005,
-				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, errno, 0);
 		return -1;
 	}
-	sg_fcntl_lock(&fd, fname);
+	sg_fcntl_lock(&fd, fname, F_WRLCK, 1);
 	return fd;
 }
 
@@ -909,9 +937,12 @@ int sg_grab(struct burn_drive *d)
 		open_mode |= O_EXCL;
 
 	/* ts A60813
-	   O_NONBLOCK was hardcoded here. So it should stay default mode. */
+	   O_NONBLOCK was hardcoded here. So it should stay default mode.
+	   ts A70411
+           Switched to O_NDELAY for LKML statement 2007/4/11/141
+	*/
 	if(burn_sg_open_o_nonblock)
-		open_mode |= O_NONBLOCK;
+		open_mode |= O_NDELAY;
 
 	/* ts A60813 - A60822
 	   After enumeration the drive fd is probably still open.
@@ -924,7 +955,7 @@ int sg_grab(struct burn_drive *d)
    		<<< debug: for tracing calls which might use open drive fds */
 		mmc_function_spy("sg_grab ----------- opening");
 
-		/* ts A70409 : DDLP */
+		/* ts A70409 : DDLP-B */
 		/* >>> obtain single lock on d->devname */
 
 		/* ts A60926 */
@@ -940,8 +971,11 @@ int sg_grab(struct burn_drive *d)
 
 		fd = open(d->devname, open_mode);
 		os_errno = errno;
-		if (fd >= 0)
-			sg_fcntl_lock(&fd, d->devname);
+		if (fd >= 0) {
+			sg_fcntl_lock(&fd, d->devname, F_WRLCK, 1);
+			if (fd < 0)
+				goto drive_is_in_use;
+		}
 	} else
 		fd= d->fd;
 
@@ -1155,27 +1189,33 @@ ex:;
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
-	int fd, ret, l, open_mode = O_RDWR | O_NONBLOCK;
+	int fd, ret, l, open_mode = O_RDONLY;
 	struct my_scsi_idlun {
 		int x;
 		int host_unique_id;
 	};
  	struct my_scsi_idlun idlun;
 
+
 	l = strlen(linux_ata_device_family) - 2;
 	if (l > 0 && strncmp(path, linux_ata_device_family, l) == 0 
 	    && path[7] >= 'a' && path[7] <= 'z' && path[8] == 0)
 		return 0; /* on RIP 14 all hdx return SCSI adr 0,0,0,0 */
 
-	/* ts A70409 : DDLP */
+	/* ts A70409 : DDLP-B */
 	/* >>> obtain single lock on path */
 
-	if(burn_sg_open_o_excl)
-		open_mode |= O_EXCL;
+	if(burn_sg_open_o_nonblock)
+		open_mode |= O_NDELAY;
+	if(burn_sg_open_o_excl) {
+		/* O_EXCL | O_RDONLY does not work with /dev/sg* on 
+		   SuSE 9.0 (kernel 2.4) and SuSE 9.3 (kernel 2.6) */
+		/* so skip it for now */;
+	}
 	fd = open(path, open_mode);
 	if(fd < 0)
 		return 0;
-	sg_fcntl_lock(&fd, path);
+	sg_fcntl_lock(&fd, path, F_RDLCK, 0);
 	if(fd < 0)
 		return 0;
 

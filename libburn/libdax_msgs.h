@@ -300,9 +300,10 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020002 (SORRY,HIGH)   = Encountered error when closing drive
  0x00020003 (SORRY,HIGH)   = Could not grab drive
  0x00020004 (NOTE,HIGH)    = Opened O_EXCL scsi sibling
- 0x00020005 (FATAL,HIGH)   = Failed to open device
+ 0x00020005 (SORRY,HIGH)   = Failed to open device
  0x00020006 (FATAL,HIGH)   = Too many scsi siblings
  0x00020007 (NOTE,HIGH)    = Closed O_EXCL scsi siblings
+ 0x00020008 (SORRY,HIGH)   = Device busy. Failed to fcntl-lock
            
  General library operations:
 
@@ -365,7 +366,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020138 (FATAL,HIGH)   = Cannot reserve track
  0x00020139 (SORRY,HIGH)   = Write job parameters are unsuitable
  0x0002013a (FATAL,HIGH)   = No suitable media detected
- 0x0002013b (FATAL,HIGH)   = Failed to fcntl-lock device
+ 0x0002013b
  0x0002013c (SORRY,HIGH)   = Malformed capabilities page 2Ah received
 
  libdax_audioxtr:
