@@ -2101,6 +2101,9 @@ set_dev:;
    } else if(strcmp(argv[i],"--drive_blocking")==0) {
      o->drive_blocking= 1;
 
+   } else if(strcmp(argv[i],"--drive_f_setlk")==0) {
+     o->drive_fcntl_f_setlk= 1;
+
    } else if(strcmp(argv[i],"--drive_not_exclusive")==0) {
      o->drive_exclusive= 0;
      o->drive_fcntl_f_setlk= 0;
@@ -2121,7 +2124,6 @@ set_dev:;
        o->drive_scsi_dev_family= 4;
      else
        o->drive_scsi_dev_family= 0;
-
    } else if(strcmp(argv[i],"--drive_scsi_exclusive")==0) {
      o->drive_exclusive= 2;
 
@@ -2172,6 +2174,7 @@ set_dev:;
      printf("                    (might be triggered by a busy hard disk)\n");
      printf(" --drive_blocking   try to wait for busy drive to become free\n");
      printf("                    (might be stalled by a busy hard disk)\n");
+     printf(" --drive_f_setlk    obtain exclusive lock via fcntl.\n");
      printf(" --drive_not_exclusive  combined not_o_excl and not_f_setlk.\n");
      printf(" --drive_not_f_setlk  do not obtain exclusive lock via fcntl.\n");
      printf(" --drive_not_o_excl   do not ask kernel to prevent opening\n");
