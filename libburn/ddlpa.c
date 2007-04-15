@@ -185,22 +185,9 @@ static int ddlpa_obtain_scsi_adr(struct ddlpa_lock *o, char *path,
 	};
 	struct my_scsi_idlun idlun;
 
-	if (!ddlpa_is_scsi(o, o->std_path))
-                return EFAULT;
 	fd = open(path, open_mode);
 	if (fd == -1)
 		return (errno ? errno : EBUSY);
-	if (!(o->ddlpa_flags & DDLPA_ALLOW_ROGUE_BUSIDLUN)) {
-		ret = ddlpa_fcntl_lock(o, fd, F_RDLCK);
-		if (ret) {
-			if (ddlpa_debug_mode)
-				fprintf(stderr, 
-				"DDLPA_DEBUG: fcntl '%s' errno=%d  ret=%d\n",
-				 path, errno, ret);
-			return ret;
-		}
-	}
-		
 	if (ioctl(fd, SCSI_IOCTL_GET_BUS_NUMBER, bus) == -1)
 		*bus = -1;
 	ret = ioctl(fd, SCSI_IOCTL_GET_IDLUN, &idlun);
@@ -222,7 +209,6 @@ static int ddlpa_collect_siblings(struct ddlpa_lock *o)
 	ino_t path_inode;
 	struct stat stbuf;
 	char *path, try_path[DDLPA_MAX_STD_LEN+1];
-	int p_bus, p_host, p_channel, p_id, p_lun;
 	int t_bus, t_host, t_channel, t_id, t_lun;
 	
 	if (o->ddlpa_flags & DDLPA_OPEN_GIVEN_PATH)
@@ -242,12 +228,14 @@ static int ddlpa_collect_siblings(struct ddlpa_lock *o)
 	o->dev = stbuf.st_dev;
 	o->ino = stbuf.st_ino;
 	ret = ddlpa_obtain_scsi_adr(o, path,
-				&p_bus, &p_host, &p_channel, &p_id, &p_lun);
+				&(o->bus), &(o->host), &(o->channel),
+				&(o->id), &(o->lun));
 	if (ret) {
 		o->errmsg = strdup(
 			"Cannot obtain SCSI parameters host,channel,id,lun");
 		return ret;
 	}
+	o->hcilb_is_valid = 1;
 
 	while (ddlpa_enumerate(o, &idx, try_path) == 0) {
 		if (!ddlpa_is_scsi(o, try_path))
@@ -262,8 +250,8 @@ static int ddlpa_collect_siblings(struct ddlpa_lock *o)
 
 			continue;
 		}
-		if (t_host != p_host || t_channel != p_channel ||
-		    t_id != p_id     || t_lun != p_lun)
+		if (t_host != o->host || t_channel != o->channel ||
+		    t_id != o->id     || t_lun != o->lun)
 			continue;
 
 		if (o->num_siblings >= DDLPA_MAX_SIBLINGS) {
@@ -299,6 +287,42 @@ static int ddlpa_collect_siblings(struct ddlpa_lock *o)
 	/* >>> add more info about busy and forbidden paths */
 
 	return EBUSY;
+}
+
+
+static int ddlpa_std_by_btl(struct ddlpa_lock *o)
+{
+	int idx = 0, ret;
+	char try_path[DDLPA_MAX_STD_LEN+1];
+	int t_bus, t_host, t_channel, t_id, t_lun;
+
+	if (!o->inbtl_is_valid)
+		return EFAULT;
+
+	while (ddlpa_enumerate(o, &idx, try_path) == 0) {
+		if (!ddlpa_is_sr(o, try_path))
+			continue;
+		ret = ddlpa_obtain_scsi_adr(o, try_path, 
+				&t_bus, &t_host, &t_channel, &t_id, &t_lun);
+		if (ret) {
+
+			/* >>> interpret error, memorize busy, no permission */
+
+			continue;
+		}
+		if (t_bus != o->in_bus || t_id != o->in_target ||
+		    t_lun != o->in_lun)
+			continue;
+		strcpy(o->std_path, try_path);
+
+		if (ddlpa_debug_mode)
+			fprintf(stderr,
+			 "DDLPA_DEBUG: ddlpa_std_by_rdev(%d,%d,%d) = \"%s\"\n",
+			 t_bus, t_id, t_lun, o->std_path);
+
+		return 0;
+	}
+	return ENOENT;
 }
 
 
@@ -413,10 +437,33 @@ int ddlpa_lock_btl(int bus, int target, int lun,
 			int  o_flags, int ddlpa_flags,
 			struct ddlpa_lock **lockbundle, char **errmsg)
 {
-	/* >>> */
+	struct ddlpa_lock *o;
+	int ret;
 
-	*errmsg = strdup("Function  ddlpa_lock_btl()  not implemented yet.");
-	return ENOSYS;
+	*errmsg = NULL;
+	ddlpa_flags &= ~DDLPA_OPEN_GIVEN_PATH;
+	if (ddlpa_new(&o, o_flags, ddlpa_flags))
+		return ENOMEM;
+	*lockbundle = o;
+	
+	o->in_bus = bus;
+	o->in_target = target;
+	o->in_lun = lun;
+	o->inbtl_is_valid = 1;
+	ret = ddlpa_std_by_btl(o);
+	if (ret) {
+		*errmsg = strdup(
+		  "Cannot find /dev/sr* with given Bus,Target,Lun");	
+		return ret;
+	}
+        ret = ddlpa_open_all(o);
+	if (ret) {
+		*errmsg = o->errmsg;
+		o->errmsg = NULL;
+		ddlpa_destroy(&o);
+		return ret;
+	}
+	return 0;
 }
 
 
@@ -459,7 +506,7 @@ int main(int argc, char **argv)
 {
 	struct ddlpa_lock *lck = NULL;
 	char *errmsg = NULL, *opened_path = NULL, *my_path = NULL;
-	int i, ret, fd = -1, duration = -1;
+	int i, ret, fd = -1, duration = -1, bus = -1, target = -1, lun = -1;
 
 	if (argc < 3) {
 usage:;
@@ -471,11 +518,18 @@ usage:;
 	if (duration < 0)
 		goto usage;
 
-	/* This substitutes for:
-		fd = open(my_path, O_RDWR | O_EXCL);
-	*/
-	ret = ddlpa_lock_path(my_path, O_RDWR, DDLPA_ALLOW_ROGUE_BUSIDLUN,
-				 &lck, &errmsg);
+	if (my_path[0] != '/' && my_path[0] != '.' &&
+	    strchr(my_path, ',') != NULL) {
+		/* cdrecord style dev=Bus,Target,Lun */
+		sscanf(my_path, "%d,%d,%d", &bus, &target, &lun);
+		ret = ddlpa_lock_btl(bus, target, lun, O_RDWR, 0, &lck,
+					 &errmsg);
+	} else {
+		/* This substitutes for:
+			fd = open(my_path, O_RDWR | O_EXCL);
+		*/
+		ret = ddlpa_lock_path(my_path, O_RDWR, 0, &lck, &errmsg);
+	}
 	if (ret) {
 		fprintf(stderr, "Cannot exclusively open '%s'\n", my_path);
 		if (errmsg != NULL)

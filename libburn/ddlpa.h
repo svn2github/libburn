@@ -77,11 +77,6 @@ struct ddlpa_lock {
                        although not both, a sg and a sr|scd device, have been
                        found during sibling search. Normally this is counted
                        as failure due to EBUSY. 
-                       DDLPA_ALLOW_ROGUE_BUSIDLUN allows to perform the ioctls
-                       SCSI_IOCTL_GET_BUS_NUMBER and SCSI_IOCTL_GET_IDLUN
-                       without prior fcntl lock. This is expected to be
-                       harmless. It helps to detect and report drives which
-                       are really busy.
     @param lockbundle  gets allocated and then represents the locking state
     @param errmsg      if *errmsg is not NULL after the call, it contains an
                        error message. Then to be released by free(3).
@@ -158,7 +153,6 @@ int ddlpa_get_siblings(struct ddlpa_lock *lockbundle,
 
 #define DDLPA_OPEN_GIVEN_PATH 1
 #define DDLPA_ALLOW_MISSING_SGRCD 2
-#define DDLPA_ALLOW_ROGUE_BUSIDLUN 4
 
 
 #endif /* DDLPA_H_INCLUDED */
