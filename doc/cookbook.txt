@@ -5,7 +5,7 @@ Content:
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
 - Sequential DVD-R[W] Cookbook
-- DVD+R Cookbook (still emerging)
+- DVD+R Cookbook
 
 -------------------------------------------------------------------------------
                          TAO Multi-Session CD Cookbook
@@ -1078,17 +1078,17 @@ libburn obtains the necessary logical track number from Last Track Number in
 Last Session from the reply of 51h READ DISC INFORMATION requesting
 Data Type 000b.
 (mmc5r03c.pdf 6.22) 
+
 After each track 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
 Number 0 closes the DVD+R session but keeps the media appendable.
 (mmc5r03c.pdf 6.3.3.4.3)
-
-
->>> This is not tested yet. growisofs has code for that gesture but explicitly 
-    avoids to use it. Instead it recommends to fill up the media with zeros.
-Eventually 5Bh CLOSE TRACK SESSION Close Function 101b is used to finalize
-the media with minimal radius. After that the disc is not appendable any more !
+If the media shall not stay appendable then the last DVD+R session is to be
+closed by Close Function 101b rather than 010b. This finalizes the media
+"with minimal radius".
 (mmc5r03c.pdf 6.3.3.4.4) 
 
+Note: growisofs has code for that gesture but explicitly avoids to use it.
+Instead it recommends to fill up the media with zeros.
 
 -------------------------------------------------------------------------------
 Hearsay about DVD+R/DL (Dual Layer) :
