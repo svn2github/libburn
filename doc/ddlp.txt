@@ -1,0 +1,165 @@
+
+
+                      Delicate Device Locking Protocol
+               (a joint sub project of cdrkit and libburnia)
+
+
+DDLP shall help to avoid collisions between programs in the process of
+recording to a CD or DVD drive and other programs which access that drive.
+The protocol intends to provide advisory locking. So any good-willing program
+has to take some extra precautions to participate.
+
+If a program does not feel vulnerable to disturbance, then the precautions
+impose much less effort than if the program feels the need for protection.
+
+Two levels are specified:
+DDLP-A operates on device files only. It is very Linux specific.
+DDLP-B adds proxy lock files, inspired by FHS /var/lock standard.
+
+
+                                  DDLP-A
+
+This protocol relies on the hardly documented feature open(O_EXCL | O_RDWR)
+with Linux device files and on POSIX compliant fcntl(F_SETLK).
+
+Other than the original meaning of O_EXCL with creating regular files, the
+effect on device files is mutual exclusion of access. I.e. if one
+filedescriptor is open on that combination of major-minor device number, then
+no other open(O_EXCL) will succeed. But open() without O_EXCL would succeed.
+So this is advisory and exclusive locking.
+With kernel 2.6 it seems to work on all device drivers which might get used
+to access a CD/DVD drive.
+
+The vulnerable programs do not start their operation before they occupied a
+wide collection of drive representations.
+Non-vulnerable programs take care to detect the occupation of _one_ such
+representation.
+
+                          So for Friendly Programs
+
+A program which does not feel vulnerable to disturbance is urged to access
+CD/DVD drives by opening a file descriptor which will uphold the lock
+as long as it does not get closed. There are two alternative ways to achieve
+this.
+Very reliable is  
+
+  open( some_path , O_EXCL | O_RDWR | ...)
+
+Regrettably, O_EXCL | O_RDONLY did not always succeed with our tests on
+kernel 2.6 systems. 
+
+So it may be necessary to use a cautious open() without O_EXCL and to aquire
+a POSIX lock via fcntl().
+With this gesture it is important to use the standard paths because 
+fcntl(F_SETLK) does not lock the device but only a device-inode.
+
+  std_path = one of the standard device files:
+               /dev/sr[0..255] /dev/scd[0..255] /dev/sg[0..255] /dev/hd[a..z]
+             or a symbolic link pointing to one of them.
+  open( std_path , ... | O_NDELAY)
+  fcntl(F_SETLK) and close() on failure
+  ... eventually disable O_NDELAY by fcntl(F_SETFL) ...
+
+There is a pitfall mentioned in man 2 fcntl :
+ "locks are automatically released [...] if it closes any file descriptor
+  referring to a file on which locks are held. This is bad [...]"
+So you may have to re-lock after some temporary fd got closed.
+
+
+                            Vulnerable Programs
+
+For programs which do feel vulnerable, O_EXCL would suffice for the /dev/hd*
+device file family and their driver. But USB and SATA recorders appear with
+at least two different major-minor combinations simultaneously.
+One as /dev/sr* alias /dev/scd*, the other as /dev/sg*.
+The same is true for ide-scsi or recorders attached to SCSI controllers.
+
+So, in order to lock any access to the recorder, one has to open(O_EXCL)
+not only the device file that is intended for accessing the recorder but also
+a device file of any other major-minor representation of the recorder.
+This is done via the SCSI address parameter vector (Host,Channel,Id,Lun)
+and a search on standard device file paths /dev/sr* /dev/scd* /dev/sg*.
+In this text the alternative device representations are called "siblings".
+
+For finding them, it is necessary to apply open() to many device files which
+might be occupied by delicate operations. On the other hand it is very
+important to occupy all reasonable representations of the drive.
+So the reading of the (Host,Channel,Id,Lun) parameters demands an 
+open(O_RDONLY | O_NDELAY) _without_ fcntl() in order to find the outmost
+number of representations among the standard device files. Only ioctls
+SCSI_IOCTL_GET_IDLUN and SCSI_IOCTL_GET_BUS_NUMBER are applied.
+Hopefully this gesture is unable to cause harmful side effects on kernel 2.6.
+
+At least one file of each class sr, scd and sg should be found to regard
+the occupation as satisfying. Thus corresponding sr-scd-sg triplets should have
+matching ownerships and access permissions.
+One will have to help the sysadmins to find those triplets.
+
+A spicy detail is that sr and scd may be distinct device files for the same
+major-minor combination.  In this case fcntl() locks on both are needed
+but O_EXCL can only be applied to one of them.
+
+
+An open and free implementation ddlpa.[ch] is provided as
+  http://libburnia.pykix.org/browser/libburn/trunk/libburn/ddlpa.h?format=txt
+  http://libburnia.pykix.org/browser/libburn/trunk/libburn/ddlpa.c?format=txt
+The current version of this text is 
+  http://libburnia.pykix.org/browser/libburn/trunk/doc/ddlp.txt?format=txt
+
+Put ddlpa.h and ddlpa.c into the same directory and compile as test program by
+  cc -g -Wall -DDDLPA_C_STANDALONE -o ddlpa ddlpa.c
+
+Use it to occupy a drive's representations for a given number of seconds
+  ./ddlpa /dev/sr0 300
+
+It should do no harm to any of your running activities.
+If it does: Please, please alert us.
+
+Your own programs should not be able to circumvent the occupation if the
+obey the rules for Friendly Programs.
+Of course ./ddlpa should be unable to circumvent itself.
+
+A successfull occupation looks like
+  DDLPA_DEBUG: ddlpa_std_by_rdev("/dev/scd0") = "/dev/sr0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/sr0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/scd0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/sg0"
+  DDLPA_DEBUG: ddlpa_occupy()        : '/dev/scd0'
+  DDLPA_DEBUG: ddlpa_occupy() O_EXCL : '/dev/sg0'
+  DDLPA_DEBUG: ddlpa_occupy() O_EXCL : '/dev/sr0'
+  ---------------------------------------------- Lock gained
+  ddlpa: opened           /dev/sr0
+  ddlpa: opened siblings: /dev/scd0 /dev/sg0
+  slept 1 seconds of 300
+
+Now an attempt via device file alias /dev/NEC must fail:
+  DDLPA_DEBUG: ddlpa_std_by_rdev("/dev/NEC") = "/dev/sg0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/sr0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/scd0"
+  DDLPA_DEBUG: ddlpa_collect_siblings() found "/dev/sg0"
+  Cannot exclusively open '/dev/sg0'
+  Reason given    : Failed to open O_RDWR | O_NDELAY | O_EXCL : '/dev/sr0'
+  Error condition : 16 'Device or resource busy'
+
+With hdc, of course, things are trivial
+  DDLPA_DEBUG: ddlpa_std_by_rdev("/dev/hdc") = "/dev/hdc"
+  DDLPA_DEBUG: ddlpa_occupy() O_EXCL : '/dev/hdc'
+  ---------------------------------------------- Lock gained
+  ddlpa: opened           /dev/hdc
+  slept 1 seconds of 1
+
+----------------------------------------------------------------------------
+
+                                  DDLP-B
+
+                                
+>>> Proxy lock file protocol embedded in DDLP-A which itself might be a
+>>> generic dummy on non-Linux systems (i.e. without O_EXCL or SCSI sibling
+>>> search).
+
+>>> Definition to come soon. Implementation possibly to come never.
+
+
+----------------------------------------------------------------------------
+
+
