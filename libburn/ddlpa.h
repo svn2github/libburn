@@ -64,7 +64,7 @@ struct ddlpa_lock {
     @param errmsg      if *errmsg is not NULL after the call, it contains an
                        error message. Then to be released by free(3).
                        It is NULL in case of success or lack of memory.
-    @return            0=success , 1=failure               
+    @return            0=success , else an errno compatible error number
 */
 int ddlpa_lock_path(char *path, int  o_flags, int ddlpa_flags, 
                     struct ddlpa_lock **lockbundle, char **errmsg);
@@ -80,7 +80,7 @@ int ddlpa_lock_path(char *path, int  o_flags, int ddlpa_flags,
                        will be ignored.
     @param lockbundle  see ddlpa_lock_path().
     @param errmsg      see ddlpa_lock_path().
-    @return            0=success , 1=failure               
+    @return            0=success , else an errno compatible error number
 */
 int ddlpa_lock_btl(int bus, int target, int lun,
                    int  o_flags, int ddlpa_flags,
