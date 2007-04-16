@@ -12,7 +12,7 @@ has to take some extra precautions to participate.
 If a program does not feel vulnerable to disturbance, then the precautions
 impose much less effort than if the program feels the need for protection.
 
-Two levels are specified:
+Two locking strategies are specified:
 DDLP-A operates on device files only. It is very Linux specific.
 DDLP-B adds proxy lock files, inspired by FHS /var/lock standard.
 
@@ -30,9 +30,9 @@ So this is advisory and exclusive locking.
 With kernel 2.6 it seems to work on all device drivers which might get used
 to access a CD/DVD drive.
 
-The vulnerable programs do not start their operation before they occupied a
+The vulnerable programs shall not start their operation before they occupied a
 wide collection of drive representations.
-Non-vulnerable programs take care to detect the occupation of _one_ such
+Non-vulnerable programs shall take care to detect the occupation of _one_ such
 representation.
 
                           So for Friendly Programs

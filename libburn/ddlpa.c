@@ -16,8 +16,6 @@
 #include <sys/ioctl.h>
 #include <scsi/scsi.h>
 
-/* No getter functions. This makes the compiled code leaner. */
-#define DDLPA_H_NOT_ENCAPSULATED 1
 
 /* All callers of ddlpa must do this */
 #include "ddlpa.h"
@@ -322,6 +320,9 @@ static int ddlpa_std_by_btl(struct ddlpa_lock *o)
 
 		return 0;
 	}
+
+	/* >>> add more info about busy and forbidden paths */
+
 	return ENOENT;
 }
 
@@ -344,7 +345,8 @@ static int ddlpa_open_all(struct ddlpa_lock *o)
 			/* There may be the same rdev but different inode. */
 			no_o_excl = (o->sibling_rdevs[i] == o->rdev);
 		
-			/* Look for multiply registered device drivers */	
+			/* Look for multiply registered device drivers with
+			   distinct inodes. */	
 			for (j = 0; j < i; j++) {
 				if (o->sibling_devs[j] == o->sibling_devs[i] &&
 			   	  o->sibling_inodes[j] == o->sibling_inodes[i])
@@ -467,39 +469,9 @@ int ddlpa_lock_btl(int bus, int target, int lun,
 }
 
 
-#ifndef DDLPA_H_NOT_ENCAPSULATED
-
-int ddlpa_get_fd(struct ddlpa_lock *lockbundle)
-{
-	/* >>> */
-	return -1;
-}
-
-
-char *ddlpa_get_fd_path(struct ddlpa_lock *lockbundle)
-{
-	/* >>> */
-	return "none";
-}
-
-
-int ddlpa_get_siblings(struct ddlpa_lock *lockbundle, 
-			char **std_path, int *num_siblings,
-			char ***sibling_paths, int **sibling_fds)
-{
-	*num_siblings = 0;
-
-	/* >>> */
-
-	return 1;
-}
-
-#endif /* ! DDLPA_H_NOT_ENCAPSULATED */
-
+#ifdef DDLPA_C_STANDALONE
 
 /* ----------------------------- Test / Demo -------------------------- */
-
-#ifdef DDLPA_C_STANDALONE
 
 
 int main(int argc, char **argv)
@@ -520,14 +492,19 @@ usage:;
 
 	if (my_path[0] != '/' && my_path[0] != '.' &&
 	    strchr(my_path, ',') != NULL) {
-		/* cdrecord style dev=Bus,Target,Lun */
+		/* 
+		   cdrecord style dev=Bus,Target,Lun
+		*/
+
 		sscanf(my_path, "%d,%d,%d", &bus, &target, &lun);
 		ret = ddlpa_lock_btl(bus, target, lun, O_RDWR, 0, &lck,
 					 &errmsg);
 	} else {
-		/* This substitutes for:
+		/*
+		   This substitutes for:
 			fd = open(my_path, O_RDWR | O_EXCL);
 		*/
+
 		ret = ddlpa_lock_path(my_path, O_RDWR, 0, &lck, &errmsg);
 	}
 	if (ret) {
@@ -537,7 +514,7 @@ usage:;
 				errmsg);
 		free(errmsg);
 		fprintf(stderr, "Error condition : %d '%s'\n",
-			errno, strerror(errno));
+			ret, strerror(ret));
 		exit(2);
 	}
 	fd = lck->fd;

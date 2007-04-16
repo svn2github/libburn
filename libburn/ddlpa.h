@@ -3,26 +3,12 @@
    Implementation of Delicate Device Locking Protocol level A.
    Copyright (C) 2007 Thomas Schmitt <scdbackup@gmx.net>
    Provided under any of the following licenses: GPL, LGPL, BSD. Choose one.
+
+   See ../doc/ddlp.txt for a description of the protocol.
 */
 
 #ifndef DDLPA_H_INCLUDED
 #define DDLPA_H_INCLUDED 1
-
-
-/* >>> For now : do not encapsulate the details of struct ddlpa_lock */
-#ifndef DDLPA_H_NOT_ENCAPSULATED
-#define DDLPA_H_NOT_ENCAPSULATED 1
-#endif
-
-
-#ifndef DDLPA_H_NOT_ENCAPSULATED
-
-/** Container for locking state and parameters.
-*/
-struct ddlpa_lock;
-
-
-#else /* ! DDLPA_H_NOT_ENCAPSULATED */
 
 
 /* An upper limit for the length of standard paths and sibling paths */
@@ -60,8 +46,6 @@ struct ddlpa_lock {
 	char *errmsg;
 };
 
-#endif /* DDLPA_H_NOT_ENCAPSULATED */
-
 
 
 /** Lock a recorder by naming a device file path. Allocate a new container.
@@ -71,12 +55,11 @@ struct ddlpa_lock {
     @param ddlpa_flags 0 = default behavior: the standard path will be opened
                            and treated by fcntl(F_SETLK)
                        DDLPA_OPEN_GIVEN_PATH causes the input parameter "path"
-                       to be used with open(2) and fcntl(2). Caution: This
-                       weakens the fcntl part of DDLP-A.
+                       to be used with open(2) and fcntl(2).
                        DDLPA_ALLOW_MISSING_SGRCD allows to grant a lock
-                       although not both, a sg and a sr|scd device, have been
-                       found during sibling search. Normally this is counted
-                       as failure due to EBUSY. 
+                       although not all three, a sg, a sr and a scd device
+                       file have been found during sibling search. Normally
+                       this is counted as failure due to EBUSY. 
     @param lockbundle  gets allocated and then represents the locking state
     @param errmsg      if *errmsg is not NULL after the call, it contains an
                        error message. Then to be released by free(3).
@@ -111,42 +94,6 @@ int ddlpa_lock_btl(int bus, int target, int lun,
 */
 int ddlpa_destroy(struct ddlpa_lock **lockbundle);
 
-
-
-#ifndef DDLPA_H_NOT_ENCAPSULATED
-
-/** Obtain the file descriptor for doing serious work on the recorder.
-    @param lockbundle  the lock which has been activated either by
-                       ddlpa_lock_path() or ddlpa_lock_btl()
-    @return            the file descriptor
-*/
-int ddlpa_get_fd(struct ddlpa_lock *lockbundle);
-
-/** Obtain the path which was used to open the file descriptor.
-    @param lockbundle  the lock
-    @return            a pointer to the path string. 
-                       Do not alter that string ! Do not free(3) it !
-*/
-char *ddlpa_get_fd_path(struct ddlpa_lock *lockbundle);
-
-
-/* Obtain info about the standard path and eventual locked siblings.
-    @param lockbundle    the lock to inquire
-    @param std_path      a pointer to the string with the standard path.
-                         Do not alter that string ! Do not free(3) it !
-    @param num_siblings  Tells the number of elements in sibling_*[].
-                         0 and 1 will be the most frequent values.
-    @param sibling_paths Tells the device file paths of the opened sibling
-                         device representations
-                         Do not alter those strings ! Do not free(3) them !
-    @param sibling_fds   Contains the opened file descriptors on sibling_paths
-    @return              0=success , 1=failure (will hardly happen) 
-*/
-int ddlpa_get_siblings(struct ddlpa_lock *lockbundle, 
-                       char **std_path, int *num_siblings,
-                       char ***sibling_paths, int **sibling_fds);
-
-#endif /* ! DDLPA_H_NOT_ENCAPSULATED */
 
 
 /** Definitions of macros used in above functions */
