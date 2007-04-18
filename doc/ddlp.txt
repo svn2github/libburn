@@ -181,7 +181,7 @@ Ignorant programs would use:
   ./open-cd-excl -w /dev/sg1
   ./open-cd-excl -f -w /dev/black-drive
 where "/dev/black-drive" is _not_ a symbolic link to
-any of /dev/sr* /dev/scd* /dev/sg*, but has an own inode.
+any of /dev/sr* /dev/scd* /dev/sg* /dev/hd*, but has an own inode.
 
 Prone to failure without further reason is:
   ./open-cd-excl -e -r /dev/sg1
