@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	
 	progname = argv[0];
 
-	/* ts A70417: added -w and -r */
+	/* ts A70417: added -w , -r , -i */
 	while ((c = getopt (argc, argv, "feirw")) != EOF) {
 		switch (c) {
 		case 'e':
@@ -119,6 +119,7 @@ int main(int argc, char **argv)
 		printf("Trying to grab fcntl lock...\n");
 		if (fcntl(fd, F_SETLKW, &fl) < 0) {
 			perror("fcntl: F_SETLKW: ");
+			printf("failed\n");
 			exit(1);
 		}
 		printf("succeeded\n");

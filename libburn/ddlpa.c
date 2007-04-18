@@ -11,8 +11,8 @@
         -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE \
         -DDDLPA_C_STANDALONE -o ddlpa ddlpa.c
 
-   The system macros are needed for 8-bit off_t and for open flag O_LARGEFILE
-   which are not absolutely necessary but explicitely take into respect that
+   The system macros enable 64-bit off_t and open(2) flag O_LARGEFILE, which
+   are not absolutely necessary but explicitely take into respect that
    our devices can offer more than 2 GB of addressable data. 
 
    Run test program:
@@ -40,6 +40,12 @@
 
 /* 1 = Enable progress message on stderr, 0 = normal silent operation */
 static int ddlpa_debug_mode = 1;
+
+
+/* #define _GNU_SOURCE  or  _LARGEFILE64_SOURCE  to get real O_LARGEFILE */
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
 
 
 /* ----------------------- private -------------------- */

@@ -148,6 +148,44 @@ With hdc, of course, things are trivial
   ddlpa: opened           /dev/hdc
   slept 1 seconds of 1
 
+
+Ted Ts'o provided program  open-cd-excl  which allows to explore open(2) on
+device files with combinations of read-write, O_EXCL, and fcntl().
+(This does not mean that Ted endorsed our project yet. He helps exploring.)
+
+Friendly in the sense of DDLP-A would be any run which uses at least one of
+the options -e (i.e. O_EXCL) or -f (i.e. F_SETLK).
+The code is available under GPL at
+  http://libburnia.pykix.org/browser/libburn/trunk/test/open-cd-excl.c?format=txt
+To be compiled by
+  cc -g -Wall -o open-cd-excl open-cd-excl.c
+
+Options:
+  -e : open O_EXCL
+  -f : aquire lock by fcntl(F_SETLK) after sucessful open
+  -i : do not wait in case of success but exit 0 immediately
+  -r : open O_RDONLY , with -f use F_RDLCK
+  -w : open O_RDWR   , with -f use F_WRLCK
+  plus the path of the devce file to open.
+
+Friendly Programs would use gestures like:
+  ./open-cd-excl -e -r /dev/sr0
+  ./open-cd-excl -e -w /dev/sg1
+  ./open-cd-excl -e -w /dev/black-drive
+  ./open-cd-excl -f -r /dev/sg1
+  ./open-cd-excl -e -f -w /dev/sr0
+
+Ignorant programs would use:
+  ./open-cd-excl -r /dev/sr0
+  ./open-cd-excl -w /dev/sg1
+  ./open-cd-excl -f -w /dev/black-drive
+where "/dev/black-drive" is _not_ a symbolic link to
+any of /dev/sr* /dev/scd* /dev/sg*, but has an own inode.
+
+Prone to failure without further reason is:
+  ./open-cd-excl -e -r /dev/sg1
+
+
 ----------------------------------------------------------------------------
 
                                   DDLP-B
