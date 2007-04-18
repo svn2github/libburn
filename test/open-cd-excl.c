@@ -109,16 +109,10 @@ int main(int argc, char **argv)
 		printf("fcntl lock apparently %sLOCKED\n", 
 		       (fl.l_type == F_UNLCK) ? "NOT " : "");
 
-		/* ts A70418: do not try to lock if it is already locked */
-		if (fl.l_type != F_UNLCK) {
-			printf("failed\n");
-			exit(1);
-		}
-
 		init_flock(&fl, do_rdwr);
 		printf("Trying to grab fcntl lock...\n");
-		if (fcntl(fd, F_SETLKW, &fl) < 0) {
-			perror("fcntl: F_SETLKW: ");
+		if (fcntl(fd, F_SETLK, &fl) < 0) {
+			perror("fcntl: F_SETLK: ");
 			printf("failed\n");
 			exit(1);
 		}
@@ -127,6 +121,7 @@ int main(int argc, char **argv)
 
 	/* ts A70417: added end_immediately */
 	printf("Holding %s open.\n", device_name);
+	usleep(100000);
 	if (end_immediately)
 		exit(0);
 	printf("Press ^C to exit.\n");

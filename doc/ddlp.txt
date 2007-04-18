@@ -154,7 +154,8 @@ device files with combinations of read-write, O_EXCL, and fcntl().
 (This does not mean that Ted endorsed our project yet. He helps exploring.)
 
 Friendly in the sense of DDLP-A would be any run which uses at least one of
-the options -e (i.e. O_EXCL) or -f (i.e. F_SETLK).
+the options -e (i.e. O_EXCL) or -f (i.e. F_SETLK, applied to a file
+descriptor which was obtained from a standard device file path).
 The code is available under GPL at
   http://libburnia.pykix.org/browser/libburn/trunk/test/open-cd-excl.c?format=txt
 To be compiled by
