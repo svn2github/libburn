@@ -3,6 +3,23 @@
    Implementation of Delicate Device Locking Protocol level A.
    Copyright (C) 2007 Thomas Schmitt <scdbackup@gmx.net>
    Provided under any of the following licenses: GPL, LGPL, BSD. Choose one.
+
+
+   Compile as test program:
+
+     cc -g -Wall \
+        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE \
+        -DDDLPA_C_STANDALONE -o ddlpa ddlpa.c
+
+   The system macros are needed for 8-bit off_t and for open flag O_LARGEFILE
+   which are not absolutely necessary but explicitely take into respect that
+   our devices can offer more than 2 GB of addressable data. 
+
+   Run test program:
+
+     ./ddlpa /dev/sr0 15
+     ./ddlpa 0,0,0    15
+
 */
 
 #include <stdio.h>
@@ -91,7 +108,7 @@ static int ddlpa_std_by_rdev(struct ddlpa_lock *o)
 
 		if (ddlpa_debug_mode)
 			fprintf(stderr,
-			    "DDLPA_DEBUG: ddlpa_std_by_rdev(\"%s\") = \"%s\"\n",
+			   "DDLPA_DEBUG: ddlpa_std_by_rdev(\"%s\") = \"%s\"\n",
 			    o->path, o->std_path);
 
 		return 0;
@@ -143,20 +160,32 @@ static int ddlpa_fcntl_lock(struct ddlpa_lock *o, int fd, int l_type)
 static int ddlpa_occupy(struct ddlpa_lock *o, char *path, int *fd,
 			int no_o_excl)
 {
-	int ret, o_flags = O_RDWR | O_NDELAY;
+	int ret, o_flags, o_rw, l_type;
+	char *o_rwtext;
 
+	o_flags = o->o_flags | O_NDELAY;
 	if(!no_o_excl)
 		o_flags |= O_EXCL;
+	o_rw = (o_flags) & (O_RDONLY | O_WRONLY | O_RDWR);
+	o_rwtext = (o_rw == O_RDONLY ? "O_RDONLY" :
+			(o_rw == O_WRONLY ? "O_WRONLY" :
+			(o_rw == O_RDWR ? "O_RDWR  " : "O_?rw-mode?")));
+
 	*fd = open(path, o_flags);
 	if (*fd == -1) {
 		o->errmsg = malloc(strlen(path)+160);
 		if (o->errmsg)
 			sprintf(o->errmsg,
-				"Failed to open O_RDWR | O_NDELAY %s: '%s'", 
-				(no_o_excl ? "" : "| O_EXCL "), path);
+				"Failed to open %s | O_NDELAY %s: '%s'", 
+				o_rwtext,
+				(o_flags & O_EXCL ? "| O_EXCL " : ""), path);
 		return (errno ? errno : EBUSY);
 	}
-	ret = ddlpa_fcntl_lock(o, *fd, F_WRLCK);
+	if (o_rw == O_RDWR || o_rw == O_WRONLY)
+		l_type = F_WRLCK;
+	else
+		l_type = F_RDLCK;
+	ret = ddlpa_fcntl_lock(o, *fd, l_type);
 	if (ret) {
 		o->errmsg = malloc(strlen(path)+160);
 		if (o->errmsg)
@@ -167,7 +196,8 @@ static int ddlpa_occupy(struct ddlpa_lock *o, char *path, int *fd,
 		return ret;
 	}
 	if (ddlpa_debug_mode)
-		fprintf(stderr, "DDLPA_DEBUG: ddlpa_occupy() %s: '%s'\n",
+		fprintf(stderr, "DDLPA_DEBUG: ddlpa_occupy() %s %s: '%s'\n",
+			o_rwtext,
 			(no_o_excl ? "       " : "O_EXCL "), path);
 	return 0;
 }
@@ -270,7 +300,7 @@ static int ddlpa_collect_siblings(struct ddlpa_lock *o)
 
 		if (ddlpa_debug_mode)
 			fprintf(stderr,
-			"DDLPA_DEBUG: ddlpa_collect_siblings() found \"%s\"\n",
+		"DDLPA_DEBUG: ddlpa_collect_siblings() found   \"%s\"\n",
 			try_path);
 
 		(o->num_siblings)++;
@@ -315,7 +345,7 @@ static int ddlpa_std_by_btl(struct ddlpa_lock *o)
 
 		if (ddlpa_debug_mode)
 			fprintf(stderr,
-			 "DDLPA_DEBUG: ddlpa_std_by_rdev(%d,%d,%d) = \"%s\"\n",
+			 "DDLPA_DEBUG: ddlpa_std_by_btl(%d,%d,%d) = \"%s\"\n",
 			 t_bus, t_id, t_lun, o->std_path);
 
 		return 0;
@@ -490,6 +520,14 @@ usage:;
 	if (duration < 0)
 		goto usage;
 
+
+	/* For our purpose, only O_RDWR is a suitable access mode.
+	   But in order to allow experiments, o_flags are freely adjustable.
+
+	   Warning: Do _not_ set an own O_EXCL flag with the following calls !
+
+	   (This freedom to fail may get removed in a final version.)
+	*/
 	if (my_path[0] != '/' && my_path[0] != '.' &&
 	    strchr(my_path, ',') != NULL) {
 		/* 
@@ -497,15 +535,17 @@ usage:;
 		*/
 
 		sscanf(my_path, "%d,%d,%d", &bus, &target, &lun);
-		ret = ddlpa_lock_btl(bus, target, lun, O_RDWR, 0, &lck,
-					 &errmsg);
+		ret = ddlpa_lock_btl(bus, target, lun, O_RDWR | O_LARGEFILE,
+					 0, &lck, &errmsg);
 	} else {
 		/*
 		   This substitutes for:
-			fd = open(my_path, O_RDWR | O_EXCL);
+			fd = open(my_path, O_RDWR | O_EXCL | O_LARGEFILE);
+
 		*/
 
-		ret = ddlpa_lock_path(my_path, O_RDWR, 0, &lck, &errmsg);
+		ret = ddlpa_lock_path(my_path, O_RDWR | O_LARGEFILE,
+					 0, &lck, &errmsg);
 	}
 	if (ret) {
 		fprintf(stderr, "Cannot exclusively open '%s'\n", my_path);

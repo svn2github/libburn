@@ -51,7 +51,9 @@ struct ddlpa_lock {
 /** Lock a recorder by naming a device file path. Allocate a new container.
     @param path        Gives the file system path of the recorder
                        as known to the calling program.
-    @param o_flags     flags for open(2)
+    @param o_flags     flags for open(2). Do not use O_EXCL here because this
+                       is done automatically whenever appropriate.
+                       Advised is O_RDWR | O_LARGEFILE, eventually | O_NDELAY.
     @param ddlpa_flags 0 = default behavior: the standard path will be opened
                            and treated by fcntl(F_SETLK)
                        DDLPA_OPEN_GIVEN_PATH causes the input parameter "path"
@@ -75,7 +77,7 @@ int ddlpa_lock_path(char *path, int  o_flags, int ddlpa_flags,
     @param bus         parameter to match ioctl(SCSI_IOCTL_GET_BUS_NUMBER)
     @param target      parameter to match ioctl(SCSI_IOCTL_GET_IDLUN) &0xff
     @param lun         parameter to match ioctl(SCSI_IOCTL_GET_IDLUN) &0xff00
-    @param o_flags     flags for open(2)
+    @param o_flags     see ddlpa_lock_path().
     @param ddlpa_flags see ddlpa_lock_path(). Flag DDLPA_OPEN_GIVEN_PATH
                        will be ignored.
     @param lockbundle  see ddlpa_lock_path().
