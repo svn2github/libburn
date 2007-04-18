@@ -50,10 +50,10 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70129 */
 #define Libburn_support_dvd_r_seQ 1
 
-/* ts A70306 >>> UNTESTED */
+/* ts A70306 */
 #define Libburn_support_dvd_plus_R 1
 
-/* Progress report:
+/* DVD progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
                read TOC or track info. Nevertheless, the written images verify.
@@ -88,7 +88,8 @@ extern struct libdax_msgs *libdax_messenger;
    ts A70205 : Beginning to implement DVD-R[W] DAO : single track and session,
                size prediction mandatory.
    ts A70208 : Finally made tests with DVD-R. Worked exactly as new DVD-RW.
-
+   ts A70306 : Implemented DVD+R (always -multi for now)
+   ts A70330 : Allowed finalizing of DVD+R.
 */
 
 
