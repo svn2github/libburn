@@ -2,6 +2,7 @@
 
                       Delicate Device Locking Protocol
                (a joint sub project of cdrkit and libburnia)
+                       (contact: scdbackup@gmx.net )
 
 
 DDLP shall help to avoid collisions between programs in the process of
@@ -43,10 +44,9 @@ as long as it does not get closed. There are two alternative ways to achieve
 this.
 Very reliable is  
 
-  open( some_path , O_EXCL | O_RDWR | ...)
+  open( some_path , O_EXCL | ...)
 
-Regrettably, O_EXCL | O_RDONLY did not always succeed with our tests on
-kernel 2.6 systems. 
+But: O_EXCL | O_RDONLY does not succeed with /dev/sg* on several systems.
 
 So it may be necessary to use a cautious open() without O_EXCL and to aquire
 a POSIX lock via fcntl().
@@ -115,8 +115,8 @@ Use it to occupy a drive's representations for a given number of seconds
 It should do no harm to any of your running activities.
 If it does: Please, please alert us.
 
-Your own programs should not be able to circumvent the occupation if the
-obey the rules for Friendly Programs.
+Your own programs should not be able to circumvent the occupation if they
+obey above rules for Friendly Programs.
 Of course ./ddlpa should be unable to circumvent itself.
 
 A successfull occupation looks like
