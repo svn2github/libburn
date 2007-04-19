@@ -4,6 +4,15 @@
                (a joint sub project of cdrkit and libburnia)
                        (contact: scdbackup@gmx.net )
 
+Our projects provide programs which allow recording of data on CD or DVD.
+We encounter an increasing number of bug reports about spoiled burn runs and
+wasted media which obviously have one common cause: interference by other
+programs which access the drive's device files.
+There is some riddling about which gestures exactly are dangerous for
+ongoing recordings or can cause weirdly misformatted drive replies to MMC 
+commands. 
+We do know, nevertheless, that these effects do not occur if no other program
+accesses a device file of the drive while our programs use it. 
 
 DDLP shall help to avoid collisions between programs in the process of
 recording to a CD or DVD drive and other programs which access that drive.
@@ -46,10 +55,19 @@ Very reliable is
 
   open( some_path , O_EXCL | ...)
 
-But: O_EXCL | O_RDONLY does not succeed with /dev/sg* on several systems.
+But O_EXCL imposes restrictions and interferences:
+- O_EXCL | O_RDONLY does not succeed with /dev/sg* !
+- O_EXCL cannot provide shared locks for programs which only want to lock
+  against burn programs but not against their own peers.
+- O_EXCL keeps from obtaining information by harmless activities.
+- O_EXCL already has a meaning with devices which are mounted as filesystems.
+  This priority meaning is more liberal than the one needed for CD/DV recording
+  protection.
 
 So it may be necessary to use a cautious open() without O_EXCL and to aquire
-a POSIX lock via fcntl().
+a POSIX lock via fcntl(). "Cautious" means to add O_NDELAY to the flags of
+open(), because this is declared to avoid side effects within open().
+
 With this gesture it is important to use the standard paths because 
 fcntl(F_SETLK) does not lock the device but only a device-inode.
 
