@@ -68,8 +68,9 @@ So it may be necessary to use a cautious open() without O_EXCL and to aquire
 a POSIX lock via fcntl(). "Cautious" means to add O_NDELAY to the flags of
 open(), because this is declared to avoid side effects within open().
 
-With this gesture it is important to use the standard paths because 
-fcntl(F_SETLK) does not lock the device but only a device-inode.
+With this gesture it is important to use the paths expected by our burn
+programs: /dev/sr[0..255] /dev/scd[0..255] /dev/sg[0..255] /dev/hd[a..z]
+because fcntl(F_SETLK) does not lock the device but only a device-inode.
 
   std_path = one of the standard device files:
                /dev/sr[0..255] /dev/scd[0..255] /dev/sg[0..255] /dev/hd[a..z]
