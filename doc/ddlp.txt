@@ -195,7 +195,7 @@ Friendly Programs would use gestures like:
   ./open-cd-excl -f -r /dev/sg1
   ./open-cd-excl -e -f -w /dev/sr0
 
-Ignorant programs would use:
+Ignorant programs would use and cause potential trouble by:
   ./open-cd-excl -r /dev/sr0
   ./open-cd-excl -w /dev/sg1
   ./open-cd-excl -f -w /dev/black-drive
@@ -210,13 +210,84 @@ Prone to failure without further reason is:
 
                                   DDLP-B
 
-                                
->>> Proxy lock file protocol embedded in DDLP-A which itself might be a
->>> generic dummy on non-Linux systems (i.e. without O_EXCL or SCSI sibling
->>> search).
+This protocol relies on proxy lock files in some filesystem directory. It can
+be embedded into DDLP-A or it ican be used be used standalone, outside DDLP-A.
 
->>> Definition to come soon. Implementation possibly to come never.
+DDLP-A shall be kept by DDLP-B from trying to access any device file which
+might already be in use. There is a problematic gesture in DDLP-A when SCSI
+address parameters are to be retrieved. For now this gesture seems to be
+harmless. But one never knows.
+ 
+There is a proxy file locking protocol described in FHS:
+  http://www.pathname.com/fhs/pub/fhs-2.3.html#VARLOCKLOCKFILES
 
+But it has shortcommings: 
+- Stale locks are possible.
+- Much info is missing about the occupying process: host id, program, purpose
+- It is necessary to create a file (using the _old_ meaning of O_EXCL flag ?).
+- No way to indicate difference between exclusive and shared locks.
+- Relies entirely on basename of device file path.
+- /var/lock/ is not available early during system start and often has
+  restrictive permission settings.
+
+The stale locks and the clear prescriptions in FHS make /var/lock/ entirely
+unsuitable for our purpose.
+
+DDLP-B rather defines a "path prefix" which is advised to be
+  /tmp/ddlpb-lock-
+This prefix will get appended "device specific suffixes" and then form the path
+of a "lockfile".
+Not the existence of a lockfile but its occupation by an fcntl(F_SETLK) will
+constitute a lock. Lockfiles may get prepared by the sysadmin in directories
+where normal users are not allowed to create new files. Their rw-permissions
+then act as additional access restriction to the device files.
+The use of fcntl(F_SETLK) will prevent any stale locks after the process ended.
+It will also allow to obtain shared locks as well as exclusive locks.
+
+There are several classes of device specific suffixes:
+
+- Device file path suffix. "/" gets replaced by "_-". Eventual "_-" in path
+  gets replaced by "_-_-".
+  E.g.: "_-dev_-sr0" , "_-mydevs_-burners_-nec"
+
+- st_rdev suffix. A hex representation of struct stat.st_rdev. Capital letters.
+  The number of characters is pare with at most one leading 0. I.e. bytewise
+  printf("%2.2X") beginning with the highest order byte that is not zero.
+  E.g. : "0B01", "2200", "01000000000004001"
+
+- SCSI parameter suffix. A tuple of decimal numbers representing the SCSI
+  address if applicable for the device at all. On Linux this are the four
+  numbers Host,Channel,Id,Lun obtained by ioctl(SCSI_IOCTL_GET_IDLUN).
+  The separator is the minor letter "s".
+  E.g. "1s0s0s0", "0s0s3s0"
+
+If a lockfile does not exist and cannot be created then this shall not keep
+a program from working on a device. But if a lockfile exists and if permissions
+or locking state do not allow to obtain a lock of the appropirate type, then
+this shall prevent any opening of device file in question resp. shall cause
+immediate close(2) of an already opened device file.
+
+The vulnerable programs shall not start their operation before they locked a
+wide collection of drive representations.
+
+Non-vulnerable programs shall take care to lock at least the suffix resulting
+from the path they will be using and the suffix of the st_rdev from that path.
+The latter is to be obtained by call stat(2).
+
+>>> Vulnerable program shall use SCSI parameter suffixes to ensure that the search
+>>> for further paths and st_rdev representations of the same device does not
+>>> disturb 
+
+
+If it is sure that the device has valid SCSI address parameters then these
+should be obtained first and the SCSI parameter suffix should be locked before
+any further activity is started. If done so, then the open(2) flags shall
+include O_NDELAY to avoid side effect. O_NDELAY may be revoked later by
+fcntl(2) F_GETFL,F_SETFL.
+ This gesture is mandatory only for vulnerable
+programs in order to obtain more path and st_rdev suffixes.
+
+Example:  Device file path "/dev/sr1"
 
 ----------------------------------------------------------------------------
 
