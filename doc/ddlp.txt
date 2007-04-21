@@ -1,3 +1,25 @@
+-------------------------------------------------------------------------------
+
+Users of modern desktop Linux installations report misburns with CD/DVD
+recording due to concurrency problems.
+
+This text describes two locking protocols which have been developed by our
+best possible effort. But finally they rather serve as repelling example of
+what would be needed in user space to achieve an insufficient partial solution.
+
+Ted Ts'o was so friendly to help as critic with his own use cases. It turned
+out that we cannot imagine a way in user space how to cover reliably the needs
+of callers of libblkid and the needs of our burn programs.
+
+-------------------------------------------------------------------------------
+Content:
+
+The "Delicate Device Locking Protocol" shall demonstrate our sincere
+consideration of the problem.
+
+"What are the Stumble Stones ?" lists reasons why the effort finally failed.
+
+-----------------------------------------------------------------------------
 
 
                       Delicate Device Locking Protocol
@@ -211,27 +233,23 @@ Prone to failure without further reason is:
                                   DDLP-B
 
 This protocol relies on proxy lock files in some filesystem directory. It can
-be embedded into DDLP-A or it ican be used be used standalone, outside DDLP-A.
+be embedded into DDLP-A or it can be used be used standalone, outside DDLP-A.
 
 DDLP-A shall be kept by DDLP-B from trying to access any device file which
 might already be in use. There is a problematic gesture in DDLP-A when SCSI
 address parameters are to be retrieved. For now this gesture seems to be
 harmless. But one never knows.
+Vice versa DDLP-B may get from DDLP-A the service to search for SCSI device
+file siblings. So they are best as a couple.
+
+But they are not perfect. Not even as couple. fcntl() locking is flawed.
  
+
 There is a proxy file locking protocol described in FHS:
   http://www.pathname.com/fhs/pub/fhs-2.3.html#VARLOCKLOCKFILES
 
-But it has shortcommings: 
-- Stale locks are possible.
-- Much info is missing about the occupying process: host id, program, purpose
-- It is necessary to create a file (using the _old_ meaning of O_EXCL flag ?).
-- No way to indicate difference between exclusive and shared locks.
-- Relies entirely on basename of device file path.
-- /var/lock/ is not available early during system start and often has
-  restrictive permission settings.
-
-The stale locks and the clear prescriptions in FHS make /var/lock/ entirely
-unsuitable for our purpose.
+But it has shortcommings (see below). Decisive obstacle for its usage are the
+possibility for stale locks and the lack of shared locks.
 
 DDLP-B rather defines a "path prefix" which is advised to be
   /tmp/ddlpb-lock-
@@ -244,22 +262,20 @@ then act as additional access restriction to the device files.
 The use of fcntl(F_SETLK) will prevent any stale locks after the process ended.
 It will also allow to obtain shared locks as well as exclusive locks.
 
-There are several classes of device specific suffixes:
+There are two classes of device specific suffixes:
 
-- Device file path suffix. "/" gets replaced by "_-". Eventual "_-" in path
-  gets replaced by "_-_-".
-  E.g.: "_-dev_-sr0" , "_-mydevs_-burners_-nec"
+- Device file path suffix. Absolute paths only. "/" gets replaced by "_-". 
+  Eventual "_-" in path gets replaced by "_-_-". The leading group of "_-"
+  is always interpreted as a group of "/", though.  E.g.:
+    /dev/sr0           <-> "_-dev_-sr0"
+    /mydevs/burner/nec <-> "_-mydevs_-burners_-nec"
+    /dev/rare_-name    <-> "_-dev_-rare_-_-name"
+    ///strange/dev/x   <-> "_-_-_-strange_-dev_-x"
 
 - st_rdev suffix. A hex representation of struct stat.st_rdev. Capital letters.
   The number of characters is pare with at most one leading 0. I.e. bytewise
   printf("%2.2X") beginning with the highest order byte that is not zero.
   E.g. : "0B01", "2200", "01000000000004001"
-
-- SCSI parameter suffix. A tuple of decimal numbers representing the SCSI
-  address if applicable for the device at all. On Linux this are the four
-  numbers Host,Channel,Id,Lun obtained by ioctl(SCSI_IOCTL_GET_IDLUN).
-  The separator is the minor letter "s".
-  E.g. "1s0s0s0", "0s0s3s0"
 
 If a lockfile does not exist and cannot be created then this shall not keep
 a program from working on a device. But if a lockfile exists and if permissions
@@ -270,25 +286,103 @@ immediate close(2) of an already opened device file.
 The vulnerable programs shall not start their operation before they locked a
 wide collection of drive representations.
 
-Non-vulnerable programs shall take care to lock at least the suffix resulting
-from the path they will be using and the suffix of the st_rdev from that path.
+Non-vulnerable programs shall take care to lock the suffix resulting from the
+path they will be using and the suffix from the st_rdev from that path.
 The latter is to be obtained by call stat(2).
 
->>> Vulnerable program shall use SCSI parameter suffixes to ensure that the search
->>> for further paths and st_rdev representations of the same device does not
->>> disturb 
+Locks get upheld as long as their file descriptor is not closed or no other
+incident as described in man 2 fcntl releases the lock.
+
+So with shared locks there are no imandatory further activities after they
+have been obtained.
+
+In case of exclusive locks, the file has to have been opened for writing and
+must be truncated to 0 bytes length immediately after obtaining the lock.
+When releasing an exclusive lock it is a nice gesture to
+already do this truncation.
+Then a /var/lock/ compatible first line has to be written.
+E.g. by:  printf("%10u\n",(unsigned) getpid()) yielding "      1230\n".
+
+Any further lines are optional. They shall have the form Name=Value and must
+be printable cleartext. If such further lines exist, then the last one must
+have the name "endmark".
+Defined Names are:
+  hostid   =hostname of the machine where the process number of line 1 is valid
+  start    =start time of lock in seconds since 1970. E.g: 1177147634.592410
+  program  =self chosen name of the program which obtained the lock
+  argv0    =argv[0] of that program
+  mainpath =device file path which will be used for operations by that program
+  path     =device file path which lead to the lock
+  st_rdev  =st_rdev suffix which is associated with path
+  scsi_hcil=eventual SCSI parameters Host,Channel,Id,Lun
+  scsi_bus =eventual SCSI parameter Bus
+  endmark  =declares the info as complete.
+Any undefined name or a line without "=" shall be handled as comment.
+"=" in the value is allowed. Any line beginning with an "=" character is an
+extension of the previous value.
+
+If programs encounter an exclusive lock, they are invited to read the content
+of the lockfile anyway. But they should be aware that the info might be in the
+progress of emerging. There is a race condition possible in the short time
+between obtaining the exclusive lock and erasing the file content.
+If it is not crucial to obtain most accurate info then one may take the newline
+of the first line as indicator of a valid process number and the "endmark"
+name as indicator that the preceding lines are valid.
+Very cautious readers should obtain the info twice with a decent waiting period
+inbetween. Only if both results are identical they should be considered valid.
 
 
-If it is sure that the device has valid SCSI address parameters then these
-should be obtained first and the SCSI parameter suffix should be locked before
-any further activity is started. If done so, then the open(2) flags shall
-include O_NDELAY to avoid side effect. O_NDELAY may be revoked later by
-fcntl(2) F_GETFL,F_SETFL.
- This gesture is mandatory only for vulnerable
-programs in order to obtain more path and st_rdev suffixes.
+There is no implementation of DDLP-B yet.
 
-Example:  Device file path "/dev/sr1"
 
+ 
+----------------------------------------------------------------------------
+What are the Stumble Stones ?
 ----------------------------------------------------------------------------
 
+Any of the considered locking mechanisms has decisive shortcommings
+which keeps it from being the solution to all known legitimate use cases.
+
+The attempt has failed to compose a waterproof locking mechanism from means of
+POSIX, FHS and from hardly documented Linux open(O_EXCL) on device files.
+The resulting mechanisms would need about 1000 lines of code and still do
+not close all gaps resp. cover the well motivated use cases.
+This attempt you see above: DDLP-A and DDLP-B.
+
+
+Summary of the reasons why the established locking mechanisms do not suffice:
+
+None of the mechanisms can take care of the double device driver identity
+sr versus sg. To deduce the one device file from the other involves the need
+to open many other (possibly unrelated) device files with the risk to disturb
+them.
+This hard to solve problem is aggravated by the following facts.
+
+Shortcommings of Linux specific open(O_EXCL) :
+
+- O_EXCL | O_RDONLY does not succeed with /dev/sg*
+- O_EXCL cannot provide shared locks for programs which only want to lock
+  against burn programs but not against their own peers.
+- O_EXCL keeps from obtaining information by harmless activities.
+- O_EXCL already has a meaning with devices which are mounted as filesystems.
+  This priority meaning is more liberal than the one needed for CD/DV recording
+  protection.
+
+Shortcommings of POSIX fcntl(F_SETLK) :
+
+- fcntl() demands an open file descriptor. open(2) might have side effects.
+- fcntl() locks can be released inadvertedly by submodules which just open and
+  close the same file (inode ?) without refering to fcntl locks in any way.
+  See man 2 fcntl "This is bad:". 
+  Stacking of software modules is a widely used design pattern. But fcntl()
+  cannot cope with that.
+
+Shortcommings of FHS /var/lock/ :
+
+- Stale locks are possible.
+- It is necessary to create a file (using the _old_ meaning of O_EXCL flag ?)
+  but /var/lock/ might not be available early during system start and it often
+  has restrictive permission settings.
+- There is no way to indicate a difference between exclusive and shared locks.
+- The FHS prescription relies entirely on the basename of the device file path.
 
