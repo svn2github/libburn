@@ -3518,10 +3518,123 @@ Reacted on compiler warning about last_rdev, fixed fresh typo bug
 * DVD+R now get finalized (if not -multi is given)
 
 
-  []
+10 Apr 2007  [804]
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
+2007.04.10.081855  [805]
+libburn/init.c
+Fixed bug with drive_scsi_dev_family= introduced by revision 796 (fcntl lock)
+
+2007.04.10.082229  [806]
+libburn/sg-linux.c
+Used O_EXCL|O_RDWR and fcntl() even within sg_obtain_scsi_adr()
+
+2007.04.10.083119  [807]
+libburn/sg-linux.c
+Fixed bug in sg_open_scsi_siblings() introduced with revision 802
+
+2007.04.10.144840  [808]
+libburn/spc.c
+libburn/libdax_msgs.h
+Avoided SIGSEGV with an old SCSI CD-ROM drive and its wild replies
+
+12 Apr 2007  [810]
+README
+Clarified license. People who object shall please come forward now.
+
+2007.04.13.171347  [815]
+libburn/sg-linux.c
+libburn/libdax_msgs.h
+Switched from O_NONBLOCK to O_NDELAY (see http://lkml.org/lkml/2007/4/11/141)
+
+2007.04.13.173008  [816]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Made use of fcntl(F_SETLK) switchable (and thus became more free with default)
+
+15 Apr 2007  [819]
++ libburn/ddlpa.h
++ libburn/ddlpa.c
+Began test implementation of DDLP-A
+
+15 Apr 2007  [820]
+libburn/ddlpa.h
+libburn/ddlpa.c
+Implemented ddlpa_lock_btl()
+
+16 Apr 2007  [821]
+doc/cookbook.txt
+Finalized DVD+R cookbook
+
+16 Apr 2007  [822]
++ doc/ddlp.txt
+Emerging description of DDLP
+
+16 Apr 2007  [823]
+doc/ddlp.txt
+libburn/ddlpa.h
+libburn/ddlpa.c
+Polished txt and finally threw out getter functions
+
+16 Apr 2007  [824]
+libburn/ddlpa.h
+Corrected description of return values
+
+18 Apr 2007  [825]
++ test/open-cd-excl.c
+Program for probing access to device files. By Ted Ts'o with modifications by me.
+
+18 Apr 2007  [826]
+doc/ddlp.txt
+Allowed for Friendly Programs: O_EXCL | O_RDONLY
+
+18 Apr 2007  [827]
+libburn/ddlpa.h
+libburn/ddlpa.c
+Progress due to tests with test/open-cd-excl
+
+2007.04.18.103734  [828]
+libburn/mmc.c
+Updated comments about DVD+R
+
+18 Apr 2007  [829]
+test/open-cd-excl.c
+libburn/ddlpa.c
+doc/ddlp.txt
+Polished messages, comments and description of DDLP-A
+
+18 Apr 2007  [830]
+test/open-cd-excl.c
+doc/ddlp.txt
+Adaptations to new test results and discussions
+
+18 Apr 2007  [831]
+doc/ddlp.txt
+Corrected a list of standard paths
+
+19 Apr 2007  [832] [833]
+doc/ddlp.txt
+Clarifications about motivation and duties of the participants
+
+20 Apr 2007  [834]
+doc/ddlp.txt
+Beginning to develop DDLP-B
+
+21 Apr 2007  [835]
+doc/ddlp.txt
+Declared failure of DDLP to entirely solve the concurrency problem
+
+------------------------------------ cycle  - cdrskin-0.3.5 - 2007.04.22.112236
+
+22 Apr 2007  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.5 cycle
+
+  []
+cdrskin/add_ts_changes_to_libburn_0_3_5
+cdrskin/add_ts_changes_to_libburn_0_3_4
+Repaired autotools bootstrap bug by help of sed
 
 
 ===============================================================================
