@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 12, 2007"
+.TH CDRSKIN 1 "April 22, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -225,7 +225,7 @@ it might be only the
 who is able to get this list without further
 precautions.
 .br
-It is consensus that \fBchmod a+rw /dev/sg0\fP or \fBchmod a+rw /dev/hdc\fP
+It is consensus that \fBchmod a+rw /dev/sr0\fP or \fBchmod a+rw /dev/hdc\fP
 is less security sensitive than chmod u+s /usr/bin/cdrskin. The risk for the
 drive is somewhat higher but the overall system is much less at stake.
 .br
@@ -243,7 +243,7 @@ See option -scanbus for getting a list of cdrecord style addresses.
 .br
 Further are accepted on Linux: links to libburn-suitable device files, 
 device files which have the same major and minor device number,
-and device files which have the same SCSI address parameters (e.g. /dev/sr0).
+and device files which have the same SCSI address parameters (e.g. /dev/sg0).
 .br
 .SH OPTIONS
 .TP
@@ -722,7 +722,7 @@ translate cdrecord addresses into cdrskin addresses.
 dev=. <to> is the address to be used instead whenever <from> is given.
 More than one translation instruction can be given in one cdrskin run.
 .br
-E.g.: dev_translation=+ATA:1,0,0+/dev/sg1 dev_translation=+ATA:1,1,0+/dev/sg2
+E.g.: dev_translation=+ATA:1,0,0+/dev/sr1 dev_translation=+ATA:1,1,0+/dev/sr2
 .TP
 .BI \--drive_abort_on_busy
 Linux specific: Abort process if a busy drive is encountered.
@@ -750,7 +750,7 @@ Linux specific: Select a SCSI device file family to be used for drive command
 transactions. Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
 on kernels >= 2.6 . This option allows to explicitely override that default
 in order to meet other programs at a common device file for each drive.
-On kernel 2.4 family sr will find no drives.
+On kernel 2.4 families sr and scd will find no drives.
 .br
 Device file family /dev/hdX on kernel >= 2.6 is not affected by this setting.
 .TP
@@ -807,7 +807,7 @@ Partly Linux specific:
 Such opening is needed for Bus,Target,Lun addresses unless option
 --old_pseudo_scsi_adr is given. It is also needed to resolve device file
 addresses which are not listed with cdrskin --devices but nevertheless point
-to a usable drive. (Like /dev/sr0 using the same SCSI address as /dev/sg0.)
+to a usable drive. (Like /dev/sg0 using the same SCSI address as /dev/sr0.)
 .TP
 .BI \--old_pseudo_scsi_adr
 Linux specific:
