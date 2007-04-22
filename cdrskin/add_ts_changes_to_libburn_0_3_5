@@ -192,6 +192,19 @@ do
   fi
 done
 
+# Repair non-portable shell code output of ./bootstrap
+( 
+ cd "$compile_dir" || exit 1
+ sed -e 's/^for ac_header in$/test -z 1 \&\& for ac_header in dummy/' \
+     < ./configure > ./configure-repaired
+ if test "$?" = 0
+ then
+   echo "$0: Empty 'for ac_header in' found in configure." >&2
+ fi
+ mv ./configure-repaired ./configure
+ chmod a+rx,go-w,u+w ./configure
+)
+
 
 # Pack it up to the new libburn+cdrskin-tarball
 tar czf "$cdrskin_tarball" "$target"
