@@ -56,9 +56,9 @@ and to MMC-5 for DVD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.3.4</DT>
+<DT>libburn-0.3.6</DT>
 <DD>(by Derek Foreman, Ben Jansens, and team of libburnia.pykix.org)</DD>
-<DD>transfers data to CD</DD>
+<DD>transfers data to CD and DVD</DD>
 </DL>
 </P>
 
@@ -98,7 +98,7 @@ wishes as well as on the development of libburn.</DT>
 <DD>#<KBD>&nbsp;cdrskin -scanbus</KBD></DD>
 <DD>#<KBD>&nbsp;cdrskin dev=ATA -scanbus</KBD></DD>
 <DD>#<KBD>&nbsp;cdrskin --devices</KBD></DD>
-<DT>Being superuser avoids permission problems with /dev/sgN resp. /dev/hdX .
+<DT>Being superuser avoids permission problems with /dev/srN resp. /dev/hdX .
 </DT>
 <DT>Ordinary users should then get granted rw access to the /dev files
 as listed by option --devices.</DT>
@@ -178,8 +178,8 @@ man cdrecord</A></KBD></DD>
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.3.4.pl00.tar.gz">cdrskin-0.3.4.pl00.tar.gz</A>
-(590 KB).
+<DD><A HREF="cdrskin-0.3.6.pl00.tar.gz">cdrskin-0.3.6.pl00.tar.gz</A>
+(605 KB).
 </DD>
 <DD>
 The "stable" cdrskin tarballs are source code identical with "stable" 
@@ -189,14 +189,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.3.4.pl00-x86-suse9_0.tar.gz">
-cdrskin_0.3.4.pl00-x86-suse9_0.tar.gz</A>, (85 KB),
+<DD><A HREF="cdrskin_0.3.6.pl00-x86-suse9_0.tar.gz">
+cdrskin_0.3.6.pl00-x86-suse9_0.tar.gz</A>, (90 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.3.4.pl00-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.4.pl00-x86-suse9_0-static.tar.gz</A>, (285 KB), -static compiled,
+<DD><A HREF="cdrskin_0.3.6.pl00-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.6.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -223,17 +223,16 @@ cdrskin_0.3.4.pl00-x86-suse9_0-static.tar.gz</A>, (285 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.3.2:
+Enhancements towards previous stable version cdrskin-0.3.4:
 <UL>
-<LI>Multi-session burning to DVD+R</LI>
-<LI>New option --tell_media_space tells the maximum size for the next burn</LI>
-<LI>New option assert_write_lba=0 prevents inadverted writing to appendable
-media</LI>
-<LI>Bug fix: Multi-track runs with fifo could stall in rare cases</LI>
+<LI>Use of /dev/srN rather than /dev/sgN on Linux >= 2.6</LI>
+<LI>Option drive_scsi_dev_family=sr|scd|sg to select explicitely</LI>
+<LI>Option -isosize is supported now</LI>
+<LI>DVD+R now get finalized (if not -multi is given)</LI>
 </UL>
 
 <!--
- Bug fixes towards cdrskin-0.3.4.pl00:
+ Bug fixes towards cdrskin-0.3.6.pl00:
 <UL>
 <LI>none yet</LI>
 </UL>
@@ -245,19 +244,17 @@ media</LI>
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.3.5 :</H3></DT>
-<DD>Enhancements towards stable version 0.3.4.pl00:
+<DT><H3>Development snapshot, version 0.3.7 :</H3></DT>
+<DD>Enhancements towards stable version 0.3.6.pl00:
 <UL>
-<LI>Usage of /dev/srN rather than /dev/sgN on Linux >= 2.6</LI>
-<LI>Option drive_scsi_dev_family=sr|scd|sg to select explicitely</LI>
-<LI>Option -isosize is supported now</LI>
+<LI>-none yet-</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.3.5</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.5 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.5 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.5)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.3.7</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.7 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.7 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.7)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia.pykix.org"> libburnia.pykix.org</A></DT>
@@ -277,15 +274,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.3.5.tar.gz">cdrskin-0.3.5.tar.gz</A>
-(590 KB).
+<A HREF="cdrskin-0.3.7.tar.gz">cdrskin-0.3.7.tar.gz</A>
+(605 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.3.5-x86-suse9_0.tar.gz">
-cdrskin_0.3.5-x86-suse9_0.tar.gz</A>, (85 KB).
+<DD><A HREF="cdrskin_0.3.7-x86-suse9_0.tar.gz">
+cdrskin_0.3.7-x86-suse9_0.tar.gz</A>, (90 KB).
 </DD>
-<DD><A HREF="cdrskin_0.3.5-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.5-x86-suse9_0-static.tar.gz</A>, (285 KB)
+<DD><A HREF="cdrskin_0.3.7-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.7-x86-suse9_0-static.tar.gz</A>, (285 KB)
 </DD>
 </DL>
 </P>
@@ -313,13 +310,13 @@ provide libburn with invaluable examples on how to deal with DVD media.
 <P>
 <DL>
 <DT>Example for a setup of device permissions. To be done by the superuser:</DT>
-<DT>(CD devices which offer no r-permission are invisible to normal users.)</DT>
-<DT>(CD devices which offer no w-permission are not useable.)</DT>
+<DT>(CD devices which offer no rw-permission are invisible to normal users.)
+</DT>
 <DD># <KBD><B>cdrskin --devices</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>0&nbsp; dev='/dev/sg0'&nbsp; rwrwr- :&nbsp; 'TEAC'  'CD-ROM CD-532S'</KBD></DD>
+<DD><KBD>0&nbsp; dev='/dev/sr0'&nbsp; rwrwr- :&nbsp; 'TEAC'  'CD-ROM CD-532S'</KBD></DD>
 <DD><KBD>1&nbsp; dev='/dev/hdc'&nbsp; rwrw-- :&nbsp; 'LITE-ON'  'LTR-48125S'</KBD></DD>
-<DD># <KBD><B>chmod a+rw /dev/sg0 /dev/hdc</B></KBD></DD>
+<DD># <KBD><B>chmod a+rw /dev/sr0 /dev/hdc</B></KBD></DD>
 </DL>
 </P>
 
@@ -356,7 +353,7 @@ is a GUI frontend which uses cdrecord for CD burning.)
 <DD>$ <KBD><B>export SCDBACKUP_USE_CDRSKIN=1</B></KBD></DD>
 <DD>$ <KBD><B>./CONFIGURE_CD</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>cdrskin 0.3.4 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
+<DD><KBD>cdrskin 0.3.6 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
 </DL>
 If your system is stricken with some ill CD device then this can stall
 and you will have to press <KBD>Ctrl+C</KBD> to abort.

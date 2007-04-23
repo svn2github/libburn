@@ -33,7 +33,7 @@ scope by help of existing cdrecord frontends.
 
 - libburn  is the library by which preformatted data get onto optical media.
            It uses either /dev/sgN (e.g. on kernel 2.4 with ide-scsi) or
-           /dev/hdX (e.g. on kernel 2.6).
+           /dev/srM or /dev/hdX (e.g. on kernel 2.6).
            libburn is the foundation of our cdrecord emulation. Its code is
            independent of cdrecord. Its DVD capabilities are learned from
            studying the code of dvd+rw-tools and MMC-5 specs. No code but only

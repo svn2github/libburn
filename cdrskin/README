@@ -26,12 +26,12 @@ following possible.
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia.pykix.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.3.5.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.3.7.tar.gz
 Copyright (C) 2006-2007 Thomas Schmitt
 
 ------------------------------------------------------------------------------
 
-On top of libburn there is implemented cdrskin 0.3.5, a limited cdrecord
+On top of libburn there is implemented cdrskin 0.3.7, a limited cdrecord
 compatibility wrapper which allows to use some libburn features from
 the command line.
 Interested users of cdrecord are invited to participate in the development
@@ -59,16 +59,16 @@ systems, including 64 bit systems. (Further reports are welcome.)
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.3.5.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.3.7.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.3.5.tar.gz
-    cd cdrskin-0.3.5
+    tar xzf cdrskin-0.3.7.tar.gz
+    cd cdrskin-0.3.7
 
 Or obtain a libburnia.pykix.org SVN snapshot,
 go into the toplevel directory of the snapshot (e.g.  cd libburn_pykix ),
 and execute the autotools script ./bootstrap . Use autools version >= 1.7 .
 
-Within that toplevel directory of either cdrskin-0.3.5 or libburn then execute:
+Within that toplevel directory of either cdrskin-0.3.7 or libburn then execute:
 
     ./configure
     make
@@ -126,16 +126,16 @@ The superuser should be able to see any usable drive and then set the
 permissions as needed. If this hangs then there is a drive with
 unexpected problems (locked, busy, broken, whatever). You might have to
 guess the address of your (non-broken) burner by other means, then.
-On Linux 2.4 this would be some /dev/sgN and on 2.6. some /dev/hdX.
+On Linux 2.4 this would be some /dev/sgN and on 2.6. some /dev/srM or /dev/hdX.
 
 The output of  cdrskin --devices  might look like
 
-    0  dev='/dev/sg0'  rwrwr- :  '_NEC'  'DVD_RW ND-4570A'
-    1  dev='/dev/sg1'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
+    0  dev='/dev/sr0'  rwrwr- :  '_NEC'  'DVD_RW ND-4570A'
+    1  dev='/dev/sr1'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
 
 So full and insecure enabling of both for everybody would look like
 
-    chmod a+rw /dev/sg0 /dev/sg1
+    chmod a+rw /dev/sr0 /dev/sr1
 
 I strongly discourage to run cdrskin with setuid root or via sudo !
 It is not checked for the necessary degree of hacker safety.
@@ -152,7 +152,7 @@ Get an overview of cdrecord style addresses of available devices
     cdrskin --devices
 
 Adresses reported with dev=ATA need prefix "ATA:". Address examples:
-    dev=0,1,0  dev=ATA:1,0,0  dev=/dev/sg1  dev=/dev/hdc
+    dev=0,1,0  dev=ATA:1,0,0  dev=/dev/sg1  dev=/dev/hdc  dev=/dev/sr0
 See also "Drive Addressing" below.
 
 Obtain some info about the drive
@@ -210,7 +210,7 @@ cdrskin -scanbus (and hopefully as listed with cdrecord -scanbus) :
 
 or a device file address as listed by --devices with an accessible drive :
 
-    export SCDBACKUP_SCSI_ADR="/dev/sg1"
+    export SCDBACKUP_SCSI_ADR="/dev/sr1"
 
 Set usage of cdrskin with appropriate options rather than cdrecord :
 
@@ -272,8 +272,8 @@ the meaning of the components. A cdrecord-style address for cdrskin
 can be interpreted in two different modes.
 
 Standard mode tries to be compatible to original cdrecord. This should be true
-with (emulated) SCSI where the /dev/sgN with is looked up with matching
-scsibus,target,lun as given by the operating system.
+with (emulated) SCSI where the device file /dev/s[rg]N with is looked up with
+matching scsibus,target,lun as given by the operating system.
 With dev=ATA: or dev=ATAPI: the translation to /dev/hdX is purely literal
 but matches the cdrecord addresses on all systems tested so far:
   X = 'a' + 2 * scsibus + target
@@ -293,8 +293,8 @@ Component "scsibus" indicates the translation method. Defined busses are:
   1  associated to device file /dev/sgN , target chooses N
   2  associated to device file /dev/hdX , target 0='a', 1='b' ..., 25='z' 
 
-So "1,1,0" is /dev/sg1, "2,3,0" is /dev/hdd, "0,2,0" is libburn drive #2 at
-some unspecified device file. 
+So "1,1,0" is /dev/sg1 (resp. its /dev/sr*), "2,3,0" is /dev/hdd,
+"0,2,0" is libburn drive #2 at some unspecified device file. 
 This scheme shall help to keep cdrecord-style addresses stable and exchangeable
 between users without excluding drives with unexpected device addresses.
 The numbering on bus 0 is prone to arbitrary changes caused by changes in
@@ -314,12 +314,12 @@ Old frontends which do not know dev=ATA or dev=ATAPI and which do ask their
 
 To direct any remaining stubborn callers to the appropriate drives, cdrskin
 allows to define device address aliases. Like
-  cdrskin dev_translation=+1,0,0+/dev/sg1 \
-          dev_translation=+ATA:1,0,0+/dev/sg1 \
+  cdrskin dev_translation=+1,0,0+/dev/sr1 \
+          dev_translation=+ATA:1,0,0+/dev/sr1 \
           dev_translation=-"cd+dvd"-0,1,0 \
           ...
 Any of the addresses dev=1,0,0, dev=ATA:1,0,0, dev=cd+dvd will be mapped to
-/dev/sg1 resp. to 0,1,0.
+/dev/sr1 resp. to 0,1,0.
 The first character after "dev_translation=" defines the character which
 separates the two parts of the translation pair. (Above: "+" and "-".)
 
@@ -331,7 +331,7 @@ and to make them default in menu
 A suitable setting for "cdrecord" in menu 
   Settings:Configure K3b...:Programs:User Parameters
 would then probably be
-  -v dev_translation=+1,0,0+/dev/sg1
+  -v dev_translation=+1,0,0+/dev/sr1
 You will learn from button "Show Debugging Output" after a failed burn run
 what cdrecord command was used with what address "dev=...". This address "..."
 will be the right one to replace "1,0,0" in above example.

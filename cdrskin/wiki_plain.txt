@@ -67,7 +67,7 @@ and displays their detected properties.
 The drives are listed one per line, with fields:
 libburn-drive-number, sysadmin-device-file, permissions, vendor, type
 {{{
-0  dev='/dev/sg0'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
+0  dev='/dev/sr0'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
 }}}
 This feature is valuable since cdrskin -scanbus will not give you
 the device file name and its current permissions.
