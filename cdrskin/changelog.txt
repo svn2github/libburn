@@ -3627,23 +3627,78 @@ Declared failure of DDLP to entirely solve the concurrency problem
 
 ------------------------------------ cycle  - cdrskin-0.3.5 - 2007.04.22.112236
 
-22 Apr 2007  []
+22 Apr 2007  [836]
 cdrskin/changelog.txt
 Next cdrskin-0.3.5 cycle
 
-  []
+22 Apr 2007  [837]
 cdrskin/add_ts_changes_to_libburn_0_3_5
 cdrskin/add_ts_changes_to_libburn_0_3_4
 Repaired autotools bootstrap bug by help of sed
+
+22 Apr 2007  [838]
+cdrskin/cdrskin.1
+Changed many /dev/sg to /dev/sr
+
+
+2007.04.23.130001  [tag 841]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html 
+doc/comments
+Made number transition and activated development documentation
+
+23 Apr 2007  [tag 842]
+- cdrskin/add_ts_changes_to_libburn_0_3_4
+- cdrskin/add_ts_changes_to_libburn_0_3_5
++ cdrskin/add_ts_changes_to_libburn_0_3_6
++ cdrskin/add_ts_changes_to_libburn_0_3_7
+Updated cdrskin tarball generator
+
+23 Apr 2007  [tag 844]
+cdrskin/README
+Corrected false info about outdated addressing method
+
+2007.04.23.154600  [843]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html 
+doc/comments
+Made number transition and activated development documentation
+
+23 Apr 2007  [845]
+- cdrskin/add_ts_changes_to_libburn_0_3_4
+- cdrskin/add_ts_changes_to_libburn_0_3_5
++ cdrskin/add_ts_changes_to_libburn_0_3_6
++ cdrskin/add_ts_changes_to_libburn_0_3_7
+Updated cdrskin tarball generator
+
+
+----------------------------- release  - cdrskin-0.3.6.pl00 - 2007.04.23.130001
+* Usage of /dev/srN rather than /dev/sgN on Linux >= 2.6
+* New option drive_scsi_dev_family=sr|scd|sg
+* Option -isosize is supported now
+* DVD+R now get finalized (if not -multi is given)
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
------------------------------------- cycle  - cdrskin-0.3.5 - 
+------------------------------------ cycle  - cdrskin-0.3.7 - 
 cdrskin/changelog.txt
-Next cdrskin-0.3.5 cycle
+Next cdrskin-0.3.7 cycle
 
 
 
@@ -3677,9 +3732,6 @@ Sequentially check option list for DVD compliance
 
 
 ----------------------------------------- long term intentions:
-
-  []
-Ticket 90: failure on USB
 
   []
 -reset: ioctl(fd,CDROMRESET)  ioctl(fd,SG_SCSI_RESET,SG_SCSI_RESET_DEVICE)
