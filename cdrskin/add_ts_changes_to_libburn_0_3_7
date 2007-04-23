@@ -38,7 +38,7 @@ original="./libburn_svn.tgz"
 # My changes are in $changes , mainly in $changes/cdrskin
 changes="./libburn-develop"
 
-skin_release="0.3.5"
+skin_release="0.3.7"
 patch_level=""
 skin_rev="$skin_release""$patch_level"
 
@@ -114,7 +114,8 @@ then
 fi
 cp -a "$cdrskin_dir" "$cdrskin_target"
 
-# Remove copied binaries
+# Remove copied vim.swp and binaries
+rm "$cdrskin_target"/.*.swp
 rm "$cdrskin_target"/*.o
 rm "$cdrskin_target"/cdrfifo
 rm "$cdrskin_target"/cdrskin
@@ -214,11 +215,11 @@ tar czf "$cdrskin_tarball" "$target"
  cd "$compile_dir" || exit 1
  ./configure
  make
- "$compile_cmd" -O2 -do_strip
+ "$compile_cmd" -libburn_svn -O2 -do_strip
  cp "$compile_result" "../$bintarget_dynamic"
  if test -n "$compile_static_opts"
  then
-   "$compile_cmd" $compile_static_opts -O2 -do_strip
+   "$compile_cmd" $compile_static_opts -libburn_svn -O2 -do_strip
    cp "$compile_result" "../$bintarget_static"
  fi
  "$man_to_html_cmd"

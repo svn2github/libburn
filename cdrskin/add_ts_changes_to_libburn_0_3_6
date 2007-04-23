@@ -38,7 +38,7 @@ original="./libburn_svn_release.tgz"
 # My changes are in $changes , mainly in $changes/cdrskin
 changes="./libburn-release"
 
-skin_release="0.3.4"
+skin_release="0.3.6"
 patch_level=".pl00"
 skin_rev="$skin_release""$patch_level"
 
@@ -114,7 +114,8 @@ then
 fi
 cp -a "$cdrskin_dir" "$cdrskin_target"
 
-# Remove copied binaries
+# Remove copied vim.swp and binaries
+rm "$cdrskin_target"/.*.swp
 rm "$cdrskin_target"/*.o
 rm "$cdrskin_target"/cdrfifo
 rm "$cdrskin_target"/cdrskin
