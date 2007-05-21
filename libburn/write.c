@@ -1765,6 +1765,9 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 		return;
 	}
 
+	/* ts A70521 : Linux 2.4 USB audio fails with 64 kiB */
+	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
+
 #ifndef Libburn_precheck_write_ruleS
 	/* <<< covered by burn_precheck_write() */
 	if (o->start_byte >= 0) {
