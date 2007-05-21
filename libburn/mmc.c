@@ -92,6 +92,11 @@ extern struct libdax_msgs *libdax_messenger;
    ts A70330 : Allowed finalizing of DVD+R.
 */
 
+/* ts A70519 : With MMC commands of data direction FROM_DRIVE:
+               Made struct command.dxfer_len equal to Allocation Length
+               of MMC commands. Made sure that not more bytes are allowed
+               for transfer than there are available. 
+*/
 
 static unsigned char MMC_GET_MSINFO[] =
 	{ 0x43, 0, 1, 0, 0, 0, 0, 16, 0, 0 };
@@ -116,6 +121,7 @@ static unsigned char MMC_SYNC_CACHE[] = { 0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_GET_EVENT[] = { 0x4A, 1, 0, 0, 16, 0, 0, 0, 8, 0 };
 static unsigned char MMC_CLOSE[] = { 0x5B, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_TRACK_INFO[] = { 0x52, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
+
 static unsigned char MMC_SEND_CUE_SHEET[] =
 	{ 0x5D, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -188,9 +194,13 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 
 
 	mmc_function_spy("mmc_send_cue_sheet");
-	c.retry = 1;
+
+	scsi_init_command(&c, MMC_SEND_CUE_SHEET, sizeof(MMC_SEND_CUE_SHEET));
+/*
 	c.oplen = sizeof(MMC_SEND_CUE_SHEET);
 	memcpy(c.opcode, MMC_SEND_CUE_SHEET, sizeof(MMC_SEND_CUE_SHEET));
+*/
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = s->count * 8;
 	c.page->sectors = 0;
@@ -214,10 +224,12 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 	char msg[80];
 
 	mmc_function_spy("mmc_reserve_track");
-	c.retry = 1;
+	scsi_init_command(&c, MMC_RESERVE_TRACK, sizeof(MMC_RESERVE_TRACK));
+/*
 	c.oplen = sizeof(MMC_RESERVE_TRACK);
 	memcpy(c.opcode, MMC_RESERVE_TRACK, sizeof(MMC_RESERVE_TRACK));
-
+*/
+	c.retry = 1;
 	/* Round to 32 KiB and divide by 2048
 	   (by nice binary rounding trick learned from dvd+rw-tools) */
 	lba = ((size + (off_t) 0x7fff) >> 11) & ~0xf;
@@ -238,14 +250,22 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 /* ts A70201 :
    Common track info fetcher for mmc_get_nwa() and mmc_fake_toc()
 */
-int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
+int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf,
+			int alloc_len)
 {
 	struct command c;
 
 	mmc_function_spy("mmc_read_track_info");
-	c.retry = 1;
+
+	scsi_init_command(&c, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
+/*
 	c.oplen = sizeof(MMC_TRACK_INFO);
 	memcpy(c.opcode, MMC_TRACK_INFO, sizeof(MMC_TRACK_INFO));
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.opcode[1] = 1;
 	if(trackno<=0) {
 		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
@@ -278,12 +298,12 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf)
 int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 {
 	struct buffer buf;
-	int ret, num;
+	int ret, num, alloc_len = 20;
 	unsigned char *data;
 
 	mmc_function_spy("mmc_get_nwa");
 
-	ret = mmc_read_track_info(d, trackno, &buf);
+	ret = mmc_read_track_info(d, trackno, &buf, alloc_len);
 	if (ret <= 0)
 		return ret;
 	data = buf.data;
@@ -368,9 +388,12 @@ void mmc_close(struct burn_drive *d, int session, int track)
 
 	mmc_function_spy("mmc_close");
 
-	c.retry = 1;
+	scsi_init_command(&c, MMC_CLOSE, sizeof(MMC_CLOSE));
+/*
 	c.oplen = sizeof(MMC_CLOSE);
 	memcpy(c.opcode, MMC_CLOSE, sizeof(MMC_CLOSE));
+*/
+	c.retry = 1;
 
 	/* (ts A61030 : shifted !!session rather than or-ing plain session ) */
 	c.opcode[2] = ((session & 3) << 1) | !!track;
@@ -385,11 +408,19 @@ void mmc_get_event(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct command c;
+	int alloc_len= 8;
 
 	mmc_function_spy("mmc_get_event");
-	c.retry = 1;
+
+	scsi_init_command(&c, MMC_GET_EVENT, sizeof(MMC_GET_EVENT));
+/*
 	c.oplen = sizeof(MMC_GET_EVENT);
 	memcpy(c.opcode, MMC_GET_EVENT, sizeof(MMC_GET_EVENT));
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -415,9 +446,13 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	/* a ssert(buf->bytes >= buf->sectors);*/	/* can be == at 0... */
 
 	burn_print(100, "trying to write %d at %d\n", len, start);
+
+	scsi_init_command(&c, MMC_WRITE_12, sizeof(MMC_WRITE_12));
+/*
 	memcpy(c.opcode, MMC_WRITE_12, sizeof(MMC_WRITE_12));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_WRITE_12);
+*/
+	c.retry = 1;
 	mmc_int_to_four_char(c.opcode + 2, start);
 	mmc_int_to_four_char(c.opcode + 6, len);
 	c.page = buf;
@@ -469,9 +504,13 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	/* a ssert(buf->bytes >= buf->sectors);*/	/* can be == at 0... */
 
 	burn_print(100, "trying to write %d at %d\n", len, start);
+
+	scsi_init_command(&c, MMC_WRITE_10, sizeof(MMC_WRITE_10));
+/*
 	memcpy(c.opcode, MMC_WRITE_10, sizeof(MMC_WRITE_10));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_WRITE_10);
+*/
+	c.retry = 1;
 	mmc_int_to_four_char(c.opcode + 2, start);
 	c.opcode[6] = 0;
 	c.opcode[7] = (len >> 8) & 0xFF;
@@ -570,7 +609,7 @@ int mmc_fake_toc(struct burn_drive *d)
 	struct burn_session *session;
 	struct burn_toc_entry *entry;
 	struct buffer buf;
-	int i, session_number, prev_session = -1, ret, lba;
+	int i, session_number, prev_session = -1, ret, lba, alloc_len = 34;
 	unsigned char *tdata, size_data[4], start_data[4];
 	char msg[160];
 
@@ -618,7 +657,7 @@ int mmc_fake_toc(struct burn_drive *d)
 		leadout X               entry i+X
 	*/
 	for (i = 0; i < d->last_track_no; i++) {
-		ret = mmc_read_track_info(d, i+1, &buf);
+		ret = mmc_read_track_info(d, i+1, &buf, alloc_len);
 		if (ret <= 0)
 			return ret;
 		tdata = buf.data;
@@ -687,7 +726,7 @@ int mmc_fake_toc(struct burn_drive *d)
 }
 
 
-void mmc_read_toc(struct burn_drive *d)
+static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 {
 /* read full toc, all sessions, in m/s/f form, 4k buffer */
 /* ts A70201 : or fake a toc from track information */
@@ -696,10 +735,14 @@ void mmc_read_toc(struct burn_drive *d)
 	struct buffer buf;
 	struct command c;
 	int dlen;
-	int i, bpl= 12;
+	int i, bpl= 12, old_alloc_len;
 	unsigned char *tdata;
 
 	mmc_function_spy("mmc_read_toc");
+
+	if (*alloc_len < 4)
+		return 0;
+
 	if (!(d->current_profile == -1 || d->current_is_cd_profile)) {
 		/* ts A70131 : MMC_GET_TOC uses Response Format 2 
 		   For DVD this fails with 5,24,00 */
@@ -715,11 +758,17 @@ void mmc_read_toc(struct burn_drive *d)
 
 		if (d->status == BURN_DISC_UNREADY)
 			d->status = BURN_DISC_FULL;
-		return;
+		return 1;
 	}
+	scsi_init_command(&c, MMC_GET_TOC, sizeof(MMC_GET_TOC));
+/*
 	memcpy(c.opcode, MMC_GET_TOC, sizeof(MMC_GET_TOC));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_TOC);
+*/
+	c.dxfer_len = *alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -746,11 +795,19 @@ void mmc_read_toc(struct burn_drive *d)
 		d->toc_entry = malloc(sizeof(struct burn_toc_entry));
 		memset(&(d->toc_entry[0]), 0, sizeof(struct burn_toc_entry));
 
-		return;
+		return 0;
 	}
 
 	dlen = c.page->data[0] * 256 + c.page->data[1];
+	old_alloc_len = *alloc_len;
+	*alloc_len = dlen + 2;
+	if (old_alloc_len < 15)
+		return 1;
+	if (dlen + 2 > old_alloc_len)
+		dlen = old_alloc_len - 2;
 	d->toc_entries = (dlen - 2) / 11;
+	if (d->toc_entries < 1)
+		return 0;
 /*
 	some drives fail this check.
 
@@ -839,6 +896,22 @@ void mmc_read_toc(struct burn_drive *d)
 	if (d->status == BURN_DISC_UNREADY)
 		d->status = BURN_DISC_FULL;
 	toc_find_modes(d);
+	return 1;
+}
+
+
+void mmc_read_toc(struct burn_drive *d)
+{
+	int alloc_len = 4, ret;
+
+	ret = mmc_read_toc_al(d, &alloc_len);
+/*
+	fprintf(stderr,
+		"LIBBURN_DEBUG: 43h READ TOC alloc_len = %d , ret = %d\n",
+		alloc_len, ret);
+*/
+	if (alloc_len >= 15)
+		ret = mmc_read_toc_al(d, &alloc_len);
 }
 
 
@@ -852,7 +925,7 @@ int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 	struct buffer buf;
 	struct command c;
 	unsigned char *tdata;
-	int num_sessions, session_no, num_tracks;
+	int num_sessions, session_no, num_tracks, alloc_len = 12;
 	struct burn_disc *disc;
 	struct burn_session **sessions;
 	struct burn_track **tracks;
@@ -895,9 +968,15 @@ inquire_drive:;
 	   MMC-3 states that DVD had no tracks. So maybe this mandatory fake
 	   is a forgotten legacy ?
 	*/
+	scsi_init_command(&c, MMC_GET_MSINFO, sizeof(MMC_GET_MSINFO));
+/*
 	memcpy(c.opcode, MMC_GET_MSINFO, sizeof(MMC_GET_MSINFO));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_MSINFO);
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7]= (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8]= c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -914,14 +993,14 @@ inquire_drive:;
 }
 
 
-void mmc_read_disc_info(struct burn_drive *d)
+static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer buf;
 	unsigned char *data;
 	struct command c;
 	char msg[160];
 	/* ts A70131 : had to move mmc_read_toc() to end of function */
-	int do_read_toc = 0, session_state, disc_status;
+	int do_read_toc = 0, session_state, disc_status, len, old_alloc_len;
 
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
@@ -935,14 +1014,23 @@ void mmc_read_disc_info(struct burn_drive *d)
 	/* ts A61202 */
 	d->toc_entries = 0;
 	if (d->status == BURN_DISC_EMPTY)
-		return;
+		return 1;
 
 	mmc_get_configuration(d);
 
+	if (*alloc_len < 2)
+
 	mmc_function_spy("mmc_read_disc_info");
+
+	scsi_init_command(&c, MMC_GET_DISC_INFO, sizeof(MMC_GET_DISC_INFO));
+/*
 	memcpy(c.opcode, MMC_GET_DISC_INFO, sizeof(MMC_GET_DISC_INFO));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_DISC_INFO);
+*/
+	c.dxfer_len = *alloc_len;
+	c.opcode[7]= (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8]= c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->sectors = 0;
 	c.page->bytes = 0;
@@ -951,10 +1039,20 @@ void mmc_read_disc_info(struct burn_drive *d)
 
 	if (c.error) {
 		d->busy = BURN_DRIVE_IDLE;
-		return;
+		return 0;
 	}
 
 	data = c.page->data;
+	len = (data[0] << 8) | data[1];
+	old_alloc_len = *alloc_len;
+	*alloc_len = len + 2;
+	if (old_alloc_len < 34)
+		return 1;
+	if (*alloc_len < 24) /* data[23] is the last byte used her */
+		return 0;
+	if (len + 2 > old_alloc_len)
+		len = old_alloc_len - 2;
+
 	d->erasable = !!(data[2] & 16);
 
  	disc_status = data[2] & 3;
@@ -997,7 +1095,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 				 msg, 0,0);
 		}
 		d->status = BURN_DISC_UNSUITABLE;
-		return;
+		return 0;
 	}
 
 	/* >>> ts A61217 : Note for future
@@ -1042,12 +1140,28 @@ void mmc_read_disc_info(struct burn_drive *d)
 
 	if (do_read_toc)
 		mmc_read_toc(d);
+	return 1;
 }
+
+
+void mmc_read_disc_info(struct burn_drive *d)
+{
+	int alloc_len = 34, ret;
+
+	ret = mmc_read_disc_info_al(d, &alloc_len);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: 51h alloc_len = %d , ret = %d\n",
+			alloc_len, ret);
+*/
+	/* for now there is no need to inquire the variable lenght part */
+}
+
 
 void mmc_read_atip(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct command c;
+	int alloc_len = 28;
 
 	/* ts A61021 */
 	unsigned char *data;
@@ -1063,9 +1177,16 @@ void mmc_read_atip(struct burn_drive *d)
 	               /*    24,   32,   40,   48,   -,   -,   -,   - */
 
 	mmc_function_spy("mmc_read_atip");
+
+	scsi_init_command(&c, MMC_GET_ATIP, sizeof(MMC_GET_ATIP));
+/*
 	memcpy(c.opcode, MMC_GET_ATIP, sizeof(MMC_GET_ATIP));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_ATIP);
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7]= (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8]= c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -1221,9 +1342,13 @@ void mmc_read_sectors(struct burn_drive *d,
 	/* a ssert(d->busy); */
 
 	burn_print(12, "reading %d from %d\n", len, start);
+
+	scsi_init_command(&c, MMC_READ_CD, sizeof(MMC_READ_CD));
+/*
 	memcpy(c.opcode, MMC_READ_CD, sizeof(MMC_READ_CD));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_READ_CD);
+*/
+	c.retry = 1;
 	temp = start;
 	c.opcode[5] = temp & 0xFF;
 	temp >>= 8;
@@ -1277,11 +1402,15 @@ void mmc_erase(struct burn_drive *d, int fast)
 	struct command c;
 
 	mmc_function_spy("mmc_erase");
+
+	scsi_init_command(&c, MMC_BLANK, sizeof(MMC_BLANK));
+/*
 	memcpy(c.opcode, MMC_BLANK, sizeof(MMC_BLANK));
+	c.oplen = sizeof(MMC_BLANK);
+*/
 	c.opcode[1] = 16;	/* IMMED set to 1 */
 	c.opcode[1] |= !!fast;
 	c.retry = 1;
-	c.oplen = sizeof(MMC_BLANK);
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
@@ -1294,9 +1423,12 @@ void mmc_read_lead_in(struct burn_drive *d, struct buffer *buf)
 
 	mmc_function_spy("mmc_read_lead_in");
 	len = buf->sectors;
+	scsi_init_command(&c, MMC_READ_CD, sizeof(MMC_READ_CD));
+/*
 	memcpy(c.opcode, MMC_READ_CD, sizeof(MMC_READ_CD));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_READ_CD);
+*/
+	c.retry = 1;
 	c.opcode[5] = 0;
 	c.opcode[4] = 0;
 	c.opcode[3] = 0;
@@ -1316,9 +1448,13 @@ void mmc_perform_opc(struct burn_drive *d)
 	struct command c;
 
 	mmc_function_spy("mmc_perform_opc");
+
+	scsi_init_command(&c, MMC_SEND_OPC, sizeof(MMC_SEND_OPC));
+/*
 	memcpy(c.opcode, MMC_SEND_OPC, sizeof(MMC_SEND_OPC));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_SEND_OPC);
+*/
+	c.retry = 1;
 	c.opcode[1] = 1;
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
@@ -1343,9 +1479,12 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 		r_speed = 0x10000000; /* ~ 2 TB/s */
 	if (w_speed <= 0)
 		w_speed = 0x10000000; /* ~ 2 TB/s */
-	c.retry = 1;
+	scsi_init_command(&c, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
+/*
 	c.oplen = sizeof(MMC_SET_STREAMING);
 	memcpy(c.opcode, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
+*/
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 28;
 	c.opcode[9] = (c.page->bytes >> 8) & 0xff;
@@ -1427,9 +1566,12 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	if (w<=0 || w>0xffff)
 		w = 0xffff;
 
+	scsi_init_command(&c, MMC_SET_SPEED, sizeof(MMC_SET_SPEED));
+/*
 	memcpy(c.opcode, MMC_SET_SPEED, sizeof(MMC_SET_SPEED));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_SET_SPEED);
+*/
+	c.retry = 1;
 	c.opcode[2] = r >> 8;
 	c.opcode[3] = r & 0xFF;
 	c.opcode[4] = w >> 8;
@@ -1483,15 +1625,20 @@ static char *mmc_obtain_profile_name(int profile_number)
 }
 
 
-/* ts A61201 : found in unfunctional state */
-void mmc_get_configuration(struct burn_drive *d)
+/* ts A61201 : found in unfunctional state
+ */
+static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer buf;
 	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
+	int old_alloc_len;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command c;
 	int phys_if_std = 0;
 	char *phys_name = "";
+
+	if (*alloc_len < 8)
+		return 0;
 
 	d->current_profile = 0;
         d->current_profile_text[0] = 0;
@@ -1502,9 +1649,17 @@ void mmc_get_configuration(struct burn_drive *d)
 	d->current_feat2fh_byte4 = -1;
 
 	mmc_function_spy("mmc_get_configuration");
+
+	scsi_init_command(&c, MMC_GET_CONFIGURATION,
+			 sizeof(MMC_GET_CONFIGURATION));
+/*
 	memcpy(c.opcode, MMC_GET_CONFIGURATION, sizeof(MMC_GET_CONFIGURATION));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_GET_CONFIGURATION);
+*/
+	c.dxfer_len= *alloc_len;
+	c.retry = 1;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
 	c.page = &buf;
 	c.page->sectors = 0;
 	c.page->bytes = 0;
@@ -1512,11 +1667,13 @@ void mmc_get_configuration(struct burn_drive *d)
 	d->issue_command(d, &c);
 
 	if (c.error)
-		return;
-	len = mmc_four_char_to_int(c.page->data);
-
+		return 0;
+	old_alloc_len = *alloc_len;
+	*alloc_len = len = mmc_four_char_to_int(c.page->data);
+	if (len > old_alloc_len)
+		len = old_alloc_len;
 	if (len < 8 || len > 4096)
-		return;
+		return 0;
 	cp = (c.page->data[6]<<8) | c.page->data[7];
 	d->current_profile = cp;
 	strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
@@ -1671,15 +1828,34 @@ void mmc_get_configuration(struct burn_drive *d)
 
 		}
 	}
+	return 1;
+}
+
+
+void mmc_get_configuration(struct burn_drive *d)
+{
+	int alloc_len = 8, ret;
+
+	/* first command execution to learn Allocation Length */
+	ret = mmc_get_configuration_al(d, &alloc_len);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: 46h alloc_len = %d , ret = %d\n",
+			alloc_len, ret);
+*/
+	if (alloc_len > 8 && ret > 0)
+		/* second execution with announced length */
+		mmc_get_configuration_al(d, &alloc_len);
 }
 
 
 /* ts A70108 */
 /* mmc5r03c.pdf 6.24 */
-int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
+static int mmc_read_format_capacities_al(struct burn_drive *d,
+					int *alloc_len, int top_wanted)
 {
 	struct buffer buf;
 	int len, type, score, num_descr, max_score = -2000000000, i, sign = 1;
+	int old_alloc_len;
 	off_t size, num_blocks;
 	struct command c;
 	unsigned char *dpt;
@@ -1689,18 +1865,26 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 
 	mmc_function_spy("mmc_read_format_capacities");
 
+	if (*alloc_len < 4)
+		return 0;
+
 	d->format_descr_type = 3;
 	d->format_curr_max_size = 0;
 	d->format_curr_blsas = 0;
 	d->best_format_type = -1;
 	d->best_format_size = 0;
 
+	scsi_init_command(&c, MMC_READ_FORMAT_CAPACITIES,
+			 sizeof(MMC_READ_FORMAT_CAPACITIES));
+/*
 	memcpy(c.opcode, MMC_READ_FORMAT_CAPACITIES,
 		 sizeof(MMC_READ_FORMAT_CAPACITIES));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_READ_FORMAT_CAPACITIES);
-	c.opcode[7]= 0x02;
-	c.opcode[8]= 0x00; /* accept 512 bytes (not more than 260 possible) */
+*/
+	c.dxfer_len = *alloc_len;
+	c.retry = 1;
+	c.opcode[7]= (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8]= c.dxfer_len & 0xff;
 	c.page = &buf;
 	c.page->sectors = 0;
 	c.page->bytes = 0;
@@ -1711,7 +1895,13 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 		return 0;
 
 	len = c.page->data[3];
-	if (len<8)
+	old_alloc_len = *alloc_len;
+	*alloc_len = len + 4;
+	if (old_alloc_len < 12)
+		return 1;
+	if (len + 4 > old_alloc_len)
+		len = old_alloc_len - 4;
+	if (len < 8)
 		return 0;
 
 	dpt = c.page->data + 4;
@@ -1807,14 +1997,34 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 }
 
 
+int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
+{
+	int alloc_len = 4, ret;
+
+	ret = mmc_read_format_capacities_al(d, &alloc_len, top_wanted);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: 23h alloc_len = %d , ret = %d\n",
+		 alloc_len, ret);
+*/
+	if (alloc_len >= 12 && ret > 0)
+		ret = mmc_read_format_capacities_al(d, &alloc_len, top_wanted);
+
+	return ret;
+}
+
+
 void mmc_sync_cache(struct burn_drive *d)
 {
 	struct command c;
 
 	mmc_function_spy("mmc_sync_cache");
+
+	scsi_init_command(&c, MMC_SYNC_CACHE, sizeof(MMC_SYNC_CACHE));
+/*
 	memcpy(c.opcode, MMC_SYNC_CACHE, sizeof(MMC_SYNC_CACHE));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_SYNC_CACHE);
+*/
+	c.retry = 1;
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 
@@ -1834,12 +2044,21 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 	struct buffer buf;
 	struct command c;
 	unsigned char *data;
+	int alloc_len = 12;
 
 	mmc_function_spy("mmc_read_buffer_capacity");
+
+	scsi_init_command(&c, MMC_READ_BUFFER_CAPACITY,
+			 sizeof(MMC_READ_BUFFER_CAPACITY));
+/*
 	memcpy(c.opcode, MMC_READ_BUFFER_CAPACITY,
 		 sizeof(MMC_READ_BUFFER_CAPACITY));
-	c.retry = 1;
 	c.oplen = sizeof(MMC_READ_BUFFER_CAPACITY);
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -1889,9 +2108,13 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
 	mmc_function_spy("mmc_format_unit");
-	c.retry = 1;
+
+	scsi_init_command(&c, MMC_FORMAT_UNIT, sizeof(MMC_FORMAT_UNIT));
+/*
 	c.oplen = sizeof(MMC_FORMAT_UNIT);
 	memcpy(c.opcode, MMC_FORMAT_UNIT, sizeof(MMC_FORMAT_UNIT));
+*/
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 12;
 	c.page->sectors = 0;
@@ -2099,10 +2322,11 @@ unsuitable_media:;
 
 
 /* ts A61225 */
-int mmc_get_write_performance(struct burn_drive *d)
+static int mmc_get_write_performance_al(struct burn_drive *d,
+		 int *alloc_len, int *max_descr)
 {
 	struct buffer buf;
-	int len, i, b, max_descr, num_descr, ret;
+	int len, i, b, num_descr, ret, old_alloc_len;
 	int exact_bit, read_speed, write_speed;
 	/* if this call delivers usable data then they should override
 	   previously recorded min/max speed and not compete with them */
@@ -2121,19 +2345,29 @@ int mmc_get_write_performance(struct burn_drive *d)
 	if (d->current_profile <= 0)
 		mmc_get_configuration(d);
 
+	if (*alloc_len < 8)
+		return 0;
+
+	scsi_init_command(&c, MMC_GET_PERFORMANCE,
+			 sizeof(MMC_GET_PERFORMANCE));
+/*
 	memcpy(c.opcode, MMC_GET_PERFORMANCE, sizeof(MMC_GET_PERFORMANCE));
+	c.oplen = sizeof(MMC_GET_PERFORMANCE);
+*/
+/*     ts A70519 : now controlled externally
 	max_descr = ( BUFFER_SIZE - 8 ) / 16 - 1;
+*/
 
 	/* >>> future: maintain a list of write descriptors 
 	if (max_descr > d->max_write_descr - d->num_write_descr)
 		max_descr = d->max_write_descr;
 	*/
+	c.dxfer_len = *alloc_len;
 
-	c.opcode[8] = ( max_descr >> 8 ) & 0xff;
-	c.opcode[9] = ( max_descr >> 0 ) & 0xff;
+	c.opcode[8] = ( *max_descr >> 8 ) & 0xff;
+	c.opcode[9] = ( *max_descr >> 0 ) & 0xff;
 	c.opcode[10] = 3;
 	c.retry = 1;
-	c.oplen = sizeof(MMC_GET_PERFORMANCE);
 	c.page = &buf;
 	c.page->sectors = 0;
 	c.page->bytes = 0;
@@ -2141,17 +2375,24 @@ int mmc_get_write_performance(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return 0;
-	len = (c.page->data[0] << 24)
-		+ (c.page->data[1] << 16)
-		+ (c.page->data[2] << 8)
-		+ c.page->data[3];
-	if (len<12)
+        len = mmc_four_char_to_int(c.page->data);
+	old_alloc_len = *alloc_len;
+        *alloc_len = len + 4;
+	if (len + 4 > old_alloc_len)
+		len = old_alloc_len - 4;
+	num_descr = ( *alloc_len - 8 ) / 16;
+	if (*max_descr == 0) {
+		*max_descr = num_descr;
+		return 1;
+	}
+	if (old_alloc_len < 16)
+		return 1;
+	if (len < 12)
 		return 0;
 
 	pd = c.page->data;
-	num_descr = ( len - 4 ) / 16;
-	if (num_descr > max_descr)
-		num_descr = max_descr;
+	if (num_descr > *max_descr)
+		num_descr = *max_descr;
 	for (i = 0; i < num_descr; i++) {
 		exact_bit = !!(pd[8 + i*16] & 2);
 		end_lba = read_speed = write_speed = 0;
@@ -2211,6 +2452,24 @@ int mmc_get_write_performance(struct burn_drive *d)
 	if (max_read_speed > 0)
 		d->mdata->max_read_speed = max_read_speed;
 	return num_descr;
+}
+
+
+int mmc_get_write_performance(struct burn_drive *d)
+{
+	int alloc_len = 8, max_descr = 0, ret;
+
+	/* first command execution to learn number of descriptors and 
+           dxfer_len */
+	ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: ACh alloc_len = %d , ret = %d\n",
+			alloc_len, ret);
+*/
+	if (max_descr > 0 && ret > 0)
+		/* second execution with announced length */
+		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+	return ret; 
 }
 
 

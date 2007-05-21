@@ -55,4 +55,7 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 int scsi_notify_error(struct burn_drive *, struct command *c,
 			unsigned char *sense, int senselen, int flag);
 
+/* ts A70519 */
+int scsi_init_command(struct command *c, unsigned char *opcode, int oplen);
+
 #endif /*__SPC*/

@@ -51,6 +51,7 @@ struct command
 	unsigned char opcode[16];
 	int oplen;
 	int dir;
+	int dxfer_len;
 	unsigned char sense[128];
 	int error;
 	int retry;

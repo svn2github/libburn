@@ -128,9 +128,14 @@ void toc_find_modes(struct burn_drive *d)
 			if (e && !(e->control & 4)) {
 				t->mode = BURN_AUDIO;
 			} else {
+
+				t->mode = BURN_MODE1;
+/* ts A70519 : this does not work with Linux 2.4 USB because one cannot
+               predict the exact dxfer_size without knowing the sector type.
 				mem.sectors = 1;
 				d->read_sectors(d, lba, mem.sectors, &o, &mem);
 				t->mode = sector_identify(mem.data);
+*/
 			}
 		}
 }

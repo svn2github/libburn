@@ -29,7 +29,8 @@ extern struct libdax_msgs *libdax_messenger;
 
 
 /* spc command set */
-static unsigned char SPC_INQUIRY[] = { 0x12, 0, 0, 0, 255, 0 };
+/* ts A70519 : allocation length byte 3+4 was 0,255 */
+static unsigned char SPC_INQUIRY[] = { 0x12, 0, 0, 0, 36, 0 };
 
 /*static char SPC_TEST[]={0,0,0,0,0,0};*/
 static unsigned char SPC_PREVENT[] = { 0x1e, 0, 0, 0, 1, 0 };
@@ -40,14 +41,35 @@ static unsigned char SPC_MODE_SELECT[] =
 static unsigned char SPC_REQUEST_SENSE[] = { 0x03, 0, 0, 0, 18, 0 };
 static unsigned char SPC_TEST_UNIT_READY[] = { 0x00, 0, 0, 0, 0, 0 };
 
+
+/* ts A70519 : An initializer for the abstract SCSI command structure */
+int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
+{
+	if (oplen > 16)
+		return 0;
+	memcpy(c->opcode, opcode, oplen);
+	c->oplen = oplen;
+	c->dir = NO_TRANSFER;
+	c->dxfer_len = -1;
+	memset(c->sense, 0, sizeof(c->sense));
+	c->error = 0;
+	c->retry = 0;
+	c->page = NULL;
+	return 1;
+}
+
+
 int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 {
 	struct command c;
 
-	c.retry = 0;
+	scsi_init_command(&c, SPC_TEST_UNIT_READY,sizeof(SPC_TEST_UNIT_READY));
+/*
 	c.oplen = sizeof(SPC_TEST_UNIT_READY);
 	memcpy(c.opcode, SPC_TEST_UNIT_READY, sizeof(SPC_TEST_UNIT_READY));
 	c.page = NULL;
+*/
+	c.retry = 0;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 	if (c.error) {
@@ -68,7 +90,7 @@ int spc_test_unit_ready(struct burn_drive *d)
 
 
 /* ts A70315 */
-/** Wait until the drive state becomes clear in or until max_usec elapsed */
+/** Wait until the drive state becomes clear or until max_usec elapsed */
 int spc_wait_unit_attention(struct burn_drive *d, int max_sec)
 {
 	int i, ret, key, asc, ascq;
@@ -89,9 +111,14 @@ void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 {
 	struct command c;
 
+	scsi_init_command(&c, SPC_REQUEST_SENSE, sizeof(SPC_REQUEST_SENSE));
 	c.retry = 0;
+/*
 	c.oplen = sizeof(SPC_REQUEST_SENSE);
 	memcpy(c.opcode, SPC_REQUEST_SENSE, sizeof(SPC_REQUEST_SENSE));
+*/
+	c.dxfer_len= c.opcode[4];
+	c.retry = 0;
 	c.page = buf;
 	c.page->sectors = 0;
 	c.page->bytes = 0;
@@ -113,24 +140,29 @@ void spc_inquiry(struct burn_drive *d)
 	struct burn_scsi_inquiry_data *id;
 	struct command c;
 
+	scsi_init_command(&c, SPC_INQUIRY, sizeof(SPC_INQUIRY));
+/*
 	memcpy(c.opcode, SPC_INQUIRY, sizeof(SPC_INQUIRY));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_INQUIRY);
+*/
+	c.dxfer_len= (c.opcode[3] << 8) | c.opcode[4];
+	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
-
 	id = (struct burn_scsi_inquiry_data *)d->idata;
-	id->vendor[8] = 0;
-	id->product[16] = 0;
-	id->revision[4] = 0;
-
+	memset(id->vendor, 0, 9);
+	memset(id->product, 0, 17);
+	memset(id->revision, 0, 5);
+	if (c.error) {
+		id->valid = -1;
+		return;
+	}
 	memcpy(id->vendor, c.page->data + 8, 8);
 	memcpy(id->product, c.page->data + 16, 16);
 	memcpy(id->revision, c.page->data + 32, 4);
-
 	id->valid = 1;
 	return;
 }
@@ -139,10 +171,13 @@ void spc_prevent(struct burn_drive *d)
 {
 	struct command c;
 
+	scsi_init_command(&c, SPC_PREVENT, sizeof(SPC_PREVENT));
+/*
 	memcpy(c.opcode, SPC_PREVENT, sizeof(SPC_PREVENT));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_PREVENT);
 	c.page = NULL;
+*/
+	c.retry = 1;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 }
@@ -151,19 +186,27 @@ void spc_allow(struct burn_drive *d)
 {
 	struct command c;
 
+	scsi_init_command(&c, SPC_ALLOW, sizeof(SPC_ALLOW));
+/*
 	memcpy(c.opcode, SPC_ALLOW, sizeof(SPC_ALLOW));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_ALLOW);
 	c.page = NULL;
+*/
+	c.retry = 1;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 }
 
-void spc_sense_caps(struct burn_drive *d)
+/*
+ts A70518 : Do not call with *alloc_len < 8
+*/
+/** flag&1= do only inquire alloc_len */
+static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
 	int size, page_length, num_write_speeds = 0, i, speed, ret;
+	int old_alloc_len, was_error = 0;
 	unsigned char *page;
 	struct command c;
 	struct burn_speed_descriptor *sd;
@@ -171,18 +214,30 @@ void spc_sense_caps(struct burn_drive *d)
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
 
+	if (*alloc_len < 8)
+		return 0;
+
 	memset(&buf, 0, sizeof(buf));
+	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
+/*
 	memcpy(c.opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SENSE);
+*/
+	c.dxfer_len = *alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.opcode[2] = 0x2A;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
-	if (c.error)
+	if (c.error) {
 		memset(&buf, 0, sizeof(buf));
+		d->mdata->valid = -1;
+		was_error = 1;
+	}
 
 	size = c.page->data[0] * 256 + c.page->data[1];
 	m = d->mdata;
@@ -195,6 +250,14 @@ void spc_sense_caps(struct burn_drive *d)
 	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
 	*/
 	page_length = page[1];
+	old_alloc_len = *alloc_len;
+	*alloc_len = page_length + 8;
+	if (flag & 1)
+		return !was_error;
+	if (page_length + 8 > old_alloc_len)
+		page_length = old_alloc_len - 8;
+	if (page_length < 22)
+		return 0;
 
 	m->valid = 0;
 	burn_mdata_free_subs(m);
@@ -253,7 +316,7 @@ void spc_sense_caps(struct burn_drive *d)
 				0x0002013c,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
-		return;
+		return 0;
 	}
 
 	for (i = 0; i < num_write_speeds; i++) {
@@ -297,6 +360,24 @@ try_mmc_get_performance:;
 		fprintf(stderr,
 	  "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
 		m->min_write_speed, m->max_write_speed);
+	return !was_error;
+}
+
+
+void spc_sense_caps(struct burn_drive *d)
+{
+	int alloc_len, start_len = 22, ret;
+
+	/* first command execution to learn Allocation Length */
+	alloc_len = start_len;
+	ret = spc_sense_caps_al(d, &alloc_len, 1);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: 5Ah alloc_len = %d , ret = %d\n",
+			alloc_len, ret);
+*/
+	if (alloc_len >= start_len && ret > 0)
+		/* second execution with announced length */
+		spc_sense_caps_al(d, &alloc_len, 0);
 }
 
 
@@ -304,13 +385,19 @@ void spc_sense_error_params(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
-	int size;
+	int size, alloc_len = 12 ;
 	unsigned char *page;
 	struct command c;
 
+	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
+/*
 	memcpy(c.opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SENSE);
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.opcode[2] = 0x01;
 	c.page = &buf;
 	c.page->bytes = 0;
@@ -332,9 +419,12 @@ void spc_select_error_params(struct burn_drive *d,
 	struct buffer buf;
 	struct command c;
 
+	scsi_init_command(&c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
+/*
 	memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SELECT);
+*/
+	c.retry = 1;
 	c.opcode[8] = 8 + 2 + d->mdata->retry_page_length;
 	c.page = &buf;
 	c.page->bytes = 0;
@@ -363,7 +453,7 @@ void spc_sense_write_params(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct scsi_mode_data *m;
-	int size, dummy;
+	int size, dummy, alloc_len = 10;
 	unsigned char *page;
 	struct command c;
 
@@ -371,9 +461,15 @@ void spc_sense_write_params(struct burn_drive *d)
 	/* a ssert(d->mdata->cdr_write || d->mdata->cdrw_write ||
 	       d->mdata->dvdr_write || d->mdata->dvdram_write); */
 
+	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
+/*
 	memcpy(c.opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SENSE);
+*/
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
 	c.opcode[2] = 0x05;
 	c.page = &buf;
 	c.page->bytes = 0;
@@ -428,9 +524,12 @@ void spc_select_write_params(struct burn_drive *d,
 		o->block_type,spc_block_type(o->block_type));
 	*/
 
+	scsi_init_command(&c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
+/*
 	memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-	c.retry = 1;
 	c.oplen = sizeof(SPC_MODE_SELECT);
+*/
+	c.retry = 1;
 	c.opcode[8] = 8 + 2 + d->mdata->write_page_length;
 	c.page = &buf;
 	c.page->bytes = 0;
@@ -488,9 +587,12 @@ void spc_probe_write_modes(struct burn_drive *d)
 			try_block_type = useable_block_type;
 			last_try= 1;
 		}
+		scsi_init_command(&c, SPC_MODE_SELECT,sizeof(SPC_MODE_SELECT));
+/*
 		memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-		c.retry = 1;
 		c.oplen = sizeof(SPC_MODE_SELECT);
+*/
+		c.retry = 1;
 		c.opcode[8] = 8 + 2 + 0x32;
 		c.page = &buf;
 

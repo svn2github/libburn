@@ -11,19 +11,22 @@
 #include "options.h"
 
 /* spc command set */
-static char SBC_LOAD[] = { 0x1b, 0, 0, 0, 3, 0 };
-static char SBC_UNLOAD[] = { 0x1b, 0, 0, 0, 2, 0 };
-static char SBC_START_UNIT[] = { 0x1b, 0, 0, 0, 1, 0 };
+static unsigned char SBC_LOAD[] = { 0x1b, 0, 0, 0, 3, 0 };
+static unsigned char SBC_UNLOAD[] = { 0x1b, 0, 0, 0, 2, 0 };
+static unsigned char SBC_START_UNIT[] = { 0x1b, 0, 0, 0, 1, 0 };
 
 void sbc_load(struct burn_drive *d)
 {
 	struct command c;
 
+	scsi_init_command(&c, SBC_LOAD, sizeof(SBC_LOAD));
+/*
 	memcpy(c.opcode, SBC_LOAD, sizeof(SBC_LOAD));
-	c.retry = 1;
 	c.oplen = sizeof(SBC_LOAD);
-	c.dir = NO_TRANSFER;
 	c.page = NULL;
+*/
+	c.retry = 1;
+	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 	spc_wait_unit_attention(d, 60);
 }
@@ -32,10 +35,12 @@ void sbc_eject(struct burn_drive *d)
 {
 	struct command c;
 
-	c.page = NULL;
+	scsi_init_command(&c, SBC_UNLOAD, sizeof(SBC_UNLOAD));
+/*
 	memcpy(c.opcode, SBC_UNLOAD, sizeof(SBC_UNLOAD));
-	c.oplen = 1;
 	c.oplen = sizeof(SBC_UNLOAD);
+	c.page = NULL;
+*/
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
@@ -46,11 +51,14 @@ int sbc_start_unit(struct burn_drive *d)
 {
 	struct command c;
 
+	scsi_init_command(&c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
+/*
 	memcpy(c.opcode, SBC_START_UNIT, sizeof(SBC_START_UNIT));
-	c.retry = 1;
 	c.oplen = sizeof(SBC_START_UNIT);
-	c.dir = NO_TRANSFER;
 	c.page = NULL;
+*/
+	c.retry = 1;
+	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 	return (c.error==0);
 }
