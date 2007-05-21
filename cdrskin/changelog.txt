@@ -3692,6 +3692,40 @@ Updated cdrskin tarball generator
 * DVD+R now get finalized (if not -multi is given)
 
 
+2007.04.23.171735  [846]
+cdrskin/changelog.txt
+Next cdrskin-0.3.7 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.04.24.113310
+
+2007.05.21.184334  [853]
+libburn/sg-linux.c
+Prepared fflushing and stderr output of SCSI command log
+
+2007.05.21.185450  [854]
+libburn/sbc.c
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.c
+libburn/toc.c
+libburn/transport.h
+For Linux 2.4, USB : Carefully avoided to inquire more data than available
+
+2007.05.21.185644  [855]
+libburn/sector.c
+libburn/write.c
+For Linux 2.4, USB audio : Reduced CD output buffer size to 32 kiB
+
+21 May 2007  []
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.7 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.7 - 
+
+
 ===============================================================================
                                     TODO
 ===============================================================================
