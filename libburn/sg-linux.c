@@ -1027,6 +1027,71 @@ int sg_release(struct burn_drive *d)
 }
 
 
+/** ts A70518: 
+    Debugging log facility. Controlled by existence of macros:
+     Libburn_log_sg_commandS          enables logging to file
+                                        /tmp/libburn_sg_command_log
+     Libburn_fflush_log_sg_commandS   enables fflush after each output line
+     Libburn_log_sg_command_stderR    enables additional log to stderr
+*/
+/*
+#define Libburn_log_sg_commandS 1
+#define Libburn_fflush_log_sg_commandS 1
+#define Libburn_log_sg_command_stderR 1
+*/
+
+#ifdef Libburn_log_sg_commandS
+
+/** Logs command (before execution) */
+static int sg_log_cmd(struct command *c, FILE *fp, int flag)
+{
+	int i;
+
+	if (fp != NULL) {
+		for(i = 0; i < 16 && i < c->oplen; i++)
+  			fprintf(fp,"%2.2x ", c->opcode[i]);
+		fprintf(fp, "\n");
+#ifdef Libburn_fflush_log_sg_commandS
+		fflush(fp);
+#endif
+	}
+	if (fp == stderr)
+		return 1;
+#ifdef Libburn_log_sg_command_stderR
+	sg_log_cmd(c, stderr, flag);
+#endif
+	return 1;
+}
+
+
+/** logs outcome of a sg command. flag&1 causes an error message */
+static int sg_log_err(struct command *c, FILE *fp, 
+		sg_io_hdr_t *s,
+		int flag)
+{
+      	if(fp!=NULL) {
+		if(flag & 1)
+  			fprintf(fp,
+			"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh   (%6d ms)\n",
+				s->sbp[2], s->sbp[12], s->sbp[13],s->duration);
+		else
+			fprintf(fp,"%6d ms\n", s->duration);
+#ifdef Libburn_fflush_log_sg_commandS
+		fflush(fp);
+#endif
+	}
+	if (fp == stderr)
+		return 1;
+#ifdef Libburn_log_sg_command_stderR
+	sg_log_err(c, stderr, s, flag);
+#endif
+	return 1;
+}
+
+
+#endif /* Libburn_log_sg_commandS */
+
+
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
     the command succeeded or shall be retried or finally failed.
     Returned SCSI errors shall not lead to a return value indicating failure.
@@ -1041,15 +1106,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	int done = 0, no_c_page = 0;
 	int err;
 	sg_io_hdr_t s;
-/*
-#define Libburn_log_sg_commandS 1
-*/
 
 #ifdef Libburn_log_sg_commandS
 	/* ts A61030 */
 	static FILE *fp= NULL;
-	static int fpcount= 0;
-	int i;
 #endif /* Libburn_log_sg_commandS */
 
 	/* <<< ts A60821
@@ -1065,12 +1125,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		fp= fopen("/tmp/libburn_sg_command_log","a");
 		fprintf(fp,"\n-----------------------------------------\n");
 	}
-	if(fp!=NULL) {
-		for(i=0;i<10;i++)
-	  		fprintf(fp,"%2.2x ", c->opcode[i]);
-		fprintf(fp,"\n");
-		fpcount++;
-	}
+	sg_log_cmd(c,fp,0);
 #endif /* Libburn_log_sg_commandS */
 	  
 
@@ -1105,7 +1160,15 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	if (c->page && !no_c_page) {
 		s.dxferp = c->page->data;
 		if (c->dir == FROM_DRIVE) {
-			s.dxfer_len = BUFFER_SIZE;
+
+			/* ts A70519 : kernel 2.4 usb-storage seems to
+					expect exact dxfer_len for data
+					fetching commands.
+			*/
+			if (c->dxfer_len >= 0)
+				s.dxfer_len = c->dxfer_len;
+			else
+				s.dxfer_len = BUFFER_SIZE;
 /* touch page so we can use valgrind */
 			memset(c->page->data, 0, BUFFER_SIZE);
 		} else {
@@ -1168,16 +1231,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 ex:;
 	if (c->error) {
 		scsi_notify_error(d, c, s.sbp, s.sb_len_wr, 0);
+	}
 
 #ifdef Libburn_log_sg_commandS
-        	if(fp!=NULL) {
-  			fprintf(fp,"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh\n",
-				s.sbp[2], s.sbp[12], s.sbp[13]);
-			fpcount++;
-		}
+	sg_log_err(c, fp, &s, c->error != 0);
 #endif /* Libburn_log_sg_commandS */
 
-	}
 	return 1;
 }
 
