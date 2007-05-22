@@ -72,8 +72,15 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <linux/hdreg.h>
 #include <stdlib.h>
 #include <sys/utsname.h>
-#include <scsi/sg.h>
 #include <scsi/scsi.h>
+
+#include <scsi/sg.h>
+/* Values within sg_io_hdr_t indicating success after ioctl(SG_IO) : */
+/* .host_status : from http://tldp.org/HOWTO/SCSI-Generic-HOWTO/x291.html */
+#define Libburn_sg_host_oK 0
+/* .driver_status : from http://tldp.org/HOWTO/SCSI-Generic-HOWTO/x322.html */
+#define Libburn_sg_driver_oK 0
+
 
 /* ts A61211 : to eventually recognize CD devices on /dev/sr* */
 #include <linux/cdrom.h>
@@ -1231,6 +1238,19 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 ex:;
 	if (c->error) {
 		scsi_notify_error(d, c, s.sbp, s.sb_len_wr, 0);
+	} else if (s.host_status != Libburn_sg_host_oK || 
+	    s.driver_status != Libburn_sg_driver_oK) {
+		char msg[161];
+
+		sprintf(msg,"SCSI command indicates host or driver error:");
+		sprintf(msg+strlen(msg),
+			" host_status= %xh , driver_status= %xh",
+			(unsigned int) s.host_status,
+			(unsigned int) s.driver_status);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002013b,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 	}
 
 #ifdef Libburn_log_sg_commandS
