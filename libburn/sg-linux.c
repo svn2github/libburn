@@ -1242,7 +1242,9 @@ ex:;
 	    s.driver_status != Libburn_sg_driver_oK) {
 		char msg[161];
 
-		sprintf(msg,"SCSI command indicates host or driver error:");
+		sprintf(msg,
+			"SCSI command %2.2Xh indicates host or driver error:",
+			(unsigned int) c->opcode[0]);
 		sprintf(msg+strlen(msg),
 			" host_status= %xh , driver_status= %xh",
 			(unsigned int) s.host_status,
