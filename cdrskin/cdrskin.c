@@ -1716,11 +1716,12 @@ int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
 int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 {
 #ifdef Cdrskin_libburn_has_burn_msgS
+/* In cdrskin there is not much sense in queueing library messages.
 #ifndef Cdrskin_extra_leaN
 #define Cdrskin_debug_libdax_msgS 1
 #endif
-/* <<< In cdrskin there is not much sense in queueing library messages.
-        It is done here only for debugging */
+       It would be done here only for debugging
+*/
 #ifdef Cdrskin_debug_libdax_msgS
 
  int ret;
