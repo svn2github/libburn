@@ -1022,7 +1022,6 @@ int burn_drive_is_enumerable_adr(char *adr)
 #define BURN_DRIVE_MAX_LINK_DEPTH 20
 
 /* ts A60922 ticket 33 */
-/* Try to find an enumerated address with the given stat.st_rdev number */
 int burn_drive_resolve_link(char *path, char adr[], int *recursion_count)
 {
 	int ret;
@@ -1620,6 +1619,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	o->selected_write_mode = wt;
 	o->current_profile = d->current_profile;
 	o->current_is_cd_profile = d->current_is_cd_profile;
+        o->might_simulate = 0;
 	
 	if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
 		return 0;
@@ -1649,6 +1649,9 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		}
 		if (wt == BURN_WRITE_RAW)
 			o->multi_session = o->multi_track = 0;
+		else if(wt == BURN_WRITE_NONE || wt == BURN_WRITE_SAO ||
+			wt == BURN_WRITE_TAO)
+			o->might_simulate = !!d->mdata->simulate;
 	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
 			d->current_profile == 0x15) {
 		/* DVD-R , sequential DVD-RW , DVD-R/DL Sequential */
@@ -1667,6 +1670,9 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		}
 		if (wt == BURN_WRITE_SAO)
 			o->multi_session = o->multi_track = 0;
+		if (wt == BURN_WRITE_NONE || wt == BURN_WRITE_SAO ||
+		    wt == BURN_WRITE_TAO)
+			o->might_simulate = 1;
 	} else if (d->current_profile == 0x12 || d->current_profile == 0x13 ||
 			d->current_profile == 0x1a) {
 		/* DVD-RAM, overwriteable DVD-RW, DVD+RW */

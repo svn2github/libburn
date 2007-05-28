@@ -1411,6 +1411,7 @@ void burn_write_opts_set_fillup(struct burn_write_opts *opts,
 /* ts A70303 */
 /** Eventually makes libburn ignore the failure of some conformance checks:
     - the check wether CD write+block type is supported by the drive
+    - the check wether the media profile supports simulated burning 
     @param opts The write opts to change
     @param use_force 1=ignore above checks, 0=refuse work on failed check
 */
@@ -1599,6 +1600,10 @@ struct burn_multi_caps {
 
 	/** Wether the current profile indicates CD media. 1=yes, 0=no */
 	int current_is_cd_profile;
+
+        /* ts A70528, added to version 0.3.7 */
+	/** Wether the current profile is able to perform simulated write */
+	int might_simulate;
 };
 
 /** Allocates a struct burn_multi_caps (see above) and fills it with values

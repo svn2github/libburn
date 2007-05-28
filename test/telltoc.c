@@ -312,6 +312,11 @@ int telltoc_media(struct burn_drive *drive)
 				caps->advised_write_mode == BURN_WRITE_RAW ?
 				" (advised)" : "");
 		printf("\n");
+		printf("Write dummy  : ");
+		if (caps->might_simulate)
+			printf("supposed to work with non-RAW modes\n");
+		else
+			printf("will not work\n");
 		o= burn_write_opts_new(drive);
 		if (o != NULL) {
 			burn_write_opts_set_perform_opc(o, 0);
