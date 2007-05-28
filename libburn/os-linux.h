@@ -42,7 +42,10 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */
+/* ts A70523 : >32k seems not good with kernel 2.4 USB drivers and audio
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
+*/
+#define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
 
 
 /* To hold the index number of the most recently delivered address from
