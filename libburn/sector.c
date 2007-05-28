@@ -219,7 +219,7 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 
 	/* ts A61219 : opts->obs is eventually a 32k trigger for DVD */
 	if (out->bytes + seclen > BUFFER_SIZE ||
-	    out->bytes + seclen > opts->obs) {
+	    (opts->obs > 0 && out->bytes + seclen > opts->obs)) {
 		int err;
 		err = d->write(d, d->nwa, out);
 		if (err == BE_CANCELLED)
