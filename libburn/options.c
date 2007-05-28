@@ -124,11 +124,19 @@ void burn_write_opts_set_format(struct burn_write_opts *opts, int format)
 
 int burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim)
 {
+/* <<< ts A70529 :
+       One cannot predict the ability to simulate from page 05h
+       information alone. This check is now done later in 
+       function  burn_write_opts_auto_write_type().
+
 	if (opts->drive->mdata->simulate) {
 		opts->simulate = sim;
 		return 1;
 	}
 	return 0;
+*/
+	opts->simulate = !!sim;
+	return 1;
 }
 
 int burn_write_opts_set_underrun_proof(struct burn_write_opts *opts,
@@ -265,6 +273,8 @@ no_caps:;
 	} else if (caps->might_do_sao >= 3 && !(flag & 1))
 		goto try_tao;
 do_sao:;
+	if (caps->might_simulate == 0 && opts->simulate && !opts->force_is_set)
+		goto no_simulate;
 	if (!(flag & 1))
 		burn_write_opts_set_write_type(
 					opts, BURN_WRITE_SAO, BURN_BLOCK_SAO);
@@ -296,6 +306,8 @@ try_tao:;
 	if (strcmp(reason_pt, "TAO: ") != 0)
 		goto no_tao;
 	/* ( TAO data/audio block size will be handled automatically ) */
+	if (caps->might_simulate == 0 && opts->simulate && !opts->force_is_set)
+		goto no_simulate;
 	if (!(flag & 1))
 		burn_write_opts_set_write_type(
 				opts, BURN_WRITE_TAO, BURN_BLOCK_MODE1);
@@ -323,13 +335,21 @@ try_raw:;
 		strcat(reasons, "drive dislikes block type, ");
 	if (strcmp(reason_pt, "RAW: ") != 0)
 		goto no_write_mode;
+	if (!opts->force_is_set)
+		goto no_simulate;
 
 	/*  For now: no setting of raw write modes */
 
 	{wt = BURN_WRITE_RAW; goto ex;}
 
 no_write_mode:;
-	wt = BURN_WRITE_NONE;
+	{wt = BURN_WRITE_NONE; goto ex;}
+
+no_simulate:;
+	strcat(reasons,
+	       "simulation of write job not supported by drive and media, ");
+	{wt = BURN_WRITE_NONE; goto ex;}
+	
 ex:;
 	burn_disc_free_multi_caps(&caps);
 	if (wt == BURN_WRITE_NONE && !(flag & 3)) {

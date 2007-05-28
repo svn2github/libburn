@@ -365,8 +365,10 @@ even if attempted explicitely via "driveropts=burnfree".
 .TP
 .BI \-dummy
 Try to perform the drive operations without actually affecting the inserted
-media. There is no guarantee that this will work with a particular combination
+media. There is no warranty that this will work with a particular combination
 of drive, media, and write mode. Blanking is prevented reliably, though.
+To avoid inadverted real burning, -dummy refuses burn runs on anything but
+CD-R[W] and DVD-R[W].
 .TP
 .BI \-eject
 Eject the disc after work is done.
@@ -379,6 +381,9 @@ write modes which libburn believes they are not supported by the drive.
 .br
 Another application is to enforce blanking or re-formatting of media
 which appear to be in the desired blank or format state already.
+.br
+This option enables a burn run with option -dummy even if libburn believes
+that drive and media will not simulate the write mode but will write for real.
 .br
 .B Caution:
 Use this only when in urgent need.
