@@ -3717,13 +3717,60 @@ libburn/sector.c
 libburn/write.c
 For Linux 2.4, USB audio : Reduced CD output buffer size to 32 kiB
 
-21 May 2007  []
+21 May 2007  [856]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.7 cycle
 
 
------------------------------------- cycle  - cdrskin-0.3.7 - 
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.05.21.201501
+* Now able to cope with the peculiarities of Linux 2.4 USB
+
+
+2007.05.22.154407  [857]
+libburn/sg-linux.c
+Report eventual sg_io_hdr_t host_status,driver_status as debug messages
+
+2007.05.22.154504  [858]
+cdrskin/cdrskin.c
+Disabled macro Cdrskin_debug_libdax_msgS. Thus getting unqueued error messages.
+
+2007.05.22.164850  [859]
+libburn/sg-linux.c
+Added SCSI opcode to output of revision 857
+
+2007.05.28.132412  [860]
+libburn/os-linux.h
+libburn/write.c
+Moved general 32 kiB buffer restriction from write.c to os-linux.h
+
+2007.05.28.165630  [861]
+libburn/libburn.h
+libburn/drive.c
+test/telltoc.c
+Extended struct burn_multi_caps by .might_simulate
+
+28 May 2007  [862]
+libburn/libdax_msgs.h
+Forgotten update of error list with revison 857
+
+2007.05.28.170243  [863]
+libburn/options.c
+cdrskin/cdrskin.1
+Added check for .might_simulate to burn_write_opts_auto_write_type()
+
+2007.05.28.192421  [864]
+libburn/sector.c
+Fixed low transaction size introduced by cooperation of revisions 855 and 860
+
+
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.05.28.192853
+* Refusal to perform -dummy runs on media which cannot simulate burning
+
+  []
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.7 cycle
 
 
 ===============================================================================
@@ -3743,9 +3790,6 @@ Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
 
 What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 
-How to handle finalizing ?
-growisofs does not finalize multi-session DVD[+-]R unless padding up. Why ?
-
 
 After cooking: review of -do_diet ?
 
@@ -3762,8 +3806,6 @@ Disable error checking with DVD-RAM.
 
 Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
 
-Sequentially check option list for DVD compliance
-
 
 ----------------------------------------- long term intentions:
 
@@ -3771,10 +3813,6 @@ Sequentially check option list for DVD compliance
 -reset: ioctl(fd,CDROMRESET)  ioctl(fd,SG_SCSI_RESET,SG_SCSI_RESET_DEVICE)
 http://developer.osdl.org/dev/robustmutexes/src/fusyn.hg/Documentation/ioctl/cdrom.txt
 
-
-  []
-Open O_EXCL all devices in address resolution chain
-(Might help with non-standard hdX device siblings)
 
   []
 Convert burn_print() into libdax_msgs_submit()

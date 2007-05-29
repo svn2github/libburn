@@ -81,18 +81,13 @@ Ports to other usable systems are appreciated. Reports are welcome.
 <P>
 <H2>Commands:</H2>
 <DL>
-<DT>The goal is to provide some of cdrecord's options in a compatible way.
-This has been achieved quite sufficiently for the needs of backup tool
-<A HREF="http://scdbackup.sourceforge.net/main_eng.html">scdbackup</A>
-and for data CD projects of <A HREF="http://www.k3b.org">K3b</A> 
-(see <A HREF="#examples">examples</A>).
-Suitability for audio CD frontends has been improved much and is now being
-evaluated.<BR>
-Most DVD types are written in pseudo -tao modes which are very different
-from the write mode DAO used by cdrecord(-ProDVD). With DVD-R[W] cdrskin
-can use this write mode, too.<BR>
-Further enhancements depend on people who can describe and discuss their
-wishes as well as on the development of libburn.</DT>
+<DT>The most common options of cdrecord for data and audio on CD media
+are provided in a compatible way.<BR>
+On single layer DVD media cdrskin is able to perform any recording job
+which is possible with cdrecord.
+Other than with cdrecord, options -multi and -tao are supported with
+certain DVD types.
+</DT>
 <BR><BR>
 <DT>Get an overview of drives and their addresses</DT>
 <DD>#<KBD>&nbsp;cdrskin -scanbus</KBD></DD>
@@ -160,7 +155,6 @@ as listed by option --devices.</DT>
 <DT>Read the detailed manual page:</DT>
 <DD>$<KBD>&nbsp;<A HREF="man_1_cdrskin.html">man cdrskin</A></KBD></DD>
 </DL>
-
 <DL>
 <DT>Read about the standard for which cdrskin is striving:</DT>
 <DD>$<KBD>&nbsp;
@@ -171,6 +165,9 @@ man cdrecord</A></KBD></DD>
  this "don't bother Joerg" demand.)
 </DD>
 </DL>
+
+Testers wanted who are willing to risk some double layer DVD media.
+
 </P>
 
 <HR>
@@ -248,6 +245,7 @@ Enhancements towards previous stable version cdrskin-0.3.4:
 <DD>Enhancements towards stable version 0.3.6.pl00:
 <UL>
 <LI>Now able to cope with the peculiarities of Linux 2.4 USB</LI>
+<LI>Refusal to perform -dummy runs on media which cannot simulate burning</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
