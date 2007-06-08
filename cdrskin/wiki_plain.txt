@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------
                        cdrskin Wiki - plain text copy
 --------------------------------------------------------------------------
-[[Image(source:/libburn/trunk/cdrskin/doener_150x200_tr.gif)]] [http://en.wikipedia.org/wiki/D%C3%B6ner_kebab Doener]
+[[Image(source:/libburn/trunk/cdrskin/doener_150x200_tr.png)]] [http://en.wikipedia.org/wiki/D%C3%B6ner_kebab Doener]
 
 '''cdrskin is the cdrecord compatibility middleware of libburn.'''
 
@@ -127,7 +127,7 @@ E.g. cdrskin aborts with an error message if
 {{{
 assert_write_lba=0
 }}}
-is given but an appendable media is to be burned which would start ati
+is given but an appendable media is to be burned which would start at
 block 68432.
 
 

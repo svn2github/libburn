@@ -138,7 +138,7 @@ do
 done
 
 # Remove GIFs of cdrskin_eng.html
-rm "$cdrskin_target"/doener_*.gif
+rm "$cdrskin_target"/doener_*.gif "$cdrskin_target"/doener_*.png
 
 # Remove automatically generated HTML man page
 rm "$cdrskin_target"/man_1_cdrskin.html
