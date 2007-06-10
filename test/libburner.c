@@ -350,7 +350,7 @@ int libburner_format_row(struct burn_drive *drive)
 
 /** Brings preformatted track images (ISO 9660, audio, ...) onto media.
     To make sure a data image is fully readable on any Linux machine, this
-    function adds 300 kB of padding to the (usualy single) track.
+    function adds 300 kiB of padding to the (usualy single) track.
     Audio tracks get padded to complete their last sector.
 
     In case of external signals expect abort handling of an ongoing burn to
@@ -378,7 +378,7 @@ int libburner_payload(struct burn_drive *drive,
 
 	if (all_tracks_type != BURN_AUDIO) {
 		all_tracks_type = BURN_MODE1;
-		/* a padding of 300 kB helps to avoid the read-ahead bug */
+		/* a padding of 300 kiB helps to avoid the read-ahead bug */
 		padding = 300*1024;
 	}
 

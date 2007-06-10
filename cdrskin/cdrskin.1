@@ -421,7 +421,7 @@ added to each -isosize track. But be advised to rather use padsize=300k.
 .br
 This option can be performed on track sources which are regular files or block
 devices. For the first track of the session it can be performed on any type
-of source if there is a fifo of at least 64 kB. See option fs= .
+of source if there is a fifo of at least 64 kiB. See option fs= .
 .TP
 .BI msifile= path
 Run option -msinfo and copy the result line into the file given by path.
@@ -466,7 +466,7 @@ to be no use for audio tracks with incomplete last sector, this option applies
 only to data tracks. There it is default.
 .TP
 .BI \-pad
-Add 30 kB of trailing zeros to each data track. (This is not sufficient to
+Add 30 kiB of trailing zeros to each data track. (This is not sufficient to
 avoid problems with various CD-ROM read drivers.)
 .TP
 .BI padsize= size
@@ -693,8 +693,8 @@ string and eventual output of -msinfo.
 .TP 
 .BI write_start_address= byte_offset
 Set the address on media where to start writing the track. With DVD+RW or
-DVD-RAM byte_offset must be aligned to 2 KB blocks, but better is 32 kB.
-With DVD-RW 32 kB alignment is mandatory.
+DVD-RAM byte_offset must be aligned to 2 kiB blocks, but better is 32 kiB.
+With DVD-RW 32 kiB alignment is mandatory.
 .br
 Other media are not suitable for this option yet.
 .PP

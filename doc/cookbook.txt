@@ -788,12 +788,12 @@ growisofs (transport.hxx) sets Link Size to 16 for profiles 0011h and 0014h.
 libburn now records the first link size from feature 0021h in its burn_drive
 structure. If another link size item is 16, then 16 is used.
 [*4:]
-growisofs takes Packet Size from 52h. Specs predict it will be 16 (= 32 kB).
+growisofs takes Packet Size from 52h. Specs predict it will be 16 (= 32 kiB).
 (mmc5r03.pdf 7.5.4.16)
 
 The writing process is much like in "Writing a session to CD in TAO mode" :
 Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION.
-libburn writes full 32 kB buffers via 2Ah WRITE.
+libburn writes full 32 kiB buffers via 2Ah WRITE.
 (mmc5r03c.pdf, 6.27 READ TRACK INFORMATION, 6.44 WRITE)
 When writing is done, it is mandatory to force the drive's buffer to media by
 35h SYNCHRONIZE CACHE.
@@ -860,7 +860,8 @@ tested yet, what happens if not enough data get written.
 (mmc5r03c.pdf 6.31)
 
 Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION.
-The reply is supposed to be 0. libburn writes full 32 kB buffers via 2Ah WRITE.
+The reply is supposed to be 0. libburn writes full 32 kiB buffers via
+2Ah WRITE.
 (mmc5r03c.pdf, 6.27 READ TRACK INFORMATION, 6.44 WRITE)
 If the track source delivers less than the announced size then libburn pads up
 by zeros.
@@ -1063,7 +1064,7 @@ The specs promise to pad up the track if not enough data get written.
 Next Writeable Address is fetched from the reply of 52h READ TRACK INFORMATION
 with track number FFh.
 (mmc5r03c.pdf 6.27)
-Since the fixely set write type is 16-block packet, full 32 kB buffers have
+Since the fixely set write type is 16-block packet, full 32 kiB buffers have
 to be transmitted via 2Ah WRITE.
 (mmc5r03c.pdf 4.3.6.2.2)
 
