@@ -271,7 +271,7 @@ stereo. For little-endian byte order (which is usual on PCs) use option
 -swab. Unless marked explicitely by option -data, input files with suffix
 ".wav" are examined wether they have a header in MS-WAVE format confirming
 those parameters and eventually raw audio data get extracted and burned as
-audio track. Same is done for suffix .au and SUN Audio.
+audio track. Same is done for suffix ".au" and SUN Audio.
 .br
 Option -audio may be used only with CD media and not with DVD.
 .TP 
@@ -298,14 +298,14 @@ Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
 (Note: blank=format_overwrite* are not original cdrecord options.)
 .TP
 format_overwrite_quickest
-Like format_overwrite without creating a 128 MB trailblazer session.
+Like format_overwrite without creating a 128 MiB trailblazer session.
 Leads to "intermediate" state which only allows sequential write
 beginning from address 0.
 The "intermediate" state ends after the first session of writing data.
 .TP
 format_overwrite_full
 For DVD-RW this is like format_overwrite but claims full media size
-rather than just 128 MB.
+rather than just 128 MiB.
 Most traditional formatting is attempted. No data get written. 
 Much patience is required.
 .br

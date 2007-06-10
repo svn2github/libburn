@@ -402,7 +402,7 @@ most recent session. For example put an ISO filesystem at address 1 GB:
   cdrskin dev=/dev/sr0 -v fs=32m -eject speed=4 write_start_address=524288s -
 The superuser may then do:
   mount -t iso9660 -o ro,sbsector=524288 /dev/sr0 /mnt
-Note: On my linux-2.4.21-215 mount works only with sbsector <= 337920 (660 MB).
+Note: On my linux-2.4.21-215 mount works only with sbsector <= 337920 (660 MiB)
 To extend a filesystem already existing at address 0
   mkisofs -C 0,524288 -M /dev/sr0 ... | cdrskin dev=/dev/sr0 ...
 Record the number 524288 for usage as first number with -C at the next
@@ -447,7 +447,7 @@ too on blanking by cdrecord, dvd+rw-format or cdrskin. Perils of DVD-RW.
 There are three DVD-RW formatting variants with cdrskin currently:
 
 blank=format_overwrite  uses "DVD-RW Quick" formatting (MMC-type 15h)
-and writes a first session of 128 MB. This leads to media which are expandable
+and writes a first session of 128 MiB. This leads to media which are expandable
 and random addressable by cdrskin.
 
 blank=format_overwrite_quickest  uses "DVD-RW Quick" formatting (type 15h) too,
