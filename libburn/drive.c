@@ -857,6 +857,35 @@ void burn_drive_set_speed(struct burn_drive *d, int r, int w)
 	d->set_speed(d, r, w);
 }
 
+
+/* ts A70711  API function */
+int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
+				int min_usec, int max_usec, int timeout_sec,
+				int min_percent, int max_percent)
+{
+
+	if (enable >= 0)
+		d->wait_for_buffer_free = !!enable;
+	if (min_usec >= 0)
+		d->wfb_min_usec = min_usec;
+	if (max_usec >= 0)
+		d->wfb_max_usec = max_usec;
+	if (timeout_sec >= 0)
+		d->wfb_timeout_sec = timeout_sec;
+        if (min_percent >= 0) {
+		if (min_percent < 25 || min_percent > 100)
+			return 0;
+		d->wfb_min_percent = min_percent;
+	}
+	if (max_percent >= 0) {
+		if (max_percent < 25 || max_percent > 100)
+			return 0;
+		d->wfb_max_percent = max_percent;
+	}
+	return 1;
+}
+
+
 int burn_msf_to_sectors(int m, int s, int f)
 {
 	return (m * 60 + s) * 75 + f;

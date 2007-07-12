@@ -455,8 +455,9 @@ struct burn_progress {
 	/* ts A61119 */
 	/** The number of bytes sent to the drive buffer */
 	off_t buffered_bytes;
-	/** The minimum number of buffered bytes. (Caution: Before surely
-	    one buffer size of bytes was processed, this value is 0xffffffff.) 
+	/** The minimum number of bytes stored in buffer during write.
+            (Caution: Before surely one buffer size of bytes was processed,
+                      this value is 0xffffffff.) 
 	*/
 	unsigned buffer_min_fill;
 };
@@ -1288,11 +1289,51 @@ int burn_track_get_counters(struct burn_track *t,
 
 
 /** Sets drive read and write speed
+    Note: "k" is 1000, not 1024. 1xCD = 176.4 k/s, 1xDVD = 1385 k/s.
+          Fractional speeds should be rounded up. Like 4xCD = 706.
     @param d The drive to set speed for
-    @param read Read speed in k/s (0 is max)
-    @param write Write speed in k/s (0 is max)
+    @param read Read speed in k/s (0 is max).
+    @param write Write speed in k/s (0 is max). 
 */
 void burn_drive_set_speed(struct burn_drive *d, int read, int write);
+
+
+/* ts A70711 */
+/** Controls the behavior with writing when the drive buffer is suspected to
+    be full. To check and wait for enough free buffer space before writing
+    will move the task of waiting from the operating system's device driver
+    to libburn. While writing is going on and waiting is enabled, any write
+    operation will be checked wether it will fill the drive buffer up to
+    more than max_percent. If so, then waiting will happen until the buffer
+    fill is predicted with at most min_percent.
+    Thus: if min_percent < max_percent then transfer rate will oscillate. 
+    This may allow the driver to operate on other devices, e.g. a disk from
+    which to read the input for writing. On the other hand, this checking might
+    reduce maximum throughput to the drive or even get misled by faulty buffer
+    fill replies from the drive. It is advised not to set speed to 0 (= max)
+    together with enabling buffer waiting.
+    If a setting parameters is < 0, then this setting will stay unchanged
+    by the call.
+    Known burner or media specific pitfalls:
+    To have max_percent larger than the burner's best reported buffer fill has
+    the same effect as min_percent==max_percent. Some burners do not report
+    their full buffer with all media types. Some are not suitable because
+    they report their buffer fill with delay.
+    @param d The drive to control
+    @param enable 0= disable , 1= enable waiting , (-1 = do not change setting)
+    @param min_usec Shortest possible sleeping period (given in micro seconds)
+    @param max_usec Longest possible sleeping period (given in micro seconds)
+    @param timeout_sec If a single write has to wait longer than this number
+                       of seconds, then waiting gets disabled and mindless
+                       writing starts. A value of 0 disables this timeout.
+    @param min_percent Minimum of desired buffer oscillation: 25 to 100
+    @param max_percent Maximum of desired buffer oscillation: 25 to 100
+    @return 1=success , 0=failure
+*/
+int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
+                                int min_usec, int max_usec, int timeout_sec,
+                                int min_percent, int max_percent);
+
 
 /* these are for my debugging, they will disappear */
 void burn_structure_print_disc(struct burn_disc *d);
