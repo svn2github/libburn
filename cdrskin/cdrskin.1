@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 22, 2007"
+.TH CDRSKIN 1 "July 12, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -423,6 +423,13 @@ This option can be performed on track sources which are regular files or block
 devices. For the first track of the session it can be performed on any type
 of source if there is a fifo of at least 64 kiB. See option fs= .
 .TP
+.BI minbuf= percentage
+Equivalent to:
+.br
+modesty_on_drive=1:min_percent=<percentage>:max_percent=95
+.br
+Percentage is permissible between 25 and 95.
+.TP
 .BI msifile= path
 Run option -msinfo and copy the result line into the file given by path.
 Unlike -msinfo this option does not redirect all normal output away from
@@ -795,6 +802,32 @@ active.
 Try to ignore any signals rather than to abort the program. This is not a
 very good idea. You might end up waiting a very long time for cdrskin
 to finish.
+.TP
+.BI modesty_on_drive= <mode>[:min_percent=<num>][:max_percent=<num>]
+Mode 1 keeps the program from trying to write to the burner drive while its
+buffer is in danger to be filled by more than max_percent. If this filling is
+exceeded then the program will wait until the filling is at most min_percent.
+.br
+This can ease the load on operating system and drive controller and thus help
+with achieving better input bandwidth if disk and burner are not on independent
+controllers (like hda and hdb). Unsufficient input bandwidth is indicated by
+output "(fifo  xy%)" of option -v if xy is lower than 90 for some time.
+modesty_on_drive= might hamper output bandwidth and cause buffer underruns.
+.br
+To have max_percent larger than the burner's best actual
+buffer fill has the same effect as min_percent==max_percent. Some burners
+do not use their full buffer with all media types. Watch output "[buf xy%]"
+of option -v to get an impression of the actual buffer usage. Some burners
+are not suitable because they report buffer fill with granularity too large
+in size or time. 
+.br
+Mode 0 disables this feature. Mode -1 keeps it unchanged. Default is:
+.br
+modesty_on_drive=0:min_percent=65:max_percent=95
+.br
+Percentages are permissible in the range of 25 to 100.
+This mode can be activated only if option speed= is given with a number > 0
+which should be realistic, i.e. appropriate for drive and media.
 .TP
 .BI \--no_abort_handler
 On signals exit even if the drive is in busy state. This is not a very good

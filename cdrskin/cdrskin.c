@@ -131,7 +131,7 @@ or
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
-/* - no novelty switches currently - */
+#define Cdrskin_libburn_has_set_waitinG 1
 
 #endif /* Cdrskin_libburn_0_3_7 */
 
@@ -2209,6 +2209,9 @@ set_dev:;
      printf(
        " --ignore_signals   try to ignore any signals rather than to abort\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
+#ifdef Cdrskin_libburn_has_set_waitinG
+     printf(" modesty_on_drive=<options> no writing into full drive buffer\n");
+#endif
      printf(" --no_abort_handler  exit even if the drive is in busy state\n");
      printf(" --no_blank_appendable  refuse to blank appendable CD-RW\n");
      printf(" --no_convert_fs_adr  only literal translations of dev=\n");
@@ -2304,6 +2307,10 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\t-toc\t\tretrieve and print TOC/PMA data\n");
      fprintf(stderr,
              "\t-atip\t\tretrieve media state, print \"Is *erasable\"\n");
+#ifdef Cdrskin_libburn_has_set_waitinG
+     fprintf(stderr,
+             "\tminbuf=percent\tset lower limit for drive buffer modesty\n");
+#endif
 #ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-multi\t\tgenerate a TOC that allows multi session\n");
@@ -2616,6 +2623,9 @@ struct CdrskiN {
  enum burn_write_types write_type;
  int block_type;
  int multi;
+ int modesty_on_drive;
+ int min_buffer_percent;
+ int max_buffer_percent;
 
  double write_start_address;
  int assert_write_lba;
@@ -2748,6 +2758,9 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
+ o->modesty_on_drive= 0;
+ o->min_buffer_percent= 65;
+ o->max_buffer_percent= 95;
  o->write_start_address= -1.0;
  o->assert_write_lba= -1;
  o->burnfree= 1;
@@ -2938,7 +2951,7 @@ int Cdrskin_fill_fifo(struct CdrskiN *skin, int flag)
 /** Inform libburn about the consumer x-speed factor of skin */
 int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 {
- int k_speed;
+ int k_speed, modesty= 0;
 
  if(skin->x_speed<0)
    k_speed= 0; /* libburn.h promises 0 to be max speed. */
@@ -2952,6 +2965,15 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
    ClN(fprintf(stderr,"cdrskin_debug: k_speed= %d\n",k_speed));
 
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
+
+#ifdef Cdrskin_libburn_has_set_waitinG
+ if(k_speed>0)
+   modesty= skin->modesty_on_drive;
+ burn_drive_set_buffer_waiting(skin->drives[skin->driveno].drive,
+                               modesty, -1, -1, -1,
+                               skin->min_buffer_percent,
+                               skin->max_buffer_percent);
+#endif
  return(1);
 }
 
@@ -6096,6 +6118,90 @@ gracetime_equals:;
      for(k=0;ignored_full_options[k][0]!=0;k++) 
        printf("%s\n",ignored_full_options[k]);
      printf("\n");
+
+   } else if(strncmp(argv[i],"-minbuf=",8)==0) {
+     value_pt= argv[i]+8;
+     goto minbuf_equals;
+   } else if(strncmp(argv[i],"minbuf=",7)==0) {
+     value_pt= argv[i]+7;
+minbuf_equals:;
+#ifdef Cdrskin_libburn_has_set_waitinG
+     skin->modesty_on_drive= 1;
+     sscanf(value_pt,"%lf",&value);
+     if (value<25 || value>95) {
+       fprintf(stderr,
+               "cdrskin: FATAL : minbuf= value must be between 25 and 95\n");
+       return(0);
+     }
+     skin->min_buffer_percent= value;
+     skin->max_buffer_percent= 95;
+     ClN(printf("cdrskin: minbuf=%d percent desired buffer fill\n",
+                skin->min_buffer_percent));
+#else
+     fprintf(stderr,
+          "cdrskin: SORRY : Option minbuf= is not available yet.\n");
+     return(0);
+#endif
+
+   } else if(strncmp(argv[i],"modesty_on_drive=",17)==0) {
+#ifdef Cdrskin_libburn_has_set_waitinG
+     value_pt= argv[i]+17;
+     if(*value_pt=='0') {
+       skin->modesty_on_drive= 0;
+       if(skin->verbosity>=Cdrskin_verbose_cmD)
+         ClN(printf(
+               "cdrskin: modesty_on_drive=0 : buffer waiting by os driver\n"));
+     } else if(*value_pt=='1') {
+       skin->modesty_on_drive= 1;
+       if(skin->verbosity>=Cdrskin_verbose_cmD)
+         ClN(printf(
+                 "cdrskin: modesty_on_drive=1 : buffer waiting by libburn\n"));
+     } else if(*value_pt=='-' && argv[i][18]=='1') {
+       skin->modesty_on_drive= -1;
+       if(skin->verbosity>=Cdrskin_verbose_cmD)
+         ClN(printf(
+       "cdrskin: modesty_on_drive=-1 : buffer waiting as libburn defaults\n"));
+     } else {
+       fprintf(stderr,
+               "cdrskin: FATAL : modesty_on_drive= must be -1, 0 or 1\n");
+       return(0);
+     }
+     while(1) {
+       value_pt= strchr(value_pt,':');
+       if(value_pt==NULL)
+     break;
+       value_pt++;
+       if(strncmp(value_pt,"min_percent=",12)==0) {
+         sscanf(value_pt+12,"%lf",&value);
+         if (value<25 || value>100) {
+           fprintf(stderr,
+                   "cdrskin: FATAL : modest_on_drive= min_percent value must be between 25 and 100\n");
+           return(0);
+         }
+         skin->min_buffer_percent= value;
+         ClN(printf("cdrskin: modesty_on_drive : %d percent min buffer fill\n",
+                skin->min_buffer_percent));
+       } else if(strncmp(value_pt,"max_percent=",12)==0) {
+         sscanf(value_pt+12,"%lf",&value);
+         if (value<25 || value>100) {
+           fprintf(stderr,
+                   "cdrskin: FATAL : modest_on_drive= max_percent value must be between 25 and 100\n");
+           return(0);
+         }
+         skin->max_buffer_percent= value;
+         ClN(printf("cdrskin: modesty_on_drive : %d percent max buffer fill\n",
+                skin->max_buffer_percent));
+       } else {
+         fprintf(stderr,
+                "cdrskin: SORRY : modest_on_drive= unknown option code : %s\n",
+                value_pt);
+       }
+     }
+#else
+     fprintf(stderr,
+          "cdrskin: SORRY : Option modesty_on_drive= is not available yet.\n");
+     return(0);
+#endif
 
    } else if(strcmp(argv[i],"-multi")==0) {
 #ifdef Cdrskin_libburn_has_multI
