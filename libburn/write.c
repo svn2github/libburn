@@ -875,6 +875,14 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 	d->progress.buffered_bytes = 0;
 	d->progress.buffer_min_fill = 0xffffffff;
 
+	/* ts A70711 */
+	d->pessimistic_buffer_free = 0;
+	d->pbf_altered = 0;
+	d->pessimistic_writes = 0;
+	d->waited_writes = 0;
+	d->waited_tries = 0;
+	d->waited_usec = 0;
+
 	/* Set eventual media fill up for last track only */
 	for (sx = 0; sx < disc->sessions; sx++)
 		for (tx = 0 ; tx < disc->session[sx]->tracks; tx++) {

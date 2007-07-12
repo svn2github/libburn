@@ -368,6 +368,9 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002013a (FATAL,HIGH)   = No suitable media detected
  0x0002013b (DEBUG,HIGH)   = SCSI command indicates host or driver error
  0x0002013c (SORRY,HIGH)   = Malformed capabilities page 2Ah received
+ 0x0002013d (DEBUG,LOW)    = Waiting for free buffer space takes long time
+ 0x0002013e (SORRY,HIGH)   = Timeout with waiting for free buffer. Now disabled
+ 0x0002013f (DEBUG,LOW)    = Reporting total time spent with waiting for buffer
 
 
  libdax_audioxtr:

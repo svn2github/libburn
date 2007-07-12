@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include "error.h"
 #include "sector.h"
@@ -97,6 +98,20 @@ extern struct libdax_msgs *libdax_messenger;
                of MMC commands. Made sure that not more bytes are allowed
                for transfer than there are available. 
 */
+
+
+/* ts A70711 Trying to keep writing from clogging the SCSI driver due to
+             full buffer at burner drive: 0=waiting disabled, 1=enabled
+             These are only defaults which can be overwritten by
+             burn_drive_set_buffer_waiting()
+*/
+#define Libburn_wait_for_buffer_freE          0
+#define Libburn_wait_for_buffer_min_useC        10000
+#define Libburn_wait_for_buffer_max_useC       100000
+#define Libburn_wait_for_buffer_tio_seC     120
+#define Libburn_wait_for_buffer_min_perC     65
+#define Libburn_wait_for_buffer_max_perC     95
+
 
 static unsigned char MMC_GET_MSINFO[] =
 	{ 0x43, 0, 1, 0, 0, 0, 0, 16, 0, 0 };
@@ -434,6 +449,142 @@ void mmc_get_event(struct burn_drive *d)
 }
 
 
+/* ts A70711
+   This has become a little monster because of the creative buffer reports of
+   my LG GSA-4082B : Belated, possibly statistically dampened. But only with
+   DVD media. With CD it is ok.
+*/
+static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
+{
+	int usec= 0, need, reported_3s = 0, first_wait = 1;
+	struct timeval t0,tnow;
+	struct timezone dummy_tz;
+	double max_fac, min_fac, waiting;
+
+/* Enable to get reported waiting activities and total time.
+#define Libburn_mmc_wfb_debuG 1
+*/
+#ifdef Libburn_mmc_wfb_debuG
+	char sleeplist[32768];
+	static int buffer_still_invalid = 1;
+#endif
+
+	max_fac = ((double) d->wfb_max_percent) / 100.0;
+
+	/* Buffer info from the drive is valid only after writing has begun.
+	   Caring for buffer space makes sense mostly after max_percent of the
+	   buffer was transmitted. */
+	if (d->progress.buffered_bytes <= 0 ||
+		d->progress.buffer_capacity <= 0 ||
+		d->progress.buffered_bytes + buf->bytes <=
+ 					d->progress.buffer_capacity * max_fac)
+		return 2;
+
+#ifdef Libburn_mmc_wfb_debuG
+	if (buffer_still_invalid)
+			fprintf(stderr,
+			"\nLIBBURN_DEBUG: Buffer considered valid now\n");
+	buffer_still_invalid = 0;
+#endif
+
+	/* The pessimistic counter does not assume any buffer consumption */
+	if (d->pessimistic_buffer_free - buf->bytes >=
+		( 1.0 - max_fac) * d->progress.buffer_capacity)
+		return 1;
+
+	/* There is need to inquire the buffer fill */
+	d->pessimistic_writes++;
+	min_fac = ((double) d->wfb_min_percent) / 100.0;
+	gettimeofday(&t0,&dummy_tz);
+#ifdef Libburn_mmc_wfb_debuG
+	sleeplist[0]= 0;
+	sprintf(sleeplist,"(%d%s %d)",
+		(int) (d->pessimistic_buffer_free - buf->bytes),
+		(d->pbf_altered ? "? -" : " -"),
+		(int) ((1.0 - max_fac) * d->progress.buffer_capacity));
+#endif
+
+	while (1) {
+		if ((!first_wait) || d->pbf_altered) {
+			d->pbf_altered = 1;
+			mmc_read_buffer_capacity(d);
+		}
+#ifdef Libburn_mmc_wfb_debuG
+		if(strlen(sleeplist) < sizeof(sleeplist) - 80)
+			sprintf(sleeplist+strlen(sleeplist)," (%d%s %d)",
+			(int) (d->pessimistic_buffer_free - buf->bytes),
+			(d->pbf_altered ? "? -" : " -"),
+			(int) ((1.0 - min_fac) * d->progress.buffer_capacity));
+#endif
+		gettimeofday(&tnow,&dummy_tz);
+		waiting = (tnow.tv_sec - t0.tv_sec) +
+			  ((double) (tnow.tv_usec - t0.tv_usec)) / 1.0e6;
+		if (d->pessimistic_buffer_free - buf->bytes >=
+			(1.0 - min_fac) * d->progress.buffer_capacity) {
+#ifdef Libburn_mmc_wfb_debuG
+			if(strlen(sleeplist) >= sizeof(sleeplist) - 80)
+				strcat(sleeplist," ...");
+			sprintf(sleeplist+strlen(sleeplist)," -> %d [%.6f]",
+				(int) (
+				 d->pessimistic_buffer_free - buf->bytes -
+				 (1.0 - min_fac) * d->progress.buffer_capacity
+				), waiting);
+			fprintf(stderr,
+				"\nLIBBURN_DEBUG: sleeplist= %s\n",sleeplist);
+#endif
+			return 1;
+		}
+
+		/* Waiting is needed */
+		if (waiting >= 3 && !reported_3s) {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002013d,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
+			"Waiting for free buffer takes more than 3 seconds",
+				0,0);
+			reported_3s = 1;
+		} else if (d->wfb_timeout_sec > 0 &&
+				waiting > d->wfb_timeout_sec) {
+			d->wait_for_buffer_free = 0;
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002013d,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Timeout with waiting for free buffer. Now disabled.",
+				0,0);
+	break;
+		}
+
+		need = (1.0 - min_fac) * d->progress.buffer_capacity +
+			buf->bytes - d->pessimistic_buffer_free;
+		usec = 0;
+		if (d->nominal_write_speed > 0)
+			usec = ((double) need) / 1000.0 /
+				((double) d->nominal_write_speed) * 1.0e6;
+		else
+			usec = d->wfb_min_usec * 2;
+
+		/* >>> learn about buffer progress and adjust usec */
+
+		if (usec < d->wfb_min_usec)
+			usec = d->wfb_min_usec;
+		else if (usec > d->wfb_max_usec)
+			usec = d->wfb_max_usec;
+		usleep(usec);
+		if (d->waited_usec < 0xf0000000)
+			d->waited_usec += usec;
+		d->waited_tries++;
+		if(first_wait)
+			d->waited_writes++;
+#ifdef Libburn_mmc_wfb_debuG
+		if(strlen(sleeplist) < sizeof(sleeplist) - 80)
+			sprintf(sleeplist+strlen(sleeplist)," %d", usec);
+#endif
+		first_wait = 0;
+	}
+	return 0;
+}
+
+
 void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 {
 	struct command c;
@@ -459,6 +610,10 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	c.dir = TO_DRIVE;
 
 	d->issue_command(d, &c);
+
+	/* ts A70711 */
+	d->pessimistic_buffer_free -= buf->bytes;
+	d->pbf_altered = 1;
 }
 
 int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
@@ -505,6 +660,10 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 
 	burn_print(100, "trying to write %d at %d\n", len, start);
 
+	/* ts A70711 */
+	if(d->wait_for_buffer_free)
+		mmc_wait_for_buffer_free(d, buf);
+
 	scsi_init_command(&c, MMC_WRITE_10, sizeof(MMC_WRITE_10));
 /*
 	memcpy(c.opcode, MMC_WRITE_10, sizeof(MMC_WRITE_10));
@@ -530,6 +689,10 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 #endif /* Libburn_log_in_and_out_streaM */
 
 	d->issue_command(d, &c);
+
+	/* ts A70711 */
+	d->pessimistic_buffer_free -= buf->bytes;
+	d->pbf_altered = 1;
 
 	/* ts A61112 : react on eventual error condition */ 
 	if (c.error && c.sense[2]!=0) {
@@ -1552,6 +1715,9 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 
 	mmc_function_spy("mmc_set_speed");
 
+	/* A70711 */
+	d->nominal_write_speed = w;
+
 	/* ts A61221 : try to set DVD speed via command B6h */
 	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
 		ret = mmc_set_streaming(d, r, w);
@@ -2031,6 +2197,19 @@ void mmc_sync_cache(struct burn_drive *d)
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   "syncing cache", 0, 0);
+	if(d->wait_for_buffer_free) {
+		char msg[80];
+
+		sprintf(msg,
+			"Checked buffer %u times. Waited %u+%u times = %.3f s",
+			d->pessimistic_writes, d->waited_writes,
+			d->waited_tries - d->waited_writes,
+			((double) d->waited_usec) / 1.0e6);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002013f,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
+				msg, 0,0);
+	}
 
 	d->issue_command(d, &c);
 }
@@ -2060,6 +2239,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 	c.opcode[8] = c.dxfer_len & 0xff;
 	c.retry = 1;
 	c.page = &buf;
+	memset(c.page->data, 0, alloc_len);
 	c.page->bytes = 0;
 	c.page->sectors = 0;
 
@@ -2067,6 +2247,8 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 	d->issue_command(d, &c);
 
 	/* >>> ??? error diagnostics */
+	if (c.error)
+		return 0;
 
 	data = c.page->data;
 
@@ -2074,6 +2256,8 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 			(data[4]<<24)|(data[5]<<16)|(data[6]<<8)|data[7];
 	d->progress.buffer_available =
 			(data[8]<<24)|(data[9]<<16)|(data[10]<<8)|data[11];
+	d->pessimistic_buffer_free = d->progress.buffer_available;
+	d->pbf_altered = 0;
 	if (d->progress.buffered_bytes >= d->progress.buffer_capacity){
 		double fill;
 
@@ -2473,59 +2657,6 @@ int mmc_get_write_performance(struct burn_drive *d)
 }
 
 
-/* ts A61021 : the mmc specific part of sg.c:enumerate_common()
-*/
-int mmc_setup_drive(struct burn_drive *d)
-{
-	d->read_atip = mmc_read_atip;
-	d->read_toc = mmc_read_toc;
-	d->write = mmc_write;
-	d->erase = mmc_erase;
-	d->read_sectors = mmc_read_sectors;
-	d->perform_opc = mmc_perform_opc;
-	d->set_speed = mmc_set_speed;
-	d->send_cue_sheet = mmc_send_cue_sheet;
-	d->reserve_track = mmc_reserve_track;
-	d->sync_cache = mmc_sync_cache;
-	d->get_nwa = mmc_get_nwa;
-	d->read_multi_session_c1 = mmc_read_multi_session_c1;
-	d->close_disc = mmc_close_disc;
-	d->close_session = mmc_close_session;
-	d->close_track_session = mmc_close;
-	d->read_buffer_capacity = mmc_read_buffer_capacity;
-	d->format_unit = mmc_format_unit;
-	d->read_format_capacities = mmc_read_format_capacities;
-
-
-	/* ts A70302 */
-	d->phys_if_std = -1;
-	d->phys_if_name[0] = 0;
-
-	/* ts A61020 */
-	d->start_lba = -2000000000;
-	d->end_lba = -2000000000;
-
-	/* ts A61201 - A70223*/
-	d->erasable = 0;
-	d->current_profile = -1;
-	d->current_profile_text[0] = 0;
-	d->current_is_cd_profile = 0;
-	d->current_is_supported_profile = 0;
-	d->current_has_feat21h = 0;
-	d->current_feat21h_link_size = -1;
-	d->current_feat2fh_byte4 = -1;
-	d->needs_close_session = 0;
-	d->bg_format_status = -1;
-	d->num_format_descr = 0;
-	d->complete_sessions = 0;
-	d->last_track_no = 1;
-	d->media_capacity_remaining = 0;
-	d->media_lba_limit = 0;
-
-	return 1;
-}
-
-
 /* ts A61229 : outsourced from spc_select_write_params() */
 /* Note: Page data is not zeroed here to allow preset defaults. Thus
            memset(pd, 0, 2 + d->mdata->write_page_length);
@@ -2632,4 +2763,71 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 	}
 	return 1;
 }
+
+
+/* ts A61021 : the mmc specific part of sg.c:enumerate_common()
+*/
+int mmc_setup_drive(struct burn_drive *d)
+{
+	d->read_atip = mmc_read_atip;
+	d->read_toc = mmc_read_toc;
+	d->write = mmc_write;
+	d->erase = mmc_erase;
+	d->read_sectors = mmc_read_sectors;
+	d->perform_opc = mmc_perform_opc;
+	d->set_speed = mmc_set_speed;
+	d->send_cue_sheet = mmc_send_cue_sheet;
+	d->reserve_track = mmc_reserve_track;
+	d->sync_cache = mmc_sync_cache;
+	d->get_nwa = mmc_get_nwa;
+	d->read_multi_session_c1 = mmc_read_multi_session_c1;
+	d->close_disc = mmc_close_disc;
+	d->close_session = mmc_close_session;
+	d->close_track_session = mmc_close;
+	d->read_buffer_capacity = mmc_read_buffer_capacity;
+	d->format_unit = mmc_format_unit;
+	d->read_format_capacities = mmc_read_format_capacities;
+
+
+	/* ts A70302 */
+	d->phys_if_std = -1;
+	d->phys_if_name[0] = 0;
+
+	/* ts A61020 */
+	d->start_lba = -2000000000;
+	d->end_lba = -2000000000;
+
+	/* ts A61201 - A70223*/
+	d->erasable = 0;
+	d->current_profile = -1;
+	d->current_profile_text[0] = 0;
+	d->current_is_cd_profile = 0;
+	d->current_is_supported_profile = 0;
+	d->current_has_feat21h = 0;
+	d->current_feat21h_link_size = -1;
+	d->current_feat2fh_byte4 = -1;
+	d->needs_close_session = 0;
+	d->bg_format_status = -1;
+	d->num_format_descr = 0;
+	d->complete_sessions = 0;
+	d->last_track_no = 1;
+	d->media_capacity_remaining = 0;
+	d->media_lba_limit = 0;
+	d->pessimistic_buffer_free = 0;
+	d->pbf_altered = 0;
+	d->wait_for_buffer_free = Libburn_wait_for_buffer_freE;
+	d->nominal_write_speed = 0;
+	d->pessimistic_writes = 0;
+	d->waited_writes = 0;
+	d->waited_tries = 0;
+	d->waited_usec = 0;
+	d->wfb_min_usec = Libburn_wait_for_buffer_min_useC;
+	d->wfb_max_usec = Libburn_wait_for_buffer_max_useC;
+	d->wfb_timeout_sec = Libburn_wait_for_buffer_tio_seC;
+	d->wfb_min_percent = Libburn_wait_for_buffer_min_perC;
+	d->wfb_max_percent = Libburn_wait_for_buffer_max_perC;
+
+	return 1;
+}
+
 

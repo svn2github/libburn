@@ -224,6 +224,21 @@ struct burn_drive
 	struct buffer *buffer;
 	struct burn_progress progress;
 
+	/* ts A70711 : keeping an eye on the drive buffer */
+	off_t pessimistic_buffer_free;
+	int pbf_altered;
+	int wait_for_buffer_free;
+	int nominal_write_speed;
+	unsigned wfb_min_usec;
+	unsigned wfb_max_usec;
+	unsigned wfb_timeout_sec;
+	unsigned wfb_min_percent;
+	unsigned wfb_max_percent;
+	unsigned pessimistic_writes;
+	unsigned waited_writes;
+	unsigned waited_tries;
+	unsigned waited_usec;
+
 	volatile int cancel;
 	volatile enum burn_drive_status busy;
 /* transport functions */
