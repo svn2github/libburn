@@ -1614,6 +1614,49 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 }
 
 
+/* ts A70713 : API function */
+int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
+			struct burn_speed_descriptor **best_descr, int flag)
+{
+	struct burn_speed_descriptor *sd;
+	int best_speed = 0, best_lba = 0, source= 2, speed;
+
+	if (flag & 2)
+		source = -1;
+
+	*best_descr = NULL;
+	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
+		if ((source >= 0 && sd->source != source) || 
+		    sd->write_speed <= 0)
+	continue;
+		if (flag & 1)
+			speed = sd->read_speed;
+		else
+			speed = sd->write_speed;
+		if (speed_goal <= 0) {
+			if ((source == 2 && sd->end_lba > best_lba) ||
+			    ((source !=2 || sd->end_lba == best_lba) &&
+			     speed > best_speed)) {
+				best_lba = sd->end_lba;
+				best_speed = speed;
+				*best_descr = sd;
+			}
+		} else if (speed <= speed_goal) {
+			if (speed > best_speed) {
+				best_speed = speed;
+				*best_descr = sd;
+			}
+		}
+	}
+	if (d->current_is_cd_profile && *best_descr == NULL && ! (flag & 2))
+		/* Mode page 2Ah is deprecated in MMC-5 although all known
+		   burners still support it with CD media. */
+		return burn_drive_get_best_speed(d, speed_goal, best_descr,
+						 flag | 2);
+	return (*best_descr != NULL);
+}
+
+
 /* ts A61226 : API function */
 int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list)
 {

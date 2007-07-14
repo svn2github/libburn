@@ -1555,6 +1555,24 @@ int burn_drive_get_read_speed(struct burn_drive *d);
 int burn_drive_get_speedlist(struct burn_drive *d,
                              struct burn_speed_descriptor **speed_list);
 
+/* ts A70713 */
+/** Look up the fastest speed descriptor which is not faster than the given
+    speed_goal. If it is 0, then the fastest one is chosen among the
+    descriptors with the highest end_lba. Parameter flag decides wether the
+    speed goal means write speed or read speed.
+    @param d Drive to query
+    @param speed_goal Upper limit for speed, 0=search for maximum speed
+    @param best_descr Result of the search, NULL if no match
+    @param flag Bitfield for control purposes
+                bit0= look for best read speed rather than write speed
+                bit1= look for any source type (else look for source==2 first
+	              and for any other source type only with CD media)
+    @return >0 indicates a valid best_descr, 0 = no valid best_descr
+*/
+int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
+                        struct burn_speed_descriptor **best_descr, int flag);
+
+
 /* ts A61226 */
 /** Dispose a speed descriptor list copy which was obtained by
     burn_drive_get_speedlist().
