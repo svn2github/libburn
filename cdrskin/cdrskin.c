@@ -132,6 +132,7 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 #define Cdrskin_libburn_has_set_waitinG 1
+#define Cdrskin_libburn_has_get_best_speeD 1
 
 #endif /* Cdrskin_libburn_0_3_7 */
 
@@ -2161,6 +2162,10 @@ set_dev:;
       "blanking and burning see output of option -help rather than --help.\n");
      printf("Non-cdrecord options:\n");
      printf(" --abort_handler    do not leave the drive in busy state\n");
+#ifdef Cdrskin_libburn_has_get_best_speeD
+     printf(
+     " --adjust_speed_to_drive  set only speeds offered by drive and media\n");
+#endif
      printf(
         " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
      printf(
@@ -2583,6 +2588,7 @@ struct CdrskiN {
  /** Job: what to do, plus some parameters. */
  int verbosity;
  double x_speed;
+ int adjust_speed_to_drive;
  int gracetime;
  int dummy_mode;
  int force_is_set;
@@ -2736,6 +2742,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->preskin= preskin;
  o->verbosity= preskin->verbosity;
  o->x_speed= -1.0;
+ o->adjust_speed_to_drive= 0;
  o->gracetime= 0;
  o->dummy_mode= 0;
  o->force_is_set= 0;
@@ -2963,6 +2970,18 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(fprintf(stderr,"cdrskin_debug: k_speed= %d\n",k_speed));
+
+#ifdef Cdrskin_libburn_has_get_best_speeD
+ if(skin->adjust_speed_to_drive && !skin->force_is_set) {
+   struct burn_speed_descriptor *best_descr;
+   burn_drive_get_best_speed(skin->drives[skin->driveno].drive,k_speed,
+                             &best_descr,0);
+   if(best_descr!=NULL) {
+     k_speed= best_descr->write_speed;
+     skin->x_speed = ((double) k_speed) / Cdrskin_libburn_speed_factoR;
+   }  
+ }
+#endif /* Cdrskin_libburn_has_get_best_speeD */
 
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
 
@@ -5259,6 +5278,8 @@ burn_failed:;
    {ret= 1; goto ex;}
  }
 
+ Cdrskin_adjust_speed(skin,0);
+
 #ifndef Cdrskin_extra_leaN
  Cdrskin_wait_before_action(skin,0);
  if(needs_early_fifo_fill==1)
@@ -5272,8 +5293,6 @@ fifo_filling_failed:;
  }
 
 #endif /* ! Cdrskin_extra_leaN */
-
- Cdrskin_adjust_speed(skin,0);
 
  if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0)
    printf("Starting new track at sector: %d\n",nwa);
@@ -5812,6 +5831,10 @@ set_abort_max_wait:;
             skin->abort_max_wait);
      }
 
+#ifdef Cdrskin_libburn_has_get_best_speeD
+   } else if(strcmp(argv[i],"--adjust_speed_to_drive")==0) {
+     skin->adjust_speed_to_drive= 1;
+#endif
 
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      /* is handled in Cdrpreskin_setup() */;
