@@ -1627,21 +1627,40 @@ void mmc_perform_opc(struct burn_drive *d)
 
 /* ts A61221 : Learned much from dvd+rw-tools-7.0 set_speed_B6h() but then
    made own experiments on base of mmc5r03c.pdf 6.8.3 and 6.39 in the hope
-   to achieve a leaner solution */
+   to achieve a leaner solution
+   ts A70712 : That leaner solution does not suffice for my LG GSA-4082B.
+   Meanwhile there is a speed descriptor list anyway.
+*/
 int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 {
 	struct buffer buf;
 	struct command c;
-	int b, end_lba;
+	int b, end_lba = 0;
 	char msg[160];
 	unsigned char *pd;
+	struct burn_speed_descriptor *best_sd = NULL;
 
 	mmc_function_spy("mmc_set_streaming");
 
-	if (r_speed <= 0)
-		r_speed = 0x10000000; /* ~ 2 TB/s */
-	if (w_speed <= 0)
-		w_speed = 0x10000000; /* ~ 2 TB/s */
+	if (r_speed <= 0 || w_speed <= 0) {
+		/* ts A70712 : now searching for best speed descriptor */
+		if (w_speed > 0 && r_speed <= 0) 
+			burn_drive_get_best_speed(d, r_speed, &best_sd, 1);
+		else
+			burn_drive_get_best_speed(d, w_speed, &best_sd, 0);
+		if (best_sd != NULL) {
+			w_speed = best_sd->write_speed;
+			d->nominal_write_speed = w_speed;
+			r_speed = best_sd->read_speed;
+			end_lba = best_sd->end_lba;
+		} else {
+			if (w_speed <= 0)
+				w_speed = 0x10000000; /* ~ 2 TB/s */
+			if (r_speed <= 0)
+				r_speed = 0x10000000; /* ~ 2 TB/s */
+		}
+	}
+
 	scsi_init_command(&c, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
 /*
 	c.oplen = sizeof(MMC_SET_STREAMING);
@@ -1662,10 +1681,12 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 	*/
 	pd[0] = 0; /* WRC=0 (Default Rotation Control), RDD=Exact=RA=0 */
 
-	/* Default computed from 4.7e9 */
-	end_lba = 2294921 - 1;
-	if (d->mdata->max_end_lba > 0)
-		end_lba = d->mdata->max_end_lba - 1;
+	if (end_lba == 0) {
+		/* Default computed from 4.7e9 */
+		end_lba = 2294921 - 1;
+		if (d->mdata->max_end_lba > 0)
+			end_lba = d->mdata->max_end_lba - 1;
+	}
 
 	sprintf(msg, "mmc_set_streaming: end_lba=%d ,  r=%d ,  w=%d",
 		end_lba, r_speed, w_speed);
