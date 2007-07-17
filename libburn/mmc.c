@@ -1631,35 +1631,16 @@ void mmc_perform_opc(struct burn_drive *d)
    ts A70712 : That leaner solution does not suffice for my LG GSA-4082B.
    Meanwhile there is a speed descriptor list anyway.
 */
-int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
+int mmc_set_streaming(struct burn_drive *d,
+			 int r_speed, int w_speed, int end_lba)
 {
 	struct buffer buf;
 	struct command c;
-	int b, end_lba = 0;
+	int b, eff_end_lba;
 	char msg[160];
 	unsigned char *pd;
-	struct burn_speed_descriptor *best_sd = NULL;
 
 	mmc_function_spy("mmc_set_streaming");
-
-	if (r_speed <= 0 || w_speed <= 0) {
-		/* ts A70712 : now searching for best speed descriptor */
-		if (w_speed > 0 && r_speed <= 0) 
-			burn_drive_get_best_speed(d, r_speed, &best_sd, 1);
-		else
-			burn_drive_get_best_speed(d, w_speed, &best_sd, 0);
-		if (best_sd != NULL) {
-			w_speed = best_sd->write_speed;
-			d->nominal_write_speed = w_speed;
-			r_speed = best_sd->read_speed;
-			end_lba = best_sd->end_lba;
-		} else {
-			if (w_speed <= 0)
-				w_speed = 0x10000000; /* ~ 2 TB/s */
-			if (r_speed <= 0)
-				r_speed = 0x10000000; /* ~ 2 TB/s */
-		}
-	}
 
 	scsi_init_command(&c, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
 /*
@@ -1676,17 +1657,23 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 	memset(c.page->data, 0, c.page->bytes);
 	pd = c.page->data;
 
-	/* Trying to avoid inquiry of available speed descriptors but rather
-	   to allow the drive to use the liberties of Exact==0.
-	*/
 	pd[0] = 0; /* WRC=0 (Default Rotation Control), RDD=Exact=RA=0 */
 
+	if (w_speed == 0)
+		w_speed = 0x10000000; /* ~ 2 TB/s */
+	else if (w_speed < 0)
+		w_speed = 177; /* 1x CD */
+	if (r_speed == 0)
+		r_speed = 0x10000000; /* ~ 2 TB/s */
+	else if (r_speed < 0)
+		r_speed = 177; /* 1x CD */
 	if (end_lba == 0) {
 		/* Default computed from 4.7e9 */
-		end_lba = 2294921 - 1;
+		eff_end_lba = 2294921 - 1;
 		if (d->mdata->max_end_lba > 0)
-			end_lba = d->mdata->max_end_lba - 1;
-	}
+			eff_end_lba = d->mdata->max_end_lba - 1;
+	} else
+		eff_end_lba = end_lba;
 
 	sprintf(msg, "mmc_set_streaming: end_lba=%d ,  r=%d ,  w=%d",
 		end_lba, r_speed, w_speed);
@@ -1732,26 +1719,46 @@ int mmc_set_streaming(struct burn_drive *d, int r_speed, int w_speed)
 void mmc_set_speed(struct burn_drive *d, int r, int w)
 {
 	struct command c;
-	int ret;
+	int ret, end_lba = 0;
+	struct burn_speed_descriptor *best_sd = NULL;
 
 	mmc_function_spy("mmc_set_speed");
+
+	if (r <= 0 || w <= 0) {
+		/* ts A70712 : now searching for best speed descriptor */
+		if (w > 0 && r <= 0) 
+			burn_drive_get_best_speed(d, r, &best_sd, 1);
+		else
+			burn_drive_get_best_speed(d, w, &best_sd, 0);
+		if (best_sd != NULL) {
+			w = best_sd->write_speed;
+			d->nominal_write_speed = w;
+			r = best_sd->read_speed;
+			end_lba = best_sd->end_lba;
+		}
+	}
 
 	/* A70711 */
 	d->nominal_write_speed = w;
 
 	/* ts A61221 : try to set DVD speed via command B6h */
 	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
-		ret = mmc_set_streaming(d, r, w);
+		ret = mmc_set_streaming(d, r, w, end_lba);
 		if (ret != 0)
 			return; /* success or really fatal failure */ 
 	}
 
 	/* ts A61112 : MMC standards prescribe FFFFh as max speed.
-			But libburn.h prescribes 0. */
-	if (r<=0 || r>0xffff)
+			But libburn.h prescribes 0.
+	   ts A70715 : <0 now means minimum speed */
+	if (r == 0 || r > 0xffff)
 		r = 0xffff;
-	if (w<=0 || w>0xffff)
+	else if (r < 0)
+		r = 177; /* 1x CD */
+	if (w == 0 || w > 0xffff)
 		w = 0xffff;
+	else if (w < 0)
+		w = 177; /* 1x CD */
 
 	scsi_init_command(&c, MMC_SET_SPEED, sizeof(MMC_SET_SPEED));
 /*

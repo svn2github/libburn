@@ -1623,17 +1623,23 @@ int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
 
 	if (flag & 2)
 		source = -1;
-
+	if (speed_goal < 0)
+		best_speed = 2000000000;
 	*best_descr = NULL;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
-		if ((source >= 0 && sd->source != source) || 
-		    sd->write_speed <= 0)
-	continue;
 		if (flag & 1)
 			speed = sd->read_speed;
 		else
 			speed = sd->write_speed;
-		if (speed_goal <= 0) {
+		if ((source >= 0 && sd->source != source) || 
+		    speed <= 0)
+	continue;
+		if (speed_goal < 0) {
+			if (speed < best_speed) {
+				best_speed = speed;
+				*best_descr = sd;
+			}
+		} else if (speed_goal == 0) {
 			if ((source == 2 && sd->end_lba > best_lba) ||
 			    ((source !=2 || sd->end_lba == best_lba) &&
 			     speed > best_speed)) {

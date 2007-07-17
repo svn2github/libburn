@@ -2962,9 +2962,13 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 
  if(skin->x_speed<0)
    k_speed= 0; /* libburn.h promises 0 to be max speed. */
- else if(skin->x_speed==0) /* cdrecord specifies 0 as minimum speed. */
+ else if(skin->x_speed==0) { /* cdrecord specifies 0 as minimum speed. */
+#ifdef Cdrskin_libburn_has_get_best_speeD
+   k_speed= -1;
+#else
    k_speed= Cdrskin_libburn_speed_factoR+Cdrskin_libburn_speed_addoN;
- else
+#endif
+ } else
    k_speed= skin->x_speed*Cdrskin_libburn_speed_factoR +
             Cdrskin_libburn_speed_addoN;
 

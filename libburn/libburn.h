@@ -1292,8 +1292,8 @@ int burn_track_get_counters(struct burn_track *t,
     Note: "k" is 1000, not 1024. 1xCD = 176.4 k/s, 1xDVD = 1385 k/s.
           Fractional speeds should be rounded up. Like 4xCD = 706.
     @param d The drive to set speed for
-    @param read Read speed in k/s (0 is max).
-    @param write Write speed in k/s (0 is max). 
+    @param read Read speed in k/s (0 is max, -1 is min).
+    @param write Write speed in k/s (0 is max, -1 is min). 
 */
 void burn_drive_set_speed(struct burn_drive *d, int read, int write);
 
@@ -1558,10 +1558,12 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 /* ts A70713 */
 /** Look up the fastest speed descriptor which is not faster than the given
     speed_goal. If it is 0, then the fastest one is chosen among the
-    descriptors with the highest end_lba. Parameter flag decides wether the
-    speed goal means write speed or read speed.
+    descriptors with the highest end_lba. If it is -1 then the slowest speed
+    descriptor is chosen regardless of end_lba. Parameter flag decides wether
+    the speed goal means write speed or read speed.
     @param d Drive to query
-    @param speed_goal Upper limit for speed, 0=search for maximum speed
+    @param speed_goal Upper limit for speed,
+                      0=search for maximum speed , -1 search for minimum speed
     @param best_descr Result of the search, NULL if no match
     @param flag Bitfield for control purposes
                 bit0= look for best read speed rather than write speed
