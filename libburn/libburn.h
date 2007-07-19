@@ -1310,9 +1310,8 @@ void burn_drive_set_speed(struct burn_drive *d, int read, int write);
     This may allow the driver to operate on other devices, e.g. a disk from
     which to read the input for writing. On the other hand, this checking might
     reduce maximum throughput to the drive or even get misled by faulty buffer
-    fill replies from the drive. It is advised not to set speed to 0 (= max)
-    together with enabling buffer waiting.
-    If a setting parameters is < 0, then this setting will stay unchanged
+    fill replies from the drive.
+    If a setting parameter is < 0, then this setting will stay unchanged
     by the call.
     Known burner or media specific pitfalls:
     To have max_percent larger than the burner's best reported buffer fill has

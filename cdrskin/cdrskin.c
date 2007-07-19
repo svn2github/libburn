@@ -2990,8 +2990,7 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
 
 #ifdef Cdrskin_libburn_has_set_waitinG
- if(k_speed>0)
-   modesty= skin->modesty_on_drive;
+ modesty= skin->modesty_on_drive;
  burn_drive_set_buffer_waiting(skin->drives[skin->driveno].drive,
                                modesty, -1, -1, -1,
                                skin->min_buffer_percent,
