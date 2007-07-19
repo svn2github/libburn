@@ -1164,27 +1164,33 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    *fd= -1;
 
 #ifdef Cdrskin_libburn_has_convert_fs_adR
-   if(1) { char adr[BURN_DRIVE_ADR_LEN],*device_adr,*raw_adr;
+   if(1) {
+     char adr[BURN_DRIVE_ADR_LEN],*device_adr,*raw_adr;
+     int no_convert_fs_adr;
      int Cdrskin_get_device_adr(struct CdrskiN *skin,
-                           char **device_adr, char **raw_adr, int flag);
+           char **device_adr, char **raw_adr, int *no_convert_fs_adr,int flag);
 
-     if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
-/*     
-       fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
-               track->source_path,adr);
-*/
-       Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,0);
+     Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
+                            &no_convert_fs_adr,0);
 /*    
-       fprintf(stderr,"cdrskin: DEBUG : device_adr='%s' , raw_adr='%s'\n",
-               device_adr, raw_adr);
+     fprintf(stderr,
+             "cdrskin: DEBUG : device_adr='%s' , raw_adr='%s' , ncfs=%d\n",
+             device_adr, raw_adr, no_convert_fs_adr);
 */
-       if(strcmp(device_adr,adr)==0) {
-         fprintf(stderr,
+     if(!no_convert_fs_adr) {
+       if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
+/*     
+         fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
+                 track->source_path,adr);
+*/
+         if(strcmp(device_adr,adr)==0) {
+           fprintf(stderr,
               "cdrskin: FATAL : track source address leads to burner drive\n");
-         fprintf(stderr,
-              "cdrskin:       : dev='%s' -> '%s' , track source '%s'\n",
+           fprintf(stderr,
+              "cdrskin:       : dev='%s' -> '%s' <- track source '%s'\n",
               raw_adr, device_adr, track->source_path);
-         return(0);
+           return(0);
+         }
        }
      }
 /*
@@ -2900,11 +2906,12 @@ int Cdrskin_set_msinfo_fd(struct CdrskiN *skin, int result_fd, int flag)
     address of the drive, raw_adr is the address as given by the user.
 */
 int Cdrskin_get_device_adr(struct CdrskiN *skin,
-                           char **device_adr, char **raw_adr, int flag)
+           char **device_adr, char **raw_adr, int *no_convert_fs_adr, int flag)
 {
  burn_drive_get_adr(&skin->drives[skin->driveno],skin->device_adr);
  *device_adr= skin->device_adr;
  *raw_adr= skin->preskin->raw_device_adr;
+ *no_convert_fs_adr= skin->preskin->no_convert_fs_adr;
  return(1); 
 }
 
