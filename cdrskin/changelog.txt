@@ -3767,10 +3767,112 @@ Fixed low transaction size introduced by cooperation of revisions 855 and 860
 ------------------------------------ cycle  - cdrskin-0.3.7 - 2007.05.28.192853
 * Refusal to perform -dummy runs on media which cannot simulate burning
 
-  []
+29 May 2007  [865]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.7 cycle
+
+8 Jun 2007  [873]
+- cdrskin/doener_150x200_tr.gif
+- cdrskin/doener_150x200_tr_octx.gif
++ cdrskin/doener_150x200_tr.png
++ cdrskin/doener_150x200_tr_octx.png
+cdrskin/cdrskin_eng.html
+Changed logo graphics format from GIF to PNG
+
+8 Jun 2007  [874]
+cdrskin/wiki_plain.txt
+cdrskin/add_ts_changes_to_libburn_0_3_6
+cdrskin/add_ts_changes_to_libburn_0_3_7
+Took into respect change of logo graphics format
+
+8 Jun 2007  [875]
+cdrskin/cdrskin.1
+Prevented macro interpretation of text snippet ".wav"
+
+10 Jun 2007  [876]
+cdrskin/README 
+cdrskin/cdrskin.1
+Clarified MB to MiB if compatibility allows it (ticket 100)
+
+10 Jun 2007  [877]
+cdrskin/cdrskin.1
+doc/cookbook.txt
+test/libburner.c
+Changed "KB" to "kiB"
+
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.06.10.081025
+
+
+2007.07.12.162856  [882]
+libburn/transport.h
+libburn/mmc.c
+libburn/write.c
+libburn/libdax_msgs.h
+Preparations to avoid writing which will not fit in drive buffer
+
+2007.07.12.171727  [883]
+libburn/libburn.h
+libburn/drive.c
+New API-Function burn_drive_set_buffer_waiting() 
+
+2007.07.12.171832  [884]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New options modesty_on_drive= and minbuf=
+
+2007.07.14.111614  [885]
+libburn/libburn.h
+libburn/drive.c
+New API function burn_drive_get_best_speed()
+
+2007.07.14.112029  [886]
+libburn/mmc.c
+Only set realistic maximum DVD speeds (for my LG GSA which fails otherwise)
+
+2007.07.14.112326  [887]
+cdrskin/cdrskin.c
+Experimental option --adjust_speed_to_drive. Caution: May vanish soon.
+
+17 Jul 2007  [888]
+cdrskin/cdrskin.1
+Clarification on option speed=
+
+2007.07.17.085823  [889]
+libburn/libburn.h
+libburn/drive.c
+libburn/mmc.c
+cdrskin/cdrskin.c
+Implemented minimum speed in burn_drive_set_speed()
+
+2007.07.19.072434  [890]
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Removed ban against speed 0 with burn_drive_set_buffer_waiting()
+
+2007.07.19.143139  [891]
+cdrskin/cdrskin.c
+Trying to prevent usage of burn drive as track source
+
+2007.07.19.171947  [892]
+cdrskin/cdrskin.c
+Avoided new track-drive test with option --no_convert_fs_adr
+
+19 Jul 2007  [893]
+cdrskin/cdrskin.1
+Documented option --adjust_speed_to_drive (i.e. it will stay)
+
+19 Jul 2007  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.7 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.07.19
+* New option modesty_on_drive= may help with hda -> hdb burns
+* New option minbuf= , cdrecord compatible frontend of modesty_on_drive=
+* New option --adjust_speed_to_drive
+* Precautions against using the burner drive as track source
 
 
 ===============================================================================
@@ -3782,10 +3884,6 @@ cdrskin/changelog.txt
 Next cdrskin-0.3.7 cycle
 
 
-
-cdrskin: prevent usage of burn drive as track source
-
-Think about cdrecord option minbuf= for simultaneous operation on hdc and hdd
 
 
 What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
@@ -3827,5 +3925,5 @@ Clear outdated persistent read buffer after small CD image was read (ticket 57)
 
 ===============================================================================
                    This is the dirty end of the todo list.
-          For most recent changelog entries scroll up about 100 lines.
+          The recent changelog entries are above the headline "TODO".
 ===============================================================================
