@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "July 12, 2007"
+.TH CDRSKIN 1 "July 19, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -594,6 +594,12 @@ somebody who had a look into the program sourcecode.
 .PP
 Alphabetical list of options which are genuine to cdrskin and intended for
 normal use:
+.TP
+.BI \--adjust_speed_to_drive
+Curb explicitely given speed= values to the maximum which is announced by the
+drive for the loaded media. By default, such an adjustment is only made with
+pseudo-speeds 0 and -1 whereas speed settings > 0 are sent unchanged to the
+drive which will then choose an appropriate speed on its own.
 .TP
 .BI \--allow_setuid
 Disable the loud warning about insecure discrepance between login user and
