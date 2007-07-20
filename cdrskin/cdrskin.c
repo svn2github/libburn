@@ -86,7 +86,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.3.7"
+#define Cdrskin_prog_versioN "0.3.9"
 #endif
 
 /** The source code release timestamp */
@@ -119,25 +119,25 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_3_6
-#define Cdrskin_libburn_versioN "0.3.6"
+#ifdef Cdrskin_libburn_0_3_8
+#define Cdrskin_libburn_versioN "0.3.8"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_3_6 */
+#endif /* Cdrskin_libburn_0_3_8 */
 
-#ifdef Cdrskin_libburn_0_3_7
-#define Cdrskin_libburn_versioN "0.3.7"
+#ifdef Cdrskin_libburn_0_3_9
+#define Cdrskin_libburn_versioN "0.3.9"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
-#define Cdrskin_libburn_has_set_waitinG 1
-#define Cdrskin_libburn_has_get_best_speeD 1
 
-#endif /* Cdrskin_libburn_0_3_7 */
+/* - no novelty switch macros yet - */
+
+#endif /* Cdrskin_libburn_0_3_9 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_versioN "0.3.6"
+#define Cdrskin_libburn_versioN "0.3.8"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
@@ -193,6 +193,10 @@ or
 /* 0.3.6 */
 #define Cdrskin_libburn_preset_device_familY 1
 #define Cdrskin_libburn_has_track_set_sizE 1
+
+/* 0.3.8 */
+#define Cdrskin_libburn_has_set_waitinG 1
+#define Cdrskin_libburn_has_get_best_speeD 1
 
 #ifdef Cdrskin_new_api_tesT
 

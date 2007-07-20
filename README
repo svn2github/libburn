@@ -127,7 +127,7 @@ Project history as far as known to me:
   It has meanwhile moved to use vanilla libburn.pykix.org , though.
   Version 0.1.4 constitutes the first release of this kind.
 
-- In Juli 2006 our team mate Mario Danic announced a revival of libburn
+- In July 2006 our team mate Mario Danic announced a revival of libburn
   which by about nearly everybody else was perceived as unfriendly fork.
   Derek Foreman four days later posted a message which expressed his
   discontent.
@@ -197,8 +197,13 @@ Project history as far as known to me:
   DVD media. Code for double layer DVD+/-R is implemented but awaits a tester
   yet.
 
-- 23th April 2000 version 0.3.6 follows the unanimous opinion of Linux kernel
+- 23th April 2007 version 0.3.6 follows the unanimous opinion of Linux kernel
   people that one should not use /dev/sg on kernel 2.6.
+
+- 31st July 2007 version 0.3.8 marks the first anniversary of libburn revival.
+  We look back on improved stability, a substantially extended list of media
+  and write modes, and better protection against typical user mishaps.
+
 
 ------------------------------------------------------------------------------
 

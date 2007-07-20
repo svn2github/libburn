@@ -56,7 +56,7 @@ and to MMC-5 for DVD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.3.6</DT>
+<DT>libburn-0.3.8</DT>
 <DD>(by Derek Foreman, Ben Jansens, and team of libburnia.pykix.org)</DD>
 <DD>transfers data to CD and DVD</DD>
 </DL>
@@ -175,8 +175,8 @@ Testers wanted who are willing to risk some double layer DVD media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.3.6.pl00.tar.gz">cdrskin-0.3.6.pl00.tar.gz</A>
-(605 KB).
+<DD><A HREF="cdrskin-0.3.8.pl00.tar.gz">cdrskin-0.3.8.pl00.tar.gz</A>
+(615 KB).
 </DD>
 <DD>
 The "stable" cdrskin tarballs are source code identical with "stable" 
@@ -186,14 +186,14 @@ cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.3.6.pl00-x86-suse9_0.tar.gz">
-cdrskin_0.3.6.pl00-x86-suse9_0.tar.gz</A>, (90 KB),
+<DD><A HREF="cdrskin_0.3.8.pl00-x86-suse9_0.tar.gz">
+cdrskin_0.3.8.pl00-x86-suse9_0.tar.gz</A>, (90 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.3.6.pl00-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.6.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
+<DD><A HREF="cdrskin_0.3.8.pl00-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.8.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -222,14 +222,16 @@ cdrskin_0.3.6.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
 <P>
 Enhancements towards previous stable version cdrskin-0.3.4:
 <UL>
-<LI>Use of /dev/srN rather than /dev/sgN on Linux >= 2.6</LI>
-<LI>Option drive_scsi_dev_family=sr|scd|sg to select explicitely</LI>
-<LI>Option -isosize is supported now</LI>
-<LI>DVD+R now get finalized (if not -multi is given)</LI>
+<LI>Now able to cope with the peculiarities of Linux 2.4 USB</LI>
+<LI>Refusal to perform -dummy runs on media which cannot simulate burning</LI>
+<LI>Precautions against using the burner drive as track source</LI>
+<LI>New option modesty_on_drive= may help with hda -> hdb burns</LI>
+<LI>New option minbuf= , cdrecord compatible frontend of modesty_on_drive=</LI>
+<LI>New option --adjust_speed_to_drive</LI>
 </UL>
 
 <!--
- Bug fixes towards cdrskin-0.3.6.pl00:
+ Bug fixes towards cdrskin-0.3.8.pl00:
 <UL>
 <LI>none yet</LI>
 </UL>
@@ -241,23 +243,17 @@ Enhancements towards previous stable version cdrskin-0.3.4:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.3.7 :</H3></DT>
-<DD>Enhancements towards stable version 0.3.6.pl00:
+<DT><H3>Development snapshot, version 0.3.9 :</H3></DT>
+<DD>Enhancements towards stable version 0.3.8.pl00:
 <UL>
-<LI>Now able to cope with the peculiarities of Linux 2.4 USB</LI>
-<LI>Refusal to perform -dummy runs on media which cannot simulate burning</LI>
-<LI>Precautions against using the burner drive as track source</LI>
-<LI>New option modesty_on_drive= may help with hda -> hdb burns</LI>
-<LI>New option minbuf= , cdrecord compatible frontend of modesty_on_drive=</LI>
-<LI>New option --adjust_speed_to_drive</LI>
-
+<LI>none yet</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.3.7</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.7 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.7 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.7)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.3.9</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.9 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.9 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.9)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia.pykix.org"> libburnia.pykix.org</A></DT>
@@ -277,15 +273,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.3.7.tar.gz">cdrskin-0.3.7.tar.gz</A>
-(605 KB).
+<A HREF="cdrskin-0.3.9.tar.gz">cdrskin-0.3.9.tar.gz</A>
+(615 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.3.7-x86-suse9_0.tar.gz">
-cdrskin_0.3.7-x86-suse9_0.tar.gz</A>, (90 KB).
+<DD><A HREF="cdrskin_0.3.9-x86-suse9_0.tar.gz">
+cdrskin_0.3.9-x86-suse9_0.tar.gz</A>, (90 KB).
 </DD>
-<DD><A HREF="cdrskin_0.3.7-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.7-x86-suse9_0-static.tar.gz</A>, (285 KB)
+<DD><A HREF="cdrskin_0.3.9-x86-suse9_0-static.tar.gz">
+cdrskin_0.3.9-x86-suse9_0-static.tar.gz</A>, (290 KB)
 </DD>
 </DL>
 </P>
@@ -356,7 +352,7 @@ is a GUI frontend which uses cdrecord for CD burning.)
 <DD>$ <KBD><B>export SCDBACKUP_USE_CDRSKIN=1</B></KBD></DD>
 <DD>$ <KBD><B>./CONFIGURE_CD</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>cdrskin 0.3.6 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
+<DD><KBD>cdrskin 0.3.8 : limited cdrecord compatibility wrapper for libburn</KBD></DD>
 </DL>
 If your system is stricken with some ill CD device then this can stall
 and you will have to press <KBD>Ctrl+C</KBD> to abort.
