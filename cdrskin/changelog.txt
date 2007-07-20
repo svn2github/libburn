@@ -3863,12 +3863,64 @@ Avoided new track-drive test with option --no_convert_fs_adr
 cdrskin/cdrskin.1
 Documented option --adjust_speed_to_drive (i.e. it will stay)
 
-19 Jul 2007  []
+19 Jul 2007  [894]
 cdrskin/changelog.txt
 Next cdrskin-0.3.7 cycle
 
+19 Jul 2007  [895]
+cdrskin/cdrskin_eng.html
+Next cdrskin-0.3.7 cycle
 
------------------------------------- cycle  - cdrskin-0.3.7 - 2007.07.19
+------------------------------------ cycle  - cdrskin-0.3.7 - 2007.07.19.174859
+* New option modesty_on_drive= may help with hda -> hdb burns
+* New option minbuf= , cdrecord compatible frontend of modesty_on_drive=
+* New option --adjust_speed_to_drive
+* Precautions against using the burner drive as track source
+
+2007.07.20.120001  [branch 897]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh 
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.3.8
+
+20 Jul 2007  [branch 898]
+- cdrskin/add_ts_changes_to_libburn_0_3_6
+- cdrskin/add_ts_changes_to_libburn_0_3_7
++ cdrskin/add_ts_changes_to_libburn_0_3_8
++ cdrskin/add_ts_changes_to_libburn_0_3_9
+Updated cdrskin tarball generators
+
+20 Jul 2007  [branch 899]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+2007.07.20.210001  [900]
+Makefile.am
+configure.ac
+README
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh 
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.3.9
+
+20 Jul 2007  []
+- cdrskin/add_ts_changes_to_libburn_0_3_6
+- cdrskin/add_ts_changes_to_libburn_0_3_7
++ cdrskin/add_ts_changes_to_libburn_0_3_8
++ cdrskin/add_ts_changes_to_libburn_0_3_9
+Updated cdrskin tarball generators
+
+
+----------------------------- release  - cdrskin-0.3.8.pl00 - 2007.07.
+* Now able to cope with the peculiarities of Linux 2.4 USB
+* Refusal to perform -dummy runs on media which cannot simulate burning
 * New option modesty_on_drive= may help with hda -> hdb burns
 * New option minbuf= , cdrecord compatible frontend of modesty_on_drive=
 * New option --adjust_speed_to_drive
