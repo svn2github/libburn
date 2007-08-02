@@ -190,6 +190,11 @@ DVD+R.
 Quite deliberately write mode -sao insists in the tradition of a predicted
 track size and blank media, whereas -tao writes the tracks open ended and
 allows appendable media.
+.br
+.B Note:
+Option -multi might make DVD media unreadable in some DVD-ROM drives.
+Best reader compatibility is achieved without it
+(i.e. by single session media).
 .PP
 .B Overwriteable DVD Media:
 .br
@@ -465,7 +470,10 @@ program. mkisofs and genisoimage expect particular info about the situation
 which can be retrieved by cdrskin option -msinfo.
 .br
 To retrieve an archive file which was written as follow-up session,
-you may use option -toc to learn about the "lba" of the desired track number. 
+you may use option -toc to learn about the "lba" of the desired track number.
+This lba is the address of the 2048 byte block where the archive begins.
+.br
+Note: -multi might make DVD media unreadable in some DVD-ROM drives.
 .TP
 .BI \-nopad
 Do not add trailing zeros to the data stream. Nevertheless, since there seems
@@ -796,9 +804,12 @@ This option overrides option -multi. It will not fill up media if option -sao
 is given with CD media.
 .br
 .B Caution:
-This option might increase read compatibility with DVD-ROM drives but
-with some DVD recorders and media types it might also fail to produce readable
-media at all. "Your mileage may vary".
+With multi-session media this option might increase readatibility on DVD-ROM
+drives but with some DVD recorders and media types it might also fail to
+produce readable media at all. "Your mileage may vary".
+.br
+You can expect the best possible read compatibility if you do not use -multi at
+all. 
 .TP
 .BI grab_drive_and_wait= seconds
 Open the addressed drive, wait the given number of seconds, release the drive,

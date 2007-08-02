@@ -1088,8 +1088,19 @@ closed by Close Function 101b rather than 010b. This finalizes the media
 "with minimal radius".
 (mmc5r03c.pdf 6.3.3.4.4) 
 
-Note: growisofs has code for that gesture but explicitly avoids to use it.
-Instead it recommends to fill up the media with zeros.
+Note: growisofs has code for that gesture but explicitly avoids to use it, if
+the media was appendable before writing began. Instead it recommends to fill
+up the media with zeros. This gesture nevertheless caused error replies from
+the drives in my own experiments.
+The reason given by Andy Polyakov is that some DVD-ROM drives get mislead by
+the lead-out information of (formerly) appendable media unless the media is
+fully written.
+(http://fy.chalmers.se/~appro/linux/DVD+RW/ , "Compatibility: caveat lector")
+
+Own experiments showed no such problems with PC attached PATA DVD-ROM drives.
+For best DVD-ROM compatibility one should avoid appendable media at all
+by closing them already after the first session.
+
 
 -------------------------------------------------------------------------------
 Hearsay about DVD+R/DL (Dual Layer) :
