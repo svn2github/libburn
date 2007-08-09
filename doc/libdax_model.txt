@@ -1,0 +1,658 @@
+
+# Originally this was a backup of text input clicketitoggled into ArgoUML
+# Meanwhile it becomes an intermediate storage for attributes and
+# class interconnections in the notation of my C stub generator CgeN
+# (see also end of this text)
+
+
+Model=libdax
+
+ClassDiagram=Overview
+
+Class=API
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+The API is the only layer visible to the applications. It exposes MMC concepts
+which it reflects and augments by its own architectural concepts.
+Subordinates=EQUIP,JOB,AUX
+Cgen=\
+cevapi
+-m struct CevapeqP *equip
+-m struct CevapjoB *job
+-m struct CevapauX *aux
+-m struct CevapgsT *gestures
+@
+=end Class
+
+Class=EQUIP
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+EQUIP represents the physical and logical equipment in reach of libdax.
+This includes the system, drives, media, and their current states.
+PeerToPeer=GESTURES
+Boss=API
+Cgen=\
+cevapeqp
+-v struct CevapI *boss
+-m struct CevapeqpsyS *sys
+@
+=end Class
+
+Class=JOB
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+JOB models the tasks to be performed via libdax.
+This includes disc, session, track, source, fifo, dewav, burn options.
+PeerToPeer=GESTURES
+Boss=API
+Cgen=\
+cevapjob
+-v struct CevapI *boss
+-m struct CevapjobtdO *todo
+# >>>
+@
+=end Class
+
+Class=AUX
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+AUX bundles any models which are neither EQUIP nor JOB.
+This includes abort handler and message system.
+PeerToPeer=GESTURES
+Boss=API
+Cgen=\
+cevapaux
+-v struct CevapI *boss
+# >>>
+@
+=end Class
+
+Class=GESTURES
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+GESTURES ist the procedural repertoire which interconnects EQUIP, JOB, and AUX
+and also provides to them the services from the SCSI oriented layers. 
+PeerToPeer=EQUIP,JOB,AUX
+Subordinates=SCSI_CMD
+Cgen=\
+cevapgst
+-v struct CevapI *boss
+# >>>
+@
+=end Class
+
+Class=SCSI_CMD
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+SCSI_CMD represents the semantic part of SCSI (i.e. mainly MMC) specs.
+This layer models each SCSI command that is used by libdax. It knows about
+its parameters and constraints with particular equipment and jobs.
+Boss=GESTURES
+Subordinates=Classes with SCSI_EXEC Interface
+=end Class
+
+Interface=SCSI_EXEC
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+SCSI_EXEC hides the difference between the implementation principle of
+SCSI format+transport and the principle of SCSI service.
+Boss=SCSI_CMD
+Implementations=SCSI_FORMAT,SCSI_SERVICE
+Cgen=\
+cevapsciexc
+-v struct CevapscifmT *scsi_format
+-v struct CevapscisvC *scsi_service
+-v int silent_on_scsi_error
+@
+=end Interface
+
+Class=SCSI_FORMAT
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+SCSI_FORMAT translates parameters of SCSI commands into CDBs, takes care for
+transport and decodes the reply into parameters.
+Boss=SCSI_CMD via SCSI_EXEC
+Subordinates=SCSI_TRANSPORT
+Cgen=\
+cevapscifmt
+-v struct CevapsciexC *boss
+-v struct CevapscitrN *scsi_transport
+# >>>
+@
+=end Class
+
+Class=SCSI_TRANSPORT
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+SCSI_TRANSPORT takes a formatted CDB from SCSI_FORMAT and makes the operating
+system perform a SCSI transaction. It then returns the reply data in raw form.
+Boss=SCSI_FORMAT
+Os_specific=yes
+Cgen=\
+cevapscitrn
+-v struct CevapscifmT *boss
+-v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+# >>>
+@
+=end Class
+
+Class=SCSI_SERVICE
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=11.03.2007
+Documentation=\
+SCSI_SERVICE provides the combined services of SCSI_FORMAT and SCSI_TRANSPORT
+via a set of parametrized functions which abstract SCSI command transactions.
+Boss=SCSI_CMD via SCSI_EXEC
+Os_specific=yes
+Cgen=\
+cevapscisvc
+-v struct CevapsciexC *boss
+-v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+# >>>
+@
+=end Class
+
+=end ClassDiagram=Overview
+
+
+
+ClassDiagram=Equip_overview
+
+Class=EquipSystem
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+EquipSystem is the inner root class of EQUIP. It describes the system on
+which libdax is working. This includes the operating system, the system
+adapter classes, the drives.
+Boss=EQUIP
+Subordinates=EquipDrive*N
+Cgen=\
+cevapeqpsys
+-v struct CevapeqP *boss
+-m char *infotext
+-l struct CevapeqpdrV *drives
+-v struct CevapeqpdrV *eol_drive
+# >>> be boss of SCSI_CMD ?
+# >>>
+@
+=end Class
+
+
+Class=EquipDrive
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+EquipDrive represents a drive, including its capabilities, its processing
+status, the media loaded.
+Subordinates=EquipMedia
+Boss=EquipSystem
+Cgen=\
+-l cevapeqpdrv
+-v struct CevapeqpsyS *boss
+-m struct CevapeqpmdA *media
+-m char *devname
+-v int bus_no
+-v int host
+-v int id
+-v int channel
+-v int lun
+-v int phys_if_std
+-m char *phys_if_name
+-v struct CevapsciexC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
+-v int global_index
+# >>> -v pthread_mutex_t access_lock
+-v int current_feat2fh_byte4
+-v volatile int released
+
+# >>> next to process: transport.h : int complete_sessions
+# >>>
+
+@
+=end Class
+
+
+Class=EquipMedia
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+EquipMedia represents an optical disc, including its type, its writeability,
+its formatting, its available formats and performances. 
+Subordinates=\
+EquipProfile*N,EquipFormat*N,EquipPerformance*N,EquipStatus,EquipMulticaps
+Boss=EquipDrive
+Cgen=\
+cevapeqpmda
+-v struct CevapeqpdrV *boss
+-m struct CevapeqpstA *status
+-l struct CevapeqpprO *profiles
+-v struct CevapeqpprO *eol_profile
+-v int current_has_feat21h
+-v int current_feat21h_link_size
+-v int needs_close_session
+-v int bg_format_status
+-v int format_descr_type
+-v off_t format_curr_max_size
+-v unsigned int format_curr_blsas
+-v int best_format_type
+-v off_t best_format_size
+-l struct CevapeqpfmT *format_descriptors
+-v struct CevapeqpfmT *eol_format_descriptor
+-v int nwa
+-v int start_lba
+-v int end_lba
+
+# >>>
+@
+=end Class
+
+
+Class=EquipProfile
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+EquipProfile maps a MMC profile into libdax (See mmc5r03c.pdf chapter 5).
+A profile describes a set of features and may be either current, possible,
+disabled, or unavailable.
+Subordinates=EquipFeature*N
+Boss=EquipMedia
+Cgen=\
+-l cevapeqppro
+-v struct CevapeqpmdA *boss
+-v int profile_code
+-v char *profile_text
+-v int is_cd_profile
+-v int is_supported_profile
+-l struct CevapeqpftR *features
+-v struct CevapeqpftR *eol_feature
+# >>>
+@
+=end Class
+
+Class=EquipFeature
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=16.03.2007
+Documentation=\
+EquipFeature maps a MMC feature into libdax (See mmc5r03c.pdf chapter 5).
+A feature describes a set of SCSI commands and (implicitely) of use cases.
+Boss=EquipProfile
+Cgen=\
+-l cevapeqpftr
+# >>>
+@
+=end Class
+
+Class=EquipFormat
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=
+Documentation=\
+>>> EquipFormat
+Boss=EquipMedia
+Cgen=\
+-l cevapeqpfmt
+# >>>
+@
+=end Class
+
+Class=EquipPerformance
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=
+Documentation=\
+>>> EquipPerformance
+Boss=EquipMedia
+Cgen=\
+cevapeqppfm
+# >>>
+@
+=end Class
+
+Class=EquipStatus
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=17.3.2007
+Documentation=\
+EquipStatus represents the status of media and drive. This includes 
+blank/appendable/closed, progress indicator.
+Boss=EquipMedia
+Cgen=\
+cevapeqpsta
+-v struct CevapeqpmdA *boss
+-v int status
+-m char *status_text
+-v struct CevapeqpprO *current_profile
+@
+=end Class
+
+Class=EquipMulticaps
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=
+Documentation=\
+>>> EquipMulticaps
+Boss=EquipMedia
+=end Class
+
+# >>> need EquipDisc for describing the table of content
+# >>> ??? Define AuxDisc class as common part of EquipDisc , JobDisc
+
+=end ClassDiagram=Equip_overview
+
+
+ClassDiagram=Job_overview
+
+Class=JobTodo
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobTodo records what is to be done during a job. This includes peripheral
+actions like tray load/eject and central actions like blank, format, burn.
+Subordinates=JobDisc,JobOptions
+Cgen=\
+cevapjobtdo
+# >>>
+@
+=end Class
+
+Class=JobDisc
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobDisc models a not yet existing disc structure which is to be created.
+Subordinates=JobSession*N
+Boss=JobTodo
+=end Class
+
+Class=JobSession
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobSession represents a recording session. A session usually bundles
+several tracks. Traditionally the last session of a disc is recognized
+by operating systems as the thing to be mounted.
+Subordinates=JobTrack*N,JobFifo
+Boss=JobDisc
+=end Class
+
+Class=JobTrack
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobTrack represents a track to be recorded. A track mainly is associated with
+a data source but in many cases it also becomes a recognizable entity on the
+target media.
+Subordinates=JobBlock*N,JobTrackFilter,JobSource
+Boss=JobSession
+=end Class
+
+Class=JobBlock
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobBlock represents a single output data transaction unit. On CD this is
+the same as an addressable media block resp. sector. On DVD this might be
+an addressable block od 2k or a packet of e.g. 32k.
+Boss=JobTrack
+Cgen=\
+cevapjobblk
+-v int alba
+-v int rlba
+# >>>
+@
+=end Class
+
+Class=JobSource
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=8.4.2007
+Documentation=\
+JobSource represents a data source for a track. Typically this is a disk
+file or a stream file descriptor like stdin.
+Subordinates=JobSourceBlock*N
+Boss=JobTrack
+=end Class
+
+Class=JobSourceBlock
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=8.4.2007
+Documentation=\
+JobSourceBlock represents a single input data transaction unit.
+Boss=JobSource
+=end Class
+
+Class=JobFifo
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=8.4.2007
+Documentation=\
+JobFifo reads data via JobTrackFilter and buffers them until JobBlock can
+accept them.
+Boss=JobSession
+=end Class
+
+Class=JobTrackFilter
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=8.4.2007
+Documentation=\
+JobTrackFilter reads data from JobSourceBlock, processes them and presents
+them to JobFifo or JobBlock. This includes stripping of .wav headers.
+Boss=JobTrack
+=end Class
+
+Class=JobOptions
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.3.2007
+Documentation=\
+JobOptions bundles the adjustable parameters of a job. This includes dummy
+mode, speed, appendability, blank mode, format selection, write mode, 
+underrun protection, random access addressing.
+Boss=JobTodo
+=end Class
+
+Class=
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=
+Documentation=\
+=end Class
+
+=end ClassDiagram=Equip_overview
+
+# >>> a dummy to be integrated into the model
+Cgen=\
+burn_os_transport_drive_elements
+@
+
+
+=end Model=libdax
+
+----------------------------------------------------------------------------
+Notes:
+----------------------------------------------------------------------------
+
+ Generate C stubs:
+   test_dir=...where_to_generate_the_stub...
+   model_dir=...where_to_find_the_model_file_libdax_model.txt...
+   xtr_dir=...where_to_find_the_extractor_script_extract_cgen_input.sh...
+   cgen_dir=...where_to_find_the_cgen_binary...
+
+   /bin/rm "$test_dir"/cevap*.[cho] \
+           "$test_dir"/burn_os_transport_drive_elements*.[cho] \
+           "$test_dir"/a.out
+   cd "$test_dir"/
+   cat "$model_dir"/libdax_model.txt | \
+     "$xtr_dir"/extract_cgen_input.sh | \
+   "$cgen_dir"/bin/cgen -no_stic -ansi -global_include cevap_global.h
+
+ Compile:
+   ( cd "$test_dir" ; cc -g -c *.c 2>&1 | less )
+
+----------------------------------------------------------------------------
+~/projekte/cdrskin_dir/libburn-develop/libcevap/extract_cgen_input.sh :
+
+#!/bin/sh
+
+copy_mode=0
+
+while true
+do
+  read line
+  if test "$copy_mode" = "0"
+  then
+    if echo " $line" | grep '^ Cgen=' >/dev/null 2>&1
+    then
+      copy_mode=1
+      if echo " $line" | grep '^ Cgen=..' >/dev/null 2>&1
+      then
+        echo " $line" | sed -e 's/^ Cgen=//'
+      fi
+    elif echo " $line" | grep '^ =end Model=' >/dev/null 2>&1
+    then
+break
+    fi
+  else
+    if test " $line" = " @"
+    then
+      copy_mode=0
+      echo "@"
+    else
+      echo " $line" | sed -e 's/^ //'
+    fi
+  fi
+done
+
+----------------------------------------------------------------------------
+
+Description of CgeN
+
+cgen produces a class stub in C programming language. The data structure of
+the class is described by some lines which get read from stdin. The stub will
+consist of two files <classname>.h and <classname>.c which emerge in the
+current working directory.
+It will define a struct <ClassnamE> for representing the class data aspects,
+construtor <Classname>_new(), destructor <Classname>_destroy(),
+getter <Classname>_<element>_get() for each structure element.
+Some more functions get added for particular class and element roles.
+
+After first generation, there is no further support by cgen. It simply refuses
+to overwrite existing files because it supposes that those contain code added
+by the human programmer. 
+Those programmer enhancements are supposed to include explanatory comments,
+class specific methods, initial element values and other special precautions
+within the generated functions.
+
+
+Command line options
+
+  -no_stic   prevents usage of stic_dir/s_tools/*.[ch]
+
+  -ansi      generates ANSI C function heads and makes file <classname>.h hold
+             only public definitions: an opaque declaration of the class struct
+             and a list of function prototypes. The definiton of the class
+             struct is then in <classname>_private.h .
+  -global_include filename
+             sets the name of a file which will contain globally necessary
+             declarations. Currently it lists the existence of all class
+             structs.
+
+A class can have one of two roles:
+
+- Standalone class.
+  Input example:
+    my_class
+
+- Listable class, which has pointers to peer instances: .prev and .next
+  Such classes get a list destructor <Classname>_destroy_all() which destroys
+  all members of a list (which is given by any of the list members).
+  There is a function <Classname>_link() which inserts an instance into a list.
+  Input example:
+    -l my_class
+
+Elements have one of the following roles:
+
+- Value. It provides only storage for a C data type (which may be a C pointer
+  despite the role name "value"), a getter method <Classname>_<element>_get(),
+  and a setter method <Classname>_<element>_set().
+  Input examples:
+    -v int i
+    -v int a[100]
+    -v char *cpt
+    -v struct xyz x
+    -v struct xyz *xpt
+
+- Managed. This has to be a pointer to a struct <XyZ> or to char. It will not
+  get attached to an object by the stub's code but its destructor
+  <Xyz>_destroy() will be called by <Classname>_destruct(). In case of (char *)
+  it is supposed that a non-NULL value has been allocated by malloc().
+  Managed (char *) types get a setter function <Classname>_<element>_set()
+  which allocates memory and copies the textstring from its parameter.
+  Input examples:
+    -m struct XyZ *xyzpt
+    -m char *textstring
+
+- Chainlink. A pair of prev-next-style pointers to the own class struct.
+  Function <Classname>_destruct() will unlink the affected instance and
+  put together its link partners.
+  Input example (there must always be two consequtive -c lines):
+    -c struct My_clasS *up
+    -c struct My_clasS *down
+
+- List. A pair of pointers to the struct <XyZ> of a listable class. The first
+  one <ls> holds the start of the list, the second one <eol> holds the end.
+  For insertion of list items there is provided method <Classname>_new_<ls>().
+  The inserted item is then content of the <eol> pointer.
+  <Classname>_destroy() instance calls <Xyz>_destroy_all(). There is a method
+  <Classname>_set_<eol>() which should be used with caution, if ever.
+  Input example (there must always be a -l and a -v line):
+    -l struct XyZ *list_start
+    -v struct XyZ *list_end
+
+
+Example run:
+
+  bin/cgen <<+
+-l class_x
+-v int x
+-m struct Class_Y *y
+-m char *text
+-c struct Class_X *boss
+-c struct Class_X *slave
+-l struct Class_X *providers
+-v struct Class_X *last_provider
+@
++
+  
+
