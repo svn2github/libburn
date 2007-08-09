@@ -6385,7 +6385,10 @@ set_padsize:;
    } else if(strncmp(argv[i],"speed=",6)==0) {
      value_pt= argv[i]+6;
 set_speed:;
-     sscanf(value_pt,"%lf",&(skin->x_speed));
+     if(strcmp(value_pt,"any")==0)
+       skin->x_speed= -1;
+     else
+       sscanf(value_pt,"%lf",&(skin->x_speed));
      if(skin->x_speed<1.0 && skin->x_speed!=0.0 && skin->x_speed!=-1) {
        fprintf(stderr,"cdrskin: FATAL : speed= must be -1, 0 or at least 1\n");
        return(0);
