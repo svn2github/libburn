@@ -276,7 +276,7 @@ int libdax_msgs_item_get_rank(struct libdax_msgs_item *item,
 
 
 Format: error_code  (LIBDAX_MSGS_SEV_*,LIBDAX_MSGS_PRIO_*) = explanation
-If no severity or priority are fixely associates, use "(,)".
+If no severity or priority are fixely associated, use "(,)".
 
 ------------------------------------------------------------------------------
 Range "libdax_msgs"        :  0x00000000 to 0x0000ffff
