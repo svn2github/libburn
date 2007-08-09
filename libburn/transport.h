@@ -182,7 +182,7 @@ struct burn_drive
 	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
 	int format_descr_type;      /* 1=unformatted, 2=formatted, 3=unclear */
 	off_t format_curr_max_size;  /* meaning depends on format_descr_type */
-	unsigned format_curr_blsas;  /* meaning depends on format_descr_type */
+	unsigned int format_curr_blsas;  /* dito */
 	int best_format_type;
 	off_t best_format_size;
 
