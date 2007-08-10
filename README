@@ -1,10 +1,10 @@
 ------------------------------------------------------------------------------
-                              libburnia.pykix.org
+                              libburnia-project.org
 ------------------------------------------------------------------------------
 This all is under GPL.
 (See GPL reference, our clarification and commitment at the end of this text)
 ------------------------------------------------------------------------------
-libburnia.pykix.org
+libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
 Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
 
@@ -12,14 +12,14 @@ Still containing parts of
 Libburn. By Derek Foreman <derek@signalmarketing.com> and
             Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
-These parts are to be replaced by own code of above libburnia.pykix.org
-copyright holders and then libburnia.pykix.org is to be their sole copyright.
+These parts are to be replaced by own code of above libburnia-project.org
+copyright holders and then libburnia-project.org is to be their sole copyright.
 This is done to achieve the right to issue the clarification and the
 commitment as written at the end of this text.
 The rights and merits of the Libburn-copyright holders Derek Foreman and
 Ben Jansens will be duely respected. 
 
-This libburnia.pykix.org toplevel README (C) 2006-2007 Thomas Schmitt 
+This libburnia-project.org toplevel README (C) 2006-2007 Thomas Schmitt 
 ------------------------------------------------------------------------------
 
                            Build and Installation
@@ -27,16 +27,16 @@ This libburnia.pykix.org toplevel README (C) 2006-2007 Thomas Schmitt
 Our build system is based on autotools. For preparing the build of a SVN 
 snapshot you will need autotools of at least version 1.7. 
 Check out from SVN by
-   svn co http://libburnia-svn.pykix.org/libburn/trunk libburn_pykix
-go into directory libburn_pykix and apply autotools by
+   svn co http://svn.libburnia-project.org/libburn/trunk libburn
+go into directory libburn and apply autotools by
    ./bootstrap
 
 Alternatively you may unpack a release tarball for which you do not need
 autotools installed.
 
-To build a libburnia.pykix.org subproject it should be sufficient to go
-into its toplevel directory (here: "libburn_pykix") and execute
-   ./configure
+To build a libburnia-project.org subproject it should be sufficient to go
+into its toplevel directory (here: "libburn") and execute
+   ./configure --prefix=/usr
    make
 
 To make the libraries accessible for running resp. developing applications 
@@ -44,16 +44,16 @@ To make the libraries accessible for running resp. developing applications
 
 
 The other half of the project, libisofs, is hosted in the libburnia SVN, too:
-   svn co http://libburnia-svn.pykix.org/libisofs/trunk libisofs_pykix
+   svn co http://svn.libburnia-project.org/libisofs/trunk libisofs
 See README file there.
 
 
 ------------------------------------------------------------------------------
 
 
-                        Overview of libburnia.pykix.org 
+                        Overview of libburnia-project.org
 
-libburnia.pykix.org is an open-source software project for reading, mastering
+libburnia-project.org is an open-source software project for reading, mastering
 and writing optical discs.
 For now this means only CD media and all single layer DVD media except DVD+R.
 
