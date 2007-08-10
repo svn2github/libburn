@@ -163,13 +163,13 @@ indent: $(indent_files)
 
 # Extra things
 nodist_pkgconfig_DATA = \
-	libburn-1.pc
+	libburn-5.pc
 
 # http://www.nada.kth.se/cgi-bin/info?(automake.info)Man%20pages
 man_MANS = cdrskin/cdrskin.1
 
 EXTRA_DIST = \
-	libburn-1.pc.in \
+	libburn-5.pc.in \
 	version.h.in \
 	doc/comments \
 	doc/doxygen.conf.in \
