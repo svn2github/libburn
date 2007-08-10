@@ -100,6 +100,6 @@ AC_CONFIG_FILES([
 	Makefile
 	doc/doxygen.conf
 	version.h
-	libburn-1.pc
+	libburn-5.pc
 	])
 AC_OUTPUT
