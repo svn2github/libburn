@@ -222,11 +222,13 @@ Cgen=\
 -m char *phys_if_name
 -v struct CevapsciexC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
 -v int global_index
-# >>> -v pthread_mutex_t access_lock
+# >>> How to handle this by cgen ? : -v pthread_mutex_t access_lock
 -v int current_feat2fh_byte4
 -v volatile int released
 
-# >>> next to process: transport.h : int complete_sessions
+# >>> next to process: transport.h :  struct burn_disc *disc 
+
+# >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
 
 @
@@ -327,7 +329,7 @@ Documentation=\
 >>> EquipPerformance
 Boss=EquipMedia
 Cgen=\
-cevapeqppfm
+-l cevapeqppfm
 # >>>
 @
 =end Class
@@ -346,6 +348,10 @@ cevapeqpsta
 -v int status
 -m char *status_text
 -v struct CevapeqpprO *current_profile
+-v int complete_sessions
+-v int last_track_no
+-v off_t media_capacity_remaining
+-v int media_lba_limit
 @
 =end Class
 
@@ -515,13 +521,13 @@ Notes:
    cd "$test_dir"/
    cat "$model_dir"/libdax_model.txt | \
      "$xtr_dir"/extract_cgen_input.sh | \
-   "$cgen_dir"/bin/cgen -no_stic -ansi -global_include cevap_global.h
+   "$cgen_dir"/bin/cgen -smem_local -ansi -global_include cevap_global.h
 
  Compile:
    ( cd "$test_dir" ; cc -g -c *.c 2>&1 | less )
 
 ----------------------------------------------------------------------------
-~/projekte/cdrskin_dir/libburn-develop/libcevap/extract_cgen_input.sh :
+"$xtr_dir"/extract_cgen_input.sh :
 
 #!/bin/sh
 
