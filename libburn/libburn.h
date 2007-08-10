@@ -602,7 +602,8 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
 /* ts A70223 */
 /** Allows the use of media types which are implemented in libburn but not yet
     tested. The list of those untested profiles is subject to change.
-    Currently it contains: 0x15 "DVD-R/DL Sequential".
+    Currently it contains: 0x15 "DVD-R/DL sequential recording",
+                           0x2b "DVD+R/DL"
     If you really test such media, then please report the outcome on
     libburn-hackers@pykix.org
     If ever then this call should be done soon after burn_initialize() before
@@ -884,14 +885,16 @@ off_t burn_disc_available_space(struct burn_drive *d,
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
-    libburn currently writes only to profiles 0x09 "CD-R", 0x0a "CD-RW",
-    0x11 "DVD-R", 0x12 "DVD-RAM", 0x13 "DVD-RW restricted overwrite",
-    0x14 "DVD-RW Sequential Recording" or 0x1a "DVD+RW".
-    If enabled by burn_allow_untested_profiles() it also writes to profile
-    0x15 "DVD-R/DL Sequential Recording".
+    libburn currently writes only to profiles 
+    0x09 "CD-R",                          0x0a "CD-RW",
+    0x11 "DVD-R sequential recording",    0x12 "DVD-RAM",
+    0x13 "DVD-RW restricted overwrite",   0x14 "DVD-RW sequential recording",
+    0x1a "DVD+RW",                        0x1b "DVD+R".
+    If enabled by burn_allow_untested_profiles() it also writes to profiles
+    0x15 "DVD-R/DL sequential recording", 0x2b "DVD+R/DL".
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
-    @param name Profile Name (e.g "CD-RW", unknown profiles have empty name)
+    @param name Profile Name (see above list, unknown profiles have empty name)
     @return 1 profile is valid, 0 no profile info available 
 */
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
