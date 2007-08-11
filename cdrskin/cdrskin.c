@@ -132,7 +132,7 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* - no novelty switch macros yet - */
+#define Cdrskin_libburn_has_random_access_writE 1
 
 #endif /* Cdrskin_libburn_0_3_9 */
 
@@ -1151,6 +1151,9 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
 
 
 /** Deliver an open file descriptor corresponding to the source path of track.
+    @param flag Bitfield for control purposes:
+                bit0=open as source for direct write: 
+                     no audio extract, no minimum track size
     @return <=0 error, 1 success
 */
 int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
@@ -1204,7 +1207,8 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    }
 #endif
 
-   is_wav= Cdrtrack_extract_audio(track,fd,&xtr_size,0);
+   if(!(flag&1))
+     is_wav= Cdrtrack_extract_audio(track,fd,&xtr_size,0);
    if(is_wav==-1)
      return(-1);
    if(is_wav==-3)
@@ -1245,11 +1249,12 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
 #ifdef Cdrskin_allow_libburn_taO
 
  if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size
-    && (track->fixed_size>0 || size_from_file)) {
+    && (track->fixed_size>0 || size_from_file) && !(flag&1)) {
 
 #else
 
- if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size) {
+ if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size &&
+    !(flag&1)) {
 
 #endif
 
@@ -2663,6 +2668,7 @@ struct CdrskiN {
                         */
  double blank_format_size; /* to be used with burn_disc_format() */
 
+ int do_direct_write;
  int do_burn;
  int tell_media_space; /* actually do not burn but tell the available space */
  int burnfree;
@@ -2676,6 +2682,7 @@ struct CdrskiN {
  int max_buffer_percent;
 
  double write_start_address;
+ double direct_write_amount;
  int assert_write_lba;
 
  int do_eject;
@@ -2804,6 +2811,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->no_blank_appendable= 0;
  o->blank_format_type= 0;
  o->blank_format_size= 0.0;
+ o->do_direct_write= 0;
  o->do_burn= 0;
  o->tell_media_space= 0;
  o->write_type= BURN_WRITE_SAO;
@@ -2813,6 +2821,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->min_buffer_percent= 65;
  o->max_buffer_percent= 95;
  o->write_start_address= -1.0;
+ o->direct_write_amount= -1.0;
  o->assert_write_lba= -1;
  o->burnfree= 1;
  o->do_eject= 0;
@@ -5109,6 +5118,124 @@ int Cdrskin_announce_tracks(struct CdrskiN *skin, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
+#ifdef Cdrskin_libburn_has_random_access_writE
+
+int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
+{
+ off_t byte_address, data_count, chunksize, i, alignment, fill;
+ int ret, max_chunksize= 64*1024, source_fd= -1, is_from_stdin, eof_sensed= 0;
+ char *buf= NULL, *source_path, amount_text[81];
+ struct burn_multi_caps *caps= NULL;
+
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   goto ex;
+
+ ret= burn_disc_get_multi_caps(skin->grabbed_drive,BURN_WRITE_NONE,&caps,0);
+ if(ret<=0)
+   goto ex;
+ if(caps->start_adr==0) {
+   fprintf(stderr,
+      "cdrskin: SORRY : Direct writing is not supported by drive and media\n");
+   {ret= 0; goto ex;}
+ }
+ alignment= caps->start_alignment;
+ if(alignment>0 && (((off_t) skin->direct_write_amount) % alignment)!=0) {
+   fprintf(stderr,
+     "cdrskin: SORRY : direct_write_amount=%.f not aligned to blocks of %dk\n",
+      skin->direct_write_amount,(int) alignment/1024);
+   {ret= 0; goto ex;}
+ }
+
+ if(skin->track_counter<=0) {
+   fprintf(stderr,
+           "cdrskin: SORRY : No track source given for direct writing\n");
+   {ret= 0; goto ex;}
+ }
+ Cdrtrack_get_source_path(skin->tracklist[0],
+                          &source_path,&source_fd,&is_from_stdin,0);
+ if(source_fd==-1) {
+   ret= Cdrtrack_open_source_path(skin->tracklist[0],&source_fd,1);
+   if(ret<=0)
+     goto ex;
+ }
+ buf= malloc(max_chunksize);
+ if(buf==NULL) {
+   fprintf(stderr,
+           "cdrskin: FATAL : Cannot allocate %d bytes of read buffer.\n",
+           max_chunksize);
+   {ret= -1; goto ex;}
+ }
+ byte_address= skin->write_start_address;
+ if(byte_address<0)
+   byte_address= 0;
+ data_count= skin->direct_write_amount;
+ if(data_count>0)
+   sprintf(amount_text,"%.fk",(double) (data_count/1024));
+ else
+   strcpy(amount_text,"0=open_ended");
+ fprintf(stderr,"Beginning direct write (start=%.fk,amount=%s) ...\n",
+         (double) (byte_address/1024),amount_text);
+ for(i= 0; i<data_count || data_count==0; i+= chunksize) {
+   chunksize= data_count-i;
+   if(chunksize>max_chunksize)
+     chunksize= max_chunksize;
+
+   /* read buffer from first track */
+   for(fill= 0; fill<chunksize;fill+= ret) {
+     ret= read(source_fd,buf+fill,chunksize-fill); 
+     if(ret==-1) {
+       fprintf(stderr,"cdrskin: FATAL : Error while reading from '%s'\n",
+               source_path);
+       if(errno>0)
+         fprintf(stderr,"cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+       ret= 0; goto ex;
+     } else if(ret==0) {
+       eof_sensed= 1;
+       if(data_count==0) {
+         memset(buf+fill,0,(size_t) (chunksize-fill));
+   break;
+       } else {
+         fprintf(stderr,
+                 "cdrskin: FATAL : Premature EOF while reading from '%s'\n",
+                 source_path);
+         ret= 0; goto ex;
+       }
+     }
+   }
+   ret= burn_random_access_write(skin->grabbed_drive,byte_address,
+                                 buf,chunksize,0);
+   if(ret<=0)
+     goto ex;
+   if(eof_sensed)
+ break;
+   byte_address+= chunksize;
+   fprintf(stderr,"\r%9.fk written     ",((double) (i+chunksize))/1024.0); 
+ }
+ fprintf(stderr,"\r%9.fk written     \n",((double) i)/1024.0); 
+ /* flush drive buffer */
+ fprintf(stderr,"syncing cache ...\n"); 
+ ret = burn_random_access_write(skin->grabbed_drive,byte_address,buf,0,1);
+ if(ret<=0)
+   goto ex;
+ ret= 1;
+ex:;
+ if(caps!=NULL)
+   burn_disc_free_multi_caps(&caps);
+ if(skin->drive_is_grabbed)
+   Cdrskin_release_drive(skin,0);
+ if(buf!=NULL)
+   free(buf);
+ if(ret>0)
+   fprintf(stderr,"writing done\n"); 
+ else
+   fprintf(stderr,"writing failed\n"); 
+ return(ret);
+}
+
+#endif /* Cdrskin_libburn_has_random_access_writE */
+
+
 /** Burn data via libburn according to the parameters set in skin.
     @return <=0 error, 1 success
 */
@@ -6030,6 +6157,17 @@ set_blank:;
    } else if(strncmp(argv[i],"dev=",4)==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strncmp(argv[i],"direct_write_amount=",20)==0) {
+     skin->direct_write_amount= Scanf_io_size(argv[i]+20,0);
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(printf("cdrskin: amount for direct writing : %.f\n",
+                  skin->direct_write_amount));
+     if(skin->direct_write_amount>=0.0) {
+       skin->do_direct_write= 1;
+       printf("cdrskin: NOTE : Direct writing will only use first track source and no fifo.\n");
+     } else
+       skin->do_direct_write= 0;
+
    } else if(strcmp(argv[i],"--drive_abort_on_busy")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -6611,9 +6749,11 @@ ignore_unknown:;
    skin->do_burn= 1;
 
 #ifndef Cdrskin_extra_leaN
-   ret= Cdrskin_attach_fifo(skin,0);
-   if(ret<=0)
-     return(ret);
+   if(!skin->do_direct_write) {
+     ret= Cdrskin_attach_fifo(skin,0);
+     if(ret<=0)
+       return(ret);
+   }
 #endif /* ! Cdrskin_extra_leaN */
 
  }
@@ -6746,6 +6886,16 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 8; goto ex;}
  }
+
+#ifdef Cdrskin_libburn_has_random_access_writE
+ if(skin->do_direct_write) {
+   skin->do_burn= 0;
+   ret= Cdrskin_direct_write(skin,0);
+   if(ret<=0)
+     {*exit_value= 13; goto ex;}
+ }
+#endif /* Cdrskin_libburn_has_random_access_writE */
+
  if(skin->do_burn || skin->tell_media_space) {
    if(skin->n_drives<=0)
      {*exit_value= 10; goto no_drive;}
