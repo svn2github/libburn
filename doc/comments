@@ -89,7 +89,7 @@ languages and development tools.
 @section libburner Libburner
 
 libburner is a minimal demo application for the library libburn 
-(see: libburn/libburn.h) as provided on  http://libburn.pykix.org .
+(see: libburn/libburn.h) as provided on  http://libburnia-project.org .
 It can list the available devices, can blank a CD-RW or DVD-RW and
 can burn to recordable CD and recordable single layer DVD.
 

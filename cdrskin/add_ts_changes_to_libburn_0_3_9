@@ -24,9 +24,9 @@ set -x
 # The top level directory in the SVN snapshot is named
 intermediate="./libburn_pykix"
 
-# libburn source used:  http://libburnia.pykix.org
+# libburn source used:  http://libburnia-project.org
 # Downloaded by:
-#  $ svn co http://libburnia-svn.pykix.org/libburn/tags/... $intermediate
+#  $ svn co http://libburnia-project.org/libburn/tags/... $intermediate
 # packed up in a tarball just to save it from inadverted changes by
 #  $ tar czf libburn_svn.tgz $intermediate
 original="./libburn_svn.tgz"

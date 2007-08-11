@@ -1,13 +1,13 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2006 Thomas Schmitt <scdbackup@gmx.net> */
-/* Provided under GPL, see also "License and copyright aspects" at file end */
+/* Copyright (C) 2005 - 2007 Thomas Schmitt <scdbackup@gmx.net> */
+/* Provided under GPLv2,see also "License and copyright aspects" at file end */
 
 
 /**                               Overview 
   
   libburner is a minimal demo application for the library libburn as provided
-  on  http://libburnia.pykix.org . It can list the available devices, can
+  on  http://libburnia-project.org . It can list the available devices, can
   blank a CD-RW or DVD-RW, can format a DVD-RW, can burn to CD-R, CD-RW, DVD-R,
   DVD+R, DVD+RW, DVD-RAM or DVD-RW. Not supported yet: double layer media.
 
@@ -620,7 +620,7 @@ int main(int argc, char **argv)
 	if (ret)
 		exit(ret);
 
-	printf("Initializing libburnia.pykix.org ...\n");
+	printf("Initializing libburnia-project.org ...\n");
 	if (burn_initialize())
 		printf("Done\n");
 	else {

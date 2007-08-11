@@ -1,4 +1,4 @@
-libburnia.pykix.org Optical Media Rotisserie Recipes as of February 2007
+libburnia-project.org Optical Media Rotisserie Recipes as of August 2007
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
@@ -18,7 +18,7 @@ by reading        libburn/*    from http://icculus.org/burn
 and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
 which used in part code from http://icculus.org/burn.
 
-For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
 -------------------------------------------------------------------------------
 
@@ -215,7 +215,7 @@ backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
 which used in part code from http://icculus.org/burn.
 
-For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
 -------------------------------------------------------------------------------
 
@@ -405,7 +405,7 @@ Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 and by experiments with drives NEC ND-4570A and LG GSA-4082B.
 
-For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
 -------------------------------------------------------------------------------
 
@@ -680,7 +680,7 @@ Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 and by experiments with drives NEC ND-4570A and LG GSA-4082B.
 
-For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
 -------------------------------------------------------------------------------
 
@@ -990,15 +990,12 @@ close session if multi-session is demanded.
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-
-                              INCOMPLETE YET
-
                               DVD+R Cookbook
 -------------------------------------------------------------------------------
 Inspired by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 backed by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 
-For libburnia.pykix.org by Thomas Schmitt <scdbackup@gmx.net>
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
 -------------------------------------------------------------------------------
 

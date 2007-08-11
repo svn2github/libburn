@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-        libburnia.pykix.org    scdbackup.sourceforge.net/cdrskin_eng.html
+     libburnia-project.org     scdbackup.sourceforge.net/cdrskin_eng.html
 ------------------------------------------------------------------------------
 Installation instructions at about line 60. First the legal stuff:
 ------------------------------------------------------------------------------
@@ -7,24 +7,24 @@ This all is under GPL.
 (See GPL reference, our clarification and commitment at the end of this text)
 ------------------------------------------------------------------------------
 Based on and sub project of:
-libburnia.pykix.org
+libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
 Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
 
-libburnia.pykix.org is inspired by and in other components still containing
+libburnia-project.org is inspired by and in other components still containing
 parts of
 Libburn. By Derek Foreman <derek@signalmarketing.com> and
             Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 See toplevel README for an overview of the current copyright situation in
-libburnia.pykix.org.
+libburnia-project.org.
 
 ------------------------------------------------------------------------------
 My thanks to the above authors (except myself, of course) for making the
 following possible.
 
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
-Integrated sub project of libburnia.pykix.org but also published via:
+Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
 http://scdbackup.sourceforge.net/cdrskin-0.3.9.tar.gz
 Copyright (C) 2006-2007 Thomas Schmitt
@@ -64,13 +64,13 @@ Obtain cdrskin-0.3.9.tar.gz, take it to a directory of your choice and do:
     tar xzf cdrskin-0.3.9.tar.gz
     cd cdrskin-0.3.9
 
-Or obtain a libburnia.pykix.org SVN snapshot,
-go into the toplevel directory of the snapshot (e.g.  cd libburn_pykix ),
+Or obtain a libburnia-project.org SVN snapshot,
+go into the toplevel directory of the snapshot (e.g.  cd libburn ),
 and execute the autotools script ./bootstrap . Use autools version >= 1.7 .
 
 Within that toplevel directory of either cdrskin-0.3.9 or libburn then execute:
 
-    ./configure
+    ./configure --prefix=/usr
     make
 
 (Note: there are next-level directories "libburn" and "cdrskin". Those
