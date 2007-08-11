@@ -371,6 +371,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002013d (DEBUG,LOW)    = Waiting for free buffer space takes long time
  0x0002013e (SORRY,HIGH)   = Timeout with waiting for free buffer. Now disabled
  0x0002013f (DEBUG,LOW)    = Reporting total time spent with waiting for buffer
+ 0x00020140 (FATAL,HIGH)   = Drive is busy on attempt to write random access
+ 0x00020141 (SORRY,HIGH)   = Write data count not properly aligned
 
 
  libdax_audioxtr:

@@ -1427,11 +1427,14 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to
-    choose this address at all (DVD+RW, DVD-RAM, formatted DVD-RW only for
+    choose this address at all (for now: DVD+RW, DVD-RAM, formatted DVD-RW).
     now). The address is given in bytes. If it is not -1 then a write run
     will fail if choice of start address is not supported or if the block
     alignment of the address is not suitable for media and write mode.
-    (Alignment to 32 kB blocks is advised with DVD media.)
+    Alignment to 32 kB blocks is supposed to be safe with DVD media.
+    Call burn_disc_get_multi_caps() can obtain the necessary media info. See
+    resulting struct burn_multi_caps elements .start_adr , .start_alignment ,
+    .start_range_low , .start_range_high .
     @param opts The write opts to change
     @param value The address in bytes (-1 = start at default address)
 */
@@ -1788,9 +1791,9 @@ int burn_msgs_obtain(char *minimum_severity,
 
 
 /* ts A61002 */
-/* The prototype of a handler function suitable for burn_set_abort_handling().
-   Such a function has to return -2 if it does not want the process to
-   exit with value 1.
+/** The prototype of a handler function suitable for burn_set_abort_handling().
+    Such a function has to return -2 if it does not want the process to
+    exit with value 1.
 */
 typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
 
@@ -1809,6 +1812,34 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
 */
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler, 
 			     int mode);
+
+/* ts A70811 */
+/** Circumvent usual libburn session processing and rather write data without
+    preparations or finalizing. This will work only with overwriteable media
+    which are also suitable for burn_write_opts_set_start_byte(). The same
+    address alignment restrictions as with this function apply. I.e. for DVD
+    it is best to align to 32 KiB blocks (= 16 LBA units). The amount of data
+    to be written is subject to the same media dependent alignment rules.
+    Again, 32 KiB is most safe.
+    Call burn_disc_get_multi_caps() can obtain the necessary media info. See
+    resulting struct burn_multi_caps elements .start_adr , .start_alignment ,
+    .start_range_low , .start_range_high .
+    Other than burn_disc_write() this is a synchronous call which returns
+    only after the write transaction has ended (sucessfully or not). So it is
+    wise not to transfer giant amounts of data in a single call.
+    @param d            The drive to which to write 
+    @param byte_address The start address of the write in byte
+                        (1 LBA unit = 2048 bytes) (do respect media alignment)
+    @param data         The bytes to be written
+    @param data_count   The number of those bytes (do respect media alignment)
+                        data_count == 0 is permitted (e.g. to flush the
+                        drive buffer without further data transfer).
+    @param flag         Bitfield for control purposes:
+                        bit0 = flush the drive buffer after eventual writing
+    @return 1=sucessful , <=0 : number of tranfered bytes * -1
+*/
+int burn_random_access_write(struct burn_drive *d, off_t byte_address,
+                             char *data, off_t data_count, int flag);
 
 #ifndef DOXYGEN
 

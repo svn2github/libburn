@@ -1523,7 +1523,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			sprintf(msg,
 			  "Write start address not properly aligned to 2048");
 			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020125,
+				0x00020126,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			goto early_failure;
@@ -1553,7 +1553,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			sprintf(msg,
 			  "Write start address not properly aligned to 32K");
 			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020125,
+				0x00020126,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			goto early_failure;
@@ -1636,7 +1636,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		if (o->start_byte >= 0) {
 			sprintf(msg, "Write start address not supported");
 			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020124,
+				0x00020125,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			goto early_failure;
@@ -1969,3 +1969,82 @@ fail_wo_sync:;
 	d->cancel = 1;
 	d->busy = BURN_DRIVE_IDLE;
 }
+
+
+int burn_random_access_write(struct burn_drive *d, off_t byte_address,
+                             char *data, off_t data_count, int flag)
+{
+	int alignment = 0, start, upto, chunksize, err;
+	char msg[81], *rpt;
+	struct buffer buf;
+
+	if (d->current_profile == 0x12) /* DVD-RAM */
+		alignment = 2 * 1024;
+        if (d->current_profile == 0x13) /* DVD-RW restricted overwrite */
+		alignment = 32 * 1024;
+	if (d->current_profile == 0x1a) /* DVD+RW */
+		alignment = 2 * 1024;
+	if (alignment == 0) {
+		sprintf(msg, "Write start address not supported");
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020125,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Write start address not supported", 0, 0);
+		return 0;
+	}
+	if ((byte_address % alignment) != 0) {
+		sprintf(msg,
+			"Write start address not properly aligned (%d bytes)",
+			alignment);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020126,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		return 0;
+	}
+	if ((data_count % alignment) != 0) {
+		sprintf(msg,
+			"Write data count not properly aligned (%ld bytes)",
+			(long) alignment);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020141,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		return 0;
+	}
+
+	if (d->busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020140,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is busy on attempt to write random access",0,0);
+		return 0;
+	}
+	d->busy = BURN_DRIVE_WRITING;
+	d->buffer = &buf;
+
+	start = byte_address / 2048;
+	upto = start + data_count / 2048;
+	rpt = data;
+	for (; start < upto; start += 16) {
+		chunksize = upto - start;
+		if (chunksize > 16)
+			chunksize = 16;
+		d->buffer->bytes = chunksize * 2048;
+		memcpy(d->buffer->data, rpt, d->buffer->bytes);
+		rpt += d->buffer->bytes;
+		d->buffer->sectors = chunksize;
+		d->nwa = start;
+		err = d->write(d, d->nwa, d->buffer);
+		if (err == BE_CANCELLED) {
+			d->busy = BURN_DRIVE_IDLE;
+			return (-(start * 2048 - byte_address));
+		}
+	}
+
+	if (flag & 1)
+		d->sync_cache(d);
+	d->busy = BURN_DRIVE_IDLE;
+	return(1);
+}
+
