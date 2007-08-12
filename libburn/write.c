@@ -1978,6 +1978,13 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 	char msg[81], *rpt;
 	struct buffer buf;
 
+	if (d->released) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020142,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is not grabbed on random access write", 0, 0);
+		return 0;
+	}
 	if (d->current_profile == 0x12) /* DVD-RAM */
 		alignment = 2 * 1024;
         if (d->current_profile == 0x13) /* DVD-RW restricted overwrite */
