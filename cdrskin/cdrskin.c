@@ -1152,7 +1152,8 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
 
 /** Deliver an open file descriptor corresponding to the source path of track.
     @param flag Bitfield for control purposes:
-                bit0=open as source for direct write: 
+                bit0=debugging verbosity
+                bit1=open as source for direct write: 
                      no audio extract, no minimum track size
     @return <=0 error, 1 success
 */
@@ -1185,6 +1186,9 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
              device_adr, raw_adr, no_convert_fs_adr);
 */
      if(!no_convert_fs_adr) {
+       if(flag&1)
+         ClN(fprintf(stderr,
+            "cdrskin_debug: checking track source for identity with drive\n"));
        if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
 /*     
          fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
@@ -1207,7 +1211,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    }
 #endif
 
-   if(!(flag&1))
+   if(!(flag&2))
      is_wav= Cdrtrack_extract_audio(track,fd,&xtr_size,0);
    if(is_wav==-1)
      return(-1);
@@ -1249,12 +1253,12 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
 #ifdef Cdrskin_allow_libburn_taO
 
  if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size
-    && (track->fixed_size>0 || size_from_file) && !(flag&1)) {
+    && (track->fixed_size>0 || size_from_file) && !(flag&2)) {
 
 #else
 
  if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size &&
-    !(flag&1)) {
+    !(flag&2)) {
 
 #endif
 
@@ -1300,7 +1304,7 @@ int Cdrtrack_attach_fifo(struct CdrtracK *track, int *outlet_fd,
  *outlet_fd= -1;
  if(track->fifo_size<=0)
    return(2);
- ret= Cdrtrack_open_source_path(track,&source_fd,0);
+ ret= Cdrtrack_open_source_path(track,&source_fd,flag&1);
  if(ret<=0)
    return(ret);
  if(pipe(pipe_fds)==-1)
@@ -1404,7 +1408,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 
  /* Note: track->track_type may get set in here */
  if(track->source_fd==-1) {
-   ret= Cdrtrack_open_source_path(track,&source_fd,0);
+   ret= Cdrtrack_open_source_path(track,&source_fd,(flag&1));
    if(ret<=0)
      goto ex;
  }
@@ -5155,7 +5159,8 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
  Cdrtrack_get_source_path(skin->tracklist[0],
                           &source_path,&source_fd,&is_from_stdin,0);
  if(source_fd==-1) {
-   ret= Cdrtrack_open_source_path(skin->tracklist[0],&source_fd,1);
+   ret= Cdrtrack_open_source_path(skin->tracklist[0],&source_fd,
+                                  2|(skin->verbosity>=Cdrskin_verbose_debuG));
    if(ret<=0)
      goto ex;
  }
