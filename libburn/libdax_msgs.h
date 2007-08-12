@@ -374,6 +374,9 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020140 (FATAL,HIGH)   = Drive is busy on attempt to write random access
  0x00020141 (SORRY,HIGH)   = Write data count not properly aligned
  0x00020142 (FATAL,HIGH)   = Drive is not grabbed on random access write
+ 0x00020143 (SORRY,HIGH)   = Read start address not properly aligned
+ 0x00020144 (SORRY,HIGH)   = SCSI error on read
+ 0x00020145 (FATAL,HIGH)   = Drive is busy on attempt to read data
 
 
  libdax_audioxtr:

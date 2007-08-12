@@ -320,6 +320,11 @@ struct burn_drive
 	/* mmc5r03c.pdf 6.24 : get list of available formats */
 	int (*read_format_capacities) (struct burn_drive *d, int top_wanted);
 
+	/* ts A70812 */
+	/* mmc5r03c.pdf 6.15 : read data sectors (start and amount in LBA) */
+	int (*read_10) (struct burn_drive *d, int start, int amount,
+	                struct buffer *buf);
+
 };
 
 /* end of generic 'drive' data structures */

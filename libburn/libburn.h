@@ -1061,6 +1061,9 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
     Note: write_type BURN_WRITE_SAO is currently not capable of writing a mix
     of data and audio tracks. You must use BURN_WRITE_TAO for such sessions.
     To be set by burn_write_opts_set_write_type(). 
+    Note: This function is not suitable for overwriting data in the middle of
+    a valid data area because it is allowed to append trailing data.
+    For exact random access overwriting use burn_random_access_write().
     @param o The options for the writing operation.
     @param disc The struct burn_disc * that described the disc to be created
 */
@@ -1813,8 +1816,10 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler, 
 			     int mode);
 
+
 /* ts A70811 */
-/** The drive must be grabbed successfully before calling this function. It
+/** Write data in random access mode.
+    The drive must be grabbed successfully before calling this function which
     circumvents usual libburn session processing and rather writes data without
     preparations or finalizing. This will work only with overwriteable media
     which are also suitable for burn_write_opts_set_start_byte(). The same
@@ -1842,6 +1847,29 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 */
 int burn_random_access_write(struct burn_drive *d, off_t byte_address,
                              char *data, off_t data_count, int flag);
+
+
+/* ts A70812 */
+/** Read data in random access mode.
+    The drive must be grabbed successfully before calling this function.
+    With all currently supported drives and media the byte_address has to
+    be aligned to 2048 bytes. Only data tracks with 2048 bytes per sector
+    can be read this way. I.e. not CD-audio, not CD-video-stream ...
+    This is a synchronous call which returns only after the full read job
+    has ended (sucessfully or not). So it is wise not to read giant amounts
+    of data in a single call.
+    @param d            The drive to which to write
+    @param byte_address The start address of the read in byte (aligned to 2048)
+    @param data         A memory buffer capable of taking data_size bytes
+    @param data_size    The amount of data to be read. This does not have to
+                        be aligned to any block size.
+    @param data_count   The amount of data actually read (interesting on error)
+    @param flag         Bitfield for control purposes: (unused yet, submit 0)
+    @return 1=sucessful , <=0 an error occured
+*/
+int burn_read_data(struct burn_drive *d, off_t byte_address,
+                   char data[], off_t data_size, off_t *data_count, int flag);
+
 
 #ifndef DOXYGEN
 

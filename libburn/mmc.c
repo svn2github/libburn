@@ -165,6 +165,10 @@ static unsigned char MMC_READ_FORMAT_CAPACITIES[] =
 static unsigned char MMC_RESERVE_TRACK[] =
 	{ 0x53, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* ts A70812 : Read data sectors (for types with 2048 bytes/sector only) */
+static unsigned char MMC_READ_10[] =
+	{ 0x28, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 
 static int mmc_function_spy_do_tell = 0;
 
@@ -2793,6 +2797,45 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 }
 
 
+/* A70812 ts */
+int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
+{
+	struct command c;
+
+	mmc_function_spy("mmc_read_10");
+	if (amount > BUFFER_SIZE / 2048)
+		return -1;
+
+	scsi_init_command(&c, MMC_READ_10, sizeof(MMC_READ_10));
+	c.dxfer_len = amount * 2048;
+	c.retry = 1;
+	mmc_int_to_four_char(c.opcode + 2, start);
+	c.opcode[7] = (amount >> 8) & 0xFF;
+	c.opcode[8] = amount & 0xFF;
+	c.page = buf;
+	c.page->bytes = 0;
+	c.page->sectors = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+	if (c.error) {
+		char msg[160];
+		printf(msg,
+		"SCSI error on read_10(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
+			start, amount,
+			c.sense[2],c.sense[12],c.sense[13]);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020144,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		return BE_CANCELLED;
+	}
+
+	buf->sectors = amount;
+	buf->bytes = amount * 2048;
+	return 0;
+}
+
+
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()
 */
 int mmc_setup_drive(struct burn_drive *d)
@@ -2815,6 +2858,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->read_buffer_capacity = mmc_read_buffer_capacity;
 	d->format_unit = mmc_format_unit;
 	d->read_format_capacities = mmc_read_format_capacities;
+	d->read_10 = mmc_read_10;
 
 
 	/* ts A70302 */

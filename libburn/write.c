@@ -1970,9 +1970,9 @@ fail_wo_sync:;
 	d->busy = BURN_DRIVE_IDLE;
 }
 
-
+/* ts A70811 : API function */
 int burn_random_access_write(struct burn_drive *d, off_t byte_address,
-                             char *data, off_t data_count, int flag)
+				char *data, off_t data_count, int flag)
 {
 	int alignment = 0, start, upto, chunksize, err;
 	char msg[81], *rpt;
@@ -2051,6 +2051,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 
 	if (flag & 1)
 		d->sync_cache(d);
+	d->buffer = NULL;
 	d->busy = BURN_DRIVE_IDLE;
 	return(1);
 }

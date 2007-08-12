@@ -68,6 +68,11 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
                             const struct burn_write_opts *o,
                             unsigned char *pd);
 
+/* ts A70812 : return 0 = ok , return BE_CANCELLED = error occured */
+int mmc_read_10(struct burn_drive *d, int start, int amount,
+                struct buffer *buf);
+
+
 
 /* mmc5r03c.pdf 4.3.4.4.1 d) "The maximum number of RZones is 2 302." */
 #define BURN_MMC_FAKE_TOC_MAX_SIZE 2302

@@ -31,6 +31,12 @@
 #include "read.h"
 #include "options.h"
 
+/* ts A70812 */
+#include "error.h"
+#include "libdax_msgs.h"
+extern struct libdax_msgs *libdax_messenger;
+
+
 void burn_disc_read(struct burn_drive *d, const struct burn_read_opts *o)
 {
 #if 0
@@ -280,3 +286,68 @@ static void flipq(unsigned char *sub)
 	*(sub + 12 + 11) = ~*(sub + 12 + 11);
 }
 */
+
+
+/* ts A70812 : API function */
+int burn_read_data(struct burn_drive *d, off_t byte_address,
+                   char data[], off_t data_size, off_t *data_count, int flag)
+{
+	int alignment = 2048, start, upto, chunksize, err, cpy_size;
+	char msg[81], *wpt;
+	struct buffer buf;
+
+	*data_count = 0;
+	if (d->released) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020142,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is not grabbed on random access write", 0, 0);
+		return 0;
+	}
+	if ((byte_address % alignment) != 0) {
+		sprintf(msg,
+			"Read start address not properly aligned (%d bytes)",
+			alignment);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020143,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		return 0;
+	}
+
+	if (d->busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020145,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is busy on attempt to read data", 0, 0);
+		return 0;
+	}
+	d->busy = BURN_DRIVE_READING;
+	d->buffer = &buf;
+
+	start = byte_address / 2048;
+	upto = start + data_size / 2048;
+	if (data_size % 2048)
+		upto++;
+	wpt = data;
+	for (; start < upto; start += 16) {
+		chunksize = upto - start;
+		if (chunksize > 16) {
+			chunksize = 16;
+			cpy_size = 16 * 2048;
+		} else
+			cpy_size = data_size - *data_count;
+		err = d->read_10(d, start, chunksize, d->buffer);
+		if (err == BE_CANCELLED) {
+			d->busy = BURN_DRIVE_IDLE;
+			return 0;
+		}
+		memcpy(wpt, d->buffer->data, cpy_size);
+		wpt += cpy_size;
+		*data_count += cpy_size;
+	}
+
+	d->buffer = NULL;
+	d->busy = BURN_DRIVE_IDLE;
+	return 1;
+}
