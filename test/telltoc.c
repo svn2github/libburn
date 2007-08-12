@@ -559,6 +559,55 @@ ex:;
 }
 
 
+/**
+  @param encoding determins how to format output on stdout:
+                  0 = default , 1 = raw 8 bit (dangerous for tty) , 2 = hex
+*/
+int telltoc_read_and_print(struct burn_drive *drive, 
+			int start_sector, int sector_count, int encoding)
+{
+	int ret, j;
+	char *buf = NULL, line[81];
+	off_t data_count, i;
+
+	if (sector_count <= 0)
+		return -1;
+	buf = malloc(sector_count * 2048);
+	ret = burn_read_data(drive, ((off_t) start_sector) * (off_t) 2048,
+				buf, ((off_t) sector_count) * (off_t) 2048,
+				&data_count, 0);
+	printf(
+	     "Data         : start=%ds , count=%ds , read=%ds , encoding=%d\n",
+		start_sector, sector_count, (int) (data_count / (off_t) 2048),
+		encoding);
+	if (encoding == 1) {
+		fwrite(buf, data_count, 1, stdout);
+	} else for (i = 0; i < data_count; i += 16) {
+		for (j = 0; j < 16 && i + j < data_count; j++) {
+			if (buf[i + j] >= ' ' && buf[i + j] <= 126 &&
+				encoding != 2)
+				sprintf(line + 3 * j, " %c ",
+					 (int) buf[i + j]);
+			else
+				sprintf(line + 3 * j, "%2.2X ",
+					 (unsigned char) buf[i + j]);
+		}
+		line[3 * (j - 1) + 2] = 0;
+		printf("%s\n",line);
+	}
+	printf(
+	     "End Of Data  : start=%ds , count=%ds , read=%ds , encoding=%d\n",
+		start_sector, sector_count, (int) (data_count / (off_t) 2048),
+		encoding);
+
+	if (ret <= 0)
+		fprintf(stderr, "SORRY : Reading failed.\n");
+	if (buf != NULL)
+		free(buf);
+	return ret;
+}
+
+
 /** The setup parameters of telltoc */
 static char drive_adr[BURN_DRIVE_ADR_LEN] = {""};
 static int driveno = 0;
@@ -567,6 +616,7 @@ static int do_toc = 0;
 static int do_msinfo = 0;
 static int print_help = 0;
 static int do_capacities = 0;
+static int read_start = -1, read_count = -1, print_encoding = 0;
 
 
 /** Converts command line arguments into above setup parameters.
@@ -609,6 +659,20 @@ int telltoc_setup(int argc, char **argv)
         } else if (!strcmp(argv[i], "--toc")) {
 	    do_toc = 1;
 
+        } else if (!strcmp(argv[i], "--read_and_print")) {
+            i+= 3;
+            if (i >= argc) {
+                fprintf(stderr,"--read_and_print requires three arguments: start count encoding(try 0, not 1)\n");
+                return 1;
+            }
+            sscanf(argv[i-2], "%d", &read_start);
+            sscanf(argv[i-1], "%d", &read_count);
+            print_encoding = 0;
+            if(strcmp(argv[i], "dangerously_raw")==0 || strcmp(argv[i],"1")==0)
+              print_encoding = 1;
+            else if(strcmp(argv[i], "hex") == 0 || strcmp(argv[i],"2") == 0)
+              print_encoding = 2;
+            
         } else if (!strcmp(argv[i], "--help")) {
             print_help = 1;
 
@@ -657,11 +721,11 @@ int main(int argc, char **argv)
 			msinfo_alone = 1;
 	}
 	/* Default option is to do everything if possible */
-    	if (do_media==0 && do_msinfo==0 && do_capacities==0 && do_toc==0 
-	    && driveno!=-1) {
+    	if (do_media==0 && do_msinfo==0 && do_capacities==0 && do_toc==0 &&
+		(read_start < 0 || read_count <= 0) && driveno!=-1) {
 		if(print_help)
 			exit(0);
-		full_default = do_media = do_msinfo = do_capacities= do_toc = 1;
+		full_default = do_media = do_msinfo = do_capacities= do_toc= 1;
 	}
 
 	fprintf(stderr, "Initializing libburnia-project.org ...\n");
@@ -709,6 +773,12 @@ int main(int argc, char **argv)
 					msinfo_explicit, msinfo_alone);
 		if (ret<=0)
 			{ret = 38; goto release_drive; }
+	}
+	if (read_start >= 0 && read_count > 0) {
+		ret = telltoc_read_and_print(drive_list[driveno].drive,
+				read_start, read_count, print_encoding);
+		if (ret<=0)
+			{ret = 40; goto release_drive; }
 	}
 
 	ret = 0;
