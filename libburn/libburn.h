@@ -1814,7 +1814,8 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 			     int mode);
 
 /* ts A70811 */
-/** Circumvent usual libburn session processing and rather write data without
+/** The drive must be grabbed successfully before calling this function. It
+    circumvents usual libburn session processing and rather writes data without
     preparations or finalizing. This will work only with overwriteable media
     which are also suitable for burn_write_opts_set_start_byte(). The same
     address alignment restrictions as with this function apply. I.e. for DVD
@@ -1827,6 +1828,7 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
     Other than burn_disc_write() this is a synchronous call which returns
     only after the write transaction has ended (sucessfully or not). So it is
     wise not to transfer giant amounts of data in a single call.
+    Important: Data have to fit into the already formatted area of the media.
     @param d            The drive to which to write 
     @param byte_address The start address of the write in byte
                         (1 LBA unit = 2048 bytes) (do respect media alignment)
