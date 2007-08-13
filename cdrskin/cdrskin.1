@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "July 19, 2007"
+.TH CDRSKIN 1 "August 12, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -649,6 +649,32 @@ Number dev='Devicefile' rw-Permissions : 'Vendor' 'Model'
 .br
 Number and Devicefile can both be used with option dev=, but number is
 volatile (numbering changes if drives become busy).
+.TP
+.BI direct_write_amount= size
+Do not write a session with tracks but rather make an appropriate number of
+direct write operations with no preparations. Flushing the drive buffer will
+be the only finalization. It is advised to eject the media afterwards because
+the write operations circumvent the usual system i/o with its caches and
+buffers. By ejecting, those invalid memory copies get surely discarded.
+.br
+Only few media can be written this way: DVD-RAM, RVD+RW and overwriteable
+DVD-RW. Writing is restricted to the already formatted area of the media.
+.br
+Writing starts at byte 0 of the media or at the address given by option
+.B write_start_address= .
+Only the first track source is used as input for the write operations.
+The fifo (fs=) is disabled.
+.br
+Parameter
+.B size
+controls the amount of data to be written. Size 0 means that the track source
+shall be used up until EOF. In this case, the last write transaction gets
+padded up to the necessary size by zeros. Size -1 revokes direct writing
+and switches back to normal session oriented writing.
+.br
+Both, write_start_address and direct_write_amount size must be aligned to a
+media dependend transaction size. With DVD-RAM and DVD+RW this is 2k, with
+overwriteable DVD-RW it is 32k.
 .TP
 .BI fifo_start_at= size
 Do not wait for full fifo but start burning as soon as the given number
