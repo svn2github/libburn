@@ -22,7 +22,7 @@ cevapi
 -m struct CevapeqP *equip
 -m struct CevapjoB *job
 -m struct CevapauX *aux
--m struct CevapgsT *gestures
+-m struct CevapgestureS *gestures
 @
 =end Class
 
@@ -38,7 +38,7 @@ Boss=API
 Cgen=\
 cevapeqp
 -v struct CevapI *boss
--m struct CevapeqpsyS *sys
+-m struct CevapsysteM *sys
 @
 =end Class
 
@@ -54,7 +54,7 @@ Boss=API
 Cgen=\
 cevapjob
 -v struct CevapI *boss
--m struct CevapjobtdO *todo
+-m struct CevaptodO *todo
 # >>>
 @
 =end Class
@@ -85,7 +85,7 @@ and also provides to them the services from the SCSI oriented layers.
 PeerToPeer=EQUIP,JOB,AUX
 Subordinates=SCSI_CMD
 Cgen=\
-cevapgst
+cevapgestures
 -v struct CevapI *boss
 # >>>
 @
@@ -113,9 +113,9 @@ SCSI format+transport and the principle of SCSI service.
 Boss=SCSI_CMD
 Implementations=SCSI_FORMAT,SCSI_SERVICE
 Cgen=\
-cevapsciexc
--v struct CevapscifmT *scsi_format
--v struct CevapscisvC *scsi_service
+cevapsexec
+-v struct CevapsforM *scsi_format
+-v struct CevapsservicE *scsi_service
 -v int silent_on_scsi_error
 @
 =end Interface
@@ -130,9 +130,9 @@ transport and decodes the reply into parameters.
 Boss=SCSI_CMD via SCSI_EXEC
 Subordinates=SCSI_TRANSPORT
 Cgen=\
-cevapscifmt
--v struct CevapsciexC *boss
--v struct CevapscitrN *scsi_transport
+cevapsform
+-v struct CevapsexeC *boss
+-v struct CevapstransP *scsi_transport
 # >>>
 @
 =end Class
@@ -147,8 +147,8 @@ system perform a SCSI transaction. It then returns the reply data in raw form.
 Boss=SCSI_FORMAT
 Os_specific=yes
 Cgen=\
-cevapscitrn
--v struct CevapscifmT *boss
+cevapstransp
+-v struct CevapsforM *boss
 -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
 # >>>
 @
@@ -164,8 +164,8 @@ via a set of parametrized functions which abstract SCSI command transactions.
 Boss=SCSI_CMD via SCSI_EXEC
 Os_specific=yes
 Cgen=\
-cevapscisvc
--v struct CevapsciexC *boss
+cevapsservice
+-v struct CevapsexeC *boss
 -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
 # >>>
 @
@@ -188,11 +188,11 @@ adapter classes, the drives.
 Boss=EQUIP
 Subordinates=EquipDrive*N
 Cgen=\
-cevapeqpsys
+cevapsystem
 -v struct CevapeqP *boss
 -m char *infotext
--l struct CevapeqpdrV *drives
--v struct CevapeqpdrV *eol_drive
+-l struct CevapdrivE *drives
+-v struct CevapdrivE *eol_drive
 # >>> be boss of SCSI_CMD ?
 # >>>
 @
@@ -209,9 +209,9 @@ status, the media loaded.
 Subordinates=EquipMedia
 Boss=EquipSystem
 Cgen=\
--l cevapeqpdrv
--v struct CevapeqpsyS *boss
--m struct CevapeqpmdA *media
+-l cevapdrive
+-v struct CevapsysteM *boss
+-m struct CevapmediA *media
 -m char *devname
 -v int bus_no
 -v int host
@@ -220,13 +220,15 @@ Cgen=\
 -v int lun
 -v int phys_if_std
 -m char *phys_if_name
--v struct CevapsciexC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
+-v struct CevapsexeC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
 -v int global_index
 # >>> How to handle this by cgen ? : -v pthread_mutex_t access_lock
 -v int current_feat2fh_byte4
 -v volatile int released
+-v int block_types[4]
+-v struct CevapbuffeR *buffer
 
-# >>> next to process: transport.h :  struct burn_disc *disc 
+# >>> next to process: transport.h :  struct burn_progress progress;
 
 # >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
@@ -246,11 +248,11 @@ Subordinates=\
 EquipProfile*N,EquipFormat*N,EquipPerformance*N,EquipStatus,EquipMulticaps
 Boss=EquipDrive
 Cgen=\
-cevapeqpmda
--v struct CevapeqpdrV *boss
--m struct CevapeqpstA *status
--l struct CevapeqpprO *profiles
--v struct CevapeqpprO *eol_profile
+cevapmedia
+-v struct CevapdrivE *boss
+-m struct CevapstatuS *status
+-l struct CevapprofilE *profiles
+-v struct CevapprofilE *eol_profile
 -v int current_has_feat21h
 -v int current_feat21h_link_size
 -v int needs_close_session
@@ -260,12 +262,12 @@ cevapeqpmda
 -v unsigned int format_curr_blsas
 -v int best_format_type
 -v off_t best_format_size
--l struct CevapeqpfmT *format_descriptors
--v struct CevapeqpfmT *eol_format_descriptor
+-l struct CevapformaT *format_descriptors
+-v struct CevapformaT *eol_format_descriptor
 -v int nwa
 -v int start_lba
 -v int end_lba
-
+-m struct CevapmcapS *multicaps
 # >>>
 @
 =end Class
@@ -282,14 +284,14 @@ disabled, or unavailable.
 Subordinates=EquipFeature*N
 Boss=EquipMedia
 Cgen=\
--l cevapeqppro
--v struct CevapeqpmdA *boss
+-l cevapprofile
+-v struct CevapmediA *boss
 -v int profile_code
 -v char *profile_text
 -v int is_cd_profile
 -v int is_supported_profile
--l struct CevapeqpftR *features
--v struct CevapeqpftR *eol_feature
+-l struct CevapfeaturE *features
+-v struct CevapfeaturE *eol_feature
 # >>>
 @
 =end Class
@@ -303,7 +305,7 @@ EquipFeature maps a MMC feature into libdax (See mmc5r03c.pdf chapter 5).
 A feature describes a set of SCSI commands and (implicitely) of use cases.
 Boss=EquipProfile
 Cgen=\
--l cevapeqpftr
+-l cevapfeature
 # >>>
 @
 =end Class
@@ -316,7 +318,7 @@ Documentation=\
 >>> EquipFormat
 Boss=EquipMedia
 Cgen=\
--l cevapeqpfmt
+-l cevapformat
 # >>>
 @
 =end Class
@@ -329,7 +331,7 @@ Documentation=\
 >>> EquipPerformance
 Boss=EquipMedia
 Cgen=\
--l cevapeqppfm
+-l cevapperf
 # >>>
 @
 =end Class
@@ -343,15 +345,16 @@ EquipStatus represents the status of media and drive. This includes
 blank/appendable/closed, progress indicator.
 Boss=EquipMedia
 Cgen=\
-cevapeqpsta
--v struct CevapeqpmdA *boss
+cevapstatus
+-v struct CevapmediA *boss
 -v int status
 -m char *status_text
--v struct CevapeqpprO *current_profile
+-v struct CevapprofilE *current_profile
 -v int complete_sessions
 -v int last_track_no
 -v off_t media_capacity_remaining
 -v int media_lba_limit
+# >>>
 @
 =end Class
 
@@ -362,10 +365,12 @@ Since=
 Documentation=\
 >>> EquipMulticaps
 Boss=EquipMedia
+Cgen=\
+cevapmcaps
+-m struct CevapdisC *disc
+# >>>
+@
 =end Class
-
-# >>> need EquipDisc for describing the table of content
-# >>> ??? Define AuxDisc class as common part of EquipDisc , JobDisc
 
 =end ClassDiagram=Equip_overview
 
@@ -381,7 +386,7 @@ JobTodo records what is to be done during a job. This includes peripheral
 actions like tray load/eject and central actions like blank, format, burn.
 Subordinates=JobDisc,JobOptions
 Cgen=\
-cevapjobtdo
+cevaptodo
 # >>>
 @
 =end Class
@@ -391,9 +396,16 @@ Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
 Since=18.3.2007
 Documentation=\
-JobDisc models a not yet existing disc structure which is to be created.
+JobDisc models a disc structure. Either one iwhich already exists or
+one which is to be created in a job run.
 Subordinates=JobSession*N
 Boss=JobTodo
+Cgen=\
+cevapdisc
+-l struct CevapsessioN *sessions
+-v struct CevapsessioN *eol_session
+# >>> take over services of struct burn_disc
+@
 =end Class
 
 Class=JobSession
@@ -406,6 +418,10 @@ several tracks. Traditionally the last session of a disc is recognized
 by operating systems as the thing to be mounted.
 Subordinates=JobTrack*N,JobFifo
 Boss=JobDisc
+Cgen=\
+-l cevapsession
+# >>>
+@
 =end Class
 
 Class=JobTrack
@@ -430,7 +446,7 @@ the same as an addressable media block resp. sector. On DVD this might be
 an addressable block od 2k or a packet of e.g. 32k.
 Boss=JobTrack
 Cgen=\
-cevapjobblk
+cevapblock
 -v int alba
 -v int rlba
 # >>>
@@ -488,6 +504,19 @@ underrun protection, random access addressing.
 Boss=JobTodo
 =end Class
 
+Class=JobBuffer
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=13.8.2007
+Documentation=\
+JobBuffer is an intermediate storage for the content of several JobBlock
+or JobSourceBlock.
+Cgen=\
+cevapbuffer
+# >>>
+@
+=end Class
+
 Class=
 Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
@@ -500,6 +529,7 @@ Documentation=\
 # >>> a dummy to be integrated into the model
 Cgen=\
 burn_os_transport_drive_elements
+# >>>
 @
 
 
@@ -521,7 +551,7 @@ Notes:
    cd "$test_dir"/
    cat "$model_dir"/libdax_model.txt | \
      "$xtr_dir"/extract_cgen_input.sh | \
-   "$cgen_dir"/bin/cgen -smem_local -ansi -global_include cevap_global.h
+   "$cgen_dir"/cgen -smem_local -ansi -global_include cevap_global.h
 
  Compile:
    ( cd "$test_dir" ; cc -g -c *.c 2>&1 | less )
@@ -661,4 +691,75 @@ Example run:
 @
 +
   
+------------------------------------------------------------------------
+
+The generated code uses smem.[ch] out of one of my BSD licensed projects.
+Out of smem.h :
+
+
+                                   smem
+
+ Functions to replace  malloc()  and  free() in order to get more control
+ over memory leaks or spurious errors caused by faulty usage of malloc()
+ and free(). 
+
+
+ Sourcecode provisions:
+ 
+ Use only the following macros for memory management:
+    TSOB_FELD(type,count)  creates an array of items of given type 
+    Smem_malloC()          analogue of malloc()
+    Smem_freE()            analogue of free()
+ One may #define malloc Smem_malloC resp. #define free Smem_freE 
+ but better would be to review (and often to streamline) the sourcecode
+ in respect to those two functions. 
+
+
+ Speed versus control:
+
+ In production versions, where maximum speed is required, one may undefine
+ the macro  Smem_own_functionS  in  smem.h . 
+ This causes the above macros to directly invoke malloc() and free() without
+ any speed reduction (and without any additional use).
+ Undefinitio can be done globaly by modifying smem.h or locally by defining
+  Smem_no_own_functionS  before including smem.h .
+
+ If Smem_own_functionS remains defined, then the functions
+   Smem_malloc() 
+   Smem_free()
+ are used rather than malloc() and free().
+ They count the number of calls to maintain a rough overview of memory usage.
+ Smem_malloc() additionally checks for 0 size and Smem_free() checks for
+ NULL pointers, which they both report to stderr. Eventually one should set
+ a breakpoint in function Smem_protest() to learn about the origin of such
+ messages.
+ A status line may be obtained by  Smem_report()  or printed by Smem_stderr().
+
+ As long as the variable Smem_record_itemS is set to 0, there is not very much
+ overhead compared with malloc() and free().
+ If the variable is set to 1 by Smem_set_record_items() then all malloc()
+ results are kept in a list where they will be deleted by their corresponding
+ Smem_free() calls. If a pointer is to be freed, which is not recorded in the
+ list then an error message will be printed to stderr. The memory will not
+ be freed !
+ This mode not only may be very slow, it also consumes at least 16 byte per
+ piece of data which was obtained by malloc as long as it has not been freed.
+ Due to the current nature of the list, large numbers of memory items are freed
+ much faster in the reverse order of their creation. If there is a list of
+ 100000 strings to delete, it is very rewarding to free the youngest ones first.
+ A shortcut via hashing is available but consumes 24 bytes rather than 16.
+ (see above  Smem_with_hasH  )
+
+ The function Smem_is_recorded() can be used to check wether a pointer is
+ valid according to the list. It returns :
+   0 = is not in list , 1 = is in list , 2 = recording is off 
+
+ If one decides to start recording malloc() results in the midst of a program
+ run, one has to be aware of false protests of Smem_free() if a memory piece
+ has been allocated before recording started. This will also cause those pieces
+ to be memory leaks because Smem_free() refuses to delete them. (Freeing memory
+ that was not obtained by malloc or was already freed previously can result in
+ deferred SIGSEGV or similar trouble, depending on OS and library.)
+ Also in that case one should stop recording before ending the program, to
+ avoid a lot of false complaints about longliving memory objects.    
 
