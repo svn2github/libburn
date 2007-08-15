@@ -19,10 +19,10 @@ which it reflects and augments by its own architectural concepts.
 Subordinates=EQUIP,JOB,AUX
 Cgen=\
 cevapi
--m struct CevapeqP *equip
--m struct CevapjoB *job
--m struct CevapauX *aux
--m struct CevapgestureS *gestures
+-r -m struct CevapeqP *equip
+-r -m struct CevapjoB *job
+-r -m struct CevapauX *aux
+-r -m struct CevapgestureS *gestures
 @
 =end Class
 
@@ -37,8 +37,8 @@ PeerToPeer=GESTURES
 Boss=API
 Cgen=\
 cevapeqp
--v struct CevapI *boss
--m struct CevapsysteM *sys
+-r -v struct CevapI *boss
+-r -m struct CevapsysteM *sys
 @
 =end Class
 
@@ -53,8 +53,8 @@ PeerToPeer=GESTURES
 Boss=API
 Cgen=\
 cevapjob
--v struct CevapI *boss
--m struct CevaptodO *todo
+-r -v struct CevapI *boss
+-r -m struct CevaptodO *todo
 # >>>
 @
 =end Class
@@ -70,7 +70,7 @@ PeerToPeer=GESTURES
 Boss=API
 Cgen=\
 cevapaux
--v struct CevapI *boss
+-r -v struct CevapI *boss
 # >>>
 @
 =end Class
@@ -86,7 +86,7 @@ PeerToPeer=EQUIP,JOB,AUX
 Subordinates=SCSI_CMD
 Cgen=\
 cevapgestures
--v struct CevapI *boss
+-r -v struct CevapI *boss
 # >>>
 @
 =end Class
@@ -114,9 +114,10 @@ Boss=SCSI_CMD
 Implementations=SCSI_FORMAT,SCSI_SERVICE
 Cgen=\
 cevapsexec
--v struct CevapsforM *scsi_format
--v struct CevapsservicE *scsi_service
+-p -v struct CevapsforM *scsi_format
+-p -v struct CevapsservicE *scsi_service
 -v int silent_on_scsi_error
+# >>>
 @
 =end Interface
 
@@ -131,8 +132,8 @@ Boss=SCSI_CMD via SCSI_EXEC
 Subordinates=SCSI_TRANSPORT
 Cgen=\
 cevapsform
--v struct CevapsexeC *boss
--v struct CevapstransP *scsi_transport
+-r -v struct CevapsexeC *boss
+-p -v struct CevapstransP *scsi_transport
 # >>>
 @
 =end Class
@@ -148,8 +149,11 @@ Boss=SCSI_FORMAT
 Os_specific=yes
 Cgen=\
 cevapstransp
--v struct CevapsforM *boss
--v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+-r -v struct CevapsforM *boss
+
+# >>> needs thorough rethought
+-p -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+
 # >>>
 @
 =end Class
@@ -165,8 +169,11 @@ Boss=SCSI_CMD via SCSI_EXEC
 Os_specific=yes
 Cgen=\
 cevapsservice
--v struct CevapsexeC *boss
--v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+-r -v struct CevapsexeC *boss
+
+# >>> needs thorough rethought
+-p -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
+
 # >>>
 @
 =end Class
@@ -189,11 +196,13 @@ Boss=EQUIP
 Subordinates=EquipDrive*N
 Cgen=\
 cevapsystem
--v struct CevapeqP *boss
--m char *infotext
--l struct CevapdrivE *drives
--v struct CevapdrivE *eol_drive
+-r -v struct CevapeqP *boss
+-r -m char *infotext
+-r -l struct CevapdrivE *drive
+-p -v struct CevapdrivE *eol_drive
+
 # >>> be boss of SCSI_CMD ?
+
 # >>>
 @
 =end Class
@@ -210,29 +219,58 @@ Subordinates=EquipMedia
 Boss=EquipSystem
 Cgen=\
 -l cevapdrive
--v struct CevapsysteM *boss
--m struct CevapmediA *media
--m char *devname
--v int bus_no
--v int host
--v int id
--v int channel
--v int lun
--v int phys_if_std
--m char *phys_if_name
--v struct CevapsexeC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
--v int global_index
+-r -v struct CevapsysteM *boss
+-r -v int global_index
+-r -m char *devname
+-r -v int bus_no
+-r -v int host
+-r -v int id
+-r -v int channel
+-r -v int lun
+# (ex struct burn_scsi_inquiry_data)
+-r -v char idata_vendor[9]
+-r -v char idata_product[17]
+-r -v char idata_evision[5]
+-r -v int idata_valid
+-r -v int phys_if_std
+-r -m char *phys_if_name
+-p -v struct CevapsexeC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
+-r -v int block_types[4]
+# (ex struct scsi_mode_data)
+-p -v int mdata_buffer_size
+-p -v int mdata_dvdram_read
+-p -v int mdata_dvdram_write
+-p -v int mdata_dvdr_read
+-p -v int mdata_dvdr_write
+-p -v int mdata_dvdrom_read
+-p -v int mdata_cdrw_read
+-p -v int mdata_cdrw_write
+-p -v int mdata_cdr_read
+-p -v int mdata_cdr_write
+-p -v int mdata_simulate
+-p -v int mdata_max_read_speed
+-p -v int mdata_max_write_speed
+-p -v int madata_min_write_speed
+-p -v int mdata_cur_read_speed
+-p -v int mdata_cur_write_speed
+-p -v int mdata_retry_page_length
+-p -v int mdata_retry_page_valid
+-p -v int mdata_write_page_length
+-p -v int mdata_write_page_valid
+-p -v int mdata_c2_pointers
+-r -v int mdata_underrun_proof
+-p -v int mdata_valid
 # >>> How to handle this by cgen ? : -v pthread_mutex_t access_lock
--v int current_feat2fh_byte4
+-r -v int current_feat2fh_byte4
 -v volatile int released
--v int block_types[4]
 -v struct CevapbuffeR *buffer
 
-# >>> next to process: transport.h :  struct burn_progress progress;
+# >>> next to process: transport.h :  struct burn_toc_entry *toc_entry;
 
 # >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
 
+-r -m struct CevapmediA *media
 @
 =end Class
 
@@ -249,25 +287,25 @@ EquipProfile*N,EquipFormat*N,EquipPerformance*N,EquipStatus,EquipMulticaps
 Boss=EquipDrive
 Cgen=\
 cevapmedia
--v struct CevapdrivE *boss
--m struct CevapstatuS *status
--l struct CevapprofilE *profiles
--v struct CevapprofilE *eol_profile
--v int current_has_feat21h
--v int current_feat21h_link_size
+-r -v struct CevapdrivE *boss
+-r -m struct CevapstatuS *status
+-r -l struct CevapprofilE *profile
+-p -v struct CevapprofilE *eol_profile
+-r -v int current_has_feat21h
+-r -v int current_feat21h_link_size
 -v int needs_close_session
--v int bg_format_status
--v int format_descr_type
--v off_t format_curr_max_size
--v unsigned int format_curr_blsas
--v int best_format_type
--v off_t best_format_size
--l struct CevapformaT *format_descriptors
--v struct CevapformaT *eol_format_descriptor
--v int nwa
--v int start_lba
--v int end_lba
--m struct CevapmcapS *multicaps
+-r -v int bg_format_status
+-r -v int format_descr_type
+-r -v off_t format_curr_max_size
+-r -v unsigned int format_curr_blsas
+-r -v int best_format_type
+-r -v off_t best_format_size
+-r -l struct CevapformaT *format_descriptor
+-p -v struct CevapformaT *eol_format_descriptor
+-r -v int nwa
+-r -v int start_lba
+-r -v int end_lba
+-r -m struct CevapmcapS *multicaps
 # >>>
 @
 =end Class
@@ -285,13 +323,13 @@ Subordinates=EquipFeature*N
 Boss=EquipMedia
 Cgen=\
 -l cevapprofile
--v struct CevapmediA *boss
--v int profile_code
--v char *profile_text
--v int is_cd_profile
--v int is_supported_profile
--l struct CevapfeaturE *features
--v struct CevapfeaturE *eol_feature
+-r -v struct CevapmediA *boss
+-r -v int profile_code
+-r -v char *profile_text
+-r -v int is_cd_profile
+-r -v int is_supported_profile
+-r -l struct CevapfeaturE *feature
+-p -v struct CevapfeaturE *eol_feature
 # >>>
 @
 =end Class
@@ -306,6 +344,7 @@ A feature describes a set of SCSI commands and (implicitely) of use cases.
 Boss=EquipProfile
 Cgen=\
 -l cevapfeature
+-r -v struct CevapprofilE *boss
 # >>>
 @
 =end Class
@@ -319,6 +358,7 @@ Documentation=\
 Boss=EquipMedia
 Cgen=\
 -l cevapformat
+-r -v struct CevapmediA *boss
 # >>>
 @
 =end Class
@@ -332,6 +372,7 @@ Documentation=\
 Boss=EquipMedia
 Cgen=\
 -l cevapperf
+-r -v struct CevapmediA *boss
 # >>>
 @
 =end Class
@@ -346,14 +387,16 @@ blank/appendable/closed, progress indicator.
 Boss=EquipMedia
 Cgen=\
 cevapstatus
--v struct CevapmediA *boss
+-r -v struct CevapmediA *boss
 -v int status
 -m char *status_text
+-v volatile int busy
 -v struct CevapprofilE *current_profile
 -v int complete_sessions
 -v int last_track_no
 -v off_t media_capacity_remaining
 -v int media_lba_limit
+-v struct CevapprogresS *progress
 # >>>
 @
 =end Class
@@ -361,16 +404,47 @@ cevapstatus
 Class=EquipMulticaps
 Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
-Since=
+Since=14.8.2007
 Documentation=\
->>> EquipMulticaps
+EquipMulticaps represents media dependent properties and media states. This
+includes eventually existing sessions, closure status, profile dependent
+capabilities.
 Boss=EquipMedia
 Cgen=\
 cevapmcaps
--m struct CevapdisC *disc
+-r -m struct CevapdisC *disc
 # >>>
 @
 =end Class
+
+Class=EquipTocItem
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=14.8.2007
+Boss=
+Cgen=\
+-l cevaptocitem
+-r -v struct CevapdisC *boss
+-v int session
+-v int valid
+-v int control
+
+# obscure info from CD TOC : possibly length of track
+-v unsigned char point
+-v unsigned char min
+-v unsigned char sec
+-v unsigned char frame
+# 
+-v int pmin
+-v int psec
+-v int pframe
+#
+-v int start_lba
+-v int track_blocks
+@
+=end Class
+
+
 
 =end ClassDiagram=Equip_overview
 
@@ -387,6 +461,7 @@ actions like tray load/eject and central actions like blank, format, burn.
 Subordinates=JobDisc,JobOptions
 Cgen=\
 cevaptodo
+-v volatile int cancel
 # >>>
 @
 =end Class
@@ -396,14 +471,16 @@ Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
 Since=18.3.2007
 Documentation=\
-JobDisc models a disc structure. Either one iwhich already exists or
+JobDisc models a disc structure. Either one which already exists or
 one which is to be created in a job run.
 Subordinates=JobSession*N
 Boss=JobTodo
 Cgen=\
 cevapdisc
--l struct CevapsessioN *sessions
--v struct CevapsessioN *eol_session
+-l struct CevapsessioN *session
+-r -v struct CevapsessioN *eol_session
+-l struct CevaptociteM *toc_entry
+-r -v struct CevaptociteM *eol_toc_entry
 # >>> take over services of struct burn_disc
 @
 =end Class
@@ -420,6 +497,13 @@ Subordinates=JobTrack*N,JobFifo
 Boss=JobDisc
 Cgen=\
 -l cevapsession
+-r -v struct CevapdisC *boss
+
+# >>>
+
+-l struct CevaptracK *track
+-r -v struct CevaptracK *eol_track
+
 # >>>
 @
 =end Class
@@ -434,6 +518,11 @@ a data source but in many cases it also becomes a recognizable entity on the
 target media.
 Subordinates=JobBlock*N,JobTrackFilter,JobSource
 Boss=JobSession
+Cgen=\
+-l cevaptrack
+-r -v struct CevapsessioN *boss
+# >>>
+@
 =end Class
 
 Class=JobBlock
@@ -502,6 +591,17 @@ JobOptions bundles the adjustable parameters of a job. This includes dummy
 mode, speed, appendability, blank mode, format selection, write mode, 
 underrun protection, random access addressing.
 Boss=JobTodo
+Cgen=\
+cevapjobopts
+# >>>
+-v int wait_for_buffer_free
+-v unsigned int wfb_min_usec
+-v unsigned int wfb_max_usec
+-v unsigned int wfb_timeout_sec
+-v unsigned int wfb_min_percent
+-v unsigned int wfb_max_percent
+# >>> -m struct params params (used by disabled read cd funtionality)
+@
 =end Class
 
 Class=JobBuffer
@@ -514,6 +614,28 @@ or JobSourceBlock.
 Cgen=\
 cevapbuffer
 # >>>
+@
+=end Class
+
+Class=JobProgress
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=13.8.2007
+Documentation=\
+JobProgress reflects the state and parts of the history of a job
+Cgen=\
+cevapprogress
+-v int nominal_write_speed
+-v off_t pessimistic_buffer_free
+-v int pbf_altered
+-v unsigned int pessimistic_writes
+-v unsigned int waited_writes
+-v unsigned int waited_tries
+-v unsigned int waited_usec
+
+# >>> the info provided by struct burn_progress
+
+# >>> 
 @
 =end Class
 
@@ -592,6 +714,7 @@ done
 
 ----------------------------------------------------------------------------
 
+  
 Description of CgeN
 
 cgen produces a class stub in C programming language. The data structure of
@@ -633,9 +756,22 @@ A class can have one of two roles:
 - Listable class, which has pointers to peer instances: .prev and .next
   Such classes get a list destructor <Classname>_destroy_all() which destroys
   all members of a list (which is given by any of the list members).
-  There is a function <Classname>_link() which inserts an instance into a list.
+  Such a class should have a pointer *boss as first element in which case
+  the constructor will look like
+    <Classname>_new(struct <ClassnamE> **o,struct <Some_clasS> *boss,int flag);
+  There is a function <Classname>_link() which inserts an instance into a list
+  and a function <Classname>_count() which tells the number of list members.
   Input example:
     -l my_class
+
+A modifier is defined for listable classes:
+
+- Bossless listable. cgen will not warn if the first element is not 
+    struct <Some_clasS> *boss
+  and will not include a parameter *boss into the constructor. I.e. it will
+  look like the constructor of non-listable classes:
+    <Classname>_new(struct <ClassnamE> **o, int flag);
+
 
 Elements have one of the following roles:
 
@@ -676,21 +812,46 @@ Elements have one of the following roles:
     -l struct XyZ *list_start
     -v struct XyZ *list_end
 
+The availability of getter method <Classname>_get_<element>(), and setter
+method <Classname>_set_<element>_set() can be controled by two modifiers:
+
+- Readonly. Only a getter method.
+  Input example
+    -r -v int broadcasted_status
+
+- Private. Neither getter nor setter method.
+  Input example
+    -p -v int private_value
+
+- Bossless listable. This marks elements which are listable objects but do not
+  expect a boss pointer in their constructor. See above: Listable class and
+  the bossless listable modifier for classes.
+  Input example
+    -b -l struct XyZ *list
+    -v struct XyZ *last_in_list
+
 
 Example run:
 
+  rm  class_x.c  class_x.h  class_y.c  class_y.h
   bin/cgen <<+
 -l class_x
+-r -v struct Boss_clasS *boss
 -v int x
+-r -v struct stat stbuf
 -m struct Class_Y *y
 -m char *text
--c struct Class_X *boss
+-c struct Class_X *master
 -c struct Class_X *slave
--l struct Class_X *providers
--v struct Class_X *last_provider
+-b -l struct Class_X *provider
+-r -v struct Class_X *last_provider
+@
+-b -l class_y
+-r -v char providername[80]
 @
 +
   
+
 ------------------------------------------------------------------------
 
 The generated code uses smem.[ch] out of one of my BSD licensed projects.
