@@ -114,7 +114,7 @@ struct burn_format_descr {
 	off_t size;
 
 	/* the Type Dependent Parameter (usually the write alignment size) */
-	unsigned tdp;
+	unsigned int tdp;
 };
 
 
@@ -229,15 +229,15 @@ struct burn_drive
 	int pbf_altered;
 	int wait_for_buffer_free;
 	int nominal_write_speed;
-	unsigned wfb_min_usec;
-	unsigned wfb_max_usec;
-	unsigned wfb_timeout_sec;
-	unsigned wfb_min_percent;
-	unsigned wfb_max_percent;
-	unsigned pessimistic_writes;
-	unsigned waited_writes;
-	unsigned waited_tries;
-	unsigned waited_usec;
+	unsigned int wfb_min_usec;
+	unsigned int wfb_max_usec;
+	unsigned int wfb_timeout_sec;
+	unsigned int wfb_min_percent;
+	unsigned int wfb_max_percent;
+	unsigned int pessimistic_writes;
+	unsigned int waited_writes;
+	unsigned int waited_tries;
+	unsigned int waited_usec;
 
 	volatile int cancel;
 	volatile enum burn_drive_status busy;
