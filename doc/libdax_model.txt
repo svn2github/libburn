@@ -4,6 +4,11 @@
 # class interconnections in the notation of my C stub generator CgeN
 # (see also end of this text)
 
+# next : transport.h : struct burn_format_descr
+
+# Open questions:
+# - how to connect to GESTURES ? Globally ?
+
 
 Model=libdax
 
@@ -19,7 +24,7 @@ which it reflects and augments by its own architectural concepts.
 Subordinates=EQUIP,JOB,AUX
 Cgen=\
 cevapi
--r -m struct CevapeqP *equip
+-r -m struct CevapequiP *equip
 -r -m struct CevapjoB *job
 -r -m struct CevapauX *aux
 -r -m struct CevapgestureS *gestures
@@ -36,9 +41,10 @@ This includes the system, drives, media, and their current states.
 PeerToPeer=GESTURES
 Boss=API
 Cgen=\
-cevapeqp
+cevapequip
 -r -v struct CevapI *boss
 -r -m struct CevapsysteM *sys
+-v struct CevapgestureS *gestures
 @
 =end Class
 
@@ -55,7 +61,10 @@ Cgen=\
 cevapjob
 -r -v struct CevapI *boss
 -r -m struct CevaptodO *todo
+-v struct CevapgestureS *gestures
+
 # >>>
+
 @
 =end Class
 
@@ -71,7 +80,10 @@ Boss=API
 Cgen=\
 cevapaux
 -r -v struct CevapI *boss
+-v struct CevapgestureS *gestures
+
 # >>>
+
 @
 =end Class
 
@@ -87,7 +99,13 @@ Subordinates=SCSI_CMD
 Cgen=\
 cevapgestures
 -r -v struct CevapI *boss
+-v struct CevapequiP *equip
+-v struct CevapjoB *job
+-v struct CevapauX *aux
+-r -m struct CevapscmD *scsi_cmd
+
 # >>>
+
 @
 =end Class
 
@@ -101,6 +119,14 @@ This layer models each SCSI command that is used by libdax. It knows about
 its parameters and constraints with particular equipment and jobs.
 Boss=GESTURES
 Subordinates=Classes with SCSI_EXEC Interface
+Cgen=\
+cevapscmd
+-r -v struct CevapgestureS *boss
+-r -m struct CevapsexeC *scsi_exec
+
+# >>>
+
+@
 =end Class
 
 Interface=SCSI_EXEC
@@ -114,10 +140,13 @@ Boss=SCSI_CMD
 Implementations=SCSI_FORMAT,SCSI_SERVICE
 Cgen=\
 cevapsexec
+-r -v struct CevapscmD *boss
 -p -v struct CevapsforM *scsi_format
 -p -v struct CevapsservicE *scsi_service
 -v int silent_on_scsi_error
+
 # >>>
+
 @
 =end Interface
 
@@ -134,7 +163,19 @@ Cgen=\
 cevapsform
 -r -v struct CevapsexeC *boss
 -p -v struct CevapstransP *scsi_transport
+ 
+# former struct command
+-v unsigned char opcode[16] 
+-v int oplen 
+-v int dir 
+-v int dxfer_len 
+-v unsigned char sense[128] 
+-v int error 
+-v int retry 
+-v struct CevapbuffeR *page 
+
 # >>>
+
 @
 =end Class
 
@@ -196,12 +237,12 @@ Boss=EQUIP
 Subordinates=EquipDrive*N
 Cgen=\
 cevapsystem
--r -v struct CevapeqP *boss
+-r -v struct CevapequiP *boss
 -r -m char *infotext
 -r -l struct CevapdrivE *drive
 -p -v struct CevapdrivE *eol_drive
 
-# >>> be boss of SCSI_CMD ?
+# >>> be boss of SCSI_CMD ? (Rather than GESTURES)
 
 # >>>
 @
@@ -220,23 +261,36 @@ Boss=EquipSystem
 Cgen=\
 -l cevapdrive
 -r -v struct CevapsysteM *boss
+ 
+# Drive number
 -r -v int global_index
+ 
+# The persistent system drive address
 -r -m char *devname
+ 
+# Traditional SCSI address parameters (-1 if not applicable)
 -r -v int bus_no
 -r -v int host
 -r -v int id
 -r -v int channel
 -r -v int lun
+ 
 # (ex struct burn_scsi_inquiry_data)
 -r -v char idata_vendor[9]
 -r -v char idata_product[17]
 -r -v char idata_evision[5]
 -r -v int idata_valid
+ 
+# mc5r03c.pdf 5.3.2 Physical Interface Standard
+# 1=SCSI, 2=ATAPI, 3,4,6=FireWire, 7=SATA, 8=USB
 -r -v int phys_if_std
+# MMC-5 5.3.2 table 91 , e.g. "SCSI Family"
 -r -m char *phys_if_name
--p -v struct CevapsexeC *BURN_OS_TRANSPORT_DRIVE_ELEMENTS
+ 
+#
 -r -v int block_types[4]
-# (ex struct scsi_mode_data)
+
+# (former struct scsi_mode_data)
 -p -v int mdata_buffer_size
 -p -v int mdata_dvdram_read
 -p -v int mdata_dvdram_write
@@ -251,6 +305,13 @@ Cgen=\
 -p -v int mdata_max_read_speed
 -p -v int mdata_max_write_speed
 -p -v int madata_min_write_speed
+
+# Results from ACh GET PERFORMANCE, Type 03h
+# (Speed values go into *_*_speed)
+# speed_descriptors became cevapperf which is under cevapmedia
+-p -v int min_end_lba
+-p -v int max_end_lba
+
 -p -v int mdata_cur_read_speed
 -p -v int mdata_cur_write_speed
 -p -v int mdata_retry_page_length
@@ -260,12 +321,19 @@ Cgen=\
 -p -v int mdata_c2_pointers
 -r -v int mdata_underrun_proof
 -p -v int mdata_valid
+
 # >>> How to handle this by cgen ? : -v pthread_mutex_t access_lock
+
+# Flags from feature 002Fh feature descriptor mmc5r03c.pdf 5.3.25 :
+#   bit1= DVD-RW supported
+#   bit2= Test Write available
+#   bit3= DVD-R DL supported
+#   bit6= Buffer Under-run Free recording available (page 05h BUFE)
+# Value -1 indicates that no 002Fh was current in the features list.
 -r -v int current_feat2fh_byte4
+
 -v volatile int released
 -v struct CevapbuffeR *buffer
-
-# >>> next to process: transport.h :  struct burn_toc_entry *toc_entry;
 
 # >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
@@ -288,24 +356,49 @@ Boss=EquipDrive
 Cgen=\
 cevapmedia
 -r -v struct CevapdrivE *boss
+
 -r -m struct CevapstatuS *status
+
 -r -l struct CevapprofilE *profile
 -p -v struct CevapprofilE *eol_profile
+
+# MMC-to-MMC feature info from 46h for DVD-RW.
+# Quite internal. Regard as opaque :)
+# 1 = incremental recording available, 0 = not available
 -r -v int current_has_feat21h
+
+# Link Size item number 0 from feature 0021h descriptor
 -r -v int current_feat21h_link_size
+
+# Wether a DVD-RW media holds an incomplete session
+# (which could need closing after write)
 -v int needs_close_session
+
+# From 51h READ DISC INFORMATION
+# 0=needs format start, 1=needs format restart
 -r -v int bg_format_status
+
+# From 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24
+# 1=unformatted, 2=formatted, 3=unclear
 -r -v int format_descr_type
+# meaning depends on format_descr_type
 -r -v off_t format_curr_max_size
+# dito
 -r -v unsigned int format_curr_blsas
 -r -v int best_format_type
 -r -v off_t best_format_size
 -r -l struct CevapformaT *format_descriptor
 -p -v struct CevapformaT *eol_format_descriptor
+
 -r -v int nwa
 -r -v int start_lba
 -r -v int end_lba
 -r -m struct CevapmcapS *multicaps
+
+# Results from ACh GET PERFORMANCE, Type 03h
+# (Speed values go into drive.mdata_*_*_speed)
+-r -l struct CevapperF *speed_descriptor
+-p -v struct CevapperF *eol_speed_descriptor
 # >>>
 @
 =end Class
@@ -330,7 +423,9 @@ Cgen=\
 -r -v int is_supported_profile
 -r -l struct CevapfeaturE *feature
 -p -v struct CevapfeaturE *eol_feature
+
 # >>>
+
 @
 =end Class
 
@@ -345,7 +440,9 @@ Boss=EquipProfile
 Cgen=\
 -l cevapfeature
 -r -v struct CevapprofilE *boss
+
 # >>>
+
 @
 =end Class
 
@@ -354,12 +451,24 @@ Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
 Since=
 Documentation=\
->>> EquipFormat
+EquipFormat represents a single Formattable Capacity Descriptor
+as of mmc5r03c.pdf 6.24.3.3 .
 Boss=EquipMedia
 Cgen=\
 -l cevapformat
 -r -v struct CevapmediA *boss
+
+# format type: e.g 0x00 is "Full", 0x15 is "Quick"
+-r -v int type
+
+# the size in bytes derived from Number of Blocks
+-r -v off_t size
+
+# the Type Dependent Parameter (usually the write alignment size)
+-r -v unsigned int tdp
+
 # >>>
+
 @
 =end Class
 
@@ -373,7 +482,9 @@ Boss=EquipMedia
 Cgen=\
 -l cevapperf
 -r -v struct CevapmediA *boss
+
 # >>>
+
 @
 =end Class
 
@@ -392,12 +503,26 @@ cevapstatus
 -m char *status_text
 -v volatile int busy
 -v struct CevapprofilE *current_profile
+-v int erasable
+
+# From 51h READ DISC INFORMATION Number of Sessions (-1)
 -v int complete_sessions
+
+# From 51h READ DISC INFORMATION Last Track Number in Last Session
 -v int last_track_no
+
+# From various sources : free space on media (in bytes)
+# With CD this might change after particular write
+# parameters have been set and nwa has been inquired.
 -v off_t media_capacity_remaining
+
+# if > 0 : first lba on media that is too high for write
 -v int media_lba_limit
+
 -v struct CevapprogresS *progress
+
 # >>>
+
 @
 =end Class
 
@@ -413,7 +538,9 @@ Boss=EquipMedia
 Cgen=\
 cevapmcaps
 -r -m struct CevapdisC *disc
+
 # >>>
+
 @
 =end Class
 
@@ -434,11 +561,11 @@ Cgen=\
 -v unsigned char min
 -v unsigned char sec
 -v unsigned char frame
-# 
+ 
 -v int pmin
 -v int psec
 -v int pframe
-#
+
 -v int start_lba
 -v int track_blocks
 @
@@ -462,7 +589,9 @@ Subordinates=JobDisc,JobOptions
 Cgen=\
 cevaptodo
 -v volatile int cancel
+
 # >>>
+
 @
 =end Class
 
@@ -481,7 +610,9 @@ cevapdisc
 -r -v struct CevapsessioN *eol_session
 -l struct CevaptociteM *toc_entry
 -r -v struct CevaptociteM *eol_toc_entry
+
 # >>> take over services of struct burn_disc
+
 @
 =end Class
 
@@ -505,6 +636,7 @@ Cgen=\
 -r -v struct CevaptracK *eol_track
 
 # >>>
+
 @
 =end Class
 
@@ -521,7 +653,9 @@ Boss=JobSession
 Cgen=\
 -l cevaptrack
 -r -v struct CevapsessioN *boss
+
 # >>>
+
 @
 =end Class
 
@@ -538,7 +672,9 @@ Cgen=\
 cevapblock
 -v int alba
 -v int rlba
+
 # >>>
+
 @
 =end Class
 
@@ -593,14 +729,19 @@ underrun protection, random access addressing.
 Boss=JobTodo
 Cgen=\
 cevapjobopts
+
 # >>>
+
+# Keeping an eye on the drive buffer
 -v int wait_for_buffer_free
 -v unsigned int wfb_min_usec
 -v unsigned int wfb_max_usec
 -v unsigned int wfb_timeout_sec
 -v unsigned int wfb_min_percent
 -v unsigned int wfb_max_percent
+
 # >>> -m struct params params (used by disabled read cd funtionality)
+
 @
 =end Class
 
@@ -613,7 +754,9 @@ JobBuffer is an intermediate storage for the content of several JobBlock
 or JobSourceBlock.
 Cgen=\
 cevapbuffer
-# >>>
+-r -m unsigned char *data
+-v int sectors
+-v int bytes
 @
 =end Class
 
@@ -625,6 +768,8 @@ Documentation=\
 JobProgress reflects the state and parts of the history of a job
 Cgen=\
 cevapprogress
+
+# Keeping an eye on the drive buffer
 -v int nominal_write_speed
 -v off_t pessimistic_buffer_free
 -v int pbf_altered
@@ -647,6 +792,14 @@ Documentation=\
 =end Class
 
 =end ClassDiagram=Equip_overview
+
+
+ClassDiagram=Gestures_overview
+
+# >>>
+
+=end ClassDiagram=Gestures_overview
+
 
 # >>> a dummy to be integrated into the model
 Cgen=\
@@ -713,9 +866,8 @@ break
 done
 
 ----------------------------------------------------------------------------
-
-  
 Description of CgeN
+
 
 cgen produces a class stub in C programming language. The data structure of
 the class is described by some lines which get read from stdin. The stub will
@@ -747,6 +899,47 @@ Command line options
              declarations. Currently it lists the existence of all class
              structs.
 
+
+Input line format:
+
+There are two states of input: class level and element level.
+Exampes are shown below with class roles and element roles.
+
+Input starts at class level. A class level line may be one of
+
+- Comment. A line which begins with '#' is ignored on class level.
+
+- Empty. A line with no characters is a comment with empty text (i.e. ignored).
+
+- Class. Options which begin with '-' and finally a word in lowercase letters
+  which defines the <classname>. The classname leads to a struct ClassnamE
+  and some class methods implemented as C functions <Classnname>_<func>().
+
+- End of input. Line "@@@" or EOF at stdin end the program run.
+
+After a class line, input switches to element level where a line may be:
+
+- Comment. A line which after some white space begins with '#' is considered
+  a comment. The preceeding white space is ignored and the text after '#' is
+  eventuellay trimmed by a single blank at both ends. This text will be part
+  of the class struct definition within file <classname_private>.h as a single
+  C comment line /* ... */. The sequence of elements and comments is preserved.
+  An empty comment text leads to an empty line in <classname_private>.h.
+
+- Empty. A line with no characters is a comment with empty text.
+
+- Element. Options which begin with '-', eventual C keywords "unsigned" or
+  "volatile", type or "struct <NamE>", element name. This leads to a struct
+  element which is taken into respect in some class methods. Depending on the
+  options in this line, some element methods <Classnname>_<func>_<element>()
+  may get generated.
+
+- End of class. A single '@' marks the end of the element list and brings
+  input back to class level. I.e. next is expected another class name or
+  "@@@" or EOF at stdin.
+
+Input semantics:
+
 A class can have one of two roles:
 
 - Standalone class.
@@ -764,13 +957,24 @@ A class can have one of two roles:
   Input example:
     -l my_class
 
-A modifier is defined for listable classes:
 
-- Bossless listable. cgen will not warn if the first element is not 
-    struct <Some_clasS> *boss
-  and will not include a parameter *boss into the constructor. I.e. it will
-  look like the constructor of non-listable classes:
+A modifier is defined for classes:
+
+- Bossless. Disables a special boss-subordinate relationship which is created
+  if the first element of a class is a struct pointer with the name "boss".
+  Like
+    -l <classname>
+    -v struct Some_clasS *boss
+  Normally such a parameter *boss becomes part of the constructor method
+    <Classname>_new(struct <ClassnamE> **o, struct Some_clasS *boss, int flag);
+  This relationship is typical for a listable class and a single class which
+  is designed to host instances of that listable class. Therefore one gets a
+  warning if a listable class does not begin with a struct pointer *boss.
+  But if -b is given, then CgeN ill not include a parameter *boss into the
+  constructor. It will rather look normal:
     <Classname>_new(struct <ClassnamE> **o, int flag);
+  It will not warn if the first element of a listable class is not struct
+  pointer *boss.
 
 
 Elements have one of the following roles:
@@ -825,7 +1029,7 @@ method <Classname>_set_<element>_set() can be controled by two modifiers:
 
 - Bossless listable. This marks elements which are listable objects but do not
   expect a boss pointer in their constructor. See above: Listable class and
-  the bossless listable modifier for classes.
+  the bossless modifier for classes.
   Input example
     -b -l struct XyZ *list
     -v struct XyZ *last_in_list
