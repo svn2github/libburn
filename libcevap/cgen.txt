@@ -1,0 +1,222 @@
+
+
+Description of the helper program stic*/bin/cgen
+
+cgen is copyright 2001 to 2007, Thomas Schmitt <stic-source@gmx.net>
+and provided under BSD license.
+
+Compilation:
+  cc -g -o cgen cgen.c ctyp.c smem.c
+
+
+cgen produces a class stub in C programming language. The data structure of
+the class is described by some lines which get read from stdin. The stub will
+consist of four files which emerge in the current working directory:
+ <classname>.h          public header file of the class
+ <classname>.c          automatically generated C code of the class
+                        plus a copy of <classname>.c.methods
+ <classname>_private.h  private header file of the class
+ <classname>.c.methods  safe storage for manually created functions.
+                        From here they get copied into the generated stub.
+                        If such a file is missing, a dummy gets created.
+It will define a struct <ClassnamE> for representing the class data aspects,
+construtor <Classname>_new(), destructor <Classname>_destroy(),
+getter <Classname>_<element>_get() for each structure element.
+Some more functions get added for particular class and element roles.
+
+cgen normally refuses to overwrite existing files because it supposes that
+those contain code added by the human programmer. 
+Human programmer enhancements may be explanatory comments, class specific
+methods, initial element values and other special precautions within the
+generated functions.
+As long as the modelling phase is going on, one may store such human code
+in <classname>.c.methods and may use command line option -overwrite for
+modelling development cycles.
+
+At some point of model matureness one may decide to give up cgen and the
+.c.method files and to go on only with _private.h , .h and .c files.
+
+
+Command line options
+
+  -no_stic   prevents usage of stic_dir/s_tools/*.[ch]
+
+  -ansi      generates ANSI C function heads and makes file <classname>.h hold
+             only public definitions: an opaque declaration of the class struct
+             and a list of function prototypes. The definiton of the class
+             struct is then in <classname>_private.h .
+  -global_include filename
+             sets the name of a file which will contain globally necessary
+             declarations. Currently it lists the existence of all class
+             structs.
+  -lowercase generate struct <classname> rather than struct <ClassnamE> and
+             function names <classname>_func() rather than <Classname>_func() .
+  -overwrite allows to overwrite files <classname>_private.h, <classname>.h
+             and <classname>.c, but not <classname>.c.methods.
+
+
+Input line format:
+
+There are two states of input: class level and element level.
+Exampes are shown below with class roles and element roles.
+
+Input starts at class level. A class level line may be one of
+
+- Comment. A line which begins with '#' is ignored on class level.
+
+- Empty. A line with no characters is a comment with empty text (i.e. ignored).
+
+- Class. Options which begin with '-' and finally a word in lowercase letters
+  which defines the <classname>. The classname leads to a struct ClassnamE
+  and some class methods implemented as C functions <Classnname>_<func>().
+
+- End of input. Line "@@@" or EOF at stdin end the program run.
+
+After a class line, input switches to element level where a line may be:
+
+- Comment. A line which after some white space begins with '#' is considered
+  a comment. The preceeding white space is ignored and the text after '#' is
+  eventuellay trimmed by a single blank at both ends. This text will be part
+  of the class struct definition within file <classname_private>.h as a single
+  C comment line /* ... */. The sequence of elements and comments is preserved.
+  An empty comment text leads to an empty line in <classname_private>.h.
+
+- Empty. A line with no characters is a comment with empty text.
+
+- Element. Options which begin with '-', eventual C keywords "unsigned" or
+  "volatile", type or "struct <NamE>", element name. This leads to a struct
+  element which is taken into respect in some class methods. Depending on the
+  options in this line, some element methods <Classnname>_<func>_<element>()
+  may get generated.
+
+- End of class. A single '@' marks the end of the element list and brings
+  input back to class level. I.e. next is expected another class name or
+  "@@@" or EOF at stdin.
+
+Input semantics:
+
+A class can have one of two roles:
+
+- Standalone class.
+  Input example:
+    my_class
+
+- Listable class, which has pointers to peer instances: .prev and .next
+  Such classes get a list destructor <Classname>_destroy_all() which destroys
+  all members of a list (which is given by any of the list members).
+  Such a class should have a pointer *boss as first element in which case
+  the constructor will look like
+    <Classname>_new(struct <ClassnamE> **o,struct <Some_clasS> *boss,int flag);
+  There is a function <Classname>_link() which inserts an instance into a list
+  and a function <Classname>_count() which tells the number of list members.
+  For pseudo random access there is function <Classname>_by_idx().
+  Input example:
+    -l my_class
+
+
+A modifier is defined for classes:
+
+- Bossless. Disables a special boss-subordinate relationship which is created
+  if the first element of a class is a struct pointer with the name "boss".
+  Like
+    -l <classname>
+    -v struct Some_clasS *boss
+  Normally such a parameter *boss becomes part of the constructor method
+    <Classname>_new(struct <ClassnamE> **o, struct Some_clasS *boss, int flag);
+  This relationship is typical for a listable class and a single class which
+  is designed to host instances of that listable class. Therefore one gets a
+  warning if a listable class does not begin with a struct pointer *boss.
+  But if -b is given, then CgeN ill not include a parameter *boss into the
+  constructor. It will rather look normal:
+    <Classname>_new(struct <ClassnamE> **o, int flag);
+  It will not warn if the first element of a listable class is not struct
+  pointer *boss.
+
+
+Elements have one of the following roles:
+
+- Value. It provides only storage for a C data type (which may be a C pointer
+  despite the role name "value"), a getter method <Classname>_<element>_get(),
+  and a setter method <Classname>_<element>_set().
+  Input examples:
+    -v int i
+    -v int a[100]
+    -v char *cpt
+    -v struct xyz x
+    -v struct xyz *xpt
+
+- Managed. This has to be a pointer to a struct <XyZ> or to char. It will not
+  get attached to an object by the stub's code but its destructor
+  <Xyz>_destroy() will be called by <Classname>_destruct(). In case of (char *)
+  it is supposed that a non-NULL value has been allocated by malloc().
+  Managed (char *) types get a setter function <Classname>_<element>_set()
+  which allocates memory and copies the textstring from its parameter.
+  Input examples:
+    -m struct XyZ *xyzpt
+    -m char *textstring
+
+- Chainlink. A pair of prev-next-style pointers to the own class struct.
+  Function <Classname>_destruct() will unlink the affected instance and
+  put together its link partners.
+  Input example (there must always be two consequtive -c lines):
+    -c struct My_clasS *up
+    -c struct My_clasS *down
+
+- List. A pair of pointers to the struct <XyZ> of a listable class. The first
+  one <ls> holds the start of the list, the second one <eol> holds the end.
+  The getter function has an additional argument idx:
+    <Classname>_get_<ls>(struct <ClassnamE> *o, int idx, struct <XyZ> **pt,
+                         int flag)
+  idx == 0 is the start of the list, idx=1 the next element, ...
+  idx == -1 retrieves the last element of the list.
+  For insertion of list items there is provided method <Classname>_new_<ls>().
+  The inserted item is reachable via the getter function with idx == -1
+  <Classname>_destroy() instance calls <Xyz>_destroy_all(). Note that the end
+  pointer is always generated as private element (-p).
+  Input example (there must always be a -l and a -v line):
+    -l struct XyZ *list_start
+    -v struct XyZ *list_end
+
+The availability of getter method <Classname>_get_<element>(), and setter
+method <Classname>_set_<element>_set() can be controled by two modifiers:
+
+- Readonly. Only a getter method.
+  Input example
+    -r -v int broadcasted_status
+
+- Private. Neither getter nor setter method.
+  Input example
+    -p -v int private_value
+
+- Bossless listable. This marks elements which are listable objects but do not
+  expect a boss pointer in their constructor. See above: Listable class and
+  the bossless modifier for classes.
+  Input example
+    -b -l struct XyZ *list
+    -v struct XyZ *last_in_list
+
+- Initialization free. The class constructor will not initialize this element.
+  This modifier has to be used if neither NULL nor 0 are suitable
+  initialization values.
+
+Example run:
+
+  rm  class_x.c  class_x.h  class_y.c  class_y.h
+  bin/cgen <<+
+-l class_x
+-r -v struct Boss_clasS *boss
+-v int x
+-r -v struct stat stbuf
+-m struct Class_Y *y
+-m char *text
+-c struct Class_X *master
+-c struct Class_X *slave
+-b -l struct Class_X *provider
+-p -v struct Class_X *last_provider
+@
+-b -l class_y
+-r -v char providername[80]
+@
++
+  
+
