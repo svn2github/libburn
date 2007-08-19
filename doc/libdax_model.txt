@@ -862,53 +862,10 @@ Notes:
 ----------------------------------------------------------------------------
 
  Generate C stubs:
-   test_dir=...where_to_generate_the_stub...
-   model_dir=...where_to_find_the_model_file_libdax_model.txt...
-   xtr_dir=...where_to_find_the_extractor_script_extract_cgen_input.sh...
-   cgen_dir=...where_to_find_the_cgen_binary...
+   ( cd libcevap ; ./libcevap_gen.sh )
 
-   /bin/rm "$test_dir"/a.out
-   cd "$test_dir"/
-   cat "$model_dir"/libdax_model.txt | \
-   "$xtr_dir"/extract_cgen_input.sh | \
-   "$cgen_dir"/cgen -smem_local -ansi -overwrite -global_include cevap_global.h
-
- Compile (a copy of smem.[ch] has to be placed in $test_dir) :
-   ( cd "$test_dir" ; cc -g -c *.c 2>&1 | less )
-
-----------------------------------------------------------------------------
-"$xtr_dir"/extract_cgen_input.sh :
-
-#!/bin/sh
-
-copy_mode=0
-
-while true
-do
-  read line
-  if test "$copy_mode" = "0"
-  then
-    if echo " $line" | grep '^ Cgen=' >/dev/null 2>&1
-    then
-      copy_mode=1
-      if echo " $line" | grep '^ Cgen=..' >/dev/null 2>&1
-      then
-        echo " $line" | sed -e 's/^ Cgen=//'
-      fi
-    elif echo " $line" | grep '^ =end Model=' >/dev/null 2>&1
-    then
-break
-    fi
-  else
-    if test " $line" = " @"
-    then
-      copy_mode=0
-      echo "@"
-    else
-      echo " $line" | sed -e 's/^ //'
-    fi
-  fi
-done
+ Compile test:
+   ( cd libcevap ; rm cc -g main.c cevap*.c smem.c 2>&1 | less )
 
 ----------------------------------------------------------------------------
 
