@@ -150,6 +150,27 @@ cevapsexec
 @
 =end Interface
 
+
+Class=OSDriveAspect
+Author=Thomas Schmitt <scdbackup@gmx.net>
+Version=1.0
+Since=18.08.2007
+Documentation=\
+OSDriveAspect encapsulates operating system specific properties of an
+individual drive. It shall be handed out by SCSI_EXEC via the GESTURES layer
+to EquipDrive where it forms the link between cevap drive model and operating
+system driver.
+This class description models the implementation specific to Linux.
+Cgen=\
+cevaposdrv
+-r -v int fd
+
+# >>> ??? implement the sibling stuff which never worked properly ?
+
+@
+=end Class
+
+
 Class=SCSI_FORMAT
 Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
@@ -192,9 +213,6 @@ Cgen=\
 cevapstransp
 -r -v struct CevapsforM *boss
 
-# >>> needs thorough rethought
--p -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
-
 # >>>
 @
 =end Class
@@ -211,9 +229,6 @@ Os_specific=yes
 Cgen=\
 cevapsservice
 -r -v struct CevapsexeC *boss
-
-# >>> needs thorough rethought
--p -v struct Burn_os_transport_drive_elementS *system_dep_drive_info
 
 # >>>
 @
@@ -261,11 +276,14 @@ Boss=EquipSystem
 Cgen=\
 -l cevapdrive
 -r -v struct CevapsysteM *boss
+
+# Media currently loaded in the drive
+-r -m struct CevapmediA *media
  
 # Drive number
 -r -v int global_index
  
-# The persistent system drive address
+# Persistent system drive address
 -r -m char *devname
  
 # Traditional SCSI address parameters (-1 if not applicable)
@@ -275,10 +293,12 @@ Cgen=\
 -r -v int channel
 -r -v int lun
  
-# (ex struct burn_scsi_inquiry_data)
--r -v char idata_vendor[9]
--r -v char idata_product[17]
--r -v char idata_evision[5]
+# (former struct burn_scsi_inquiry_data idata)
+# From 12h INQUIRY , spc3r23.pdf , 6.4.2 , Table 81
+-r -v char vendor[9]
+-r -v char product[17]
+-r -v char revision[5]
+# 1= above elements contain valid information
 -r -v int idata_valid
  
 # mc5r03c.pdf 5.3.2 Physical Interface Standard
@@ -286,11 +306,30 @@ Cgen=\
 -r -v int phys_if_std
 # MMC-5 5.3.2 table 91 , e.g. "SCSI Family"
 -r -m char *phys_if_name
- 
-#
+
+# System despendent aspect of the drive (e.g. int fd;) 
+-r -v struct CevaposdrV *system_dep_drive_info
+
+# Result of the CD write mode x block type tests:
+# Index is for write mode : 0=packet , 1=TAO , 2=SAO , 3=raw
+# Bits are for block type
+# Numbering as in mc5r03c.pdf 7.5.4.13 Data Block Type, Table 668 :
+#    0=RAW0     (2352, Raw data)
+#    1=RAW16    (2368, Raw data with P and Q Sub-channel
+#    2=RAW96P   (2448, Raw data with P-W Sub-channel appended)
+#    3=RAW96R   (2448, Raw data with raw P-W Sub-channel appended)
+#    8=MODE1    (2048, ISO/IEC 10149)
+#    9=MODE2R   (2336, Mode 2 formless)
+#   10=MODE2F1  (2048, CD-ROM XA, form 1)
+#   11=MODE2F1X (2056, CD-ROM XA, form 1 plus 8 byte subheader)
+#   12=MODE2F2  (2324, CD-ROM XA, form 2)
+#   13=MODE2MIX (2332, CD-ROM XA, form 1, form 2, or mixed form)
 -r -v int block_types[4]
 
 # (former struct scsi_mode_data)
+# Information about the drive's capabilities, obtained via 5Ah MODE SENSE
+# from mode page 2Ah , mmc3r10g.pdf , 6.3.11 , Table 361
+# (which is deprecated in MMC-5 E.11)
 -p -v int mdata_buffer_size
 -p -v int mdata_dvdram_read
 -p -v int mdata_dvdram_write
@@ -301,28 +340,38 @@ Cgen=\
 -p -v int mdata_cdrw_write
 -p -v int mdata_cdr_read
 -p -v int mdata_cdr_write
--p -v int mdata_simulate
 -p -v int mdata_max_read_speed
 -p -v int mdata_max_write_speed
 -p -v int madata_min_write_speed
+-p -v int mdata_cur_read_speed
+-p -v int mdata_cur_write_speed
+-p -v int mdata_simulate
+-p -v int mdata_c2_pointers
+-r -v int mdata_underrun_proof
 
 # Results from ACh GET PERFORMANCE, Type 03h
 # (Speed values go into *_*_speed)
-# speed_descriptors became cevapperf which is under cevapmedia
+# (speed_descriptors became cevapperf which is under cevapmedia)
 -p -v int min_end_lba
 -p -v int max_end_lba
 
--p -v int mdata_cur_read_speed
--p -v int mdata_cur_write_speed
+# from mode page 01h , mmc5r03c.pdf , 7.3.2.1 , Table 657
 -p -v int mdata_retry_page_length
 -p -v int mdata_retry_page_valid
+
+# from mode page 05h , mmc5r03c.pdf , 7.5.4.1 , Table 664
 -p -v int mdata_write_page_length
 -p -v int mdata_write_page_valid
--p -v int mdata_c2_pointers
--r -v int mdata_underrun_proof
+
+# 1= above elements contain valid information
 -p -v int mdata_valid
 
-# >>> How to handle this by cgen ? : -v pthread_mutex_t access_lock
+# The mutex shall be used to coordinate access to the drive in situations
+# where multi-threaded race conditions could disturb operations.
+# E.g. lock, read busy state, interpret, set busy state, unlock
+# A mere reader of the busy state does not have to lock because
+# reading of the state itself is atomar.
+-i -v pthread_mutex_t access_lock
 
 # Flags from feature 002Fh feature descriptor mmc5r03c.pdf 5.3.25 :
 #   bit1= DVD-RW supported
@@ -332,13 +381,17 @@ Cgen=\
 # Value -1 indicates that no 002Fh was current in the features list.
 -r -v int current_feat2fh_byte4
 
+# 0= drive is grabbed, 1= drive is not grabbed
 -v volatile int released
+
+# >>> ???
+# (do we need a drive owned buffer to carry data from call to call or what ?)
 -v struct CevapbuffeR *buffer
+
 
 # >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
 
--r -m struct CevapmediA *media
 @
 =end Class
 
@@ -607,9 +660,9 @@ Boss=JobTodo
 Cgen=\
 cevapdisc
 -l struct CevapsessioN *session
--r -v struct CevapsessioN *eol_session
+-p -v struct CevapsessioN *eol_session
 -l struct CevaptociteM *toc_entry
--r -v struct CevaptociteM *eol_toc_entry
+-p -v struct CevaptociteM *eol_toc_entry
 
 # >>> take over services of struct burn_disc
 
@@ -633,7 +686,7 @@ Cgen=\
 # >>>
 
 -l struct CevaptracK *track
--r -v struct CevaptracK *eol_track
+-p -v struct CevaptracK *eol_track
 
 # >>>
 
@@ -801,12 +854,6 @@ ClassDiagram=Gestures_overview
 =end ClassDiagram=Gestures_overview
 
 
-# >>> a dummy to be integrated into the model
-Cgen=\
-burn_os_transport_drive_elements
-# >>>
-@
-
 
 =end Model=libdax
 
@@ -820,15 +867,13 @@ Notes:
    xtr_dir=...where_to_find_the_extractor_script_extract_cgen_input.sh...
    cgen_dir=...where_to_find_the_cgen_binary...
 
-   /bin/rm "$test_dir"/cevap*.[cho] \
-           "$test_dir"/burn_os_transport_drive_elements*.[cho] \
-           "$test_dir"/a.out
+   /bin/rm "$test_dir"/a.out
    cd "$test_dir"/
    cat "$model_dir"/libdax_model.txt | \
-     "$xtr_dir"/extract_cgen_input.sh | \
-   "$cgen_dir"/cgen -smem_local -ansi -global_include cevap_global.h
+   "$xtr_dir"/extract_cgen_input.sh | \
+   "$cgen_dir"/cgen -smem_local -ansi -overwrite -global_include cevap_global.h
 
- Compile:
+ Compile (a copy of smem.[ch] has to be placed in $test_dir) :
    ( cd "$test_dir" ; cc -g -c *.c 2>&1 | less )
 
 ----------------------------------------------------------------------------
@@ -866,265 +911,10 @@ break
 done
 
 ----------------------------------------------------------------------------
-Description of CgeN
 
-
-cgen produces a class stub in C programming language. The data structure of
-the class is described by some lines which get read from stdin. The stub will
-consist of two files <classname>.h and <classname>.c which emerge in the
-current working directory.
-It will define a struct <ClassnamE> for representing the class data aspects,
-construtor <Classname>_new(), destructor <Classname>_destroy(),
-getter <Classname>_<element>_get() for each structure element.
-Some more functions get added for particular class and element roles.
-
-After first generation, there is no further support by cgen. It simply refuses
-to overwrite existing files because it supposes that those contain code added
-by the human programmer. 
-Those programmer enhancements are supposed to include explanatory comments,
-class specific methods, initial element values and other special precautions
-within the generated functions.
-
-
-Command line options
-
-  -no_stic   prevents usage of stic_dir/s_tools/*.[ch]
-
-  -ansi      generates ANSI C function heads and makes file <classname>.h hold
-             only public definitions: an opaque declaration of the class struct
-             and a list of function prototypes. The definiton of the class
-             struct is then in <classname>_private.h .
-  -global_include filename
-             sets the name of a file which will contain globally necessary
-             declarations. Currently it lists the existence of all class
-             structs.
-
-
-Input line format:
-
-There are two states of input: class level and element level.
-Exampes are shown below with class roles and element roles.
-
-Input starts at class level. A class level line may be one of
-
-- Comment. A line which begins with '#' is ignored on class level.
-
-- Empty. A line with no characters is a comment with empty text (i.e. ignored).
-
-- Class. Options which begin with '-' and finally a word in lowercase letters
-  which defines the <classname>. The classname leads to a struct ClassnamE
-  and some class methods implemented as C functions <Classnname>_<func>().
-
-- End of input. Line "@@@" or EOF at stdin end the program run.
-
-After a class line, input switches to element level where a line may be:
-
-- Comment. A line which after some white space begins with '#' is considered
-  a comment. The preceeding white space is ignored and the text after '#' is
-  eventuellay trimmed by a single blank at both ends. This text will be part
-  of the class struct definition within file <classname_private>.h as a single
-  C comment line /* ... */. The sequence of elements and comments is preserved.
-  An empty comment text leads to an empty line in <classname_private>.h.
-
-- Empty. A line with no characters is a comment with empty text.
-
-- Element. Options which begin with '-', eventual C keywords "unsigned" or
-  "volatile", type or "struct <NamE>", element name. This leads to a struct
-  element which is taken into respect in some class methods. Depending on the
-  options in this line, some element methods <Classnname>_<func>_<element>()
-  may get generated.
-
-- End of class. A single '@' marks the end of the element list and brings
-  input back to class level. I.e. next is expected another class name or
-  "@@@" or EOF at stdin.
-
-Input semantics:
-
-A class can have one of two roles:
-
-- Standalone class.
-  Input example:
-    my_class
-
-- Listable class, which has pointers to peer instances: .prev and .next
-  Such classes get a list destructor <Classname>_destroy_all() which destroys
-  all members of a list (which is given by any of the list members).
-  Such a class should have a pointer *boss as first element in which case
-  the constructor will look like
-    <Classname>_new(struct <ClassnamE> **o,struct <Some_clasS> *boss,int flag);
-  There is a function <Classname>_link() which inserts an instance into a list
-  and a function <Classname>_count() which tells the number of list members.
-  Input example:
-    -l my_class
-
-
-A modifier is defined for classes:
-
-- Bossless. Disables a special boss-subordinate relationship which is created
-  if the first element of a class is a struct pointer with the name "boss".
-  Like
-    -l <classname>
-    -v struct Some_clasS *boss
-  Normally such a parameter *boss becomes part of the constructor method
-    <Classname>_new(struct <ClassnamE> **o, struct Some_clasS *boss, int flag);
-  This relationship is typical for a listable class and a single class which
-  is designed to host instances of that listable class. Therefore one gets a
-  warning if a listable class does not begin with a struct pointer *boss.
-  But if -b is given, then CgeN ill not include a parameter *boss into the
-  constructor. It will rather look normal:
-    <Classname>_new(struct <ClassnamE> **o, int flag);
-  It will not warn if the first element of a listable class is not struct
-  pointer *boss.
-
-
-Elements have one of the following roles:
-
-- Value. It provides only storage for a C data type (which may be a C pointer
-  despite the role name "value"), a getter method <Classname>_<element>_get(),
-  and a setter method <Classname>_<element>_set().
-  Input examples:
-    -v int i
-    -v int a[100]
-    -v char *cpt
-    -v struct xyz x
-    -v struct xyz *xpt
-
-- Managed. This has to be a pointer to a struct <XyZ> or to char. It will not
-  get attached to an object by the stub's code but its destructor
-  <Xyz>_destroy() will be called by <Classname>_destruct(). In case of (char *)
-  it is supposed that a non-NULL value has been allocated by malloc().
-  Managed (char *) types get a setter function <Classname>_<element>_set()
-  which allocates memory and copies the textstring from its parameter.
-  Input examples:
-    -m struct XyZ *xyzpt
-    -m char *textstring
-
-- Chainlink. A pair of prev-next-style pointers to the own class struct.
-  Function <Classname>_destruct() will unlink the affected instance and
-  put together its link partners.
-  Input example (there must always be two consequtive -c lines):
-    -c struct My_clasS *up
-    -c struct My_clasS *down
-
-- List. A pair of pointers to the struct <XyZ> of a listable class. The first
-  one <ls> holds the start of the list, the second one <eol> holds the end.
-  For insertion of list items there is provided method <Classname>_new_<ls>().
-  The inserted item is then content of the <eol> pointer.
-  <Classname>_destroy() instance calls <Xyz>_destroy_all(). There is a method
-  <Classname>_set_<eol>() which should be used with caution, if ever.
-  Input example (there must always be a -l and a -v line):
-    -l struct XyZ *list_start
-    -v struct XyZ *list_end
-
-The availability of getter method <Classname>_get_<element>(), and setter
-method <Classname>_set_<element>_set() can be controled by two modifiers:
-
-- Readonly. Only a getter method.
-  Input example
-    -r -v int broadcasted_status
-
-- Private. Neither getter nor setter method.
-  Input example
-    -p -v int private_value
-
-- Bossless listable. This marks elements which are listable objects but do not
-  expect a boss pointer in their constructor. See above: Listable class and
-  the bossless modifier for classes.
-  Input example
-    -b -l struct XyZ *list
-    -v struct XyZ *last_in_list
-
-
-Example run:
-
-  rm  class_x.c  class_x.h  class_y.c  class_y.h
-  bin/cgen <<+
--l class_x
--r -v struct Boss_clasS *boss
--v int x
--r -v struct stat stbuf
--m struct Class_Y *y
--m char *text
--c struct Class_X *master
--c struct Class_X *slave
--b -l struct Class_X *provider
--r -v struct Class_X *last_provider
-@
--b -l class_y
--r -v char providername[80]
-@
-+
-  
-
-------------------------------------------------------------------------
+For a description of CgeN see libcevap/cgen.txt
 
 The generated code uses smem.[ch] out of one of my BSD licensed projects.
-Out of smem.h :
+For a description see end of libcevap/smem.h .
 
-
-                                   smem
-
- Functions to replace  malloc()  and  free() in order to get more control
- over memory leaks or spurious errors caused by faulty usage of malloc()
- and free(). 
-
-
- Sourcecode provisions:
- 
- Use only the following macros for memory management:
-    TSOB_FELD(type,count)  creates an array of items of given type 
-    Smem_malloC()          analogue of malloc()
-    Smem_freE()            analogue of free()
- One may #define malloc Smem_malloC resp. #define free Smem_freE 
- but better would be to review (and often to streamline) the sourcecode
- in respect to those two functions. 
-
-
- Speed versus control:
-
- In production versions, where maximum speed is required, one may undefine
- the macro  Smem_own_functionS  in  smem.h . 
- This causes the above macros to directly invoke malloc() and free() without
- any speed reduction (and without any additional use).
- Undefinitio can be done globaly by modifying smem.h or locally by defining
-  Smem_no_own_functionS  before including smem.h .
-
- If Smem_own_functionS remains defined, then the functions
-   Smem_malloc() 
-   Smem_free()
- are used rather than malloc() and free().
- They count the number of calls to maintain a rough overview of memory usage.
- Smem_malloc() additionally checks for 0 size and Smem_free() checks for
- NULL pointers, which they both report to stderr. Eventually one should set
- a breakpoint in function Smem_protest() to learn about the origin of such
- messages.
- A status line may be obtained by  Smem_report()  or printed by Smem_stderr().
-
- As long as the variable Smem_record_itemS is set to 0, there is not very much
- overhead compared with malloc() and free().
- If the variable is set to 1 by Smem_set_record_items() then all malloc()
- results are kept in a list where they will be deleted by their corresponding
- Smem_free() calls. If a pointer is to be freed, which is not recorded in the
- list then an error message will be printed to stderr. The memory will not
- be freed !
- This mode not only may be very slow, it also consumes at least 16 byte per
- piece of data which was obtained by malloc as long as it has not been freed.
- Due to the current nature of the list, large numbers of memory items are freed
- much faster in the reverse order of their creation. If there is a list of
- 100000 strings to delete, it is very rewarding to free the youngest ones first.
- A shortcut via hashing is available but consumes 24 bytes rather than 16.
- (see above  Smem_with_hasH  )
-
- The function Smem_is_recorded() can be used to check wether a pointer is
- valid according to the list. It returns :
-   0 = is not in list , 1 = is in list , 2 = recording is off 
-
- If one decides to start recording malloc() results in the midst of a program
- run, one has to be aware of false protests of Smem_free() if a memory piece
- has been allocated before recording started. This will also cause those pieces
- to be memory leaks because Smem_free() refuses to delete them. (Freeing memory
- that was not obtained by malloc or was already freed previously can result in
- deferred SIGSEGV or similar trouble, depending on OS and library.)
- Also in that case one should stop recording before ending the program, to
- avoid a lot of false complaints about longliving memory objects.    
-
+------------------------------------------------------------------------
