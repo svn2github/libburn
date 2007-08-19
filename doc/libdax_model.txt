@@ -861,11 +861,14 @@ ClassDiagram=Gestures_overview
 Notes:
 ----------------------------------------------------------------------------
 
+ Compile cgen:
+   ( cd libcevap && cc -g -o cgen cgen.c ctyp.c smem.c )
+
  Generate C stubs:
-   ( cd libcevap ; ./libcevap_gen.sh )
+   ( cd libcevap && ./libcevap_gen.sh )
 
  Compile test:
-   ( cd libcevap ; rm cc -g main.c cevap*.c smem.c 2>&1 | less )
+   ( cd libcevap && ( rm a.out ; cc -g main.c cevap*.c smem.c ) )
 
 ----------------------------------------------------------------------------
 
