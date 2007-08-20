@@ -34,6 +34,8 @@ struct SmemiteM {
 #ifdef Smem_own_functionS
 
 char *Smem_malloc();
+int Smem_free();
+
 #define TSOB_FELD(typ,anz) (typ *) Smem_malloc((anz)*sizeof(typ));
 #define Smem_malloC Smem_malloc
 #define Smem_freE Smem_free
@@ -46,7 +48,9 @@ char *Smem_malloc();
 
 #endif /* ! Smem_own_functionS */
 
-
+int Smem_set_record_items();
+int Smem_stderr();
+int Smem_clone_string();
 
 
 #define Smem_hashsizE 251
