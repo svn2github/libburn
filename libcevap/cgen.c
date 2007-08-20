@@ -464,10 +464,14 @@ int flag;
    /* already included ? */
    if(strcmp(dtype,cgen->structname)==0)
  continue;
-   for(hct= cgen->elements; hct!=NULL && hct!=ct; hct= hct->next)
-     if(strcmp(ct->dtype,dtype)==0)
+   for(hct= cgen->elements; hct!=NULL && hct!=ct; hct= hct->next) {
+     if(hct->is_comment)
+   continue;
+     if(hct->dtype!=NULL)
+       if(strcmp(hct->dtype,dtype)==0)
    break;
-   if(hct!=ct)
+   }
+   if(hct!=ct && hct!=NULL)
  continue;
 
    if(is_struct && (isupper(dtype[0]) && isupper(dtype[strlen(dtype)-1]))) {
