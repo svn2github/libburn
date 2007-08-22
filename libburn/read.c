@@ -292,7 +292,7 @@ static void flipq(unsigned char *sub)
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag)
 {
-	int alignment = 2048, start, upto, chunksize, err, cpy_size;
+	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
 	char msg[81], *wpt;
 	struct buffer buf;
 
@@ -330,7 +330,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	if (data_size % 2048)
 		upto++;
 	wpt = data;
-	for (; start < upto; start += 16) {
+	for (; start < upto; start += chunksize) {
 		chunksize = upto - start;
 		if (chunksize > 16) {
 			chunksize = 16;
@@ -339,6 +339,15 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			cpy_size = data_size - *data_count;
 		err = d->read_10(d, start, chunksize, d->buffer);
 		if (err == BE_CANCELLED) {
+			/* Try to read a smaller part of the chunk */
+			for (i = 0; i < chunksize - 1; i++) {
+				err = d->read_10(d, start + i, 1, d->buffer);
+				if (err == BE_CANCELLED)
+			break;
+				memcpy(wpt, d->buffer->data, 2048);
+				wpt += 2048;
+				*data_count += 2048;
+			}
 			d->busy = BURN_DRIVE_IDLE;
 			return 0;
 		}

@@ -75,6 +75,10 @@ int telltoc_aquire_by_adr(char *drive_adr);
 int telltoc_aquire_by_driveno(int *drive_no, int silent);
 
 
+/* A message from --toc to --read_and_print */
+static int last_track_start = 0, last_track_size = -1;
+
+
 /* ------------------------------- API gestures ---------------------------- */
 
 /** You need to aquire a drive before burning. The API offers this as one
@@ -446,8 +450,9 @@ int telltoc_formatlist(struct burn_drive *drive)
 int telltoc_toc(struct burn_drive *drive)
 {
 	int num_sessions = 0 , num_tracks = 0 , lba = 0, pmin, psec, pframe;
-	int track_count = 0;
+	int track_count = 0, pno;
 	int session_no, track_no;
+	char profile_name[80];
 	struct burn_disc *disc= NULL;
 	struct burn_session **sessions;
 	struct burn_track **tracks;
@@ -482,6 +487,7 @@ int telltoc_toc(struct burn_drive *drive)
 				track_count,
 				((toc_entry.control&7)<4?"audio":"data "),
 				lba, pmin, psec, pframe);
+			last_track_start = lba;
 		}
 		burn_session_get_leadout_entry(sessions[session_no],
 						&toc_entry);
@@ -497,6 +503,10 @@ int telltoc_toc(struct burn_drive *drive)
 		printf("Media content: session %2d  ", session_no+1);
 		printf("leadout            lba: %9d  %4.2d:%2.2d:%2.2d\n",
 			lba, pmin, psec, pframe);
+		last_track_size = lba - last_track_start;
+		if (burn_disc_get_profile(drive, &pno, profile_name) > 0)
+			if (pno == 0x09 || pno == 0x0a)
+				last_track_size -= 2;
 	}
 	if (disc!=NULL)
 		burn_disc_free(disc);
@@ -568,11 +578,20 @@ ex:;
 int telltoc_read_and_print(struct burn_drive *drive, 
 	int start_sector, int sector_count, char *raw_file, int encoding)
 {
-	int ret, j, i, request, done;
+	int ret, j, i, request, done, lbas = 0;
 	char buf[16 * 2048], line[81];
 	off_t data_count, total_count= 0, last_reported_count= 0;
 	struct stat stbuf;
 	FILE *raw_fp = NULL;
+
+	if (start_sector == -1)
+		start_sector = last_track_start;
+	if (sector_count == -1)
+		sector_count = last_track_size;
+	if (start_sector < 0)
+		start_sector = 0;
+	if (sector_count <= 0)
+		sector_count = 2147483632;
 
 	if (sector_count <= 0)
 		return -1;
@@ -587,7 +606,7 @@ int telltoc_read_and_print(struct burn_drive *drive,
                     return 1;
                 }
 		printf(
-	"Data         : start=%ds , count=%ds , read=0 , encoding=%d:'%s'\n",
+	"Data         : start=%ds , count=%ds , read=0s , encoding=%d:'%s'\n",
 		start_sector, sector_count, encoding, raw_file);
 	} else 
 		printf(
@@ -601,22 +620,27 @@ int telltoc_read_and_print(struct burn_drive *drive,
 			
 		ret = burn_read_data(drive,
 			((off_t) start_sector + done) * (off_t) 2048,
-			buf, (off_t) (request * 2048), &data_count, 0);
+			buf, (off_t) (request * 2048), &data_count, 1);
 		total_count += data_count;
 		if (encoding == 1) {
 			if (data_count > 0)
 				fwrite(buf, data_count, 1, raw_fp);
 		} else for (i = 0; i < data_count; i += 16) {
+			if (encoding == 0) {
+				sprintf(line, "%8ds + %4d : ",
+					start_sector + i / 2048, i % 2048);
+				lbas = strlen(line);
+			}
 			for (j = 0; j < 16 && i + j < data_count; j++) {
 				if (buf[i + j] >= ' ' && buf[i + j] <= 126 &&
 					encoding != 2)
-					sprintf(line + 3 * j, " %c ",
+					sprintf(line + lbas + 3 * j, " %c ",
 					 	(int) buf[i + j]);
 				else
-					sprintf(line + 3 * j, "%2.2X ",
+					sprintf(line + lbas + 3 * j, "%2.2X ",
 					 	(unsigned char) buf[i + j]);
 			}
-			line[3 * (j - 1) + 2] = 0;
+			line[lbas + 3 * (j - 1) + 2] = 0;
 			printf("%s\n",line);
 		}
 		if (encoding == 1 &&
@@ -650,7 +674,7 @@ static int do_toc = 0;
 static int do_msinfo = 0;
 static int print_help = 0;
 static int do_capacities = 0;
-static int read_start = -1, read_count = -1, print_encoding = 0;
+static int read_start = -2, read_count = -2, print_encoding = 0;
 static char print_raw_file[4096] = {""};
 
 
@@ -737,12 +761,12 @@ int telltoc_setup(int argc, char **argv)
         printf("  mkisofs ... -C \"$msinfo\" ...\n");
 	printf("Obtain what is available about drive 0 and its media\n");
 	printf("  %s --drive 0\n",argv[0]);
-	printf("View blocks 16 to 19 of data CD or DVD in printable form\n");
+	printf("View blocks 16 to 19 of data CD or DVD in human readable form\n");
 	printf("  %s --drive /dev/sr1 --read_and_print 16 4 0 | less\n",
 		argv[0]);
-	printf("Copy data CD hit by Linux read-ahead-bug to file /tmp/iso\n");
-	printf("  %s --drive /dev/sr1 --read_and_print 0 1000000 raw:/tmp/iso\n",
-		argv[0]);
+        printf("Copy last data track from CD to file /tmp/data\n");
+        printf("  %s --drive /dev/sr1 --toc --read_and_print -1 -1 raw:/tmp/data\n",
+                argv[0]);
     }
     return 0;
 }
@@ -817,7 +841,7 @@ int main(int argc, char **argv)
 		if (ret<=0)
 			{ret = 38; goto release_drive; }
 	}
-	if (read_start >= 0 && read_count > 0) {
+	if (read_start >= -1 && (read_count > 0 || read_count == -1)) {
 		ret = telltoc_read_and_print(drive_list[driveno].drive,
 				read_start, read_count, print_raw_file,
 				print_encoding);
