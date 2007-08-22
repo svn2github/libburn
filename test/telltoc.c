@@ -806,6 +806,9 @@ int main(int argc, char **argv)
 	/* Print messages of severity SORRY or more directly to stderr */
 	burn_msgs_set_severities("NEVER", "SORRY", "telltoc : ");
 
+	/* Activate the default signal handler */
+	burn_set_signal_handling("telltoc : ", NULL, 0);
+
 	/** Note: driveno might change its value in this call */
 	ret = telltoc_aquire_drive(drive_adr, &driveno, !full_default);
 	if (ret<=0) {
