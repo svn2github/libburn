@@ -2819,7 +2819,7 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 	d->issue_command(d, &c);
 	if (c.error) {
 		char msg[160];
-		printf(msg,
+		sprintf(msg,
 		"SCSI error on read_10(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
 			start, amount,
 			c.sense[2],c.sense[12],c.sense[13]);
