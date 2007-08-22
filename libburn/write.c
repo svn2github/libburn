@@ -2027,7 +2027,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			"Drive is busy on attempt to write random access",0,0);
 		return 0;
 	}
-	d->busy = BURN_DRIVE_WRITING;
+	d->busy = BURN_DRIVE_WRITING_SYNC;
 	d->buffer = &buf;
 
 	start = byte_address / 2048;
@@ -2053,6 +2053,6 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		d->sync_cache(d);
 	d->buffer = NULL;
 	d->busy = BURN_DRIVE_IDLE;
-	return(1);
+	return 1;
 }
 

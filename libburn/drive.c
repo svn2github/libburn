@@ -110,6 +110,7 @@ int burn_drive_is_released(struct burn_drive *d)
                   -1 = drive is closed (i.e. released explicitely)
                    0 = drive is open, not grabbed (after scan, before 1st grab)
                    1 = drive is grabbed but BURN_DRIVE_IDLE
+                   2 = drive is grabbed, synchronous read/write interrupted
                   10 = drive is grabbing (BURN_DRIVE_GRABBING)
                  100 = drive is busy in cancelable state
                 1000 = drive is in non-cancelable state 
@@ -127,6 +128,9 @@ int burn_drive_is_occupied(struct burn_drive *d)
 		return 0;
 	if(d->busy == BURN_DRIVE_IDLE)
 		return 1;
+	if(d->busy == BURN_DRIVE_READING_SYNC ||
+		 d->busy == BURN_DRIVE_WRITING_SYNC)
+		return 2;
 	if(d->busy == BURN_DRIVE_READING || d->busy == BURN_DRIVE_WRITING)
 		return 50;
 	return 1000;

@@ -251,8 +251,16 @@ enum burn_drive_status
 
 	/* ts A61223 */
 	/** The drive is formatting media */
-	BURN_DRIVE_FORMATTING
+	BURN_DRIVE_FORMATTING,
 
+	/* ts A70822 */
+	/** The drive is busy in synchronous read (if you see this then it
+	    has been interrupted) */
+	BURN_DRIVE_READING_SYNC,
+	/** The drive is busy in synchronous write (if you see this then it
+	    has been interrupted) */
+	BURN_DRIVE_WRITING_SYNC
+	
 };
 
     

@@ -322,7 +322,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			"Drive is busy on attempt to read data", 0, 0);
 		return 0;
 	}
-	d->busy = BURN_DRIVE_READING;
+	d->busy = BURN_DRIVE_READING_SYNC;
 	d->buffer = &buf;
 
 	start = byte_address / 2048;
@@ -348,6 +348,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				wpt += 2048;
 				*data_count += 2048;
 			}
+			d->buffer = NULL;
 			d->busy = BURN_DRIVE_IDLE;
 			return 0;
 		}
