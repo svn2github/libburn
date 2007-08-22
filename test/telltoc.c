@@ -25,6 +25,8 @@
      telltoc_media()   prints some information about the media in a drive
      telltoc_toc()     prints a table of content (if there is content)
      telltoc_msinfo()  prints parameters for mkisofs option -C
+     telltoc_read_and_print()  reads from data CD or from DVD and prints 7-bit 
+                       to stdout (encodings 0,2) or 8-bit to file (encoding 1)
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
      burn_finish()
@@ -564,46 +566,78 @@ ex:;
                   0 = default , 1 = raw 8 bit (dangerous for tty) , 2 = hex
 */
 int telltoc_read_and_print(struct burn_drive *drive, 
-			int start_sector, int sector_count, int encoding)
+	int start_sector, int sector_count, char *raw_file, int encoding)
 {
-	int ret, j;
-	char *buf = NULL, line[81];
-	off_t data_count, i;
+	int ret, j, i, request, done;
+	char buf[16 * 2048], line[81];
+	off_t data_count, total_count= 0, last_reported_count= 0;
+	struct stat stbuf;
+	FILE *raw_fp = NULL;
 
 	if (sector_count <= 0)
 		return -1;
-	buf = malloc(sector_count * 2048);
-	ret = burn_read_data(drive, ((off_t) start_sector) * (off_t) 2048,
-				buf, ((off_t) sector_count) * (off_t) 2048,
-				&data_count, 0);
-	printf(
-	     "Data         : start=%ds , count=%ds , read=%ds , encoding=%d\n",
-		start_sector, sector_count, (int) (data_count / (off_t) 2048),
-		encoding);
 	if (encoding == 1) {
-		fwrite(buf, data_count, 1, stdout);
-	} else for (i = 0; i < data_count; i += 16) {
-		for (j = 0; j < 16 && i + j < data_count; j++) {
-			if (buf[i + j] >= ' ' && buf[i + j] <= 126 &&
-				encoding != 2)
-				sprintf(line + 3 * j, " %c ",
-					 (int) buf[i + j]);
-			else
-				sprintf(line + 3 * j, "%2.2X ",
-					 (unsigned char) buf[i + j]);
+                if (stat(raw_file,&stbuf) != -1) {
+                    fprintf(stderr,"SORRY: target file '%s' already existing\n", raw_file);
+                    return 1;
+                }
+                raw_fp = fopen(raw_file,"w");
+                if (raw_fp == NULL) {
+                    fprintf(stderr,"SORRY: cannot open target file '%s' (%s)\n", raw_file, strerror(errno));
+                    return 1;
+                }
+		printf(
+	"Data         : start=%ds , count=%ds , read=0 , encoding=%d:'%s'\n",
+		start_sector, sector_count, encoding, raw_file);
+	} else 
+		printf(
+		"Data         : start=%ds , count=%ds , read=0 , encoding=%d\n",
+		start_sector, sector_count, encoding);
+	for (done = 0; done < sector_count; done += 16) {
+		if (sector_count - done > 16)
+			request = 16;
+		else
+			request = sector_count - done;
+			
+		ret = burn_read_data(drive,
+			((off_t) start_sector + done) * (off_t) 2048,
+			buf, (off_t) (request * 2048), &data_count, 0);
+		total_count += data_count;
+		if (encoding == 1) {
+			if (data_count > 0)
+				fwrite(buf, data_count, 1, raw_fp);
+		} else for (i = 0; i < data_count; i += 16) {
+			for (j = 0; j < 16 && i + j < data_count; j++) {
+				if (buf[i + j] >= ' ' && buf[i + j] <= 126 &&
+					encoding != 2)
+					sprintf(line + 3 * j, " %c ",
+					 	(int) buf[i + j]);
+				else
+					sprintf(line + 3 * j, "%2.2X ",
+					 	(unsigned char) buf[i + j]);
+			}
+			line[3 * (j - 1) + 2] = 0;
+			printf("%s\n",line);
 		}
-		line[3 * (j - 1) + 2] = 0;
-		printf("%s\n",line);
+		if (encoding == 1 &&
+		    total_count - last_reported_count >= 1000 * 2048) {
+			fprintf(stderr, 
+	     		 "\rReading data : start=%ds , count=%ds , read=%ds  ",
+			 start_sector, sector_count,
+			  (int) (total_count / (off_t) 2048));
+			last_reported_count = total_count;
+		}
+		if (ret <= 0) {
+			fprintf(stderr, "SORRY : Reading failed.\n");
+	break;
+		}
 	}
-	printf(
-	     "End Of Data  : start=%ds , count=%ds , read=%ds , encoding=%d\n",
-		start_sector, sector_count, (int) (data_count / (off_t) 2048),
-		encoding);
+	if (last_reported_count > 0)
+		fprintf(stderr,
+"\r                                                                       \r");
+	printf("End Of Data  : start=%ds , count=%ds , read=%ds\n",
+		start_sector, sector_count,(int) (total_count / (off_t) 2048));
 
-	if (ret <= 0)
-		fprintf(stderr, "SORRY : Reading failed.\n");
-	if (buf != NULL)
-		free(buf);
 	return ret;
 }
 
@@ -617,6 +651,7 @@ static int do_msinfo = 0;
 static int print_help = 0;
 static int do_capacities = 0;
 static int read_start = -1, read_count = -1, print_encoding = 0;
+static char print_raw_file[4096] = {""};
 
 
 /** Converts command line arguments into above setup parameters.
@@ -668,10 +703,11 @@ int telltoc_setup(int argc, char **argv)
             sscanf(argv[i-2], "%d", &read_start);
             sscanf(argv[i-1], "%d", &read_count);
             print_encoding = 0;
-            if(strcmp(argv[i], "dangerously_raw")==0 || strcmp(argv[i],"1")==0)
-              print_encoding = 1;
-            else if(strcmp(argv[i], "hex") == 0 || strcmp(argv[i],"2") == 0)
-              print_encoding = 2;
+            if(strncmp(argv[i], "raw:", 4) == 0 || strcmp(argv[i],"1:") == 0) {
+                print_encoding = 1;
+                strcpy(print_raw_file, strchr(argv[i], ':') + 1);
+            } else if(strcmp(argv[i], "hex") == 0 || strcmp(argv[i], "2") == 0)
+               print_encoding = 2;
             
         } else if (!strcmp(argv[i], "--help")) {
             print_help = 1;
@@ -687,6 +723,7 @@ int telltoc_setup(int argc, char **argv)
         printf("Usage: %s\n", argv[0]);
         printf("       [--drive <address>|<driveno>|\"-\"]\n");
         printf("       [--media]  [--capacities]  [--toc]  [--msinfo]\n");
+        printf("       [--read_and_print <start> <count> \"0\"|\"hex\"|\"raw\":<path>]\n");
         printf("Examples\n");
         printf("A bus scan (needs rw-permissions to see a drive):\n");
         printf("  %s --drive -\n",argv[0]);
@@ -700,6 +737,12 @@ int telltoc_setup(int argc, char **argv)
         printf("  mkisofs ... -C \"$msinfo\" ...\n");
 	printf("Obtain what is available about drive 0 and its media\n");
 	printf("  %s --drive 0\n",argv[0]);
+	printf("View blocks 16 to 19 of data CD or DVD in printable form\n");
+	printf("  %s --drive /dev/sr1 --read_and_print 16 4 0 | less\n",
+		argv[0]);
+	printf("Copy data CD hit by Linux read-ahead-bug to file /tmp/iso\n");
+	printf("  %s --drive /dev/sr1 --read_and_print 0 1000000 raw:/tmp/iso\n",
+		argv[0]);
     }
     return 0;
 }
@@ -776,7 +819,8 @@ int main(int argc, char **argv)
 	}
 	if (read_start >= 0 && read_count > 0) {
 		ret = telltoc_read_and_print(drive_list[driveno].drive,
-				read_start, read_count, print_encoding);
+				read_start, read_count, print_raw_file,
+				print_encoding);
 		if (ret<=0)
 			{ret = 40; goto release_drive; }
 	}
