@@ -75,8 +75,9 @@ int telltoc_aquire_by_adr(char *drive_adr);
 int telltoc_aquire_by_driveno(int *drive_no, int silent);
 
 
-/* A message from --toc to --read_and_print */
+/* A message from --toc to --read_and_print (CD tracksize is a bit tricky) */
 static int last_track_start = 0, last_track_size = -1;
+static int media_is_cd_profile = 0;
 
 
 /* ------------------------------- API gestures ---------------------------- */
@@ -506,7 +507,8 @@ int telltoc_toc(struct burn_drive *drive)
 		last_track_size = lba - last_track_start;
 		if (burn_disc_get_profile(drive, &pno, profile_name) > 0)
 			if (pno == 0x09 || pno == 0x0a)
-				last_track_size -= 2;
+				media_is_cd_profile = 1;
+			
 	}
 	if (disc!=NULL)
 		burn_disc_free(disc);
@@ -578,7 +580,7 @@ ex:;
 int telltoc_read_and_print(struct burn_drive *drive, 
 	int start_sector, int sector_count, char *raw_file, int encoding)
 {
-	int ret, j, i, request, done, lbas = 0;
+	int ret, j, i, request = 16, done, lbas = 0, final_cd_try = -1, todo;
 	char buf[16 * 2048], line[81];
 	off_t data_count, total_count= 0, last_reported_count= 0;
 	struct stat stbuf;
@@ -586,8 +588,11 @@ int telltoc_read_and_print(struct burn_drive *drive,
 
 	if (start_sector == -1)
 		start_sector = last_track_start;
-	if (sector_count == -1)
+	if (sector_count == -1) {
 		sector_count = last_track_size;
+		if (media_is_cd_profile)  /* In case it is a TAO track */
+			final_cd_try = 0; /* allow it (-1 is denial) */
+	}
 	if (start_sector < 0)
 		start_sector = 0;
 	if (sector_count <= 0)
@@ -612,15 +617,17 @@ int telltoc_read_and_print(struct burn_drive *drive,
 		printf(
 		"Data         : start=%ds , count=%ds , read=0 , encoding=%d\n",
 		start_sector, sector_count, encoding);
-	for (done = 0; done < sector_count; done += 16) {
-		if (sector_count - done > 16)
+	todo = sector_count - 2*(final_cd_try > -1);
+	for (done = 0; done < todo && final_cd_try != 1; done += request) {
+		if (todo - done > 16)
 			request = 16;
 		else
-			request = sector_count - done;
-			
+			request = todo - done;
 		ret = burn_read_data(drive,
 			((off_t) start_sector + done) * (off_t) 2048,
 			buf, (off_t) (request * 2048), &data_count, 1);
+			
+print_result:;
 		total_count += data_count;
 		if (encoding == 1) {
 			if (data_count > 0)
@@ -628,7 +635,8 @@ int telltoc_read_and_print(struct burn_drive *drive,
 		} else for (i = 0; i < data_count; i += 16) {
 			if (encoding == 0) {
 				sprintf(line, "%8ds + %4d : ",
-					start_sector + i / 2048, i % 2048);
+					start_sector + done + i / 2048,
+					i % 2048);
 				lbas = strlen(line);
 			}
 			for (j = 0; j < 16 && i + j < data_count; j++) {
@@ -655,6 +663,17 @@ int telltoc_read_and_print(struct burn_drive *drive,
 			fprintf(stderr, "SORRY : Reading failed.\n");
 	break;
 		}
+	}
+	if (ret > 0 && media_is_cd_profile && final_cd_try == 0) {
+		/* In a SAO track the last 2 frames should be data too */
+		final_cd_try = 1;
+		burn_read_data(drive,
+			((off_t) start_sector + todo) * (off_t) 2048,
+			buf, (off_t) (2 * 2048), &data_count, 2);
+		if (data_count < 2 * 2048)
+			fprintf(stderr, "\rNOTE : Last two frames of CD track unreadable. This is normal if TAO track.\n");
+		if (data_count > 0)
+			goto print_result;	
 	}
 	if (last_reported_count > 0)
 		fprintf(stderr,
