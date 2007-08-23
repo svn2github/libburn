@@ -2823,7 +2823,8 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 		"SCSI error on read_10(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
 			start, amount,
 			c.sense[2],c.sense[12],c.sense[13]);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
+		if(!d->silent_on_scsi_error)
+			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020144,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);

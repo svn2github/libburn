@@ -293,10 +293,13 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag)
 {
 	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
+	int sose_mem = 0;
 	char msg[81], *wpt;
 	struct buffer buf;
 
 	*data_count = 0;
+	sose_mem = d->silent_on_scsi_error;
+
 	if (d->released) {
 		libdax_msgs_submit(libdax_messenger,
 			d->global_index, 0x00020142,
@@ -337,11 +340,19 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			cpy_size = 16 * 2048;
 		} else
 			cpy_size = data_size - *data_count;
+		if (flag & 2)
+			d->silent_on_scsi_error = 1;
 		err = d->read_10(d, start, chunksize, d->buffer);
+		if (flag & 2) 
+			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
 			/* Try to read a smaller part of the chunk */
 			for (i = 0; i < chunksize - 1; i++) {
+				if (flag & 2)
+					d->silent_on_scsi_error = 1;
 				err = d->read_10(d, start + i, 1, d->buffer);
+				if (flag & 2) 
+					d->silent_on_scsi_error = sose_mem;
 				if (err == BE_CANCELLED)
 			break;
 				memcpy(wpt, d->buffer->data, 2048);

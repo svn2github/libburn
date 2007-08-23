@@ -1872,7 +1872,9 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     @param data_size    The amount of data to be read. This does not have to
                         be aligned to any block size.
     @param data_count   The amount of data actually read (interesting on error)
-    @param flag         Bitfield for control purposes: (unused yet, submit 0)
+    @param flag         Bitfield for control purposes:
+                        bit0= - reserved -
+                        bit1= do not submit error message if read error
     @return 1=sucessful , <=0 an error occured
 */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
