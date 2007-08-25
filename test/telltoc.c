@@ -580,7 +580,8 @@ ex:;
 int telltoc_read_and_print(struct burn_drive *drive, 
 	int start_sector, int sector_count, char *raw_file, int encoding)
 {
-	int ret, j, i, request = 16, done, lbas = 0, final_cd_try = -1, todo;
+	int j, i, request = 16, done, lbas = 0, final_cd_try = -1, todo;
+	int ret = 0;
 	char buf[16 * 2048], line[81];
 	off_t data_count, total_count= 0, last_reported_count= 0;
 	struct stat stbuf;
