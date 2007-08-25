@@ -34,6 +34,12 @@ struct burn_source *burn_source_new(void)
 	struct burn_source *out;
 
 	out = calloc(1, sizeof(struct burn_source));
+
+	/* ts A70825 */
+	if (out == NULL)
+		return NULL;
+	memset((char *) out, 0, sizeof(struct burn_source));
+
 	out->refcount = 1;
 	return out;
 }

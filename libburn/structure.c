@@ -40,6 +40,8 @@ struct burn_disc *burn_disc_create(void)
 {
 	struct burn_disc *d;
 	d = calloc(1, sizeof(struct burn_disc));
+	if (d == NULL) /* ts A70825 */
+		return NULL;
 	d->refcnt = 1;
 	d->sessions = 0;
 	d->session = NULL;
@@ -64,6 +66,8 @@ struct burn_session *burn_session_create(void)
 {
 	struct burn_session *s;
 	s = calloc(1, sizeof(struct burn_session));
+	if (s == NULL) /* ts A70825 */
+		return NULL;
 	s->refcnt = 1;
 	s->tracks = 0;
 	s->track = NULL;
@@ -104,6 +108,8 @@ struct burn_track *burn_track_create(void)
 {
 	struct burn_track *t;
 	t = calloc(1, sizeof(struct burn_track));
+	if (t == NULL) /* ts A70825 */
+		return NULL;
 	t->refcnt = 1;
 	t->indices = 0;
 	t->offset = 0;

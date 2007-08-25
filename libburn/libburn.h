@@ -1127,7 +1127,9 @@ int burn_msf_to_lba(int m, int s, int f);
 */
 void burn_lba_to_msf(int lba, int *m, int *s, int *f);
 
-/** Create a new disc */
+/** Create a new disc
+    @return Pointer to a burn_disc object or NULL on failure.
+*/
 struct burn_disc *burn_disc_create(void);
 
 /** Delete disc and decrease the reference count on all its sessions
@@ -1135,7 +1137,9 @@ struct burn_disc *burn_disc_create(void);
 */
 void burn_disc_free(struct burn_disc *d);
 
-/** Create a new session */
+/** Create a new session
+    @return Pointer to a burn_session object or NULL on failure.
+ */
 struct burn_session *burn_session_create(void);
 
 /** Free a session (and decrease reference count on all tracks inside)
@@ -1264,7 +1268,12 @@ int burn_track_set_default_size(struct burn_track *t, off_t size);
 */
 void burn_source_free(struct burn_source *s);
 
-/** Creates a data source for an image file (and maybe subcode file) */
+/** Creates a data source for an image file (and maybe subcode file)
+    @param path The file address for the main channel payload.
+    @param subpath Eventual address for subchannel data. Only used in exotic
+                   raw write modes. Submit NULL for normal tasks.
+    @return Pointer to a burn_source object, NULL indicates failure
+*/
 struct burn_source *burn_file_source_new(const char *path,
 					 const char *subpath);
 
@@ -1272,9 +1281,11 @@ struct burn_source *burn_file_source_new(const char *path,
     readable filedescriptor, an eventually open readable subcodes file
     descriptor and eventually a fixed size in bytes.
     @param datafd The source of data.
-    @param subfd The eventual source for subcodes. Not used if -1.
+    @param subfd The eventual source of subchannel data. Only used in exotic
+                 raw write modes. Submit -1 for normal tasks.
     @param size The eventual fixed size of eventually both fds. 
                 If this value is 0, the size will be determined from datafd.
+    @return Pointer to a burn_source object, NULL indicates failure
 */
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 

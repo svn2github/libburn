@@ -960,8 +960,9 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 		d->toc_entries = 0;
 		/* Prefering memory leaks over fandangos */
 		d->toc_entry = malloc(sizeof(struct burn_toc_entry));
-		memset(&(d->toc_entry[0]), 0, sizeof(struct burn_toc_entry));
-
+		if (d->toc_entry != NULL) /* ts A70825 */
+			memset(&(d->toc_entry[0]), 0,
+				 sizeof(struct burn_toc_entry));
 		return 0;
 	}
 
@@ -982,6 +983,8 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	a ssert(((dlen - 2) % 11) == 0);
 */
 	d->toc_entry = malloc(d->toc_entries * sizeof(struct burn_toc_entry));
+	if(d->toc_entry == NULL) /* ts A70825 */
+		return 0;
 	for (i = 0; i < d->toc_entries; i++)
 		memset(&(d->toc_entry[i]), 0, sizeof(struct burn_toc_entry));
 	tdata = c.page->data + 4;
@@ -989,9 +992,13 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	burn_print(12, "TOC:\n");
 
 	d->disc = burn_disc_create();
+	if (d->disc == NULL) /* ts A70825 */
+		return 0;
 
 	for (i = 0; i < c.page->data[3]; i++) {
 		session = burn_session_create();
+		if (session == NULL) /* ts A70825 */
+			return 0;
 		burn_disc_add_session(d->disc, session, BURN_POS_END);
 		burn_session_free(session);
 	}
