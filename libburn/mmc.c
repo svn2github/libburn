@@ -959,10 +959,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 		d->status = BURN_DISC_UNSUITABLE;
 		d->toc_entries = 0;
 		/* Prefering memory leaks over fandangos */
-		d->toc_entry = malloc(sizeof(struct burn_toc_entry));
-		if (d->toc_entry != NULL) /* ts A70825 */
-			memset(&(d->toc_entry[0]), 0,
-				 sizeof(struct burn_toc_entry));
+		d->toc_entry = calloc(1, sizeof(struct burn_toc_entry));
 		return 0;
 	}
 
@@ -982,11 +979,9 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	ts A61007 : if re-enabled then not via Assert.
 	a ssert(((dlen - 2) % 11) == 0);
 */
-	d->toc_entry = malloc(d->toc_entries * sizeof(struct burn_toc_entry));
+	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
 	if(d->toc_entry == NULL) /* ts A70825 */
 		return 0;
-	for (i = 0; i < d->toc_entries; i++)
-		memset(&(d->toc_entry[i]), 0, sizeof(struct burn_toc_entry));
 	tdata = c.page->data + 4;
 
 	burn_print(12, "TOC:\n");

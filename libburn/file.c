@@ -93,7 +93,7 @@ struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 {
 	struct burn_source_file *fs;
 	struct burn_source *src;
-	int fd1, fd2 = 0;
+	int fd1 = -1, fd2 = -1;
 
 	if (!path)
 		return NULL;
@@ -113,15 +113,13 @@ struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 	if (fs == NULL) {
 failure:;
 		close(fd1);
-		if (subpath != NULL)
+		if (fd2 >= 0)
 			close(fd2);
 		return NULL;
 	}
 
 	fs->datafd = fd1;
-
-	if (subpath)
-		fs->subfd = fd2;
+	fs->subfd = fd2;
 
 	/* ts A70125 */
 	fs->fixed_size = 0;
