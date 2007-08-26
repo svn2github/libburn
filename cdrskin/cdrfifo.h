@@ -123,6 +123,16 @@ int Cdrfifo_get_cdr_counters(struct CdrfifO *o,
 int Cdrfifo_get_iso_fs_size(struct CdrfifO *o, double *size_in_bytes,int flag);
 
 
+/** Take over the eventually memorized blocks 16 to 31 of input (2 kB each).
+    The fifo forgets the blocks by this call. I.e. a second one will return 0.
+    After this call it is the responsibility of the caller to dispose the
+    retrieved memory via call free().
+    @param pt Will be filled either with NULL or a pointer to 32 kB of data
+    @return 0=nothing is buffered, 1=pt points to valid freeable data
+*/
+int Cdrfifo_adopt_iso_fs_descr(struct CdrfifO *o, char **pt, int flag);
+
+
 /** Check for pending data at the fifo's source file descriptor and wether the
     fifo is ready to take them. Simultaneously check the buffer for existing
     data and the destination fd for readiness to accept some. If so, a small

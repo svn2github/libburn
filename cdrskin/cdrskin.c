@@ -132,7 +132,7 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-#define Cdrskin_libburn_has_random_access_writE 1
+#define Cdrskin_libburn_has_random_access_rW 1
 
 #endif /* Cdrskin_libburn_0_3_9 */
 
@@ -561,7 +561,8 @@ int Sfile_home_adr_s(char *filename, char *fileadr, int fa_size, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
-/* <<< Preliminary sketch : to go into libburn later */
+/* This would rather belong to libisofs */
+
 /* Learned from reading growisofs.c , 
    watching mkisofs, and viewing its results via od -c */
 /* @return 0=no size found , 1=*size_in_bytes is valid */
@@ -576,6 +577,20 @@ int Scan_for_iso_size(unsigned char data[2048], double *size_in_bytes,
    return(0);
  sectors=  data[80] | (data[81]<<8) | (data[82]<<16) | (data[83]<<24); 
  *size_in_bytes= sectors*2048.0;
+ return(1);
+}
+
+
+int Set_descr_iso_size(unsigned char data[2048], double size_in_bytes,
+                      int flag)
+{
+ unsigned int sectors, i;
+
+ sectors= size_in_bytes/2048.0;
+ if(size_in_bytes>((double) sectors) * 2048.0)
+   sectors++;
+ for(i=0;i<4;i++)
+   data[87-i]= data[80+i]= (sectors >> (8*i)) & 0xff;
  return(1);
 }
 
@@ -800,6 +815,7 @@ struct CdrtracK {
 
  /** Eventually detected data image size */
  double data_image_size;
+ char *iso_fs_descr;  /* eventually block 16 to 31 of input during detection */
  /** Wether to demand a detected data image size and use it (or else abort) */
  int use_data_image_size; /* 0=no, 1=size not defined yet, 2=size defined */
 
@@ -872,6 +888,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->track_type_by_default= 1;
  o->swap_audio_bytes= 0;
  o->data_image_size= -1.0;
+ o->iso_fs_descr= NULL;
  o->use_data_image_size= 0;
  o->extracting_container= 0;
  o->fifo_enabled= 0;
@@ -923,6 +940,8 @@ int Cdrtrack_destroy(struct CdrtracK **o, int flag)
 
  if(track->libburn_track!=NULL)
    burn_track_free(track->libburn_track);
+ if(track->iso_fs_descr!=NULL)
+     free((char *) track->iso_fs_descr);
  free((char *) track);
  *o= NULL;
  return(1);
@@ -979,6 +998,15 @@ int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
 #endif
  *sector_size= track->sector_size;
  return(1);
+}
+
+
+int Cdrtrack_get_iso_fs_descr(struct CdrtracK *track,
+                              char **descr, double *size, int flag)
+{
+ *descr= track->iso_fs_descr;
+ *size= track->data_image_size;
+ return(*descr != NULL && *size > 0.0); 
 }
 
 
@@ -1122,15 +1150,26 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
    return(0);
  if((stbuf.st_mode&S_IFMT)!=S_IFREG && (stbuf.st_mode&S_IFMT)!=S_IFBLK)
    return(2);
+
+ if(track->iso_fs_descr!=NULL)
+   free((char *) track->iso_fs_descr);
+ track->iso_fs_descr= TSOB_FELD(char,16*2048);
+ if(track->iso_fs_descr==NULL)
+   return(-1);
  for(i=0;i<32 && track->data_image_size<=0;i++) {
    for(got= 0; got<2048;got+= ret) {
      ret= read(fd, secbuf+got, 2048-got);
      if(ret<=0)
        return(0);
    }
+   if(i<16)
+ continue;
+   memcpy(track->iso_fs_descr+(i-16)*2048,secbuf,2048);
+   if(i>16)
+ continue;
    ret= Scan_for_iso_size((unsigned char *) secbuf, &size, 0);
    if(ret<=0)
- continue;
+ break;
    track->data_image_size= size;
    if(track->use_data_image_size) {
      Cdrtrack_activate_image_size(track,&size,1);
@@ -1379,6 +1418,9 @@ int Cdrtrack_fill_fifo(struct CdrtracK *track, int fifo_start_at, int flag)
  ret= Cdrfifo_get_iso_fs_size(track->fifo,&data_image_size,0);
  if(ret>0)
    track->data_image_size= data_image_size;
+ if(track->iso_fs_descr!=NULL)
+   free((char *) track->iso_fs_descr);
+ Cdrfifo_adopt_iso_fs_descr(track->fifo,&(track->iso_fs_descr),0);
  return(1);
 }
 
@@ -2770,8 +2812,22 @@ struct CdrskiN {
  double tao_to_sao_tsize;
  int stdin_source_used;
 
- /* For option -isosize */
+ /* Info about media capabilities */
+ int media_does_multi;
+ int media_is_overwriteable;
+
+ /* For option -isosize and --grow_overwriteable_iso */
  int use_data_image_size;
+
+ /* For growisofs stunt :
+    0=disabled,
+    1=do stunt, fabricate toc, allow multi,
+    2=overwriteable_iso_head is valid
+    3=initial session (mostly to appease -multi on overwriteables)
+ */
+ int grow_overwriteable_iso;
+ /* New image head buffer for --grow_overwriteable_iso */
+ char overwriteable_iso_head[32*2048]; /* block  0 to 31 of target */
 
 };
 
@@ -2869,6 +2925,11 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->tao_to_sao_tsize= 0.0;
  o->stdin_source_used= 0;
  o->use_data_image_size= 0;
+ o->media_does_multi= 0;
+ o->media_is_overwriteable= 0;
+
+ o->grow_overwriteable_iso= 0;
+ memset(o->overwriteable_iso_head,0,sizeof(o->overwriteable_iso_head));
 
 #ifndef Cdrskin_extra_leaN
  ret= Cdradrtrn_new(&(o->adr_trn),0);
@@ -3072,6 +3133,25 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 }
 
 
+int Cdrskin_determine_media_caps(struct CdrskiN *skin, int flag)
+{
+#ifdef Cdrskin_libburn_has_get_multi_capS
+ int ret;
+ struct burn_multi_caps *caps = NULL;
+ 
+ skin->media_is_overwriteable= skin->media_does_multi= 0;
+ ret= burn_disc_get_multi_caps(skin->grabbed_drive,BURN_WRITE_NONE,&caps,0);
+ if(ret<=0)
+   return(0);
+ skin->media_is_overwriteable= !!caps->start_adr;
+ skin->media_does_multi= !!caps->multi_session;
+ return(1);
+#else /* Cdrskin_libburn_has_get_multi_capS */
+ return(-1);
+#endif
+}
+
+
 /** Obtain access to a libburn drive for writing or information retrieval.
     If libburn is not restricted to a single persistent address then the
     unused drives are dropped. This might be done by shutting down and
@@ -3209,6 +3289,7 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    }
  }
 #endif /* Cdrskin_libburn_has_get_profilE */
+ Cdrskin_determine_media_caps(skin,0);
 
  ret= 1;
 ex:;
@@ -3870,6 +3951,77 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 }
 
 
+/** Read and buffer the start of an existing ISO-9660 image from
+    overwriteable target media.
+*/
+int Cdrskin_overwriteable_iso_size(struct CdrskiN *skin, int *size, int flag)
+{
+#ifdef Cdrskin_libburn_has_random_access_rW
+ int ret;
+ off_t data_count= 0;
+ double size_in_bytes;
+ char *buf;
+
+ buf= skin->overwriteable_iso_head;
+ if(!skin->media_is_overwriteable)
+   {ret= 0; goto ex;}
+ /* Read first 64 kB */
+ ret= burn_read_data(skin->grabbed_drive,(off_t) 0,buf,32*2048,&data_count,0);
+ if(ret<=0)
+   {ret= 0; goto ex;}
+ ret= Scan_for_iso_size((unsigned char *) (buf+16*2048), &size_in_bytes,0);
+ if(ret<=0) {
+   if(skin->verbosity>=Cdrskin_verbose_debuG)
+  ClN(fprintf(stderr,"cdrskin_debug: No detectable ISO-9660 size on media\n"));
+   {ret= 0; goto ex;}
+ }
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,"cdrskin_debug: detected ISO-9660 size : %.f  (%fs)\n",
+               size_in_bytes, size_in_bytes/2048.0));
+ if(size_in_bytes/2048.0>2147483647-1-16) {
+   fprintf(stderr,
+           "cdrskin: FATAL : ISO-9660 filesystem in terabyte size detected\n");
+   {ret= 0; goto ex;}
+ }
+ *size= size_in_bytes/2048.0;
+ if(size_in_bytes-((double) *size)*2048.0>0.0)
+   (*size)++;
+ if((*size)%16)
+   *size+= 16-((*size)%16);
+ skin->grow_overwriteable_iso= 2;
+ ret= 1;
+ex:;
+ return(ret);
+
+#else /* Cdrskin_libburn_has_random_access_rW */
+ return(-1);
+#endif
+}     
+
+
+int Cdrskin_invalidate_iso_head(struct CdrskiN *skin, int flag)
+{
+ int ret;
+ int size;
+
+ fprintf(stderr,
+   "cdrskin: blank=... : invalidating ISO-9660 head on overwriteable media\n");
+ ret= Cdrskin_overwriteable_iso_size(skin,&size,0);
+ if(ret<=0) {
+   fprintf(stderr,
+           "cdrskin: NOTE : Not an ISO-9660 file system. Left unaltered.\n");
+   return(2);
+ }
+ skin->overwriteable_iso_head[16*2048]= 0;
+ skin->overwriteable_iso_head[16*2048+3]= 
+ skin->overwriteable_iso_head[16*2048+4]= 'x';
+ ret= burn_random_access_write(skin->grabbed_drive,(off_t) 16*2048,
+                               skin->overwriteable_iso_head+16*2048,
+                               (off_t) 16*2048,1);
+ return(ret);
+}
+
+
 /** Perform -toc under control of Cdrskin_atip().
     @param flag Bitfield for control purposes:
                 bit0= do not list sessions separately (do it cdrecord style)
@@ -3878,7 +4030,7 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 int Cdrskin_toc(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
- int session_no, track_no, pmin, psec, pframe;
+ int session_no, track_no, pmin, psec, pframe, ret;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions;
@@ -3888,8 +4040,23 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  drive= skin->drives[skin->driveno].drive;
 
  disc= burn_drive_get_disc(drive);
- if(disc==NULL)
+ if(disc==NULL) {
+   if(skin->grow_overwriteable_iso>0) {
+     ret= Cdrskin_overwriteable_iso_size(skin,&lba,0);
+     if(ret>0) {
+       printf(
+"first: 1 last 1  (fabricated from ISO-9660 image on overwriteable media)\n");
+       printf(
+"track:   1 lba:         0 (        0) 00:02:00 adr: 1 control: 4 mode: 1\n");
+       burn_lba_to_msf(lba, &pmin, &psec, &pframe);
+       printf("track:lout lba: %9d (%9d) %2.2d:%2.2d:%2.2d",
+          lba,4*lba,pmin,psec,pframe);
+       printf(" adr: 1 control: 4 mode: -1\n");
+       return(1);
+     }
+   }
    goto cannot_read;
+ }
  sessions= burn_disc_get_sessions(disc,&num_sessions);
  if(flag&1) {
    for(session_no= 0; session_no<num_sessions; session_no++) {
@@ -4315,7 +4482,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        "cdrskin: NOTE : blank=format_... : media is already formatted\n");
        fprintf(stderr,
        "cdrskin: HINT : If you really want to re-format, add option -force\n");
-       return(2);
+       {ret= 2; goto ex;}
      }
    } else if(profile_number == 0x1a) { /* DVD+RW */
      if(!((skin->blank_format_type>>8)&4)) {
@@ -4323,12 +4490,12 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        "cdrskin: NOTE : blank=format_... : DVD+RW do not need this\n");
        fprintf(stderr,
        "cdrskin: HINT : For de-icing use option blank=format_overwrite_full");
-       return(2);
+       {ret= 2; goto ex;}
      }
    } else {
      fprintf(stderr,
             "cdrskin: SORRY : blank=%s for now does DVD+/-RW only\n",fmt_text);
-     return(0);
+     {ret= 0; goto ex;}
    }
    if(s==BURN_DISC_UNSUITABLE)
      fprintf(stderr,
@@ -4338,7 +4505,18 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  } else if(do_format==0) {
    /* Classical blanking of erasable media */
 
-   if(s!=BURN_DISC_FULL && 
+   if(skin->grow_overwriteable_iso > 0 && skin->media_is_overwriteable) {
+     if(skin->dummy_mode) {
+       fprintf(stderr,
+     "cdrskin: would have begun to pseudo-blank disc if not in -dummy mode\n");
+       goto blanking_done;
+     }
+     skin->grow_overwriteable_iso= 3;
+     ret= Cdrskin_invalidate_iso_head(skin, 0);
+     if(ret<=0)
+       goto ex;
+     goto blanking_done;
+   } else if(s!=BURN_DISC_FULL && 
       (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable) &&
       (profile_number!=0x13 || !skin->prodvd_cli_compatible) &&
       (s!=BURN_DISC_BLANK || !skin->force_is_set)) {
@@ -4346,7 +4524,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      if(s==BURN_DISC_BLANK) {
        fprintf(stderr,
        "cdrskin: NOTE : blank=... : media was already blank (and still is)\n");
-       return(2);
+       {ret= 2; goto ex;}
      } else if(s==BURN_DISC_APPENDABLE) {
        fprintf(stderr,
                "cdrskin: FATAL : blank=... : media is still appendable\n");
@@ -4357,11 +4535,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
          fprintf(stderr,
     "cdrskin: HINT : If you are certain to have a CD-RW, try option -force\n");
      }
-     return(0);
+     {ret= 0; goto ex;}
    }
    if(!burn_disc_erasable(drive)) {
      fprintf(stderr,"cdrskin: FATAL : blank=... : media is not erasable\n");
-     return(0);
+     {ret= 0; goto ex;}
    }
    if((profile_number == 0x14 || profile_number == 0x13) &&
       !skin->prodvd_cli_compatible)
@@ -4372,7 +4550,7 @@ unsupported_format_type:;
    fprintf(stderr,
           "cdrskin: SORRY : blank=%s is unsupported with media type %s\n",
           fmt_text, profile_name);
-   return(0);
+   {ret= 0; goto ex;}
  }
 
  if(skin->dummy_mode) {
@@ -4843,7 +5021,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
  int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
  int profile_number= -1, track_type_1= 0, mixed_mode= 0, unpredicted_size= 0;
  int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret, current_is_cd= 1;
- int use_data_image_size;
+ int use_data_image_size, current_is_overwriteable= 0;
  struct burn_drive_info *drive_info = NULL;
  char profile_name[80];
  double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
@@ -5024,19 +5202,27 @@ check_with_drive:;
 
 #ifdef Cdrskin_libburn_has_get_multi_capS
  ret = burn_disc_get_multi_caps(skin->grabbed_drive,skin->write_type,&caps,0);
- if (ret>0)
-   allows_multi= caps->multi_session;
+ if (ret>0) {
+   current_is_overwriteable= caps->start_adr;
+   allows_multi= caps->multi_session || current_is_overwriteable;
+ }
  burn_disc_free_multi_caps(&caps);
 #endif
- if(skin->multi && !allows_multi) {
-   if(skin->prodvd_cli_compatible) {
-     skin->multi= 0;
-     if(skin->verbosity>=Cdrskin_verbose_progresS)
-       fprintf(stderr, "cdrskin: NOTE : Ignored option -multi.\n");
-   } else {
-     fprintf(stderr,
+ if(skin->multi) {
+   if(!allows_multi) {
+     if(skin->prodvd_cli_compatible) {
+       skin->multi= 0;
+       if(skin->verbosity>=Cdrskin_verbose_progresS)
+         fprintf(stderr, "cdrskin: NOTE : Ignored option -multi.\n");
+     } else {
+       fprintf(stderr,
  "cdrskin: SORRY : Cannot keep this media appendable after write by -multi\n");
-     return(0);
+       return(0);
+   } else if(current_is_overwriteable) {
+       skin->multi= 0;
+       if(!skin->use_data_image_size)
+         if(skin->verbosity>=Cdrskin_verbose_progresS)
+           fprintf(stderr, "cdrskin: NOTE : -multi cannot leave a recognizeable end mark on this media.\n");
    }
  }
 
@@ -5122,7 +5308,7 @@ int Cdrskin_announce_tracks(struct CdrskiN *skin, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
-#ifdef Cdrskin_libburn_has_random_access_writE
+#ifdef Cdrskin_libburn_has_random_access_rW
 
 int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
 {
@@ -5238,7 +5424,75 @@ ex:;
  return(ret);
 }
 
-#endif /* Cdrskin_libburn_has_random_access_writE */
+
+int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
+{
+ int ret, i, went_well= 1;
+ char *track_descr,*td,*md;
+ double track_size, media_size;
+
+ ret= Cdrtrack_get_iso_fs_descr(skin->tracklist[0],&track_descr,&track_size,0);
+ if(ret<=0) {
+   fprintf(stderr,"cdrskin: SORRY : Saw no ISO-9660 filesystem in track 0\n");
+   return(ret);
+ }
+ if(skin->grow_overwriteable_iso==3) /* initial session */
+   return(1);
+ if(skin->grow_overwriteable_iso!=2) {
+   fprintf(stderr,
+          "cdrskin: SORRY : Could not read ISO-9660 descriptors from media\n");
+   return(0);
+ }
+ ret= Scan_for_iso_size((unsigned char *) skin->overwriteable_iso_head+16*2048,
+                        &media_size, 0);
+ if(ret<=0) {
+   fprintf(stderr,"cdrskin: SORRY : No recognizable ISO-9660 on media\n");
+   return(0);
+ }
+
+ /* Write new sum into media descr 0 */
+ md= skin->overwriteable_iso_head+16*2048;
+ memcpy(md,track_descr,2048);
+ Set_descr_iso_size((unsigned char *) md,track_size+media_size,0);
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,"cdrskin_debug: new ISO-9660 size : %.f  (%fs)\n",
+               track_size+media_size, (track_size+media_size)/2048));
+
+ /* Copy type 255 CD001 descriptors from track to media descriptor buffer
+    and adjust their size entries */
+ for(i=1; i<16; i++) {
+   td= track_descr+i*2048;
+   md= skin->overwriteable_iso_head+(16+i)*2048;
+   if(td[0] != -1)
+ break;
+   /* demand media descrN[0] == track descrN[0] */
+   if(td[0] != md[0]) {
+     fprintf(stderr,
+   "cdrskin: SORRY : type mismatch of ISO volume descriptor #%d (%u <-> %u)\n",
+             i, ((unsigned int) td[0]) & 0xff, ((unsigned int) md[0])&0xff);
+     went_well= 0;
+   }
+   memcpy(md,td,2048);
+   Set_descr_iso_size((unsigned char *) md,track_size+media_size,0);
+ }
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,"cdrskin_debug: copied %d secondary ISO descriptors\n",
+               i-1));
+
+ /* write block 16 to 31 to media */
+ if(skin->verbosity>=Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,"cdrskin_debug: writing to media: blocks 16 to 31\n"));
+ ret= burn_random_access_write(skin->grabbed_drive, (off_t) (16*2048),
+                               skin->overwriteable_iso_head+16*2048,
+                               (off_t) (16*2048), 1);
+ if(ret<=0)
+   return(ret);
+
+ return(went_well);
+}
+
+
+#endif /* Cdrskin_libburn_has_random_access_rW */
 
 
 /** Burn data via libburn according to the parameters set in skin.
@@ -5255,7 +5509,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  struct burn_drive *drive;
  int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
  int fifo_disabled= 0,fifo_percent,total_min_fill,min_buffer_fill= 101;
- int use_data_image_size, needs_early_fifo_fill= 0;
+ int use_data_image_size, needs_early_fifo_fill= 0,iso_size= -1;
  double put_counter,get_counter,empty_counter,full_counter;
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
@@ -5403,11 +5657,47 @@ burn_failed:;
  o= burn_write_opts_new(drive);
  burn_write_opts_set_perform_opc(o, 0);
 
-#ifdef Cdrskin_libburn_has_multI
- burn_write_opts_set_multi(o,skin->multi);
-#endif
 #ifdef Cdrskin_libburn_has_set_start_bytE
+
+/* growisofs stunt: assessment of media and start for next session */
+ if((skin->grow_overwriteable_iso==1 || skin->grow_overwriteable_iso==2) &&
+     skin->media_is_overwriteable) {
+   /* Obtain ISO size from media, keep 64 kB head in memory */
+   ret= Cdrskin_overwriteable_iso_size(skin,&iso_size,0);
+   if(ret<0)
+     goto ex;
+   if(ret>0 && skin->write_start_address<0) {
+     skin->write_start_address= ((double) iso_size)*2048.0;
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(printf(
+            "cdrskin: write start address by --grow_overwriteable_iso : %ds\n",
+            iso_size));
+   } else if(ret==0)
+     skin->grow_overwriteable_iso= 3; /* do not patch ISO header later on */
+ } 
+
  burn_write_opts_set_start_byte(o, skin->write_start_address);
+
+#endif /* Cdrskin_libburn_has_set_start_bytE */
+
+#ifdef Cdrskin_libburn_has_multI
+ if(skin->media_is_overwriteable && skin->multi) {
+   if(skin->grow_overwriteable_iso<=0) {
+     fprintf(stderr, "cdrskin: FATAL : -multi cannot leave a recognizeable end mark on this media.\n");
+     fprintf(stderr, "cdrskin: HINT  : For ISO-9660 images try --start_overwriteable_iso -multi\n");
+     fprintf(stderr, "cdrskin: HINT  : or                      --grow_overwriteable_iso  -multi\n");
+     {ret= 0; goto ex;}
+   }
+   skin->multi= 0;
+ }
+ if(skin->multi && !skin->media_does_multi) {
+   if(skin->prodvd_cli_compatible) {
+     skin->multi= 0;
+     if(skin->verbosity>=Cdrskin_verbose_progresS)
+       fprintf(stderr, "cdrskin: NOTE : Ignored option -multi.\n");
+   }
+ }
+ burn_write_opts_set_multi(o,skin->multi);
 #endif
 #ifdef Cdrskin_libburn_has_set_filluP
  burn_write_opts_set_fillup(o, skin->fill_up_media);
@@ -5578,14 +5868,23 @@ fifo_filling_failed:;
  wrote_well = burn_drive_wrote_well(drive);
 #endif
 
+#ifdef Cdrskin_libburn_has_random_access_rW
+ if(skin->media_is_overwriteable && skin->grow_overwriteable_iso>0 &&
+    wrote_well) {
+   /* growisofs final stunt : update volume descriptors at start of media */
+   ret= Cdrskin_grow_overwriteable_iso(skin,0);
+   if(ret<=0)
+     wrote_well= 0;
+ }
+#endif /* Cdrskin_libburn_has_random_access_rW */
+
  if(max_track<0) {
    printf("Track 01: Total bytes read/written: %.f/%.f (%.f sectors).\n",
           total_count,total_count,total_count/sector_size);
  } else {
    Cdrtrack_get_size(skin->tracklist[max_track],&size,&padding,&sector_size,
                      &use_data_image_size,1);
-   printf(
-         "Track %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
+   printf("Track %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
          max_track+1,size,size+padding,(size+padding)/sector_size);
  }
  if(skin->verbosity>=Cdrskin_verbose_progresS)
@@ -5705,8 +6004,16 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  drive= skin->drives[skin->driveno].drive;
  s= burn_disc_get_status(drive);
  if(s!=BURN_DISC_APPENDABLE) {
+   if(skin->grow_overwriteable_iso==1 || skin->grow_overwriteable_iso==2) {
+     lba= 0;
+     ret= Cdrskin_overwriteable_iso_size(skin,&nwa,0);
+     if(ret>0)
+       goto put_out;
+   }
    Cdrskin_report_disc_status(skin,s,0);
    fprintf(stderr,"cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) discs\n");
+   if(skin->grow_overwriteable_iso>0)
+     fprintf(stderr,"cdrskin:         or on overwriteables with existing ISO-9660 file system.\n");
    {ret= 0; goto ex;}
  }
  disc= burn_drive_get_disc(drive);
@@ -5769,6 +6076,8 @@ obtain_nwa:;
    else
      nwa= aux_lba+11400;
  }
+
+put_out:;
  if(skin->msinfo_fd>=0) {
    sprintf(msg,"%d,%d\n",lba,nwa);
    write(skin->msinfo_fd,msg,strlen(msg));
@@ -6306,6 +6615,15 @@ fs_equals:;
 gracetime_equals:;
      sscanf(value_pt,"%d",&(skin->gracetime));
 
+#ifdef Cdrskin_libburn_has_get_multi_capS
+#ifdef Cdrskin_libburn_has_random_access_rW
+   } else if(strncmp(argv[i],"--grow_overwriteable_iso",24)==0) {
+     skin->grow_overwriteable_iso= 1;
+     skin->use_data_image_size= 1;
+#endif /* Cdrskin_libburn_has_random_access_rW */
+#endif /* Cdrskin_libburn_has_get_multi_capS */
+     
+
 #else /* ! Cdrskin_extra_leaN */
 
    } else if(
@@ -6323,7 +6641,6 @@ gracetime_equals:;
 
 #endif /* Cdrskin_extra_leaN */
 
-     
    } else if(strcmp(argv[i],"--help")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -6892,14 +7209,14 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
      {*exit_value= 8; goto ex;}
  }
 
-#ifdef Cdrskin_libburn_has_random_access_writE
+#ifdef Cdrskin_libburn_has_random_access_rW
  if(skin->do_direct_write) {
    skin->do_burn= 0;
    ret= Cdrskin_direct_write(skin,0);
    if(ret<=0)
      {*exit_value= 13; goto ex;}
  }
-#endif /* Cdrskin_libburn_has_random_access_writE */
+#endif /* Cdrskin_libburn_has_random_access_rW */
 
  if(skin->do_burn || skin->tell_media_space) {
    if(skin->n_drives<=0)

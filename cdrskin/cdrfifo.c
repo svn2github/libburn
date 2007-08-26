@@ -79,6 +79,7 @@ struct CdrfifO {
 
  /* eventual ISO-9660 image size obtained from first 64k of input */
  double iso_fs_size; 
+ char *iso_fs_descr; /* eventually block 16 to 31 of input */
 
  /* (sequential) fd chaining */
  /* fds: 0=source, 1=dest  */
@@ -162,6 +163,7 @@ int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,
  o->empty_counter= 0.0;
  o->full_counter= 0.0;
  o->iso_fs_size= -1.0;
+ o->iso_fs_descr= NULL;
  for(i= 0; i<Cdrfifo_ffd_maX; i++) {
    o->follow_up_fds[i][0]= o->follow_up_fds[i][1]= -1;
    o->follow_up_eop[i]= o->follow_up_sod[i]= -1;
@@ -222,6 +224,8 @@ int Cdrfifo_destroy(struct CdrfifO **ff, int flag)
 
  /* eventual closing of source fds is the job of the calling application */
 
+ if(o->iso_fs_descr!=NULL)
+   free((char *) o->iso_fs_descr);
  if(o->buffer!=NULL)
    free((char *) o->buffer);
  free((char *) o);
@@ -397,6 +401,14 @@ int Cdrfifo_get_iso_fs_size(struct CdrfifO *o, double *size_in_bytes, int flag)
 {
  *size_in_bytes= o->iso_fs_size;
  return(o->iso_fs_size>=2048);
+}
+
+
+int Cdrfifo_adopt_iso_fs_descr(struct CdrfifO *o, char **pt, int flag)
+{
+ *pt= o->iso_fs_descr;
+ o->iso_fs_descr= NULL;
+ return(*pt!=NULL);
 }
 
 
@@ -882,19 +894,24 @@ int Cdrfifo_fill(struct CdrfifO *o, int size, int flag)
  }
 
 #ifndef Cdrfifo_standalonE
- { int Scan_for_iso_size(unsigned char data[2048], double *size_in_bytes,
+ if(fill>=32*2048) {
+   int Scan_for_iso_size(unsigned char data[2048], double *size_in_bytes,
                          int flag);
-   int i;
+   int bs= 16*2048;
    double size;
 
-   /* try to obtain an ISO-9660 file system size */
-   for(i= 0; i<32*2048 && i+2048<=fill; i+=2048) {
-     ret= Scan_for_iso_size((unsigned char *) (o->buffer+i), &size, 0);
-     if(ret<=0)
-   continue;
+   /* memorize blocks 16 to 31 */
+   if(o->iso_fs_descr!=NULL)
+     free((char *) o->iso_fs_descr);
+   o->iso_fs_descr= TSOB_FELD(char,bs);
+   if(o->iso_fs_descr==NULL)
+     return(-1);
+   memcpy(o->iso_fs_descr,o->buffer+bs,bs);
+
+   /* try to obtain ISO-9660 file system size from block 16 */
+   ret= Scan_for_iso_size((unsigned char *) (o->buffer+bs), &size, 0);
+   if(ret>0)
      o->iso_fs_size= size;
-   break;
-   }
  }
 #endif
 
