@@ -395,24 +395,19 @@ Speed is counted in DVD units (i.e. 1x = 1,385,000 bytes/second). Currently
 there is no difference between -sao and -tao. If ever, then -tao will be the
 mode which preserves the current behavior.
 
-For these media, -msinfo alone would not be enough to perform appending of an
-ISO filesystem. The filesystem driver will need a hint to find the start of the
-most recent session. For example put an ISO filesystem at address 1 GB:
-  mkisofs -C 0,524288 ... | \
-  cdrskin dev=/dev/sr0 -v fs=32m -eject speed=4 write_start_address=524288s -
-The superuser may then do:
-  mount -t iso9660 -o ro,sbsector=524288 /dev/sr0 /mnt
-Note: On my linux-2.4.21-215 mount works only with sbsector <= 337920 (660 MiB)
-To extend a filesystem already existing at address 0
-  mkisofs -C 0,524288 -M /dev/sr0 ... | cdrskin dev=/dev/sr0 ...
-Record the number 524288 for usage as first number with -C at the next
-extension:
-  mkisofs -C 524288,1000000 ... | cdrskin write_start_address=1000000s ...
-
 Program growisofs can append to an ISO filesystem on DVD+RW by additionally
-manipulating the first session. cdrskin does not want to get involved so deep
-into the format of the burned data. Be advised to use growisofs for the
-task of maintaining extendable ISO-Filesystems on DVD+RW. 
+manipulating the first session. Meanwhile cdrskin can do the same.
+Option --grow_overwriteable_iso allows -multi (although unneeded), enables
+-msinfo and -toc, and makes blank=fast an invalidator for ISO filesystems
+on overwriteable media.
+
+Initial session (equivalent to growisofs -Z): 
+  mkisofs ... | cdrskin --grow_overwriteable_iso blank=fast ...
+
+Add-on session (equivalent to growisofs -M):
+  cparms=$(cdrskin dev=/dev/sr0 --grow_overwriteable_iso -msinfo)
+  mkisofs -C "$cparms" -M /dev/sr0 ... | \
+    cdrskin dev=/dev/sr0 --grow_overwriteable_iso ... -
 
 
                                DVD-RW and DVD-R
