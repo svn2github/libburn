@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "August 26, 2007"
+.TH CDRSKIN 1 "August 27, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -200,14 +200,16 @@ Best reader compatibility is achieved without it
 .br
 Currently types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
 .br
-DVD+RW and DVD-RAM media get treated as blank media regardless wether they
-hold data or not. They need no special initial formatting.
+DVD+RW and DVD-RAM media need no special initial formatting. They offer a
+single continuous data area for blockwise random access.
+.br
 Option -audio is not allowed. Only one track is allowed.
 Option -multi cannot mark a recognizeable end of overwriteable media.
 Therefore -multi is banned unless ISO-9660 images shall be expandable by help
 of option --grow_overwriteable_iso.
 Without this option or without an ISO-9660 filesystem image present
-on media, -toc does not return information about the media content.
+on media, -toc does not return information about the media content and
+media get treated as blank regardless wether they hold data or not.
 .br
 Currently there is no difference between -sao and -tao. If ever, then -tao
 will be the mode which preserves the current behavior.
@@ -296,11 +298,11 @@ Print this list of blanking types.
 .TP
 all
 Blank an entire CD-RW or an unformatted DVD-RW.
-(See also --prodvd_cli_compatible)
+(See also --prodvd_cli_compatible, --grow_overwriteable_iso)
 .TP
 fast
 Minimally blank an entire CD-RW or blank an unformatted DVD-RW.
-(See also --prodvd_cli_compatible)
+(See also --prodvd_cli_compatible, --grow_overwriteable_iso)
 .TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
@@ -470,12 +472,6 @@ The following sessions can only be written in -tao mode. -multi is prohibited
 with DVD-R[W] DAO write mode. Option --prodvd_cli_compatible eventually makes
 -multi tolerable but cannot make it work.
 .br
-With overwriteable DVD media, -multi cannot mark the end of the session.
-So when adding a new session this end has to be determined from the payload.
-Currently only ISO-9660 filesystems can be used that way. See option
-.B \--grow_overwriteable_iso
-for lifting the ban on -multi. 
-.br
 In order to have all filesystem content accessible, the eventual ISO-9660
 filesystem of a follow-up
 session needs to be prepared in a special way by the filesystem formatter
@@ -485,6 +481,12 @@ which can be retrieved by cdrskin option -msinfo.
 To retrieve an archive file which was written as follow-up session,
 you may use option -toc to learn about the "lba" of the desired track number.
 This lba is the address of the 2048 byte block where the archive begins.
+.br
+With overwriteable DVD media, -multi cannot mark the end of the session.
+So when adding a new session this end has to be determined from the payload.
+Currently only ISO-9660 filesystems can be used that way. See option
+.B \--grow_overwriteable_iso
+for lifting the ban on -multi. 
 .br
 Note: -multi might make DVD media unreadable in some DVD-ROM drives.
 .TP
@@ -707,25 +709,31 @@ but adapted to the usage model of
 .B cdrskin -msinfo ; mkisofs -C -M | cdrskin [-multi] -
 .br
 --grow_overwriteable_iso does not hamper the use of true multi-session media.
-It demands nevertheless that the track source is a ISO-9660 filesystem image.
-With overwriteable media and no option blank=fast|all present it expands an
-eventual ISO-9660 filesystem. It is assumed that this image's inner size
-description points to the end of the valuable data on media.
+I.e. it is possible to use the same cdrskin options with both kinds of media
+and to achieve similar results if ISO-9660 filesystem images are to be written.
+This option implies option -isosize and therefore demands that the track
+source is a ISO-9660 filesystem image.
 .br
-Options -msinfo and -toc will then work for overwriteables. -toc will always
-show a single session with its size increasing with every added mkisofs image.
+With overwriteable media and no option blank=fast|all present it expands an
+eventual ISO-9660 filesystem on media. It is assumed that this image's inner
+size description points to the end of the valuable data.
+Overwriteable media with a recognizeable ISO-9660 size will be regarded as
+appendable rather than as blank. I.e. options -msinfo and -toc will work.
+-toc will always show a single session with its size increasing with
+every added mkisofs image.
+.br
+If not overriden by option write_start_address=, the track with the new image
+will be placed behind the end of the old one. One may use option
+assert_write_lba= to make sure that media state and mkisofs job do match.
 .br
 --grow_overwriteable_iso causes option blank=fast|all to invalidate an
 eventual ISO-9660 image by altering the first few bytes of block 16 on
 overwriteable media.
-.br
-If not overriden by option write_start_address=, the track with the new image
-will be placed at the end of the old one. One may use option assert_write_lba=
-to make sure that media state and mkisofs job do match.
+Option -multi is tolerated in order not to hamper true multi-session media.
 .br
 Note: The equivalent of growisofs -Z is
 .br
-(mkisofs | cdrskin --grow_overwriteable_iso blank=fast [-multi])
+.B mkisofs | cdrskin --grow_overwriteable_iso blank=fast [-multi]
 .br
 growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
 .TP
