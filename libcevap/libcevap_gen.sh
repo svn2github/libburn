@@ -1,7 +1,7 @@
 #!/bin/sh
 
 test_dir=.
-model_file=../doc/libdax_model.txt
+model_file=./libdax_model.txt
 xtr_dir=.
 cgen_dir=.
 # cgen_dir=~/projekte/cdrskin_dir/libburn-develop/libcevap
