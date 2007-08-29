@@ -2152,8 +2152,8 @@ libburn/libdax_msgs.h
 DVD speed setting via B6h SET STREAMING, DVD+RW now enabled in vanilla build
 
 2006.12.21.205702  [533]
-Disallowed multi flag with DVD+RW (nurses wrong hopes for now)
 libburn/write.c
+Disallowed multi flag with DVD+RW (nurses wrong hopes for now)
 
 21 Dec 2006   [534]
 test/libburner.c
@@ -4033,9 +4033,144 @@ Testing burn_read_data() by option --read_and_print
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
 
-  []
+13 Aug 2007  [950]
 cdrskin/cdrskin.1
-Some polishing with option direct_write_amount=
+cdrskin/cdrskin_eng.html
+Some polishing about option direct_write_amount=
+
+13 Aug 2007  [951]
+doc/libdax_model.txt
+Beautified implementation names and added some more attributes
+
+15 Aug 2007  [952]
+doc/libdax_model.txt
+Added more attributes and distinguished read-write, read-only, private ones
+
+2007.08.17.081901  [953]
+libburn/transport.h
+Corrected harmless type declaration flaws
+
+17 Aug 2007  [954]
+doc/libdax_model.txt
+Added more attributes and comments
+
+19 Aug 2007  [955]
++ libcevap/
++ libcevap/cgen.c
++ libcevap/cgen.h
++ libcevap/ctyp.c
++ libcevap/ctyp.h
++ libcevap/smem.c
++ libcevap/smem.h
++ libcevap/cgen.txt
+The C code generator mentioned in doc/libdax_model.txt. See there.
+
+19 Aug 2007  [956]
+doc/libdax_model.txt
+More comments, new capabilities of C code generator
+
+19 Aug 2007  [957]
++ libcevap/libcevap_gen.sh
++ libcevap/extract_cgen_input.sh
++ libcevap/main.c
+doc/libdax_model.txt
+Generator frontend scripts (./libcevap_gen.sh to be run in libcevap/)
+
+19 Aug 2007  [958]
+doc/libdax_model.txt
+Corrected description of compiling and generating
+
+20 Aug 2007  [959]
+libcevap/cgen.c
+Corrected a bug about inclusion of cevap*.h files
+
+21 Aug 2007  [960]
+libcevap/smem.h
+Added some function type declarations
+
+2007.08.22.134731  [961]
+libburn/mmc.c
+Corrected dangerous typo with error message production of mmc_read_10()
+
+22 Aug 2007  [962]
+test/telltoc.c
+Retrieving my old backups which are hit by the Linux Read-Ahead-Bug
+
+22 Aug 2007  [963]
+libburn/read.c
+test/telltoc.c
+Avoiding libburn read-ahead-bug
+
+22 Aug 2007  [964]
+test/telltoc.c
+Avoided locked drive with interrupted telltoc read. (eject unlocks anyway)
+
+2007.08.22.173459  [965]
+libburn/libburn.h
+libburn/drive.c
+libburn/read.c
+libburn/write.c
+Taking synchronous read/write into respect with abort handling
+
+2007.08.23.150423  [966]
+libburn/libburn.h
+libburn/mmc.c
+libburn/read.c
+Allowed to suppress error message from failed burn_read_data()
+
+23 Aug 2007  [967]
+test/telltoc.c
+Try to read last 2 blocks of CD track without eventual error message
+
+2007.08.25.085709  [968]
+libburn/libburn.h
+libburn/mmc.c
+libburn/file.c
+libburn/source.c
+libburn/structure.c
+Corrected memory management flaws found by Joris Dobbelsteen
+
+25 Aug 2007  [969]
+test/telltoc.c
+Reacted on false compiler warning about potentially unused variable
+
+2007.08.25.155931  [970]
+libburn/mmc.c
+libburn/file.c
+More memory management changes proposed by Joris Dobbelsteen
+
+2007.08.26.200829  [971]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+cdrskin/cdrfifo.c
+cdrskin/cdrskin.1
+New cdrskin option --grow_overwriteable_iso
+
+2007.08.28.143057  [974]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Made program behavior with --grow_overwriteable_iso more consistent
+
+28 Aug 2007  [975]
+cdrskin/README
+Mentioned --grow_overwriteable_iso
+
+29 Aug 2007  [976]
+doc/libdax_model.txt
+Work goes on
+
+29 Aug 2007  [977]
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.9 cycle
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.08.
+* New option --grow_overwriteable_iso
+
+
+  []
+doc/libdax_model.txt
+Work goes on
 
 
 ===============================================================================
