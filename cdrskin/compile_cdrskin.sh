@@ -133,6 +133,7 @@ then
     \
     libburn/sg.o \
     libburn/write.o \
+    libburn/read.o \
     $libdax_audioxtr_o \
     $libdax_msgs_o \
     \
