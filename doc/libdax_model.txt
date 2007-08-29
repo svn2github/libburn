@@ -1,10 +1,52 @@
 
+#
+# libdax is the early working name for the successor software of libburn,
+# a library for writing information onto optical media, i.e. CD and DVD.
+# The current working name is libcevap, refering to various kinds of roasts in
+# Europe and Asia which share the property to be structured in smaller pieces.
+#
+# The reason for the replacement is the unclear copyright situation as well
+# as libburn's sketchy original state and the subsequential evolutionary
+# damages done by us in libburn code.
+# This does not mean libburn is shaky. Its current state just reflects the
+# virtual conflict of at least two programmer personalities and their goals.
+#
+
+#
+# Please: Nobody shall take the development of libcevap as a reason for not
+# programming an application which uses libburn.
+# libburn works now. libcevap is planned to work in future.
+#
+# libcevap will replace libburn in a controlled, application friendly way.
+# The first application of libcevap will be a libburn API wrapper which will
+# allow to perform all API calls of libburn which are proveable to work in
+# the current implementation. (Some CD stuff is not understood by us yet.
+# We will have to learn.)
+#
+# The libburn API will be frozen when libcevap has closed up to its current
+# capabilities. Nevertheless it may take profit from some of the future
+# progress in libcevap (e.g. new media types).
+# We hope that finally libcevap will have capabilities superior to libburn.
+# This will then be a reason to port applications to the libcevap API.
+#
+# Application programmers are advised to encapsulate their libburn API calls
+# in an own abstraction layer. The semantic concepts of burning will be
+# compatible between libburn and libcevap. I.e you will have a library object
+# to be started up, drives to be found and grabbed, media and their states
+# to be identified, sessions, tracks, burn options to be set, blanking,
+# formatting, and so on.
+# Data types, function calls, and quirks will be incompatible between both
+# APIs, though. 
+#
+
+# -------------------------------------------------------------------------
+
 # Originally this was a backup of text input clicketitoggled into ArgoUML
 # Meanwhile it becomes an intermediate storage for attributes and
 # class interconnections in the notation of my C stub generator CgeN
 # (see also end of this text)
 
-# next : transport.h : struct burn_format_descr
+# next : comment : CevapmediA.nwa
 
 # Open questions:
 # - how to connect to GESTURES ? Globally ?
@@ -277,9 +319,6 @@ Cgen=\
 -l cevapdrive
 -r -v struct CevapsysteM *boss
 
-# Media currently loaded in the drive
--r -m struct CevapmediA *media
- 
 # Drive number
 -r -v int global_index
  
@@ -388,6 +427,13 @@ Cgen=\
 # (do we need a drive owned buffer to carry data from call to call or what ?)
 -v struct CevapbuffeR *buffer
 
+# List of profiles as reported by the drive
+-r -l struct CevapprofilE *profile
+-p -v struct CevapprofilE *eol_profile
+
+# Media currently loaded in the drive
+-r -m struct CevapmediA *media
+ 
 
 # >>> transport.h : toc_temp (what is this ? It belongs to BURN_WRITE_RAW)
 # >>>
@@ -410,10 +456,8 @@ Cgen=\
 cevapmedia
 -r -v struct CevapdrivE *boss
 
+# Volatile and/or public properties of the media
 -r -m struct CevapstatuS *status
-
--r -l struct CevapprofilE *profile
--p -v struct CevapprofilE *eol_profile
 
 # MMC-to-MMC feature info from 46h for DVD-RW.
 # Quite internal. Regard as opaque :)
@@ -443,9 +487,7 @@ cevapmedia
 -r -l struct CevapformaT *format_descriptor
 -p -v struct CevapformaT *eol_format_descriptor
 
--r -v int nwa
--r -v int start_lba
--r -v int end_lba
+# The specific capabilities and restrictions of the media
 -r -m struct CevapmcapS *multicaps
 
 # Results from ACh GET PERFORMANCE, Type 03h
@@ -469,16 +511,14 @@ Subordinates=EquipFeature*N
 Boss=EquipMedia
 Cgen=\
 -l cevapprofile
--r -v struct CevapmediA *boss
+-r -v struct CevapdrivE *boss
+-r -v int is_current
 -r -v int profile_code
 -r -v char *profile_text
 -r -v int is_cd_profile
 -r -v int is_supported_profile
 -r -l struct CevapfeaturE *feature
 -p -v struct CevapfeaturE *eol_feature
-
-# >>>
-
 @
 =end Class
 
@@ -555,19 +595,15 @@ cevapstatus
 -v int status
 -m char *status_text
 -v volatile int busy
--v struct CevapprofilE *current_profile
--v int erasable
-
-# From 51h READ DISC INFORMATION Number of Sessions (-1)
--v int complete_sessions
-
-# From 51h READ DISC INFORMATION Last Track Number in Last Session
--v int last_track_no
 
 # From various sources : free space on media (in bytes)
 # With CD this might change after particular write
 # parameters have been set and nwa has been inquired.
 -v off_t media_capacity_remaining
+
+# Current write address during write jobs. (Next address to be written)
+# <<< does this belong to JOB ?
+-r -v int nwa
 
 # if > 0 : first lba on media that is too high for write
 -v int media_lba_limit
@@ -584,15 +620,35 @@ Author=Thomas Schmitt <scdbackup@gmx.net>
 Version=1.0
 Since=14.8.2007
 Documentation=\
-EquipMulticaps represents media dependent properties and media states. This
+EquipMulticaps represents media dependent properties and media states which
+are either volatile or especially interesting to several other modules. This
 includes eventually existing sessions, closure status, profile dependent
 capabilities.
 Boss=EquipMedia
 Cgen=\
 cevapmcaps
+
+# The current profile out of the drive profile list
+-v struct CevapprofilE *current_profile
+
+# Wether the media is erasable (or overwriteable)
+-v int erasable
+
+# A description of the existing media content structure
 -r -m struct CevapdisC *disc
 
-# >>>
+# Start and end addresses out of ATIP.
+# From 43h READ TOC/PMA/ATIP , mmc5r03c.pdf , 6.26
+-r -v int start_lba
+-r -v int end_lba
+
+# From 51h READ DISC INFORMATION Number of Sessions (-1)
+-v int complete_sessions
+
+# From 51h READ DISC INFORMATION Last Track Number in Last Session
+-v int last_track_no
+
+# >>> libburn.h:struct burn_multi_caps
 
 @
 =end Class
