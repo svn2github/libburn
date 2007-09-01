@@ -927,6 +927,15 @@ enum burn_drive_status burn_drive_get_status(struct burn_drive *drive,
 */
 struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive);
 
+
+/* ts A70901 */
+/** Inquires the drive associated with a burn_write_opts object.
+    @param opts object to inquire
+    @return pointer to drive
+*/
+struct burn_drive *burn_write_opts_get_drive(struct burn_write_opts *opts);
+
+
 /** Frees a write_opts struct created with burn_write_opts_new
     @param opts write_opts to free
 */

@@ -378,6 +378,13 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force)
 }
 
 
+/* ts A70901: API */
+struct burn_drive *burn_write_opts_get_drive(struct burn_write_opts *opts)
+{
+	return opts->drive;
+}
+
+
 void burn_read_opts_set_raw(struct burn_read_opts *opts, int raw)
 {
 	opts->raw = raw;
