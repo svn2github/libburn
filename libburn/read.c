@@ -409,6 +409,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 		} else {
 			ret = burn_stdio_read(fd, (char *) d->buffer->data,
 						 cpy_size, d, 0);
+			err = 0;
 			if (ret <= 0)
 				err = BE_CANCELLED;
 		}

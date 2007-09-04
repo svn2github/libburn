@@ -2250,6 +2250,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		} else {
 			ret = burn_stdio_write(fd, (char *) d->buffer->data,
 						d->buffer->bytes, d, 0);
+			err = 0;
 			if (ret <= 0)
 				err = BE_CANCELLED;
 		}
