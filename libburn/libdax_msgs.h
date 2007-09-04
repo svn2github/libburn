@@ -377,6 +377,11 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020143 (SORRY,HIGH)   = Read start address not properly aligned
  0x00020144 (SORRY,HIGH)   = SCSI error on read
  0x00020145 (FATAL,HIGH)   = Drive is busy on attempt to read data
+ 0x00020146 (FATAL,HIGH)   = Drive is a virtual placeholder
+ 0x00020147 (SORRY,HIGH)   = Cannot address start byte
+ 0x00020148 (SORRY,HIGH)   = Cannot write desired amount of data
+ 0x00020149 (SORRY,HIGH)   = Unsuitable filetype for pseudo-drive
+ 0x0002014a (SORRY,HIGH)   = Cannot read desired amount of data
 
 
  libdax_audioxtr:

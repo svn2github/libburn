@@ -121,6 +121,9 @@ struct burn_format_descr {
 /** Gets initialized in enumerate_common() and burn_drive_register() */
 struct burn_drive
 {
+	/* ts A70902: 0=null-emulation , 1=MMC drive , 2=stdio-emulation */
+	int drive_role;
+
 	int bus_no;
 	int host;
 	int id;

@@ -96,7 +96,7 @@ static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
 	tmp = workers;
 	workers = a;
 
-	if (d)
+	if (d != NULL)
 		d->busy = BURN_DRIVE_SPAWNING;
 
 	if (pthread_create(&a->thread, NULL, f, a)) {
@@ -211,9 +211,6 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 {
 	struct erase_opts o;
 
-	/* A70103 : will be set to 0 by burn_disc_erase_sync() */
-	drive->cancel = 1;
-
 	/* ts A61006 */
 	/* a ssert(drive); */
 	/* a ssert(!SCAN_GOING()); */
@@ -233,6 +230,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 			0, 0);
 		return;
 	}
+	/* A70103 : will be set to 0 by burn_disc_erase_sync() */
+	drive->cancel = 1;
 
 	/* ts A70103 moved up from burn_disc_erase_sync() */
 	/* ts A60825 : allow on parole to blank appendable CDs */
@@ -247,6 +246,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	    (drive->status != BURN_DISC_FULL &&
 	     drive->status != BURN_DISC_APPENDABLE &&
 	     drive->status != BURN_DISC_BLANK)
+	    ||
+	    (drive->drive_role != 1)
 	   ) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020130,
@@ -285,6 +286,14 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"A drive operation is still going on (want to format)",
 			0, 0);
+		return;
+	}
+	if (drive->drive_role != 1) {
+		libdax_msgs_submit(libdax_messenger, drive->global_index,
+			0x00020146,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is a virtual placeholder", 0, 0);
+		drive->cancel = 1;
 		return;
 	}
 	if (flag & 128)     /* application prescribed format type */
@@ -339,13 +348,6 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 #endif
 
 
-	/* For the next lines any return indicates failure */
-	opts->drive->cancel = 1;
-
-	/* ts A70203 : people have been warned in API specs */
-	if (opts->write_type == BURN_WRITE_NONE)
-		return;
-
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
 	/* a ssert(!find_worker(opts->drive)); */
@@ -357,8 +359,24 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 			0, 0);
 		return;
 	}
+
+	/* For the next lines any return indicates failure */
+	opts->drive->cancel = 1;
+
+	/* ts A70203 : people have been warned in API specs */
+	if (opts->write_type == BURN_WRITE_NONE)
+		return;
+
+	if (opts->drive->drive_role == 0) {
+		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
+			0x00020146,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is a virtual placeholder (null-drive)", 0, 0);
+		return;
+	}
+
 	/* ts A61007 : obsolete Assert in spc_select_write_params() */
-	if (!opts->drive->mdata->valid) {
+	if (opts->drive->drive_role == 1 && !opts->drive->mdata->valid) {
 		libdax_msgs_submit(libdax_messenger,
 				opts->drive->global_index, 0x00020113,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,

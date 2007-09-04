@@ -35,6 +35,9 @@
 /* A70225 : to learn about eventual Libburn_dvd_r_dl_multi_no_close_sessioN */
 #include "write.h"
 
+/* A70903 : for burn_scsi_setup_drive() */
+#include "spc.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -47,10 +50,29 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 {
 	d->devname = burn_strdup(fname);
 	memset(&d->params, 0, sizeof(struct params));
+	d->idata = NULL;
+	d->mdata = NULL;
+	d->toc_entry = NULL;
 	d->released = 1;
 	d->status = BURN_DISC_UNREADY;
 	return 1;
 }
+
+
+/* ts A70903 */
+void burn_drive_free_subs(struct burn_drive *d)
+{
+	if (d->idata != NULL)
+		free((void *) d->idata);
+	if (d->mdata != NULL) {
+		burn_mdata_free_subs(d->mdata);
+		free((void *) d->mdata);
+	}
+	if(d->toc_entry != NULL)
+		free((void *) d->toc_entry);
+	free(d->devname);
+}
+
 
 /* ts A60904 : ticket 62, contribution by elmom */
 /* splitting former burn_drive_free() (which freed all, into two calls) */
@@ -59,14 +81,10 @@ void burn_drive_free(struct burn_drive *d)
 	if (d->global_index == -1)
 		return;
 	/* ts A60822 : close open fds before forgetting them */
-	if (burn_drive_is_open(d))
-		d->release(d);
-	free((void *) d->idata);
-	burn_mdata_free_subs(d->mdata);
-	free((void *) d->mdata);
-	if(d->toc_entry != NULL)
-		free((void *) d->toc_entry);
-	free(d->devname);
+	if (d->drive_role == 1)
+		if (burn_drive_is_open(d))
+			d->release(d);
+	burn_drive_free_subs(d);
 	d->global_index = -1;
 }
 
@@ -327,6 +345,8 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
    	<<< debug: for tracing calls which might use open drive fds */
 	int mmc_function_spy(char * text);
 
+	d->drive_role = 1; /* MMC drive */
+
 	t = burn_drive_register(d);
 
 	/* ts A60821 */
@@ -399,10 +419,13 @@ void burn_drive_release(struct burn_drive *d, int le)
 		return;
 	}
 
-	d->unlock(d);
-	if (le)
-		d->eject(d);
-	d->release(d);
+	if (d->drive_role == 1) {
+		d->unlock(d);
+		if (le)
+			d->eject(d);
+		d->release(d);
+	}
+
 	d->released = 1;
 
 	/* ts A61125 : outsourced model aspects */
@@ -485,7 +508,8 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 
 	/* ts A61125 : update media state records */
 	burn_drive_mark_unready(d);
-	burn_drive_inquire_media(d);
+	if (d->drive_role == 1)
+		burn_drive_inquire_media(d);
 	d->busy = BURN_DRIVE_IDLE;
 }
 
@@ -513,6 +537,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	stages = 1 + ((flag & 1) && size > 1024 * 1024);
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
+
 	ret = d->format_unit(d, size, flag & 0xff96); /* forward bits */
 	if (ret <= 0)
 		d->cancel = 1;
@@ -593,6 +618,8 @@ int burn_disc_get_formats(struct burn_drive *d, int *status, off_t *size,
 	*size = 0;
 	*bl_sas = 0;
 	*num_formats = 0;
+	if (d->drive_role != 1)
+		return 0;
 	ret = d->read_format_capacities(d, 0x00);
 	if (ret <= 0)
 		return 0;
@@ -643,7 +670,7 @@ int burn_disc_erasable(struct burn_drive *d)
 enum burn_drive_status burn_drive_get_status(struct burn_drive *d,
 					     struct burn_progress *p)
 {
-	if (p) {
+	if (p != NULL) {
 		memcpy(p, &(d->progress), sizeof(struct burn_progress));
 		/* TODO: add mutex */
 	}
@@ -797,22 +824,6 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	return 0;
 }
 
-
-void burn_drive_info_free(struct burn_drive_info drive_infos[])
-{
-/* ts A60904 : ticket 62, contribution by elmom */
-/* clarifying the meaning and the identity of the victim */
-
-	/* ts A60904 : This looks a bit weird.
-	   burn_drive_info is not the manager of burn_drive but only its
-	   spokesperson. To my knowlege drive_infos from burn_drive_scan()
-	   are not memorized globally. */
-	if(drive_infos != NULL)
-		free((void *) drive_infos);
-
-	burn_drive_free_all();
-}
-
 /* ts A61001 : internal call */
 int burn_drive_forget(struct burn_drive *d, int force)
 {
@@ -846,6 +857,32 @@ int burn_drive_info_forget(struct burn_drive_info *info, int force)
   return burn_drive_forget(info->drive, force);
 }
 
+
+void burn_drive_info_free(struct burn_drive_info drive_infos[])
+{
+/* ts A60904 : ticket 62, contribution by elmom */
+/* clarifying the meaning and the identity of the victim */
+
+	/* ts A60904 : This looks a bit weird.
+	   burn_drive_info is not the manager of burn_drive but only its
+	   spokesperson. To my knowlege drive_infos from burn_drive_scan()
+	   are not memorized globally. */
+	if(drive_infos != NULL)
+		free((void *) drive_infos);
+
+	/* >>> ts A70903 : THIS IS WRONG !
+	   It contradicts the API and endangers multi drive usage.
+	   This call is not entitled to delete all drives, only the
+	   ones of the array.
+
+	   Problem:  it is unclear how many items are listed in drive_infos
+           Solution: add a dummy element to any burn_drive_info array with
+                     drive == NULL
+	*/
+	burn_drive_free_all();
+}
+
+
 struct burn_disc *burn_drive_get_disc(struct burn_drive *d)
 {
 	/* ts A61022: SIGSEGV on calling this function with blank media */
@@ -858,6 +895,9 @@ struct burn_disc *burn_drive_get_disc(struct burn_drive *d)
 
 void burn_drive_set_speed(struct burn_drive *d, int r, int w)
 {
+	d->nominal_write_speed = w;
+	if(d->drive_role != 1)
+		return;
 	d->set_speed(d, r, w);
 }
 
@@ -904,17 +944,23 @@ void burn_sectors_to_msf(int sectors, int *m, int *s, int *f)
 
 int burn_drive_get_read_speed(struct burn_drive *d)
 {
+	if(!d->mdata->valid)
+		return 0;
 	return d->mdata->max_read_speed;
 }
 
 int burn_drive_get_write_speed(struct burn_drive *d)
 {
+	if(!d->mdata->valid)
+		return 0;
 	return d->mdata->max_write_speed;
 }
 
 /* ts A61021 : New API function */
 int burn_drive_get_min_write_speed(struct burn_drive *d)
 {
+	if(!d->mdata->valid)
+		return 0;
 	return d->mdata->min_write_speed;
 }
 
@@ -1383,6 +1429,8 @@ int burn_drive_get_start_end_lba(struct burn_drive *d,
 /* ts A61020 API function */
 int burn_disc_pretend_blank(struct burn_drive *d)
 {
+	if (d->drive_role == 0)
+		return 0;
 	if (d->status != BURN_DISC_UNREADY && 
 	    d->status != BURN_DISC_UNSUITABLE)
 		return 0;
@@ -1393,6 +1441,8 @@ int burn_disc_pretend_blank(struct burn_drive *d)
 /* ts A61106 API function */
 int burn_disc_pretend_full(struct burn_drive *d)
 {
+	if (d->drive_role == 0)
+		return 0;
 	if (d->status != BURN_DISC_UNREADY && 
 	    d->status != BURN_DISC_UNSUITABLE)
 		return 0;
@@ -1411,6 +1461,8 @@ int burn_disc_read_atip(struct burn_drive *d)
 				0, 0);
 		return -1;
 	}
+	if(d->drive_role != 1)
+		return 0;
 	if (d->current_profile == -1 || d->current_is_cd_profile) {
 		d->read_atip(d);
 		/* >>> some control of success would be nice :) */
@@ -1443,6 +1495,9 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 			0, 0);
 		return -1;
 	}
+	*lba = *nwa = 0;
+	if (d->drive_role != 1)
+		return 0;
 	if (o != NULL)
 		d->send_write_parameters(d, o);
 	ret = d->get_nwa(d, trackno, lba, nwa);
@@ -1471,6 +1526,9 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start)
 			0, 0);
 		return -1;
 	}
+	*start = 0;
+	if (d->drive_role != 1)
+		return 0;
 	ret = d->read_multi_session_c1(d, &trackno, start);
 	return ret;
 }
@@ -1483,13 +1541,20 @@ off_t burn_disc_available_space(struct burn_drive *d,
 	int lba, nwa;
 
 	if (burn_drive_is_released(d))
-		goto ex;
+		return 0;
 	if (d->busy != BURN_DRIVE_IDLE)
-		goto ex;
+		return 0;
+	if (d->drive_role == 0)
+		return 0;
+	if (d->drive_role == 2) {
+
+		/* >>> how to estimate available space for a stdio file ? */
+		return ((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
+
+	}
 	if (o != NULL)
 		d->send_write_parameters(d, o);
 	d->get_nwa(d, -1, &lba, &nwa);
-ex:;
 	if (o != NULL) {
 		if (o->start_byte > 0) {
 			if (o->start_byte > d->media_capacity_remaining)
@@ -1594,6 +1659,8 @@ int burn_speed_descriptor_copy(struct burn_speed_descriptor *from,
 /* ts A61226 : free dynamically allocated sub data of struct scsi_mode_data */
 int burn_mdata_free_subs(struct scsi_mode_data *m)
 {
+	if(!m->valid)
+		return 0;
 	burn_speed_descriptor_destroy(&(m->speed_descriptors), 1);
 	return 1;
 }
@@ -1607,6 +1674,8 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 	struct burn_speed_descriptor *sd, *csd = NULL;
 
 	(*speed_list) = NULL;
+	if(!d->mdata->valid)
+		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		ret = burn_speed_descriptor_new(&csd, NULL, csd, 0);
 		if (ret <= 0)
@@ -1630,6 +1699,8 @@ int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
 	if (speed_goal < 0)
 		best_speed = 2000000000;
 	*best_descr = NULL;
+	if(!d->mdata->valid)
+		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		if (flag & 1)
 			speed = sd->read_speed;
@@ -1703,7 +1774,21 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	o->current_is_cd_profile = d->current_is_cd_profile;
         o->might_simulate = 0;
 	
-	if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
+	if (d->drive_role == 0)
+		return 0;
+	if (d->drive_role == 2) {
+		/* stdio file dummy drive */
+		o->start_adr = 1;
+
+		size = ((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
+		/* >>> obtain realistic file size */
+		o->start_range_high = size;
+
+		o->start_alignment = 2048; /* imposting a drive, not a file */
+		o->might_do_sao = 4;
+		o->might_do_tao = 2;
+		o->advised_write_mode = BURN_WRITE_TAO;
+	} else if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
 		return 0;
 	} else if (s == BURN_DISC_APPENDABLE &&
 		 (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)) {
@@ -1880,3 +1965,80 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 	}
 	return (disc->sessions > 0);
 }
+
+
+/* ts A70903 : API */
+int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
+{
+	int ret;
+	struct burn_drive *d= NULL, *regd_d;
+	struct stat stbuf;
+
+	if (fname[0] != 0) {
+		if (stat(fname, &stbuf) == -1) {
+
+			/* >>> ? reject ? try to create ? */;
+
+		} else if(S_ISREG(stbuf.st_mode) || S_ISBLK(stbuf.st_mode)) {
+			/* >>> ? open for a test ? */; 
+		} else {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020149,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Unsuitable filetype for pseudo-drive", 0, 0);
+			return 0;
+		}
+	}
+	d= (struct burn_drive *) calloc(1, sizeof(struct burn_drive));
+	if (d == NULL)
+		return 0;
+	d->status = BURN_DISC_EMPTY;
+	burn_setup_drive(d, fname);
+
+	if (fname[0] != 0)
+		d->drive_role = 2;
+	else
+		d->drive_role = 0;
+	ret = burn_scsi_setup_drive(d, -1, -1, -1, -1, -1, 0);
+	if (ret <= 0)
+		goto ex;
+	regd_d = burn_drive_register(d);
+	if (regd_d == NULL) {
+		ret = -1;
+		goto ex;
+	}
+	if (d->drive_role == 2) {
+		d->status = BURN_DISC_BLANK;
+		d->current_profile = 0; /* MMC reserved */
+		strcpy(d->current_profile_text,"stdio file");
+		d->current_is_cd_profile = 0;
+		d->current_is_supported_profile = 1;
+		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
+		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_MODE1;
+	}
+
+	*drive_infos = calloc(2, sizeof(struct burn_drive_info));
+	if (*drive_infos == NULL)
+		goto ex;
+	(*drive_infos)[0].drive = d;
+	(*drive_infos)[1].drive = NULL; /* End-Of-List mark */
+	(*drive_infos)[0].tao_block_types = d->block_types[BURN_WRITE_TAO];
+	(*drive_infos)[0].sao_block_types = d->block_types[BURN_WRITE_SAO];
+	
+	d->released = 0;
+	ret = 1;
+ex:;
+	if (ret <= 0 && d != NULL) {
+		burn_drive_free_subs(d);
+		free((char *) d);
+	}
+	return ret;
+}
+
+
+/* ts A70903 : API */
+int burn_drive_get_drive_role(struct burn_drive *d)
+{
+	return d->drive_role;
+}
+

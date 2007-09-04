@@ -739,11 +739,8 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	d->silent_on_scsi_error = 0;
 
 
-	d->idata = malloc(sizeof(struct burn_scsi_inquiry_data));
-	d->idata->valid = 0;
-	d->mdata = malloc(sizeof(struct scsi_mode_data));
-	d->mdata->valid = 0;
-	d->mdata->speed_descriptors = NULL;
+	d->idata = calloc(1, sizeof(struct burn_scsi_inquiry_data));
+	d->mdata = calloc(1, sizeof(struct scsi_mode_data));
 
 	/* ts A61007 : obsolete Assert in drive_getcaps() */
 	if(d->idata == NULL || d->mdata == NULL) {
@@ -752,6 +749,9 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	                "Could not allocate new drive object", 0, 0);
 		return -1;
 	}
+	d->idata->valid = 0;
+	d->mdata->valid = 0;
+	d->mdata->speed_descriptors = NULL;
 	if(!(flag & 1)) {
 		ret = spc_setup_drive(d);
 		if (ret<=0)

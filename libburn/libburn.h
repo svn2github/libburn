@@ -1302,7 +1302,7 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 /* ts A70328 */
 /** Sets a fixed track size after the data source object has already been
     created.
-    @param t The track to poperate on
+    @param t The track to operate on
     @param size the number of bytes to use as track size
     @return <=0 indicates failure , >0 success
 */
@@ -1899,6 +1899,40 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
+
+
+/* ts A70903 */
+/** Create and aquire a pseudo-drive which will accept option settings much
+    like a MMC burner drive. Many of them will not cause any effect, though.
+    There are two kinds of pseudo-drives: stdio-drives and null-drives. 
+    A stdio-drive performs all its eventual data transfer activities on a file
+    via standard i/o functions open(2), lseek(2), read(2), write(2), close(2).
+    Its capabilities resemble DVD-RAM but the media profile reported is 0x00
+    and it issues no realistic write space information.
+    A null-drive is created if the parameter "name" is an empty string. It will
+    pretend to have loaded no media.
+    @param drive_infos On success returns a one element array with the drive
+                  (cdrom/burner). Thus use with driveno 0 only. On failure
+                  the array has no valid elements at all.
+                  The returned array should be freed via burn_drive_info_free()
+                  when it is no longer needed.
+    @param name   Sets the file address to be used for writing. Permissible
+                  file types are regular file or block device. If the file
+                  does not exist, it is attempted to create it as regular file.
+                  An empty fname creates a null-drive.
+    @return       1 success , <=0 failure
+*/
+int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname);
+
+
+/** Inquire wether the drive object is a real MMC drive or a pseudo-drive
+    created by burn_drive_dummy().
+    @param d      The drive to inquire
+    @return       0= null-drive
+                  1= real MMC drive
+                  2= stdio-drive
+*/
+int burn_drive_get_drive_role(struct burn_drive *d);
 
 
 #ifndef DOXYGEN

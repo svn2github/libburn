@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <errno.h>
+
 #include "sector.h"
 #include "libburn.h"
 #include "drive.h"
@@ -288,12 +291,37 @@ static void flipq(unsigned char *sub)
 */
 
 
+/* ts A70904 */
+/** @param flag bit=be silent on data shortage */
+int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
+			int flag)
+{
+	int todo, count = 0;
+
+	for(todo = bufsize; todo > 0; ) {
+		count = read(fd, buf + (bufsize - todo), todo);
+		if(count <= 0)
+	break;
+		todo -= count;
+	}
+	if(todo > 0 && !(flag & 1)) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002014a,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Cannot read desired amount of data", errno, 0);
+	}
+	if (count < 0)
+		return -1;
+	return (bufsize - todo);
+}
+
+
 /* ts A70812 : API function */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag)
 {
 	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
-	int sose_mem = 0;
+	int sose_mem = 0, fd = -1, ret;
 	char msg[81], *wpt;
 	struct buffer buf;
 
@@ -305,6 +333,13 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			d->global_index, 0x00020142,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is not grabbed on random access write", 0, 0);
+		return 0;
+	}
+	if (d->drive_role == 0) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020146,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is a virtual placeholder (null-drive)", 0, 0);
 		return 0;
 	}
 	if ((byte_address % alignment) != 0) {
@@ -325,6 +360,33 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			"Drive is busy on attempt to read data", 0, 0);
 		return 0;
 	}
+
+	if (d->drive_role != 1) {
+
+/* <<< We need _LARGEFILE64_SOURCE defined by the build system.
+*/
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
+
+		fd = open(d->devname, O_RDONLY | O_LARGEFILE);
+		if (fd == -1) {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020005,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Failed to open device (a pseudo-drive)",
+				 errno, 0);
+			ret = 0; goto ex;
+		}
+		if (lseek(fd, byte_address, SEEK_SET) == -1) {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020147,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Cannot address start byte", errno, 0);
+			ret = 0; goto ex;
+		}
+	}
+
 	d->busy = BURN_DRIVE_READING_SYNC;
 	d->buffer = &buf;
 
@@ -342,7 +404,14 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			cpy_size = data_size - *data_count;
 		if (flag & 2)
 			d->silent_on_scsi_error = 1;
-		err = d->read_10(d, start, chunksize, d->buffer);
+		if (d->drive_role == 1) {
+			err = d->read_10(d, start, chunksize, d->buffer);
+		} else {
+			ret = burn_stdio_read(fd, (char *) d->buffer->data,
+						 cpy_size, d, 0);
+			if (ret <= 0)
+				err = BE_CANCELLED;
+		}
 		if (flag & 2) 
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
@@ -350,7 +419,16 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			for (i = 0; i < chunksize - 1; i++) {
 				if (flag & 2)
 					d->silent_on_scsi_error = 1;
-				err = d->read_10(d, start + i, 1, d->buffer);
+				if (d->drive_role == 1) {
+					err = d->read_10(d, start + i, 1,
+							 d->buffer);
+				} else {
+					ret = burn_stdio_read(fd,
+						(char *) d->buffer->data,
+						2048, d, 1);
+					if (ret <= 0)
+						err = BE_CANCELLED;
+				}
 				if (flag & 2) 
 					d->silent_on_scsi_error = sose_mem;
 				if (err == BE_CANCELLED)
@@ -359,16 +437,18 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				wpt += 2048;
 				*data_count += 2048;
 			}
-			d->buffer = NULL;
-			d->busy = BURN_DRIVE_IDLE;
-			return 0;
+			ret = 0; goto ex;
 		}
 		memcpy(wpt, d->buffer->data, cpy_size);
 		wpt += cpy_size;
 		*data_count += cpy_size;
 	}
 
+	ret = 1;
+ex:;
+	if (fd != -1)
+		close(fd);
 	d->buffer = NULL;
 	d->busy = BURN_DRIVE_IDLE;
-	return 1;
+	return ret;
 }

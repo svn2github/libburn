@@ -142,6 +142,8 @@ int burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim)
 int burn_write_opts_set_underrun_proof(struct burn_write_opts *opts,
 				       int underrun_proof)
 {
+	if (!opts->drive->mdata->valid)
+		return 0;
 	if (opts->drive->mdata->underrun_proof) {
 		opts->underrun_proof = underrun_proof;
 		return 1;
