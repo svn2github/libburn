@@ -1757,15 +1757,16 @@ early_failure:;
 /* ts A70904 */
 int burn_stdio_open_write(struct burn_drive *d, off_t start_byte, int flag)
 {
-	int fd = -1;
-	int mode = O_RDWR | O_CREAT;
-	char msg[160];
 
 /* <<< We need _LARGEFILE64_SOURCE defined by the build system.
 */
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0
 #endif
+
+	int fd = -1;
+	int mode = O_RDWR | O_CREAT | O_LARGEFILE;
+	char msg[160];
 
 	if (d->devname[0] == 0) /* null drives should not come here */
 		return -1;
@@ -1775,6 +1776,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte, int flag)
 			0x00020005,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Failed to open device (a pseudo-drive)", errno, 0);
+		return -1;
 	} 
 	if (start_byte < 0)
 		start_byte = 0;
