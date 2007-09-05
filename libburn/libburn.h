@@ -1901,7 +1901,9 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
 
 
-/* ts A70903 */
+#ifdef NIX
+
+/* ts A70903 */ /* <<< ts A70905 : to vanish from API */
 /** Create and aquire a pseudo-drive which will accept option settings much
     like a MMC burner drive. Many of them will not cause any effect, though.
     There are two kinds of pseudo-drives: stdio-drives and null-drives. 
@@ -1923,6 +1925,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
     @return       1 success , <=0 failure
 */
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname);
+
+#endif /* NIX */
 
 
 /** Inquire wether the drive object is a real MMC drive or a pseudo-drive

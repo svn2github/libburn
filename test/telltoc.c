@@ -116,11 +116,15 @@ int telltoc_aquire_by_adr(char *drive_adr)
 	int ret;
 	char libburn_drive_adr[BURN_DRIVE_ADR_LEN];
 
+#ifdef NIX
 	if (strncmp(drive_adr, "stdio:", 6) == 0) {
 		fprintf(stderr, "Aquiring standard i/o pseudo-drive '%s'\n",
 			drive_adr + 6);
 		ret = burn_drive_grab_dummy(&drive_list, drive_adr + 6);
-	} else {
+	} else
+#endif /* NIX */
+
+	{
 		/* This tries to resolve links or alternative device files */
 		ret = burn_drive_convert_fs_adr(drive_adr, libburn_drive_adr);	
 		if (ret<=0) {

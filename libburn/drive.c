@@ -1007,6 +1007,76 @@ int burn_drive_is_banned(char *device_address)
 	return 1;
 }
 
+
+/* ts A70903 : will vanish from API */
+int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
+{
+	int ret;
+	struct burn_drive *d= NULL, *regd_d;
+	struct stat stbuf;
+
+	if (fname[0] != 0) {
+		if (stat(fname, &stbuf) == -1) {
+
+			/* >>> ? reject ? try to create ? */;
+
+		} else if(S_ISREG(stbuf.st_mode) || S_ISBLK(stbuf.st_mode)) {
+			/* >>> ? open for a test ? */; 
+		} else {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020149,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Unsuitable filetype for pseudo-drive", 0, 0);
+			return 0;
+		}
+	}
+	d= (struct burn_drive *) calloc(1, sizeof(struct burn_drive));
+	if (d == NULL)
+		return 0;
+	d->status = BURN_DISC_EMPTY;
+	burn_setup_drive(d, fname);
+
+	if (fname[0] != 0)
+		d->drive_role = 2;
+	else
+		d->drive_role = 0;
+	ret = burn_scsi_setup_drive(d, -1, -1, -1, -1, -1, 0);
+	if (ret <= 0)
+		goto ex;
+	regd_d = burn_drive_register(d);
+	if (regd_d == NULL) {
+		ret = -1;
+		goto ex;
+	}
+	if (d->drive_role == 2) {
+		d->status = BURN_DISC_BLANK;
+		d->current_profile = 0; /* MMC reserved */
+		strcpy(d->current_profile_text,"stdio file");
+		d->current_is_cd_profile = 0;
+		d->current_is_supported_profile = 1;
+		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
+		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_MODE1;
+	}
+
+	*drive_infos = calloc(2, sizeof(struct burn_drive_info));
+	if (*drive_infos == NULL)
+		goto ex;
+	(*drive_infos)[0].drive = d;
+	(*drive_infos)[1].drive = NULL; /* End-Of-List mark */
+	(*drive_infos)[0].tao_block_types = d->block_types[BURN_WRITE_TAO];
+	(*drive_infos)[0].sao_block_types = d->block_types[BURN_WRITE_SAO];
+	
+	d->released = 0;
+	ret = 1;
+ex:;
+	if (ret <= 0 && d != NULL) {
+		burn_drive_free_subs(d);
+		free((char *) d);
+	}
+	return ret;
+}
+
+
 /* ts A60823 */
 /** Aquire a drive with known persistent address. 
 */
@@ -1015,6 +1085,11 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 {
 	unsigned int n_drives;
 	int ret;
+
+	if(strncmp(adr, "stdio:", 6) == 0) {
+		ret = burn_drive_grab_dummy(drive_infos, adr + 6);
+		return ret;
+	}
 
 	burn_drive_clear_whitelist();
 	burn_drive_add_whitelist(adr);
@@ -1296,7 +1371,8 @@ int burn_drive_convert_fs_adr_sub(char *path, char adr[], int *rec_count)
 	struct stat stbuf;
 
 	burn_drive_adr_debug_msg("burn_drive_convert_fs_adr( %s )", path);
-	if(burn_drive_is_enumerable_adr(path)) {
+	if (strncmp(path, "stdio:", 6) == 0 ||
+	    burn_drive_is_enumerable_adr(path)) {
 		if(strlen(path) >= BURN_DRIVE_ADR_LEN)
 			return -1;
 		burn_drive_adr_debug_msg(
@@ -1964,75 +2040,6 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 			result->unknown_track_size = 0;
 	}
 	return (disc->sessions > 0);
-}
-
-
-/* ts A70903 : API */
-int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
-{
-	int ret;
-	struct burn_drive *d= NULL, *regd_d;
-	struct stat stbuf;
-
-	if (fname[0] != 0) {
-		if (stat(fname, &stbuf) == -1) {
-
-			/* >>> ? reject ? try to create ? */;
-
-		} else if(S_ISREG(stbuf.st_mode) || S_ISBLK(stbuf.st_mode)) {
-			/* >>> ? open for a test ? */; 
-		} else {
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020149,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Unsuitable filetype for pseudo-drive", 0, 0);
-			return 0;
-		}
-	}
-	d= (struct burn_drive *) calloc(1, sizeof(struct burn_drive));
-	if (d == NULL)
-		return 0;
-	d->status = BURN_DISC_EMPTY;
-	burn_setup_drive(d, fname);
-
-	if (fname[0] != 0)
-		d->drive_role = 2;
-	else
-		d->drive_role = 0;
-	ret = burn_scsi_setup_drive(d, -1, -1, -1, -1, -1, 0);
-	if (ret <= 0)
-		goto ex;
-	regd_d = burn_drive_register(d);
-	if (regd_d == NULL) {
-		ret = -1;
-		goto ex;
-	}
-	if (d->drive_role == 2) {
-		d->status = BURN_DISC_BLANK;
-		d->current_profile = 0; /* MMC reserved */
-		strcpy(d->current_profile_text,"stdio file");
-		d->current_is_cd_profile = 0;
-		d->current_is_supported_profile = 1;
-		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
-		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_MODE1;
-	}
-
-	*drive_infos = calloc(2, sizeof(struct burn_drive_info));
-	if (*drive_infos == NULL)
-		goto ex;
-	(*drive_infos)[0].drive = d;
-	(*drive_infos)[1].drive = NULL; /* End-Of-List mark */
-	(*drive_infos)[0].tao_block_types = d->block_types[BURN_WRITE_TAO];
-	(*drive_infos)[0].sao_block_types = d->block_types[BURN_WRITE_SAO];
-	
-	d->released = 0;
-	ret = 1;
-ex:;
-	if (ret <= 0 && d != NULL) {
-		burn_drive_free_subs(d);
-		free((char *) d);
-	}
-	return ret;
 }
 
 
