@@ -3555,7 +3555,12 @@ int Cdrskin_dev_to_driveno(struct CdrskiN *skin, char *in_adr, int *driveno,
  adr= translated_adr;
 #endif /* ! Cdrskin_extra_leaN */
 
- if(adr[0]=='/') {
+ if(strncmp(adr, "stdio:", 6)==0) {
+   if(skin->n_drives<=0)
+     goto wrong_devno;
+   *driveno= 0;
+   return(1);
+ } else if(adr[0]=='/') {
    ret= Cdrskin_driveno_of_location(skin,adr,driveno,0);
    if(ret<=0) {
 location_not_found:;
@@ -7120,7 +7125,7 @@ ignore_unknown:;
 int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
                    int *exit_value, int flag)
 {
- int ret;
+ int ret, stdio_drive= 0;
  struct CdrskiN *skin;
 
  *o= NULL;
@@ -7131,6 +7136,8 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
        "cdrskin: NOTE : greying out all drives besides given dev='%s'\n",
        (*preskin)->device_adr));
    burn_drive_add_whitelist((*preskin)->device_adr);
+   if(strncmp((*preskin)->device_adr, "stdio:", 6)==0)
+     stdio_drive= 1;
  }
 
  ret= Cdrskin_new(&skin,*preskin,1);
@@ -7150,12 +7157,28 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  fflush(stdout);
 
  /* In cdrskin there is not much sense in queueing library messages.
-    It is done here only for debugging */
+    It is done here only for testing it from time to time */
  Cdrpreskin_queue_msgs(skin->preskin,1);
 
- while (!burn_drive_scan(&(skin->drives), &(skin->n_drives))) {
-   usleep(20000);
-   /* >>> ??? set a timeout ? */
+
+#ifndef Cdrskin_oldfashioned_api_usE
+ if(stdio_drive) {
+   ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,0);
+   if(ret<=0) {
+     fprintf(stderr,"cdrskin: FATAL : Failed to grab emulated stdio-drive\n");
+     {*exit_value= 2; goto ex;}
+   }
+   skin->n_drives= 1;
+   burn_drive_release(skin->drives[0].drive, 0);
+ } else {
+#else
+ {
+#endif /* Cdrskin_oldfashioned_api_usE */
+
+   while (!burn_drive_scan(&(skin->drives), &(skin->n_drives))) {
+     usleep(20000);
+     /* >>> ??? set a timeout ? */
+   }
  }
 
  /* This prints the eventual queued messages */
