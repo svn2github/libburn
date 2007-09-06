@@ -1150,9 +1150,9 @@ int burn_drive_adr_debug_msg(char *fmt, char *arg)
 	return ret;
 }
 
-/* ts A60923 */
+/* ts A60923 */ /* ts A70906 : promoted to API */
 /** Inquire the persistent address of the given drive. */
-int burn_drive_raw_get_adr(struct burn_drive *d, char adr[])
+int burn_drive_d_get_adr(struct burn_drive *d, char adr[])
 {
 	if (strlen(d->devname) >= BURN_DRIVE_ADR_LEN) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -1171,9 +1171,11 @@ int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[])
 {
 	int ret;
 
-	ret = burn_drive_raw_get_adr(drive_info->drive, adr);
+	ret = burn_drive_d_get_adr(drive_info->drive, adr);
 	return ret;
 }
+
+
 
 
 /* ts A60922 ticket 33 */
@@ -1276,7 +1278,7 @@ int burn_drive_obtain_scsi_adr(char *path,
 	for (i = 0; i < drivetop + 1; i++) {
 		if (drive_array[i].global_index < 0)
 	continue;
-		ret = burn_drive_raw_get_adr(&(drive_array[i]),adr);
+		ret = burn_drive_d_get_adr(&(drive_array[i]),adr);
 		if (ret < 0)
 			return -1;
 		if (ret == 0)

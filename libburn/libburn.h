@@ -718,12 +718,22 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[]);
 #define BURN_DRIVE_ADR_LEN 1024
 
 /** Inquire the persistent address of the given drive.
+    @param drive The drive to inquire.
+    @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
+                 characters size. The persistent address gets copied to it.
+    @return >0 success , <=0 error (due to libburn internal problem)
+*/
+int burn_drive_d_get_adr(struct burn_drive *drive, char adr[]);
+
+/** Inquire the persistent address of a drive via a given drive_info object.
+    (Note: This is a legacy call.)
     @param drive_info The drive to inquire. Usually some &(drive_infos[driveno])
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
                  characters size. The persistent address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
 */
 int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[]);
+
 
 /* ts A60922 ticket 33 */
 /** Evaluate wether the given address would be a possible persistent drive
