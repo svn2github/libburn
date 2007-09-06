@@ -246,6 +246,16 @@ int burn_drive_grab(struct burn_drive *d, int le)
 		burn_print(1, "can't grab - already grabbed\n");
 		return 0;
 	}
+	if(d->drive_role != 1) {
+		d->released = 0;
+		if(d->drive_role == 2)
+			d->status = BURN_DISC_BLANK;
+		else
+			d->status = BURN_DISC_EMPTY;
+		d->busy = BURN_DRIVE_IDLE;
+		return 1;
+	}
+
 	d->status = BURN_DISC_UNREADY;
 	errcode = d->grab(d);
 
