@@ -626,12 +626,6 @@ void burn_allow_untested_profiles(int yes);
     way to open one drive and to leave all others untouched. It bundles
     the following API calls to form a non-obtrusive way to use libburn:
       burn_drive_add_whitelist() , burn_drive_scan() , burn_drive_grab()
-
-    <<< Restriction in progress of being removed:
-    To avoid memory leaks or dangling pointers one MUST shutdown all
-    burn_drive_info arrays by burn_drive_info_free() before calling
-    burn_drive_scan() a second time.
-
     You are *strongly urged* to use this call whenever you know the drive
     address in advance.
     If not, then you have to use directly above calls. In that case, you are
@@ -642,6 +636,11 @@ void burn_allow_untested_profiles(int yes);
     use the function described here with an address obtained after
     burn_drive_scan() via burn_drive_get_adr(&(drive_infos[driveno]), adr) .
     Another way is to drop the unwanted drives by burn_drive_info_forget().
+
+    Other than with burn_drive_scan() it is allowed to call
+    burn_drive_scan_and_grab() without giving up any other scanned drives.
+    So this call can be used to hold aquired more than one drive at a time.
+
     @param drive_infos On success returns a one element array with the drive
                   (cdrom/burner). Thus use with driveno 0 only. On failure
                   the array has no valid elements at all.
@@ -675,13 +674,14 @@ void burn_drive_clear_whitelist(void);
 
 
 /** Scan for drives. This function MUST be called until it returns nonzero.
-    No drives may be in use when this is called.
+    In case of re-scanning:
     All pointers to struct burn_drive and all struct burn_drive_info arrays
     are invalidated by using this function. Do NOT store drive pointers across
     calls to this function !
-    To avoid memory leaks or dangling pointers one MUST shutdown all
-    burn_drive_info arrays by burn_drive_info_free() before calling
-    bunr_drive_scan() a second time.
+    To avoid invalid pointers one MUST free all burn_drive_info arrays
+    by burn_drive_info_free() before calling burn_drive_scan() a second time.
+    If there are drives left, then burn_drive_scan() will refuse to work.
+
     After this call all drives depicted by the returned array are subject
     to eventual (O_EXCL) locking. See burn_preset_device_open(). This state
     ends either with burn_drive_info_forget() or with burn_drive_release().

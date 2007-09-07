@@ -82,8 +82,10 @@ void burn_drive_free(struct burn_drive *d)
 		return;
 	/* ts A60822 : close open fds before forgetting them */
 	if (d->drive_role == 1)
-		if (burn_drive_is_open(d))
+		if (burn_drive_is_open(d)) {
+			d->unlock(d);
 			d->release(d);
+		}
 	burn_drive_free_subs(d);
 	d->global_index = -1;
 }
@@ -782,7 +784,7 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 			 unsigned int *n_drives, int flag)
 {
 	/* ts A70907 :
-	   There seems to be a misunderstanding about the role of
+	   There seems to have been a misunderstanding about the role of
 	   burn_drive_scan_sync(). It needs no static state because it
 	   is only started once during an asynchronous scan operation.
 	   Its starter, burn_drive_scan(), is the one which ends immediately
@@ -792,13 +794,22 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	   burn_drive_scan_sync().
 	   The scanning itself is not parallel but enumerates sequentially
 	   drive by drive (within scsi_enumerate_drives()).
+
+	   I will use "scanned" for marking drives found by previous runs.
+	   Leaving it static for now, but initializing it on each call by
+	   iterating over the list of known drives.
 	*/
-	
 	/* state vars for the scan process */
 	/* ts A60904 : did set some default values to feel comfortable */
-	static int scanning = 0, scanned = 0, found = 0;
+	static int scanning = 0;
+	/* ts A70907 :
+	   These variables are too small anyway. We got up to 255 drives.
+	   static int scanned = 0, found = 0;
+	   Variable "found" was only set but never read.
+	*/
+	static unsigned char scanned[32];
 	static unsigned num_scanned = 0, count = 0;
-	unsigned int i;
+	int i;
 
 	/* ts A61007 : moved up to burn_drive_scan() */
 	/* a ssert(burn_running); */
@@ -815,16 +826,26 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 					   state */
 #endif /* 0 */
 
-		/* ts A70907 : moved here from burn_drive_info_free() */
-		if (flag & 1)
+		*n_drives = num_scanned = 0;
+
+		/* ts A70907 : wether to scan from scratch or to extend */
+		if (flag & 1) {
 			burn_drive_free_all();
+			for (i = 0; i < sizeof(scanned); i++)
+				scanned[i] = 0;
+		} else {
+			for (i = 0; i <= drivetop; i++)
+				if (drive_array[i].global_index >= 0) {
+					scanned[i / 8] |=  (1 << (i % 8));
+					num_scanned++;
+				}
+		}
 
 		/* refresh the lib's drives */
 
 		/* ts A61115 : formerly sg_enumerate(); ata_enumerate(); */
 		scsi_enumerate_drives();
 
-		*n_drives = scanned = found = num_scanned = 0;
 		count = burn_drive_count();
 		if (count) {
 			/* ts A70907 :
@@ -840,23 +861,23 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 				scanning = 0;
 				return -1;
 			} else
-				(*drives)[count].drive = NULL; /* end mark */
+				for (i = 0; i <= count; i++) /* invalidate */
+					(*drives)[i].drive = NULL;
 		} else
 			*drives = NULL;
 	}
 
 	for (i = 0; i < count; ++i) {
-		if (scanned & (1 << i))
-			continue;	/* already scanned the device */
+		if (scanned[i / 8] & (1 << (i % 8)))
+			continue; /* device already scanned by previous run */
 
 		while (!drive_getcaps(&drive_array[i],
-				      &(*drives)[num_scanned])) {
+				      &(*drives)[*n_drives])) {
 			sleep(1);
 		}
-		scanned |= 1 << i;
-		found |= 1 << i;
-		num_scanned++;
 		(*n_drives)++;
+		scanned[i / 8] |= 1 << (i % 8);
+		num_scanned++;
 	}
 
 	if (num_scanned == count) {
@@ -1140,9 +1161,21 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 			     int load)
 {
 	unsigned int n_drives;
-	int ret;
+	int ret, i;
 
-	/* >>> check wether drive adress is already registered */
+	/* check wether drive adress is already registered */
+	for (i = 0; i <= drivetop; i++)
+		if (drive_array[i].global_index >= 0)
+			if (strcmp(drive_array[i].devname, adr) == 0)
+	break;
+	if (i <= drivetop) {
+		libdax_msgs_submit(libdax_messenger, i,
+				0x0002014b,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Drive is already registered resp. scanned",
+				0, 0);
+		return -1;
+	}
 
 	if(strncmp(adr, "stdio:", 6) == 0) {
 		ret = burn_drive_grab_dummy(drive_infos, adr + 6);
@@ -1156,7 +1189,7 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 		adr);
 */
 
-/* ts A70907 : now calling synchronously rather than looping */
+	/* ts A70907 : now calling synchronously rather than looping */
 	ret = burn_drive_scan_sync(drive_infos, &n_drives, 0);
 	if (ret < 0)
 		return -1;
@@ -1164,7 +1197,11 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 	if (n_drives <= 0)
 		return 0;
 /*
-	fprintf(stderr, "libburn: experimental: n_drives == %d\n",n_drives);
+	fprintf(stderr, "libburn: experimental: n_drives %d , drivetop %d\n",
+		n_drives, drivetop);
+	if (n_drives > 0)
+		fprintf(stderr, "libburn: experimental: global_index %d\n",
+			drive_infos[0]->drive->global_index);
 */
 
 	ret = burn_drive_grab(drive_infos[0]->drive, load);
