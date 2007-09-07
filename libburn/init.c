@@ -109,9 +109,10 @@ void burn_finish(void)
 	/* burn_wait_all(); */
 	if (!burn_drives_are_clear(0)) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020107,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Drive is busy on attempt to shut down library", 0, 0);
-		return;
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+			"A drive is still busy on shutdown of library", 0, 0);
+		usleep(1000001);
+		burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
 	}
 
 	/* ts A60904 : ticket 62, contribution by elmom : name addon "_all" */

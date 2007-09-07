@@ -314,7 +314,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020104 (SORRY,HIGH)   = NULL pointer caught
  0x00020105 (SORRY,HIGH)   = Drive is already released
  0x00020106 (SORRY,HIGH)   = Drive is busy on attempt to close
- 0x00020107 (SORRY,HIGH)   = Drive is busy on attempt to shut down library
+ 0x00020107 (WARNING,HIGH) = A drive is still busy on shutdown of library
  0x00020108 (SORRY,HIGH)   = Drive is not grabbed on disc status inquiry
  0x00020108 (FATAL,HIGH)   = Could not allocate new drive object
  0x00020109 (FATAL,HIGH)   = Library not running
