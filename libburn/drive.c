@@ -1102,7 +1102,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		} else if(S_ISREG(stbuf.st_mode) || S_ISBLK(stbuf.st_mode)) {
 			/* >>> ? open for a test ? */; 
 		} else {
-			libdax_msgs_submit(libdax_messenger, d->global_index,
+			libdax_msgs_submit(libdax_messenger, -1,
 				0x00020149,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Unsuitable filetype for pseudo-drive", 0, 0);
