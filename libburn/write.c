@@ -1875,8 +1875,8 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		d->progress.sector = (w_count + (off_t) ret) / (off_t) 2048;
 		if (open_ended)
 			d->progress.sectors = d->progress.sector;
-		t->writecount = w_count;
-		t->written_sectors = w_count / 2048;
+		t->writecount += ret;
+		t->written_sectors = t->writecount / 2048;
 	}
 
 	/* >>> write t->tail zeros */;
