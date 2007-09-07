@@ -175,7 +175,8 @@ drive_is_active:;
 
 		/* ts A61007 : test moved up from burn_drive_scan_sync()
 				was burn_wait_all() */
-		if (!burn_drives_are_clear())
+		/* ts A70907 : now demanding freed drives, not only released */
+		if (!burn_drives_are_clear(1))
 			goto drive_is_active;
 		*drives = NULL;
 		*n_drives = 0;

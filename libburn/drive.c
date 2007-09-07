@@ -445,7 +445,8 @@ void burn_drive_release(struct burn_drive *d, int le)
 
 
 /* ts A61007 : former void burn_wait_all() */
-int burn_drives_are_clear(void)
+/* @param flag  bit0= demand freed drives (else released drives) */
+int burn_drives_are_clear(int flag)
 {
 	int i;
 
@@ -453,7 +454,7 @@ int burn_drives_are_clear(void)
 		/* ts A60904 : ticket 62, contribution by elmom */
 		if (drive_array[i].global_index == -1)
 	continue;
-		if (drive_array[i].released)
+		if (drive_array[i].released && !(flag & 1))
 	continue;
 		return 0;
 	}
@@ -797,6 +798,9 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 					   before checking for the released
 					   state */
 #endif /* 0 */
+
+		/* ts A70907 : moved here from burn_drive_info_free() */
+		burn_drive_free_all();
 
 		/* refresh the lib's drives */
 

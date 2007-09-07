@@ -43,7 +43,8 @@ unsigned int burn_drive_count(void);
 
 /* ts A61007 */
 /* void burn_wait_all(void); */
-int burn_drives_are_clear(void);
+/* @param flag  bit0= demand freed drives (else released drives) */
+int burn_drives_are_clear(int flag);
 
 int burn_sector_length_write(struct burn_drive *d);
 int burn_track_control(struct burn_drive *d, int);
