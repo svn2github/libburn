@@ -132,7 +132,7 @@ static void *scan_worker_func(struct w_list *w)
 {
 	int ret;
 
-	ret = burn_drive_scan_sync(w->u.scan.drives, w->u.scan.n_drives);
+	ret = burn_drive_scan_sync(w->u.scan.drives, w->u.scan.n_drives, 1);
 	if (ret <= 0)
 		w->u.scan.done = -1;
 	else
@@ -195,7 +195,7 @@ drive_is_active:;
 		if (workers != NULL) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020101,
 				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
-			     "After scan a  drive operation is still going on",
+			     "After scan a drive operation is still going on",
 				0, 0);
 			return -1;
 		}

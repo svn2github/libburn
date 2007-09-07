@@ -775,9 +775,25 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	return 1;
 }
 
+
+/* ts A70907 : added parameter flag */
+/* @param flag bit0= reset global drive list */
 int burn_drive_scan_sync(struct burn_drive_info *drives[],
-			 unsigned int *n_drives)
+			 unsigned int *n_drives, int flag)
 {
+	/* ts A70907 :
+	   There seems to be a misunderstanding about the role of
+	   burn_drive_scan_sync(). It needs no static state because it
+	   is only started once during an asynchronous scan operation.
+	   Its starter, burn_drive_scan(), is the one which ends immediately
+	   and gets called repeatedly. It acts on start of scanning by
+	   calling burn_drive_scan_sync(), returns idle while scanning is
+	   not done and finally removes the worker object which represented
+	   burn_drive_scan_sync().
+	   The scanning itself is not parallel but enumerates sequentially
+	   drive by drive (within scsi_enumerate_drives()).
+	*/
+	
 	/* state vars for the scan process */
 	/* ts A60904 : did set some default values to feel comfortable */
 	static int scanning = 0, scanned = 0, found = 0;
@@ -800,7 +816,8 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 #endif /* 0 */
 
 		/* ts A70907 : moved here from burn_drive_info_free() */
-		burn_drive_free_all();
+		if (flag & 1)
+			burn_drive_free_all();
 
 		/* refresh the lib's drives */
 
@@ -820,6 +837,7 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	                			LIBDAX_MSGS_SEV_FATAL,
 						LIBDAX_MSGS_PRIO_HIGH,
 						"Out of virtual memory", 0, 0);
+				scanning = 0;
 				return -1;
 			} else
 				(*drives)[count].drive = NULL; /* end mark */
@@ -896,7 +914,7 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[])
 #ifndef Libburn_free_all_drives_on_infO
 	/* ts A70907 : Solution for wrong behavior below */
 	for (i = 0; drive_infos[i].drive != NULL; i++)
-		return burn_drive_free(drive_infos[i].drive);
+		burn_drive_free(drive_infos[i].drive);
 #endif
 
 	/* ts A60904 : This looks a bit weird. [ts A70907 : not any more]
@@ -1124,6 +1142,8 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 	unsigned int n_drives;
 	int ret;
 
+	/* >>> check wether drive adress is already registered */
+
 	if(strncmp(adr, "stdio:", 6) == 0) {
 		ret = burn_drive_grab_dummy(drive_infos, adr + 6);
 		return ret;
@@ -1135,14 +1155,12 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 	fprintf(stderr,"libburn: experimental: burn_drive_scan_and_grab(%s)\n",
 		adr);
 */
-	while (1) {
-		ret = burn_drive_scan(drive_infos, &n_drives);
-		if (ret < 0)
-			return -1;
-		if (ret > 0)
-	break;
-		usleep(1002);
-	}
+
+/* ts A70907 : now calling synchronously rather than looping */
+	ret = burn_drive_scan_sync(drive_infos, &n_drives, 0);
+	if (ret < 0)
+		return -1;
+
 	if (n_drives <= 0)
 		return 0;
 /*
