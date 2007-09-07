@@ -626,6 +626,12 @@ void burn_allow_untested_profiles(int yes);
     way to open one drive and to leave all others untouched. It bundles
     the following API calls to form a non-obtrusive way to use libburn:
       burn_drive_add_whitelist() , burn_drive_scan() , burn_drive_grab()
+
+    <<< Restriction in progress of being removed:
+    To avoid memory leaks or dangling pointers one MUST shutdown all
+    burn_drive_info arrays by burn_drive_info_free() before calling
+    burn_drive_scan() a second time.
+
     You are *strongly urged* to use this call whenever you know the drive
     address in advance.
     If not, then you have to use directly above calls. In that case, you are
@@ -670,8 +676,12 @@ void burn_drive_clear_whitelist(void);
 
 /** Scan for drives. This function MUST be called until it returns nonzero.
     No drives may be in use when this is called.
-    All drive pointers are invalidated by using this function. Do NOT store
-    drive pointers across calls to this function or death AND pain will ensue.
+    All pointers to struct burn_drive and all struct burn_drive_info arrays
+    are invalidated by using this function. Do NOT store drive pointers across
+    calls to this function !
+    To avoid memory leaks or dangling pointers one MUST shutdown all
+    burn_drive_info arrays by burn_drive_info_free() before calling
+    bunr_drive_scan() a second time.
     After this call all drives depicted by the returned array are subject
     to eventual (O_EXCL) locking. See burn_preset_device_open(). This state
     ends either with burn_drive_info_forget() or with burn_drive_release().

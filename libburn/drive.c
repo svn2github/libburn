@@ -803,13 +803,24 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 		/* ts A61115 : formerly sg_enumerate(); ata_enumerate(); */
 		scsi_enumerate_drives();
 
-		count = burn_drive_count();
-		if (count)
-			*drives =
-				malloc(sizeof(struct burn_drive_info) * count);
-		else
-			*drives = NULL;
 		*n_drives = scanned = found = num_scanned = 0;
+		count = burn_drive_count();
+		if (count) {
+			/* ts A70907 :
+			   Extra array element marks end of array. */
+			*drives = calloc(count + 1,
+			 		sizeof(struct burn_drive_info));
+			if (*drives == NULL) {
+	        		libdax_msgs_submit(libdax_messenger, -1,
+						0x00000003,
+	                			LIBDAX_MSGS_SEV_FATAL,
+						LIBDAX_MSGS_PRIO_HIGH,
+						"Out of virtual memory", 0, 0);
+				return -1;
+			} else
+				(*drives)[count].drive = NULL; /* end mark */
+		} else
+			*drives = NULL;
 	}
 
 	for (i = 0; i < count; ++i) {
@@ -864,32 +875,44 @@ int burn_drive_forget(struct burn_drive *d, int force)
 /* API call */
 int burn_drive_info_forget(struct burn_drive_info *info, int force)
 {
-  return burn_drive_forget(info->drive, force);
+	return burn_drive_forget(info->drive, force);
 }
 
 
 void burn_drive_info_free(struct burn_drive_info drive_infos[])
 {
+	int i;
+
 /* ts A60904 : ticket 62, contribution by elmom */
 /* clarifying the meaning and the identity of the victim */
 
-	/* ts A60904 : This looks a bit weird.
+	if(drive_infos == NULL)
+		return;
+
+#ifndef Libburn_free_all_drives_on_infO
+	/* ts A70907 : Solution for wrong behavior below */
+	for (i = 0; drive_infos[i].drive != NULL; i++)
+		return burn_drive_free(drive_infos[i].drive);
+#endif
+
+	/* ts A60904 : This looks a bit weird. [ts A70907 : not any more]
 	   burn_drive_info is not the manager of burn_drive but only its
 	   spokesperson. To my knowlege drive_infos from burn_drive_scan()
 	   are not memorized globally. */
-	if(drive_infos != NULL)
-		free((void *) drive_infos);
+	free((void *) drive_infos);
 
-	/* >>> ts A70903 : THIS IS WRONG !
-	   It contradicts the API and endangers multi drive usage.
+#ifdef Libburn_free_all_drives_on_infO
+	/* ts A70903 : THIS IS WRONG !      (disabled now)
+	   It endangers multi drive usage.
 	   This call is not entitled to delete all drives, only the
-	   ones of the array.
+	   ones of the array which it recieves a parmeter.
 
-	   Problem:  it is unclear how many items are listed in drive_infos
-           Solution: add a dummy element to any burn_drive_info array with
-                     drive == NULL
+	   Problem:  It was unclear how many items are listed in drive_infos
+           Solution: Added a end marker element to any burn_drive_info array 
+                     The mark can be recognized by having drive == NULL
 	*/
 	burn_drive_free_all();
+#endif
 }
 
 
@@ -1060,13 +1083,14 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	}
 	if (d->drive_role == 2) {
 		d->status = BURN_DISC_BLANK;
-		d->current_profile = 0; /* MMC reserved */
+		d->current_profile = 0xffff; /* MMC for non-compliant drive */
 		strcpy(d->current_profile_text,"stdio file");
 		d->current_is_cd_profile = 0;
 		d->current_is_supported_profile = 1;
 		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
 		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_MODE1;
-	}
+	} else
+		d->current_profile = 0; /* Drives return this if empty */
 
 	*drive_infos = calloc(2, sizeof(struct burn_drive_info));
 	if (*drive_infos == NULL)
@@ -1165,7 +1189,7 @@ int burn_drive_d_get_adr(struct burn_drive *d, char adr[])
 	return 1;
 }
 
-/* ts A60823 - A60923 */
+/* ts A60823 - A60923 */ /* A70906 : Now legacy API call */
 /** Inquire the persistent address of the given drive. */
 int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[])
 {

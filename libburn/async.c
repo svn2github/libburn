@@ -130,8 +130,13 @@ static void remove_worker(pthread_t th)
 
 static void *scan_worker_func(struct w_list *w)
 {
-	burn_drive_scan_sync(w->u.scan.drives, w->u.scan.n_drives);
-	w->u.scan.done = 1;
+	int ret;
+
+	ret = burn_drive_scan_sync(w->u.scan.drives, w->u.scan.n_drives);
+	if (ret <= 0)
+		w->u.scan.done = -1;
+	else
+		w->u.scan.done = 1;
 	return NULL;
 }
 
@@ -165,7 +170,7 @@ drive_is_active:;
 		return -1;
 	}
 
-	if (!workers) {
+	if (workers == NULL) {
 		/* start it */
 
 		/* ts A61007 : test moved up from burn_drive_scan_sync()
