@@ -255,7 +255,7 @@ int telltoc_media(struct burn_drive *drive)
 
 	printf("Media current: ");
 	ret = burn_disc_get_profile(drive, &profile_no, profile_name);
-	if (profile_no >= 0 && ret >0) {
+	if (profile_no > 0 && ret > 0) {
 		if (profile_name[0])
 			printf("%s\n", profile_name);
 		else
