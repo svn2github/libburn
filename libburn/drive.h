@@ -53,8 +53,10 @@ void burn_write_empty_subcode(int fd);
 void burn_drive_free(struct burn_drive *d);
 void burn_drive_free_all(void);
 
+/* @param flag bit0= reset global drive list */
 int burn_drive_scan_sync(struct burn_drive_info *drives[],
-			 unsigned int *n_drives);
+			 unsigned int *n_drives, int flag);
+
 void burn_disc_erase_sync(struct burn_drive *d, int fast);
 int burn_drive_get_block_types(struct burn_drive *d,
 			       enum burn_write_types write_type);
