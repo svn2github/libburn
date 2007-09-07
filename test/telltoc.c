@@ -116,27 +116,25 @@ int telltoc_aquire_by_adr(char *drive_adr)
 	int ret;
 	char libburn_drive_adr[BURN_DRIVE_ADR_LEN];
 
-#ifdef NIX
-	if (strncmp(drive_adr, "stdio:", 6) == 0) {
-		fprintf(stderr, "Aquiring standard i/o pseudo-drive '%s'\n",
-			drive_adr + 6);
-		ret = burn_drive_grab_dummy(&drive_list, drive_adr + 6);
-	} else
-#endif /* NIX */
+	/* <<< ts A70907 FOR TESTING ONLY !
+	struct burn_drive_info *test_drive_list;
+	*/
 
-	{
-		/* This tries to resolve links or alternative device files */
-		ret = burn_drive_convert_fs_adr(drive_adr, libburn_drive_adr);	
-		if (ret<=0) {
-			fprintf(stderr,
-				"Address does not lead to a CD burner: '%s'\n",
-				drive_adr);
-			return 0;
-		}
-		fprintf(stderr,"Aquiring drive '%s' ...\n", libburn_drive_adr);
-		ret = burn_drive_scan_and_grab(&drive_list,
-							libburn_drive_adr, 1);
+	/* This tries to resolve links or alternative device files */
+	ret = burn_drive_convert_fs_adr(drive_adr, libburn_drive_adr);	
+	if (ret<=0) {
+		fprintf(stderr, "Address does not lead to a CD burner: '%s'\n",
+			drive_adr);
+		return 0;
 	}
+
+	/* <<< ts A70907 FOR TESTING ONLY ! 
+	ret = burn_drive_scan_and_grab(&test_drive_list, "/dev/sg2", 1);
+	*/
+
+	fprintf(stderr,"Aquiring drive '%s' ...\n", libburn_drive_adr);
+	ret = burn_drive_scan_and_grab(&drive_list, libburn_drive_adr, 1);
+
 	if (ret <= 0) {
 		fprintf(stderr,"FAILURE with persistent drive address  '%s'\n",
 			libburn_drive_adr);
@@ -144,6 +142,12 @@ int telltoc_aquire_by_adr(char *drive_adr)
 		fprintf(stderr,"Done\n");
 		drive_is_grabbed = 1;
 	}
+
+	/* <<< ts A70907 FOR TESTING ONLY !
+	burn_drive_info_free(test_drive_list);
+	*/
+
+
 	return ret;
 }
 
@@ -836,8 +840,8 @@ int main(int argc, char **argv)
 		exit(33);
 	}
 
-	/* Print messages of severity SORRY or more directly to stderr */
-	burn_msgs_set_severities("NEVER", "SORRY", "telltoc : ");
+	/* Print messages of severity WARNING or more directly to stderr */
+	burn_msgs_set_severities("NEVER", "WARNING", "telltoc : ");
 
 	/* Activate the default signal handler */
 	burn_set_signal_handling("telltoc : ", NULL, 0);
