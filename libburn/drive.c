@@ -250,10 +250,13 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	}
 	if(d->drive_role != 1) {
 		d->released = 0;
-		if(d->drive_role == 2)
+		if(d->drive_role == 2) {
 			d->status = BURN_DISC_BLANK;
-		else
+			d->current_profile = 0xffff;
+		} else {
 			d->status = BURN_DISC_EMPTY;
+			d->current_profile = 0;
+		}
 		d->busy = BURN_DRIVE_IDLE;
 		return 1;
 	}
@@ -1131,7 +1134,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		d->current_is_cd_profile = 0;
 		d->current_is_supported_profile = 1;
 		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
-		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_MODE1;
+		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
 	} else
 		d->current_profile = 0; /* Drives return this if empty */
 
@@ -1142,6 +1145,9 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	(*drive_infos)[1].drive = NULL; /* End-Of-List mark */
 	(*drive_infos)[0].tao_block_types = d->block_types[BURN_WRITE_TAO];
 	(*drive_infos)[0].sao_block_types = d->block_types[BURN_WRITE_SAO];
+	strcpy((*drive_infos)[0].vendor,"YOYODYNE");
+	strcpy((*drive_infos)[0].product,"WARP DRIVE");
+	strcpy((*drive_infos)[0].revision,"FX01");
 	
 	d->released = 0;
 	ret = 1;

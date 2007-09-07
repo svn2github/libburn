@@ -133,6 +133,7 @@ or
 */
 
 #define Cdrskin_libburn_has_random_access_rW 1
+#define Cdrskin_libburn_has_get_drive_rolE 1
 
 #endif /* Cdrskin_libburn_0_3_9 */
 
@@ -3793,6 +3794,7 @@ int Cdrskin_invalidate_iso_head(struct CdrskiN *skin, int flag)
 /** Report media status s to the user
     @param flag Bitfield for control purposes: 
                 bit0= permission to check for overwriteable ISO image
+                bit1= do not report media profile
 */
 int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
                                int flag)
@@ -3834,6 +3836,30 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
 
  } else 
    printf("-unknown status code-\n");
+
+ if(flag&1)
+   return(1);
+
+#ifdef Cdrskin_libburn_has_get_profilE
+ if((s==BURN_DISC_FULL || s==BURN_DISC_APPENDABLE || s==BURN_DISC_BLANK ||
+     s==BURN_DISC_UNSUITABLE) && skin->driveno>=0) {
+   char profile_name[80];
+   int profile_number;
+
+   printf("Current: ");
+   ret= burn_disc_get_profile(skin->drives[skin->driveno].drive,
+                              &profile_number,profile_name);
+   if(ret>0 && profile_name[0]!=0)
+     printf("%s\n", profile_name);
+   else if(ret>0)
+     printf("UNSUITABLE MEDIA (Profile %4.4Xh)\n",profile_number);
+   else
+     printf("-unidentified-\n");
+ } else if(s==BURN_DISC_EMPTY) {
+   printf("Current: none");
+ }
+#endif
+
  return(1);
 }
 
@@ -3973,7 +3999,16 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  ret= Cdrskin_driveno_to_btldev(skin,skin->driveno,btldev,0);
  if(ret>=0)
    fprintf(stderr,"scsidev: '%s'\n",btldev);
- printf("Device type    : %s\n","Removable CD-ROM");
+ printf("Device type    : ");
+#ifdef Cdrskin_libburn_has_get_drive_rolE
+ ret= burn_drive_get_drive_role(drive_info->drive);
+ if(ret==0)
+   printf("%s\n","Emulated (null-drive)");
+ else if(ret==2)
+   printf("%s\n","Emulated (stdio-drive)");
+ else
+#endif
+   printf("%s\n","Removable CD-ROM");
  printf("Vendor_info    : '%s'\n",drive_info->vendor);
  printf("Identifikation : '%s'\n",drive_info->product);
  printf("Revision       : '%s'\n",drive_info->revision);
@@ -3988,8 +4023,8 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
            drive_info->raw_block_types));
 
  printf("Supported modes:");
- if((drive_info->tao_block_types & (BURN_BLOCK_MODE1|BURN_BLOCK_RAW0))
-    == (BURN_BLOCK_MODE1|BURN_BLOCK_RAW0))
+ if((drive_info->tao_block_types & (BURN_BLOCK_MODE1))
+    == (BURN_BLOCK_MODE1))
    printf(" TAO");
  if(drive_info->sao_block_types & BURN_BLOCK_SAO)
    printf(" SAO");
@@ -4180,7 +4215,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    return(ret);
  drive= skin->drives[skin->driveno].drive;
  s= burn_disc_get_status(drive);
- Cdrskin_report_disc_status(skin,s,1);
+ Cdrskin_report_disc_status(skin,s,1|2);
  if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable) {
    is_not_really_erasable= 1;
  } else if(s==BURN_DISC_EMPTY) {
