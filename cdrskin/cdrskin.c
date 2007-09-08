@@ -3285,7 +3285,8 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 #ifdef Cdrskin_libburn_has_get_profilE
  ret= burn_disc_get_profile(drive,&profile_number,profile_name);
  if(ret>0) {
-   if(strstr(profile_name,"DVD")==profile_name) {
+   if(strstr(profile_name,"DVD")==profile_name ||
+      strstr(profile_name,"stdio")==profile_name ) {
      Cdrskin_speed_factoR= Cdrskin_dvd_speed_factoR;
      Cdrskin_libburn_speed_factoR= Cdrskin_libburn_dvd_speed_factoR;
      Cdrskin_libburn_speed_addoN= Cdrskin_libburn_dvd_speed_addoN;
