@@ -363,12 +363,12 @@ struct burn_drive_info
 	char product[17];
 	/** Revision of the drive */
 	char revision[5];
-	/** Location of the drive in the filesystem. */
+
+	/** Invalid: Was: "Location of the drive in the filesystem." */
+	/** This string has no meaning any more. Once it stored the persistent
+	    drive address. Now always use function  burn_drive_d_get_adr()  to
+	    inquire a persistent address.           ^^^^^^ ALWAYS ^^^^^^^^ */
 	char location[17];
-	/** This is currently the string which is used as persistent
-	    drive address. But be warned: there is NO GUARANTEE that this
-	    will stay so. Always use function  burn_drive_get_adr() to
-	    inquire a persistent address.       ^^^^^^ ALWAYS ^^^^^^ */
 
 	/** Can the drive read DVD-RAM discs */
 	unsigned int read_dvdram:1;
@@ -622,24 +622,47 @@ void burn_allow_untested_profiles(int yes);
 
 
 /* ts A60823 */
-/** Aquire a drive with known persistent address.This is the sysadmin friendly
+/** Aquire a drive with known persistent address. This is the sysadmin friendly
     way to open one drive and to leave all others untouched. It bundles
     the following API calls to form a non-obtrusive way to use libburn:
       burn_drive_add_whitelist() , burn_drive_scan() , burn_drive_grab()
     You are *strongly urged* to use this call whenever you know the drive
     address in advance.
+
     If not, then you have to use directly above calls. In that case, you are
     *strongly urged* to drop any unintended drive which will be exclusively
     occupied and not closed by burn_drive_scan().
     This can be done by shutting down the library including a call to
     burn_finish(). You may later start a new libburn session and should then
     use the function described here with an address obtained after
-    burn_drive_scan() via burn_drive_get_adr(&(drive_infos[driveno]), adr) .
+    burn_drive_scan() via burn_drive_d_get_adr(drive_infos[driveno].drive,adr).
     Another way is to drop the unwanted drives by burn_drive_info_forget().
 
-    Other than with burn_drive_scan() it is allowed to call
-    burn_drive_scan_and_grab() without giving up any other scanned drives.
-    So this call can be used to hold aquired more than one drive at a time.
+    Operating on multiple drives:
+    Different than with burn_drive_scan() it is allowed to call
+    burn_drive_scan_and_grab() without giving up any other scanned drives. So
+    this call can be used to get a collection of more than one aquired drives.
+    The attempt to aquire the same drive twice will fail, though.
+
+    Pseudo-drives:
+    burn_drive_scan_and_grab() is able to aquire virtual drives which will
+    accept options much like a MMC burner drive. Many of those options will not
+    cause any effect, though. The address of a pseudo-drive begins with
+    prefix "stdio:" optionally followed by the path to an existing regular
+    file, or to a not yet existing file, or to an existing block device.
+    Example:  "stdio:/tmp/pseudo_drive"
+    If the path is empty then the resulting pseudo-drive is a null-drive.
+    A null-drive will pretend to have loaded no media and support no writing.
+    A pseudo-drive with a non-empty path is called a stdio-drive.
+    It will perform all its eventual data transfer activities on a file
+    via standard i/o functions open(2), lseek(2), read(2), write(2), close(2).
+    Its capabilities resemble DVD-RAM but the media profile reported is 0xffff,
+    it can simulate writing and it issues no realistic write space information.
+    If the path does not exist in the filesystem yet, it is attempted to create
+    it as a regular file as soon as write operations are started.
+
+    One may distinguish pseudo-drives from MMC drives by call
+    burn_drive_get_drive_role().
 
     @param drive_infos On success returns a one element array with the drive
                   (cdrom/burner). Thus use with driveno 0 only. On failure
@@ -649,9 +672,10 @@ void burn_allow_untested_profiles(int yes);
                   function again.
                   This is a result from call burn_drive_scan(). See there.
                   Use with driveno 0 only.
-    @param adr    The persistent address of the desired drive. Either obtained
-                  by burn_drive_get_adr() or guessed skillfully by application
-                  resp. its user.
+    @param adr    The persistent address of the desired drive. Either once
+                  obtained by burn_drive_d_get_adr() or composed skillfully by
+                  application resp. its user. E.g. "/dev/sr0".
+                  Consider to preprocess it by burn_drive_convert_fs_adr().
     @param load   Nonzero to make the drive attempt to load a disc (close its
                   tray door, etc).
     @return       1 = success , 0 = drive not found , -1 = other error
@@ -737,7 +761,7 @@ int burn_drive_d_get_adr(struct burn_drive *drive, char adr[]);
 
 /** Inquire the persistent address of a drive via a given drive_info object.
     (Note: This is a legacy call.)
-    @param drive_info The drive to inquire. Usually some &(drive_infos[driveno])
+    @param drive_info The drive to inquire.Usually some &(drive_infos[driveno])
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
                  characters size. The persistent address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
@@ -785,7 +809,7 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 /* ts A60923 - A61005 */
 /** Try to obtain bus,host,channel,target,lun from path. If there is an SCSI
     address at all, then this call should succeed with a persistent
-    drive address obtained via burn_drive_get_adr(). It is also supposed to
+    drive address obtained via burn_drive_d_get_adr(). It is also supposed to
     succeed with any device file of a (possibly emulated) SCSI device.
     @return     1 = success , 0 = failure , -1 = severe error
 */
@@ -920,6 +944,8 @@ off_t burn_disc_available_space(struct burn_drive *d,
     0x1a "DVD+RW",                        0x1b "DVD+R".
     If enabled by burn_allow_untested_profiles() it also writes to profiles
     0x15 "DVD-R/DL sequential recording", 0x2b "DVD+R/DL".
+    Writeable stdio-drives return this profile
+    0xffff "stdio file"
     @param d The drive where the media is inserted.
     @param pno Profile Number as of mmc5r03c.pdf, table 89
     @param name Profile Name (see above list, unknown profiles have empty name)
@@ -1440,9 +1466,19 @@ void burn_write_opts_set_toc_entries(struct burn_write_opts *opts,
 */
 void burn_write_opts_set_format(struct burn_write_opts *opts, int format);
 
-/** Sets the simulate value for the write_opts struct
+/** Sets the simulate value for the write_opts struct . 
+    This corresponds to the Test Write bit in MMC mode page 05h. Several media
+    types do not support this. See struct burn_multi_caps.might_simulate for
+    actual availability of this feature. 
+    If the media is suitable, the drive will perform burn_write_disc() as a
+    simulation instead of effective write operations. This means that the
+    media content and burn_disc_get_status() stay unchanged.
+    Note: With stdio-drives, the target file gets eventually created, opened,
+          lseeked, and closed, but not written. So there are effects on it.
+    Warning: Call burn_random_access_write() will never do simulation because
+             it does not get any burn_write_opts.
     @param opts The write opts to change
-    @param sim If non-zero, the drive will perform a simulation instead of a burn
+    @param sim  Non-zero enables simulation, 0 enables real writing
     @return Returns 1 on success and 0 on failure.
 */
 int  burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim);
@@ -1919,34 +1955,6 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
-
-
-#ifdef NIX
-
-/* ts A70903 */ /* <<< ts A70905 : to vanish from API */
-/** Create and aquire a pseudo-drive which will accept option settings much
-    like a MMC burner drive. Many of them will not cause any effect, though.
-    There are two kinds of pseudo-drives: stdio-drives and null-drives. 
-    A stdio-drive performs all its eventual data transfer activities on a file
-    via standard i/o functions open(2), lseek(2), read(2), write(2), close(2).
-    Its capabilities resemble DVD-RAM but the media profile reported is 0x00
-    and it issues no realistic write space information.
-    A null-drive is created if the parameter "name" is an empty string. It will
-    pretend to have loaded no media.
-    @param drive_infos On success returns a one element array with the drive
-                  (cdrom/burner). Thus use with driveno 0 only. On failure
-                  the array has no valid elements at all.
-                  The returned array should be freed via burn_drive_info_free()
-                  when it is no longer needed.
-    @param name   Sets the file address to be used for writing. Permissible
-                  file types are regular file or block device. If the file
-                  does not exist, it is attempted to create it as regular file.
-                  An empty fname creates a null-drive.
-    @return       1 success , <=0 failure
-*/
-int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname);
-
-#endif /* NIX */
 
 
 /** Inquire wether the drive object is a real MMC drive or a pseudo-drive
