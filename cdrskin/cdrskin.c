@@ -1909,8 +1909,10 @@ int Cdrpreskin__cdrecord_to_dev(char *adr, char device_adr[Cdrskin_adrleN],
    digit_seen= 1;
  }
  if(!digit_seen) {
+   if(strcmp(adr,"stdio:")==0)
+     return(0);
    k= strlen(adr)-1;
-   if(adr[k]==':' || (adr[k]>='A' && adr[k]<='Z')) { /* empty prefix ? */
+   if(adr[k]==':' || (adr[k]>='A' && adr[k]<='Z')) {/* empty prefix ? */
      *driveno= 0;
      return(1);
    }
