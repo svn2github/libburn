@@ -1972,6 +1972,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
 		o->advised_write_mode = BURN_WRITE_TAO;
+        	o->might_simulate = 1;
 	} else if (s != BURN_DISC_BLANK && s != BURN_DISC_APPENDABLE) {
 		return 0;
 	} else if (s == BURN_DISC_APPENDABLE &&

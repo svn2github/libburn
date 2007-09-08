@@ -1868,7 +1868,8 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 			ret = bufsize;
 		}
 		t->sourcecount += ret;
-		ret = burn_stdio_write(fd, buf, ret, d, 0);
+		if (!o->simulate)
+			ret = burn_stdio_write(fd, buf, ret, d, 0);
 		if (ret <= 0)
 			return ret;
 
