@@ -1114,9 +1114,6 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
                         char reasons[BURN_REASONS_LEN], int silent);
 
-/* <<< enabling switch for internal usage and trust in this function */
-#define Libburn_precheck_write_ruleS 1
-
 
 /** Write a disc in the drive. The drive must be grabbed successfully before
     calling this function. Always ensure that the drive reports a status of

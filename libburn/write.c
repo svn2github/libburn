@@ -1484,63 +1484,10 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 	struct burn_track *t;
 	char msg[160];
 
-#ifndef Libburn_precheck_write_ruleS
-	int exotic_track = 0, dao_is_ok, sx, tx, mode;
-#endif
-
 	d->needs_close_session = 0;
-
-#ifndef Libburn_precheck_write_ruleS
-	/* <<< covered by burn_precheck_write() */
-	for (sx = 0; sx < disc->sessions; sx++)
-		for (tx = 0 ; tx < disc->session[sx]->tracks; tx++) {
-			mode = disc->session[sx]->track[tx]->mode;
-			if (disc->session[sx]->track[tx]->mode != BURN_MODE1)
-				exotic_track = 1;
-		}
-	if (exotic_track) {
-		sprintf(msg,"DVD Media are unsuitable for desired track type");
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020123,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0, 0);
-		goto early_failure;
-	}
-
-	/* <<< covered by burn_precheck_write() */
-	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-	    d->current_profile == 0x12) {
-		 /* DVD+RW , DVD-RW Restricted Overwrite , DVD-RAM */
-		if (disc->sessions!=1 || disc->session[0]->tracks>1
-			|| o->multi ) {
-			sprintf(msg,
-	"Burning is restricted to a single track and no multi-session on %s",
-				d->current_profile_text);
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x0002011f,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-			goto early_failure;
-		}
-	}
-#endif /* ! Libburn_precheck_write_ruleS */
 
 	if (d->current_profile == 0x1a || d->current_profile == 0x12) { 
 		/* DVD+RW , DVD-RAM */
-
-#ifndef Libburn_precheck_write_ruleS
-		/* <<< covered by burn_precheck_write() */
-		if (o->start_byte >= 0 && (o->start_byte % 2048)) {
-			sprintf(msg,
-			  "Write start address not properly aligned to 2048");
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020126,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-			goto early_failure;
-		}
-#endif /* ! Libburn_precheck_write_ruleS */
-
 		ret = 1;
 		if (d->current_profile == 0x1a)
 			ret = burn_disc_setup_dvd_plus_rw(o, disc);
@@ -1557,20 +1504,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	} else if (d->current_profile == 0x13) {
 		 /* DVD-RW Restricted Overwrite */
-
-#ifndef Libburn_precheck_write_ruleS
-		/* <<< covered by burn_precheck_write() */
-		if (o->start_byte >= 0 && (o->start_byte % 32768)) {
-			sprintf(msg,
-			  "Write start address not properly aligned to 32K");
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020126,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-			goto early_failure;
-		}
-#endif /* ! Libburn_precheck_write_ruleS */
-
 		ret = burn_disc_setup_dvd_minus_rw(o, disc);
 		if (ret <= 0) {
 			sprintf(msg,
@@ -1591,69 +1524,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		t = disc->session[0]->track[0];
 		o_end = ( burn_track_is_open_ended(t) && !o->fill_up_media );
 		default_size = burn_track_get_default_size(t);
-
-#ifndef Libburn_precheck_write_ruleS
-		dao_is_ok =
-			(disc->sessions == 1 &&
-			 disc->session[0]->tracks == 1 &&
-			 (default_size > 0 || !o_end) &&
-			 (!o->multi) && d->status == BURN_DISC_BLANK
-			);
-		if (o->write_type == BURN_WRITE_TAO && 
-		    !d->current_has_feat21h) {
-
-			/* <<< ??? keep this automatic write type change ? */
-			if (dao_is_ok) {
-				o->write_type = BURN_WRITE_SAO;
-				libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x00020134,
-				  LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
-				  "Defaulted TAO to DAO (lack of feature 21h)",
-				  0, 0);
-
-			/* <<< covered by burn_precheck_write() */
-			} else {
-				libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x00020135,
-				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-	"Cannot perform TAO (lack of feature 21h), job unsuitable for DAO",
-				  0, 0);
-				goto early_failure;
-			}
-
-		} else if (o->write_type == BURN_WRITE_SAO && !dao_is_ok) {
-
-			/* <<< covered by burn_precheck_write() */
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020136,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"DAO burning is restricted to a single fixed size track and no multi-session",
-				0, 0);
-
-			/* <<< ??? keep this automatic advise ? */
-			if (d->current_has_feat21h)
-				libdax_msgs_submit(libdax_messenger,
-					d->global_index, 0x00020137,
-					LIBDAX_MSGS_SEV_HINT,
-					LIBDAX_MSGS_PRIO_HIGH,
-				"TAO would be possible and could do the job",
-					0, 0);
-
-			goto early_failure;
-
-		}
-
-		/* <<< covered by burn_precheck_write() */
-		if (o->start_byte >= 0) {
-			sprintf(msg, "Write start address not supported");
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020125,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-			goto early_failure;
-		}
-#endif /* ! Libburn_precheck_write_ruleS */
-
 		if (o->write_type == BURN_WRITE_SAO && o_end) {
 			sprintf(msg, "Activated track default size %.f",
 				(double) default_size);
@@ -1681,11 +1551,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		t = disc->session[0]->track[0];
 		o_end = ( burn_track_is_open_ended(t) && !o->fill_up_media );
 		default_size = burn_track_get_default_size(t);
-
-#ifndef Libburn_precheck_write_ruleS
-		/* >>> oldfashioned checks hopefully never re-enabled */
-#endif /* ! Libburn_precheck_write_ruleS */
-
 		if (o->write_type == BURN_WRITE_SAO && o_end) {
 			sprintf(msg, "Activated track default size %.f",
 				(double) default_size);
@@ -1707,19 +1572,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		}
 		/* ??? padding needed ??? cowardly doing it for now */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
-
-#ifndef Libburn_precheck_write_ruleS
-	/* <<< covered by burn_precheck_write() */
-	} else {
-		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
-			d->current_profile, d->current_profile_text);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x0002011e,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0, 0);
-		goto early_failure;
-#endif /* ! Libburn_precheck_write_ruleS */
-
 	}
 	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
 
@@ -1968,45 +1820,12 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 		return;
 	}
 
-#ifndef Libburn_precheck_write_ruleS
-	/* <<< covered by burn_precheck_write() */
-	if (o->start_byte >= 0) {
-		sprintf(msg, "Write start address not supported");
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020124,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0, 0);
-		goto fail_wo_sync;
-	}
-#endif /* ! Libburn_precheck_write_ruleS */
-
 	/* ts A70218 */
 	if (o->write_type == BURN_WRITE_SAO) {
-
-#ifndef Libburn_precheck_write_ruleS
-		/* <<< covered by burn_precheck_write() "appended session" */
-		if (disc->sessions > 1) {
-sao_restriction_violated:;
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x0002012f,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"SAO is restricted to a single session with fixed track sizes",
-				0, 0);
-			goto fail_wo_sync;
-		}
-#endif /* ! Libburn_precheck_write_ruleS */
-
 		for (i = 0 ; i < disc->session[0]->tracks; i++) {
 			t = disc->session[0]->track[i];
 			if (burn_track_is_open_ended(t)) {
 				default_size = burn_track_get_default_size(t);
-
-#ifndef Libburn_precheck_write_ruleS
-				/* <<< covered by burn_precheck_write() */
-				if (default_size <= 0)
-					goto sao_restriction_violated;
-#endif /* ! Libburn_precheck_write_ruleS */
-
 				sprintf(msg,
 					"Activated track default size %.f",
 					(double) default_size);

@@ -349,10 +349,6 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
 	struct write_opts o;
 	char reasons[BURN_REASONS_LEN+80];
-#ifndef Libburn_precheck_write_ruleS
-	int i, j, mode, mixed_mode = 0;
-#endif
-
 
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
@@ -396,47 +392,12 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	strcpy(reasons, "Write job parameters are unsuitable:\n");
 	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
 	     == BURN_WRITE_NONE) {
-
-#ifndef Libburn_precheck_write_ruleS
-		libdax_msgs_submit(libdax_messenger,
-				opts->drive->global_index, 0x00020139,
-				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
-				reasons, 0, 0);
-#else
 		libdax_msgs_submit(libdax_messenger,
 				opts->drive->global_index, 0x00020139,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				reasons, 0, 0);
 		return;
-#endif /* Libburn_precheck_write_ruleS */
-
 	}
-
-
-#ifndef Libburn_precheck_write_ruleS
-	/* <<< covered burn_precheck_write() */
-	/* ts A61009 : obsolete Assert in sector_headers() */
-	if (! burn_disc_write_is_ok(opts, disc, 0)) /* issues own msgs */
-		return;
-
-	/* <<< covered burn_precheck_write() */
-	/* ts A70122 : libburn SAO code mishandles mode changes */
-	for (i = 0; i < disc->sessions; i++) {
-		if (disc->session[i]->tracks <= 0)
-	continue;
-		mode =  disc->session[i]->track[0]->mode;
-		for (j = 1; j < disc->session[i]->tracks; j++)
-			if (mode != disc->session[i]->track[j]->mode)
-				mixed_mode = 1;
-	}
-	if (mixed_mode && opts->write_type == BURN_WRITE_SAO) {
-		libdax_msgs_submit(libdax_messenger,
-				opts->drive->global_index, 0x00020133,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Cannot mix data and audio in SAO mode", 0, 0);
-		return;
-	}
-#endif /* ! Libburn_precheck_write_ruleS */
 
 	opts->drive->cancel = 0; /* End of the return = failure area */
 
