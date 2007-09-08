@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "August 27, 2007"
+.TH CDRSKIN 1 "September 8, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -48,7 +48,9 @@ or on DVD-R[W] (in Incremental mode) or on DVD+R.
 .br
 Single session on DVD-RW or DVD-R (Disk-at-once)
 .br
-or on overwriteable DVD+RW, DVD-RW, DVD-RAM.
+or on overwriteable DVD+RW, DVD-RW, DVD-RAM,
+.br
+or on data file or block device.
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
@@ -256,6 +258,21 @@ See option -scanbus for getting a list of cdrecord style addresses.
 Further are accepted on Linux: links to libburn-suitable device files, 
 device files which have the same major and minor device number,
 and device files which have the same SCSI address parameters (e.g. /dev/sg0).
+.br
+.PP
+Option --allow_emulated_drives enables addressing of pseudo-drives
+which get emulated on top of a regular data file or a block device.
+The target file address is given after prefix "stdio:".
+.br
+E.g.: dev=stdio:/tmp/my_pseudo_drive
+.br
+Warning: Superusers must take care not to spoil their hard disk via its raw
+block device (like /dev/hda or /dev/sd0).
+.br
+Pseudo-drives behave much like DVD-RAM. They allow -dummy, nevertheless, and
+their reply with --tell_media_space is utopic. If the given address does
+not exist yet, then it gets created as regular file.
+Note: -dummy runs touch the file.
 .br
 .SH OPTIONS
 .TP
@@ -623,6 +640,10 @@ Curb explicitely given speed= values to the maximum which is announced by the
 drive for the loaded media. By default, such an adjustment is only made with
 pseudo-speeds 0 and -1 whereas speed settings > 0 are sent unchanged to the
 drive which will then choose an appropriate speed on its own.
+.TP
+.BI \--allow_emulated_drives
+Enable drive addresses of the form dev=stdio:<path>. See above, paragraph
+"Drive preparation and addressing".
 .TP
 .BI \--allow_setuid
 Disable the loud warning about insecure discrepance between login user and

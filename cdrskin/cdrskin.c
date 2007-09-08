@@ -1641,6 +1641,9 @@ struct CdrpreskiN {
  /** Wether to support media types which are implemented but yet untested */
  int allow_untested_media;
 
+ /** Wether to allow libburn pseudo-drives "stdio:<path>" */
+ int allow_emulated_drives;
+
  /** Wether an option is given which needs a full bus scan */
  int no_whitelist;
 
@@ -1721,6 +1724,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->allow_setuid= 0;
  o->allow_fd_source= 0;
  o->allow_untested_media= 0;
+ o->allow_emulated_drives= 0;
  o->no_whitelist= 0;
  o->no_convert_fs_adr= 0;
 #ifdef Cdrskin_libburn_has_convert_scsi_adR
@@ -2055,6 +2059,9 @@ return:
    if(strcmp(argv[i],"--abort_handler")==0) {
      o->abort_handler= 3;
 
+   } else if(strcmp(argv[i],"--allow_emulated_drives")==0) {
+     o->allow_emulated_drives= 1;
+
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      o->allow_setuid= 1;
 
@@ -2157,7 +2164,7 @@ set_dev:;
 
 #ifndef Cdrskin_extra_leaN
 
-       printf("Supported SCSI transports for this platform:\n");
+       printf("\nSupported SCSI transports for this platform:\n");
        fflush(stdout);
        if(o->old_pseudo_scsi_adr) {
          fprintf(stderr,"\nTransport name:\t\tlibburn OLD_PSEUDO\n");
@@ -2182,6 +2189,18 @@ set_dev:;
          fprintf(stderr,"Target example:\t\tATA:1,0,0\n");
          fprintf(stderr,"SCSI Bus scanning:\tsupported\n");
          fprintf(stderr,"Open via UNIX device:\tsupported\n");
+       }
+       if(o->allow_emulated_drives) {
+         fprintf(stderr,"\nTransport name:\t\tlibburn on standard i/o\n");
+         fprintf(stderr,
+               "Transport descr.:\twrite into data files and block devices\n");
+         fprintf(stderr,"Transp. layer ind.:\tstdio:\n");
+         fprintf(stderr,"Target specifier:\tpath\n");
+         fprintf(stderr,"Target example:\t\tstdio:/tmp/pseudo_drive\n");
+         fprintf(stderr,"SCSI Bus scanning:\tnot supported\n");
+         fprintf(stderr,"Open via UNIX device:\tsupported\n");
+       } else {
+         printf("\ncdrskin: NOTE : Option --allow_emulated_drives would allow dev=stdio:<path>\n");
        }
 
 #else /* ! Cdrskin_extra_leaN */
@@ -2262,6 +2281,8 @@ set_dev:;
      printf(
      " --adjust_speed_to_drive  set only speeds offered by drive and media\n");
 #endif
+     printf(
+        " --allow_emulated_drives  dev=stdio:<path> on files and block devices\n");
      printf(
         " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
      printf(
@@ -3620,7 +3641,7 @@ wrong_devno:;
     @return <0 error,
                 pseudo transport groups:
                  0 volatile drive number, 
-                 1 /dev/sgN, 2 /dev/hdX,
+                 1 /dev/sgN, 2 /dev/hdX, 3 stdio,
                  1000000+busno = non-pseudo SCSI bus
                  2000000+busno = pseudo-ATA|ATAPI SCSI bus (currently busno==2)
 */
@@ -3643,6 +3664,14 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
  loc= skin->drives[driveno].location;
  if(loc==NULL)
    goto fallback;
+#endif
+
+#ifdef Cdrskin_libburn_has_get_drive_rolE
+ ret= burn_drive_get_drive_role(skin->drives[driveno].drive);
+ if(ret!=1) {
+   sprintf(btldev,"stdio:%s",adr);
+   {ret= 2; goto adr_translation;}
+ }
 #endif
 
 #ifdef Cdrskin_libburn_has_convert_scsi_adR
@@ -3840,7 +3869,7 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
  } else 
    printf("-unknown status code-\n");
 
- if(flag&1)
+ if(flag&2)
    return(1);
 
 #ifdef Cdrskin_libburn_has_get_profilE
@@ -4682,7 +4711,8 @@ blanking_done:;
  ret= !!(wrote_well);
 ex:;
  skin->drive_is_busy= 0;
- Cdrskin_release_drive(skin,0);
+ if(skin->drive_is_grabbed)
+   Cdrskin_release_drive(skin,0);
  return(ret);
 }
 
@@ -6408,6 +6438,9 @@ set_abort_max_wait:;
      skin->adjust_speed_to_drive= 1;
 #endif
 
+   } else if(strcmp(argv[i],"--allow_emulated_drives")==0) {
+     /* is handled in Cdrpreskin_setup() */;
+
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -7174,8 +7207,14 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
        "cdrskin: NOTE : greying out all drives besides given dev='%s'\n",
        (*preskin)->device_adr));
    burn_drive_add_whitelist((*preskin)->device_adr);
-   if(strncmp((*preskin)->device_adr, "stdio:", 6)==0)
-     stdio_drive= 1;
+   if(strncmp((*preskin)->device_adr, "stdio:", 6)==0) {
+     if((*preskin)->allow_emulated_drives)
+       stdio_drive= 1;
+     else {
+       fprintf(stderr,"cdrskin: SORRY : dev=stdio:... works only with option --allow_emulated_drives\n");
+       {*exit_value= 2; goto ex;}
+     }
+   }
  }
 
  ret= Cdrskin_new(&skin,*preskin,1);

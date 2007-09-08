@@ -45,15 +45,16 @@ then
   -e 's/<b>Overview of features:<\/b>/\&nbsp;<BR><b>Overview of features:<\/b>/' \
   -e 's/<b>General information paragraphs:<\/b>/\&nbsp;<BR><b>General information paragraphs:<\/b>/' \
   -e 's/<b>Track recording model:<\/b>/\&nbsp;<BR><b>Track recording model:<\/b>/' \
-  -e 's/In general there are two types of tracks: data and audio./\&nbsp;<BR>In general there are two types of tracks: data and audio./' \
-  -e 's/While audio tracks just contain a given/\&nbsp;<BR>While audio tracks just contain a given/' \
+  -e 's/^In general there are two types of tracks: data and audio./\&nbsp;<BR>In general there are two types of tracks: data and audio./' \
+  -e 's/^While audio tracks just contain a given/\&nbsp;<BR>While audio tracks just contain a given/' \
   -e 's/<b>Write mode selection:<\/b>/\&nbsp;<BR><b>Write mode selection:<\/b>/' \
   -e 's/<b>Recordable CD Media:<\/b>/\&nbsp;<BR><b>Recordable CD Media:<\/b>/' \
   -e 's/<b>Overwriteable DVD Media:<\/b>/\&nbsp;<BR><b>Overwriteable DVD Media:<\/b>/' \
   -e 's/<b>Sequentially Recordable DVD Media:<\/b>/\&nbsp;<BR><b>Sequentially Recordable DVD Media:<\/b>/' \
-  -e 's/The write modes for DVD+R/\&nbsp;<BR>The write modes for DVD+R/' \
+  -e 's/^The write modes for DVD+R/\&nbsp;<BR>The write modes for DVD+R/' \
   -e 's/<b>Drive preparation and addressing:<\/b>/\&nbsp;<BR><b>Drive preparation and addressing:<\/b>/' \
-  -e 's/If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
+  -e 's/^If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
+  -e 's/^Option --allow_emulated_drives enables/\&nbsp;<BR>Option --allow_emulated_drives enables/' \
   -e 's/^Alphabetical list of options/\&nbsp;<BR>Alphabetical list of options/' \
   -e 's/and for all others\.<\/td><\/table>/and for all others.<\/td><\/table>  <BR><HR><FONT SIZE=-1><CENTER>(HTML generated from '"$manpage"'.1 on '"$(date)"' by '$(basename "$0")' )<\/CENTER><\/FONT>/' \
   -e 's/See section EXAMPLES/See section <A HREF="#EXAMPLES">EXAMPLES<\/A>/' \
