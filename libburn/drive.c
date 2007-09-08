@@ -1127,6 +1127,8 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		ret = -1;
 		goto ex;
 	}
+	free((char *) d); /* all sub pointers have been copied to *regd_d */
+	d = regd_d;
 	if (d->drive_role == 2) {
 		d->status = BURN_DISC_BLANK;
 		d->current_profile = 0xffff; /* MMC for non-compliant drive */
@@ -1145,10 +1147,15 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	(*drive_infos)[1].drive = NULL; /* End-Of-List mark */
 	(*drive_infos)[0].tao_block_types = d->block_types[BURN_WRITE_TAO];
 	(*drive_infos)[0].sao_block_types = d->block_types[BURN_WRITE_SAO];
-	strcpy((*drive_infos)[0].vendor,"YOYODYNE");
-	strcpy((*drive_infos)[0].product,"WARP DRIVE");
-	strcpy((*drive_infos)[0].revision,"FX01");
-	
+	if (d->drive_role == 2) {
+		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
+		strcpy((*drive_infos)[0].product,"WARP DRIVE");
+		strcpy((*drive_infos)[0].revision,"FX01");
+	} else {
+		strcpy((*drive_infos)[0].vendor,"FERENGI");
+		strcpy((*drive_infos)[0].product,"VAPORWARE");
+		strcpy((*drive_infos)[0].revision,"0000");
+	}
 	d->released = 0;
 	ret = 1;
 ex:;
