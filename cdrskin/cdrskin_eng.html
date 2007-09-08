@@ -43,7 +43,7 @@ and to MMC-5 for DVD).
 <P>
 <H2>Software requirements :</H2>
 <DL>
-<DT>Linux kernel 2.4 or higher</DT>
+<DT>Linux with kernel 2.4 or higher (and libc, of course) :</DT>
 <DD>With kernel 2.4 an ATA drive has to be under ide-scsi emulation.</DD>
 <DD>With kernel 2.6 the drive should not be under ide-scsi.</DD>
 <DT>libpthread</DT>
@@ -248,6 +248,7 @@ Enhancements towards previous stable version cdrskin-0.3.6:
 <UL>
 <LI>New option direct_write_amount=</LI>
 <LI>New option --grow_overwriteable_iso</LI>
+<LI>New option --allow_emulated_drives dev=stdio:&lt;path&gt;</LI>
 <!--
 <LI>none yet</LI>
 -->

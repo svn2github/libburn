@@ -5,6 +5,7 @@
 Deliberate deviations of cdrskin from cdrecord compatibility:
 
 + cdrskin does drive operations (on its drive 0) without a dev= option
+  (Note: cdrecord meanwhile has a default for missing dev= option.) 
 
 + gracetime=0 is allowed and set by default
 
@@ -18,7 +19,7 @@ Deliberate deviations of cdrskin from cdrecord compatibility:
 
 + premature end of source is not an error and leads to full announced tracksize
 
-+ -msinfo pushes all other messages to stderr. It works independent of
++ -msinfo pushes all other messages to stderr. It works independently of
   other options which would prevent it with cdrecord (-atip, -scanbus, ...)
 
 + DVD track sources get not concateneated to a single track. In general DVD
@@ -4164,18 +4165,250 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
 
------------------------------------- cycle  - cdrskin-0.3.9 - 2007.08.
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.08.29.124057
 * New option --grow_overwriteable_iso
 
+29 Aug 2007  [978]
+cdrskin/compile_cdrskin.sh
+Added missing file to link list: read.o
+
+29 Aug 2007  [979]
+- doc/libdax_model.txt
+- doc/libdax_overview.gif
+- doc/libdax_job.gif
+- doc/libdax_equip.gif
++ libcevap/libdax_model.txt
++ libcevap/libdax_overview.gif
++ libcevap/libdax_job.gif
++ libcevap/libdax_equip.gif
+Moved libdax-libcevap model stuff to libcevap/
+
+29 Aug 2007  [980]
+libcevap/libcevap_gen.sh 
+Adapted C code generator script to new address of libdax_model.txt
+
+1 Sep 2007  [983]
+libisoburn/libisoburn.h
+libisoburn/isoburn.h
+libisoburn/isoburn.c
+libisoburn/burn_wrap.c
+libisoburn/isofs_wrap.c
+Initial content of libisoburn
+
+2007.09.01.182319  [984]
+libburn/libburn.h
+libburn/options.c
+New API function burn_write_opts_get_drive()
+
+1 Sep 2007  [985]
+libisoburn/libisoburn.h
+libisoburn/isoburn.h
+libisoburn/isoburn.c
+libisoburn/isofs_wrap.c
+Should have used copy+paste when writing Vreixos name
+
+2007.09.04.224905  [987]
+libburn/libburn.h
+libburn/transport.h
+libburn/async.c
+libburn/drive.c
+libburn/write.c
+libburn/read.c
+libburn/options.c
+libburn/spc.c
+libburn/libdax_msgs.h
+New API calls burn_drive_grab_dummy(), burn_drive_get_drive_role()
+
+5 Sep 2007  [988]
+test/telltoc.c
+test/libburner.c
+Testing new API functions via --drive stdio:<path>
+
+2007.09.04.225558  [989]
+libburn/write.c
+libburn/read.c
+Reacted on compiler warnings
+
+5 Sep 2007  [990]
+libisoburn/isoburn.h
+libisoburn/isoburn.c
+libisoburn/burn_wrap.c
+Implemented use of stdio-pseudo-drives
+
+
+2007.09.05.194124  [991]
+libburn/libburn.h
+libburn/drive.c
+test/libburner.c
+test/telltoc.c
+burn_drive_grab_dummy() becomes invisible part of burn_drive_scan_and_grab()
+
+2007.09.05.195248  [992]
+libburn/write.c
+Fixed a bug with failed opening of pseudo-drive
+
+5 Sep 2007  [993]
+libisoburn/libisoburn.h
+libisoburn/isoburn.h
+libisoburn/isoburn.c
+libisoburn/burn_wrap.c
+Changes in plans as discussed up to Sep 5 2007
+
+5 Sep 2007  [994]
+libisoburn/libisoburn.h
+Updated explanations about the usage principles of libisoburn
+
+2007.09.06.094402  [995]
+libburn/drive.c
+Added forgotten handling of pseudo-drives in burn_drive_grab()
+
+2007.09.06.095954  [996]
+libburn/write.c
+Added forgotten read/write counters in burn_stdio_write_track()
+
+2007.09.06.100100  [997]
+cdrskin/cdrskin.c
+Removed obstacles for use of stdio-drives
+
+6 Sep 2007  [998]
+libisoburn/libisoburn.h
+libisoburn/isoburn.h
+libisoburn/isoburn.c
+libisoburn/burn_wrap.c
+Updated to state of discussion
+
+2007.09.06.120844  [999]
+libburn/libburn.h
+libburn/drive.c
+Promoted burn_drive_raw_get_adr() to API function burn_drive_d_get_adr()
+
+2007.09.07.102728  [1002]
+libburn/write.c
+Corrected write counter in burn_stdio_write_track()
+
+2007.09.07.123748  [1003]
+libburn/libburn.h
+libburn/async.c
+libburn/drive.c
+libburn/libdax_msgs.h
+Made burn_drive_info_free() only delete the drive of its parameter
+
+7 Sep 2007  [1004]
+test/telltoc.c
+Reacted on changed media profile of stdio-drives
+
+2007.09.07.154951  [1005]
+libburn/drive.h
+libburn/drive.c
+libburn/async.c
+libburn/init.c
+Made burn_drive_scan() refuse work on non-empty drive list.
+
+2007.09.07.163949  [1006]
+libburn/async.c
+libburn/drive.c
+Corrected memory leak introduced by revision 1005
+
+2007.09.07.164532  [1007]
+libburn/drive.h
+Forgotten file for revision 1006
+
+2007.09.07.184631  [1008]
+libburn/init.c
+libburn/libdax_msgs.h
+Avoided locked tray after failed burn_finish() because of busy drive
+
+7 Sep 2007  [1009]
+test/telltoc.c
+Lowered report severity to LIBDAX_MSGS_SEV_WARNING.
+
+2007.09.07.190916  [1010]
+libburn/libburn.h
+libburn/drive.c
+libburn/libdax_msgs.h
+Made burn_drive_scan_and_grab() extend the drive list rather than replacing it
+
+2007.09.07.234122  [1011]
+libburn/drive.c
+cdrskin/cdrskin.c
+Report media profile in cdrskin blank, format, burn runs
+
+2007.09.07.234704  [1012]
+libburn/drive.c
+Bug fix about stdio:<charcter device>
+
+2007.09.08.102151  [1013]
+libburn/drive.c
+Fixed memory leak and possible SIGSEGV with pseudo-drives
+
+2007.09.08.102620  [1014]
+cdrskin/cdrskin.c
+Made cdrskin work with null-drive (which it mistook for something like ATA:)
+
+2007.09.08.132058  [1015]
+libburn/drive.c
+libburn/write.c
+Allowed -dummy burns with stdio-drives (because /dev/null is no block device)
+
+2007.09.08.132206  [1016]
+cdrskin/cdrskin.c
+Changed speed measurement of stdio-drives to DVD 1x units
+
+8 Sep 2007  [1017]
+libburn/libburn.h
+Documentation of stdio-drives
+
+2007.09.08.164924  [1018]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/convert_man_to_html.sh
+New option --allow_emulated_drives 
 
   []
-doc/libdax_model.txt
-Work goes on
+libburn/libburn.h
+libburn/async.c
+libburn/write.c
+Made Libburn_precheck_write_ruleS unconditional code
+
+  []
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Next cdrskin-0.3.9 cycle
+
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.08.
+* New option --allow_emulated_drives dev=stdio:<path>
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
+
+  []
+open(,O_LARGEFILE) ?
+
+  []
+What about alleged erasability of DVD+RW
+
+  []
+What about DVD and stdio track offset and track tail ?
+
+
+  []
+libcevap/main.c
+Preparations for lowercase class and function names
+
+
+  []
+libcevap/libdax_model.txt
+Work goes on
+
+  []
+libcevap/cgen.c
+libcevap/ctyp.c
+Fixed a bug about arrays
+
+
 
 ------------------------------------ cycle  - cdrskin-0.3.9 - 
 cdrskin/changelog.txt
