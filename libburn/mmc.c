@@ -1306,6 +1306,9 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		   appendable. I.e number of complete tracks + 1. */
 		d->last_track_no = (data[11] << 8) | data[6];
 	}
+	if (d->current_profile != 0x0a && d->current_profile != 0x13 &&
+	    d->current_profile != 0x14 && d->status != BURN_DISC_FULL)
+		d->erasable = 0; /* stay in sync with burn_disc_erase() */
 
 	if (do_read_toc)
 		mmc_read_toc(d);
