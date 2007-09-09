@@ -1898,6 +1898,8 @@ int Cdrpreskin__cdrecord_to_dev(char *adr, char device_adr[Cdrskin_adrleN],
  device_adr[0]= 0;
  if(strlen(adr)==0)
    return(0);
+ if(strncmp(adr,"stdio:",6)==0)
+   return(0);
 
  /* read the trailing numeric string as device address code */
  /* accepts "1" , "0,1,0" , "ATA:0,1,0" , ... */
@@ -1913,8 +1915,6 @@ int Cdrpreskin__cdrecord_to_dev(char *adr, char device_adr[Cdrskin_adrleN],
    digit_seen= 1;
  }
  if(!digit_seen) {
-   if(strcmp(adr,"stdio:")==0)
-     return(0);
    k= strlen(adr)-1;
    if(adr[k]==':' || (adr[k]>='A' && adr[k]<='Z')) {/* empty prefix ? */
      *driveno= 0;
@@ -3888,7 +3888,7 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
    else
      printf("-unidentified-\n");
  } else if(s==BURN_DISC_EMPTY) {
-   printf("Current: none");
+   printf("Current: none\n");
  }
 #endif
 
