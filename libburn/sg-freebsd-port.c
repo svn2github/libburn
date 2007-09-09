@@ -48,6 +48,8 @@ sg_issue_command()      sends a SCSI command to the drive, receives reply,
 
 sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
+burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
+
 
 Porting hints are marked by the text "PORTING:".
 Send feedback to libburn-hackers@pykix.org .
@@ -72,6 +74,10 @@ Send feedback to libburn-hackers@pykix.org .
 #include <cam/scsi/scsi_pass.h>
 
 #include <err.h> /* XXX */
+
+
+/* ts A70909 : >>> untestet yet wether this compiles */
+#include <sys/statvfs.h>
 
 
 /** PORTING : ------ libburn portable headers and definitions ----- */
@@ -555,5 +561,71 @@ int sg_is_enumerable_adr(char* adr)
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 	return (0);
+}
+
+
+/* ts A70909 */
+/** Estimate the potential payload capacity of a file address.
+    @param path  The address of the file to be examined. If it does not
+                 exist yet, then the directory will be inquired.
+    @param bytes This value gets modified if an estimation is possible
+    @return      -2 = cannot perform necessary operations on file object
+                 -1 = neither path nor dirname of path exist
+                  0 = could not estimate size capacity of file object
+                  1 = estimation has been made, bytes was set
+*/
+int burn_os_stdio_capacity(char *path, off_t *bytes)
+{
+	struct stat stbuf;
+	struct statvfs vfsbuf;
+	char testpath[4096], *cpt;
+	long blocks;
+	int open_mode = O_RDWR, fd, ret;
+	off_t add_size = 0;
+
+	testpath[0] = 0;
+	blocks = *bytes / 512;
+	if (stat(path, &stbuf) == -1) {
+		strcpy(testpath, path);
+		cpt = strrchr(testpath, '/');
+		if(cpt == NULL)
+			strcpy(testpath, ".");
+		else if(cpt == testpath)
+			testpath[1] = 0;
+		else
+			*cpt = 0;
+		if (stat(testpath, &stbuf) == -1)
+			return -1;
+
+#ifdef Libburn_if_this_was_linuX
+
+	} else if(S_ISBLK(stbuf.st_mode)) {
+		if(burn_sg_open_o_excl)
+			open_mode |= O_EXCL;
+		fd = open(path, open_mode);
+		if (fd == -1)
+			return -2;
+		ret = ioctl(fd, BLKGETSIZE, &blocks);
+		close(fd);
+		if (ret == -1)
+			return -2;
+		*bytes = ((off_t) blocks) * (off_t) 512;
+
+#endif /* Libburn_if_this_was_linuX */
+
+
+	} else if(S_ISREG(stbuf.st_mode)) {
+		add_size = stbuf.st_blocks * (off_t) 512;
+		strcpy(testpath, path);
+	} else
+		return 0;
+
+	if (testpath[0]) {	
+		if (statvfs(testpath, &vfsbuf) == -1)
+			return -2;
+		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
+						(off_t) vfsbuf.f_bavail;
+	}
+	return 1;
 }
 
