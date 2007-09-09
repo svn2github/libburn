@@ -16,7 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <pthread.h>
-#include <sys/statvfs.h>
+#include <errno.h>
 #include "libburn.h"
 #include "drive.h"
 #include "transport.h"
@@ -1093,40 +1093,29 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
 	int ret;
 	off_t size = ((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
-	off_t add_size = 0;
 	struct burn_drive *d= NULL, *regd_d;
 	struct stat stbuf;
-	struct statvfs vfsbuf;
-	char testpath[4096];
-
-	testpath[0] = 0;
 
 	if (fname[0] != 0) {
-		if (stat(fname, &stbuf) == -1) {
-			strcpy(testpath,fname);
-			if(strrchr(testpath,'/') == NULL)
-				strcpy(testpath,".");
-			else if(strrchr(testpath,'/') == testpath)
-				testpath[1] = 0;	
-			else
-				*strrchr(testpath,'/') = 0;	
-			if (stat(testpath, &stbuf) == -1) {
+		memset(&stbuf, 0, sizeof(stbuf));
+		ret = stat(fname, &stbuf);
+		if(ret == -1 || S_ISBLK(stbuf.st_mode) ||
+				S_ISREG(stbuf.st_mode)) {
+			ret = burn_os_stdio_capacity(fname, &size);
+			if (ret == -1) {
 				libdax_msgs_submit(libdax_messenger, -1,
 				 0x00020009,
 				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				 "Neither stdio-path nor its directory exist",
 				 0, 0);
-			return 0;
+				return 0;
+			} else if (ret == -2) {
+				libdax_msgs_submit(libdax_messenger, -1,
+				0x00020005,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Failed to open device (a pseudo-drive)",
+				errno, 0);
 			}
-
-		} else if(S_ISBLK(stbuf.st_mode)) {
-
-			/* >>> ? how to obtain the number of blocks ? */
-
-		} else if(S_ISREG(stbuf.st_mode)) {
-			add_size = stbuf.st_blocks * (off_t) 512;
-			size -= add_size;
-			strcpy(testpath,fname);
 		} else {
 			libdax_msgs_submit(libdax_messenger, -1,
 				0x00020149,
@@ -1163,11 +1152,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		d->current_is_supported_profile = 1;
 		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
 		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
-		if (testpath[0])
-			if (statvfs(testpath, &vfsbuf) != -1)
-				size = ((off_t) vfsbuf.f_bsize) *
-						 (off_t) vfsbuf.f_bavail;
-		d->media_capacity_remaining = size + add_size;
+		d->media_capacity_remaining = size;
 
 		/* >>> ? open file for a test ? */; 
 
@@ -1972,8 +1957,6 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	int status, num_formats, ret, type, i;
 	off_t size;
 	unsigned dummy;
-	struct statvfs vfsbuf;
-	struct stat stbuf;
 
 	*caps = NULL;
 	s = burn_disc_get_status(d);
@@ -2000,11 +1983,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		/* stdio file dummy drive */
 		o->start_adr = 1;
 		size = d->media_capacity_remaining;
-		if (stat(d->devname, &stbuf) != -1)
-			if(S_ISREG(stbuf.st_mode))
-				if (statvfs(d->devname, &vfsbuf) != -1)
-					size = ((off_t) vfsbuf.f_bsize) *
-						 (off_t) vfsbuf.f_bavail;
+		burn_os_stdio_capacity(d->devname, &size);
 		d->media_capacity_remaining = size;
 		o->start_range_high = size;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
