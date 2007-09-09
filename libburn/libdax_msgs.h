@@ -305,6 +305,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020006 (FATAL,HIGH)   = Too many scsi siblings
  0x00020007 (NOTE,HIGH)    = Closed O_EXCL scsi siblings
  0x00020008 (SORRY,HIGH)   = Device busy. Failed to fcntl-lock
+ 0x00020009 (SORRY,HIGH)   = Neither stdio-path nor its directory exist
            
  General library operations:
 

@@ -270,9 +270,10 @@ Warning: Superusers must take care not to spoil their hard disk via its raw
 block device (like /dev/hda or /dev/sd0).
 .br
 Pseudo-drives behave much like DVD-RAM. They allow -dummy, nevertheless, and
-their reply with --tell_media_space is utopic. If the given address does
-not exist yet, then it gets created as regular file.
-Note: -dummy runs touch the file.
+their reply with --tell_media_space can be utopic. If the given address does
+not exist yet but its directory exists, then it gets created as regular file
+as soon as a write operation occurs.
+Note: -dummy burn runs touch the file.
 .br
 .SH OPTIONS
 .TP
@@ -397,7 +398,7 @@ Try to perform the drive operations without actually affecting the inserted
 media. There is no warranty that this will work with a particular combination
 of drive, media, and write mode. Blanking is prevented reliably, though.
 To avoid inadverted real burning, -dummy refuses burn runs on anything but
-CD-R[W] and DVD-R[W].
+CD-R[W], DVD-R[W], or emulated stdio-drives.
 .TP
 .BI \-eject
 Eject the disc after work is done.
