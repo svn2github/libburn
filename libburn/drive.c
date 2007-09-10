@@ -1115,6 +1115,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Failed to open device (a pseudo-drive)",
 				errno, 0);
+				return 0;
 			}
 		} else {
 			libdax_msgs_submit(libdax_messenger, -1,
