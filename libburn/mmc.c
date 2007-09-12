@@ -376,7 +376,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 /* void mmc_close_disc(struct burn_drive *d, struct burn_write_opts *o) */
 void mmc_close_disc(struct burn_write_opts *o)
 {
-	struct burn_drive *d;
+	struct burn_drive *d = o->drive;
 
 	if (mmc_function_spy(d, "mmc_close_disc") <= 0)
 		return;
@@ -387,7 +387,6 @@ void mmc_close_disc(struct burn_write_opts *o)
 
 	/* ts A61009 : made impossible by removing redundant parameter d */
 	/* a ssert(o->drive == d); */
-	d = o->drive;
 
 	o->multi = 0;
 	spc_select_write_params(d, o);
@@ -398,7 +397,7 @@ void mmc_close_disc(struct burn_write_opts *o)
 /* void mmc_close_session(struct burn_drive *d, struct burn_write_opts *o) */
 void mmc_close_session(struct burn_write_opts *o)
 {
-	struct burn_drive *d;
+	struct burn_drive *d = o->drive;
 
 	if (mmc_function_spy(d, "mmc_close_session") <= 0)
 		return;
@@ -409,7 +408,6 @@ void mmc_close_session(struct burn_write_opts *o)
 
 	/* ts A61009 : made impossible by removing redundant parameter d */
 	/* a ssert(o->drive == d); */
-	d = o->drive;
 
 	o->multi = 3;
 	spc_select_write_params(d, o);
@@ -521,7 +519,7 @@ static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
 	/* There is need to inquire the buffer fill */
 	d->pessimistic_writes++;
 	min_fac = ((double) d->wfb_min_percent) / 100.0;
-	gettimeofday(&t0,&dummy_tz);
+	gettimeofday(&t0, &dummy_tz);
 #ifdef Libburn_mmc_wfb_debuG
 	sleeplist[0]= 0;
 	sprintf(sleeplist,"(%d%s %d)",

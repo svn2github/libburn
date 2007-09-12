@@ -142,7 +142,7 @@ int spc_get_erase_progress(struct burn_drive *d)
 	struct buffer b;
 
 	if (mmc_function_spy(d, "get_erase_progress") <= 0)
-		return;
+		return 0;
 
 	spc_request_sense(d, &b);
 	return (b.data[16] << 8) | b.data[17];
