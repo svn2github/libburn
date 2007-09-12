@@ -385,6 +385,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020149 (SORRY,HIGH)   = Unsuitable filetype for pseudo-drive
  0x0002014a (SORRY,HIGH)   = Cannot read desired amount of data
  0x0002014b (SORRY,HIGH)   = Drive is already registered resp. scanned
+ 0x0002014c (FATAL,HIGH)   = Emulated drive caught in SCSI function
 
 
  libdax_audioxtr:

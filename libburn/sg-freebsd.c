@@ -50,8 +50,9 @@ int burn_drive_is_banned(char *device_address);
 
 
 /* ts A60821
-   <<< debug: for tracing calls which might use open drive fds */
-int mmc_function_spy(char * text);
+   debug: for tracing calls which might use open drive fds
+          or for catching SCSI usage of emulated drives. */
+int mmc_function_spy(struct burn_drive *d, char * text);
 
 
 /* ts A61021 : Moved most code from scsi_enumerate_drives under
@@ -390,7 +391,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 /* ts A60821
    <<< debug: for tracing calls which might use open drive fds */
-	mmc_function_spy("enumerate_common : -------- doing grab");
+	mmc_function_spy(NULL, "enumerate_common : -------- doing grab");
 
 /* try to get the drive info */
 	if (t->grab(t)) {
@@ -404,7 +405,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 /* ts A60821
    <<< debug: for tracing calls which might use open drive fds */
-	mmc_function_spy("enumerate_common : ----- would release ");
+	mmc_function_spy(NULL, "enumerate_common : ----- would release ");
 
 }
 
@@ -452,7 +453,8 @@ int sg_grab(struct burn_drive *d)
 	int count;
 	struct cam_device *cam;
 
-	mmc_function_spy("sg_grab");
+	if (mmc_function_spy(d, "sg_grab") <= 0)
+		return 0;
 
 	if (burn_drive_is_open(d)) {
 		d->released = 0;
@@ -487,14 +489,15 @@ int sg_grab(struct burn_drive *d)
 
 int sg_release(struct burn_drive *d)
 {
-	mmc_function_spy("sg_release");
+	if (mmc_function_spy(d, "sg_release") <= 0)
+		return 0;
 
 	if (d->cam == NULL) {
 		burn_print(1, "release an ungrabbed drive.  die\n");
 		return 0;
 	}
 
-	mmc_function_spy("sg_release ----------- closing.");
+	mmc_function_spy(NULL, "sg_release ----------- closing.");
 
 	sg_close_drive(d);
 	d->released = 1;
@@ -510,7 +513,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	char buf[161];
 	snprintf(buf, sizeof (buf), "sg_issue_command  d->cam=%p d->released=%d",
 		(void*)d->cam, d->released);
-	mmc_function_spy(buf);
+	mmc_function_spy(NULL, buf);
 
 	if (d->cam == NULL) {
 		c->error = 0;

@@ -27,6 +27,11 @@
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
+/* ts A70910
+   debug: for tracing calls which might use open drive fds
+          or for catching SCSI usage of emulated drives. */
+int mmc_function_spy(struct burn_drive *d, char * text);
+
 
 /* spc command set */
 /* ts A70519 : allocation length byte 3+4 was 0,255 */
@@ -62,6 +67,9 @@ int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
 int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 {
 	struct command c;
+
+	if (mmc_function_spy(d, "test_unit_ready") <= 0)
+		return 0;
 
 	scsi_init_command(&c, SPC_TEST_UNIT_READY,sizeof(SPC_TEST_UNIT_READY));
 /*
@@ -111,6 +119,9 @@ void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 {
 	struct command c;
 
+	if (mmc_function_spy(d, "request_sense") <= 0)
+		return;
+
 	scsi_init_command(&c, SPC_REQUEST_SENSE, sizeof(SPC_REQUEST_SENSE));
 	c.retry = 0;
 /*
@@ -130,6 +141,9 @@ int spc_get_erase_progress(struct burn_drive *d)
 {
 	struct buffer b;
 
+	if (mmc_function_spy(d, "get_erase_progress") <= 0)
+		return;
+
 	spc_request_sense(d, &b);
 	return (b.data[16] << 8) | b.data[17];
 }
@@ -139,6 +153,9 @@ void spc_inquiry(struct burn_drive *d)
 	struct buffer buf;
 	struct burn_scsi_inquiry_data *id;
 	struct command c;
+
+	if (mmc_function_spy(d, "inquiry") <= 0)
+		return;
 
 	scsi_init_command(&c, SPC_INQUIRY, sizeof(SPC_INQUIRY));
 /*
@@ -171,6 +188,9 @@ void spc_prevent(struct burn_drive *d)
 {
 	struct command c;
 
+	if (mmc_function_spy(d, "prevent") <= 0)
+		return;
+
 	scsi_init_command(&c, SPC_PREVENT, sizeof(SPC_PREVENT));
 /*
 	memcpy(c.opcode, SPC_PREVENT, sizeof(SPC_PREVENT));
@@ -185,6 +205,9 @@ void spc_prevent(struct burn_drive *d)
 void spc_allow(struct burn_drive *d)
 {
 	struct command c;
+
+	if (mmc_function_spy(d, "allow") <= 0)
+		return;
 
 	scsi_init_command(&c, SPC_ALLOW, sizeof(SPC_ALLOW));
 /*
@@ -368,6 +391,9 @@ void spc_sense_caps(struct burn_drive *d)
 {
 	int alloc_len, start_len = 22, ret;
 
+	if (mmc_function_spy(d, "sense_caps") <= 0)
+		return;
+
 	/* first command execution to learn Allocation Length */
 	alloc_len = start_len;
 	ret = spc_sense_caps_al(d, &alloc_len, 1);
@@ -388,6 +414,9 @@ void spc_sense_error_params(struct burn_drive *d)
 	int size, alloc_len = 12 ;
 	unsigned char *page;
 	struct command c;
+
+	if (mmc_function_spy(d, "sense_error_params") <= 0)
+		return;
 
 	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
 /*
@@ -418,6 +447,9 @@ void spc_select_error_params(struct burn_drive *d,
 {
 	struct buffer buf;
 	struct command c;
+
+	if (mmc_function_spy(d, "select_error_params") <= 0)
+		return;
 
 	scsi_init_command(&c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
 /*
@@ -456,6 +488,9 @@ void spc_sense_write_params(struct burn_drive *d)
 	int size, dummy, alloc_len = 10;
 	unsigned char *page;
 	struct command c;
+
+	if (mmc_function_spy(d, "sense_write_params") <= 0)
+		return;
 
 	/* ts A61007 : Done in soft at only caller burn_drive_grab() */
 	/* a ssert(d->mdata->cdr_write || d->mdata->cdrw_write ||
@@ -514,6 +549,9 @@ void spc_select_write_params(struct burn_drive *d,
 	struct buffer buf;
 	struct command c;
 
+	if (mmc_function_spy(d, "select_write_params") <= 0)
+		return;
+
 	/* ts A61007 : All current callers are safe. */
 	/* a ssert(o->drive == d); */
 
@@ -554,6 +592,9 @@ void spc_select_write_params(struct burn_drive *d,
 
 void spc_getcaps(struct burn_drive *d)
 {
+	if (mmc_function_spy(d, "getcaps") <= 0)
+		return;
+
 	spc_inquiry(d);
 	spc_sense_caps(d);
 	spc_sense_error_params(d);
@@ -572,6 +613,9 @@ void spc_probe_write_modes(struct burn_drive *d)
 	int key, asc, ascq, useable_write_type = -1, useable_block_type = -1;
 	int last_try = 0;
 	struct command c;
+
+	if (mmc_function_spy(d, "spc_probe_write_modes") <= 0)
+		return;
 
 	/* ts A70213 : added pseudo try_write_type 4 to set a suitable mode */
 	while (try_write_type != 5) {

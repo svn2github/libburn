@@ -201,8 +201,9 @@ extern int burn_sg_open_abort_busy;
 
 
 /* ts A60821
-   <<< debug: for tracing calls which might use open drive fds */
-int mmc_function_spy(char * text);
+   debug: for tracing calls which might use open drive fds
+          or for catching SCSI usage of emulated drives. */
+int mmc_function_spy(struct burn_drive *d, char * text);
 
 
 /* ------------------------------------------------------------------------ */
@@ -939,7 +940,8 @@ int sg_grab(struct burn_drive *d)
 
 /* ts A60821
    <<< debug: for tracing calls which might use open drive fds */
-	mmc_function_spy("sg_grab");
+	if (mmc_function_spy(d, "sg_grab") <= 0)
+		return 0;
 
 
 	/* ts A60813 - A60927
@@ -967,7 +969,7 @@ int sg_grab(struct burn_drive *d)
 
 		/* ts A60821
    		<<< debug: for tracing calls which might use open drive fds */
-		mmc_function_spy("sg_grab ----------- opening");
+		mmc_function_spy(NULL, "sg_grab ----------- opening");
 
 		/* ts A70409 : DDLP-B */
 		/* >>> obtain single lock on d->devname */
@@ -1025,7 +1027,8 @@ int sg_release(struct burn_drive *d)
 {
 	/* ts A60821
    	<<< debug: for tracing calls which might use open drive fds */
-	mmc_function_spy("sg_release");
+	if (mmc_function_spy(d, "sg_release") <= 0)
+		return 0;
 
 	if (d->fd < 1) {
 		burn_print(1, "release an ungrabbed drive.  die\n");
@@ -1034,7 +1037,7 @@ int sg_release(struct burn_drive *d)
 
 	/* ts A60821
    	<<< debug: for tracing calls which might use open drive fds */
-	mmc_function_spy("sg_release ----------- closing");
+	mmc_function_spy(NULL, "sg_release ----------- closing");
 
 	sg_close_drive(d);
 	return 0;
@@ -1131,7 +1134,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	char buf[161];
 	sprintf(buf,"sg_issue_command   d->fd= %d  d->released= %d\n",
 		d->fd,d->released);
-	mmc_function_spy(buf);
+	mmc_function_spy(NULL, buf);
 
 #ifdef Libburn_log_sg_commandS
 	/* ts A61030 */

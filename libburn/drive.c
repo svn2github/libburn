@@ -55,6 +55,7 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->mdata = NULL;
 	d->toc_entry = NULL;
 	d->released = 1;
+	d->stdio_fd = -1;
 	d->status = BURN_DISC_UNREADY;
 	return 1;
 }
@@ -65,13 +66,21 @@ void burn_drive_free_subs(struct burn_drive *d)
 {
 	if (d->idata != NULL)
 		free((void *) d->idata);
+	d->idata = NULL;
 	if (d->mdata != NULL) {
 		burn_mdata_free_subs(d->mdata);
 		free((void *) d->mdata);
 	}
+	d->mdata = NULL;
 	if(d->toc_entry != NULL)
 		free((void *) d->toc_entry);
-	free(d->devname);
+	d->toc_entry = NULL;
+	if (d->devname != NULL)
+		free(d->devname);
+	d->devname = NULL;
+	if (d->stdio_fd >= 0)
+		close (d->stdio_fd);
+	d->stdio_fd = -1;
 }
 
 
@@ -359,14 +368,14 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	struct burn_drive *t;
 	/* ts A60821
    	<<< debug: for tracing calls which might use open drive fds */
-	int mmc_function_spy(char * text);
+	int mmc_function_spy(struct burn_drive *d, char * text);
 
 	d->drive_role = 1; /* MMC drive */
 
 	t = burn_drive_register(d);
 
 	/* ts A60821 */
-	mmc_function_spy("enumerate_common : -------- doing grab");
+	mmc_function_spy(NULL, "enumerate_common : -------- doing grab");
 
 	/* try to get the drive info */
 	if (t->grab(t)) {
@@ -381,7 +390,7 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	}
 
 	/* ts A60821 */
-	mmc_function_spy("enumerate_common : ----- would release ");
+	mmc_function_spy(NULL, "enumerate_common : ----- would release ");
 
 	return t;
 }
@@ -1128,8 +1137,8 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	d= (struct burn_drive *) calloc(1, sizeof(struct burn_drive));
 	if (d == NULL)
 		return 0;
-	d->status = BURN_DISC_EMPTY;
 	burn_setup_drive(d, fname);
+	d->status = BURN_DISC_EMPTY;
 
 	if (fname[0] != 0)
 		d->drive_role = 2;

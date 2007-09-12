@@ -10,6 +10,13 @@
 #include "spc.h"
 #include "options.h"
 
+
+/* ts A70910
+   debug: for tracing calls which might use open drive fds
+          or for catching SCSI usage of emulated drives. */
+int mmc_function_spy(struct burn_drive *d, char * text);
+
+
 /* spc command set */
 static unsigned char SBC_LOAD[] = { 0x1b, 0, 0, 0, 3, 0 };
 static unsigned char SBC_UNLOAD[] = { 0x1b, 0, 0, 0, 2, 0 };
@@ -18,6 +25,9 @@ static unsigned char SBC_START_UNIT[] = { 0x1b, 0, 0, 0, 1, 0 };
 void sbc_load(struct burn_drive *d)
 {
 	struct command c;
+
+	if (mmc_function_spy(d, "load") <= 0)
+		return;
 
 	scsi_init_command(&c, SBC_LOAD, sizeof(SBC_LOAD));
 /*
@@ -35,6 +45,9 @@ void sbc_eject(struct burn_drive *d)
 {
 	struct command c;
 
+	if (mmc_function_spy(d, "eject") <= 0)
+		return;
+
 	scsi_init_command(&c, SBC_UNLOAD, sizeof(SBC_UNLOAD));
 /*
 	memcpy(c.opcode, SBC_UNLOAD, sizeof(SBC_UNLOAD));
@@ -50,6 +63,9 @@ void sbc_eject(struct burn_drive *d)
 int sbc_start_unit(struct burn_drive *d)
 {
 	struct command c;
+
+	if (mmc_function_spy(d, "start_unit") <= 0)
+		return 0;
 
 	scsi_init_command(&c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
 /*

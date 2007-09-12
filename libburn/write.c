@@ -1190,7 +1190,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	}
 
 
-	/* >>> ts A70215 : what about offset padding ? */
+	/* (offset padding is done within sector_data()) */
 
 	burn_disc_init_track_status(o, s, tnum, sectors);
 	for (i = 0; open_ended || i < sectors; i++) {
@@ -1213,7 +1213,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		d->progress.sector++;
 	}
 	
-	/* >>> ts A70215 : what about tail padding ? */
+	/* (tail padding is done in sector_data()) */
 
 	/* Pad up buffer to next full o->obs (usually 32 kB) */
 	if (o->obs_pad && out->bytes > 0 && out->bytes < o->obs) {
@@ -1607,7 +1607,8 @@ early_failure:;
 
 
 /* ts A70904 */
-int burn_stdio_open_write(struct burn_drive *d, off_t start_byte, int flag)
+int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
+			 int sector_size, int flag)
 {
 
 /* <<< We need _LARGEFILE64_SOURCE defined by the build system.
@@ -1642,7 +1643,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte, int flag)
 		close(fd);
 		fd = -1;
 	}
-	d->nwa = start_byte / 2048;
+	d->nwa = start_byte / sector_size;
 	return fd;
 }
 
@@ -1672,31 +1673,179 @@ int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Cannot write desired amount of data", errno, 0);
+		d->cancel = 1;
 		return 0;
 	}
 	return count;
 }
 
 
+/* ts A70911
+   If defined this makes stdio run on top of sector_data() rather than
+   own stdio read and write functions. The MMC function pointers d->write()
+   and d->sync_cache() get replaced by stdio substitutes.
+*/
+#define Libburn_stdio_track_by_sector_datA 1
+
+
+#ifdef Libburn_stdio_track_by_sector_datA
+
+/* ts A70910 : to be used as burn_drive.write(), emulating mmc_write() */
+int burn_stdio_mmc_write(struct burn_drive *d, int start, struct buffer *buf)
+{
+	int ret;
+	off_t start_byte;
+
+	if (d->cancel)
+		return BE_CANCELLED;
+	if (d->stdio_fd < 0) {
+
+		/* >>> program error */;
+
+		d->cancel = 1;
+		return BE_CANCELLED;
+	}
+	if (start != d->nwa) {
+		char msg[80];
+
+		start_byte = ((off_t) start) * 
+				(off_t) (buf->bytes / buf->sectors);
+		if (lseek(d->stdio_fd, start_byte, SEEK_SET)==-1) {
+			sprintf(msg, "Cannot address start byte %.f",
+			 	(double) start_byte);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020147,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, errno, 0);
+			d->cancel = 1;
+			return BE_CANCELLED;
+		}
+		d->nwa = start;
+	}
+	ret = burn_stdio_write(d->stdio_fd,(char *)buf->data, buf->bytes, d,0);
+	if (ret <= 0)
+		return BE_CANCELLED;
+	d->nwa += buf->sectors;
+	return 0;
+}
+
+
+/* ts A70910 : to be used as burn_drive.write(),
+               emulating mmc_write() with simulated writing. */
+int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
+							struct buffer *buf)
+{
+	if (d->cancel)
+		return BE_CANCELLED;
+	d->nwa = start + buf->sectors;
+	return 0;
+}
+
+
+/* ts A70911 */
+/* Flush stdio system buffer to physical device.
+   @param flag bit0= do not report debug message (intermediate sync)
+*/
+int burn_stdio_sync_cache(struct burn_drive *d, int flag)
+{
+	if (d->stdio_fd < 0) {
+
+		/* >>> program error */;
+
+		d->cancel = 1;
+		return 0;
+	}
+	if (!(flag & 1))
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			   "syncing cache (stdio fsync)", 0, 0);
+	if (fsync(d->stdio_fd) != 0) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020148,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Cannot write desired amount of data", errno, 0);
+		d->cancel = 1;
+		return 0;
+	}
+	return 1;
+}
+
+
+/* ts A70911 : to be used as burn_drive.sync_cache(),
+               emulating mmc_sync_cache() */
+void burn_stdio_mmc_sync_cache(struct burn_drive *d)
+{
+	burn_stdio_sync_cache(d, 0);
+}
+
+
+#endif /* Libburn_stdio_track_by_sector_datA */
+
+
 /* ts A70904 */
 int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
-				int tnum, int fd, int flag)
+				int tnum, int flag)
 {
-	int open_ended, bufsize, ret, eof_seen = 0, sectors;
+	int open_ended, bufsize, ret, sectors, fd;
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
-	off_t t_size, w_count;
 	char buf[16*2048];
+#ifdef Libburn_stdio_track_by_sector_datA
+	int i, prev_sync_sector = 0;
+	struct buffer *out = d->buffer;
+#else
+	int eof_seen = 0;
+	off_t t_size, w_count;
+#endif
 
 	bufsize = sizeof(buf);
+	fd = d->stdio_fd;
 
 	sectors = burn_track_get_sectors(t);
 	burn_disc_init_track_status(o, s, tnum, sectors);
+	open_ended = burn_track_is_open_ended(t);
+
+#ifdef Libburn_stdio_track_by_sector_datA
+
+	/* attach stdio emulators for mmc_*() functions */
+	if (o->simulate)
+		d->write = burn_stdio_mmc_dummy_write;
+	else
+		d->write = burn_stdio_mmc_write;
+	d->sync_cache = burn_stdio_mmc_sync_cache;
+
+	for (i = 0; open_ended || i < sectors; i++) {
+		/* transact a (CD sized) sector */
+		if (!sector_data(o, t, 0))
+			return 0;			
+		if (open_ended) {
+			d->progress.sectors = sectors = d->progress.sector;
+			if (burn_track_is_data_done(t))
+	break;
+		}
+		d->progress.sector++;
+		/* Flush to disk after each full MB */
+		if (d->progress.sector - prev_sync_sector >= 512) {
+			prev_sync_sector = d->progress.sector;
+			if (!o->simulate)
+				burn_stdio_sync_cache(d, 1);
+		}
+	}
+
+	/* Pad up buffer to next full o->obs (usually 32 kB) */
+	if (o->obs_pad && out->bytes > 0 && out->bytes < o->obs) {
+		memset(out->data + out->bytes, 0, o->obs - out->bytes);
+		out->sectors += (o->obs - out->bytes) / 2048;
+		out->bytes = o->obs;
+	}
+	ret = burn_write_flush(o, t);
+
+#else /* Libburn_stdio_track_by_sector_datA */
+
+	t_size = t->source->get_size(t->source);
 
 	/* >>> write t->offset zeros */;
 
-	open_ended = burn_track_is_open_ended(t);
-	t_size = t->source->get_size(t->source);
 	for(w_count = 0; w_count < t_size || open_ended; w_count += ret) {
 
 
@@ -1730,9 +1879,18 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 			d->progress.sectors = d->progress.sector;
 		t->writecount += ret;
 		t->written_sectors = t->writecount / 2048;
+
+		/* Flush to physical device after each full MB */
+		if (d->progress.sector - prev_sync_sector >= 512) {
+			prev_sync_sector = d->progress.sector;
+			if (!o->simulate)
+				burn_stdio_sync_cache(d, 1);
+		}
 	}
 
 	/* >>> write t->tail zeros */;
+
+#endif
 
 	return 1;
 }
@@ -1742,7 +1900,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 int burn_stdio_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
-	int ret, fd = -1;
+	int ret;
 	struct burn_drive *d = o->drive;
 
 	d->needs_close_session = 0;
@@ -1758,12 +1916,15 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	d->progress.session = 0;
 	d->progress.tracks = 1;
 
+	/* >>> adjust sector size (2048) to eventual audio or even raw */
 	/* open target file */
-	fd = burn_stdio_open_write(d, o->start_byte, 0);
-	if (fd == -1)
+	if (d->stdio_fd >= 0)
+		close(d->stdio_fd);
+	d->stdio_fd = burn_stdio_open_write(d, o->start_byte, 2048, 0);
+	if (d->stdio_fd == -1)
 		{ret = 0; goto ex;}
 
-	ret = burn_stdio_write_track(o, disc->session[0], 0, fd, 0);
+	ret = burn_stdio_write_track(o, disc->session[0], 0, 0);
 	if (ret <= 0)
 		goto ex;
 
@@ -1773,8 +1934,10 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	d->progress.sectors = 0;
 	ret = 1;
 ex:;
-	if (fd != -1)
-		close (fd);
+	if (d->stdio_fd != -1) {
+		close (d->stdio_fd);
+		d->stdio_fd = -1;
+	}
 	/* update media state records */
 	burn_drive_mark_unready(d);
 
@@ -2051,7 +2214,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		return 0;
 	}
 	if(d->drive_role != 1) {
-		fd = burn_stdio_open_write(d, byte_address, 0);
+		fd = burn_stdio_open_write(d, byte_address, 2048, 0);
 		if (fd == -1)
 			return 0;
 	}
