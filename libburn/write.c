@@ -1747,9 +1747,9 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 /* Flush stdio system buffer to physical device.
    @param flag bit0= do not report debug message (intermediate sync)
 */
-int burn_stdio_sync_cache(struct burn_drive *d, int flag)
+int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
-	if (d->stdio_fd < 0) {
+	if (fd < 0) {
 
 		/* >>> program error */;
 
@@ -1760,7 +1760,7 @@ int burn_stdio_sync_cache(struct burn_drive *d, int flag)
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   "syncing cache (stdio fsync)", 0, 0);
-	if (fsync(d->stdio_fd) != 0) {
+	if (fsync(fd) != 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -1776,7 +1776,7 @@ int burn_stdio_sync_cache(struct burn_drive *d, int flag)
                emulating mmc_sync_cache() */
 void burn_stdio_mmc_sync_cache(struct burn_drive *d)
 {
-	burn_stdio_sync_cache(d, 0);
+	burn_stdio_sync_cache(d->stdio_fd, d, 0);
 }
 
 
@@ -1859,7 +1859,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		if (d->progress.sector - prev_sync_sector >= 512) {
 			prev_sync_sector = d->progress.sector;
 			if (!o->simulate)
-				burn_stdio_sync_cache(d, 1);
+				burn_stdio_sync_cache(d->stdio_fd, d, 1);
 			burn_stdio_slowdown(d, &prev_time, 512 * 2, 0);
 		}
 	}
@@ -1916,7 +1916,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		if (d->progress.sector - prev_sync_sector >= 512) {
 			prev_sync_sector = d->progress.sector;
 			if (!o->simulate)
-				burn_stdio_sync_cache(d, 1);
+				burn_stdio_sync_cache(fd, d, 1);
 		}
 	}
 
@@ -2282,8 +2282,13 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		}
 	}
 
-	if(d->drive_role == 1 && (flag & 1))
-		d->sync_cache(d);
+	if(flag & 1) {
+		if(d->drive_role == 1)
+			d->sync_cache(d);
+		else
+			burn_stdio_sync_cache(fd, d, 0);
+	}
+		
 	if(fd != -1)
 		close(fd);
 	d->buffer = NULL;
