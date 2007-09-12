@@ -65,6 +65,7 @@ Compilation within cdrskin-* :
 
   cd cdrskin
   cc -g -I.. -DCdrskin_build_timestamP='...' \
+     -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 \
      -o cdrskin cdrskin.c cdrfifo.c cleanup.c \
      -L../libburn/.libs -lburn -lpthread
 
@@ -72,12 +73,13 @@ or
 
   cd ..
   cc -g -I. -DCdrskin_build_timestamP='...' \
+     -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 \
      -o cdrskin/cdrskin cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cleanup.c \
      libburn/async.o libburn/crc.o libburn/debug.o libburn/drive.o \
      libburn/file.o libburn/init.o libburn/lec.o \
      libburn/mmc.o libburn/options.o libburn/sbc.o libburn/sector.o \
      libburn/sg.o libburn/spc.o libburn/source.o libburn/structure.o \
-     libburn/toc.o libburn/util.o libburn/write.o \
+     libburn/toc.o libburn/util.o libburn/write.o libburn/read.o \
      libburn/libdax_audioxtr.o libburn/libdax_msgs.o \
      -lpthread
 
@@ -5463,7 +5465,10 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
  fprintf(stderr,"Beginning direct write (start=%.fk,amount=%s) ...\n",
          (double) (byte_address/1024),amount_text);
  for(i= 0; i<data_count || data_count==0; i+= chunksize) {
-   chunksize= data_count-i;
+   if(data_count==0)
+     chunksize= (alignment > 0 ? alignment : 2048);
+   else
+     chunksize= data_count-i;
    if(chunksize>max_chunksize)
      chunksize= max_chunksize;
 
