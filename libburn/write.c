@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include "error.h"
 #include "sector.h"
@@ -1779,6 +1780,34 @@ void burn_stdio_mmc_sync_cache(struct burn_drive *d)
 }
 
 
+/* ts A70912 */
+/* Enforces eventual nominal write speed.
+   @param flag bit0= initialize *prev_time */
+int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
+			 int amount, int flag)
+{
+	struct timeval tnow;
+	struct timezone dummy_tz;
+	double to_wait;
+
+	if (flag & 1) {
+		gettimeofday(prev_time, &dummy_tz);
+		return 1;
+	}
+	if(d->nominal_write_speed <= 0)
+		return 2;
+	gettimeofday(&tnow, &dummy_tz);
+	to_wait = ( ((double) amount) / (double) d->nominal_write_speed ) - 
+		(double) ( tnow.tv_sec - prev_time->tv_sec ) -
+		(double) ( tnow.tv_usec - prev_time->tv_usec ) / 1.0e6;
+	if (to_wait >= 0.0001) {
+		usleep((int) (to_wait * 1000000.0));
+	}
+	gettimeofday(prev_time, &dummy_tz);
+	return 1;
+}
+
+
 #endif /* Libburn_stdio_track_by_sector_datA */
 
 
@@ -1793,6 +1822,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 #ifdef Libburn_stdio_track_by_sector_datA
 	int i, prev_sync_sector = 0;
 	struct buffer *out = d->buffer;
+	struct timeval prev_time;
 #else
 	int eof_seen = 0;
 	off_t t_size, w_count;
@@ -1814,6 +1844,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		d->write = burn_stdio_mmc_write;
 	d->sync_cache = burn_stdio_mmc_sync_cache;
 
+	burn_stdio_slowdown(d, &prev_time, 0, 1); /* initialize */
 	for (i = 0; open_ended || i < sectors; i++) {
 		/* transact a (CD sized) sector */
 		if (!sector_data(o, t, 0))
@@ -1829,6 +1860,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 			prev_sync_sector = d->progress.sector;
 			if (!o->simulate)
 				burn_stdio_sync_cache(d, 1);
+			burn_stdio_slowdown(d, &prev_time, 512 * 2, 0);
 		}
 	}
 
