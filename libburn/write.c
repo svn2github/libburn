@@ -1799,7 +1799,8 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 	gettimeofday(&tnow, &dummy_tz);
 	to_wait = ( ((double) amount) / (double) d->nominal_write_speed ) - 
 		(double) ( tnow.tv_sec - prev_time->tv_sec ) -
-		(double) ( tnow.tv_usec - prev_time->tv_usec ) / 1.0e6;
+		(double) ( tnow.tv_usec - prev_time->tv_usec ) / 1.0e6
+		- 0.001; /* best would be 1 / kernel granularity HZ */
 	if (to_wait >= 0.0001) {
 		usleep((int) (to_wait * 1000000.0));
 	}
