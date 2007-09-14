@@ -1504,6 +1504,7 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned cha
 /* ts A61106 */
 /** Sets the multi flag which eventually marks the emerging session as not
     being the last one and thus creating a BURN_DISC_APPENDABLE media.
+    @param opts The option object to be manipulated
     @param multi 1=media will be appendable, 0=media will be closed (default) 
 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
