@@ -25,8 +25,6 @@
 #include "libdax_msgs.h"
 struct libdax_msgs *libdax_messenger= NULL;
 
-static int libdax_messenger_is_own = 1;
-
 
 int burn_running = 0;
 
@@ -309,10 +307,12 @@ void burn_allow_untested_profiles(int yes)
 /* ts A70915 : API */
 int burn_set_messenger(void *messenger)
 {
-	if (libdax_messenger_is_own)
-		libdax_msgs_destroy(&libdax_messenger, 0);
-	libdax_messenger = (struct libdax_msgs *) messenger;
-	libdax_messenger_is_own = 0;
+	struct libdax_msgs *pt;
+
+	if (libdax_msgs_refer(&pt, messenger, 0) <= 0)
+		return 0;
+	libdax_msgs_destroy(&libdax_messenger, 0);
+	libdax_messenger = (struct libdax_msgs *) pt;
 	return 1;
 }
 

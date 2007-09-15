@@ -43,6 +43,8 @@ struct libdax_msgs_item {
 
 struct libdax_msgs {
 
+ int refcount;
+
  struct libdax_msgs_item *oldest;
  struct libdax_msgs_item *youngest;
  int count;
@@ -176,7 +178,8 @@ struct libdax_msgs_item;
        /* Calls initiated from inside the direct owner (e.g. from libburn) */
 
 
-/** Create new empty message handling facility with queue.
+/** Create new empty message handling facility with queue and issue a first
+    official reference to it.
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return >0 success, <=0 failure
 */
@@ -185,10 +188,26 @@ int libdax_msgs_new(struct libdax_msgs **m, int flag);
 
 /** Destroy a message handling facility and all its eventual messages.
     The submitted pointer gets set to NULL.
+    Actually only the last destroy call of all offical references to the object
+    will really dispose it. All others just decrement the reference counter.
+    Call this function only with official reference pointers obtained by
+    libdax_msgs_new() or libdax_msgs_refer(), and only once per such pointer.
     @param flag Bitfield for control purposes (unused yet, submit 0)
-    @return 1 for success, 0 for pointer to NULL
+    @return 1 for success, 0 for pointer to NULL, -1 for fatal error
 */
 int libdax_msgs_destroy(struct libdax_msgs **m, int flag);
+
+
+/** Create an official reference to an existing libdax_msgs object. The
+    references keep the object alive at least until it is released by
+    a matching number of destroy calls. So each reference MUST be revoked
+    by exactly one call to libdax_msgs_destroy().
+    @param pt The pointer to be set and registered
+    @param m  A pointer to the existing object
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return 1 for success, 0 for failure
+*/
+int libdax_msgs_refer(struct libdax_msgs **pt, struct libdax_msgs *o, int flag);
 
 
 /** Submit a message to a message handling facility.

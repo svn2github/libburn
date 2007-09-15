@@ -138,6 +138,7 @@ int libdax_msgs_new(struct libdax_msgs **m, int flag)
  (*m)= o= (struct libdax_msgs *) malloc(sizeof(struct libdax_msgs));
  if(o==NULL)
    return(-1);
+ o->refcount= 1;
  o->oldest= NULL;
  o->youngest= NULL;
  o->count= 0;
@@ -149,43 +150,6 @@ int libdax_msgs_new(struct libdax_msgs **m, int flag)
  pthread_mutex_init(&(o->lock_mutex),NULL);
 #endif
 
- return(1);
-}
-
-
-int libdax_msgs_destroy(struct libdax_msgs **m, int flag)
-{
- struct libdax_msgs *o;
- struct libdax_msgs_item *item, *next_item;
-
- o= *m;
- if(o==NULL)
-   return(0);
-
-#ifndef LIBDAX_MSGS_SINGLE_THREADED
- if(pthread_mutex_destroy(&(o->lock_mutex))!=0) {
-   pthread_mutex_unlock(&(o->lock_mutex));
-   pthread_mutex_destroy(&(o->lock_mutex));
- }
-#endif
-
- for(item= o->oldest; item!=NULL; item= next_item) {
-   next_item= item->next;
-   libdax_msgs_item_destroy(&item,0);
- }
- free((char *) o);
- *m= NULL;
- return(1);
-}
-
-
-int libdax_msgs_set_severities(struct libdax_msgs *m, int queue_severity,
-                               int print_severity, char *print_id, int flag)
-{
- m->queue_severity= queue_severity;
- m->print_severity= print_severity;
- strncpy(m->print_id,print_id,80);
- m->print_id[80]= 0;
  return(1);
 }
 
@@ -216,6 +180,65 @@ static int libdax_msgs_unlock(struct libdax_msgs *m, int flag)
    return(0);
 #endif
 
+ return(1);
+}
+
+
+int libdax_msgs_destroy(struct libdax_msgs **m, int flag)
+{
+ struct libdax_msgs *o;
+ struct libdax_msgs_item *item, *next_item;
+
+ o= *m;
+ if(o==NULL)
+   return(0);
+ if(o->refcount > 1) {
+   if(libdax_msgs_lock(*m,0)<=0)
+     return(-1);
+   o->refcount--;
+   libdax_msgs_unlock(*m,0);
+   *m= NULL;
+   return(1);
+ }
+
+#ifndef LIBDAX_MSGS_SINGLE_THREADED
+ if(pthread_mutex_destroy(&(o->lock_mutex))!=0) {
+   pthread_mutex_unlock(&(o->lock_mutex));
+   pthread_mutex_destroy(&(o->lock_mutex));
+ }
+#endif
+
+ for(item= o->oldest; item!=NULL; item= next_item) {
+   next_item= item->next;
+   libdax_msgs_item_destroy(&item,0);
+ }
+ free((char *) o);
+ *m= NULL;
+ return(1);
+}
+
+
+int libdax_msgs_refer(struct libdax_msgs **pt, struct libdax_msgs *m, int flag)
+{
+ if(libdax_msgs_lock(m,0)<=0)
+   return(0);
+ m->refcount++;
+ *pt= m;
+ libdax_msgs_unlock(m,0);
+ return(1);
+}
+
+
+int libdax_msgs_set_severities(struct libdax_msgs *m, int queue_severity,
+                               int print_severity, char *print_id, int flag)
+{
+ if(libdax_msgs_lock(m,0)<=0)
+   return(0);
+ m->queue_severity= queue_severity;
+ m->print_severity= print_severity;
+ strncpy(m->print_id,print_id,80);
+ m->print_id[80]= 0;
+ libdax_msgs_unlock(m,0);
  return(1);
 }
 
