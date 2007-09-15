@@ -1875,6 +1875,17 @@ int burn_msgs_obtain(char *minimum_severity,
                      char severity[]);
 
 
+/* ts A70915 */
+/** Replace the messenger object handle of libburn by a compatible handle
+    obtained from a related library. The own message object gets destroyed,
+    so it is IMPORTANT to shut down libburn BEFORE the library which provides
+    the messenger object. See also: libisofs, API function iso_get_messenger().
+    @param messenger The foreign but compatible message handle.
+    @return 1 : success, <=0 : failure
+*/
+int burn_set_messenger(void *messenger);
+
+
 /* ts A61002 */
 /** The prototype of a handler function suitable for burn_set_abort_handling().
     Such a function has to return -2 if it does not want the process to

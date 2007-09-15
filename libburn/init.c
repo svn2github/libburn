@@ -25,6 +25,8 @@
 #include "libdax_msgs.h"
 struct libdax_msgs *libdax_messenger= NULL;
 
+static int libdax_messenger_is_own = 1;
+
 
 int burn_running = 0;
 
@@ -292,7 +294,7 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 		strncpy(abort_message_prefix, (char *) handle,
 			sizeof(abort_message_prefix)-1);
 	abort_message_prefix[sizeof(abort_message_prefix)-1] = 0;
-	abort_control_pid= getpid();
+	abort_control_pid = getpid();
 	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler, mode|4);
 }
 
@@ -301,5 +303,16 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 void burn_allow_untested_profiles(int yes)
 {
 	burn_support_untested_profiles = !!yes;
+}
+
+
+/* ts A70915 : API */
+int burn_set_messenger(void *messenger)
+{
+	if (libdax_messenger_is_own)
+		libdax_msgs_destroy(&libdax_messenger, 0);
+	libdax_messenger = (struct libdax_msgs *) messenger;
+	libdax_messenger_is_own = 0;
+	return 1;
 }
 
