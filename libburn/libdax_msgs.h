@@ -392,7 +392,42 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
  0x00020201 (SORRY,HIGH)   = Audio source file has unsuitable format
  0x00020202 (SORRY,HIGH)   = Failed to prepare reading of audio data
+
+
+
+------------------------------------------------------------------------------
+Range "vreixo"              :  0x00030000 to 0x0003ffff
+
+ General:
+ 0x00031001 (SORRY,HIGH)    = Cannot read file (ignored)
+ 0x00031002 (FATAL,HIGH)    = Cannot read file (operation canceled)
+
+ Image reading:
+ 0x00031000 (FATAL,HIGH)    = Unsupported ISO-9660 image
+ 0x00031001 (HINT,MEDIUM)   = Unsupported Vol Desc that will be ignored
+ 0x00031002 (FATAL,HIGH)    = Damaged ISO-9660 image
+ 0x00031003 (SORRY,HIGH)    = Cannot read previous image file
  
+ Rock-Ridge:
+ 0x00030101 (HINT,MEDIUM)   = Unsupported SUSP entry that will be ignored
+ 0x00030102 (SORRY,HIGH)    = Wrong/damaged SUSP entry
+ 0x00030103 (WARNING,MEDIUM)= Multiple SUSP ER entries where found
+ 0x00030111 (SORRY,HIGH)    = Unsupported RR feature
+ 0x00030112 (SORRY,HIGH)    = Error in a Rock Ridge entry
+ 
+ El-Torito:
+ 0x00030201 (HINT,MEDIUM)   = Unsupported Boot Vol Desc that will be ignored
+ 0x00030202 (SORRY,HIGH)    = Wrong El-Torito catalog
+ 0x00030203 (HINT,MEDIUM)   = Unsupported El-Torito feature
+ 0x00030204 (SORRY,HIGH)    = Invalid file to be an El-Torito image
+ 0x00030205 (WARNING,MEDIUM)= Cannot properly patch isolinux image
+ 0x00030206 (WARNING,MEDIUM)= Copying El-Torito from a previous image without
+                              enought info about it
+ 
+ Joliet:
+ 0x00030301 (NOTE,MEDIUM)   = Unsupported file type for Joliet tree
+
+
 
 ------------------------------------------------------------------------------
 
