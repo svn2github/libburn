@@ -4364,44 +4364,187 @@ cdrskin/cdrskin.1
 cdrskin/convert_man_to_html.sh
 New option --allow_emulated_drives 
 
-  []
+2007.09.08.174757  [1019]
 libburn/libburn.h
 libburn/async.c
 libburn/write.c
 Made Libburn_precheck_write_ruleS unconditional code
 
-  []
+8 Sep 2007  [1020]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
 
-
------------------------------------- cycle  - cdrskin-0.3.9 - 2007.09.08.
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.08.212130
 * New option --allow_emulated_drives dev=stdio:<path>
+
+
+2007.09.09.093535  [1021]
+libburn/drive.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.1
+Called statvfs() for size estimation of regular stdio-files.
+
+2007.09.09.093637  [1022]
+cdrskin/cdrskin.c
+Fixed bug with dev=stdio: where path contains a digit
+
+2007.09.09.133136  [1023]
+libburn/init.c
+libburn/sg.h
+libburn/sg-linux.c
+libburn/sg-freebsd-port.c
+libburn/sg-freebsd.c
+Enabled os dependend stdio size estimation
+
+2007.09.09.133922  [1024]
+libburn/drive.c
+Made use of os dependend stdio size estimation
+
+9 Sep 2007  [1025]
+libisoburn/burn_wrap.c
+New wrapper isoburn_disc_erasable() declares ISO DVD-RAM, DVD+RW erasable
+
+2007.09.09.182827  [1026]
+libburn/async.c
+libburn/mmc.c
+Ended falsely alleged erasability of DVD-RAM and DVD+RW
+
+10 Sep 2007  [1027]
+libisoburn/libisoburn.h
+New wrapper isoburn_disc_erasable() declares ISO DVD-RAM, DVD+RW erasable
+
+2007.09.10.110050 [1028]
+libburn/drive.c
+Added forgotten return 0 to an error case
+
+11 Sep 2007  [1029]
+libisoburn/burn_wrap.c
+libisoburn/isoburn.h
+New inner function isoburn_set_start_byte()
+
+12 Sep 2007  [1031]
+libisoburn/libisoburn.h
+libisoburn/burn_wrap.c
+Removed isoburn_write_opts_set_start_byte()
+
+2007.09.12.104626  [1032]
+libburn/transport.h
+libburn/libdax_msgs.h
+libburn/write.c
+libburn/drive.c
+libburn/spc.c
+libburn/sbc.c
+libburn/mmc.c
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+Brought burn_stdio_write_track() onto sector_data() for outmost realism
+
+2007.09.12.115850  [1033]
+libburn/mmc.c
+libburn/spc.c
+Reacted on compiler -O2 warnings 
+
+2007.09.12.115946  [1034]
+libburn/write.c
+Implemented realistic speed simulation with stdio-drives
+
+2007.09.12.195206  [1039]
+libburn/write.c
+Implemented cache syncing for stdio-drives in burn_random_access_write()
+
+2007.09.12.200106  [1040]
+cdrskin/cdrskin.c
+Fixed bug with direct_write_amount=0
+
+13 Sep 2007  [1043] 
+libisoburn/burn_wrap.c
+Took into respect fabricated_disc_status
+
+2007.09.14.122437  [1063]
+libburn/write.c
+Took into respect time granularity with stdio speed control
+
+2007.09.14.122531  [1064]
+libburn/libburn.h
+Documented burn_write_opts_set_multi @param opts
+
+14 Sep 2007  [1065]
+src/burn_wrap.c
+Changed include form of libisofs.h and libburn.h
+
+2007.09.15.112311  [1066]
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+Imported Range "vreixo" into libburn/libdax_msgs.h
+
+2007.09.15.171844  [1067]
+libburn/libdax_msgs.h
+Prepared for neat sed translation. Explained concept of libdax_msgs variants.
+
+15 Sep 2007  [1068]
+libburn/libdax_msgs_to_xyz_msgs.sh
+A sed converter which creates libiso_msgs.[ch] from libdax_msgs.[ch]
+
+2007.09.15.172141  [1069]
+libburn/libburn.h
+libburn/init.c
+New API function burn_set_messenger()
+
+2007.09.15.204320  [1070]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+libburn/init.c
+Equipped libdax_msgs with reference counter. Completed its mutex protection.
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.15.205752
+
+cdrskin/changelog.txt
+Next cdrskin-0.3.9 cycle
+
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
+
+? fallback_program= ?
+
+
+? cdrecord: driver=cdr_simul , dvd_simul ?
+? cdrecord: -V -VV ?
+? cdrecord: -inq ?
+? cdrecord: -format (blank=format_overwrite_full)  ?
+? cdrecord: -load -lock ?
+? cdrecord: -fix -nofix ?
+? cdrecord: -waiti ?
+? cdrecord: -immed ?
+? cdrecord: -copy -scms ?
+? cdrecord: -packet pktsize= -noclose ?
+
+
+
   []
 open(,O_LARGEFILE) ?
 
   []
-What about alleged erasability of DVD+RW
+Emulate -dummy on overwriteables ?
 
   []
-What about DVD and stdio track offset and track tail ?
+Emulate -dummy on DVD+R ?
 
 
   []
 libcevap/main.c
 Preparations for lowercase class and function names
 
-
   []
 libcevap/libdax_model.txt
 Work goes on
+>>> struct burn_drive { int stdio_fd }
+
 
   []
 libcevap/cgen.c
