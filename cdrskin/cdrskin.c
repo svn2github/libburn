@@ -2053,7 +2053,7 @@ return:
 #endif
 
  if(argc==1) {
-   fprintf(stderr,"cdrskin: SORRY : no options given. Try option  --help\n");
+   fprintf(stderr,"cdrskin: SORRY : No options given. Try option  --help\n");
    return(0);
  }
  for (i= 1;i<argc;i++) {
@@ -2718,6 +2718,8 @@ struct CdrskiN {
 
  int do_scanbus;
 
+ int do_load;
+
  int do_checkdrive;
 
  int do_msinfo;
@@ -2737,6 +2739,7 @@ struct CdrskiN {
                                bit9 = insist in size 0
                                bit10= format to maximum available size
                            2=deformat_sequential (blank_fast might matter)
+                           3=format (= format_overwrite restricted to DVD+RW)
                         */
  double blank_format_size; /* to be used with burn_disc_format() */
 
@@ -2860,7 +2863,8 @@ struct CdrskiN {
 int Cdrskin_destroy(struct CdrskiN **o, int flag);
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag);
 int Cdrskin_release_drive(struct CdrskiN *skin, int flag);
-
+int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
+                               int flag);
 
 /** Create a cdrskin program run control object.
     @param skin Returns pointer to resulting
@@ -2887,6 +2891,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->prodvd_cli_compatible= 0;
  o->do_devices= 0;
  o->do_scanbus= 0;
+ o->do_load= 0;
  o->do_checkdrive= 0;
  o->do_msinfo= 0;
  o->msinfo_fd= -1;
@@ -3191,6 +3196,7 @@ int Cdrskin_determine_media_caps(struct CdrskiN *skin, int flag)
                       use burn_drive_scan_and_grab()
                 bit1= do not load drive tray
                 bit2= do not issue error message on failure
+                bit3= demand and evtl. report media, return 0 if none to see
     @return <=0 error, 1 success
 */
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
@@ -3198,6 +3204,7 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  int ret,i,profile_number;
  struct burn_drive *drive;
  char profile_name[80];
+ enum burn_disc_status s;
 #ifdef Cdrskin_grab_abort_brokeN
  int restore_handler= 0;
 #endif
@@ -3301,6 +3308,17 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 
  }
  skin->drive_is_grabbed= 1;
+
+ if((flag&8)) {
+   s= burn_disc_get_status(drive);
+   if(skin->verbosity>=Cdrskin_verbose_progresS)
+     Cdrskin_report_disc_status(skin,s,1);
+   if(s==BURN_DISC_EMPTY) {
+     Cdrskin_release_drive(skin,0);
+     fprintf(stderr,"cdrskin: SORRY : No media found in drive\n");
+     ret= 0; goto ex;
+   }
+ }
 
  Cdrskin_speed_factoR= Cdrskin_cd_speed_factoR;
  Cdrskin_libburn_speed_factoR= Cdrskin_libburn_cd_speed_factoR;
@@ -4023,8 +4041,12 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  int ret;
  char btldev[Cdrskin_adrleN];
 
- if(!(flag&1))
-   ClN(printf("cdrskin: pseudo-checkdrive on drive %d\n",skin->driveno));
+ if(!(flag&1)) {
+   if(flag&2)
+     ClN(printf("cdrskin: pseudo-inquiry on drive %d\n",skin->driveno));
+   else
+     ClN(printf("cdrskin: pseudo-checkdrive on drive %d\n",skin->driveno));
+ }
  if(skin->driveno>=skin->n_drives || skin->driveno<0) {
    fprintf(stderr,"cdrskin: FATAL : there is no drive #%d\n",skin->driveno);
    {ret= 0; goto ex;}  
@@ -4046,15 +4068,12 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  printf("Vendor_info    : '%s'\n",drive_info->vendor);
  printf("Identifikation : '%s'\n",drive_info->product);
  printf("Revision       : '%s'\n",drive_info->revision);
+
+ if(flag&2)
+   {ret= 1; goto ex;}
+
  printf("Driver flags   : %s\n","BURNFREE");
 #ifdef Cdrskin_allow_libburn_taO
-
- /* <<< */ 
- if(skin->verbosity>=Cdrskin_verbose_debuG)
-   ClN(fprintf(stderr,
- "cdrskin_debug: block_types: tao=%4.4X  sao=%4.4X  raw=%4.4X\n",
-           drive_info->tao_block_types,drive_info->sao_block_types,
-           drive_info->raw_block_types));
 
  printf("Supported modes:");
  if((drive_info->tao_block_types & (BURN_BLOCK_MODE1))
@@ -4535,7 +4554,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,1);
  do_format= skin->blank_format_type & 0xff;
- if(do_format == 1) {
+ if(do_format == 1 || do_format == 3) {
    verb= "format";
    presperf= "formatting";
  }
@@ -4566,8 +4585,16 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        goto unsupported_format_type;
    }
 
- } else if (do_format==1) {
+ } else if(do_format==1 || do_format==3) {
    /* Formatting to become overwriteable for DVD-RW and DVD+RW */
+
+   if(do_format==3 && profile_number != 0x1a) {
+     fprintf(stderr, "cdrskin: SORRY : -format does DVD+RW only\n");
+     if(profile_number==0x14)
+       fprintf(stderr,
+          "cdrskin: HINT  : blank=format_overwrite would format this media\n");
+     {ret= 0; goto ex;}
+   }
 
    if(profile_number == 0x14) { /* DVD-RW sequential */
        /* ok */;
@@ -4659,7 +4686,7 @@ unsupported_format_type:;
  Cdrskin_adjust_speed(skin,0);
 
 #ifndef Cdrskin_extra_leaN
- Cdrskin_wait_before_action(skin,1+(do_format==1));
+ Cdrskin_wait_before_action(skin,1+(do_format==1 || do_format==3));
 #endif /* ! Cdrskin_extra_leaN */
 
  skin->drive_is_busy= 1;
@@ -4667,7 +4694,7 @@ unsupported_format_type:;
    burn_disc_erase(drive,skin->blank_fast);
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
- } else if(do_format==1) {
+ } else if(do_format==1 || do_format==3) {
    burn_disc_format(drive,(off_t) skin->blank_format_size,
             ((skin->blank_format_type>>8)&0xff) | ((!!skin->force_is_set)<<4));
 #endif
@@ -4702,7 +4729,8 @@ blanking_done:;
    fprintf(stderr,
            "\rcdrskin: %s done                                        \n",
            presperf);
-   printf("%s time:   %.3fs\n",(do_format==1?"Formatting":"Blanking"),
+   printf("%s time:   %.3fs\n",
+          (do_format==1 || do_format==3?"Formatting":"Blanking"),
           Sfile_microtime(0)-start_time);
  }
  fflush(stdout);
@@ -5570,7 +5598,7 @@ int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
    /* demand media descrN[0] == track descrN[0] */
    if(td[0] != md[0]) {
      fprintf(stderr,
-   "cdrskin: SORRY : type mismatch of ISO volume descriptor #%d (%u <-> %u)\n",
+   "cdrskin: SORRY : Type mismatch of ISO volume descriptor #%d (%u <-> %u)\n",
              i, ((unsigned int) td[0]) & 0xff, ((unsigned int) md[0])&0xff);
      went_well= 0;
    }
@@ -5647,7 +5675,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if (s!=BURN_DISC_BLANK) {
 #endif
    Cdrskin_release_drive(skin,0);
-   fprintf(stderr,"cdrskin: FATAL : no writeable media detected.\n");
+   fprintf(stderr,"cdrskin: FATAL : No writeable media detected.\n");
    goto burn_failed;
  }
 
@@ -5665,7 +5693,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  session= burn_session_create();
  ret= burn_disc_add_session(disc,session,BURN_POS_END);
  if(ret==0) {
-   fprintf(stderr,"cdrskin: FATAL : cannot add session to disc object.\n");
+   fprintf(stderr,"cdrskin: FATAL : Cannot add session to disc object.\n");
 burn_failed:;
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
      printf("cdrskin: %s failed\n", doing);
@@ -5679,7 +5707,7 @@ burn_failed:;
      Cdrtrack_ensure_padding(skin->tracklist[i],hflag&1);
    ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
    if(ret<=0) {
-     fprintf(stderr,"cdrskin: FATAL : cannot add track %d to session.\n",i+1);
+     fprintf(stderr,"cdrskin: FATAL : Cannot add track %d to session.\n",i+1);
      goto burn_failed;
    }
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
@@ -5739,7 +5767,7 @@ burn_failed:;
      Cdrtrack_get_source_path(skin->tracklist[i],
                               &source_path,&source_fd,&is_from_stdin,0);
      fprintf(stderr,
-           "cdrskin: FATAL : cannot determine -isosize of track source\n");
+           "cdrskin: FATAL : Cannot determine -isosize of track source\n");
      fprintf(stderr,
            "cdrskin:         '%s'\n", source_path);
      {ret= 0; goto ex;}
@@ -5874,7 +5902,7 @@ burn_failed:;
    ret= Cdrskin_fill_fifo(skin,0);
  if(ret<=0) {
 fifo_filling_failed:;
-   fprintf(stderr,"cdrskin: FATAL : filling of fifo failed\n");
+   fprintf(stderr,"cdrskin: FATAL : Filling of fifo failed\n");
    goto ex;
  }
 
@@ -5937,7 +5965,7 @@ fifo_filling_failed:;
        abh= skin->preskin->abort_handler;
        if(abh!=2) 
          fprintf(stderr,
-              "\ncdrskin: FATAL : fifo encountered error during burn loop.\n");
+              "\ncdrskin: FATAL : Fifo encountered error during burn loop.\n");
        if(abh==0) {
          ret= -1; goto ex;
        } else if(abh==1 || abh==3 || abh==4 || abh==-1) {
@@ -6016,7 +6044,7 @@ fifo_full_at_end:;
      ret= Cdrtrack_has_input_left(skin->tracklist[i],0);
      if(ret>0) {
        fprintf(stderr,
-  "cdrskin: FATAL : fifo outlet of track #%d is still buffering some bytes.\n",
+  "cdrskin: FATAL : Fifo outlet of track #%d is still buffering some bytes.\n",
                i+1);
        goto fifo_full_at_end;
      }
@@ -6342,8 +6370,8 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    ""
  };
  static char ignored_full_options[][41]= {
-   "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", "-inq",
-   "-reset", "-abort", "-overburn", "-ignsize", "-useinfo", "-format", "-load",
+   "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
+   "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-lock", "-fix", "-nofix", "-waiti",
    "-immed", "-raw", "-raw96p", "-raw16",
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
@@ -6500,9 +6528,7 @@ set_blank:;
      } else if(strcmp(cpt,"format_overwrite_full")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1|(1<<10);
-       /* was : 1|(1<<8)|(1<<10); */
        skin->blank_format_size= 0;
-       /* was: 32*1024; / * write just a minimal packet */ 
      } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1;
@@ -6519,7 +6545,7 @@ set_blank:;
        /* is handled in Cdrpreskin_setup() */;
  continue;
      } else { 
-       fprintf(stderr,"cdrskin: FATAL : blank option '%s' not supported yet\n",
+       fprintf(stderr,"cdrskin: FATAL : Blank option '%s' not supported yet\n",
                       cpt);
        return(0);
      }
@@ -6690,6 +6716,15 @@ set_driveropts:;
    } else if(strcmp(argv[i],"-force")==0) {
      skin->force_is_set= 1;
 
+   } else if(strcmp(argv[i],"-format")==0) {
+     skin->do_blank= 1;
+     skin->blank_format_type= 3|(1<<10);
+     skin->blank_format_size= 0;
+     skin->force_is_set= 1;
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(printf(
+       "cdrskin: will format DVD+RW by blank=format_overwrite_full -force\n"));
+
 #ifndef Cdrskin_extra_leaN
 
    } else if(strncmp(argv[i],"-fs=",4)==0) {
@@ -6757,6 +6792,9 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"--ignore_signals")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i],"-inq")==0) {
+     skin->do_checkdrive= 2;
+
    } else if(strcmp(argv[i],"-isosize")==0) {
      skin->use_data_image_size= 1;
 
@@ -6770,6 +6808,9 @@ gracetime_equals:;
      for(k=0;ignored_full_options[k][0]!=0;k++) 
        printf("%s\n",ignored_full_options[k]);
      printf("\n");
+
+   } else if(strcmp(argv[i],"-load")==0) {
+     skin->do_load= 1;
 
    } else if(strncmp(argv[i],"-minbuf=",8)==0) {
      value_pt= argv[i]+8;
@@ -7018,7 +7059,7 @@ set_tsize:;
      skin->fixed_size= Scanf_io_size(value_pt,0);
      if(skin->fixed_size>Cdrskin_tracksize_maX) {
 track_too_large:;
-       fprintf(stderr,"cdrskin: FATAL : track size too large\n");
+       fprintf(stderr,"cdrskin: FATAL : Track size too large\n");
        return(0);
      }
      if(skin->verbosity>=Cdrskin_verbose_cmD)
@@ -7044,7 +7085,7 @@ track_too_large:;
              (skin->single_track==-1)) {
      if(strlen(argv[i])>=sizeof(skin->source_path)) {
        fprintf(stderr,
-            "cdrskin: FATAL : source_address too long. (max: %d, given: %d)\n",
+            "cdrskin: FATAL : Source address too long. (max: %d, given: %d)\n",
                sizeof(skin->source_path)-1,strlen(argv[i]));
        return(0);
      }
@@ -7074,7 +7115,7 @@ track_too_large:;
            source_has_size= 1;
          else if((stbuf.st_mode&S_IFMT)==S_IFDIR) {
            fprintf(stderr,
-                   "cdrskin: FATAL : source address is a directory: '%s'\n",
+                   "cdrskin: FATAL : Source address is a directory: '%s'\n",
                    skin->source_path);
            return(0);
          }
@@ -7082,7 +7123,7 @@ track_too_large:;
      }
 
      if(skin->track_counter>=Cdrskin_track_maX) {
-       fprintf(stderr,"cdrskin: FATAL : too many tracks given. (max %d)\n",
+       fprintf(stderr,"cdrskin: FATAL : Too many tracks given. (max %d)\n",
                Cdrskin_track_maX);
        return(0);
      }
@@ -7091,7 +7132,7 @@ track_too_large:;
                        (strcmp(skin->source_path,"-")==0)<<1);
      if(ret<=0) {
        fprintf(stderr,
-               "cdrskin: FATAL : creation of track control object failed.\n");
+               "cdrskin: FATAL : Creation of track control object failed.\n");
        return(ret);
      }
      skin->track_counter++;
@@ -7224,7 +7265,7 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
 
  ret= Cdrskin_new(&skin,*preskin,1);
  if(ret<=0) {
-   fprintf(stderr,"cdrskin: FATAL : creation of control object failed\n");
+   fprintf(stderr,"cdrskin: FATAL : Creation of control object failed\n");
    {*exit_value= 2; goto ex;}
  }
  *preskin= NULL; /* the preskin object now is under management of skin */
@@ -7314,8 +7355,17 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
      fprintf(stderr,"cdrskin: FATAL : -scanbus failed.\n");
    {*exit_value= 5*(ret<=0); goto ex;}
  }
+ if(skin->do_load) {
+   ret= Cdrskin_grab_drive(skin,8);
+   if(ret>0) {
+     printf(
+   "cdrskin: NOTE : option -load orders program to exit after loading tray\n");
+     Cdrskin_release_drive(skin,0);
+   }
+   {*exit_value= 14*(ret<=0); goto ex;}
+ }
  if(skin->do_checkdrive) {
-   ret= Cdrskin_checkdrive(skin,"",0);
+   ret= Cdrskin_checkdrive(skin,"",(skin->do_checkdrive==2)<<1);
    {*exit_value= 6*(ret<=0); goto ex;}
  }
  if(skin->do_msinfo) {

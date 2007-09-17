@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "September 8, 2007"
+.TH CDRSKIN 1 "September 17, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -360,7 +360,7 @@ Incremental Streaming (-tao).
 .RE
 .TP
 .BI \-checkdrive
-Retrieve some info about the addressed drive.
+Retrieve some info about the addressed drive and then exit.
 Exits with non-zero value if the drive cannot be found and opened.
 .TP
 .BI \-dao
@@ -418,6 +418,9 @@ that drive and media will not simulate the write mode but will write for real.
 .B Caution:
 Use this only when in urgent need.
 .TP
+.BI \-format
+Same as blank=format_overwrite_full -force but restricted to DVD+RW.
+.TP
 .BI fs= size
 Set the fifo size to the given value. The value may have appended letters which
 multiply the preceding number:
@@ -437,6 +440,9 @@ option fifo_start_at=size.
 .BI gracetime= seconds
 Set the grace time before starting to write. (Default is 0)
 .TP
+.BI -inq
+Print the identification of the drive and then exit.
+.TP
 .BI -isosize
 The next track following this option will try to obtain its source size from
 the header information out of the first few blocks of the source data.
@@ -452,6 +458,10 @@ added to each -isosize track. But be advised to rather use padsize=300k.
 This option can be performed on track sources which are regular files or block
 devices. For the first track of the session it can be performed on any type
 of source if there is a fifo of at least 64 kiB. See option fs= .
+.TP
+.BI -load
+Load the media and exit. Exit value is 0 if any kind of media was found, non
+zero else. Note: Option -eject will unload the media even if -load is given.
 .TP
 .BI minbuf= percentage
 Equivalent to:
