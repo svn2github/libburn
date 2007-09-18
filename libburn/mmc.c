@@ -433,6 +433,8 @@ void mmc_close(struct burn_drive *d, int session, int track)
 */
 	c.retry = 1;
 
+	c.opcode[1] |= 1; /* ts A70918 : Immed */
+
 	/* (ts A61030 : shifted !!session rather than or-ing plain session ) */
 	c.opcode[2] = ((session & 3) << 1) | !!track;
 	c.opcode[4] = track >> 8;
@@ -440,6 +442,11 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
+
+	/* ts A70918 : Immed : wait for drive to complete command */
+	usleep(1000000); /* (in format() there was a race condition) */
+	while (!d->test_unit_ready(d))
+		usleep(100000);
 }
 
 void mmc_get_event(struct burn_drive *d)
