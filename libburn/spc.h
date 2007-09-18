@@ -28,7 +28,8 @@ int spc_test_unit_ready(struct burn_drive *d);
 
 /* ts A70315 */
 /** Wait until the drive state becomes clear in or until max_sec elapsed */
-int spc_wait_unit_attention(struct burn_drive *d, int max_sec);
+int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
+				int flag);
 
 /* ts A61021 : the spc specific part of sg.c:enumerate_common()
 */

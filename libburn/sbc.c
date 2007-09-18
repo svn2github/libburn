@@ -36,9 +36,16 @@ void sbc_load(struct burn_drive *d)
 	c.page = NULL;
 */
 	c.retry = 1;
+
+	c.opcode[1] |= 1; /* ts A70918 : Immed */
+
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
-	spc_wait_unit_attention(d, 60);
+	if (c.error)
+		return;
+	/* 5 minutes for loading. If this does not suffice then other commands
+	   shall fail righteously. */
+	spc_wait_unit_attention(d, 300, "START UNIT (+ LOAD)", 0);
 }
 
 void sbc_eject(struct burn_drive *d)
@@ -54,9 +61,16 @@ void sbc_eject(struct burn_drive *d)
 	c.oplen = sizeof(SBC_UNLOAD);
 	c.page = NULL;
 */
+
+	c.opcode[1] |= 1; /* ts A70918 : Immed */
+
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
+	if (c.error)
+		return;
+	/* Wait long. A late eject could surprise or hurt user. */
+	spc_wait_unit_attention(d, 1800, "STOP UNIT (+ EJECT)", 0);
 }
 
 /* ts A61118 : is it necessary to tell the drive to get ready for use ? */
@@ -74,9 +88,14 @@ int sbc_start_unit(struct burn_drive *d)
 	c.page = NULL;
 */
 	c.retry = 1;
+
+	c.opcode[1] |= 1; /* ts A70918 : Immed */
+
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
-	return (c.error==0);
+	if (c.error)
+		return 0;
+	return spc_wait_unit_attention(d, 1800, "START UNIT", 0);
 }
 
 

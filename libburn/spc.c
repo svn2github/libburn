@@ -98,19 +98,52 @@ int spc_test_unit_ready(struct burn_drive *d)
 
 
 /* ts A70315 */
+/** @param flag bit0=do not wait 0.1 seconds before first test unit ready */
 /** Wait until the drive state becomes clear or until max_usec elapsed */
-int spc_wait_unit_attention(struct burn_drive *d, int max_sec)
+int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
+				int flag)
 {
 	int i, ret, key, asc, ascq;
+	char msg[160];
 
-	for(i=0; i < max_sec; i++) {
+	if (!(flag & 1))
+		usleep(100000);
+	for(i = !(flag & 1); i < max_sec * 10; i++) {
 		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
-		if(ret > 0 || key!=0x2 || asc!=0x4) /* ready or error */
+		if(ret > 0) /* ready */
 	break;
-		usleep(1000000);
+		if(key!=0x2 || asc!=0x4) {
+			if (key == 0x2 && asc == 0x3A) {
+				ret = 1; /* medium not present = ok */
+	break;
+			}
+			if (key == 0x6 && asc == 0x28 && ascq == 0x00)
+	continue;			 /* media change notice = try again */
+			sprintf(msg,
+		"Asynchromous SCSI error on %s: key=%X asc=%2.2Xh ascq=%2.2Xh",
+			 	cmd_text, (unsigned) key, (unsigned) asc,
+				(unsigned) ascq);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002014d,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			d->cancel = 1;
+	break;
+		}
+		usleep(100000);
 	}
-	if (i < max_sec)
+	sprintf(msg, "Async %s %s after %d.%d seconds",
+		cmd_text, (ret > 0 ? "succeeded" : "failed"), i / 10, i % 10);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020150,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
+
+	if (i < max_sec * 10)
 		return (ret > 0);
+
+	sprintf(msg, "Timeout (%d s) with asynchronous SCSI command %s\n",
+	 	max_sec, cmd_text);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002014f,
+		LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
 	return 0;
 }
 

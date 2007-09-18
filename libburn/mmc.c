@@ -444,9 +444,12 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	d->issue_command(d, &c);
 
 	/* ts A70918 : Immed : wait for drive to complete command */
-	usleep(1000000); /* (in format() there was a race condition) */
-	while (!d->test_unit_ready(d))
-		usleep(100000);
+	if (c.error) {
+		d->cancel = 1;
+		return;
+	}
+	if (spc_wait_unit_attention(d, 3600, "CLOSE TRACK SESSION", 0) <= 0)
+		d->cancel = 1;
 }
 
 void mmc_get_event(struct burn_drive *d)
@@ -2273,6 +2276,9 @@ void mmc_sync_cache(struct burn_drive *d)
 	c.oplen = sizeof(MMC_SYNC_CACHE);
 */
 	c.retry = 1;
+
+	c.opcode[1] |= 2; /* ts A70918 : Immed */
+
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 
@@ -2294,6 +2300,14 @@ void mmc_sync_cache(struct burn_drive *d)
 	}
 
 	d->issue_command(d, &c);
+
+	/* ts A70918 */
+	if (c.error) {
+		d->cancel = 1;
+		return;
+	}
+	if (spc_wait_unit_attention(d, 3600, "SYNCHRONIZE CACHE", 0) <= 0)
+		d->cancel = 1;
 }
 
 
