@@ -43,7 +43,8 @@ void sbc_load(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return;
-	/* 5 minutes for loading. If this does not suffice then other commands
+	/* ts A70918 :
+           5 minutes for loading. If this does not suffice then other commands
 	   shall fail righteously. */
 	spc_wait_unit_attention(d, 300, "START UNIT (+ LOAD)", 0);
 }
@@ -69,7 +70,7 @@ void sbc_eject(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return;
-	/* Wait long. A late eject could surprise or hurt user. */
+	/* ts A70918 : Wait long. A late eject could surprise or hurt user. */
 	spc_wait_unit_attention(d, 1800, "STOP UNIT (+ EJECT)", 0);
 }
 
@@ -95,6 +96,7 @@ int sbc_start_unit(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return 0;
+	/* ts A70918 : now asynchronous */
 	return spc_wait_unit_attention(d, 1800, "START UNIT", 0);
 }
 

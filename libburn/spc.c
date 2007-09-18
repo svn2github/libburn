@@ -103,7 +103,7 @@ int spc_test_unit_ready(struct burn_drive *d)
 int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
 {
-	int i, ret, key, asc, ascq;
+	int i, ret = 1, key, asc, ascq;
 	char msg[160];
 
 	if (!(flag & 1))
