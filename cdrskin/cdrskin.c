@@ -2425,6 +2425,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,
           "\t-load\t\tload the disk and exit (works only with tray loader)\n");
      fprintf(stderr,
+ "\t-lock\t\tload and lock the disk and exit (works only with tray loader)\n");
+     fprintf(stderr,
        "\t-eject\t\teject the disk after doing the work\n");
      fprintf(stderr,"\t-dummy\t\tdo everything with laser turned off\n");
 #ifdef Cdrskin_libburn_has_multI
@@ -3361,6 +3363,7 @@ ex:;
 /** Release grabbed libburn drive 
     @param flag Bitfield for control purposes:
                 bit0= eject
+                bit1= leave tray locked (eventually overrides bit0)
 */
 int Cdrskin_release_drive(struct CdrskiN *skin, int flag)
 {
@@ -3368,7 +3371,10 @@ int Cdrskin_release_drive(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin: CAUGHT : release of non-grabbed drive.\n");
    return(0);
  }
- burn_drive_release(skin->grabbed_drive,(flag&1));
+ if(flag&2)
+   burn_drive_leave_locked(skin->grabbed_drive,0);
+ else
+   burn_drive_release(skin->grabbed_drive,(flag&1));
  skin->drive_is_grabbed= 0;
  skin->grabbed_drive= NULL;
  return(1);
@@ -6376,7 +6382,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  static char ignored_full_options[][41]= {
    "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
-   "-lock", "-fix", "-nofix", "-waiti",
+   "-fix", "-nofix", "-waiti",
    "-immed", "-raw", "-raw96p", "-raw16",
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
@@ -6815,6 +6821,9 @@ gracetime_equals:;
 
    } else if(strcmp(argv[i],"-load")==0) {
      skin->do_load= 1;
+
+   } else if(strcmp(argv[i],"-lock")==0) {
+     skin->do_load= 2;
 
    } else if(strncmp(argv[i],"-minbuf=",8)==0) {
      value_pt= argv[i]+8;
@@ -7362,9 +7371,15 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_load) {
    ret= Cdrskin_grab_drive(skin,8);
    if(ret>0) {
-     printf(
-   "cdrskin: NOTE : option -load orders program to exit after loading tray\n");
-     Cdrskin_release_drive(skin,0);
+     if(skin->do_load==2 && !skin->do_eject) {
+       printf(
+   "cdrskin: NOTE : Option -lock orders program to exit with locked tray.\n");
+       printf(
+ "cdrskin: HINT : Run cdrskin with option -eject to unlock the drive tray.\n");
+     } else if(!skin->do_eject)
+       printf(
+  "cdrskin: NOTE : option -load orders program to exit after loading tray.\n");
+     Cdrskin_release_drive(skin,(skin->do_load==2)<<1);
    }
    {*exit_value= 14*(ret<=0); goto ex;}
  }

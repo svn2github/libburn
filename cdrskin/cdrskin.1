@@ -240,8 +240,10 @@ who is able to get this list without further
 precautions.
 .br
 It is consensus that \fBchmod a+rw /dev/sr0\fP or \fBchmod a+rw /dev/hdc\fP
-is less security sensitive than chmod u+s /usr/bin/cdrskin. The risk for the
-drive is somewhat higher but the overall system is much less at stake.
+is less security sensitive than chmod u+s,a+x /usr/bin/cdrskin. The risk for
+the drive is somewhat higher but the overall system is much less at stake.
+Consider to restrict rw-access to a single group which bundles the users who
+are allowed to use the burner drive (like group "floppy").
 .br
 .PP
 If you only got one CD capable drive then you may leave out cdrskin option
@@ -467,6 +469,14 @@ of source if there is a fifo of at least 64 kiB. See option fs= .
 .BI -load
 Load the media and exit. Exit value is 0 if any kind of media was found, non
 zero else. Note: Option -eject will unload the media even if -load is given.
+.TP
+.BI -lock
+Like option -load but leave the drive's eject button disabled if there is any
+media found and not option -eject is given.
+.br
+Use program "eject" or cdrskin -eject to get the tray out of the drive.
+Runs of programs like cdrecord, growisofs, wodim, cdrskin will not be hampered
+and normally enable the drive's eject button when they are done.
 .TP
 .BI minbuf= percentage
 Equivalent to:
