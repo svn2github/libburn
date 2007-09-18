@@ -2415,13 +2415,17 @@ see_cdrskin_eng_html:;
              "\tdriveropts=opt\topt= one of {burnfree,noburnfree,help}\n");
      fprintf(stderr,
              "\t-checkdrive\tcheck if a driver for the drive is present\n");
+     fprintf(stderr,"\t-inq\t\tdo an inquiry for the drive and exit\n");
      fprintf(stderr,"\t-scanbus\tscan the SCSI bus and exit\n");
      fprintf(stderr,"\tspeed=#\t\tset speed of drive\n");
      fprintf(stderr,"\tblank=type\tblank a CD-RW disc (see blank=help)\n");
+     fprintf(stderr,"\t-format\t\tformat a CD-RW/DVD-RW/DVD+RW disc\n");
      fprintf(stderr,
              "\tfs=#\t\tSet fifo size to # (0 to disable, default is 4 MB)\n");
      fprintf(stderr,
-       "\t-eject\t\teject the disk after doing the work (might be ignored)\n");
+          "\t-load\t\tload the disk and exit (works only with tray loader)\n");
+     fprintf(stderr,
+       "\t-eject\t\teject the disk after doing the work\n");
      fprintf(stderr,"\t-dummy\t\tdo everything with laser turned off\n");
 #ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
