@@ -114,6 +114,8 @@ void burn_drive_free_all(void)
 /* ts A60822 */
 int burn_drive_is_open(struct burn_drive *d)
 {
+	if (d->drive_role != 1)
+		return (d->stdio_fd >= 0);
 	/* ts A61021 : moved decision to sg.c */
 	return d->drive_is_open(d);
 }
@@ -421,7 +423,10 @@ int burn_drive_mark_unready(struct burn_drive *d)
 }
 
 
-void burn_drive_release(struct burn_drive *d, int le)
+/* ts A70918 : outsourced from burn_drive_release() and enhanced */
+/** @param flag bit0-2 = mode : 0=unlock , 1=unlock+eject , 2=leave locked
+*/
+int burn_drive_release_fl(struct burn_drive *d, int flag)
 {
 	if (d->released) {
 		/* ts A61007 */
@@ -430,7 +435,7 @@ void burn_drive_release(struct burn_drive *d, int le)
 				d->global_index, 0x00020105,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Drive is already released", 0, 0);
-		return;
+		return 0;
 	}
 
 	/* ts A61007 */
@@ -441,12 +446,13 @@ void burn_drive_release(struct burn_drive *d, int le)
 				d->global_index, 0x00020106,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Drive is busy on attempt to close", 0, 0);
-		return;
+		return 0;
 	}
 
 	if (d->drive_role == 1) {
-		d->unlock(d);
-		if (le)
+		if ((flag & 7) != 2)
+			d->unlock(d);
+		if ((flag & 7) == 1)
 			d->eject(d);
 		d->release(d);
 	}
@@ -455,8 +461,23 @@ void burn_drive_release(struct burn_drive *d, int le)
 
 	/* ts A61125 : outsourced model aspects */
 	burn_drive_mark_unready(d);
+	return 1;
 }
 
+
+/* API */
+void burn_drive_release(struct burn_drive *d, int le)
+{
+	burn_drive_release_fl(d, !!le);
+}
+
+
+/* ts A70918 */
+/* API */
+int burn_drive_leave_locked(struct burn_drive *d, int flag)
+{
+	return burn_drive_release_fl(d, 2);
+}
 
 
 /* ts A61007 : former void burn_wait_all() */

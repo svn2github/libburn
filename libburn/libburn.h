@@ -829,11 +829,23 @@ int burn_drive_grab(struct burn_drive *drive, int load);
 
 /** Release a drive. This should not be done until the drive is no longer
     busy (see burn_drive_get_status).
-    Linux: The drive is unlocked afterwards. (O_EXCL , F_SETLK).
+    Linux: The drive device file is not reserved afterwards. (O_EXCL, F_SETLK).
 	@param drive The drive to release.
 	@param eject Nonzero to make the drive eject the disc in it.
 */
 void burn_drive_release(struct burn_drive *drive, int eject);
+
+
+/* ts A70918 */
+/** Like burn_drive_release() but keeping the drive tray closed and its
+    eject button disabled. This physically locked drive state will last until
+    the drive is grabbed again and released via burn_drive_release().
+    Programs like eject, cdrecord, growisofs will break that ban too.
+    @param drive The drive to release and leave locked.
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return 1 means success, <=0 means failure
+*/
+int burn_drive_leave_locked(struct burn_drive *d, int flag);
 
 
 /** Returns what kind of disc a drive is holding. This function may need to be
