@@ -5824,8 +5824,7 @@ burn_failed:;
  if(skin->media_is_overwriteable && skin->multi) {
    if(skin->grow_overwriteable_iso<=0) {
      fprintf(stderr, "cdrskin: FATAL : -multi cannot leave a recognizeable end mark on this media.\n");
-     fprintf(stderr, "cdrskin: HINT  : For ISO-9660 images try --start_overwriteable_iso -multi\n");
-     fprintf(stderr, "cdrskin: HINT  : or                      --grow_overwriteable_iso  -multi\n");
+     fprintf(stderr, "cdrskin: HINT  : For ISO-9660 images try --grow_overwriteable_iso -multi\n");
      {ret= 0; goto ex;}
    }
    skin->multi= 0;
