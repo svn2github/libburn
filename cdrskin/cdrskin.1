@@ -447,6 +447,16 @@ option fifo_start_at=size.
 .BI gracetime= seconds
 Set the grace time before starting to write. (Default is 0)
 .TP
+.BI -immed
+Equivalent to:
+.br
+modesty_on_drive=1:min_percent=75:max_percent=95
+.br
+The name of this cdrecord option stems from the "Immed" bit which can make some
+long running drive commands asynchronous and thus eases the load on some
+wiring hardware types. Regardless of option -immed, cdrskin uses asynchronous
+commands where possible and appropriate. 
+.TP
 .BI -inq
 Print the identification of the drive and then exit.
 .TP

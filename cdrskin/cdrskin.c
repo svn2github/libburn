@@ -2446,6 +2446,8 @@ see_cdrskin_eng_html:;
              "\t-multi\t\tgenerate a TOC that allows multi session\n");
 #endif
      fprintf(stderr,
+           "\t-immed\t\tTry to use the SCSI IMMED flag with certain long lasting commands\n");
+     fprintf(stderr,
            "\t-force\t\tforce to continue on some errors to allow blanking\n");
 #ifdef Cdrskin_allow_libburn_taO
      fprintf(stderr,"\t-tao\t\tWrite disk in TAO mode.\n");
@@ -6382,7 +6384,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-fix", "-nofix", "-waiti",
-   "-immed", "-raw", "-raw96p", "-raw16",
+   "-raw", "-raw96p", "-raw16",
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
    "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
@@ -6800,6 +6802,15 @@ gracetime_equals:;
 
    } else if(strcmp(argv[i],"--ignore_signals")==0) {
      /* is handled in Cdrpreskin_setup() */;
+
+   } else if(strcmp(argv[i],"-immed")==0) {
+#ifdef Cdrskin_libburn_has_set_waitinG
+     skin->modesty_on_drive= 1;
+     skin->min_buffer_percent= 75;
+     skin->max_buffer_percent= 95;
+#else
+     ;
+#endif /* Cdrskin_libburn_has_set_waitinG */
 
    } else if(strcmp(argv[i],"-inq")==0) {
      skin->do_checkdrive= 2;
