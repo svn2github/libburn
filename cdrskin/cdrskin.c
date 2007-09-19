@@ -1721,8 +1721,14 @@ struct CdrpreskiN {
 
 #endif /* ! Cdrskin_extra_leaN */
 
-};
+ /* The eventual name of a program to be executed if demands_cdrecord_caps
+    is >0 and demands_cdrskin_caps is <=0
+ */
+ char fallback_program[Cdrskin_strleN];
+ int demands_cdrecord_caps;
+ int demands_cdrskin_caps;
 
+};
 
 
 /** Create a preliminary cdrskin program run control object. It will become
@@ -1778,6 +1784,9 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->pre_arglno= NULL;
 #endif /* ! Cdrskin_extra_leaN */
 
+ o->fallback_program[0]= 0;
+ o->demands_cdrecord_caps= 0;
+ o->demands_cdrskin_caps= 0;
  return(1);
 }
 
@@ -2081,6 +2090,18 @@ return:
    fprintf(stderr,"cdrskin: SORRY : No options given. Try option  --help\n");
    return(0);
  }
+
+ /* The two predefined fallback personalities are triggered by the progname */
+ value_pt= strrchr(argv[0],'/');
+ if(value_pt==NULL)
+   value_pt= argv[0];
+ else
+   value_pt++;
+ if(strcmp(value_pt,"unicord")==0)
+   strcpy(o->fallback_program,"cdrecord");
+ else if(strcmp(value_pt,"codim")==0)
+   strcpy(o->fallback_program,"wodim");
+
  for (i= 1;i<argc;i++) {
 
    if(strcmp(argv[i],"--abort_handler")==0) {
@@ -2131,6 +2152,7 @@ return:
 
    } else if(strcmp(argv[i],"--demand_a_drive")==0) {
      o->scan_demands_drive= 1;
+     o->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"--devices")==0) {
 #ifndef Cdrskin_extra_leaN
@@ -2141,8 +2163,10 @@ return:
 #endif /* ! Cdrskin_extra_leaN */
 
      o->no_whitelist= 1;
+     o->demands_cdrskin_caps= 1;
 
    } else if(strncmp(argv[i],"dev_translation=",16)==0) {
+     o->demands_cdrskin_caps= 1;
 
 #ifndef Cdrskin_extra_leaN
 
@@ -2273,6 +2297,7 @@ set_dev:;
        o->drive_scsi_dev_family= 0;
    } else if(strcmp(argv[i],"--drive_scsi_exclusive")==0) {
      o->drive_exclusive= 2;
+     o->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"driveropts=help")==0 ||
              strcmp(argv[i],"-driveropts=help")==0) {
@@ -2522,6 +2547,9 @@ see_cdrskin_eng_html:;
    } else if(strcmp(argv[i],"--ignore_signals")==0) {
      o->abort_handler= 2;
 
+   } else if(strncmp(argv[i],"fallback_program=",17)==0) {
+     strcpy(o->fallback_program,argv[i]+17);
+
    } else if(strcmp(argv[i],"--no_abort_handler")==0) {
      o->abort_handler= 0;
 
@@ -2530,6 +2558,7 @@ see_cdrskin_eng_html:;
 
    } else if(strcmp(argv[i],"--old_pseudo_scsi_adr")==0) {
      o->old_pseudo_scsi_adr= 1;
+     o->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"--no_rc")==0) {
      if(i!=1)
@@ -2683,6 +2712,61 @@ ex:;
 #endif
 
  return(ret);
+}
+
+
+int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv)
+{
+ char **hargv= NULL;
+ int i, wp= 1;
+ char *ept, *upt;
+
+ if(getuid()!=geteuid() && !preskin->allow_setuid) {
+   fprintf(stderr,
+     "cdrskin: SORRY : uid and euid differ. Will not start external fallback program.\n");
+   fprintf(stderr,
+     "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
+   fprintf(stderr,
+     "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+   fprintf(stderr,
+    "cdrskin: HINT : Option  --allow_setuid  disables this safety check.\n");
+   goto failure;
+ }
+ fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
+ fprintf(stderr,"cdrskin: Starting fallback program:\n");
+ hargv= TSOB_FELD(char *,argc+1);
+ if(hargv==NULL)
+   goto failure;
+ hargv[0]= strdup(preskin->fallback_program);
+ if(argv[0]==NULL)
+   goto failure; 
+ fprintf(stderr,"         %s", hargv[0]);
+ for(i= 1; i<argc; i++) {
+   /* filter away all cdrskin specific options :  --?*  and  *_*=*   */
+   if(argv[i][0]=='-' && argv[i][1]=='-' && argv[i][2])
+ continue;
+   ept= strchr(argv[i],'=');
+   if(ept!=NULL) {
+     upt= strchr(argv[i],'_');
+     if(upt!=NULL && upt<ept)
+ continue;
+   }
+   hargv[wp]= strdup(argv[i]);
+   if(hargv[wp]==NULL)
+     goto failure;
+   fprintf(stderr,"  %s", hargv[wp]);
+   wp++;
+ }
+ hargv[wp]= NULL;
+ fprintf(stderr,"\n");
+ fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
+ execvp(hargv[0], hargv);
+failure:;
+ fprintf(stderr,"cdrskin: FATAL : Cannot start fallback program '%s'\n",
+         hargv[0]);
+ fprintf(stderr,"cdrskin: errno=%d  \"%s\"\n",
+         errno, (errno > 0 ? strerror(errno) : "unidentified error"));
+ exit(15);
 }
 
 
@@ -3009,7 +3093,6 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->use_data_image_size= 0;
  o->media_does_multi= 0;
  o->media_is_overwriteable= 0;
-
  o->grow_overwriteable_iso= 0;
  memset(o->overwriteable_iso_head,0,sizeof(o->overwriteable_iso_head));
 
@@ -6483,8 +6566,12 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
        goto no_volunteer;
    if(0) {
 no_volunteer:;
-     fprintf(stderr,"cdrskin: NOTE : ignoring unimplemented option : '%s'\n",
-                    argv[i]);
+     skin->preskin->demands_cdrecord_caps= 1;
+     if(skin->preskin->fallback_program[0])
+       fprintf(stderr,"cdrskin: NOTE : Unimplemented option: '%s'\n",argv[i]);
+     else  
+       fprintf(stderr,"cdrskin: NOTE : ignoring unimplemented option : '%s'\n",
+               argv[i]);
      fprintf(stderr,
        "cdrskin: NOTE : option is waiting for a volunteer to implement it.\n");
  continue;
@@ -6582,22 +6669,27 @@ set_blank:;
        skin->do_blank= 1;
        skin->blank_format_type= 1|(1<<8);
        skin->blank_format_size= 128*1024*1024;
+       skin->preskin->demands_cdrskin_caps= 1;
      } else if(strcmp(cpt,"format_overwrite_full")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1|(1<<10);
        skin->blank_format_size= 0;
+       skin->preskin->demands_cdrskin_caps= 1;
      } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
        skin->do_blank= 1;
        skin->blank_format_type= 1;
        skin->blank_format_size= 0;
+       skin->preskin->demands_cdrskin_caps= 1;
      } else if(strcmp(cpt,"deformat_sequential")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 2;
        skin->blank_fast= 0;
+       skin->preskin->demands_cdrskin_caps= 1;
      } else if(strcmp(cpt,"deformat_sequential_quickest")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 2;
        skin->blank_fast= 1;
+       skin->preskin->demands_cdrskin_caps= 1;
      } else if(strcmp(cpt,"help")==0) { 
        /* is handled in Cdrpreskin_setup() */;
  continue;
@@ -6628,11 +6720,9 @@ set_blank:;
    } else if(strcmp(argv[i],"--devices")==0) {
      skin->do_devices= 1;
 
-
 #ifndef Cdrskin_extra_leaN
 
    } else if(strncmp(argv[i],"dev_translation=",16)==0) {
-
      if(argv[i][16]==0) {
        fprintf(stderr,
          "cdrskin: FATAL : dev_translation= : missing separator character\n");
@@ -6669,6 +6759,7 @@ set_blank:;
      if(skin->direct_write_amount>=0.0) {
        skin->do_direct_write= 1;
        printf("cdrskin: NOTE : Direct writing will only use first track source and no fifo.\n");
+       skin->preskin->demands_cdrskin_caps= 1;
      } else
        skin->do_direct_write= 0;
 
@@ -6805,6 +6896,7 @@ fs_equals:;
    } else if(strncmp(argv[i],"grab_drive_and_wait=",20)==0) {
      value_pt= argv[i]+20;
      grab_and_wait_value= Scanf_io_size(value_pt,0);
+     skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strncmp(argv[i],"-gracetime=",11)==0) {
      value_pt= argv[i]+11;
@@ -6819,6 +6911,7 @@ gracetime_equals:;
    } else if(strncmp(argv[i],"--grow_overwriteable_iso",24)==0) {
      skin->grow_overwriteable_iso= 1;
      skin->use_data_image_size= 1;
+     skin->preskin->demands_cdrskin_caps= 1;
 #endif /* Cdrskin_libburn_has_random_access_rW */
 #endif /* Cdrskin_libburn_has_get_multi_capS */
      
@@ -6874,6 +6967,9 @@ gracetime_equals:;
      for(k=0;ignored_full_options[k][0]!=0;k++) 
        printf("%s\n",ignored_full_options[k]);
      printf("\n");
+
+   } else if(strncmp(argv[i],"fallback_program=",17)==0) {
+     /* is handled in Cdrpreskin_setup() */;
 
    } else if(strcmp(argv[i],"-load")==0) {
      skin->do_load= 1;
@@ -6959,6 +7055,7 @@ minbuf_equals:;
                 value_pt);
        }
      }
+     skin->preskin->demands_cdrskin_caps= 1;
 #else
      fprintf(stderr,
           "cdrskin: SORRY : Option modesty_on_drive= is not available yet.\n");
@@ -7055,6 +7152,7 @@ set_padsize:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf(
 "cdrskin: --single_track : will only accept last argument as track source\n"));
+     skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strncmp(argv[i],"-speed=",7)==0) {
      value_pt= argv[i]+7;
@@ -7070,6 +7168,8 @@ set_speed:;
        fprintf(stderr,"cdrskin: FATAL : speed= must be -1, 0 or at least 1\n");
        return(0);
      }
+     if(skin->x_speed<0)
+       skin->preskin->demands_cdrskin_caps= 1;
 
      /* >>> cdrecord speed=0 -> minimum speed , libburn -> maximum speed */;
 
@@ -7098,6 +7198,7 @@ set_speed:;
      skin->tao_to_sao_tsize= Scanf_io_size(argv[i]+17,0);
      if(skin->tao_to_sao_tsize>Cdrskin_tracksize_maX)
        goto track_too_large;
+     skin->preskin->demands_cdrskin_caps= 1;
 
 #ifndef Cdrskin_extra_leaN
      if(skin->verbosity>=Cdrskin_verbose_cmD)
@@ -7112,6 +7213,7 @@ set_speed:;
 #ifdef Cdrskin_libburn_has_get_spacE
    } else if(strcmp(argv[i],"--tell_media_space")==0) {
      skin->tell_media_space= 1;
+     skin->preskin->demands_cdrskin_caps= 1;
 #endif
 
    } else if(strcmp(argv[i],"-toc")==0) {
@@ -7150,6 +7252,7 @@ track_too_large:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: write start address : %.f\n",
                   skin->write_start_address));
+     skin->preskin->demands_cdrskin_caps= 1;
 
    } else if( i==argc-1 ||
              (skin->single_track==0 && strchr(argv[i],'=')==NULL 
@@ -7225,13 +7328,27 @@ track_too_large:;
      skin->fixed_size= 0;
    } else {
 ignore_unknown:;
-     fprintf(stderr,"cdrskin: NOTE : ignoring unknown option : '%s'\n",
-                    argv[i]);
+     if(skin->preskin->fallback_program[0])
+       fprintf(stderr,"cdrskin: NOTE : Unknown option : '%s'\n",argv[i]);
+     else
+       fprintf(stderr,"cdrskin: NOTE : ignoring unknown option : '%s'\n",
+               argv[i]);
+     skin->preskin->demands_cdrecord_caps= 1;
    }
  }
 
  if(flag&1) /* no finalizing yet */
    return(1);
+
+ if(skin->preskin->fallback_program[0] &&
+    skin->preskin->demands_cdrecord_caps>0 &&
+    skin->preskin->demands_cdrskin_caps<=0) {
+   fprintf(stderr,"cdrskin: NOTE : Unsupported options found.\n");	
+   fprintf(stderr,
+           "cdrskin: NOTE : Will delegate job to fallback program '%s'.\n",
+           skin->preskin->fallback_program);
+   return(0);
+ }
 
 #ifndef Cdrskin_extra_leaN
  if(skin->verbosity>=Cdrskin_verbose_cmD) {
@@ -7326,9 +7443,10 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
        (*preskin)->device_adr));
    burn_drive_add_whitelist((*preskin)->device_adr);
    if(strncmp((*preskin)->device_adr, "stdio:", 6)==0) {
-     if((*preskin)->allow_emulated_drives)
+     if((*preskin)->allow_emulated_drives) {
        stdio_drive= 1;
-     else {
+       (*preskin)->demands_cdrskin_caps= 1;
+     } else {
        fprintf(stderr,"cdrskin: SORRY : dev=stdio:... works only with option --allow_emulated_drives\n");
        {*exit_value= 2; goto ex;}
      }
@@ -7495,7 +7613,7 @@ no_drive:;
 int main(int argc, char **argv)
 {
  int ret,exit_value= 0,lib_initialized= 0,i,result_fd= -1;
- struct CdrpreskiN *preskin= NULL;
+ struct CdrpreskiN *preskin= NULL, *h_preskin= NULL;
  struct CdrskiN *skin= NULL;
  char *lean_id= "";
 #ifdef Cdrskin_extra_leaN
@@ -7571,6 +7689,25 @@ int main(int argc, char **argv)
  Cdrskin_run(skin,&exit_value,0);
 
 ex:;
+ if(preskin!=NULL)
+   h_preskin= preskin;
+ else if(skin!=NULL)
+   h_preskin= skin->preskin;
+ if(h_preskin!=NULL) {
+   if(skin->verbosity>=Cdrskin_verbose_debuG)
+     ClN(fprintf(stderr,
+       "cdrskin_debug: demands_cdrecord_caps= %d , demands_cdrskin_caps= %d\n",
+       h_preskin->demands_cdrecord_caps, h_preskin->demands_cdrskin_caps));
+
+   if(exit_value && h_preskin->demands_cdrecord_caps>0 &&
+      h_preskin->demands_cdrskin_caps<=0) {              /* prepare fallback */
+     /* detach preskin from managers which would destroy it */
+     preskin= NULL;
+     if(skin!=NULL)
+       skin->preskin= NULL;
+   } else
+     h_preskin= NULL;                                    /* prevent fallback */
+ }
  if(skin!=NULL) {
    Cleanup_set_handlers(NULL,NULL,1);
    Cdrskin_eject(skin,0);
@@ -7579,5 +7716,7 @@ ex:;
  Cdrpreskin_destroy(&preskin,0);
  if(lib_initialized)
    burn_finish();
+ if(h_preskin!=NULL)
+   Cdrpreskin_fallback(h_preskin,argc,argv); /* never come back */
  exit(exit_value);
 }

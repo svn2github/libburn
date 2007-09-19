@@ -777,6 +777,33 @@ Both, write_start_address and direct_write_amount size must be aligned to a
 media dependend transaction size. With DVD-RAM and DVD+RW this is 2k, with
 overwriteable DVD-RW it is 32k.
 .TP
+.BI fallback_program= command
+Set a command name to be executed if cdrskin encounters a known cdrecord
+option which it does not yet support. If a non-empty command is given with
+fallback_program=, and if no essential options are given which are specific
+to cdrskin, then cdrskin will delegate the job to said command.
+.br
+The natural commands to be given are cdrecord or wodim but one may well submit
+the address of an own program. 
+.br
+The fallback programm will get all arguments of cdrskin which do not match
+the shell patterns --?* or *_*=* . This eventually suppresses path names of
+track sources which happen to match those patterns. The options from the
+startup files are not handed to the fallback program.
+.br
+Fallback program execution is disabled if cdrskin is run setuid and not
+option --allow_setuid is given. In general, the drive's device files and the
+involved programs should be set so that each program runs under its advised
+conditions. (E.g. cdrskin as member of group floppy, cdrecord setuid root.)
+.br
+Two alias names for cdrskin are predefined with default fallback programs:
+.br
+.B unicord
+implies fallback_program=cdrecord
+.br
+.B codim
+implies fallback_program=wodim
+.TP
 .BI fifo_start_at= size
 Do not wait for full fifo but start burning as soon as the given number
 of bytes is read. This option may be helpful to bring the average throughput
