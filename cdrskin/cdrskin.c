@@ -1161,8 +1161,12 @@ int Cdrtrack_activate_image_size(struct CdrtracK *track, double *size_used,
    track->set_by_padsize= 0;
  }
  track->extracting_container= 1;
+
+#ifndef Cdrskin_extra_leaN
  if(track->ff_fifo!=NULL)
    Cdrfifo_set_fd_in_limit(track->ff_fifo,track->fixed_size,track->ff_idx,0);
+#endif
+
  return(1);
 }
 
@@ -5785,6 +5789,7 @@ burn_failed:;
  }
 #endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
+#ifndef Cdrskin_extra_leaN
  /* Final decision on track size has to be made after eventual -isosize
     determination via fifo content.
  */
@@ -5805,6 +5810,8 @@ burn_failed:;
      needs_early_fifo_fill= 2; /* continue filling fifo at normal stage */
    skin->fifo_start_at= start_memorized;
  }
+#endif /* Cdrskin_extra_leaN */
+
  skin->fixed_size= 0.0;
  skin->has_open_ended_track= 0;
  for(i=0;i<skin->track_counter;i++) {
