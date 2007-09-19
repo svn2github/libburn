@@ -564,7 +564,8 @@ int Sfile_home_adr_s(char *filename, char *fileadr, int fa_size, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
-/* This would rather belong to libisofs */
+/* -------------------------- other misc functions ----------------------- */
+
 
 /* Learned from reading growisofs.c , 
    watching mkisofs, and viewing its results via od -c */
@@ -595,6 +596,30 @@ int Set_descr_iso_size(unsigned char data[2048], double size_in_bytes,
  for(i=0;i<4;i++)
    data[87-i]= data[80+i]= (sectors >> (8*i)) & 0xff;
  return(1);
+}
+
+
+int Wait_for_input(int fd, int microsec, int flag)
+{
+ struct timeval wt;
+ fd_set rds,wts,exs;
+ int ready;
+
+ FD_ZERO(&rds);
+ FD_ZERO(&wts);
+ FD_ZERO(&exs);
+ FD_SET(fd,&rds); 
+ FD_SET(fd,&exs); 
+ wt.tv_sec=  microsec/1000000;
+ wt.tv_usec= microsec%1000000;
+ ready= select(fd+1,&rds,&wts,&exs,&wt);
+ if(ready<=0)
+   return(0);
+ if(FD_ISSET(fd,&exs))
+   return(-1);
+ if(FD_ISSET(fd,&rds))
+   return(1);
+ return(0);
 }
 
 
@@ -1564,20 +1589,12 @@ int Cdrtrack_get_sectors(struct CdrtracK *track, int flag)
 */
 int Cdrtrack_has_input_left(struct CdrtracK *track, int flag)
 {
- struct timeval wt;
- fd_set rds,wts,exs;
  int ready,ret;
  char buf[2];
 
  if(track->fifo_outlet_fd<=0)
    return(0);
- FD_ZERO(&rds);
- FD_ZERO(&wts);
- FD_ZERO(&exs);
- FD_SET(track->fifo_outlet_fd,&rds); 
- wt.tv_sec= 0;
- wt.tv_usec= 0;
- ready= select(track->fifo_outlet_fd+1,&rds,&wts,&exs,&wt);
+ ready= Wait_for_input(track->fifo_outlet_fd, 0, 0);
  if(ready<=0)
    return(0);
  ret= read(track->fifo_outlet_fd,buf,1);
@@ -1611,6 +1628,9 @@ struct CdrpreskiN {
  int verbosity;
  char queue_severity[81];
  char print_severity[81];
+
+ /** Wether to wait for available standard input data before touching drives */
+ int do_waiti;
 
  /** Stores eventually given absolute device address before translation */
  char raw_device_adr[Cdrskin_adrleN];
@@ -1719,6 +1739,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->verbosity= 0;
  strcpy(o->queue_severity,"NEVER");
  strcpy(o->print_severity,"SORRY");
+ o->do_waiti= 0;
  o->raw_device_adr[0]= 0;
  o->device_adr[0]= 0;
  o->adr_trn= NULL;
@@ -2446,6 +2467,8 @@ see_cdrskin_eng_html:;
              "\t-multi\t\tgenerate a TOC that allows multi session\n");
 #endif
      fprintf(stderr,
+           "\t-waiti\t\twait until input is available before opening SCSI\n");
+     fprintf(stderr,
            "\t-immed\t\tTry to use the SCSI IMMED flag with certain long lasting commands\n");
      fprintf(stderr,
            "\t-force\t\tforce to continue on some errors to allow blanking\n");
@@ -2547,6 +2570,10 @@ set_severities:;
      printf("Version timestamp :  %s\n",Cdrskin_timestamP);
      printf("Build timestamp   :  %s\n",Cdrskin_build_timestamP);
      {ret= 2; goto final_checks;}
+
+   } else if(strcmp(argv[i],"-waiti")==0) {
+     o->do_waiti= 1;
+
    }
 
  }
@@ -2554,6 +2581,18 @@ set_severities:;
 final_checks:;
  if(flag&1)
    goto ex;
+
+ if(o->do_waiti) {
+   fprintf(stderr,
+       "cdrskin: Option -waiti pauses program until input appears at stdin\n");
+   printf("Waiting for data on stdin...\n");
+   for(ret= 0; ret==0; )
+     ret= Wait_for_input(0,1000000,0);
+   if(ret<0 || feof(stdin))
+     fprintf(stderr,
+             "cdrskin: NOTE : stdin produces exception rather than data\n");
+   fprintf(stderr,"cdrskin: Option -waiti pausing is done.\n");
+ }
 
 #ifndef Cdrskin_libburn_no_burn_preset_device_opeN
  burn_preset_device_open(o->drive_exclusive
@@ -6383,7 +6422,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  static char ignored_full_options[][41]= {
    "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
-   "-fix", "-nofix", "-waiti",
+   "-fix", "-nofix",
    "-raw", "-raw96p", "-raw16",
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
@@ -7094,6 +7133,9 @@ track_too_large:;
      /* is handled in Cdrpreskin_setup() */;
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
+     /* is handled in Cdrpreskin_setup() */;
+
+   } else if(strcmp(argv[i],"-waiti")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"write_start_address=",20)==0) {
