@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "September 17, 2007"
+.TH CDRSKIN 1 "September 19, 2007"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -48,7 +48,9 @@ or on DVD-R[W] (in Incremental mode) or on DVD+R.
 .br
 Single session on DVD-RW or DVD-R (Disk-at-once)
 .br
-or on overwriteable DVD+RW, DVD-RW, DVD-RAM,
+Single session or emulated multi-session 
+.br
+on overwriteable DVD+RW, DVD-RW, DVD-RAM,
 .br
 or on data file or block device.
 .br
@@ -114,6 +116,19 @@ the archivers afio and star. Not suitable seems GNU tar.
 .PP
 .B Write mode selection:
 .br
+In general there are two approaches for writing media:
+.br
+A permissive mode depicted by option
+.B -tao
+which needs no predicted track size and allows to make use of
+eventual multi-session capabilities.
+.br
+A more restrictive mode
+.B -sao
+(alias -dao) which usually demands a predictable track size and is not
+necessarily capable of multi-session. It may have advantages for some
+readers resp. players of the recorded tracks.
+.br
 If none of the options -dao, -tao or -sao is given then the program will
 try to choose a write mode which matches the defined recording job,
 the capabilities of the drive and the state of the present media.
@@ -130,15 +145,11 @@ read-only. Closing is done automatically unless option
 .B -multi
 is given which keeps the media appendable.
 .br
-There are two write modes,
-.B -tao
-and
-.B -sao .
-.br
+Write mode
 -tao allows to use track source of unpredictable length (like stdin) and allows
-to write further sessions to appendable media. -sao produces audio sessions
-with seamless tracks but needs predicted track sizes and cannot append sessions
-to media.
+to write further sessions to appendable media.
+-sao produces audio sessions with seamless tracks but needs predicted track
+sizes and cannot append sessions to media.
 .br
 CD-RW media can be blanked to make them re-usable for another
 round of overwriting. Usually
@@ -208,7 +219,8 @@ single continuous data area for blockwise random access.
 Option -audio is not allowed. Only one track is allowed.
 Option -multi cannot mark a recognizeable end of overwriteable media.
 Therefore -multi is banned unless ISO-9660 images shall be expandable by help
-of option --grow_overwriteable_iso.
+of option
+.B --grow_overwriteable_iso .
 Without this option or without an ISO-9660 filesystem image present
 on media, -toc does not return information about the media content and
 media get treated as blank regardless wether they hold data or not.
@@ -667,6 +679,23 @@ some extra lines to be put out with info retrieval options.
 Level 2 additionally reports about option settings derived from arguments or
 startup files. Level 3 is for debugging and useful mainly in conjunction with
 somebody who had a look into the program sourcecode.
+.TP
+.BI \-waiti
+Wait until input data is available at stdin or EOF occurs at stdin.
+Only then begin to access any drives.
+.br
+One should use this if cdrskin is working at the end of a pipe where the
+feeder process reads from the drive before it starts writing its output into
+cdrskin. Example:
+.br
+mkisofs ... -C 0,12800 -M /dev/sr0 | \\
+.br
+cdrskin dev=/dev/sr0 ... -waiti -
+.br
+This option works even if stdin is not among the track sources. If no process
+is piping in, then the Enter key of your terminal will act as trigger for
+cdrskin. Note that this input line will not be consumed by cdrskin if stdin
+is not among the track sources. It will end up as shell command, usually.
 .PP
 Alphabetical list of options which are genuine to cdrskin and intended for
 normal use:
@@ -763,7 +792,9 @@ Enable emulation of multi-session writing on overwriteable media which
 contain an ISO-9660 filesystem. This emulation is learned from growisofs -M
 but adapted to the usage model of
 .br
-.B cdrskin -msinfo ; mkisofs -C -M | cdrskin [-multi] -
+.B cdrskin -msinfo 
+.br
+.B mkisofs -C -M | cdrskin -waiti [-multi] -
 .br
 --grow_overwriteable_iso does not hamper the use of true multi-session media.
 I.e. it is possible to use the same cdrskin options with both kinds of media
@@ -788,9 +819,11 @@ eventual ISO-9660 image by altering the first few bytes of block 16 on
 overwriteable media.
 Option -multi is tolerated in order not to hamper true multi-session media.
 .br
-Note: The equivalent of growisofs -Z is
+An equivalent of growisofs -Z for overwriteable media is:
 .br
-.B mkisofs | cdrskin --grow_overwriteable_iso blank=fast [-multi]
+.B mkisofs | cdrskin --grow_overwriteable_iso blank=fast [-multi] -
+.br
+With multi-session DVD, blank=fast will act like dvd+rw-format -blank=full .
 .br
 growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
 .TP
