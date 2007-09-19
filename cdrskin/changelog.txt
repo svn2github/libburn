@@ -4500,10 +4500,72 @@ Equipped libdax_msgs with reference counter. Completed its mutex protection.
 
 ------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.15.205752
 
+16 Sep 2007  [1071]
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
 
+2007.09.17.163735  [1072]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented emulation for cdrecord options -inq , -format , -load
 
+2007.09.18.072234  [1073]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Learned helptexts for -inq, -format, -load from cdrecord (they are wrong, btw)
+
+2007.09.18.090713  [1074]
+libburn/libburn.h
+libburn/drive.c
+New API function burn_drive_leave_locked()
+
+2007.09.18.090839  [1075]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented emulation for cdrecord option -lock
+
+2007.09.18.130344  [1076]
+libburn/mmc.c
+Made use of Immed bit with 5Bh CLOSE TRACK/SESSION
+
+2007.09.18.200343  [1077]
+libburn/mmc.c
+libburn/spc.h
+libburn/spc.c
+libburn/sbc.c
+libburn/libdax_msgs.h
+Made use of Immed bit with 1Bh START STOP UNIT and 35h SYNCHRONIZE CACHE
+
+2007.09.18.200454  [1078]
+cdrskin/cdrskin.c
+Corrected an outdated HINT text
+
+2007.09.18.201556  [1079]
+libburn/sbc.c
+libburn/spc.c
+Changed some comments, reacted on harmless compiler warning
+
+2007.09.18.204043  [1080]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented emulation for cdrecord option -immed
+
+2007.09.19.094046  [1081]
+cdrskin/cdrskin.c
+Implemented emulation for cdrecord option -waiti
+
+19 Sep 2007  [1082]
+cdrskin/cdrskin.1
+Did a little overhaul of general paragraphs, mentioned new option -waiti
+
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.19.112330
+* More cdrecord options supported: -format, -inq, -load, -lock, -immed, -waiti
+
+  []
+cdrskin/changelog.txt
+cdrskin/cdrskin_eng.html
+Next cdrskin-0.3.9 cycle
 
 ===============================================================================
                                     TODO
@@ -4515,14 +4577,9 @@ Next cdrskin-0.3.9 cycle
 
 ? cdrecord: driver=cdr_simul , dvd_simul ?
 ? cdrecord: -V -VV ?
-? cdrecord: -inq ?
-? cdrecord: -format (blank=format_overwrite_full)  ?
-? cdrecord: -load -lock ?
 ? cdrecord: -fix -nofix ?
-? cdrecord: -waiti ?
-? cdrecord: -immed ?
-? cdrecord: -copy -scms ?
 ? cdrecord: -packet pktsize= -noclose ?
+? cdrecord: -copy -scms ?
 
 
 
