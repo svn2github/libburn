@@ -1915,6 +1915,71 @@ int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 }
 
 
+/* Start the fallback program as replacement of the cdrskin run.
+   @param flag bit0=do not report start command
+*/
+int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv,
+                        int flag)
+{
+ char **hargv= NULL;
+ int i, wp= 1;
+ char *ept, *upt;
+
+ if(getuid()!=geteuid() && !preskin->allow_setuid) {
+   fprintf(stderr,
+     "cdrskin: SORRY : uid and euid differ. Will not start external fallback program.\n");
+   fprintf(stderr,
+     "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
+   fprintf(stderr,
+     "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+   fprintf(stderr,
+    "cdrskin: HINT : Option  --allow_setuid  disables this safety check.\n");
+   goto failure;
+ }
+ if(!(flag&1)) {
+   fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
+   fprintf(stderr,"cdrskin: Starting fallback program:\n");
+ }
+ hargv= TSOB_FELD(char *,argc+1);
+ if(hargv==NULL)
+   goto failure;
+ hargv[0]= strdup(preskin->fallback_program);
+ if(argv[0]==NULL)
+   goto failure; 
+ if(!(flag&1))
+   fprintf(stderr,"         %s", hargv[0]);
+ for(i= 1; i<argc; i++) {
+   /* filter away all cdrskin specific options :  --?*  and  *_*=*   */
+   if(argv[i][0]=='-' && argv[i][1]=='-' && argv[i][2])
+ continue;
+   ept= strchr(argv[i],'=');
+   if(ept!=NULL) {
+     upt= strchr(argv[i],'_');
+     if(upt!=NULL && upt<ept)
+ continue;
+   }
+   hargv[wp]= strdup(argv[i]);
+   if(hargv[wp]==NULL)
+     goto failure;
+   if(!(flag&1))
+     fprintf(stderr,"  %s", hargv[wp]);
+   wp++;
+ }
+ hargv[wp]= NULL;
+ if(!(flag&1)) {
+   fprintf(stderr,"\n");
+   fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
+ }
+ execvp(hargv[0], hargv);
+failure:;
+ fprintf(stderr,"cdrskin: FATAL : Cannot start fallback program '%s'\n",
+         hargv[0]);
+ fprintf(stderr,"cdrskin: errno=%d  \"%s\"\n",
+         errno, (errno > 0 ? strerror(errno) : "unidentified error"));
+ exit(15);
+}
+
+
 /** Convert a cdrecord-style device address into a libburn device address or
     into a libburn drive number. It depends on the "scsibus" number of the
     cdrecord-style address which kind of libburn address emerges:
@@ -2602,7 +2667,16 @@ set_severities:;
 
      printf("Version timestamp :  %s\n",Cdrskin_timestamP);
      printf("Build timestamp   :  %s\n",Cdrskin_build_timestamP);
-     {ret= 2; goto final_checks;}
+     if(o->fallback_program[0]) {
+       char *hargv[2];
+
+       printf("Fallback program  :  %s\n",o->fallback_program);
+       printf("Fallback version  :\n");
+       hargv[0]= argv[0];
+       hargv[1]= "-version";
+       Cdrpreskin_fallback(o,2,hargv,1); /* dirty never come back */
+     }
+     {ret= 2; goto ex;}
 
    } else if(strcmp(argv[i],"-waiti")==0) {
      o->do_waiti= 1;
@@ -2712,61 +2786,6 @@ ex:;
 #endif
 
  return(ret);
-}
-
-
-int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv)
-{
- char **hargv= NULL;
- int i, wp= 1;
- char *ept, *upt;
-
- if(getuid()!=geteuid() && !preskin->allow_setuid) {
-   fprintf(stderr,
-     "cdrskin: SORRY : uid and euid differ. Will not start external fallback program.\n");
-   fprintf(stderr,
-     "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
-   fprintf(stderr,
-     "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
-   fprintf(stderr,
-    "cdrskin: HINT : Option  --allow_setuid  disables this safety check.\n");
-   goto failure;
- }
- fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
- fprintf(stderr,"cdrskin: Starting fallback program:\n");
- hargv= TSOB_FELD(char *,argc+1);
- if(hargv==NULL)
-   goto failure;
- hargv[0]= strdup(preskin->fallback_program);
- if(argv[0]==NULL)
-   goto failure; 
- fprintf(stderr,"         %s", hargv[0]);
- for(i= 1; i<argc; i++) {
-   /* filter away all cdrskin specific options :  --?*  and  *_*=*   */
-   if(argv[i][0]=='-' && argv[i][1]=='-' && argv[i][2])
- continue;
-   ept= strchr(argv[i],'=');
-   if(ept!=NULL) {
-     upt= strchr(argv[i],'_');
-     if(upt!=NULL && upt<ept)
- continue;
-   }
-   hargv[wp]= strdup(argv[i]);
-   if(hargv[wp]==NULL)
-     goto failure;
-   fprintf(stderr,"  %s", hargv[wp]);
-   wp++;
- }
- hargv[wp]= NULL;
- fprintf(stderr,"\n");
- fprintf(stderr,"cdrskin: --------------------------------------------------------------------\n");
- execvp(hargv[0], hargv);
-failure:;
- fprintf(stderr,"cdrskin: FATAL : Cannot start fallback program '%s'\n",
-         hargv[0]);
- fprintf(stderr,"cdrskin: errno=%d  \"%s\"\n",
-         errno, (errno > 0 ? strerror(errno) : "unidentified error"));
- exit(15);
 }
 
 
@@ -3331,6 +3350,7 @@ int Cdrskin_determine_media_caps(struct CdrskiN *skin, int flag)
                 bit1= do not load drive tray
                 bit2= do not issue error message on failure
                 bit3= demand and evtl. report media, return 0 if none to see
+                bit4= grab drive with unsuitable media even if fallback program
     @return <=0 error, 1 success
 */
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
@@ -3443,8 +3463,8 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  }
  skin->drive_is_grabbed= 1;
 
+ s= burn_disc_get_status(drive);
  if((flag&8)) {
-   s= burn_disc_get_status(drive);
    if(skin->verbosity>=Cdrskin_verbose_progresS)
      Cdrskin_report_disc_status(skin,s,1);
    if(s==BURN_DISC_EMPTY) {
@@ -3468,6 +3488,16 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    }
  }
 #endif /* Cdrskin_libburn_has_get_profilE */
+ if(skin->preskin->fallback_program[0] && s==BURN_DISC_UNSUITABLE &&
+    skin->preskin->demands_cdrskin_caps<=0 && !(flag&16)) {
+   skin->preskin->demands_cdrecord_caps= 1;
+   fprintf(stderr,
+           "cdrskin: NOTE : Will delegate job to fallback program '%s'.\n",
+           skin->preskin->fallback_program);
+   Cdrskin_release_drive(skin,0);
+   ret= 0; goto ex;
+ }
+
  Cdrskin_determine_media_caps(skin,0);
 
  ret= 1;
@@ -6409,7 +6439,7 @@ int Cdrskin_eject(struct CdrskiN *skin, int flag)
              me. Waiting seems to help. I suspect the media demon. */
 
  for(i= 0;i<max_try;i++) {
-   ret= Cdrskin_grab_drive(skin,2|((i<max_try-1)<<2));
+   ret= Cdrskin_grab_drive(skin,2|((i<max_try-1)<<2)|16);
    if(ret>0 || i>=max_try-1)
  break;
    if(skin->verbosity>=Cdrskin_verbose_progresS)
@@ -6433,7 +6463,7 @@ sorry_failed_to_eject:;
 
  if(!skin->do_eject)
    return(1);
- if(Cdrskin_grab_drive(skin,2)>0) {
+ if(Cdrskin_grab_drive(skin,2|16)>0) {
     Cdrskin_release_drive(skin,1);
  } else {
    fprintf(stderr,"cdrskin: SORRY : Failed to finally eject tray.\n");
@@ -7244,6 +7274,9 @@ track_too_large:;
              strcmp(argv[i],"-vvvv")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i],"-version")==0) {
+     /* is handled in Cdrpreskin_setup() and should really not get here */;
+
    } else if(strcmp(argv[i],"-waiti")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -7391,7 +7424,7 @@ ignore_unknown:;
    }
  }
  if(grab_and_wait_value>0) {
-   Cdrskin_grab_drive(skin,0);
+   Cdrskin_grab_drive(skin,16);
    for(k= 0; k<grab_and_wait_value; k++) {
      fprintf(stderr,
         "\rcdrskin: holding drive grabbed since %d seconds                 ",
@@ -7694,8 +7727,9 @@ ex:;
  else if(skin!=NULL)
    h_preskin= skin->preskin;
  if(h_preskin!=NULL) {
-   if(skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(fprintf(stderr,
+   if(skin!=NULL)
+     if(skin->verbosity>=Cdrskin_verbose_debuG)
+       ClN(fprintf(stderr,
        "cdrskin_debug: demands_cdrecord_caps= %d , demands_cdrskin_caps= %d\n",
        h_preskin->demands_cdrecord_caps, h_preskin->demands_cdrskin_caps));
 
@@ -7710,13 +7744,14 @@ ex:;
  }
  if(skin!=NULL) {
    Cleanup_set_handlers(NULL,NULL,1);
-   Cdrskin_eject(skin,0);
+   if(skin->preskin!=NULL)
+     Cdrskin_eject(skin,0);
    Cdrskin_destroy(&skin,0);
  }
  Cdrpreskin_destroy(&preskin,0);
  if(lib_initialized)
    burn_finish();
  if(h_preskin!=NULL)
-   Cdrpreskin_fallback(h_preskin,argc,argv); /* never come back */
+   Cdrpreskin_fallback(h_preskin,argc,argv,0); /* never come back */
  exit(exit_value);
 }
