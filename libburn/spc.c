@@ -103,22 +103,41 @@ int spc_test_unit_ready(struct burn_drive *d)
 int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
 {
-	int i, ret = 1, key, asc, ascq;
+	int i, ret = 1, key = 0, asc = 0, ascq = 0;
 	char msg[160];
 
 	if (!(flag & 1))
 		usleep(100000);
 	for(i = !(flag & 1); i < max_sec * 10; i++) {
 		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
+
+/* <<< 
+		fprintf(stderr,
+"libburn_EXPERIMENTAL: i= %d  ret= %d  key= %X  asc= %2.2X  ascq= %2.2X\n",
+		i, ret, (unsigned) key, (unsigned) asc, (unsigned) ascq);
+*/
+
 		if(ret > 0) /* ready */
 	break;
 		if(key!=0x2 || asc!=0x4) {
 			if (key == 0x2 && asc == 0x3A) {
 				ret = 1; /* medium not present = ok */
+/* <<<
+  ts A70912 :
+  My LG GSA-4082B on asynchronous load:
+    first it reports no media 2,3A,00,
+    then it reports not ready 2,04,00,
+    further media inquiry retrieves wrong data
+
+				if(i<=100)
+					goto slumber;
+*/
 	break;
 			}
 			if (key == 0x6 && asc == 0x28 && ascq == 0x00)
-	continue;			 /* media change notice = try again */
+				/* media change notice = try again */
+				goto slumber;
+
 			sprintf(msg,
 		"Asynchromous SCSI error on %s: key=%X asc=%2.2Xh ascq=%2.2Xh",
 			 	cmd_text, (unsigned) key, (unsigned) asc,
@@ -130,8 +149,10 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 			d->cancel = 1;
 	break;
 		}
+slumber:;
 		usleep(100000);
 	}
+
 	sprintf(msg, "Async %s %s after %d.%d seconds",
 		cmd_text, (ret > 0 ? "succeeded" : "failed"), i / 10, i % 10);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020150,
