@@ -38,7 +38,7 @@ void sbc_load(struct burn_drive *d)
 	c.retry = 1;
 
 	/* ts A70921 : Had to revoke Immed because of LG GSA-4082B */
-	/* c.opcode[1] |= 1; /* ts A70918 : Immed */
+	/* c.opcode[1] |= 1; / * ts A70918 : Immed */
 
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
