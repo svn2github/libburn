@@ -16,6 +16,7 @@
 #include "error.h"
 #include "libburn.h"
 #include "drive.h"
+#include "transport.h"
 
 /* ts A60825 : The storage location for back_hacks.h variables. */
 #define BURN_BACK_HACKS_INIT 1
@@ -228,6 +229,37 @@ ex:
 	libdax_msgs_destroy_item(libdax_messenger, &item, 0);
 	return ret;
 }
+
+
+/* ts A70922 : API */
+int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
+			char severity[], struct burn_drive *d)
+{
+	int ret, sevno, global_index = -1;
+
+	ret = libdax_msgs__text_to_sev(severity, &sevno, 0);
+	if (ret <= 0)
+		sevno = LIBDAX_MSGS_SEV_FATAL;
+	if (error_code <= 0) {
+		switch(sevno) {
+		       case LIBDAX_MSGS_SEV_ABORT:   error_code = 0x00040000;
+		break; case LIBDAX_MSGS_SEV_FATAL:   error_code = 0x00040001;
+		break; case LIBDAX_MSGS_SEV_SORRY:   error_code = 0x00040002;
+		break; case LIBDAX_MSGS_SEV_WARNING: error_code = 0x00040003;
+		break; case LIBDAX_MSGS_SEV_HINT:    error_code = 0x00040004;
+		break; case LIBDAX_MSGS_SEV_NOTE:    error_code = 0x00040005;
+		break; case LIBDAX_MSGS_SEV_UPDATE:  error_code = 0x00040006;
+		break; case LIBDAX_MSGS_SEV_DEBUG:   error_code = 0x00040007;
+		break; default:                      error_code = 0x00040001;
+		}
+	}
+	if (d != NULL)
+		global_index = d->global_index;
+	ret = libdax_msgs_submit(libdax_messenger, global_index, error_code,
+			sevno, LIBDAX_MSGS_PRIO_HIGH, msg_text, os_errno, 0);
+	return ret;
+}
+
 
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
