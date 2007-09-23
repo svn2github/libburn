@@ -1998,6 +1998,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
 
 
+/* A70904 */
 /** Inquire wether the drive object is a real MMC drive or a pseudo-drive
     created by burn_drive_dummy().
     @param d      The drive to inquire
@@ -2006,6 +2007,33 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                   2= stdio-drive
 */
 int burn_drive_get_drive_role(struct burn_drive *d);
+
+
+/* ts A70923 */
+/** Find out wether a given address string would lead to the given drive
+    object. This should be done in advance for track source addresses
+    with parameter drive_role set to 2. 
+    Although a real MMC drive should hardly exist as two drive objects at
+    the same time, this can easily happen with stdio-drives. So if more than
+    one drive is used by the application, then this gesture is advised:
+      burn_drive_d_get_adr(d2, adr2);
+      if (burn_drive_equals_adr(d1, adr2, burn_drive_get_drive_role(d2)))
+        ... Both drive objects point to the same storage facility ...
+ 
+    @param d1      Existing drive object
+    @param adr2    Address string to be tested. Prefix "stdio:" overrides
+                   parameter drive_role2 by either 0 or 2 as appropriate.
+                   The string must be shorter than BURN_DRIVE_ADR_LEN.
+    @param drive_role2  Role as burn_drive_get_drive_role() would attribute
+                   to adr2 if it was a drive. Use value 2 for checking track
+                   sources resp. pseudo-drive addresses without "stdio:".
+                   Use 1 for checking drive addresses including those with
+                   prefix "stdio:".
+    @return        1= adr2 leads to d1 , 0= adr2 seems not to lead to d1,
+                   -1 = adr2 is bad
+*/
+int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int drive_role2);
+
 
 
 #ifndef DOXYGEN

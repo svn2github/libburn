@@ -2207,3 +2207,123 @@ int burn_drive_get_drive_role(struct burn_drive *d)
 	return d->drive_role;
 }
 
+
+/* ts A70923
+   Hands out pointers *dpt to directory path and *npt to basename.
+   Caution: the last '/' in adr gets replaced by a 0.
+*/
+static int burn__split_path(char *adr, char **dpt, char **npt)
+{
+	*dpt = adr;
+	*npt = strrchr(*dpt, '/');
+	if (*npt == NULL) {
+		*npt = *dpt;
+		*dpt = ".";
+		return 1;
+	}
+	**npt = 0;
+	if(*npt == *dpt) 
+		*dpt = "/";
+	(*npt)++;
+	return 2;
+}
+
+
+/* ts A70923 : API */
+int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int role2)
+{
+	struct stat stbuf1, stbuf2;
+	char adr1[BURN_DRIVE_ADR_LEN];
+	char conv_adr1[BURN_DRIVE_ADR_LEN], conv_adr2[BURN_DRIVE_ADR_LEN];
+	char *npt1, *dpt1, *npt2, *dpt2;
+	int role1, stat_ret1, stat_ret2, conv_ret2;
+
+	role1 = burn_drive_get_drive_role(d1);
+	burn_drive_d_get_adr(d1, adr1);
+	stat_ret1 = stat(adr1, &stbuf1);
+
+	if (strlen(adr2) >= BURN_DRIVE_ADR_LEN)
+		return -1;
+	stat_ret2 = stat(adr2, &stbuf2);
+	conv_ret2 = burn_drive_convert_fs_adr(adr2, conv_adr2);
+
+	if (strcmp(adr1, adr2) == 0 && role1 == role2)
+		return(1);			/* equal role and address */
+	if (role1 == 1 && role2 == 1) {
+					/* MMC drive meets wannabe MMC drive */
+		if (conv_ret2 <= 0)
+			return 0;		/* no MMC drive at adr2 */
+		if (strcmp(adr1, conv_adr2) == 0)
+			return 1;		/* equal real MMC drives */
+		return 0;
+
+	} else if (role1 == 0 || role2 == 0)
+		return 0;			/* one null-drive, one not */
+
+	else if (role1 != 1 && role2 != 1) {
+					/* pseudo-drive meets file object */
+
+		if (stat_ret1 == -1 || stat_ret2 == -1) {
+			if (stat_ret1 != -1 || stat_ret2 != -1)
+				 return 0;  /* one adress existing, one not */
+
+			/* Two non-existing file objects */
+
+			strcpy(conv_adr1, adr1);
+			burn__split_path(conv_adr1, &dpt1, &npt1);
+			strcpy(conv_adr2, adr2);
+			burn__split_path(conv_adr2, &dpt2, &npt2);
+			if (strcmp(npt1, npt2))
+				return 0;		/* basenames differ */
+			stat_ret1= stat(adr1, &stbuf1);
+			stat_ret2= stat(adr2, &stbuf2);
+			if (stat_ret1 != stat_ret2)
+				 return 0;  /* one dir existing, one not */
+
+			/* Both directories exist. The basenames are equal.
+			   So the adresses are equal if the directories are
+			   equal.*/
+		}
+		if (stbuf1.st_ino == stbuf2.st_ino &&
+	 		stbuf1.st_dev == stbuf2.st_dev)
+			return 1;		/* same filesystem object */
+
+		if (S_ISBLK(stbuf1.st_mode) && S_ISBLK(stbuf2.st_mode) &&
+			 stbuf1.st_rdev == stbuf2.st_rdev)
+			return 1;	/* same major,minor device number */
+
+		/* Are both filesystem objects related to the same MMC drive */
+		if (conv_ret2 <= 0)
+			return 0;		/* no MMC drive at adr2 */
+		if (burn_drive_convert_fs_adr(adr1, conv_adr1) <= 0)
+			return 0;		/* no MMC drive at adr1 */
+		if (strcmp(conv_adr1, conv_adr2) == 0)
+			return 1;		/* same MMC drive */
+
+		return 0;	/* all filesystem disguises are checked */
+
+	} else if (role1 == 1 && role2 != 1) {
+	                          /* MMC drive meets file object */
+
+		if (conv_ret2 <= 0)
+			return 0;		/* no MMC drive at adr2 */
+		if (strcmp(adr1, conv_adr2) == 0)
+			return 1;		/* same MMC drive */
+		return 0;
+
+	} else if (role1 != 1 && role2 == 1) {
+	                          /* stdio-drive meets wannabe MMC drive */
+
+		if (conv_ret2 <= 0)
+			return 0;		/* no MMC drive at adr2 */
+		if (burn_drive_convert_fs_adr(adr1, conv_adr1) <= 0)
+			return 0;		/* no MMC drive at adr1 */
+		if (strcmp(conv_adr1, conv_adr2) == 0)
+			return 1;		/* same MMC drive */
+		return 0;
+
+	}
+	return 0;		/* now i believe they are really not equal */
+}
+
+
