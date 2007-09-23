@@ -44,10 +44,10 @@ void sbc_load(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return;
-	/* ts A70918 :
+	/* ts A70923 : Needed regardless of Immed bit. Was once 1 minute, now
            5 minutes for loading. If this does not suffice then other commands
 	   shall fail righteously. */
-	spc_wait_unit_attention(d, 300, "START UNIT (+ LOAD)", 0);
+	spc_wait_unit_attention(d, 300, "waiting after START UNIT (+ LOAD)",0);
 }
 
 void sbc_eject(struct burn_drive *d)
