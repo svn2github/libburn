@@ -136,6 +136,7 @@ or
 
 #define Cdrskin_libburn_has_random_access_rW 1
 #define Cdrskin_libburn_has_get_drive_rolE 1
+#define Cdrskin_libburn_has_drive_equals_adR 1
 
 #endif /* Cdrskin_libburn_0_3_9 */
 
@@ -1233,6 +1234,19 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
  int is_wav= 0, size_from_file= 0, ret;
  off_t xtr_size= 0;
  struct stat stbuf;
+#ifdef Cdrskin_libburn_has_convert_fs_adR
+ char *device_adr,*raw_adr;
+ int no_convert_fs_adr;
+ int Cdrskin_get_device_adr(struct CdrskiN *skin,
+           char **device_adr, char **raw_adr, int *no_convert_fs_adr,int flag);
+ int Cdrskin_get_drive(struct CdrskiN *skin, struct burn_drive **drive,
+           int flag);
+#ifdef Cdrskin_libburn_has_drive_equals_adR
+ struct burn_drive *drive;
+#else
+ char adr[BURN_DRIVE_ADR_LEN];
+#endif
+#endif /* Cdrskin_libburn_has_convert_fs_adR */
 
  if(track->source_path[0]=='-' && track->source_path[1]==0)
    *fd= 0;
@@ -1243,44 +1257,58 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    *fd= -1;
 
 #ifdef Cdrskin_libburn_has_convert_fs_adR
-   if(1) {
-     char adr[BURN_DRIVE_ADR_LEN],*device_adr,*raw_adr;
-     int no_convert_fs_adr;
-     int Cdrskin_get_device_adr(struct CdrskiN *skin,
-           char **device_adr, char **raw_adr, int *no_convert_fs_adr,int flag);
 
-     Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
-                            &no_convert_fs_adr,0);
+   Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
+                          &no_convert_fs_adr,0);
 /*    
-     fprintf(stderr,
-             "cdrskin: DEBUG : device_adr='%s' , raw_adr='%s' , ncfs=%d\n",
-             device_adr, raw_adr, no_convert_fs_adr);
+   fprintf(stderr,
+           "cdrskin: DEBUG : device_adr='%s' , raw_adr='%s' , ncfs=%d\n",
+           device_adr, raw_adr, no_convert_fs_adr);
 */
-     if(!no_convert_fs_adr) {
-       if(flag&1)
-         ClN(fprintf(stderr,
-            "cdrskin_debug: checking track source for identity with drive\n"));
-       if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
+   if(!no_convert_fs_adr) {
+     if(flag&1)
+       ClN(fprintf(stderr,
+          "cdrskin_debug: checking track source for identity with drive\n"));
+
+#ifdef Cdrskin_libburn_has_drive_equals_adR
+
+     ret= Cdrskin_get_drive(track->boss,&drive,0);
+     if(ret<=0) {
+       fprintf(stderr,
+          "cdrskin: FATAL : Program error. Cannot determine libburn drive.\n");
+       return(0);
+     }
+     if(burn_drive_equals_adr(drive,track->source_path,2)>0) {
+
+       {
+
+#else /* Cdrskin_libburn_has_drive_equals_adR */
+
+     if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
+
 /*     
-         fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
-                 track->source_path,adr);
+       fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
+               track->source_path,adr);
 */
-         if(strcmp(device_adr,adr)==0) {
-           fprintf(stderr,
+       if(strcmp(device_adr,adr)==0) {
+
+#endif /* ! Cdrskin_libburn_has_drive_equals_adR */
+
+         fprintf(stderr,
               "cdrskin: FATAL : track source address leads to burner drive\n");
-           fprintf(stderr,
+         fprintf(stderr,
               "cdrskin:       : dev='%s' -> '%s' <- track source '%s'\n",
               raw_adr, device_adr, track->source_path);
-           return(0);
-         }
+         return(0);
        }
      }
-/*
-     fprintf(stderr,"cdrskin: EXPERIMENTAL : Deliberate abort\n");
-     return(0);
-*/
    }
-#endif
+/*
+   fprintf(stderr,"cdrskin: EXPERIMENTAL : Deliberate abort\n");
+   return(0);
+*/
+
+#endif /* Cdrskin_libburn_has_convert_fs_adR */
 
    if(!(flag&2))
      is_wav= Cdrtrack_extract_audio(track,fd,&xtr_size,0);
@@ -3175,6 +3203,15 @@ int Cdrskin_get_device_adr(struct CdrskiN *skin,
  *raw_adr= skin->preskin->raw_device_adr;
  *no_convert_fs_adr= skin->preskin->no_convert_fs_adr;
  return(1); 
+}
+
+
+int Cdrskin_get_drive(struct CdrskiN *skin, struct burn_drive **drive,int flag)
+{
+ if(skin->driveno<0 || skin->driveno >= skin->n_drives)
+   return(0);
+ *drive= skin->drives[skin->driveno].drive;
+ return ((*drive) != NULL); 
 }
 
 
