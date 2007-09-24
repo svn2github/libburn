@@ -275,7 +275,12 @@ and device files which have the same SCSI address parameters (e.g. /dev/sg0).
 .br
 .PP
 Option --allow_emulated_drives enables addressing of pseudo-drives
-which get emulated on top of a regular data file or a block device.
+which get emulated on top of filesystem objects. Regular data files and
+block devices result in pseudo-drives which behave much like DVD-RAM.
+If the given address does not exist yet but its directory exists, then
+it gets created as regular file.
+Other file types like character devices or pipes result in pseudo-drives
+which behave much like blank DVD-R.
 The target file address is given after prefix "stdio:".
 .br
 E.g.: dev=stdio:/tmp/my_pseudo_drive
@@ -283,11 +288,15 @@ E.g.: dev=stdio:/tmp/my_pseudo_drive
 Warning: Superusers must take care not to spoil their hard disk via its raw
 block device (like /dev/hda or /dev/sd0).
 .br
-Pseudo-drives behave much like DVD-RAM. They allow -dummy, nevertheless, and
-their reply with --tell_media_space can be utopic. If the given address does
-not exist yet but its directory exists, then it gets created as regular file
-as soon as a write operation occurs.
-Note: -dummy burn runs touch the file.
+Addresses of the form "stdio:/dev/fd/<number>" are treated special. The
+number is read literally and used as open file descriptor. With
+dev="stdio:/dev/fd/1" the normal standard output of the program is
+redirected to stderr and the stream data of a burn run will appear on stdout.
+.br
+Not good for terminals ! Redirect it.
+.br
+Pseudo-drives allow -dummy. Their reply with --tell_media_space can be utopic.
+Note: -dummy burn runs touch the file but do not modify its data content.
 .br
 .SH OPTIONS
 .TP

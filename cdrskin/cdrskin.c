@@ -1756,6 +1756,8 @@ struct CdrpreskiN {
  int demands_cdrecord_caps;
  int demands_cdrskin_caps;
 
+ int result_fd;
+
 };
 
 
@@ -1815,6 +1817,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->fallback_program[0]= 0;
  o->demands_cdrecord_caps= 0;
  o->demands_cdrskin_caps= 0;
+ o->result_fd = -1;
  return(1);
 }
 
@@ -2114,6 +2117,15 @@ ata_bus:;
      }
    } 
  }
+ return(1);
+}
+
+
+/** Set the eventual output fd for the result of Cdrskin_msinfo()
+*/
+int Cdrpreskin_set_result_fd(struct CdrpreskiN *o, int result_fd, int flag)
+{
+ o->result_fd= result_fd;
  return(1);
 }
 
@@ -2744,6 +2756,13 @@ final_checks:;
    int driveno,hret;
    char *adr,buf[Cdrskin_adrleN];
 
+   if(strcmp(o->raw_device_adr,"stdio:-")==0) {
+     fprintf(stderr,
+             "cdrskin: SORRY : Cannot accept drive address \"stdio:-\".\n");
+     fprintf(stderr,
+             "cdrskin: HINT  : Use \"stdio:/dev/fd/1\" if you really want to write to stdout.\n");
+     {ret= 0; goto ex;}
+   }
    adr= o->raw_device_adr;
 
 #ifndef Cdrskin_extra_leaN
@@ -2807,6 +2826,9 @@ dev_too_long:;
  /* A60927 : note to myself : no "ret= 1;" here. It breaks --help , -version */
 
 ex:;
+ /* Eventually replace current stdout by dup(1) from start of program */
+ if(strcmp(o->device_adr,"stdio:/dev/fd/1")==0 && o->result_fd >= 0)
+   sprintf(o->device_adr,"stdio:/dev/fd/%d",o->result_fd);
 
 #ifndef Cdrskin_extra_leaN
  if(ret<=0 || !(flag&1))
@@ -2905,7 +2927,6 @@ struct CdrskiN {
  int do_checkdrive;
 
  int do_msinfo;
- int msinfo_fd;
  char msifile[Cdrskin_strleN];
 
  int do_atip;
@@ -3076,7 +3097,6 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_load= 0;
  o->do_checkdrive= 0;
  o->do_msinfo= 0;
- o->msinfo_fd= -1;
  o->msifile[0]= 0;
  o->do_atip= 0;
  o->do_blank= 0;
@@ -3179,15 +3199,6 @@ int Cdrskin_destroy(struct CdrskiN **o, int flag)
    burn_drive_info_free(skin->drives);
  free((char *) skin);
  *o= NULL;
- return(1);
-}
-
-
-/** Set the eventual output fd for the result of Cdrskin_msinfo()
-*/
-int Cdrskin_set_msinfo_fd(struct CdrskiN *skin, int result_fd, int flag)
-{
- skin->msinfo_fd= result_fd;
  return(1);
 }
 
@@ -4266,6 +4277,10 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  if(ret==0)
    printf("%s\n","Emulated (null-drive)");
  else if(ret==2)
+   printf("%s\n","Emulated (stdio-drive, 2k random read-write)");
+ else if(ret==3)
+   printf("%s\n","Emulated (stdio-drive, sequential write-only)");
+ else if(ret!=1)
    printf("%s\n","Emulated (stdio-drive)");
  else
 #endif
@@ -6085,8 +6100,8 @@ burn_failed:;
 
      free_space= burn_disc_available_space(drive,o);
      sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
-     if(skin->msinfo_fd>=0) {
-       write(skin->msinfo_fd,msg,strlen(msg));
+     if(skin->preskin->result_fd>=0) {
+       write(skin->preskin->result_fd,msg,strlen(msg));
      } else
        printf("%s",msg);
    }
@@ -6417,9 +6432,9 @@ obtain_nwa:;
  }
 
 put_out:;
- if(skin->msinfo_fd>=0) {
+ if(skin->preskin->result_fd>=0) {
    sprintf(msg,"%d,%d\n",lba,nwa);
-   write(skin->msinfo_fd,msg,strlen(msg));
+   write(skin->preskin->result_fd,msg,strlen(msg));
  } else
    printf("%d,%d\n",lba,nwa);
 
@@ -7693,7 +7708,11 @@ int main(int argc, char **argv)
 
  /* For -msinfo: Redirect normal stdout to stderr */
  for(i=1; i<argc; i++)
-   if(strcmp(argv[i],"-msinfo")==0 || strcmp(argv[i],"--tell_media_space")==0)
+   if(strcmp(argv[i],"-msinfo")==0 ||
+      strcmp(argv[i],"--tell_media_space")==0 ||
+      strcmp(argv[i],"dev=stdio:/dev/fd/1")==0 ||
+      strcmp(argv[i],"-dev=stdio:/dev/fd/1")==0
+)
  break;
  if(i<argc) {
    result_fd= dup(1);
@@ -7710,6 +7729,7 @@ int main(int argc, char **argv)
    fprintf(stderr,"cdrskin: FATAL : Creation of control object failed\n");
    {exit_value= 2; goto ex;}
  }
+ Cdrpreskin_set_result_fd(preskin,result_fd,0);
 
  /* <<< A60925: i would prefer to do this later, after it is clear that no
        -version or -help cause idle end. But address conversion and its debug
@@ -7740,7 +7760,6 @@ int main(int argc, char **argv)
       "cdrskin: HINT : Busy drives are invisible. (Busy = open O_EXCL)\n");
    }
  }
- Cdrskin_set_msinfo_fd(skin,result_fd,0);
 
  ret= Cdrskin_setup(skin,argc,argv,0);
  if(ret<=0)
