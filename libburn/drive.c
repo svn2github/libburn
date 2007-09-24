@@ -1140,7 +1140,8 @@ int burn_drive__fd_from_special_adr(char *adr)
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
 	int ret = -1, fd = -1, role = 0;
-	off_t size = ((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
+	/* divided by 512 it needs to fit into a signed long integer */
+	off_t size = ((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	struct burn_drive *d= NULL, *regd_d;
 	struct stat stbuf;
 
@@ -1815,7 +1816,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
 	if (d->drive_role != 1) {
 		if (d->media_capacity_remaining <= 0)
 			d->media_capacity_remaining = 
-				((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
+			((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	} else {
 		if (o != NULL)
 			d->send_write_parameters(d, o);
