@@ -332,7 +332,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 		libdax_msgs_submit(libdax_messenger,
 			d->global_index, 0x00020142,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-			"Drive is not grabbed on random access write", 0, 0);
+			"Drive is not grabbed on random access read", 0, 0);
 		return 0;
 	}
 	if (d->drive_role == 0) {
@@ -340,6 +340,12 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			0x00020146,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
+		return 0;
+	} else if (d->drive_role == 3) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020151,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Read attempt on write-only drive", 0, 0);
 		return 0;
 	}
 	if ((byte_address % alignment) != 0) {

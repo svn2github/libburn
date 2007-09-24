@@ -114,4 +114,11 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 			struct burn_write_opts *opts,
 			struct burn_disc_mode_demands *result, int flag);
 
+
+/* ts A70924 : convert a special stdio address into fd number.
+   @return >0 is a valid fd , -1 indicates unsuitable address string. 
+*/
+int burn_drive__fd_from_special_adr(char *adr);
+
+
 #endif /* __DRIVE */

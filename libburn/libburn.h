@@ -622,9 +622,11 @@ void burn_allow_untested_profiles(int yes);
 
 
 /* ts A60823 */
-/** Aquire a drive with known persistent address. This is the sysadmin friendly
-    way to open one drive and to leave all others untouched. It bundles
-    the following API calls to form a non-obtrusive way to use libburn:
+/** Aquire a drive with known persistent address.
+
+    This is the sysadmin friendly way to open one drive and to leave all
+    others untouched. It bundles the following API calls to form a
+    non-obtrusive way to use libburn:
       burn_drive_add_whitelist() , burn_drive_scan() , burn_drive_grab()
     You are *strongly urged* to use this call whenever you know the drive
     address in advance.
@@ -639,27 +641,47 @@ void burn_allow_untested_profiles(int yes);
     Another way is to drop the unwanted drives by burn_drive_info_forget().
 
     Operating on multiple drives:
+
     Different than with burn_drive_scan() it is allowed to call
     burn_drive_scan_and_grab() without giving up any other scanned drives. So
     this call can be used to get a collection of more than one aquired drives.
     The attempt to aquire the same drive twice will fail, though.
 
     Pseudo-drives:
+
     burn_drive_scan_and_grab() is able to aquire virtual drives which will
     accept options much like a MMC burner drive. Many of those options will not
     cause any effect, though. The address of a pseudo-drive begins with
-    prefix "stdio:" optionally followed by the path to an existing regular
-    file, or to a not yet existing file, or to an existing block device.
-    Example:  "stdio:/tmp/pseudo_drive"
-    If the path is empty then the resulting pseudo-drive is a null-drive.
-    A null-drive will pretend to have loaded no media and support no writing.
-    A pseudo-drive with a non-empty path is called a stdio-drive.
-    It will perform all its eventual data transfer activities on a file
+    prefix "stdio:" followed by a path.
+    Examples:  "stdio:/tmp/pseudo_drive" , "stdio:/dev/null" , "stdio:-"
+
+    If the path is empty, the result is a null-drive = drive role 0.
+    It pretends to have loaded no media and supports no reading or writing.
+
+    If the path leads to an existing regular file, or to a not yet existing
+    file, or to an existing block device, then the result is a random access
+    stdio-drive capable of reading and writing = drive role 2.
+
+    If the path leads to an existing file of any type other than directory,
+    then the result is a sequential write-only stdio-drive = drive role 3.
+
+    The special address form "stdio:/dev/fd/<number>" is interpreted literally
+    as reference to open file descriptor <number>. This address form coincides
+    with real files on some systems, but it is in fact hardcoded in libburn.
+    Special address "stdio:-" means stdout = "stdio:/dev/fd/1".
+    The role of such a drive is determined by the file type obtained via
+    fstat(<number>).
+   
+    Roles 2 and 3 perform all their eventual data transfer activities on a file
     via standard i/o functions open(2), lseek(2), read(2), write(2), close(2).
-    Its capabilities resemble DVD-RAM but the media profile reported is 0xffff,
-    it can simulate writing and it issues no realistic write space information.
+    The media profile is reported as 0xffff. Write space information from those
+    media is not necessarily realistic.
+
+    The capabilities of role 2 resemble DVD-RAM but it can simulate writing.
     If the path does not exist in the filesystem yet, it is attempted to create
     it as a regular file as soon as write operations are started.
+
+    The capabilities of role 3 resemble a blank DVD-R.
 
     One may distinguish pseudo-drives from MMC drives by call
     burn_drive_get_drive_role().
@@ -2004,7 +2026,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
     @param d      The drive to inquire
     @return       0= null-drive
                   1= real MMC drive
-                  2= stdio-drive
+                  2= stdio-drive, random access, read-write
+                  3= stdio-drive, sequential, write-only
 */
 int burn_drive_get_drive_role(struct burn_drive *d);
 

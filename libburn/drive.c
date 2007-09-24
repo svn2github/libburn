@@ -262,7 +262,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	}
 	if(d->drive_role != 1) {
 		d->released = 0;
-		if(d->drive_role == 2) {
+		if(d->drive_role == 2 || d->drive_role == 3) {
 			d->status = BURN_DISC_BLANK;
 			d->current_profile = 0xffff;
 		} else {
@@ -1118,18 +1118,42 @@ int burn_drive_is_banned(char *device_address)
 }
 
 
-/* ts A70903 : will vanish from API */
+/* ts A70924 */
+int burn_drive__fd_from_special_adr(char *adr)
+{
+	int fd = -1, i;
+
+	if (strcmp(adr, "-") == 0)
+		fd = 1;
+	if(strncmp(adr, "/dev/fd/", 8) == 0) {
+		for (i = 8; adr[i]; i++)
+			if (!isdigit(adr[i]))
+		break;
+		if (i> 8 && adr[i] == 0)
+			fd = atoi(adr + 8);
+	}
+	return fd;
+}
+
+
+/* ts A70903 : Implements adquiration of pseudo drives */
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
-	int ret;
+	int ret = -1, fd = -1, role = 0;
 	off_t size = ((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
 	struct burn_drive *d= NULL, *regd_d;
 	struct stat stbuf;
 
+	static int allow_role_3 = 1;
+
 	if (fname[0] != 0) {
 		memset(&stbuf, 0, sizeof(stbuf));
-		ret = stat(fname, &stbuf);
-		if(ret == -1 || S_ISBLK(stbuf.st_mode) ||
+		fd = burn_drive__fd_from_special_adr(fname);
+		if (fd >= 0)
+			ret = fstat(fd, &stbuf);
+		else
+			ret = stat(fname, &stbuf);
+		if (ret == -1 || S_ISBLK(stbuf.st_mode) ||
 				S_ISREG(stbuf.st_mode)) {
 			ret = burn_os_stdio_capacity(fname, &size);
 			if (ret == -1) {
@@ -1147,12 +1171,19 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				errno, 0);
 				return 0;
 			}
+			if (fname[0] != 0)
+				role = 2;
+			else
+				role = 0;
 		} else {
-			libdax_msgs_submit(libdax_messenger, -1,
-				0x00020149,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Unsuitable filetype for pseudo-drive", 0, 0);
-			return 0;
+			if(S_ISDIR(stbuf.st_mode) || !allow_role_3) {
+				libdax_msgs_submit(libdax_messenger, -1,
+				 0x00020149,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				 "Unsuitable filetype for pseudo-drive", 0, 0);
+				return 0;
+			}
+			role = 3;
 		}
 	}
 	d= (struct burn_drive *) calloc(1, sizeof(struct burn_drive));
@@ -1161,10 +1192,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	burn_setup_drive(d, fname);
 	d->status = BURN_DISC_EMPTY;
 
-	if (fname[0] != 0)
-		d->drive_role = 2;
-	else
-		d->drive_role = 0;
+	d->drive_role = role;
 	ret = burn_scsi_setup_drive(d, -1, -1, -1, -1, -1, 0);
 	if (ret <= 0)
 		goto ex;
@@ -1175,7 +1203,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	}
 	free((char *) d); /* all sub pointers have been copied to *regd_d */
 	d = regd_d;
-	if (d->drive_role == 2) {
+	if (d->drive_role == 2 || d->drive_role == 3) {
 		d->status = BURN_DISC_BLANK;
 		d->current_profile = 0xffff; /* MMC for non-compliant drive */
 		strcpy(d->current_profile_text,"stdio file");
@@ -1185,7 +1213,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
 		d->media_capacity_remaining = size;
 
-		/* >>> ? open file for a test ? */; 
+		/* >>> ? open file for a test ? (>>> beware of "-" = stdin) */;
 
 	} else
 		d->current_profile = 0; /* Drives return this if empty */
@@ -1201,6 +1229,10 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
 		strcpy((*drive_infos)[0].product,"WARP DRIVE");
 		strcpy((*drive_infos)[0].revision,"FX01");
+	} else if (d->drive_role == 3) {
+		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
+		strcpy((*drive_infos)[0].product,"BLACKHOLE");
+		strcpy((*drive_infos)[0].revision,"FX02");
 	} else {
 		strcpy((*drive_infos)[0].vendor,"FERENGI");
 		strcpy((*drive_infos)[0].product,"VAPORWARE");
@@ -1780,7 +1812,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
 		return 0;
 	if (d->drive_role == 0)
 		return 0;
-	if (d->drive_role == 2) {
+	if (d->drive_role != 1) {
 		if (d->media_capacity_remaining <= 0)
 			d->media_capacity_remaining = 
 				((off_t) (1024 * 1024 * 1024) * (off_t) 2048);
@@ -2011,13 +2043,19 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	if (d->drive_role == 0)
 		return 0;
 	if (d->drive_role == 2) {
-		/* stdio file dummy drive */
+		/* stdio file drive : random access read-write */
 		o->start_adr = 1;
 		size = d->media_capacity_remaining;
 		burn_os_stdio_capacity(d->devname, &size);
 		d->media_capacity_remaining = size;
 		o->start_range_high = size;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
+		o->might_do_sao = 4;
+		o->might_do_tao = 2;
+		o->advised_write_mode = BURN_WRITE_TAO;
+        	o->might_simulate = 1;
+	} else if (d->drive_role != 1) {
+		/* stdio file drive : sequential access write-only */
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
 		o->advised_write_mode = BURN_WRITE_TAO;
@@ -2250,6 +2288,12 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 		return -1;
 	stat_ret2 = stat(adr2, &stbuf2);
 	conv_ret2 = burn_drive_convert_fs_adr(adr2, conv_adr2);
+
+	/* roles 2 and 3 have the same name space and object interpretation */
+	if (role1 == 3)
+		role1 = 2;
+	if (role2 == 3)
+		role2 = 2;
 
 	if (strcmp(adr1, adr2) == 0 && role1 == role2)
 		return(1);			/* equal role and address */

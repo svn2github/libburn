@@ -951,10 +951,11 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 		if (o->start_byte >= 0 && (o->start_byte % 32768))
 			strcat(reasons,
 			  "write start address not properly aligned to 32k, ");
-	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
+	} else if (d->drive_role == 3 ||
+		   d->current_profile == 0x11 || d->current_profile == 0x14 ||
 	           d->current_profile == 0x15 ||
 	           d->current_profile == 0x1b || d->current_profile == 0x2b ) {
-		/* DVD-R* Sequential , DVD+R[/DL] */
+		/* DVD-R* Sequential , DVD+R[/DL] , sequential stdio "drive" */
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
 	} else {
@@ -1624,26 +1625,33 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 
 	if (d->devname[0] == 0) /* null drives should not come here */
 		return -1;
-	fd = open(d->devname, mode, S_IRUSR | S_IWUSR);
+	fd = burn_drive__fd_from_special_adr(d->devname);
+	if (fd >= 0)
+		fd = dup(fd); /* check validity and make closeable */
+	else
+		fd = open(d->devname, mode, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020005,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Failed to open device (a pseudo-drive)", errno, 0);
+		d->cancel = 1;
 		return -1;
 	} 
 	if (start_byte < 0)
 		start_byte = 0;
-	if (lseek(fd, start_byte, SEEK_SET)==-1) {
-		sprintf(msg, "Cannot address start byte %.f",
-			 (double) start_byte);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020147,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, errno, 0);
-		close(fd);
-		fd = -1;
-	}
+	if (d->drive_role == 2)
+		if (lseek(fd, start_byte, SEEK_SET)==-1) {
+			sprintf(msg, "Cannot address start byte %.f",
+			 	(double) start_byte);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020147,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, errno, 0);
+			close(fd);
+			d->cancel = 1;
+			fd = -1;
+		}
 	d->nwa = start_byte / sector_size;
 	return fd;
 }
@@ -1761,6 +1769,8 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   "syncing cache (stdio fsync)", 0, 0);
 	if (fsync(fd) != 0) {
+		if (errno == EINVAL) /* E.g. /dev/null cannot fsync */
+			return 1;
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -1967,10 +1977,10 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	d->progress.sectors = 0;
 	ret = 1;
 ex:;
-	if (d->stdio_fd != -1) {
-		close (d->stdio_fd);
-		d->stdio_fd = -1;
-	}
+	if (d->stdio_fd >= 0)
+		close(d->stdio_fd);
+	d->stdio_fd = -1;
+
 	/* update media state records */
 	burn_drive_mark_unready(d);
 
@@ -2203,7 +2213,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		return 0;
 	}
 
-	if(d->drive_role != 1)
+	if(d->drive_role == 2)
 		alignment = 2 * 1024;
 	if (d->current_profile == 0x12) /* DVD-RAM */
 		alignment = 2 * 1024;
@@ -2277,7 +2287,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		}
 		if (err == BE_CANCELLED) {
 			d->busy = BURN_DRIVE_IDLE;
-			if(fd != -1)
+			if(fd >= 0)
 				close(fd);
 			return (-(start * 2048 - byte_address));
 		}
@@ -2290,7 +2300,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			burn_stdio_sync_cache(fd, d, 0);
 	}
 		
-	if(fd != -1)
+	if(fd >= 0)
 		close(fd);
 	d->buffer = NULL;
 	d->busy = BURN_DRIVE_IDLE;
