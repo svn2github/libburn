@@ -1240,7 +1240,7 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 		return -1;
 	}
 
-	if(strncmp(adr, "stdio:", 6) == 0) {
+	if (strncmp(adr, "stdio:", 6) == 0) {
 		ret = burn_drive_grab_dummy(drive_infos, adr + 6);
 		return ret;
 	}
@@ -2230,10 +2230,10 @@ static int burn__split_path(char *adr, char **dpt, char **npt)
 
 
 /* ts A70923 : API */
-int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int role2)
+int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 {
 	struct stat stbuf1, stbuf2;
-	char adr1[BURN_DRIVE_ADR_LEN];
+	char adr1[BURN_DRIVE_ADR_LEN], *adr2 = adr2_in;
 	char conv_adr1[BURN_DRIVE_ADR_LEN], conv_adr2[BURN_DRIVE_ADR_LEN];
 	char *npt1, *dpt1, *npt2, *dpt2;
 	int role1, stat_ret1, stat_ret2, conv_ret2;
@@ -2242,6 +2242,10 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int role2)
 	burn_drive_d_get_adr(d1, adr1);
 	stat_ret1 = stat(adr1, &stbuf1);
 
+	if (strncmp(adr2, "stdio:", 6) == 0) {
+		adr2+= 6;
+		role2 = (!!adr2[0]) * 2;
+	}
 	if (strlen(adr2) >= BURN_DRIVE_ADR_LEN)
 		return -1;
 	stat_ret2 = stat(adr2, &stbuf2);
