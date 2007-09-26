@@ -1946,6 +1946,16 @@ int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 }
 
 
+int Cdrpreskin_consider_normal_user(int flag)
+{
+ fprintf(stderr,
+    "cdrskin: HINT : Consider to allow rw-access to the writer devices and\n");
+ fprintf(stderr,
+    "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+ return(1);
+}
+
+
 /* Start the fallback program as replacement of the cdrskin run.
    @param flag bit0=do not report start command
 */
@@ -1959,10 +1969,7 @@ int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv,
  if(getuid()!=geteuid() && !preskin->allow_setuid) {
    fprintf(stderr,
      "cdrskin: SORRY : uid and euid differ. Will not start external fallback program.\n");
-   fprintf(stderr,
-     "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
-   fprintf(stderr,
-     "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+   Cdrpreskin_consider_normal_user(0);
    fprintf(stderr,
     "cdrskin: HINT : Option  --allow_setuid  disables this safety check.\n");
    goto failure;
@@ -2213,7 +2220,12 @@ return:
      o->abort_handler= 3;
 
    } else if(strcmp(argv[i],"--allow_emulated_drives")==0) {
-     o->allow_emulated_drives= 1;
+     if(getuid()!=geteuid()) {
+       fprintf(stderr,
+   "cdrskin: SORRY : uid and euid differ. Will not --allow_emulated_drives\n");
+       Cdrpreskin_consider_normal_user(0);
+     } else
+       o->allow_emulated_drives= 1;
 
    } else if(strcmp(argv[i],"--allow_setuid")==0) {
      o->allow_setuid= 1;
@@ -6538,10 +6550,7 @@ sorry_failed_to_eject:;
  if(getuid()!=geteuid()) {
    fprintf(stderr,
      "cdrskin: SORRY : uid and euid differ. Will not start external eject.\n");
-   fprintf(stderr,
-     "cdrskin: HINT : Consider to allow rw-access to the writer device and\n");
-   fprintf(stderr,
-     "cdrskin: HINT : to run cdrskin under your normal user identity.\n");
+   Cdrpreskin_consider_normal_user(0);
    return(0);
  }
 
@@ -7534,6 +7543,10 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
        (*preskin)->demands_cdrskin_caps= 1;
      } else {
        fprintf(stderr,"cdrskin: SORRY : dev=stdio:... works only with option --allow_emulated_drives\n");
+       if(getuid()!=geteuid()) {
+         fprintf(stderr,"cdrskin: SORRY : but uid and euid differ. So this option will be rejected.\n");
+         Cdrpreskin_consider_normal_user(0);
+       }
        {*exit_value= 2; goto ex;}
      }
    }
