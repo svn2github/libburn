@@ -1,60 +1,21 @@
 ------------------------------------------------------------------------------
      libburnia-project.org     scdbackup.sourceforge.net/cdrskin_eng.html
 ------------------------------------------------------------------------------
-Installation instructions at about line 60. First the legal stuff:
-------------------------------------------------------------------------------
-This all is under GPL.
-(See GPL reference, our clarification and commitment at the end of this text)
-------------------------------------------------------------------------------
-Based on and sub project of:
-libburnia-project.org
-By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
-
-libburnia-project.org is inspired by and in other components still containing
-parts of
-Libburn. By Derek Foreman <derek@signalmarketing.com> and
-            Ben Jansens <xor@orodu.net>
-Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
-See toplevel README for an overview of the current copyright situation in
-libburnia-project.org.
-
-------------------------------------------------------------------------------
-My thanks to the above authors (except myself, of course) for making the
-following possible.
-
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
 http://scdbackup.sourceforge.net/cdrskin-0.3.9.tar.gz
-Copyright (C) 2006-2007 Thomas Schmitt
-
+Copyright (C) 2006-2007 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
-On top of libburn there is implemented cdrskin 0.3.9, a limited cdrecord
-compatibility wrapper which allows to use some libburn features from
-the command line.
-Interested users of cdrecord are invited to participate in the development
-of cdrskin. Contact: scdbackup@gmx.net or libburn-hackers@pykix.org .
-We will keep copyright narrow but will of course acknowledge valuable
-contributions in a due way.
 
+cdrskin is a limited cdrecord compatibility wrapper which allows to use
+most of the libburn features from the command line.
 
-Important :
-This software is provided as is. There is no warranty implied and no
-protection against possible damages. You use this on your own risk.
-Don't blame me or other authors of libburn if anything goes wrong.
+Currently it is only supported on Linux with kernels >= 2.4.
 
-I used it on my own risk with :
-SuSE 7.2, kernel 2.4.4,  ide-scsi emulation, LITE-ON LTR48125S CD burner, 2002
-SuSE 9.0, kernel 2.4.21, ide-scsi emulation, LG GSA-4082B CD/DVD burner, 2004
-                                             NEC ND-4570A CD/DVD burner, 2006
-RIP-14.4, kernel 2.6.14, no ide-scsi,        with all above burners
-
-It fails to compile or run on SuSE 6.4 (kernel 2.2.14).
-It does not find the IDE CD burner on SuSE 7.2 without ide-scsi.
-Other people sucessfully tested cdrskin on several kernel 2.6 based x86 Linux
-systems, including 64 bit systems. (Further reports are welcome.)
+By using this software you agree to the disclaimer at the end of this text
+"This software is provided as is. There is no warranty implied and ..."
 
 
                    Compilation, First Glimpse, Installation
@@ -64,19 +25,10 @@ Obtain cdrskin-0.3.9.tar.gz, take it to a directory of your choice and do:
     tar xzf cdrskin-0.3.9.tar.gz
     cd cdrskin-0.3.9
 
-Or obtain a libburnia-project.org SVN snapshot,
-go into the toplevel directory of the snapshot (e.g.  cd libburn ),
-and execute the autotools script ./bootstrap . Use autools version >= 1.7 .
-
-Within that toplevel directory of either cdrskin-0.3.9 or libburn then execute:
+Within that directory execute:
 
     ./configure --prefix=/usr
     make
-
-(Note: there are next-level directories "libburn" and "cdrskin". Those
-would be the wrong ones. Meant is the highest directory of tarball resp. 
-SVN download. Among others containing files "AUTHORS", "configure", 
-"Makefile.am", as well as directories "libburn" and "cdrskin".)
 
 This will already produce a cdrskin binary. But it might be necessary to
 install libburn in order to use this binary. Installation of libburn is
@@ -113,6 +65,10 @@ To install the man page, you may do: echo $MANPATH and choose one of the
 listed directories to copy the man-page under its ./man1 directory. Like:
     cp cdrskin/cdrskin.1 /usr/share/man/man1/cdrskin.1
 
+Note: The content of the cdrskin tarball is essentially the complete libburn
+      of the same version number. You may thus perform above steps in a local
+      SVN copy of libburn or in a unpacked libburn tarball as well.
+
 
                                     Usage
 
@@ -137,8 +93,20 @@ So full and insecure enabling of both for everybody would look like
 
     chmod a+rw /dev/sr0 /dev/sr1
 
+This is equivalent to the traditional setup chmod a+x,u+s cdrecord.
+
 I strongly discourage to run cdrskin with setuid root or via sudo !
 It is not checked for the necessary degree of hacker safety.
+
+Consider to put all authorized users into group "floppy", to chgrp the
+device file to that group and to disallow w-access to others.
+
+Helpful with Linux kernel 2.4 is a special SCSI feature:
+It is possible to address a scsi(-emulated) drive via associated device files
+which are not listed by option --devices but point to the same SCSI addresses
+as listed device files. This addressing via e.g. /dev/sr0 or /dev/scd1 is
+compatible with generic read programs like dd and with write program growisofs.
+For finding /dev/sg1 from /dev/sr0, the program needs rw-access to both files.
 
 
                                 Usage examples 
@@ -201,44 +169,32 @@ See below "Audio CD" for specifications.
            -audio -swab track0[1-5].cd /path/to/track6.wav
 
 
-           Usage example with  http://scdbackup.sourceforge.net
-
-Address may be a cdrecord-style  "scsibus,target,lun"  as listed with
-cdrskin -scanbus (and hopefully as listed with cdrecord -scanbus) :
-
-    export SCDBACKUP_SCSI_ADR="0,1,0"
-
-or a device file address as listed by --devices with an accessible drive :
-
-    export SCDBACKUP_SCSI_ADR="/dev/sr1"
-
-Set usage of cdrskin with appropriate options rather than cdrecord :
-
-    export SCDBACKUP_CDRECORD="cdrskin -v -v"
-
-Run a backup :
-
-    scdbackup_home
-
-
                                 Restrictions
 
-Many cdrecord options are still unsupported.
+Several advanced CD related options of cdrecord are still unsupported.
+See output of command
+    cdrskin --list_ignored_options
 If you have use cases for them, please report your wishes and expectations.
 
 DVD support is restricted to single layer DVD for now. Double layer media
 are implemented but untested.
-
+On the other hand, the capability of multi-session and of writing streams
+of unpredicted lenght surpass the current DVD capabilities of cdrecord.
 
 
                            Inspiration and Standard
+
+cdrskin combines the command line interface standard set by cdrecord with
+libburn, which is a control software for optical drives according to standard
+MMC-5. For particular CD legacy commands, standards MMC-3 and MMC-1 apply.
 
 For the original meaning of cdrecord options see :
     man cdrecord 
     (http://cdrecord.berlios.de/old/private/man/cdrecord-2.0.html)
 Do not bother Joerg Schilling with any cdrskin problems.
 (Be cursed if you install cdrskin as "cdrecord" without clearly forwarding
- this "don't bother Joerg" demand.)   
+ this "don't bother Joerg" demand.)
+
 cdrskin does not contain any bytes copied from cdrecord's sources. Many bytes
 have been copied from the message output of cdrecord runs, though. I am
 thankful to Joerg Schilling for every single one of them.
@@ -247,94 +203,6 @@ I have the hope that Joerg feels more flattered than annoyed by cdrskin.
 Many thanks to Andy Polyakov for his dvd+rw-tools
   http://fy.chalmers.se/~appro/linux/DVD+RW/tools
 which provide me with examples and pointers into MMC specs for DVD writing.
-
-
-                              Drive Addressing
-
-Drives get addressed either via their cdrecord-style addresses as listed
-with option -scanbus (see below "Pseudo-SCSI Adresses") or via the paths
-of device files.
-Not only device files listed by --devices may be used but also device files
-which via their major,minor numbers point to the same device driver as
-a listed device file. 
-
-Helpful with Linux kernel 2.4 is a special SCSI feature:
-It is possible to address a scsi(-emulated) drive via associated device files
-which are not listed by option --devices but point to the same SCSI addresses
-as listed device files. This addressing via e.g. /dev/sr0 or /dev/scd1 is
-compatible with generic read programs like dd and with write program growisofs.
-
-                             Pseudo-SCSI Adresses
-
-cdrecord and cdrskin share the syntax of SCSI addresses but not necessarily
-the meaning of the components. A cdrecord-style address for cdrskin
-  [prefix:]scsibus,target,lun
-can be interpreted in two different modes.
-
-Standard mode tries to be compatible to original cdrecord. This should be true
-with (emulated) SCSI where the device file /dev/s[rg]N with is looked up with
-matching scsibus,target,lun as given by the operating system.
-With dev=ATA: or dev=ATAPI: the translation to /dev/hdX is purely literal
-but matches the cdrecord addresses on all systems tested so far:
-  X = 'a' + 2 * scsibus + target
-where target only may have the values 0 or 1.
-
-In this mode, option -scanbus will list only SCSI devices unless option
-dev=ATA or dev=ATAPI are given, which will suppress SCSI devices and only
-show IDE drives (i.e. /dev/hdX without ide-scsi emulation).
-
-
-In mode  --old_pseudo_scsi_adr  there is a scsibus,target,lun representation
-which has nothing to do with SCSI and thus is not compatible to cdrecord.
-Each number triple corresponds either to a device file address or to a
-libburn drive number.
-Component "scsibus" indicates the translation method. Defined busses are:
-  0  target is the libburn drivenumber as listed with --devices
-  1  associated to device file /dev/sgN , target chooses N
-  2  associated to device file /dev/hdX , target 0='a', 1='b' ..., 25='z' 
-
-So "1,1,0" is /dev/sg1 (resp. its /dev/sr*), "2,3,0" is /dev/hdd,
-"0,2,0" is libburn drive #2 at some unspecified device file. 
-This scheme shall help to keep cdrecord-style addresses stable and exchangeable
-between users without excluding drives with unexpected device addresses.
-The numbering on bus 0 is prone to arbitrary changes caused by changes in
-drive accessability.
-Further busses may emerge as libburn evolves. "prefix" and "lun" may get
-a meaning. To stay upward compatible, use addresses as printed by -scanbus.
-
-                  User Defined Device Address Translation
-
-Some programs or users have their own ideas about the address of their burner.
-K3b 0.10 for example derives cdrecord addresses by own examination of the
-devices and not by calling cdrecord -scanbus.
-Standard mode will hopefully be fully compatible with their ideas.
-
-Old frontends which do not know dev=ATA or dev=ATAPI and which do ask their
-"cdrecord" via -scanbus may be well served with option  --old_pseudo_scsi_adr .
-
-To direct any remaining stubborn callers to the appropriate drives, cdrskin
-allows to define device address aliases. Like
-  cdrskin dev_translation=+1,0,0+/dev/sr1 \
-          dev_translation=+ATA:1,0,0+/dev/sr1 \
-          dev_translation=-"cd+dvd"-0,1,0 \
-          ...
-Any of the addresses dev=1,0,0, dev=ATA:1,0,0, dev=cd+dvd will be mapped to
-/dev/sr1 resp. to 0,1,0.
-The first character after "dev_translation=" defines the character which
-separates the two parts of the translation pair. (Above: "+" and "-".)
-
-In K3b 0.10 it is possible to employ alternative writer programs by setting
-their full path (e.g. /usr/bin/cdrskin) in menu
-  Settings:Configure K3b...:Programs:Search Path 
-and to make them default in menu
-  Settings:Configure K3b...:Programs:Programs:
-A suitable setting for "cdrecord" in menu 
-  Settings:Configure K3b...:Programs:User Parameters
-would then probably be
-  -v dev_translation=+1,0,0+/dev/sr1
-You will learn from button "Show Debugging Output" after a failed burn run
-what cdrecord command was used with what address "dev=...". This address "..."
-will be the right one to replace "1,0,0" in above example.
 
 
                                  Startup Files
@@ -352,8 +220,6 @@ A first character '#' marks a comment, empty lines are ignored.
 Example content of a startup file:
 # This is the default device
 dev=0,1,0
-# To accomodate to eventual remnant cdrskin-0.2.2 addresses
-dev_translation=+1,0,0+0,1,0
 
 # Some more options
 fifo_start_at=0
@@ -423,7 +289,7 @@ of multi-session like CD-R[W]. (But not capable of -audio recording.)
 This means they need option -multi to stay appendable, need to be blanked
 to be writeable from start, return useable info with -toc and -msinfo,
 eventually perform appending automatically.
-Without "Incremental Streaming" offered by the drive, only write mode DAO is
+Without Incremental Streaming offered by the drive, only write mode DAO is
 available with sequential DVD-R[W]. It only works with blank media, allows only
 one single track, no -multi, and demands a fixely predicted track size.
 (growisofs uses it with DVD-R[W] if option -dvd-compat is given.)
@@ -432,7 +298,7 @@ Overwriteable DVD-RW behave much like DVD+RW. "Restricted" refers only to the
 granularity of random access and block size which have always to be aligned to
 full 32 kB. Sequential DVD-RW are converted into overwriteable DVD-RW by
   cdrskin dev=... -v blank=format_overwrite
-(Command  dvd+rw-format -force  can achieve "Restricted Overwrite", too.)
+(Command  dvd+rw-format -force  can achieve Restricted Overwrite, too.)
 
 Formatting or first use of freshly formatted DVD-RW can produce unusual noises
 from the drive and last several minutes. Depending on mutual compatibility of
@@ -470,6 +336,18 @@ blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 From the view of cdrskin they behave much like DVD-R. Each track gets wrapped
 into an own session, though.
 
+
+                              Emulated Drives
+
+cdrskin can use filesystem objects as emulated drives. Regular files or block
+devices appear similar to DVD-RAM. Other file types resemble blank DVD-R.
+Necessary precondition is option --allow_emulated_drives which is not accepted
+if cdrskin took another user identity because of the setuid bit of its access
+permissions.
+Addresses of emulated drives begin with prefix "stdio:". E.g.
+  dev=stdio:/tmp/my_pseudo_drive
+
+
 ------------------------------------------------------------------------------
 
                         Special compilation variations
@@ -489,6 +367,31 @@ It will not read startup files, will abort on option  dev_translation= ,
 will not have a fifo buffer, and will not be able to put out help texts or
 debugging messages.
 
+
+------------------------------------------------------------------------------
+                      Project aspects and legal stuff
+------------------------------------------------------------------------------
+
+Important Disclaimer :
+
+This software is provided as is. There is no warranty implied and no
+protection against possible damages. You use this on your own risk.
+Don't blame me or other authors of libburn if anything goes wrong.
+
+Actually, in case of severe trouble, nearly always the drive and the media
+are the cause. Any mistake of the burn program is supposed to be caught
+by the drive's firmware and to lead to mere misburns.
+The worst mishaps which hit the author implied the need to reboot the
+system because of drives gnawing endlessly on ill media. Permanent hardware
+damage did not occur in 1.5 years of development.
+
+------------------------------------------------------------------------------
+
+Interested users are invited to participate in the development of cdrskin.
+Contact: scdbackup@gmx.net or libburn-hackers@pykix.org .
+We will keep copyright narrow but will of course acknowledge valuable
+contributions in a due way.
+
 ------------------------------------------------------------------------------
 
     This program is free software; you can redistribute it and/or modify
@@ -504,6 +407,21 @@ debugging messages.
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+------------------------------------------------------------------------------
+Based on and sub project of:
+libburnia-project.org
+By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
+Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
+
+libburnia-project.org is inspired by and in other components still containing
+parts of
+Libburn. By Derek Foreman <derek@signalmarketing.com> and
+            Ben Jansens <xor@orodu.net>
+Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
+See toplevel README for an overview of the current copyright situation in
+libburnia-project.org.
+
 
 ------------------------------------------------------------------------------
 cdrskin is currently copyright Thomas Schmitt only.
