@@ -4,7 +4,7 @@
 # Copyright 2005 - 2007 Thomas Schmitt, scdbackup@gmx.net, GPL
 # to be executed within  ./libburn-*  resp ./cdrskin-*
 
-debug_opts=
+debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
 libvers="-DCdrskin_libburn_0_3_9"
@@ -68,10 +68,7 @@ do
     do_strip=1
   elif test "$i" = "-g"
   then
-    debug_opts="$debug_opts -g"
-  elif test "$i" = "-O2"
-  then
-    debug_opts="$debug_opts -O2"
+    debug_opts="-g"
   elif test "$i" = "-help" -o "$i" = "--help" -o "$i" = "-h"
   then
     echo "cdrskin/compile_cdrskin.sh : to be executed within top level directory"
@@ -87,8 +84,7 @@ do
     echo "  -oldfashioned     use pre-0.2.2 libburn features only."
     echo "  -do_diet          produce capability reduced lean version."
     echo "  -do_strip         apply program strip to compiled programs."
-    echo "  -g                compile with cc option -g."
-    echo "  -O2               compile with cc option -O2."
+    echo "  -g                produce debuggable programm."
     echo "  -static           compile with cc option -static."
     exit 0
   elif test "$i" = "-static"
