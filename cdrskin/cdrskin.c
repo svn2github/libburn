@@ -2419,7 +2419,7 @@ set_dev:;
          fprintf(stderr,"Target specifier:\tpath\n");
          fprintf(stderr,"Target example:\t\tstdio:/tmp/pseudo_drive\n");
          fprintf(stderr,"SCSI Bus scanning:\tnot supported\n");
-         fprintf(stderr,"Open via UNIX device:\tsupported\n");
+         fprintf(stderr,"Open via UNIX device:\tnot supported\n");
        } else {
          if(Cdrpreskin__allows_emulated_drives("",reason,0)>0)
            printf("\ncdrskin: NOTE : Option --allow_emulated_drives would allow dev=stdio:<path>\n");
