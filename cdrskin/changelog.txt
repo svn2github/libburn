@@ -4562,25 +4562,158 @@ Did a little overhaul of general paragraphs, mentioned new option -waiti
 ------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.19.112330
 * More cdrecord options supported: -format, -inq, -load, -lock, -immed, -waiti
 
-  []
+19 Sep 2007  [1083]
 cdrskin/changelog.txt
 cdrskin/cdrskin_eng.html
 Next cdrskin-0.3.9 cycle
+
+2007.09.19.141650  [1084]
+cdrskin/cdrskin.c
+Made cdrskin/compile_cdrskin.sh -do_diet work again
+
+19 Sep 2007  [1085]
+cdrskin/cdrskin.1
+Made minor corrections
+
+2007.09.19.212659  [1086]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option fallback_program=
+
+2007.09.20.125854  [1087]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Triggered fallback by unsuitable media, made -version report fallback program
+
+2007.09.21.120333  [1088]
+libburn/sbc.c
+libburn/spc.c
+Had to revoke Immed bit on load command. LG GSA-4082B : premature "no media"
+
+21 Sep 2007  [1092] libisoburn
+Makefile.am
+Removed libburn file addresses
+
+22 Sep 2007  [1093] libisoburn 
++ doc/doxygen.conf.in
+Added file demanded by build system
+
+22 Sep 2007  [1094] libisoburn 
+src/burn_wrap.c
+Prevented SIGSEGV in isoburn_drive_scan_and_grab()
+
+22 Sep 2007  [1095] libisoburn 
+src/burn_wrap.c
+Enabled treatment==2 in isoburn_drive_scan_and_grab()
+
+2007.09.22.140613  [1096]
+cdrskin/cdrskin.c
+Updated list of unsupported cdrecord and wodim options
+
+2007.09.22.151712  [1097]
+libburn/libburn.h
+libburn/init.c
+New API function burn_msgs_submit()
+
+22 Sep 2007  [1099] libisoburn
+src/burn_wrap.c
+Made use of burn_msgs_submit() for error messages
+
+2007.09.22.151712  [1101]
+libburn/sbc.c
+Reacted on compiler warning
+
+23 Sep 2007  [1102] libisoburn
+src/burn_wrap.c
+Removed all references to isoburn.treatment from burn_wrap.c
+
+23 Sep 2007  [1105] libisoburn
+src/burn_wrap.c
+Called isoburn_create_data_source() and isoburn_free_data_source()
+
+2007.09.23.163301  [1107]
+libburn/libburn.h
+libburn/drive.c
+New API function burn_drive_equals_adr()
+
+2007.09.23.163419  [1108]
+cdrskin/cdrskin.c
+Made use of burn_drive_equals_adr()
+
+2007.09.23.163529  [1109]
+libburn/sbc.c
+Updated a comment about Immed and a debug message with tray loading
+
+2007.09.24.062354  [1110]
+libburn/drive.c
+Added forgotten handling of "sdtio:" with burn_drive_equals_adr()
+
+2007.09.24.135440  [1113]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.h
+libburn/drive.c
+libburn/read.c
+libburn/write.c
+Implemented drive role 3, sequential write-only stdio drives (e.g. stdout)
+
+2007.09.24.135845  [1114]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Took into respect new drive role 3
+
+2007.09.24.181340  [1115]
+libburn/sg-linux.c
+libburn/drive.c
+Made stdio-drives work on readonly CD block devices
+
+24 Sep 2007  [1116]
+test/libburner.c
+Blocked against file descriptor drives. Too dangerous for a demo.
+
+2007.09.26.155301  [1123]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Disabled --allow_emulated_drives in setuid runs
+
+26 Sep 2007  [1124]
+cdrskin/README
+Streamlined and moved legal stuff to end of text
+
+2007.09.26.173840  [1125]
+cdrskin/compile_cdrskin.sh
+Made -O2 default if not -g is given
+
+2007.09.27.083351  [1126]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/convert_man_to_html.sh
+cdrskin/README
+Disallowed emulated drives for superuser, allowed stdio:/dev/null for all
+
+2007.09.27.093129  [1127]
+cdrskin/cdrskin.c
+Corrected announcement with dev=help about stdio: "Open via UNIX device"
+
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.27.093301
+
+cdrskin/changelog.txt
+Next cdrskin-0.3.9 cycle
+
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
 
-? fallback_program= ?
+problem with telltoc: double descriptor list from before load and after load 
 
 
-? cdrecord: driver=cdr_simul , dvd_simul ?
-? cdrecord: -V -VV ?
-? cdrecord: -fix -nofix ?
-? cdrecord: -packet pktsize= -noclose ?
-? cdrecord: -copy -scms ?
+What about cdrskin rc files ? Forward with fallback runs ?
 
+cdrskin/README
+Thin out
 
 
   []
