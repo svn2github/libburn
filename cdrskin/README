@@ -347,6 +347,9 @@ permissions.
 Addresses of emulated drives begin with prefix "stdio:". E.g.
   dev=stdio:/tmp/my_pseudo_drive
 
+For safety reasons the superuser is only allowed to use /dev/null as emulated
+drive. See man page section FILES for a way to lift that ban.
+
 
 ------------------------------------------------------------------------------
 

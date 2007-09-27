@@ -845,10 +845,10 @@ struct CdrtracK {
  /** Eventually detected data image size */
  double data_image_size;
  char *iso_fs_descr;  /* eventually block 16 to 31 of input during detection */
- /** Wether to demand a detected data image size and use it (or else abort) */
+ /** Whether to demand a detected data image size and use it (or else abort) */
  int use_data_image_size; /* 0=no, 1=size not defined yet, 2=size defined */
 
- /* wether the data source is a container of defined size with possible tail */
+ /* Whether the data source is a container of defined size with possible tail*/
  int extracting_container;
 
  /** Optional fifo between input fd and libburn. It uses a pipe(2) to transfer
@@ -1056,7 +1056,7 @@ int Cdrtrack_get_fifo(struct CdrtracK *track, struct CdrfifO **fifo, int flag)
 }
 
 
-/** Try wether automatic audio extraction is appropriate and eventually open
+/** Try whether automatic audio extraction is appropriate and eventually open
     a file descriptor to the raw data.
     @return -3 identified as .wav but with cdrecord-inappropriate parameters
             -2 could not open track source, no use in retrying
@@ -1661,7 +1661,7 @@ struct CdrpreskiN {
  char queue_severity[81];
  char print_severity[81];
 
- /** Wether to wait for available standard input data before touching drives */
+ /** Whether to wait for available standard input data before touching drives*/
  int do_waiti;
 
  /** Stores eventually given absolute device address before translation */
@@ -1686,41 +1686,44 @@ struct CdrpreskiN {
  */
  int abort_handler;
 
- /** Wether to allow getuid()!=geteuid() */
+ /** Whether to allow getuid()!=geteuid() */
  int allow_setuid;
 
- /** Wether to allow user provided addresses like #4 */
+ /** Whether to allow user provided addresses like #4 */
  int allow_fd_source;
 
- /** Wether to support media types which are implemented but yet untested */
+ /** Whether to support media types which are implemented but yet untested */
  int allow_untested_media;
 
- /** Wether to allow libburn pseudo-drives "stdio:<path>" */
+ /** Whether to allow libburn pseudo-drives "stdio:<path>" .
+     0=forbidden, 1=seems ok,
+     2=potentially forbidden (depends on uid, euid, file type)
+ */
  int allow_emulated_drives;
 
- /** Wether an option is given which needs a full bus scan */
+ /** Whether an option is given which needs a full bus scan */
  int no_whitelist;
 
- /** Wether the translated device address shall not follow softlinks, device
+ /** Whether the translated device address shall not follow softlinks, device
      clones and SCSI addresses */
  int no_convert_fs_adr;
 
- /** Wether Bus,Target,Lun addresses shall be converted literally as old
+ /** Whether Bus,Target,Lun addresses shall be converted literally as old
      Pseudo SCSI-Adresses. New default is to use (possibly system emulated)
      real SCSI addresses via burn_drive_convert_scsi_adr() and literally
      emulated and cdrecord-incompatible ATA: addresses. */
  int old_pseudo_scsi_adr;
 
- /** Wether bus scans shall exit!=0 if no drive was found */
+ /** Whether bus scans shall exit!=0 if no drive was found */
  int scan_demands_drive;
 
- /** Wether to abort when a busy drive is encountered during bus scan */
+ /** Whether to abort when a busy drive is encountered during bus scan */
  int abort_on_busy_drive;
 
- /** Linux specific : Wether to try to avoid collisions when opening drives */
+ /** Linux specific : Whether to try to avoid collisions when opening drives */
  int drive_exclusive;
 
- /** Linux specific : Wether to obtain an exclusive drive lock via fcntl() */
+ /** Linux specific : Whether to obtain an exclusive drive lock via fcntl() */
  int drive_fcntl_f_setlk;
 
  /** Linux specific : Device file address family to use :
@@ -1728,7 +1731,7 @@ struct CdrpreskiN {
  int drive_scsi_dev_family;
  
 
- /** Wether to try to wait for unwilling drives to become willing to open */
+ /** Whether to try to wait for unwilling drives to become willing to open */
  int drive_blocking;
 
  /** Explicit write mode option is determined before skin processes
@@ -1942,6 +1945,52 @@ int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 #endif /* Cdrskin_debug_libdax_msgS */
 #endif /* Cdrskin_libburn_has_burn_msgS */
 
+ return(1);
+}
+
+
+/** Evaluate whether the user would be allowed in any case to use device_adr
+    as pseudo-drive */
+int Cdrpreskin__allows_emulated_drives(char *device_adr, char reason[4096],
+                                      int flag)
+{
+ struct stat stbuf;
+
+ reason[0]= 0;
+ if(device_adr[0]) {
+   if(strcmp(device_adr,"/dev/null")==0)
+     return(1);
+   strcat(reason,"File object is not /dev/null. ");
+ }
+
+ if(getuid()!=geteuid()) {
+   strcat(reason,"UID and EUID differ");
+   return(0);
+ }
+ if(getuid()!=0)
+   return(1);
+
+ strcat(reason,"UID is 0. ");
+ /* Directory must be owned by root and write protected against any others*/
+ if(lstat("/root/cdrskin_permissions",&stbuf)==-1 || !S_ISDIR(stbuf.st_mode)) {
+   strcat(reason, "No directory /root/cdrskin_permissions exists");
+   return(0);
+ }
+ if(stbuf.st_uid!=0) {
+   strcat(reason, "Directory /root/cdrskin_permissions not owned by UID 0");
+   return(0);
+ }
+ if(stbuf.st_mode & (S_IWGRP | S_IWOTH)) {
+   strcat(reason,
+  "Directory /root/cdrskin_permissions has w-permission for group or others");
+   return(0);
+ }
+ if(stat("/root/cdrskin_permissions/allow_emulated_drives",&stbuf)==-1) {
+   strcat(reason,
+          "No file /root/cdrskin_permissions/allow_emulated_drives exists");
+   return(0);
+ }
+ reason[0]= 0;
  return(1);
 }
 
@@ -2177,7 +2226,7 @@ return:
 */
 {
  int i,ret;
- char *value_pt;
+ char *value_pt, reason[4096];
 
 #ifndef Cdrskin_extra_leaN
  if(argc>1) {
@@ -2220,10 +2269,12 @@ return:
      o->abort_handler= 3;
 
    } else if(strcmp(argv[i],"--allow_emulated_drives")==0) {
-     if(getuid()!=geteuid()) {
+     if(Cdrpreskin__allows_emulated_drives("",reason,0)<=0) {
+       fprintf(stderr,"cdrskin: WARNING : %s.\n",reason);
        fprintf(stderr,
-   "cdrskin: SORRY : uid and euid differ. Will not --allow_emulated_drives\n");
+     "cdrskin: WARNING : Only /dev/null will be available with \"stdio:\".\n");
        Cdrpreskin_consider_normal_user(0);
+       o->allow_emulated_drives= 2;
      } else
        o->allow_emulated_drives= 1;
 
@@ -2360,15 +2411,18 @@ set_dev:;
        }
        if(o->allow_emulated_drives) {
          fprintf(stderr,"\nTransport name:\t\tlibburn on standard i/o\n");
-         fprintf(stderr,
-               "Transport descr.:\twrite into data files and block devices\n");
+         if(o->allow_emulated_drives==2)
+           fprintf(stderr, "Transport descr.:\troot or setuid may only write into /dev/null\n");
+         else
+           fprintf(stderr, "Transport descr.:\twrite into file objects\n");
          fprintf(stderr,"Transp. layer ind.:\tstdio:\n");
          fprintf(stderr,"Target specifier:\tpath\n");
          fprintf(stderr,"Target example:\t\tstdio:/tmp/pseudo_drive\n");
          fprintf(stderr,"SCSI Bus scanning:\tnot supported\n");
          fprintf(stderr,"Open via UNIX device:\tsupported\n");
        } else {
-         printf("\ncdrskin: NOTE : Option --allow_emulated_drives would allow dev=stdio:<path>\n");
+         if(Cdrpreskin__allows_emulated_drives("",reason,0)>0)
+           printf("\ncdrskin: NOTE : Option --allow_emulated_drives would allow dev=stdio:<path>\n");
        }
 
 #else /* ! Cdrskin_extra_leaN */
@@ -2450,8 +2504,7 @@ set_dev:;
      printf(
      " --adjust_speed_to_drive  set only speeds offered by drive and media\n");
 #endif
-     printf(
-        " --allow_emulated_drives  dev=stdio:<path> on files and block devices\n");
+     printf(" --allow_emulated_drives  dev=stdio:<path> on file objects\n");
      printf(
         " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
      printf(
@@ -3031,7 +3084,7 @@ struct CdrskiN {
  char device_adr[Cdrskin_adrleN];
 
 
- /** Progress state info: wether libburn is actually processing payload data */
+ /** Progress state info: whether libburn is actually processing payload data*/
  int is_writing;
  /** Previously detected drive state */
  enum burn_drive_status previous_drive_status;
@@ -3043,7 +3096,7 @@ struct CdrskiN {
  int lib_is_initialized;
  pid_t control_pid; /* pid of the thread that calls libburn */
  int drive_is_grabbed;
- int drive_is_busy; /* Wether drive was told to do something cancel-worthy */
+ int drive_is_busy; /* Whether drive was told to do something cancel-worthy */
  struct burn_drive *grabbed_drive;
 
 #ifndef Cdrskin_extra_leaN
@@ -3981,7 +4034,7 @@ adr_translation:;
  /* user defined address translation */
  if(!(flag&1)) {
    if(ret>0) {
-     /* try wether a translation points to loc */
+     /* try whether a translation points to loc */
      hret= Cdradrtrn_translate(skin->adr_trn,loc,driveno,buf,1);
      if(hret==2) {
        still_untranslated= 0;
@@ -5292,7 +5345,7 @@ ex:;
 #ifdef Cdrskin_libburn_write_mode_ruleS
 
 /** After everything else about burn_write_opts and burn_disc is set up, this
-    call determines the effective write mode and checks wether the drive
+    call determines the effective write mode and checks whether the drive
     promises to support it.
 */
 int Cdrskin_activate_write_mode(struct CdrskiN *skin,
@@ -5367,7 +5420,7 @@ report_failure:;
 
 #else /* Cdrskin_libburn_write_mode_ruleS */
 
-/** Determines the effective write mode and checks wether the drive promises
+/** Determines the effective write mode and checks whether the drive promises
     to support it.
     @param s state of target media, obtained from burn_disc_get_status(), 
              submit BURN_DISC_BLANK if no real state is available
@@ -5473,7 +5526,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
    skin->block_type= BURN_BLOCK_SAO;
  }
 
- /* check wether desired type combination is available with drive */
+ /* check whether desired type combination is available with drive */
  if(skin->driveno<0 || skin->driveno>skin->n_drives) {
    if(skin->verbosity>=Cdrskin_verbose_debuG)
      ClN(printf("cdrskin_debug: WARNING : No drive selected with Cdrskin_activate_write_mode\n"));
@@ -7518,7 +7571,7 @@ ignore_unknown:;
 /** Initialize libburn, create a CdrskiN program run control object,
     set eventual device whitelist, and obtain the list of available drives.
     @param o Returns the CdrskiN object created
-    @param lib_initialized Returns wether libburn was initialized here
+    @param lib_initialized Returns whether libburn was initialized here
     @param exit_value Returns after error the proposal for an exit value
     @param flag Unused yet
     @return <=0 error, 1 success
@@ -7528,6 +7581,7 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
 {
  int ret, stdio_drive= 0;
  struct CdrskiN *skin;
+ char reason[4096];
 
  *o= NULL;
  *exit_value= 0;
@@ -7538,15 +7592,23 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
        (*preskin)->device_adr));
    burn_drive_add_whitelist((*preskin)->device_adr);
    if(strncmp((*preskin)->device_adr, "stdio:", 6)==0) {
-     if((*preskin)->allow_emulated_drives) {
+     ret= Cdrpreskin__allows_emulated_drives((*preskin)->device_adr+6,reason,0);
+     if((*preskin)->allow_emulated_drives && ret>0) {
        stdio_drive= 1;
        (*preskin)->demands_cdrskin_caps= 1;
+     } else if((*preskin)->allow_emulated_drives) {
+       fprintf(stderr,"cdrskin: SORRY : dev=stdio:... rejected despite --allow_emulated_drives\n");
+       fprintf(stderr,"cdrskin: SORRY : Reason: %s.\n", reason);
      } else {
        fprintf(stderr,"cdrskin: SORRY : dev=stdio:... works only with option --allow_emulated_drives\n");
-       if(getuid()!=geteuid()) {
-         fprintf(stderr,"cdrskin: SORRY : but uid and euid differ. So this option will be rejected.\n");
-         Cdrpreskin_consider_normal_user(0);
+       if(ret<=0) {
+         fprintf(stderr,"cdrskin: SORRY : but: %s.\n", reason);
+         fprintf(stderr,
+                "cdrskin: SORRY : So this option would not help anyway.\n");
        }
+     }
+     if(!stdio_drive) {
+       Cdrpreskin_consider_normal_user(0);
        {*exit_value= 2; goto ex;}
      }
    }

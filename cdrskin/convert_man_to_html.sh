@@ -54,9 +54,10 @@ then
   -e 's/^The write modes for DVD+R/\&nbsp;<BR>The write modes for DVD+R/' \
   -e 's/<b>Drive preparation and addressing:<\/b>/\&nbsp;<BR><b>Drive preparation and addressing:<\/b>/' \
   -e 's/^If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
-  -e 's/^Option --allow_emulated_drives enables/\&nbsp;<BR>Option --allow_emulated_drives enables/' \
+  -e 's/<b>Emulated drives:<\/b>/\&nbsp;<BR><b>Emulated drives:<\/b>/' \
   -e 's/^Alphabetical list of options/\&nbsp;<BR>Alphabetical list of options/' \
   -e 's/and for all others\.<\/td><\/table>/and for all others.<\/td><\/table>  <BR><HR><FONT SIZE=-1><CENTER>(HTML generated from '"$manpage"'.1 on '"$(date)"' by '$(basename "$0")' )<\/CENTER><\/FONT>/' \
+  -e 's/See section FILES/See section <A HREF="#FILES">FILES<\/A>/' \
   -e 's/See section EXAMPLES/See section <A HREF="#EXAMPLES">EXAMPLES<\/A>/' \
   <"$2" >"$htmlpage"
 

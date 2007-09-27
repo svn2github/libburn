@@ -31,7 +31,7 @@ via libburn.
 \fBcdrskin\fP is a program that provides some of cdrecord's options
 in a compatible way for CD media. With DVD it has its own ways.
 You do not need to be superuser for its daily usage.
-.PP
+.SS
 .B Overview of features:
 .br
 Blanking of CD-RW and DVD-RW.
@@ -57,7 +57,7 @@ or on data file or block device.
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
 See section EXAMPLES at the end of this text.
-.PP
+.SS
 .B General information paragraphs:
 .br
 Track recording model
@@ -71,7 +71,9 @@ Sequentially Recordable DVD Media
 Overwriteable DVD Media
 .br
 Drive preparation and addressing
-.PP
+.br
+Emulated drives
+.SS
 .B Track recording model:
 .br
 The input-output entities which get processed are called tracks.
@@ -113,7 +115,7 @@ Another type of data track content are archive formats which originally
 have been developed for magnetic tapes. Only formats which mark a detectable
 end-of-archive in their data are suitable, though. Well tested are
 the archivers afio and star. Not suitable seems GNU tar.
-.PP
+.SS
 .B Write mode selection:
 .br
 In general there are two approaches for writing media:
@@ -136,7 +138,7 @@ the capabilities of the drive and the state of the present media.
 So the mentioning of write modes in the following paragraphs and in the
 examples is not so much a demand that the user shall choose one explicitely,
 but rather an illustration of what to expect with particular media types.
-.PP
+.SS
 .B Recordable CD Media:
 .br
 CD-R can be initially written only once and eventually extended until they
@@ -158,7 +160,7 @@ is the appropriate option.
 Blanking damages the previous content but does not
 make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be.
-.PP
+.SS
 .B Sequentially Recordable DVD Media:
 .br
 Currently DVD-RW, DVD-R and DVD+R can be used for the Sequential recording
@@ -208,7 +210,7 @@ allows appendable media.
 Option -multi might make DVD media unreadable in some DVD-ROM drives.
 Best reader compatibility is achieved without it
 (i.e. by single session media).
-.PP
+.SS
 .B Overwriteable DVD Media:
 .br
 Currently types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
@@ -237,7 +239,7 @@ can be done by option
 Several programs like dvd+rw-format, cdrecord, wodim, or cdrskin
 can bring a DVD-RW out of overwriteable state so
 that it has to be formatted again. If in doubt, just give it a try.
-.PP
+.SS
 .B Drive preparation and addressing:
 .br
 The drives, either CD burners or DVD burners, are accessed via addresses which
@@ -273,7 +275,9 @@ Further are accepted on Linux: links to libburn-suitable device files,
 device files which have the same major and minor device number,
 and device files which have the same SCSI address parameters (e.g. /dev/sg0).
 .br
-.PP
+.SS
+.B Emulated drives:
+.br
 Option --allow_emulated_drives enables addressing of pseudo-drives
 which get emulated on top of filesystem objects. Regular data files and
 block devices result in pseudo-drives which behave much like DVD-RAM.
@@ -285,12 +289,6 @@ The target file address is given after prefix "stdio:".
 .br
 E.g.: dev=stdio:/tmp/my_pseudo_drive
 .br
-Note: --allow_emulated_drives will not work if cdrskin has changed user
-identity via the setuid bit of its access permissions.
-.br
-Warning: Superusers must take care not to spoil their hard disk via its raw
-block device (like /dev/hda or /dev/sd0).
-.br
 Addresses of the form "stdio:/dev/fd/<number>" are treated special. The
 number is read literally and used as open file descriptor. With
 dev="stdio:/dev/fd/1" the normal standard output of the program is
@@ -299,7 +297,15 @@ redirected to stderr and the stream data of a burn run will appear on stdout.
 Not good for terminals ! Redirect it.
 .br
 Pseudo-drives allow -dummy. Their reply with --tell_media_space can be utopic.
-Note: -dummy burn runs touch the file but do not modify its data content.
+-dummy burn runs touch the file but do not modify its data content.
+.br
+Note: --allow_emulated_drives is restricted to stdio:/dev/null if cdrskin
+is run by the
+.B superuser
+or if it has changed user identity via the
+.B setuid
+bit of its access permissions. The ban for the superuser can be lifted by a
+skillfully created file. See section FILES below.
 .br
 .SH OPTIONS
 .TP
@@ -1154,6 +1160,9 @@ cdrskin -v dev=ATA:1,0,0 speed=48 -sao \\
 track1.wav track2.au -audio -swab track3.raw
 .br
 .SH FILES
+.SS
+Startup files:
+.br
 If not --no_rc is given as the first argument then cdrskin attempts on
 startup to read the arguments from the following files:
 .PP
@@ -1171,16 +1180,12 @@ The files are read in the sequence given above, but none of them is
 required for cdrskin to function properly. Each readable line is treated
 as one single argument. No extra blanks.
 A first character '#' marks a comment, empty lines are ignored.
-.SS
-.B Example content of a startup file:
+.br
+Example content of a startup file:
 .br
 # This is the default device
 .br
 dev=0,1,0
-.br
-# To accomodate to remnant cdrskin-0.2.2 addresses
-.br
-dev_translation=+1,0,0+0,1,0
 .br
 # Some more options
 .br
@@ -1188,6 +1193,19 @@ fifo_start_at=0
 .br
 fs=16m
 .br
+.SS
+Disabling superuser safety precautions:
+The superuser is normally banned from using any other emulated drive but
+/dev/null. This ban can be lifted by the existence of file
+.PP
+.B /root/cdrskin_permissions/allow_emulated_drives
+.PP
+where the directory must be owned by the superuser and must not offer
+w-permissions for group or others.
+.br
+Warning: Superusers must take care not to spoil their hard disk via its raw
+block device (like stdio:/dev/hda or stdio:/dev/sd0).
+
 .SH SEE ALSO
 .TP
 Formatting data track sources for cdrskin:
