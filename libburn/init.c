@@ -311,6 +311,9 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 					kill(abort_control_pid, signum);
 			}
 			return -2;
+		} else {
+			usleep(1000000); /* calm down */
+			return -2;
 		}
 
 #else
