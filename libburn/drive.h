@@ -121,4 +121,8 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 int burn_drive__fd_from_special_adr(char *adr);
 
 
+/* ts A70929 : Find the drive which is being worked on by pid */
+int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid);
+
+
 #endif /* __DRIVE */

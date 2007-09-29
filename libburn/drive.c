@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include "libburn.h"
+#include "init.h"
 #include "drive.h"
 #include "transport.h"
 #include "debug.h"
@@ -163,8 +164,18 @@ int burn_drive_is_occupied(struct burn_drive *d)
 	if(d->busy == BURN_DRIVE_READING_SYNC ||
 		 d->busy == BURN_DRIVE_WRITING_SYNC)
 		return 2;
-	if(d->busy == BURN_DRIVE_READING || d->busy == BURN_DRIVE_WRITING)
+	if(d->busy == BURN_DRIVE_WRITING) {
+
+		/* ts A70928 */
+		/* >>> how do i learn whether the writer thread is still
+			 alive ? */;
+			/* >>> what to do if writer is dead ? 
+				At least sync disc ?*/;
+
+	}
+	if(d->busy == BURN_DRIVE_READING) {
 		return 50;
+	}
 	return 1000;
 }
 
@@ -317,6 +328,8 @@ struct burn_drive *burn_drive_register(struct burn_drive *d)
 	d->rlba = 0;
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_IDLE;
+	d->thread_pid = 0;
+	d->thread_pid_valid = 0;
 	d->toc_entries = 0;
 	d->toc_entry = NULL;
 	d->disc = NULL;
@@ -717,6 +730,19 @@ int burn_disc_erasable(struct burn_drive *d)
 enum burn_drive_status burn_drive_get_status(struct burn_drive *d,
 					     struct burn_progress *p)
 {
+	/* ts A70928 : inform control thread of signal in sub-threads */
+	if (burn_global_abort_level > 0)
+		burn_global_abort_level++;
+	if (burn_global_abort_level > 5) {
+		if (burn_global_signal_handler == NULL)
+			kill(getpid(), burn_global_abort_signum);
+		else
+			(*burn_global_signal_handler)
+				(burn_global_signal_handle,
+				 burn_global_abort_signum, 0);
+		burn_global_abort_level = -1;
+	}
+
 	if (p != NULL) {
 		memcpy(p, &(d->progress), sizeof(struct burn_progress));
 		/* TODO: add mutex */
@@ -2373,6 +2399,20 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 
 	}
 	return 0;		/* now i believe they are really not equal */
+}
+
+
+int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid)
+{
+	int i;
+
+	for (i = 0; i < drivetop + 1; i++)
+		if (drive_array[i].thread_pid_valid &&
+		    drive_array[i].thread_pid == pid) {
+			*d = &(drive_array[i]);
+			return 1;
+		}
+	return 0;
 }
 
 

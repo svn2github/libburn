@@ -251,6 +251,12 @@ struct burn_drive
 
 	volatile int cancel;
 	volatile enum burn_drive_status busy;
+
+	/* ts A70929 */
+	pid_t thread_pid;
+	int thread_pid_valid;
+
+
 /* transport functions */
 	int (*grab) (struct burn_drive *);
 	int (*release) (struct burn_drive *);

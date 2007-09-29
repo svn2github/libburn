@@ -338,7 +338,13 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 
 static void *write_disc_worker_func(struct w_list *w)
 {
+	struct burn_drive *d = w->u.write.drive;
+
+	d->thread_pid = getpid();
+	d->thread_pid_valid= 1;
 	burn_disc_write_sync(w->u.write.opts, w->u.write.disc);
+	d->thread_pid_valid= 0;
+	d->thread_pid = 0;
 
 	/* the options are refcounted, free out ref count which we added below 
 	 */

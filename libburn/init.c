@@ -10,8 +10,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-
+/* ts A70928 : init.h is for others, not for init .c
 #include "init.h"
+*/
+
+
 #include "sg.h"
 #include "error.h"
 #include "libburn.h"
@@ -56,7 +59,6 @@ int burn_sg_open_o_nonblock = 1;
 	    to unconditional abort of the process  */
 int burn_sg_open_abort_busy = 0;
 
-
 /* ts A61002 */
 
 #include "cleanup.h"
@@ -64,6 +66,10 @@ int burn_sg_open_abort_busy = 0;
 /* Parameters for builtin abort handler */
 static char abort_message_prefix[81] = {"libburn : "};
 static pid_t abort_control_pid= 0;
+volatile int burn_global_abort_level= 0;
+int burn_global_abort_signum= 0;
+void *burn_global_signal_handle = NULL;
+burn_abort_handler_t burn_global_signal_handler = NULL;
 
 
 /* ts A70223 : wether implemented untested profiles are supported */
@@ -263,38 +269,57 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
+#define Libburn_new_thread_signal_handleR 1
+	int ret;
+	struct burn_drive *d;
+
+	/*
+	fprintf(stderr, "libburn_ABORT: pid = %d , abort_control_pid = %d\n",
+		getpid(), abort_control_pid);
+	*/
+
+	/* ts A70928:
+	Must be quick. Allowed to coincide with other thread and to share
+	the increment with that one. It must not decrease, though, and
+	yield at least 1 if any thread calls this function.
+	*/
+	burn_global_abort_level++;
+	burn_global_abort_signum= signum;
+
 	if(getpid() != abort_control_pid) {
 
-#ifdef Not_yeT
-		pthread_t thread_id;
+#ifdef Libburn_new_thread_signal_handleR
 
-		/* >>> need better handling of self-induced SIGs 
-		       like SIGSEGV or SIGFPE.
-		       Like bonking the control thread if it did not show up
-		       after a short while.
-		*/
+		ret = burn_drive_find_by_thread_pid(&d, getpid());
+		if (ret > 0 && d->busy == BURN_DRIVE_WRITING) {
+					/* This is an active writer thread */
+/*
+			fprintf(stderr, "libburn_ABORT: pid %d found drive busy with writing, (level= %d)\n", (int) getpid(), burn_global_abort_level);
+*/
 
-		/* >>> if this is a non-fatal signal : return -2 */
+			d->sync_cache(d);
 
-		thread_id = pthread_self();
-		/* >>> find thread_id  in worker list of async.c */
-		/* >>> if owning a drive : mark idle and canceled
-		       (can't do anything more) */
+			/* >>> perform a more qualified end of burn process */;
 
-		usleep(1000000); /* calm down */
+			d->busy = BURN_DRIVE_IDLE;
 
- 		/* forward signal to control thread */
-		if (abort_control_pid>1)
-			kill(abort_control_pid, signum);
-
-		/* >>> ??? end thread */;
+			if (burn_global_abort_level > 0) {
+				/* control process did not show up yet */
+/*
+					fprintf(stderr, "libburn_ABORT: pid %d sending signum %d to pid %d\n", (int) getpid(), (int) signum, (int) abort_control_pid);
+*/
+					kill(abort_control_pid, signum);
+			}
+			return -2;
+		}
 
 #else
 		usleep(1000000); /* calm down */
 		return -2;
-#endif /* ! Not_yeT */
+#endif /* ! Libburn_new_thread_signal_handleR */
 
 	}
+	burn_global_abort_level = -1;
 	Cleanup_set_handlers(NULL, NULL, 2);
 	fprintf(stderr,"%sABORT : Trying to shut down drive and library\n",
 		abort_message_prefix);
@@ -302,10 +327,13 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 		"%sABORT : Wait the normal burning time before any kill -9\n",
 		abort_message_prefix);
 	close(0); /* somehow stdin as input blocks abort until EOF */
+
 	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
+
 	fprintf(stderr,
 	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
 		abort_message_prefix);
+	burn_global_abort_level = -2;
 	return(1);
 }
 
@@ -326,6 +354,8 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 	abort_message_prefix[sizeof(abort_message_prefix)-1] = 0;
 	abort_control_pid = getpid();
 	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler, mode|4);
+	burn_global_signal_handle = handle;
+	burn_global_signal_handler = handler;
 }
 
 
