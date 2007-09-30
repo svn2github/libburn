@@ -7,9 +7,12 @@
 #include "options.h"
 #include "async.h"
 #include "init.h"
+#include "file.h"
 #include "back_hacks.h"
 
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -53,6 +56,12 @@ struct write_opts
 	struct burn_disc *disc;
 };
 
+struct fifo_opts
+{
+	struct burn_source *source;
+	int flag;
+};
+
 
 struct w_list
 {
@@ -67,6 +76,7 @@ struct w_list
 		struct erase_opts erase;
 		struct format_opts format;
 		struct write_opts write;
+		struct fifo_opts fifo;
 	} u;
 };
 
@@ -418,6 +428,38 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 	add_worker(opts->drive, (WorkerFunc) write_disc_worker_func, &o);
 }
+
+
+static void *fifo_worker_func(struct w_list *w)
+{
+	burn_fifo_source_shuffler(w->u.fifo.source, w->u.fifo.flag);
+	remove_worker(pthread_self());
+	return NULL;
+}
+
+
+int burn_fifo_start(struct burn_source *source, int flag)
+{
+	struct fifo_opts o;
+	struct burn_source_fifo *fs = source->data;
+
+	fs->is_started = -1;
+
+	/* >>> create and set up ring buffer */;
+	/* >>> for now: only 1 , later: fs->chunks */
+	fs->buf = calloc(fs->chunksize, 1);
+	if (fs->buf == NULL) {
+		/* >>> could not start ring buffer */;
+		return -1;
+	}
+
+	o.source = source;
+	o.flag = flag;
+	add_worker(NULL, (WorkerFunc) fifo_worker_func, &o);
+	fs->is_started = 1;
+	return 1;
+}
+
 
 void burn_async_join_all(void)
 {

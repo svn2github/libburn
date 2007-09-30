@@ -2,12 +2,16 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "source.h"
 #include "libburn.h"
 #include "file.h"
+#include "async.h"
 
 /* main channel data can be padded on read, but 0 padding the subs will make
 an unreadable disc */
@@ -170,11 +174,156 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 
 	src->read = file_read;
 	if(subfd != -1)
-		src->read = file_read_sub;
+		src->read_sub = file_read_sub;
 	src->get_size = file_size;
 	src->set_size = file_set_size;
 	src->free_data = file_free;
 	src->data = fs;
 	return src;
 }
+
+
+/* ts A70930 */
+/* ----------------------------- fifo ---------------------------- */
+
+/* The fifo mechanism consists of a burn_source proxy which is here,
+   a thread management team which is located in async.c,
+   and a synchronous shuffler which is here.
+*/
+
+static int fifo_read(struct burn_source *source,
+		     unsigned char *buffer,
+		     int size)
+{
+	struct burn_source_fifo *fs = source->data;
+	int ret;
+
+        if (fs->is_started == 0) {
+		ret = burn_fifo_start(source, 0);
+		if (ret <= 0) {
+
+			/* >>> cannot start fifo thread */;
+
+			return -1;
+		}
+		fs->is_started = 1;
+	}
+	if (size == 0)
+		return 0;
+
+	ret = read_full_buffer(fs->outlet[0], buffer, size);
+	if (ret > 0)
+		fs->out_counter += ret;
+	return ret;
+}
+
+
+static off_t fifo_get_size(struct burn_source *source)
+{
+	struct burn_source_fifo *fs = source->data;
+
+	return fs->inp->get_size(fs->inp);
+}
+
+
+static int fifo_set_size(struct burn_source *source, off_t size)
+{
+	struct burn_source_fifo *fs = source->data;
+
+	return fs->inp->set_size(fs->inp, size);
+}
+
+
+static void fifo_free(struct burn_source *source)
+{
+	struct burn_source_fifo *fs = source->data;
+
+	if (fs->outlet[1] >= 0)
+		close(fs->outlet[1]);
+	free(fs);
+}
+
+
+struct burn_source *burn_fifo_source_new(struct burn_source *inp,
+		 		int chunksize, int chunks, int flag)
+{
+	struct burn_source_fifo *fs;
+	struct burn_source *src;
+	int ret, outlet[2];
+
+	ret = pipe(outlet);
+	if (ret == -1) {
+		/* >>> error on pipe creation */;
+		return NULL;
+	}
+
+	fs = malloc(sizeof(struct burn_source_fifo));
+	if (fs == NULL)
+		return NULL;
+	fs->is_started = 0;
+	fs->thread_pid = 0;
+	fs->thread_pid_valid = 0;
+	fs->inp = inp;
+	fs->outlet[0] = outlet[0];
+	fs->outlet[1] = outlet[1];
+	fs->chunksize = chunksize;
+	if (chunksize <= 0)
+		fs->chunksize = 2048;
+	fs->chunks = chunks;
+	fs->buf = NULL;
+	fs->in_counter = fs->out_counter = 0;
+
+	src = burn_source_new();
+	if (src == NULL) {
+		free((char *) fs->buf);
+		free((char *) fs);
+		return NULL;
+	}
+
+	src->read = fifo_read;
+	src->read_sub = NULL;
+	src->get_size = fifo_get_size;
+	src->set_size = fifo_set_size;
+	src->free_data = fifo_free;
+	src->data = fs;
+	return src;
+}
+
+
+int burn_fifo_source_shuffler(struct burn_source *source, int flag)
+{
+	struct burn_source_fifo *fs = source->data;
+	int ret;
+
+	fs->thread_pid = getpid();
+	fs->thread_pid_valid = 1;
+
+	while (1) {
+		ret = fs->inp->read(fs->inp, (unsigned char *) fs->buf,
+					 fs->chunksize);
+		if (ret > 0)
+			fs->in_counter += ret;
+		else if (ret == 0)
+	break; /* EOF */
+		else {
+			/* >>> read error */;
+	break;
+		}
+		ret = write(fs->outlet[1], fs->buf, ret);
+		if (ret == -1) {
+			/* >>> write error */;
+	break;
+		}
+	}
+
+	/* >>> check and destroy ring buffer */;
+	free(fs->buf);
+	fs->buf = NULL;
+
+	if (fs->outlet[1] >= 0)
+		close(fs->outlet[1]);
+	fs->outlet[1] = -1;
+	return (ret >= 0);
+}
+
 

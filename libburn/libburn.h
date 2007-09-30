@@ -1376,6 +1376,24 @@ struct burn_source *burn_file_source_new(const char *path,
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 
 
+/* ts A70930 : Provisory API call. Subject to changes ! */
+/** Creates a fifo which acts as proxy for an already existing data source.
+    NOTE: Incomplete function. Curently the ring buffer is not implemented.
+          The only purpose is to decouple the writer thread of libburn from an
+          eventually error prone burn_source.
+    In future this will implement a ring buffer which shall smoothen the
+    data stream between burn_source and writer thread.
+    @param inp        The burn_source for which the fifo shall act as proxy.
+    @param chunksize  The size in bytes of a chunk. Use 2048 if in doubt.
+    @param chunks     The number of chunks to be allocated in ring buffer.
+    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @return           A pointer to the newly created burn_source.
+                      Later both burn_sources, inp and the returned fifo, have
+                      to be disposed by calling burn_source_free() for each.
+*/
+struct burn_source *burn_fifo_source_new(struct burn_source *inp,
+                                         int chunksize, int chunks, int flag);
+
 /* ts A70328 */
 /** Sets a fixed track size after the data source object has already been
     created.
