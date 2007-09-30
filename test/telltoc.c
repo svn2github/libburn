@@ -147,7 +147,6 @@ int telltoc_aquire_by_adr(char *drive_adr)
 	burn_drive_info_free(test_drive_list);
 	*/
 
-
 	return ret;
 }
 
@@ -620,8 +619,13 @@ int telltoc_read_and_print(struct burn_drive *drive,
 		return -1;
 	if (encoding == 1) {
                 if (stat(raw_file,&stbuf) != -1) {
-                    fprintf(stderr,"SORRY: target file '%s' already existing\n", raw_file);
-                    return 1;
+			if (!(S_ISCHR(stbuf.st_mode) || S_ISFIFO(stbuf.st_mode)
+				 || (stbuf.st_mode & S_IFMT) == S_IFSOCK )) {
+                   	 	fprintf(stderr,
+				  "SORRY: target file '%s' already existing\n",
+				  raw_file);
+				return 1;
+			}
                 }
                 raw_fp = fopen(raw_file,"w");
                 if (raw_fp == NULL) {
@@ -767,6 +771,11 @@ int telltoc_setup(int argc, char **argv)
             if(strncmp(argv[i], "raw:", 4) == 0 || strcmp(argv[i],"1:") == 0) {
                 print_encoding = 1;
                 strcpy(print_raw_file, strchr(argv[i], ':') + 1);
+		if (strcmp(print_raw_file, "-") == 0) {
+                	fprintf(stderr,
+		"--read_and_print does not write to \"-\" as stdout.\n");
+                	return 1;
+		}
             } else if(strcmp(argv[i], "hex") == 0 || strcmp(argv[i], "2") == 0)
                print_encoding = 2;
             
