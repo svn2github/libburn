@@ -149,7 +149,7 @@ int burn_write_flush(struct burn_write_opts *o, struct burn_track *track)
 	int ret;
 	struct burn_drive *d = o->drive;
 
-	ret = burn_write_flush(o, track);
+	ret = burn_write_flush_buffer(o, track);
 	if (ret <= 0)
 		return ret;
 	d->sync_cache(d);
