@@ -117,7 +117,9 @@ void type_to_form(int mode, unsigned char *ctladr, int *form)
 		*form |= 0x40;
 }
 
-int burn_write_flush(struct burn_write_opts *o, struct burn_track *track)
+
+/* ts A71002 : outsourced from burn_write_flush() : no sync cache here */
+int burn_write_flush_buffer(struct burn_write_opts *o,struct burn_track *track)
 {
 	struct burn_drive *d = o->drive;
 
@@ -138,24 +140,31 @@ int burn_write_flush(struct burn_write_opts *o, struct burn_track *track)
 		d->buffer->bytes = 0;
 		d->buffer->sectors = 0;
 	}
+	return 1;
+}
+
+
+int burn_write_flush(struct burn_write_opts *o, struct burn_track *track)
+{
+	int ret;
+	struct burn_drive *d = o->drive;
+
+	ret = burn_write_flush(o, track);
+	if (ret <= 0)
+		return ret;
 	d->sync_cache(d);
 	return 1;
 }
 
 
-/* ts A61030 */
-int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
+/* ts A71002 : outsourced from burn_write_close_track() */
+int burn_write_track_minsize(struct burn_write_opts *o, struct burn_session *s,
 				int tnum)
 {
 	char msg[81];
 	struct burn_drive *d;
 	struct burn_track *t;
 	int todo, step, cancelled, seclen;
-
-	/* ts A61106 */
-#ifdef Libburn_experimental_no_close_tracK
-	return 1;
-#endif
 
 	d = o->drive;
 	t = s->track[tnum];
@@ -190,8 +199,26 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 		}
 		d->cancel = cancelled;
 	}
+	return 1;
+}
 
-	/* ts A61102 */
+
+/* ts A61030 */
+int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
+				int tnum)
+{
+	char msg[81];
+	struct burn_drive *d;
+	struct burn_track *t;
+
+	/* ts A61106 */
+#ifdef Libburn_experimental_no_close_tracK
+	return 1;
+#endif
+
+	d = o->drive;
+	t = s->track[tnum];
+
 	d->busy = BURN_DRIVE_CLOSING_TRACK;
 
 	sprintf(msg, "Closing track %2.2d", tnum+1);
@@ -206,11 +233,11 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 	*/
 	d->close_track_session(o->drive, 0, 0xff);
 
-	/* ts A61102 */
 	d->busy = BURN_DRIVE_WRITING;
 
 	return 1;
 }
+
 
 
 /* ts A61030 */
@@ -811,11 +838,13 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 ex:;
 	if (o->write_type == BURN_WRITE_TAO) {
 
-		/* ts A61103 */
-		/* >>> if cancelled: ensure that at least 600 kB get written */
-
-		if (!burn_write_flush(o, t))
+		/* ts A71002 */
+		if (!burn_write_flush_buffer(o, t))
 			ret = 0;
+
+		/* Ensure that at least 600 kB get written */
+		burn_write_track_minsize(o, s, tnum);
+		d->sync_cache(d);
 
 		/* ts A61030 */
 		if (burn_write_close_track(o, s, tnum) <= 0)
