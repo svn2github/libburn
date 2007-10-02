@@ -318,38 +318,77 @@ struct burn_toc_entry
 };
 
 
-/** Data source for tracks */
+/** Data source interface for tracks.
+
+    Objects compliant to this interface are either provided by the application
+    or by API calls of libburn. If provided by the application then the
+    functions (*read), (*get_size), (*set_size), (*free_data) MUST be
+    implemented by the application and attached to the object at creation time.
+    Function (*read_sub) MUST either be NULL or provided by the application.
+*/
 struct burn_source {
-	/** Reference count for the data source. Should be 1 when a new source
-            is created.  Increment it to take a reference for yourself. Use
-            burn_source_free to destroy your reference to it. */
+
+	/** Reference count for the data source. MUST be 1 when a new source
+            is created. Increment it to take more references for yourself. Use
+            burn_source_free() to destroy your references to it. */
 	int refcount;
 
-	/** Read data from the source */
-	int (*read)(struct burn_source *,
-	                                   unsigned char *buffer,
-	                                   int size);
+	/** Read data from the source. Semantics like with read(2), but MUST
+	    either deliver the full buffer as defined by size or MUST deliver
+	    EOF (return -1) at the following call.
+	*/
+	int (*read)(struct burn_source *, unsigned char *buffer, int size);
 
-	/** Read subchannel data from the source (NULL if lib generated) */
-	int (*read_sub)(struct burn_source *,
-	                                       unsigned char *buffer,
-	                                       int size);
+	/** Read subchannel data from the source (NULL if lib generated) 
+	    WARNING: This is an obscure feature with CD raw write modes.
+	    Unless you checked the libburn code for correctness in that aspect
+	    you should not rely on raw writing with own subchannels.
+	    ADVICE: Set this pointer to NULL.
+	*/
+	int (*read_sub)(struct burn_source *, unsigned char *buffer, int size);
 
-	/** Get the size of the source's data */
-	off_t (*get_size)(struct burn_source *);
+	/** Get the size of the source's data. Return 0 means unpredictable
+	    size. If application provided (*get_size) allows return 0, then
+	    the application MUST provide a fully functional (*set_size).
+	*/
+	off_t (*get_size)(struct burn_source *); 
 
-	/** Set the size of the source's data */
+	/** Program the reply of (*get_size) to a fixed value. It is advised
+	    to implement this by a attribute  off_t fixed_size;  in *data .
+	    The read() function does not have to take into respect this fake
+	    setting. It is rather a note of libburn to itself. Eventually
+	    necessary truncation or padding is done in libburn. Truncation
+	    is usually considered a misburn. Padding is considered ok.
+
+	    libburn is supposed to work even if (*get_size) ignores the
+            setting by (*set_size). But your application will not be able to
+	    enforce fixed track sizes by  burn_track_set_size() and possibly
+	    even padding might be left out.
+	*/
 	int (*set_size)(struct burn_source *source, off_t size);
 
-	/** Clean up the source specific data */
+	/** Clean up the source specific data. This function will be called
+	    once by burn_source_free() when the last referer disposes the
+	    source.
+	*/
 	void (*free_data)(struct burn_source *);
 
 	/** Next source, for when a source runs dry and padding is disabled
-	    THIS IS AUTOMATICALLY HANDLED, DO NOT TOUCH
+	    WARNING: This is an obscure feature. Set to NULL at creation and
+	             from then on leave untouched and uninterpreted.
 	*/
 	struct burn_source *next;
 
-	/** Source specific data */
+	/** Source specific data. Here the various source classes express their
+	    specific properties and the instance objects store their individual
+	    management data. E.g. a struct like this:
+		struct app_burn_source
+		{
+			struct my_app *app_handle;
+			... other individual source parameters ...
+			off_t fixed_size;
+		};
+	*/
 	void *data;
 };
 
