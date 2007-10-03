@@ -319,28 +319,55 @@ struct burn_toc_entry
 
 
 /** Data source interface for tracks.
+    This allows to use arbitrary program code as provider of track input data.
 
     Objects compliant to this interface are either provided by the application
-    or by API calls of libburn. If provided by the application then the
-    functions (*read), (*get_size), (*set_size), (*free_data) MUST be
-    implemented by the application and attached to the object at creation time.
-    Function (*read_sub) MUST either be NULL or provided by the application.
+    or by API calls of libburn: burn_fd_source_new() , burn_file_source_new().
+    Those calls allow to use any file object as data source. Consider to feed
+    your data stream asynchronously into a file descriptor and to let libburn
+    handle the rest. 
+
+    If you need to implement an own passive data producer by this interface,
+    then beware: it can do anything and it can spoil everything.
+
+    If implemented by the application then the functions (*read), (*get_size),
+    (*set_size), (*free_data) MUST be implemented and attached to the object
+    at creation time.
+    Function (*read_sub) is allowed to be NULL (or MUST be implemented).
+
+    burn_source.refcount MUST be handled properly: If not exactly as many
+    references are freed as have been obtained, then either memory leaks or
+    corrupted memory are the consequence.
+    All objects which are referred to by *data must be kept existent until
+    (*free_data) is called via burn_source_free() by the last referer.
+
+    With libburn provided burn_source objects the following rule applies:
+    Call burn_source_free() exactly once for every source obtained from
+    libburn API. You MUST NOT otherwise manipulate its refcount.
+
+    The following component description applies to application implemented
+    burn_source objects only. You need not to know it for API provided ones.
 */
 struct burn_source {
 
 	/** Reference count for the data source. MUST be 1 when a new source
-            is created. Increment it to take more references for yourself. Use
-            burn_source_free() to destroy your references to it. */
+            is created and thus the first reference is handed out. Increment
+            it to take more references for yourself. Use burn_source_free()
+            to destroy your references to it. */
 	int refcount;
+
 
 	/** Read data from the source. Semantics like with read(2), but MUST
 	    either deliver the full buffer as defined by size or MUST deliver
-	    EOF (return -1) at the following call.
+	    EOF (return 0) or failure (return -1) at this call or at the
+	    next following call. I.e. the only incomplete buffer may be the
+	    last one from that source.
 	    libburn will read a single sector by each call to (*read).
 	    The size of a sector depends on BURN_MODE_*. The known range is
 	    2048 to 2352.
 	*/
 	int (*read)(struct burn_source *, unsigned char *buffer, int size);
+
 
 	/** Read subchannel data from the source (NULL if lib generated) 
 	    WARNING: This is an obscure feature with CD raw write modes.
@@ -350,11 +377,13 @@ struct burn_source {
 	*/
 	int (*read_sub)(struct burn_source *, unsigned char *buffer, int size);
 
+
 	/** Get the size of the source's data. Return 0 means unpredictable
 	    size. If application provided (*get_size) allows return 0, then
 	    the application MUST provide a fully functional (*set_size).
 	*/
 	off_t (*get_size)(struct burn_source *); 
+
 
 	/** Program the reply of (*get_size) to a fixed value. It is advised
 	    to implement this by a attribute  off_t fixed_size;  in *data .
@@ -370,11 +399,13 @@ struct burn_source {
 	*/
 	int (*set_size)(struct burn_source *source, off_t size);
 
+
 	/** Clean up the source specific data. This function will be called
 	    once by burn_source_free() when the last referer disposes the
 	    source.
 	*/
 	void (*free_data)(struct burn_source *);
+
 
 	/** Next source, for when a source runs dry and padding is disabled
 	    WARNING: This is an obscure feature. Set to NULL at creation and
@@ -382,9 +413,10 @@ struct burn_source {
 	*/
 	struct burn_source *next;
 
+
 	/** Source specific data. Here the various source classes express their
 	    specific properties and the instance objects store their individual
-	    management data. E.g. a struct like this:
+	    management data. E.g. data may point to a struct like this:
 		struct app_burn_source
 		{
 			struct my_app *app_handle;
@@ -393,6 +425,7 @@ struct burn_source {
 		};
 	*/
 	void *data;
+
 };
 
 
