@@ -370,7 +370,7 @@ int libburner_payload(struct burn_drive *drive,
 		      char source_adr[][4096], int source_adr_count,
 		      int multi, int simulate_burn, int all_tracks_type)
 {
-	struct burn_source *data_src;
+	struct burn_source *data_src, *fifo_src[99];
 	struct burn_disc *target_disc;
 	struct burn_session *session;
 	struct burn_write_opts *burn_options;
@@ -379,6 +379,7 @@ int libburner_payload(struct burn_drive *drive,
 	struct burn_progress progress;
 	time_t start_time;
 	int last_sector = 0, padding = 0, trackno, unpredicted_size = 0, fd;
+	int fifo_chunksize = 2352, fifo_chunks = 1783; /* ~ 4 MB fifo */
 	off_t fixed_size;
 	char *adr, reasons[BURN_REASONS_LEN];
 	struct stat stbuf;
@@ -387,6 +388,8 @@ int libburner_payload(struct burn_drive *drive,
 		all_tracks_type = BURN_MODE1;
 		/* a padding of 300 kiB helps to avoid the read-ahead bug */
 		padding = 300*1024;
+		fifo_chunksize = 2048;
+		fifo_chunks = 2048; /* 4 MB fifo */
 	}
 
 	target_disc = burn_disc_create();
@@ -397,6 +400,7 @@ int libburner_payload(struct burn_drive *drive,
 	  tracklist[trackno] = track = burn_track_create();
 	  burn_track_define_data(track, 0, padding, 1, all_tracks_type);
 
+	  /* Open file descriptor to source of track data */
 	  adr = source_adr[trackno];
 	  fixed_size = 0;
 	  if (adr[0] == '-' && adr[1] == 0) {
@@ -410,6 +414,8 @@ int libburner_payload(struct burn_drive *drive,
 	  }
 	  if (fixed_size==0)
 		unpredicted_size = 1;
+
+	  /* Convert this filedescriptor into a burn_source object */
 	  data_src = NULL;
 	  if (fd>=0)
 	  	data_src = burn_fd_source_new(fd, -1, fixed_size);
@@ -421,14 +427,28 @@ int libburner_payload(struct burn_drive *drive,
 				strerror(errno));
 		return 0;
 	  }
-	  if (burn_track_set_source(track, data_src) != BURN_SOURCE_OK) {
+	  /* Install a fifo object on top of that data source object */
+	  fifo_src[trackno] = burn_fifo_source_new(data_src,
+					fifo_chunksize, fifo_chunks, 0);
+	  if (fifo_src[trackno] == NULL) {
+		fprintf(stderr,
+			"FATAL: Could not create fifo object of 4 MB\n");
+		return 0;
+	  }
+
+	  /* Use the fifo object as data source for the track */
+	  if (burn_track_set_source(track, fifo_src[trackno])
+							 != BURN_SOURCE_OK) {
 		printf("FATAL: Cannot attach source object to track object\n");
 		return 0;
 	  }
 
 	  burn_session_add_track(session, track, BURN_POS_END);
 	  printf("Track %d : source is '%s'\n", trackno+1, adr);
+
+	  /* Give up local reference to the data burn_source object */
 	  burn_source_free(data_src);
+	  
         } /* trackno loop end */
 
 	/* Evaluate drive and media */
@@ -470,23 +490,40 @@ int libburner_payload(struct burn_drive *drive,
 	while (burn_drive_get_status(drive, NULL) == BURN_DRIVE_SPAWNING)
 		usleep(1002);
 	while (burn_drive_get_status(drive, &progress) != BURN_DRIVE_IDLE) {
-		if( progress.sectors <= 0 || progress.sector == last_sector)
+		if( progress.sectors <= 0)
 			printf(
-			     "Thank you for being patient since %d seconds.\n",
+			     "Thank you for being patient since %d seconds.",
 			     (int) (time(0) - start_time));
 		else if(unpredicted_size)
-			printf("Track %d : sector %d\n", progress.track+1,
+			printf("Track %d : sector %d", progress.track+1,
 				progress.sector);
 		else
-			printf("Track %d : sector %d of %d\n",progress.track+1,
+			printf("Track %d : sector %d of %d",progress.track+1,
 				progress.sector, progress.sectors);
 		last_sector = progress.sector;
+		if (progress.track >= 0 && progress.track < source_adr_count) {
+			int size, free_bytes, ret;
+			static char ind[8][16] = {
+				"-", "active", "ending", "input error",
+				"-", "no reader", "ended", "aborted"};
+	
+			ret = burn_fifo_inquire_status(
+				fifo_src[progress.track], &size, &free_bytes);
+			if (ret > 0 && ret <8) 
+				printf("  [fifo %s, %2d%% fill]", ind[ret],
+					(int) (100.0 - 100.0 *
+						((double) free_bytes) /
+						(double) size));
+		} 
+		printf("\n");
 		sleep(1);
 	}
 	printf("\n");
 
-	for (trackno = 0 ; trackno < source_adr_count; trackno++)
+	for (trackno = 0 ; trackno < source_adr_count; trackno++) {
+	  	burn_source_free(fifo_src[trackno]);
 		burn_track_free(tracklist[trackno]);
+	}
 	burn_session_free(session);
 	burn_disc_free(target_disc);
 	if (multi && current_profile != 0x1a && current_profile != 0x13 &&
