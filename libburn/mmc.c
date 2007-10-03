@@ -2308,6 +2308,8 @@ void mmc_sync_cache(struct burn_drive *d)
 	}
 	if (spc_wait_unit_attention(d, 3600, "SYNCHRONIZE CACHE", 0) <= 0)
 		d->cancel = 1;
+	else
+		d->needs_sync_cache = 0;
 }
 
 
@@ -2949,6 +2951,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_feat21h_link_size = -1;
 	d->current_feat2fh_byte4 = -1;
 	d->needs_close_session = 0;
+	d->needs_sync_cache = 0;
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
 	d->complete_sessions = 0;

@@ -180,9 +180,12 @@ struct burn_drive
 	*/
 	int current_feat2fh_byte4;
 
-	/* ts A70114 : wether a DVD-RW media holds an incomplete session
+	/* ts A70114 : whether a DVD-RW media holds an incomplete session
 	               (which could need closing after write) */
 	int needs_close_session;
+	/* ts A71003 : whether a random write operation was done and no
+	               synchronize chache has happened yet */
+	int needs_sync_cache;
 
 	/* ts A61218 from 51h READ DISC INFORMATION */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/

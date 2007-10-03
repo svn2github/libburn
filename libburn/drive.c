@@ -463,6 +463,8 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 	}
 
 	if (d->drive_role == 1) {
+		if (d->needs_sync_cache)
+			d->sync_cache(d);
 		if ((flag & 7) != 2)
 			d->unlock(d);
 		if ((flag & 7) == 1)
@@ -470,6 +472,7 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 		d->release(d);
 	}
 
+	d->needs_sync_cache = 0; /* just to be sure */
 	d->released = 1;
 
 	/* ts A61125 : outsourced model aspects */
@@ -1670,6 +1673,12 @@ int burn_abort(int patience,
 
 	current_time = start_time = pacifier_time = time(0);
 	end_time = start_time + patience;
+
+	/* >>> ts A71002 : are there any threads at work ?
+		If not, then one can force abort because the drives will not
+		change status on their own.
+	 */
+
 	while(current_time-end_time < patience) {
 		still_not_done = 0;
 
@@ -2406,12 +2415,19 @@ int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid)
 {
 	int i;
 
-	for (i = 0; i < drivetop + 1; i++)
+	for (i = 0; i < drivetop + 1; i++) {
+
+/*
+		if (drive_array[i].thread_pid_valid)
+			fprintf(stderr, "libburn_EXPERIMENTAL : drive %d , thread_pid %d\n", i, drive_array[i].thread_pid);
+*/
+
 		if (drive_array[i].thread_pid_valid &&
 		    drive_array[i].thread_pid == pid) {
 			*d = &(drive_array[i]);
 			return 1;
 		}
+	}
 	return 0;
 }
 

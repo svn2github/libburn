@@ -1793,6 +1793,7 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 		d->cancel = 1;
 		return 0;
 	}
+	d->needs_sync_cache = 0;
 	if (!(flag & 1))
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -2322,11 +2323,14 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		}
 	}
 
+	if(d->drive_role == 1)
+		d->needs_sync_cache = 1;
 	if(flag & 1) {
 		if(d->drive_role == 1)
 			d->sync_cache(d);
 		else
 			burn_stdio_sync_cache(fd, d, 0);
+		d->needs_sync_cache = 0;
 	}
 		
 	if(fd >= 0)
