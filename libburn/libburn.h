@@ -322,31 +322,38 @@ struct burn_toc_entry
     This allows to use arbitrary program code as provider of track input data.
 
     Objects compliant to this interface are either provided by the application
-    or by API calls of libburn: burn_fd_source_new() , burn_file_source_new().
-    Those calls allow to use any file object as data source. Consider to feed
-    your data stream asynchronously into a file descriptor and to let libburn
-    handle the rest. 
+    or by API calls of libburn: burn_fd_source_new() , burn_file_source_new(),
+    and burn_fifo_source_new().
 
-    If you need to implement an own passive data producer by this interface,
+    The API calls allow to use any file object as data source. Consider to feed
+    an eventual custom data stream asynchronously into a pipe(2) and to let
+    libburn handle the rest. 
+    In this case the following rule applies:
+    Call burn_source_free() exactly once for every source obtained from
+    libburn API. You MUST NOT otherwise use or manipulate its components.
+
+    In general, burn_source objects can be freed as soon as they are attached
+    to track objects. The track objects will keep them alive and dispose them
+    when they are no longer needed.
+
+    The following description of burn_source applies only to application
+    implemented burn_source objects. You need not to know it for API provided
+    ones.
+
+    If you really implement an own passive data producer by this interface,
     then beware: it can do anything and it can spoil everything.
 
-    If implemented by the application then the functions (*read), (*get_size),
-    (*set_size), (*free_data) MUST be implemented and attached to the object
-    at creation time.
-    Function (*read_sub) is allowed to be NULL (or MUST be implemented).
+    In this case the functions (*read), (*get_size), (*set_size), (*free_data)
+    MUST be implemented by the application and attached to the object at
+    creation time.
+    Function (*read_sub) is allowed to be NULL or it MUST be implemented and
+    attached.
 
     burn_source.refcount MUST be handled properly: If not exactly as many
     references are freed as have been obtained, then either memory leaks or
     corrupted memory are the consequence.
     All objects which are referred to by *data must be kept existent until
     (*free_data) is called via burn_source_free() by the last referer.
-
-    With libburn provided burn_source objects the following rule applies:
-    Call burn_source_free() exactly once for every source obtained from
-    libburn API. You MUST NOT otherwise manipulate its refcount.
-
-    The following component description applies to application implemented
-    burn_source objects only. You need not to know it for API provided ones.
 */
 struct burn_source {
 
@@ -1459,8 +1466,13 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
     In future this will implement a ring buffer which shall smoothen the
     data stream between burn_source and writer thread.
     @param inp        The burn_source for which the fifo shall act as proxy.
-    @param chunksize  The size in bytes of a chunk. Use 2048 if in doubt.
+    @param chunksize  The size in bytes of a chunk. Use 2048 for sources
+                      suitable for BURN_BLOCK_MODE1 and 2352 for sources
+                      which deliver for BURN_BLOCK_AUDIO.
+                      Some variations of burn_source might work only with
+                      a particular chunksize. E.g. libisofs demands 2048.
     @param chunks     The number of chunks to be allocated in ring buffer.
+                      This value must be >= 2.
     @param flag       Bitfield for control purposes (unused yet, submit 0).
     @return           A pointer to the newly created burn_source.
                       Later both burn_sources, inp and the returned fifo, have
@@ -1468,6 +1480,24 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 */
 struct burn_source *burn_fifo_source_new(struct burn_source *inp,
                                          int chunksize, int chunks, int flag);
+
+/* ts A71003 */
+/** Inquires state and fill parameters of a fifo burn_source which was created
+    by burn_fifo_source_new() . Do not use with other burn_source variants.
+    @param fifo  The fifo object to inquire
+    @param size  The total size of the fifo
+    @param free_bytes  The current free capacity of the fifo
+    @return  <=0 error,
+             1=input and consumption are active
+             2=input has ended without error
+             3=input had error and ended,
+             5=consumption has ended prematurely
+             6=consumption has ended without input error
+             7=consumption has ended after input error
+*/
+int burn_fifo_inquire_status(struct burn_source *fifo, int *size, 
+                            int *free_bytes);
+
 
 /* ts A70328 */
 /** Sets a fixed track size after the data source object has already been
