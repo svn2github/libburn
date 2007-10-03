@@ -336,6 +336,9 @@ struct burn_source {
 	/** Read data from the source. Semantics like with read(2), but MUST
 	    either deliver the full buffer as defined by size or MUST deliver
 	    EOF (return -1) at the following call.
+	    libburn will read a single sector by each call to (*read).
+	    The size of a sector depends on BURN_MODE_*. The known range is
+	    2048 to 2352.
 	*/
 	int (*read)(struct burn_source *, unsigned char *buffer, int size);
 
