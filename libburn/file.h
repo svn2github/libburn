@@ -15,6 +15,7 @@ struct burn_source_file
 
 /* ts A70930 */
 struct burn_source_fifo {
+	char magic[4];
 
 	/* The fifo stays inactive and unequipped with eventual resources
 	   until its read() method is called for the first time.
@@ -35,10 +36,15 @@ struct burn_source_fifo {
 	/* <<< currently it is only a pipe */
 	int outlet[2];
 
-	/* >>> later it will be a ring buffer mechanism */
+	/* The ring buffer mechanism */
 	int chunksize;
 	int chunks;
 	char *buf;
+	volatile int buf_writepos;
+	volatile int buf_readpos;
+	volatile int end_of_input;
+	volatile int input_error;
+	volatile int end_of_consumption;
 
 	off_t in_counter;
 	off_t out_counter;
@@ -48,7 +54,7 @@ struct burn_source_fifo {
 /** The worker behind the fifo thread.
     Gets started from burn_fifo_start() in async.c
 */
-int burn_fifo_source_shuffler(struct burn_source *source, int flag);
+int burn_fifo_source_shoveller(struct burn_source *source, int flag);
 
 
 #endif /* LIBBURN__FILE_H */

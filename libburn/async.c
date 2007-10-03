@@ -432,7 +432,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 static void *fifo_worker_func(struct w_list *w)
 {
-	burn_fifo_source_shuffler(w->u.fifo.source, w->u.fifo.flag);
+	burn_fifo_source_shoveller(w->u.fifo.source, w->u.fifo.flag);
 	remove_worker(pthread_self());
 	return NULL;
 }
@@ -445,9 +445,8 @@ int burn_fifo_start(struct burn_source *source, int flag)
 
 	fs->is_started = -1;
 
-	/* >>> create and set up ring buffer */;
-	/* >>> for now: only 1 , later: fs->chunks */
-	fs->buf = calloc(fs->chunksize, 1);
+	/* create and set up ring buffer */;
+	fs->buf = calloc(fs->chunksize, fs->chunks);
 	if (fs->buf == NULL) {
 		/* >>> could not start ring buffer */;
 		return -1;
