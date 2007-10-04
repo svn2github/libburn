@@ -1482,14 +1482,14 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 
 /* ts A70930 */
 /** Creates a fifo which acts as proxy for an already existing data source.
-    The fifo is based on a ring buffer which shall smoothen the data stream
+    The fifo provides a ring buffer which shall smoothen the data stream
     between burn_source and writer thread. Each fifo serves only for one
-    data source and gets attached to one track instead of its data source
+    data source and gets attached to one track as its only data source
     by burn_track_set_source().
     A fifo starts its life in "standby" mode with no buffer space allocated.
     As soon as its track requires bytes, the fifo establishes a worker thread
     and allocates its buffer. After input has ended and all buffer content is
-    consumed, the buffer space gets freedi and the worker thread ends.
+    consumed, the buffer space gets freed and the worker thread ends.
     This happens asynchronously. So expect two buffers and worker threads to
     exist for a short time between tracks. Be modest in your size demands if
     multiple tracks are to be expected. 
