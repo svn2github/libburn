@@ -171,7 +171,7 @@ int burn_drive_is_occupied(struct burn_drive *d)
 			 alive ? */;
 			/* >>> what to do if writer is dead ? 
 				At least sync disc ?*/;
-
+		return 50;
 	}
 	if(d->busy == BURN_DRIVE_READING) {
 		return 50;
