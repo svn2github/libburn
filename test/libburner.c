@@ -359,6 +359,10 @@ int libburner_format_row(struct burn_drive *drive)
     To make sure a data image is fully readable on any Linux machine, this
     function adds 300 kiB of padding to the (usualy single) track.
     Audio tracks get padded to complete their last sector.
+    A fifo of 4 MB is installed between each track and its data source.
+    Each of the 4 MB buffers gets allocated automatically as soon as a track
+    begins to be processed and it gets freed as soon as the track is done.
+    The fifos do not wait for buffer fill but writing starts immediately.
 
     In case of external signals expect abort handling of an ongoing burn to
     last up to a minute. Wait the normal burning timespan before any kill -9.
@@ -490,7 +494,10 @@ int libburner_payload(struct burn_drive *drive,
 	while (burn_drive_get_status(drive, NULL) == BURN_DRIVE_SPAWNING)
 		usleep(1002);
 	while (burn_drive_get_status(drive, &progress) != BURN_DRIVE_IDLE) {
-		if( progress.sectors <= 0)
+		if (progress.sectors <= 0 ||
+		    (progress.sector >= progress.sectors - 1 &&
+	             !unpredicted_size) ||
+		    (unpredicted_size && progress.sector == last_sector))
 			printf(
 			     "Thank you for being patient since %d seconds.",
 			     (int) (time(0) - start_time));
@@ -503,14 +510,13 @@ int libburner_payload(struct burn_drive *drive,
 		last_sector = progress.sector;
 		if (progress.track >= 0 && progress.track < source_adr_count) {
 			int size, free_bytes, ret;
-			static char ind[8][16] = {
-				"-", "active", "ending", "input error",
-				"-", "no reader", "ended", "aborted"};
+			char *status_text;
 	
 			ret = burn_fifo_inquire_status(
-				fifo_src[progress.track], &size, &free_bytes);
-			if (ret > 0 && ret <8) 
-				printf("  [fifo %s, %2d%% fill]", ind[ret],
+				fifo_src[progress.track], &size, &free_bytes,
+				&status_text);
+			if (ret > 0 ) 
+				printf("  [fifo %s, %2d%% fill]", status_text,
 					(int) (100.0 - 100.0 *
 						((double) free_bytes) /
 						(double) size));
