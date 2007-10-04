@@ -334,7 +334,11 @@ struct burn_toc_entry
 
     In general, burn_source objects can be freed as soon as they are attached
     to track objects. The track objects will keep them alive and dispose them
-    when they are no longer needed.
+    when they are no longer needed. With a fifo burn_source it makes sense to
+    keep the own reference for inquiring its state while burning is in
+    progress.
+
+    ---
 
     The following description of burn_source applies only to application
     implemented burn_source objects. You need not to know it for API provided
@@ -423,13 +427,31 @@ struct burn_source {
 
 	/** Source specific data. Here the various source classes express their
 	    specific properties and the instance objects store their individual
-	    management data. E.g. data may point to a struct like this:
+	    management data.
+	    You SHOULD implement two attributes in *data :
+            1) The first member of the structure should be a 4 byte array
+	      magic[] with the first byte being set to an uppercase letter
+	      and the other 3 set to some value you deem unique for your
+	      burn_source.
+	      libburnia sets magic[0] to a lower case letter in its burn_source
+	      objects. Established magic values are: 
+	      {'f','i','l','e'} , {'f','i','f','o'} , {'e','1','1','9'}.
+	    2) off_t fixed_size should store an eventual value from (*set_size)
+	      and if set be used as reply of (*get_size).
+ 
+            E.g. data could point to a struct like this:
 		struct app_burn_source
 		{
+			char magic[4];
+			off_t fixed_size;
 			struct my_app *app_handle;
 			... other individual source parameters ...
-			off_t fixed_size;
 		};
+	    With .magic[] getting initialized as  {'M','y','a','p'}
+	    and .fixed_size initialized as 0 (= invalid).
+
+	    Function (*free_data) has to be prepared to clean up and free
+	    the struct.
 	*/
 	void *data;
 
@@ -1458,14 +1480,22 @@ struct burn_source *burn_file_source_new(const char *path,
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 
 
-/* ts A70930 : Provisory API call. Subject to changes ! */
+/* ts A70930 */
 /** Creates a fifo which acts as proxy for an already existing data source.
-    NOTE: Incomplete function. Curently the ring buffer is not implemented.
-          The only purpose is to decouple the writer thread of libburn from an
-          eventually error prone burn_source.
-    In future this will implement a ring buffer which shall smoothen the
-    data stream between burn_source and writer thread.
+    The fifo is based on a ring buffer which shall smoothen the data stream
+    between burn_source and writer thread. Each fifo serves only for one
+    data source and gets attached to one track instead of its data source
+    by burn_track_set_source().
+    A fifo starts its life in "standby" mode with no buffer space allocated.
+    As soon as its track requires bytes, the fifo establishes a worker thread
+    and allocates its buffer. After input has ended and all buffer content is
+    consumed, the buffer space gets freedi and the worker thread ends.
+    This happens asynchronously. So expect two buffers and worker threads to
+    exist for a short time between tracks. Be modest in your size demands if
+    multiple tracks are to be expected. 
     @param inp        The burn_source for which the fifo shall act as proxy.
+                      It can be disposed by burn_source_free() immediately
+                      after this call.
     @param chunksize  The size in bytes of a chunk. Use 2048 for sources
                       suitable for BURN_BLOCK_MODE1 and 2352 for sources
                       which deliver for BURN_BLOCK_AUDIO.
@@ -1477,6 +1507,8 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
     @return           A pointer to the newly created burn_source.
                       Later both burn_sources, inp and the returned fifo, have
                       to be disposed by calling burn_source_free() for each.
+                      inp can be freed immediately, the returned fifo may be
+                      kept as handle for burn_fifo_inquire_status().
 */
 struct burn_source *burn_fifo_source_new(struct burn_source *inp,
                                          int chunksize, int chunks, int flag);
@@ -1487,16 +1519,20 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
     @param fifo  The fifo object to inquire
     @param size  The total size of the fifo
     @param free_bytes  The current free capacity of the fifo
-    @return  <=0 error,
-             1=input and consumption are active
-             2=input has ended without error
-             3=input had error and ended,
-             5=consumption has ended prematurely
-             6=consumption has ended without input error
-             7=consumption has ended after input error
+    @param status_text  Returns a pointer to a constant text, see below
+    @return  <0 reply invalid, >=0 fifo status code:
+             bit0+1=input status, bit2=consumption status, i.e:
+             0="standby"   : data processing not started yet
+             1="active"    : input and consumption are active
+             2="ending"    : input has ended without error
+             3="failing"   : input had error and ended,
+             4="unused"    : ( consumption has ended before processing start )
+             5="abandoned" : consumption has ended prematurely
+             6="ended"     : consumption has ended without input error
+             7="aborted"   : consumption has ended after input error
 */
 int burn_fifo_inquire_status(struct burn_source *fifo, int *size, 
-                            int *free_bytes);
+                            int *free_bytes, char **status_text);
 
 
 /* ts A70328 */

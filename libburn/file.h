@@ -5,6 +5,8 @@
 
 struct burn_source_file
 {
+	char magic[4];
+
 	int datafd;
 	int subfd;
 	off_t fixed_size;
@@ -33,7 +35,7 @@ struct burn_source_fifo {
 	/* the burn_source for which this fifo is acting as proxy */
 	struct burn_source *inp;
 
-	/* <<< currently it is only a pipe */
+	/* <<< up to now it was only a pipe. This is on its way out. */
 	int outlet[2];
 
 	/* The ring buffer mechanism */

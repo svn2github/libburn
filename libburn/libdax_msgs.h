@@ -433,6 +433,13 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002014d (SORRY,HIGH)   = Asynchromous SCSI error
  0x0002014f (SORRY,HIGH)   = Timeout with asynchromous SCSI command
  0x00020150 (DEBUG,LOW)    = Reporting asynchronous waiting time
+ 0x00020151 (FATAL,HIGH)   = Read attempt on write-only drive
+ 0x00020152 (FATAL,HIGH)   = Cannot start fifo thread
+ 0x00020153 (SORRY,HIGH)   = Read error on fifo input
+ 0x00020154 (NOTE,HIGH)    = Forwarded input error ends output
+ 0x00020155 (SORRY,HIGH)   = Desired fifo buffer too large
+ 0x00020156 (SORRY,HIGH)   = Desired fifo buffer too small
+ 0x00020157 (FATAL,HIGH)   = burn_source is not a fifo object
 
 
  libdax_audioxtr:
@@ -474,6 +481,18 @@ Range "vreixo"              :  0x00030000 to 0x0003ffff
  Joliet:
  0x00030301 (NOTE,MEDIUM)   = Unsupported file type for Joliet tree
 
+
+------------------------------------------------------------------------------
+Range "application"         :  0x00040000 to 0x0004ffff
+
+ 0x00040000 (ABORT,HIGH)    : Application supplied message
+ 0x00040001 (FATAL,HIGH)    : Application supplied message
+ 0x00040002 (SORRY,HIGH)    : Application supplied message
+ 0x00040003 (WARNING,HIGH)  : Application supplied message
+ 0x00040004 (HINT,HIGH)     : Application supplied message
+ 0x00040005 (NOTE,HIGH)     : Application supplied message
+ 0x00040006 (UPDATE,HIGH)   : Application supplied message
+ 0x00040007 (DEBUG,HIGH)    : Application supplied message
 
 
 ------------------------------------------------------------------------------

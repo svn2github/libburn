@@ -14,6 +14,10 @@
 #include "file.h"
 #include "async.h"
 
+#include "libdax_msgs.h"
+extern struct libdax_msgs *libdax_messenger;
+
+
 /* main channel data can be padded on read, but 0 padding the subs will make
 an unreadable disc */
 
@@ -123,6 +127,8 @@ failure:;
 		return NULL;
 	}
 
+	fs->magic[0] = 'f'; fs->magic[1] = 'i';
+	fs->magic[2] = 'l'; fs->magic[3] = 'e';
 	fs->datafd = fd1;
 	fs->subfd = fd2;
 
@@ -161,6 +167,8 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 	fs = malloc(sizeof(struct burn_source_file));
 	if (fs == NULL) /* ts A70825 */
 		return NULL;
+	fs->magic[0] = 'f'; fs->magic[1] = 'i';
+	fs->magic[2] = 'l'; fs->magic[3] = 'e';
 	fs->datafd = datafd;
 	fs->subfd = subfd;
 	fs->fixed_size = size;
@@ -202,9 +210,9 @@ static int fifo_read(struct burn_source *source,
         if (fs->is_started == 0) {
 		ret = burn_fifo_start(source, 0);
 		if (ret <= 0) {
-
-			/* >>> msg: cannot start fifo thread */;
-
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020152,
+				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Cannot start fifo thread", 0, 0);
 			return -1;
 		}
 		fs->is_started = 1;
@@ -261,7 +269,9 @@ int burn_fifo_source_shoveller_og(struct burn_source *source, int flag)
 		else if (ret == 0)
 	break; /* EOF */
 		else {
-			/* >>> read error */;
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020153,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Read error on fifo input", errno, 0);
 	break;
 		}
 		ret = write(fs->outlet[1], fs->buf, ret);
@@ -306,17 +316,15 @@ static int fifo_read_ng(struct burn_source *source,
 	int ret, todo, rpos, bufsize, diff;
 
 	if (fs->end_of_consumption) {
-
-		/* >>> msg: reading has been ended already */;
-
+		/* ??? msg: reading has been ended already */;
 		return 0;
 	}
         if (fs->is_started == 0) {
 		ret = burn_fifo_start(source, 0);
 		if (ret <= 0) {
-
-			/* >>> msg: cannot start fifo thread */;
-
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020152,
+				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Cannot start fifo thread", 0, 0);
 			fs->end_of_consumption = 1;
 			return -1;
 		}
@@ -344,9 +352,10 @@ static int fifo_read_ng(struct burn_source *source,
 				if (todo < size) /* deliver partial buffer */
 		break;
 				fs->end_of_consumption = 1;
-
-				/* >>> msg: report fs->input_error as errno */;
-
+				libdax_msgs_submit(libdax_messenger, -1,
+				   0x00020154,
+				   LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				   "Forwarded input error ends output", 0, 0);
 				return -1;
 			}
 			fifo_sleep(0);
@@ -447,9 +456,10 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 		if (trans_end) {
 			bufpt = calloc(fs->chunksize, 1);
 			if (bufpt == NULL) {
-
-				/* >>> msg: out of memory */;
-
+				libdax_msgs_submit(libdax_messenger, -1,
+				  0x00000003,
+				  LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				  "Out of virtual memory", 0, 0);
 				fs->input_error = ENOMEM;
 	break;
 			}
@@ -463,6 +473,9 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 		else if (ret == 0)
 	break; /* EOF */
 		else {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020153,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Read error on fifo input", errno, 0);
 			fs->input_error = errno;
 			if(errno == 0)
 				fs->input_error = EIO;
@@ -514,7 +527,7 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 	   So in both cases the consumer is aware that reading is futile
 	   or even fatal.
 	*/
-	free(fs->buf);
+	free(fs->buf); /* Give up fifo buffer. Next fifo might start soon. */
 	fs->buf = NULL;
 
 	return (fs->input_error == 0);
@@ -543,11 +556,15 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 #endif
 
 	if (((double) chunksize) * ((double) chunks) > 1024.0*1024.0*1024.0) {
-		/* >>> buffer larger than 1 GB */;
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020155,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Desired fifo buffer too large (> 1GB)", 0, 0);
 		return NULL;
 	}
 	if (chunksize < 1 || chunks < 2) {
-		/* >>> buffer too small */;
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020156,
+				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Desired fifo buffer too small", 0, 0);
 		return NULL;
 	}
 
@@ -614,17 +631,23 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 
 
 /* ts A71003 : API */
-int burn_fifo_inquire_status(struct burn_source *source, int *size,
-		 int *free_bytes)
+int burn_fifo_inquire_status(struct burn_source *source,
+		 int *size, int *free_bytes, char **status_text)
 {
 	struct burn_source_fifo *fs = source->data;
 	int ret = 0, diff, wpos, rpos;
+	static char *(states[8]) = {
+			"standby", "active", "ending", "failing",
+			"unused", "abandoned", "ended", "aborted"};
+
+	*status_text = NULL;
+	*size = 0;
 
 	if (fs->magic[0] != 'f' || fs->magic[1] != 'i' ||
 	    fs->magic[2] != 'f' || fs->magic[3] != 'o') {
-
-		/* >>> not a fifo burn_source */;
-
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020157,
+				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+		  "burn_source is not a fifo object", 0, 0);
 		return -1;
 	}
 	*size = fs->chunksize * fs->chunks;
@@ -645,6 +668,7 @@ int burn_fifo_inquire_status(struct burn_source *source, int *size,
 		ret |= 2;
 	else
 		ret |= 1;
+	*status_text = states[ret];
 	return ret;
 }
 
