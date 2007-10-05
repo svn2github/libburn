@@ -469,7 +469,7 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 		}
 
 		/* Obtain next chunk */
-		ret = fs->inp->read(fs->inp, (unsigned char *) fs->buf,
+		ret = fs->inp->read(fs->inp, (unsigned char *) bufpt,
 					 fs->chunksize);
 		if (ret > 0)
 			fs->in_counter += ret;
