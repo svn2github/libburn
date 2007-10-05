@@ -127,8 +127,6 @@ failure:;
 		return NULL;
 	}
 
-	fs->magic[0] = 'f'; fs->magic[1] = 'i';
-	fs->magic[2] = 'l'; fs->magic[3] = 'e';
 	fs->datafd = fd1;
 	fs->subfd = fd2;
 
@@ -167,8 +165,6 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 	fs = malloc(sizeof(struct burn_source_file));
 	if (fs == NULL) /* ts A70825 */
 		return NULL;
-	fs->magic[0] = 'f'; fs->magic[1] = 'i';
-	fs->magic[2] = 'l'; fs->magic[3] = 'e';
 	fs->datafd = datafd;
 	fs->subfd = subfd;
 	fs->fixed_size = size;
@@ -199,6 +195,11 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
    a thread management team which is located in async.c,
    and a synchronous shoveller which is here.
 */
+
+/* fifo_ng has a ringbuffer and runs in a thread. og is on its way out. */
+#define Libburn_fifo_nG 1
+
+#ifndef Libburn_fifo_nG
 
 static int fifo_read(struct burn_source *source,
 		     unsigned char *buffer,
@@ -290,6 +291,8 @@ int burn_fifo_source_shoveller_og(struct burn_source *source, int flag)
 	fs->outlet[1] = -1;
 	return (ret >= 0);
 }
+
+#endif Libburn_fifo_nG
 
 
 /* ts A71003 */
@@ -580,8 +583,6 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 	fs = malloc(sizeof(struct burn_source_fifo));
 	if (fs == NULL)
 		return NULL;
-	fs->magic[0] = 'f'; fs->magic[1] = 'i';
-	fs->magic[2] = 'f'; fs->magic[3] = 'o';
 	fs->is_started = 0;
 	fs->thread_pid = 0;
 	fs->thread_pid_valid = 0;
@@ -643,8 +644,7 @@ int burn_fifo_inquire_status(struct burn_source *source,
 	*status_text = NULL;
 	*size = 0;
 
-	if (fs->magic[0] != 'f' || fs->magic[1] != 'i' ||
-	    fs->magic[2] != 'f' || fs->magic[3] != 'o') {
+	if (source->free_data != fifo_free_ng) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020157,
 				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 		  "burn_source is not a fifo object", 0, 0);

@@ -428,27 +428,13 @@ struct burn_source {
 	/** Source specific data. Here the various source classes express their
 	    specific properties and the instance objects store their individual
 	    management data.
-	    You SHOULD implement two attributes in *data :
-            1) The first member of the structure should be a 4 byte array
-	      magic[] with the first byte being set to an uppercase letter
-	      and the other 3 set to some value you deem unique for your
-	      burn_source.
-	      libburnia sets magic[0] to a lower case letter in its burn_source
-	      objects. Established magic values are: 
-	      {'f','i','l','e'} , {'f','i','f','o'} , {'e','1','1','9'}.
-	    2) off_t fixed_size should store an eventual value from (*set_size)
-	      and if set be used as reply of (*get_size).
- 
             E.g. data could point to a struct like this:
 		struct app_burn_source
 		{
-			char magic[4];
-			off_t fixed_size;
 			struct my_app *app_handle;
 			... other individual source parameters ...
+			off_t fixed_size;
 		};
-	    With .magic[] getting initialized as  {'M','y','a','p'}
-	    and .fixed_size initialized as 0 (= invalid).
 
 	    Function (*free_data) has to be prepared to clean up and free
 	    the struct.
