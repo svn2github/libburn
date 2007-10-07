@@ -660,13 +660,14 @@ int burn_fifo_inquire_status(struct burn_source *source,
 		*free_bytes = diff - 1;
 	else
 		*free_bytes = (*size - wpos) + rpos - 1;
-	if (fs->end_of_consumption == 1)
+	ret = 0;
+	if (fs->end_of_consumption > 0)
 		ret |= 4;
 	if (fs->input_error)
 		ret |= 3;
 	else if (fs->end_of_input)
 		ret |= 2;
-	else
+	else if(fs->buf != NULL)
 		ret |= 1;
 	*status_text = states[ret];
 	return ret;
