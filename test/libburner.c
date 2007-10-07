@@ -170,7 +170,7 @@ int libburner_aquire_by_driveno(int *driveno)
 
 	printf("Beginning to scan for devices ...\n");
 	while (!burn_drive_scan(&drive_list, &drive_count))
-		usleep(1002);
+		usleep(100002);
 	if (drive_count <= 0 && *driveno >= 0) {
 		printf("FAILED (no drives found)\n");
 		return 0;
@@ -492,7 +492,7 @@ int libburner_payload(struct burn_drive *drive,
 
 	burn_write_opts_free(burn_options);
 	while (burn_drive_get_status(drive, NULL) == BURN_DRIVE_SPAWNING)
-		usleep(1002);
+		usleep(100002);
 	while (burn_drive_get_status(drive, &progress) != BURN_DRIVE_IDLE) {
 		if (progress.sectors <= 0 ||
 		    (progress.sector >= progress.sectors - 1 &&
@@ -515,7 +515,7 @@ int libburner_payload(struct burn_drive *drive,
 			ret = burn_fifo_inquire_status(
 				fifo_src[progress.track], &size, &free_bytes,
 				&status_text);
-			if (ret > 0 ) 
+			if (ret >= 0 ) 
 				printf("  [fifo %s, %2d%% fill]", status_text,
 					(int) (100.0 - 100.0 *
 						((double) free_bytes) /
