@@ -292,7 +292,7 @@ int burn_fifo_source_shoveller_og(struct burn_source *source, int flag)
 	return (ret >= 0);
 }
 
-#endif Libburn_fifo_nG
+#endif /* Libburn_fifo_nG */
 
 
 /* ts A71003 */
