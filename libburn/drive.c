@@ -312,6 +312,10 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	return ret;
 }
 
+
+/* ts A71015 */
+#define Libburn_ticket_62_re_register_is_possiblE 1
+
 struct burn_drive *burn_drive_register(struct burn_drive *d)
 {
 #ifdef Libburn_ticket_62_re_register_is_possiblE
@@ -338,6 +342,7 @@ struct burn_drive *burn_drive_register(struct burn_drive *d)
 #ifdef Libburn_ticket_62_re_register_is_possiblE
 	/* ts A60904 : ticket 62, contribution by elmom */
 	/* Not yet accepted because no use case seen yet */
+        /* ts A71015 : xorriso dialog imposes a use case now */
 
 	/* This is supposed to find an already freed drive struct among
 	   all the the ones that have been used before */
@@ -859,76 +864,66 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	   drive by drive (within scsi_enumerate_drives()).
 
 	   I will use "scanned" for marking drives found by previous runs.
-	   Leaving it static for now, but initializing it on each call by
-	   iterating over the list of known drives.
+           It will not be static any more.
 	*/
-	/* state vars for the scan process */
-	/* ts A60904 : did set some default values to feel comfortable */
-	static int scanning = 0;
+	/* ts A71015 : this makes only trouble : static int scanning = 0; */
 	/* ts A70907 :
 	   These variables are too small anyway. We got up to 255 drives.
 	   static int scanned = 0, found = 0;
 	   Variable "found" was only set but never read.
 	*/
-	static unsigned char scanned[32];
-	static unsigned num_scanned = 0, count = 0;
+	unsigned char scanned[32];
+	unsigned count = 0;
 	int i;
 
 	/* ts A61007 : moved up to burn_drive_scan() */
 	/* a ssert(burn_running); */
 
-	if (!scanning) {
-		scanning = 1;
 
-		/* ts A61007 : test moved up to burn_drive_scan()
+	/* ts A61007 : test moved up to burn_drive_scan()
 		               burn_wait_all() is obsoleted */
 #if 0
-		/* make sure the drives aren't in use */
-		burn_wait_all();	/* make sure the queue cleans up
-					   before checking for the released
-					   state */
+	/* make sure the drives aren't in use */
+	burn_wait_all();	/* make sure the queue cleans up
+				   before checking for the released
+				   state */
 #endif /* 0 */
 
-		*n_drives = num_scanned = 0;
+	*n_drives = 0;
 
-		/* ts A70907 : wether to scan from scratch or to extend */
-		if (flag & 1) {
-			burn_drive_free_all();
-			for (i = 0; i < sizeof(scanned); i++)
-				scanned[i] = 0;
-		} else {
-			for (i = 0; i <= drivetop; i++)
-				if (drive_array[i].global_index >= 0)
-					scanned[i / 8] |=  (1 << (i % 8));
-			if (drivetop + 1 > 0)
-				num_scanned= drivetop + 1;
-		}
-
-		/* refresh the lib's drives */
-
-		/* ts A61115 : formerly sg_enumerate(); ata_enumerate(); */
-		scsi_enumerate_drives();
-
-		count = burn_drive_count();
-		if (count) {
-			/* ts A70907 :
-			   Extra array element marks end of array. */
-			*drives = calloc(count + 1,
-			 		sizeof(struct burn_drive_info));
-			if (*drives == NULL) {
-	        		libdax_msgs_submit(libdax_messenger, -1,
-						0x00000003,
-	                			LIBDAX_MSGS_SEV_FATAL,
-						LIBDAX_MSGS_PRIO_HIGH,
-						"Out of virtual memory", 0, 0);
-				scanning = 0;
-				return -1;
-			} else
-				for (i = 0; i <= count; i++) /* invalidate */
-					(*drives)[i].drive = NULL;
-		} else
-			*drives = NULL;
+	/* ts A70907 : wether to scan from scratch or to extend */
+	for (i = 0; i < sizeof(scanned); i++)
+		scanned[i] = 0;
+	if (flag & 1) {
+		burn_drive_free_all();
+	} else {
+		for (i = 0; i <= drivetop; i++) 
+			if (drive_array[i].global_index >= 0)
+				scanned[i / 8] |=  (1 << (i % 8));
 	}
+
+	/* refresh the lib's drives */
+
+	/* ts A61115 : formerly sg_enumerate(); ata_enumerate(); */
+	scsi_enumerate_drives();
+
+	count = burn_drive_count();
+	if (count) {
+		/* ts A70907 :
+		   Extra array element marks end of array. */
+		*drives = calloc(count + 1,
+				sizeof(struct burn_drive_info));
+		if (*drives == NULL) {
+	       		libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
+	               			LIBDAX_MSGS_SEV_FATAL,
+					LIBDAX_MSGS_PRIO_HIGH,
+					"Out of virtual memory", 0, 0);
+			return -1;
+		} else
+			for (i = 0; i <= count; i++) /* invalidate */
+				(*drives)[i].drive = NULL;
+	} else
+		*drives = NULL;
 
 	for (i = 0; i < count; ++i) {
 		if (scanned[i / 8] & (1 << (i % 8)))
@@ -942,15 +937,9 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 		}
 		(*n_drives)++;
 		scanned[i / 8] |= 1 << (i % 8);
-		num_scanned++;
 	}
 
-	if (num_scanned == count) {
-		/* done scanning */
-		scanning = 0;
-		return 1;
-	}
-	return 0;
+	return(1);
 }
 
 /* ts A61001 : internal call */
