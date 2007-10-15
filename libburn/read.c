@@ -377,11 +377,13 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 		fd = open(d->devname, O_RDONLY | O_LARGEFILE);
 		if (fd == -1) {
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020005,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Failed to open device (a pseudo-drive)",
-				 errno, 0);
+			if (!(flag & 1))
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index,
+				  0x00020005,
+				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			  "Failed to open device (a pseudo-drive) for reading",
+				   errno, 0);
 			ret = 0; goto ex;
 		}
 		if (lseek(fd, byte_address, SEEK_SET) == -1) {
