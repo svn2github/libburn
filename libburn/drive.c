@@ -898,10 +898,10 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 				scanned[i] = 0;
 		} else {
 			for (i = 0; i <= drivetop; i++)
-				if (drive_array[i].global_index >= 0) {
+				if (drive_array[i].global_index >= 0)
 					scanned[i / 8] |=  (1 << (i % 8));
-					num_scanned++;
-				}
+			if (drivetop + 1 > 0)
+				num_scanned= drivetop + 1;
 		}
 
 		/* refresh the lib's drives */
@@ -932,7 +932,9 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 
 	for (i = 0; i < count; ++i) {
 		if (scanned[i / 8] & (1 << (i % 8)))
-			continue; /* device already scanned by previous run */
+	continue;		/* device already scanned by previous run */
+		if (drive_array[i].global_index < 0)
+	continue;		/* invalid device */
 
 		while (!drive_getcaps(&drive_array[i],
 				      &(*drives)[*n_drives])) {
@@ -996,10 +998,29 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[])
 		return;
 
 #ifndef Libburn_free_all_drives_on_infO
+
+#ifdef Not_yeT
+	int new_drivetop;
+
+	/* ts A71015: compute reduced drivetop counter */
+	new_drivetop = drivetop;
+	for (i = 0; drive_infos[i].drive != NULL; i++)
+		if (drive_infos[i].global_index == new_drivetop
+		    && new_drivetop >= 0) {
+			new_drivetop--;
+			i = 0;
+		}
+#endif /* Not_yeT */
+
 	/* ts A70907 : Solution for wrong behavior below */
 	for (i = 0; drive_infos[i].drive != NULL; i++)
 		burn_drive_free(drive_infos[i].drive);
-#endif
+
+#ifdef Not_yeT
+	drivetop = new_drivetop;
+#endif /* Not_yeT */
+
+#endif /* ! Libburn_free_all_drives_on_infO */
 
 	/* ts A60904 : This looks a bit weird. [ts A70907 : not any more]
 	   burn_drive_info is not the manager of burn_drive but only its
