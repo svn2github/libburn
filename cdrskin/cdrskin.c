@@ -2192,8 +2192,11 @@ int Cdrpreskin_set_result_fd(struct CdrpreskiN *o, int result_fd, int flag)
 int Cdrpreskin_read_rc(struct CdrpreskiN *o, char *progname, int flag)
 {
  int ret,i;
- char *filenames_v[3];
+ char **filenames_v;
 
+ filenames_v= TSOB_FELD(char *, o->rc_filename_count+1);
+ if(filenames_v==NULL)
+   return(-1);
  for(i=0;i<o->rc_filename_count;i++)
    filenames_v[i]= o->rc_filenames[i];
  Sfile_home_adr_s(".cdrskinrc",o->rc_filenames[o->rc_filename_count-1],
@@ -2201,6 +2204,7 @@ int Cdrpreskin_read_rc(struct CdrpreskiN *o, char *progname, int flag)
  ret= Sfile_multi_read_argv(progname,filenames_v,o->rc_filename_count,
                             &(o->pre_argc),&(o->pre_argv),
                             &(o->pre_argidx),&(o->pre_arglno),4);
+ free((char *) filenames_v);
  return(ret);
 }
 
