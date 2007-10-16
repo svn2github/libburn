@@ -267,16 +267,32 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 }
 
 
+/* ts A71016 API */
+int burn_text_to_sev(char *severity_name, int *sevno, int flag)
+{
+	int ret;
+
+	ret = libdax_msgs__text_to_sev(severity_name, sevno, 0);
+	if (ret <= 0)
+		*sevno = LIBDAX_MSGS_SEV_FATAL;
+	return ret;
+}
+
+
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
+
 #define Libburn_new_thread_signal_handleR 1
+/*
+#define Libburn_signal_handler_verbouS 1
+*/
 	int ret;
 	struct burn_drive *d;
 
-	/*
+#ifdef Libburn_signal_handler_verbouS
 	fprintf(stderr, "libburn_ABORT: pid = %d , abort_control_pid = %d\n",
 		getpid(), abort_control_pid);
-	*/
+#endif
 
 	/* ts A70928:
 	Must be quick. Allowed to coincide with other thread and to share
@@ -293,9 +309,10 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 		ret = burn_drive_find_by_thread_pid(&d, getpid());
 		if (ret > 0 && d->busy == BURN_DRIVE_WRITING) {
 					/* This is an active writer thread */
-/*
+
+#ifdef Libburn_signal_handler_verbouS
 			fprintf(stderr, "libburn_ABORT: pid %d found drive busy with writing, (level= %d)\n", (int) getpid(), burn_global_abort_level);
-*/
+#endif
 
 			d->sync_cache(d);
 
@@ -305,11 +322,16 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 
 			if (burn_global_abort_level > 0) {
 				/* control process did not show up yet */
-/*
+#ifdef Libburn_signal_handler_verbouS
 					fprintf(stderr, "libburn_ABORT: pid %d sending signum %d to pid %d\n", (int) getpid(), (int) signum, (int) abort_control_pid);
-*/
+#endif
 					kill(abort_control_pid, signum);
 			}
+
+#ifdef Libburn_signal_handler_verbouS
+					fprintf(stderr, "libburn_ABORT: pid %d signum %d returning -2\n", (int) getpid(), (int) signum);
+#endif
+
 			return -2;
 		} else {
 			usleep(1000000); /* calm down */

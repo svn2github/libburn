@@ -299,7 +299,7 @@ struct burn_toc_entry
 	/** Track start time frames for normal tracks */
 	unsigned char pframe;
 
-	/* Indicates wether extension data are valid and eventually override
+	/* Indicates whether extension data are valid and eventually override
 	   older elements in this structure:
 	     bit0= DVD extension is valid
 	*/
@@ -882,7 +882,7 @@ int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[]);
 
 
 /* ts A60922 ticket 33 */
-/** Evaluate wether the given address would be a possible persistent drive
+/** Evaluate whether the given address would be a possible persistent drive
     address of libburn.
     @return 1 means yes, 0 means no
 */
@@ -1226,7 +1226,7 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 
 
 /* ts A70219 */
-/** Examines a completed setup for burn_disc_write() wether it is permissible
+/** Examines a completed setup for burn_disc_write() whether it is permissible
     with drive and media. This function is called by burn_disc_write() but
     an application might be interested in this check in advance.
     @param o The options for the writing operation.
@@ -1262,7 +1262,7 @@ void burn_drive_cancel(struct burn_drive *drive);
 
 
 /* ts A61223 */
-/** Inquire wether the most recent write run was successful. Reasons for
+/** Inquire whether the most recent write run was successful. Reasons for
     non-success may be: rejection of burn parameters, abort during fatal errors
     during write, a call to burn_drive_cancel() by the application thread.
     @param d The drive to inquire.
@@ -1379,7 +1379,7 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
 
 
 /* ts A61024 */
-/** Define wether a track shall swap bytes of its input stream.
+/** Define whether a track shall swap bytes of its input stream.
     @param t The track to change
     @param swap_source_bytes 0=do not swap, 1=swap byte pairs
     @return 1=success , 0=unacceptable value
@@ -1559,7 +1559,7 @@ void burn_drive_set_speed(struct burn_drive *d, int read, int write);
     be full. To check and wait for enough free buffer space before writing
     will move the task of waiting from the operating system's device driver
     to libburn. While writing is going on and waiting is enabled, any write
-    operation will be checked wether it will fill the drive buffer up to
+    operation will be checked whether it will fill the drive buffer up to
     more than max_percent. If so, then waiting will happen until the buffer
     fill is predicted with at most min_percent.
     Thus: if min_percent < max_percent then transfer rate will oscillate. 
@@ -1709,7 +1709,7 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 /** Caution: still immature and likely to change. Problems arose with
     sequential DVD-RW on one drive.
 
-    Controls wether the whole available space of the media shall be filled up
+    Controls whether the whole available space of the media shall be filled up
     by the last track of the last session.
     @param opts The write opts to change
     @param fill_up_media If 1 : fill up by last track, if 0 = do not fill up
@@ -1720,8 +1720,8 @@ void burn_write_opts_set_fillup(struct burn_write_opts *opts,
 
 /* ts A70303 */
 /** Eventually makes libburn ignore the failure of some conformance checks:
-    - the check wether CD write+block type is supported by the drive
-    - the check wether the media profile supports simulated burning 
+    - the check whether CD write+block type is supported by the drive
+    - the check whether the media profile supports simulated burning 
     @param opts The write opts to change
     @param use_force 1=ignore above checks, 0=refuse work on failed check
 */
@@ -1828,7 +1828,7 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 /** Look up the fastest speed descriptor which is not faster than the given
     speed_goal. If it is 0, then the fastest one is chosen among the
     descriptors with the highest end_lba. If it is -1 then the slowest speed
-    descriptor is chosen regardless of end_lba. Parameter flag decides wether
+    descriptor is chosen regardless of end_lba. Parameter flag decides whether
     the speed goal means write speed or read speed.
     @param d Drive to query
     @param speed_goal Upper limit for speed,
@@ -2017,8 +2017,8 @@ void burn_version(int *major, int *minor, int *micro);
 
 /* ts A60924 : ticket 74 */
 /** Control queueing and stderr printing of messages from libburn.
-    Severity may be one of "NEVER", "ABORT", "FATAL", "SORRY", "WARNING", "HINT",
-    "NOTE", "UPDATE", "DEBUG", "ALL".
+    Severity may be one of "NEVER", "ABORT", "FATAL", "SORRY", "WARNING",
+    "HINT", "NOTE", "UPDATE", "DEBUG", "ALL".
     @param queue_severity Gives the minimum limit for messages to be queued.
                           Default: "NEVER". If you queue messages then you
                           must consume them by burn_msgs_obtain().
@@ -2073,6 +2073,17 @@ int burn_msgs_obtain(char *minimum_severity,
 */
 int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
                      char severity[], struct burn_drive *d);
+
+
+/* ts A71016 */
+/** Convert a severity name into a severity number, which gives the severity
+    rank of the name.
+    @param severity_name A name as with burn_msgs_submit(), e.g. "SORRY".
+    @param severity_number The rank number: the higher, the more severe.
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return >0 success, <=0 failure
+*/
+int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
 
 
 /* ts A70915 */
@@ -2166,7 +2177,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 
 /* A70904 */
-/** Inquire wether the drive object is a real MMC drive or a pseudo-drive
+/** Inquire whether the drive object is a real MMC drive or a pseudo-drive
     created by burn_drive_dummy().
     @param d      The drive to inquire
     @return       0= null-drive
@@ -2178,7 +2189,7 @@ int burn_drive_get_drive_role(struct burn_drive *d);
 
 
 /* ts A70923 */
-/** Find out wether a given address string would lead to the given drive
+/** Find out whether a given address string would lead to the given drive
     object. This should be done in advance for track source addresses
     with parameter drive_role set to 2. 
     Although a real MMC drive should hardly exist as two drive objects at
