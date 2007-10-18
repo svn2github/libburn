@@ -171,7 +171,7 @@ int telltoc_aquire_by_driveno(int *driveno, int silent_drive)
 
 	fprintf(stderr, "Beginning to scan for devices ...\n");
 	while (!burn_drive_scan(&drive_list, &drive_count))
-		usleep(1002);
+		usleep(100002);
 	if (drive_count <= 0 && *driveno >= 0) {
 		fprintf(stderr, "FAILED (no drives found)\n");
 		return 0;
