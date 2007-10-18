@@ -210,6 +210,8 @@ int burn_msgs_obtain(char *minimum_severity,
 	ret = libdax_msgs__text_to_sev(minimum_severity, &minimum_sevno, 0);
 	if (ret <= 0)
 		return 0;
+	if (libdax_messenger == NULL)
+		return 0;
 	ret = libdax_msgs_obtain(libdax_messenger, &item, minimum_sevno,
 				LIBDAX_MSGS_PRIO_ZERO, 0);
 	if (ret <= 0)
