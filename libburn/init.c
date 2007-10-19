@@ -292,8 +292,9 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 	struct burn_drive *d;
 
 #ifdef Libburn_signal_handler_verbouS
-	fprintf(stderr, "libburn_ABORT: pid = %d , abort_control_pid = %d\n",
-		getpid(), abort_control_pid);
+	fprintf(stderr,
+		"libburn_ABORT: pid = %d , abort_control_pid = %d , sig= %d\n",
+		getpid(), abort_control_pid, signum);
 #endif
 
 	/* ts A70928:
