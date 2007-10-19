@@ -1,39 +1,25 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 
-/* ts A71019 : burry dead puppies before forgetting them */
+/* ts A71019 */
 
-/* Standard measure : Threads are created detached.
+/* Standard measure should be: Threads are created detached.
    According to the man pages they should then care for disposing themselves.
-   Does not help on my SuSE 9.3
 
-*/
+   >>> ??? It is yet unclear why the threads vanish from the process list
+           even if joinable and even if never joined.
+
+   To be activated after release of libburn-0.4.0
+
 #define Libburn_create_detached_threadS 1
-
-/* Addon with certain impact on application: 
-   Call wait3() more often than pthread_create()
-   Does not help on my SuSE 9.3
-
-#define Libburn_use_wait3 1
 */
 
-/* Alternative 1 : Threads are created joinable.
-   Workers get transferred to the done_workers list and then joined with
-   the next thread going to that list.
-   Does not help on my SuSE 9.3
-
-#define Libburn_remove_done_workerS 1
-*/
-
-/* Alternative 2 : Threads are created joinable.
+/* Alternative : Threads are created joinable.
    Threads get detached in remove_worker() and thus should dispose themselves.
-   Does not help on my SuSE 9.3
-
-   Note: this works only if Libburn_remove_done_workerS is not defined.
 
 #define Libburn_detach_done_workeR 1
 */
-                       
+
 
 #include "libburn.h"
 #include "transport.h"
@@ -51,9 +37,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/wait.h>
 
 /*
 #include <a ssert.h>
@@ -120,10 +103,6 @@ struct w_list
 
 static struct w_list *workers = NULL;
 
-#ifdef Libburn_remove_done_workerS
-static struct w_list *done_workers = NULL;
-#endif
-
 
 static struct w_list *find_worker(struct burn_drive *d)
 {
@@ -143,11 +122,6 @@ static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
 
 #ifdef Libburn_create_detached_threadS
 	pthread_attr_t attr;
-#endif
-
-#ifdef Libburn_use_wait3
-	wait3(NULL,WNOHANG,NULL);
-	wait3(NULL,WNOHANG,NULL);
 #endif
 
 	a = malloc(sizeof(struct w_list));
@@ -183,50 +157,14 @@ static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
 }
 
 
-#ifdef Libburn_remove_done_workerS
-
-/* ts A71019 : burry dead puppies before forgetting them */
-/* Alternative 1 : Threads are created joinable.
-   Workers get transferred to the done_workers list and then joined with
-   the next thread going to that list.
-   Does not work on my SuSE 9.3
-*/
-int burn_remove_done_workers(int flag)
-{
-	int ret;
-	char msg[80];
-	struct w_list *next;
-
-	while (done_workers != NULL) {
-		ret = pthread_join(done_workers->thread, NULL);
-		sprintf(msg,
-			"burn_remove_done_workers(): pthread_join(%lu) = %d",
-			(unsigned long) done_workers->thread, ret);
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020158,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
-			msg, 0, 0);
-		next = done_workers->next;
-		free(done_workers);
-		done_workers = next;
-	}
-	return 1;
-}
-
-#endif /* Libburn_remove_done_workerS */
-
-
 static void remove_worker(pthread_t th)
 {
 	struct w_list *a, *l = NULL;
 
-#ifdef Libburn_remove_done_workerS
-	burn_remove_done_workers(0);
-#else
 #ifdef Libburn_detach_done_workeR
 	int ret;
 	char msg[80];
 #endif
-#endif /* ! Libburn_remove_done_workerS && ! Libburn_detach_done_workeR */
 
 	for (a = workers; a; l = a, a = a->next)
 		if (a->thread == th) {
@@ -235,15 +173,10 @@ static void remove_worker(pthread_t th)
 			else
 				workers = a->next;
 
-#ifdef Libburn_remove_done_workerS
-			a->next= done_workers;
-			done_workers= a;
-#else
 #ifdef Libburn_detach_done_workeR
 			/* ts A71019 : burry dead puppy before forgetting it */
-			/* Alternative 2 : threads get detached and thus should
+			/* Alternative : threads get detached and thus should
 					dispose themselves.
-   			   Does not work on my SuSE 9.3
 			*/
 			ret = pthread_detach(th);
 			sprintf(msg,
@@ -256,7 +189,6 @@ static void remove_worker(pthread_t th)
 #endif /* Libburn_detach_done_workeR */
 
 			free(a);
-#endif
 			break;
 		}
 
@@ -590,6 +522,9 @@ int burn_fifo_start(struct burn_source *source, int flag)
 }
 
 
+#ifdef Libburn_has_burn_async_join_alL
+
+/* ts A71019 : never used */
 void burn_async_join_all(void)
 {
 	void *ret;
@@ -597,3 +532,7 @@ void burn_async_join_all(void)
 	while (workers)
 		pthread_join(workers->thread, &ret);
 }
+
+#endif /* Libburn_has_burn_async_join_alL */
+
+
