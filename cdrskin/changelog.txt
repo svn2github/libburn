@@ -4187,25 +4187,10 @@ Moved libdax-libcevap model stuff to libcevap/
 libcevap/libcevap_gen.sh 
 Adapted C code generator script to new address of libdax_model.txt
 
-1 Sep 2007  [983]
-libisoburn/libisoburn.h
-libisoburn/isoburn.h
-libisoburn/isoburn.c
-libisoburn/burn_wrap.c
-libisoburn/isofs_wrap.c
-Initial content of libisoburn
-
 2007.09.01.182319  [984]
 libburn/libburn.h
 libburn/options.c
 New API function burn_write_opts_get_drive()
-
-1 Sep 2007  [985]
-libisoburn/libisoburn.h
-libisoburn/isoburn.h
-libisoburn/isoburn.c
-libisoburn/isofs_wrap.c
-Should have used copy+paste when writing Vreixos name
 
 2007.09.04.224905  [987]
 libburn/libburn.h
@@ -4229,13 +4214,6 @@ libburn/write.c
 libburn/read.c
 Reacted on compiler warnings
 
-5 Sep 2007  [990]
-libisoburn/isoburn.h
-libisoburn/isoburn.c
-libisoburn/burn_wrap.c
-Implemented use of stdio-pseudo-drives
-
-
 2007.09.05.194124  [991]
 libburn/libburn.h
 libburn/drive.c
@@ -4246,17 +4224,6 @@ burn_drive_grab_dummy() becomes invisible part of burn_drive_scan_and_grab()
 2007.09.05.195248  [992]
 libburn/write.c
 Fixed a bug with failed opening of pseudo-drive
-
-5 Sep 2007  [993]
-libisoburn/libisoburn.h
-libisoburn/isoburn.h
-libisoburn/isoburn.c
-libisoburn/burn_wrap.c
-Changes in plans as discussed up to Sep 5 2007
-
-5 Sep 2007  [994]
-libisoburn/libisoburn.h
-Updated explanations about the usage principles of libisoburn
 
 2007.09.06.094402  [995]
 libburn/drive.c
@@ -4269,13 +4236,6 @@ Added forgotten read/write counters in burn_stdio_write_track()
 2007.09.06.100100  [997]
 cdrskin/cdrskin.c
 Removed obstacles for use of stdio-drives
-
-6 Sep 2007  [998]
-libisoburn/libisoburn.h
-libisoburn/isoburn.h
-libisoburn/isoburn.c
-libisoburn/burn_wrap.c
-Updated to state of discussion
 
 2007.09.06.120844  [999]
 libburn/libburn.h
@@ -4401,32 +4361,14 @@ Enabled os dependend stdio size estimation
 libburn/drive.c
 Made use of os dependend stdio size estimation
 
-9 Sep 2007  [1025]
-libisoburn/burn_wrap.c
-New wrapper isoburn_disc_erasable() declares ISO DVD-RAM, DVD+RW erasable
-
 2007.09.09.182827  [1026]
 libburn/async.c
 libburn/mmc.c
 Ended falsely alleged erasability of DVD-RAM and DVD+RW
 
-10 Sep 2007  [1027]
-libisoburn/libisoburn.h
-New wrapper isoburn_disc_erasable() declares ISO DVD-RAM, DVD+RW erasable
-
 2007.09.10.110050 [1028]
 libburn/drive.c
 Added forgotten return 0 to an error case
-
-11 Sep 2007  [1029]
-libisoburn/burn_wrap.c
-libisoburn/isoburn.h
-New inner function isoburn_set_start_byte()
-
-12 Sep 2007  [1031]
-libisoburn/libisoburn.h
-libisoburn/burn_wrap.c
-Removed isoburn_write_opts_set_start_byte()
 
 2007.09.12.104626  [1032]
 libburn/transport.h
@@ -4456,10 +4398,6 @@ Implemented cache syncing for stdio-drives in burn_random_access_write()
 2007.09.12.200106  [1040]
 cdrskin/cdrskin.c
 Fixed bug with direct_write_amount=0
-
-13 Sep 2007  [1043] 
-libisoburn/burn_wrap.c
-Took into respect fabricated_disc_status
 
 2007.09.14.122437  [1063]
 libburn/write.c
@@ -4590,22 +4528,6 @@ libburn/sbc.c
 libburn/spc.c
 Had to revoke Immed bit on load command. LG GSA-4082B : premature "no media"
 
-21 Sep 2007  [1092] libisoburn
-Makefile.am
-Removed libburn file addresses
-
-22 Sep 2007  [1093] libisoburn 
-+ doc/doxygen.conf.in
-Added file demanded by build system
-
-22 Sep 2007  [1094] libisoburn 
-src/burn_wrap.c
-Prevented SIGSEGV in isoburn_drive_scan_and_grab()
-
-22 Sep 2007  [1095] libisoburn 
-src/burn_wrap.c
-Enabled treatment==2 in isoburn_drive_scan_and_grab()
-
 2007.09.22.140613  [1096]
 cdrskin/cdrskin.c
 Updated list of unsupported cdrecord and wodim options
@@ -4615,21 +4537,9 @@ libburn/libburn.h
 libburn/init.c
 New API function burn_msgs_submit()
 
-22 Sep 2007  [1099] libisoburn
-src/burn_wrap.c
-Made use of burn_msgs_submit() for error messages
-
 2007.09.22.151712  [1101]
 libburn/sbc.c
 Reacted on compiler warning
-
-23 Sep 2007  [1102] libisoburn
-src/burn_wrap.c
-Removed all references to isoburn.treatment from burn_wrap.c
-
-23 Sep 2007  [1105] libisoburn
-src/burn_wrap.c
-Called isoburn_create_data_source() and isoburn_free_data_source()
 
 2007.09.23.163301  [1107]
 libburn/libburn.h
@@ -4697,15 +4607,185 @@ Corrected announcement with dev=help about stdio: "Open via UNIX device"
 
 
 ------------------------------------ cycle  - cdrskin-0.3.9 - 2007.09.27.093301
+* New option fallback_program=
 
+
+27 Sep 2007  [1128]
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
+
+28 Sep 2007  [1129] libisofs
+libisofs/libiso_msgs.h
+Removed apostrophes which my compiler does not like
+
+2007.09.29.185007  [1131]
+libburn/transport.h
+libburn/init.h
+libburn/init.c
+libburn/drive.h
+libburn/drive.c
+libburn/async.c
+Trying to catch signals from within the writer thread
+
+2007.09.29.191558  [1132]
+libburn/init.c
+Added forgotten handling of non-writer-non-control threads
+
+2007.09.30.212517  [1135]
+libburn/libburn.h
+libburn/async.h
+libburn/async.c
+libburn/file.h
+libburn/file.c
+Implemented a simple fifo to decouple from burn_source signals
+
+30 Sep 2007  [1136]
+test/telltoc.c
+Disallowed --read_and_print raw:- , allowed to write to chardev+pipe+socket
+
+2007.10.02.120659  [1145]
+libburn/write.c
+Moved minimum tracksize padding out of TAO track closing. Now done before sync.
+
+2007.10.02.135538  [1146]
+libburn/libburn.h
+Clarified role of burn_source
+
+2007.10.02.180003  [1148]
+libburn/write.c
+Corrected error with revision 1145
+
+2007.10.03.084206  [1150]
+libburn/libburn.h
+More documentation for burn_source
+
+2007.10.03.112547  [1151]
+libburn/transport.h
+libburn/mmc.c
+libburn/write.c
+libburn/drive.c
+Ensured synchronize cache before release
+
+2007.10.03.115550  [1153]
+libburn/libburn.h
+More documentation for burn_source
+
+2007.10.03.223649  [1155]
+libburn/file.h
+libburn/file.c
+libburn/async.c
+Implemented the ring buffer of burn_fifo_source_new() object
+
+2007.10.03.223851  [1156]
+libburn/libburn.h
+More documentation for burn_source, new API call burn_fifo_inquire_status()
+
+3 Oct 2007  [1157]
+test/libburner.c
+Made use of 4 MB fifo
+
+2007.10.04.200221  [1158]
+libburn/libburn.h
+libburn/file.h
+libburn/file.c
+libburn/libdax_msgs.h
+Inserted the necessary error messages and magic numbers
+
+4 Oct 2007  [1159]
+test/libburner.c
+Adjusted pacifier messages and change with burn_fifo_inquire_status()
+
+2007.10.04.210245  [1160]
+libburn/libburn.h
+Minor adjustments with comment text
+
+2007.10.04.213107  [1161]
+libburn/drive.c
+Corrected abort preventing bug introduced with revision 1131
+
+2007.10.05.085929  [1162]
+libburn/libburn.h
+libburn/file.c
+Revoked urge to have a magic[4] in burn_source (free_data is magic enough)
+
+2007.10.05.231712  [1163]
+libburn/file.c
+Fixed data spoiling bug with ring buffer introduced with rev 1155
+
+2007.10.07.110506  [1164]
+libburn/file.c
+Corrected status reply for unstarted fifo
+
+2007.10.07.110644  [1165]
+libburn/file.c
+Corrected status reply for unstarted fifo (2nd try)
+
+7 Oct 2007  [1166]
+test/libburner.c
+Minor changes with waiting for drive and fifo status display
+
+2007.10.15.115448  [1179]
+cdrskin/cdrskin.c
+Corrected 4-byte buffer overflow (which did no detectable harm)
+
+2007.10.15.115728  [1180]
+libburn/read.c
+Made possible to silence error message about missing pseudo drive
+
+2007.10.15.115851  [1181]
+libburn/drive.c
+Corrected SIGSEGV with changing from one drive to the other
+
+2007.10.15.144050  [1182]
+libburn/drive.c
+Activated re-usal of disposed global drive_array slots
+
+2007.10.16.212205  [1189]
+libburn/libburn.h
+libburn/init.c
+New API function burn_text_to_sev()
+
+18 Oct 2007  [1209]
+test/telltoc.c
+Calmed down hyperactive sleep interval with drive scanning
+
+2007.10.18.200336  [1210]
+libburn/init.c
+Prevented SIGSEGV with burn_msgs_obtain() on non-initialized library
+
+2007.10.19.115326  [1215]
+libburn/async.c
+libburn/libdax_msgs.h
+Starting threads detached, providing two alternatives. But zombies still there.
+
+2007.10.19.132821  [1216]
+libburn/init.c
+Small change with debug verbosity of abort handler
+
+2007.10.19.133310  [1217]
+libburn/async.c
+Removed useless alternative after zombies turned out to be caused by gdb
+
+------------------------------------ cycle  - cdrskin-0.3.9 - 2007.10.23.150436
+
+2007.10.23.150436  []
+cdrskin/changelog.txt
+Next cdrskin-0.3.9 cycle
+
+
+----------------------------- release  - cdrskin-0.4.0.pl00 - 2007.10.
+* New option direct_write_amount=
+* New option --grow_overwriteable_iso
+* New option --allow_emulated_drives dev=stdio:<path>
+* More cdrecord options supported: -format, -inq, -load, -lock, -immed, -waiti
+* New option fallback_program=
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
+Refuse writing if track size exceeds free media space
 
 problem with telltoc: double descriptor list from before load and after load 
 
