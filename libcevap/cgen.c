@@ -337,7 +337,10 @@ int flag;
    pointer_level= Ctyp_get_pointer_level(ct,0);
    for(i=0;i<pointer_level;i++)
      fprintf(fp,"*");
-   fprintf(fp,"%s;\n",ct->name);
+   fprintf(fp,"%s",ct->name);
+   if(ct->array_size>0)
+     fprintf(fp,"[%lu]",ct->array_size);
+   fprintf(fp,";\n");
  }
  fprintf(fp,"\n");
  fprintf(fp,"};\n");
@@ -438,7 +441,7 @@ int flag;
  fp= cgen->fp;
  fprintf(fp,"\n");
  fprintf(fp,"/*\n");
- fprintf(fp,"  cc -g -o %s.c\n",cgen->classname);
+ fprintf(fp,"  cc -g -c %s.c\n",cgen->classname);
  fprintf(fp,"*/\n");
  Cgen_write_datestr(cgen,0);
  fprintf(fp,"\n");
@@ -548,6 +551,18 @@ int flag;
  }
  fprintf(fp,"{\n");
  fprintf(fp," struct %s *o;\n",cgen->structname);
+
+ /* Is an array index i needed ? */
+ for(ct= cgen->elements; ct!=NULL; ct= ct->next) {
+   if(ct->is_comment || ct->no_initializer)
+ continue;
+   if(ct->array_size>0) 
+     if(strcmp(ct->dtype,"char")!=0) {
+       fprintf(fp," int i;\n");
+ break;
+     }
+ }
+
  fprintf(fp,"\n");
  if(cgen->gen_for_stic)
    fprintf(fp," *objpt= o= TSOB_FELD(struct %s,1);\n",cgen->structname);
@@ -568,15 +583,11 @@ int flag;
      if(strcmp(ct->dtype,"char")==0) {
        fprintf(fp," o->%s[0]= 0;\n;",ct->name);
      } else if(pointer_level>0) {
-       fprintf(fp," { int i;");
-       fprintf(fp,"   for(i=0;i<array_size;i++)\n;");
-       fprintf(fp,"     o->%s[i]= NULL;\n",ct->name);
-       fprintf(fp," }");
+       fprintf(fp," for(i=0;i<%lu;i++)\n",array_size);
+       fprintf(fp,"   o->%s[i]= NULL;\n",ct->name);
      } else {
-       fprintf(fp," { int i;");
-       fprintf(fp,"   for(i=0;i<array_size;i++)\n;");
-       fprintf(fp,"     o->%s[i]= 0;\n",ct->name);
-       fprintf(fp," }");
+       fprintf(fp," for(i=0;i<%lu;i++)\n",array_size);
+       fprintf(fp,"   o->%s[i]= 0;\n",ct->name);
      }  
    } else if(pointer_level>0) {
      fprintf(fp," o->%s= NULL;\n",ct->name);
@@ -882,7 +893,8 @@ int flag;
        fprintf(fp,"int idx;\n");
      fprintf(fp,"int flag;\n");
    }
-   fprintf(fp,"/* Note: idx==-1 fetches the last item of the list */\n");
+   if(ct->management==4)
+     fprintf(fp,"/* Note: idx==-1 fetches the last item of the list */\n");
    fprintf(fp,"{\n");
    if(ct->management==4) {
      strcpy(funct,ct->dtype);
@@ -1066,7 +1078,7 @@ after_setter:;
           "         bit1= address from start of list */\n");
    fprintf(fp,"{\n");
    fprintf(fp," int i,abs_idx;\n");
-   fprintf(fp,"struct %s *npt;\n",cgen->structname);
+   fprintf(fp," struct %s *npt;\n",cgen->structname);
    fprintf(fp,"\n");
    fprintf(fp," if(flag&2)\n");
    fprintf(fp,"   for(;o->prev!=NULL;o= o->prev);\n");
@@ -1082,7 +1094,6 @@ after_setter:;
    fprintf(fp,"   *pt= npt;\n");
    fprintf(fp," }\n");
    fprintf(fp," return(*pt!=NULL);\n");
-   fprintf(fp," ;\n");
    fprintf(fp,"}\n");
    fprintf(fp,"\n");
  }

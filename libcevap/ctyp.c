@@ -312,7 +312,7 @@ no_name:;
  if(bpt!=NULL) {
    if(strchr(bpt,']')!=NULL)
      *strchr(bpt,']')= 0;
-   sscanf(bpt,"%lu",&(o->array_size));
+   sscanf(bpt+1,"%lu",&(o->array_size));
    *bpt= 0;
  }
  if(Sregex_string(&(o->name),cpt,0)<=0)
