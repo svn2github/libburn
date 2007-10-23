@@ -46,7 +46,7 @@
 # class interconnections in the notation of my C stub generator CgeN
 # (see also end of this text)
 
-# next : comment : CevapmediA.nwa
+# next : work on completeness : cevapformat
 
 # Open questions:
 # - how to connect to GESTURES ? Globally ?
@@ -423,6 +423,9 @@ Cgen=\
 # 0= drive is grabbed, 1= drive is not grabbed
 -v volatile int released
 
+# File descriptor of an eventual emulated drive
+-v int stdio_fd
+
 # >>> ???
 # (do we need a drive owned buffer to carry data from call to call or what ?)
 -v struct CevapbuffeR *buffer
@@ -494,7 +497,9 @@ cevapmedia
 # (Speed values go into drive.mdata_*_*_speed)
 -r -l struct CevapperF *speed_descriptor
 -p -v struct CevapperF *eol_speed_descriptor
+
 # >>>
+
 @
 =end Class
 
@@ -922,9 +927,12 @@ Notes:
 
  Generate C stubs:
    ( cd libcevap && ./libcevap_gen.sh )
+ Option -lowercase would generate all lowercase struct and function names
 
  Compile test:
    ( cd libcevap && ( rm a.out ; cc -g main.c cevap*.c smem.c ) )
+ Option -DCevap_lowercasE would tell main.c that -lowercase was used above.
+
 
 ----------------------------------------------------------------------------
 
