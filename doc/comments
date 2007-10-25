@@ -43,6 +43,11 @@ scope by help of existing cdrecord frontends.
            ISO 9660 disk image. This may then be brought to CD via libburn.
            libisofs is to be the foundation of our upcoming mkisofs emulation.
 
+- libisoburn is an add-on to libburn and libisofs which allows to grow
+           ISO-9660 filesystem images on multi-session media as well as
+           on overwriteable media via the same API. All media peculiarities
+           are handled automatically.
+
 - cdrskin  is a limited cdrecord compatibility wrapper for libburn.
            cdrecord is a powerful GPL'ed burn program included in Joerg
            Schilling's cdrtools. cdrskin strives to be a second source for
@@ -53,6 +58,13 @@ scope by help of existing cdrecord frontends.
            Many bytes have been copied from the message output of cdrecord
            runs, though.
            See cdrskin/README for more.
+
+- xorriso  is an upcomming application of all three libraries which creates,
+           loads, manipulates and writes ISO 9660 filesystem images with
+           Rock Ridge extensions. Manipulation will not only be adding or
+           overwriting of files but also deletion, renaming, and attribute
+           changing.
+           See SVN of libisoburn, man test/xorriso.1, test/compile_xorriso.sh
 
 - "test"   is a collection of application gestures and examples given by the
            authors of the library features. The burn API example of libburn

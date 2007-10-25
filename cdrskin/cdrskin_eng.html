@@ -56,8 +56,9 @@ and to MMC-5 for DVD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.3.8</DT>
-<DD>(by Derek Foreman, Ben Jansens, and team of libburnia-project.org)</DD>
+<DT>libburn-0.4.0</DT>
+<DD>(founded by Derek Foreman and Ben Jansens,
+furthered by team of libburnia-project.org)</DD>
 <DD>transfers data to CD and DVD</DD>
 </DL>
 </P>
@@ -175,25 +176,25 @@ Testers wanted who are willing to risk some double layer DVD media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.3.8.pl00.tar.gz">cdrskin-0.3.8.pl00.tar.gz</A>
-(615 KB).
+<DD><A HREF="cdrskin-0.4.0.pl00.tar.gz">cdrskin-0.4.0.pl00.tar.gz</A>
+(680 KB).
 </DD>
 <DD>
-The "stable" cdrskin tarballs are source code identical with "stable" 
-libburn releases or with "stabilized" libburn SVN snapshots. They get
-produced via a different procedure, though.<BR>
+The cdrskin tarballs are source code identical with libburn releases
+of the same version number.
+They get produced via a different procedure, though.<BR>
 cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
-<DD><A HREF="cdrskin_0.3.8.pl00-x86-suse9_0.tar.gz">
-cdrskin_0.3.8.pl00-x86-suse9_0.tar.gz</A>, (90 KB),
+<DD><A HREF="cdrskin_0.4.0.pl00-x86-suse9_0.tar.gz">
+cdrskin_0.4.0.pl00-x86-suse9_0.tar.gz</A>, (106 KB),
 <DL>
 <DD>runs on SuSE 9.0 (2.4.21) , RIP-14.4 (2.6.14) ,
  Gentoo (2.6.15 x86_64 Athlon).</DD>
 </DL>
-<DD><A HREF="cdrskin_0.3.8.pl00-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.8.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
+<DD><A HREF="cdrskin_0.4.0.pl00-x86-suse9_0-static.tar.gz">
+cdrskin_0.4.0.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <DL>
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
@@ -220,18 +221,18 @@ cdrskin_0.3.8.pl00-x86-suse9_0-static.tar.gz</A>, (290 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.3.6:
+Enhancements towards previous stable version cdrskin-0.3.8:
 <UL>
-<LI>Now able to cope with the peculiarities of Linux 2.4 USB</LI>
-<LI>Refusal to perform -dummy runs on media which cannot simulate burning</LI>
-<LI>Precautions against using the burner drive as track source</LI>
-<LI>New option modesty_on_drive= may help with hda -> hdb burns</LI>
-<LI>New option minbuf= , cdrecord compatible frontend of modesty_on_drive=</LI>
-<LI>New option --adjust_speed_to_drive</LI>
+<LI>New option direct_write_amount=</LI>
+<LI>New option --grow_overwriteable_iso</LI>
+<LI>New option --allow_emulated_drives dev=stdio:&lt;path&gt;</LI>
+<LI>More cdrecord options supported:
+ -format, -inq, -load, -lock, -immed, -waiti</LI>
+<LI>New option fallback_program=</LI>
 </UL>
 
 <!--
- Bug fixes towards cdrskin-0.3.8.pl00:
+ Bug fixes towards cdrskin-0.4.0.pl00:
 <UL>
 <LI>none yet</LI>
 </UL>
@@ -243,24 +244,19 @@ Enhancements towards previous stable version cdrskin-0.3.6:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.3.9 :</H3></DT>
-<DD>Enhancements towards stable version 0.3.8.pl00:
+<DT><H3>Development snapshot, version 0.4.1 :</H3></DT>
+<DD>Enhancements towards stable version 0.4.0.pl00:
 <UL>
-<LI>New option direct_write_amount=</LI>
-<LI>New option --grow_overwriteable_iso</LI>
-<LI>New option --allow_emulated_drives dev=stdio:&lt;path&gt;</LI>
-<LI>More cdrecord options supported:
- -format, -inq, -load, -lock, -immed, -waiti</LI>
-<!--
 <LI>none yet</LI>
+<!--
 -->
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.3.9</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.3.9 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.3.9 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.3.9)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.4.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -280,15 +276,15 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.3.9.tar.gz">cdrskin-0.3.9.tar.gz</A>
-(640 KB).
+<A HREF="cdrskin-0.4.1.tar.gz">cdrskin-0.4.1.tar.gz</A>
+(680 KB).
 </DD>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
-<DD><A HREF="cdrskin_0.3.9-x86-suse9_0.tar.gz">
-cdrskin_0.3.9-x86-suse9_0.tar.gz</A>, (90 KB).
+<DD><A HREF="cdrskin_0.4.1-x86-suse9_0.tar.gz">
+cdrskin_0.4.1-x86-suse9_0.tar.gz</A>, (105 KB).
 </DD>
-<DD><A HREF="cdrskin_0.3.9-x86-suse9_0-static.tar.gz">
-cdrskin_0.3.9-x86-suse9_0-static.tar.gz</A>, (290 KB)
+<DD><A HREF="cdrskin_0.4.1-x86-suse9_0-static.tar.gz">
+cdrskin_0.4.1-x86-suse9_0-static.tar.gz</A>, (310 KB)
 </DD>
 </DL>
 </P>

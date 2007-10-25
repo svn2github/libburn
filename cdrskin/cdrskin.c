@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.3.9"
+#define Cdrskin_prog_versioN "0.4.1"
 #endif
 
 /** The source code release timestamp */
@@ -121,27 +121,25 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_3_8
-#define Cdrskin_libburn_versioN "0.3.8"
+#ifdef Cdrskin_libburn_0_4_0
+#define Cdrskin_libburn_versioN "0.4.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_3_8 */
+#endif /* Cdrskin_libburn_0_4_0 */
 
-#ifdef Cdrskin_libburn_0_3_9
-#define Cdrskin_libburn_versioN "0.3.9"
+#ifdef Cdrskin_libburn_0_4_1
+#define Cdrskin_libburn_versioN "0.4.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-#define Cdrskin_libburn_has_random_access_rW 1
-#define Cdrskin_libburn_has_get_drive_rolE 1
-#define Cdrskin_libburn_has_drive_equals_adR 1
+/* there are no novelties in 0.4.1 yet */
 
-#endif /* Cdrskin_libburn_0_3_9 */
+#endif /* Cdrskin_libburn_0_4_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_versioN "0.3.8"
+#define Cdrskin_libburn_versioN "0.4.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
@@ -201,6 +199,12 @@ or
 /* 0.3.8 */
 #define Cdrskin_libburn_has_set_waitinG 1
 #define Cdrskin_libburn_has_get_best_speeD 1
+
+/* 0.4.0 */
+#define Cdrskin_libburn_has_random_access_rW 1
+#define Cdrskin_libburn_has_get_drive_rolE 1
+#define Cdrskin_libburn_has_drive_equals_adR 1
+
 
 #ifdef Cdrskin_new_api_tesT
 

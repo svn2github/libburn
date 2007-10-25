@@ -204,6 +204,12 @@ Project history as far as known to me:
   We look back on improved stability, a substantially extended list of media
   and write modes, and better protection against typical user mishaps.
 
+- 24th October 2007 version 0.4.0 is the foundation of new library libisoburn
+  and an upcomming integrated application for manipulating and writing
+  ISO 9660 + Rock Ridge images. cdrskin-0.4.0 got capabilities like growisofs
+  by these enhancements: growing of overwriteable media and disk files.
+  Taking again a bow towards Andy Polyakov.
+
 
 ------------------------------------------------------------------------------
 
