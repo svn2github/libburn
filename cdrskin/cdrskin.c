@@ -2521,6 +2521,8 @@ set_dev:;
          " --any_track        allow source_addresses to match '^-.' or '='\n");
      printf(
          " assert_write_lba=<lba>  abort if not next write address == lba\n");
+     printf(
+    " direct_write_amount=<size>  write random access to media like DVD+RW\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
      printf(" --devices          list accessible devices (tells /dev/...)\n");
      printf(
@@ -2545,6 +2547,8 @@ set_dev:;
      printf(
           " eject_device=<path>  set the device address for command eject\n");
 #endif
+     printf(
+         " fallback_program=<cmd>  use external program for exotic CD jobs\n");
      printf(" --fifo_disable     disable fifo despite any fs=...\n");
      printf(" --fifo_per_track   use a separate fifo for each track\n");
      printf(
@@ -2558,6 +2562,8 @@ set_dev:;
           " grab_drive_and_wait=<num>  grab drive, wait given number of\n");
      printf(
           "                    seconds, release drive, and do normal work\n");
+     printf(
+    " --grow_overwriteable_iso  emulate multi-session on media like DVD+RW\n");
      printf(
        " --ignore_signals   try to ignore any signals rather than to abort\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
