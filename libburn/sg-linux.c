@@ -90,6 +90,7 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 
 
 /* ts A61211 : to eventually recognize CD devices on /dev/sr* */
+#include <limits.h>
 #include <linux/cdrom.h>
 
 
