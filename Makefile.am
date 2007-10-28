@@ -169,7 +169,7 @@ nodist_pkgconfig_DATA = \
 man_MANS = cdrskin/cdrskin.1
 
 EXTRA_DIST = \
-	libburn-5.pc.in \
+	libburn-1.pc.in \
 	version.h.in \
 	doc/comments \
 	doc/doxygen.conf.in \
