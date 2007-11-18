@@ -148,8 +148,8 @@ read-only. Closing is done automatically unless option
 is given which keeps the media appendable.
 .br
 Write mode
--tao allows to use track source of unpredictable length (like stdin) and allows
-to write further sessions to appendable media.
+-tao allows to use track sources of unpredictable length (like stdin) and
+allows to write further sessions to appendable media.
 -sao produces audio sessions with seamless tracks but needs predicted track
 sizes and cannot append sessions to media.
 .br
@@ -278,7 +278,9 @@ and device files which have the same SCSI address parameters (e.g. /dev/sg0).
 .SS
 .B Emulated drives:
 .br
-Option --allow_emulated_drives enables addressing of pseudo-drives
+Option
+.B --allow_emulated_drives
+enables addressing of pseudo-drives
 which get emulated on top of filesystem objects. Regular data files and
 block devices result in pseudo-drives which behave much like DVD-RAM.
 If the given address does not exist yet but its directory exists, then
