@@ -396,6 +396,7 @@ struct burn_source {
 	off_t (*get_size)(struct burn_source *); 
 
 
+	/* ts A70125 : BROKE BINARY BACKWARD COMPATIBILITY AT libburn-0.3.1. */
 	/** Program the reply of (*get_size) to a fixed value. It is advised
 	    to implement this by a attribute  off_t fixed_size;  in *data .
 	    The read() function does not have to take into respect this fake
@@ -2178,7 +2179,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 /* A70904 */
 /** Inquire whether the drive object is a real MMC drive or a pseudo-drive
-    created by burn_drive_dummy().
+    created by a stdio: address.
     @param d      The drive to inquire
     @return       0= null-drive
                   1= real MMC drive
