@@ -2861,7 +2861,7 @@ final_checks:;
 dev_too_long:;
        fprintf(stderr,
                "cdrskin: FATAL : dev=... too long (max. %d characters)\n",
-               sizeof(o->device_adr)-1);
+               (int) sizeof(o->device_adr)-1);
        {ret= 0; goto ex;}
      }
      strcpy(o->device_adr,adr);
@@ -6975,7 +6975,7 @@ set_driveropts:;
      if(strlen(argv[i]+13)>=sizeof(skin->eject_device)) {
        fprintf(stderr,
           "cdrskin: FATAL : eject_device=... too long. (max: %d, given: %d)\n",
-          sizeof(skin->eject_device)-1,strlen(argv[i]+13));
+          (int) sizeof(skin->eject_device)-1,(int) strlen(argv[i]+13));
        return(0);
      }
      strcpy(skin->eject_device,argv[i]+13);
@@ -7238,7 +7238,7 @@ msifile_equals:;
      if(strlen(value_pt)>=sizeof(skin->msifile)) {
        fprintf(stderr,
           "cdrskin: FATAL : msifile=... too long. (max: %d, given: %d)\n",
-          sizeof(skin->msifile)-1,strlen(value_pt));
+          (int) sizeof(skin->msifile)-1,(int) strlen(value_pt));
        return(0);
      }
      strcpy(skin->msifile, value_pt);
@@ -7423,7 +7423,7 @@ track_too_large:;
      if(strlen(argv[i])>=sizeof(skin->source_path)) {
        fprintf(stderr,
             "cdrskin: FATAL : Source address too long. (max: %d, given: %d)\n",
-               sizeof(skin->source_path)-1,strlen(argv[i]));
+               (int) sizeof(skin->source_path)-1,(int) strlen(argv[i]));
        return(0);
      }
      source_has_size= 0;
