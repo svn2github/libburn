@@ -34,7 +34,7 @@ int libdax_audioxtr_new(struct libdax_audioxtr **xtr, char *path, int flag)
  if(o==NULL)
    return(-1);
  strncpy(o->path,path,LIBDAX_AUDIOXTR_STRLEN-1);
- o->path[LIBDAX_AUDIOXTR_STRLEN]= 0;
+ o->path[LIBDAX_AUDIOXTR_STRLEN-1]= 0;
  o->fd= -1;
  strcpy(o->fmt,"unidentified");
  o->fmt_info[0]= 0;
