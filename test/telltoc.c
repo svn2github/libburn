@@ -606,7 +606,8 @@ int telltoc_read_and_print(struct burn_drive *drive,
 	if (start_sector == -1)
 		start_sector = last_track_start;
 	if (sector_count == -1) {
-		sector_count = last_track_size;
+		sector_count = last_track_start + last_track_size
+				- start_sector;
 		if (media_is_cd_profile)  /* In case it is a TAO track */
 			final_cd_try = 0; /* allow it (-1 is denial) */
 	}
