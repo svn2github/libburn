@@ -566,12 +566,16 @@ void spc_sense_write_params(struct burn_drive *d)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 
-	size = c.page->data[0] * 256 + c.page->data[1];
+	/* ts A71128 : do not interpret reply if error */
 	m = d->mdata;
-	page = c.page->data + 8;
-	burn_print(1, "write page length 0x%x\n", page[1]);
-	m->write_page_length = page[1];
-	m->write_page_valid = 1;
+	if(!c.error) {
+		size = c.page->data[0] * 256 + c.page->data[1];
+		page = c.page->data + 8;
+		burn_print(1, "write page length 0x%x\n", page[1]);
+		m->write_page_length = page[1];
+		m->write_page_valid = 1;
+	} else
+		m->write_page_valid = 0;
 	mmc_read_disc_info(d);
 
 	/* ts A70212 : try to setup d->media_capacity_remaining */

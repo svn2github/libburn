@@ -201,7 +201,9 @@ int burn_drive_inquire_media(struct burn_drive *d)
 
 	/* ts A61020 : d->status was set to BURN_DISC_BLANK as pure guess */
 
-	if (d->mdata->cdr_write || d->mdata->cdrw_write ||
+        /* ts A71128 : run read_disc_info() for any recognizeable profile */
+	if (d->current_profile > 0 || 
+	    d->mdata->cdr_write || d->mdata->cdrw_write ||
 	    d->mdata->dvdr_write || d->mdata->dvdram_write) {
 
 #define Libburn_knows_correct_state_after_loaD 1

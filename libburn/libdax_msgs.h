@@ -441,7 +441,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020156 (SORRY,HIGH)   = Desired fifo buffer too small
  0x00020157 (FATAL,HIGH)   = burn_source is not a fifo object
  0x00020158 (DEBUG,LOW)    = Reporting thread disposal precautions
-
+ 0x00020159 (DEBUG,HIGH)   = TOC Format 0 returns inconsistent data
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

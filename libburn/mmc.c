@@ -116,6 +116,7 @@ extern struct libdax_msgs *libdax_messenger;
 static unsigned char MMC_GET_MSINFO[] =
 	{ 0x43, 0, 1, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_TOC[] = { 0x43, 2, 2, 0, 0, 0, 0, 16, 0, 0 };
+static unsigned char MMC_GET_TOC_FMT0[] = { 0x43, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_ATIP[] = { 0x43, 2, 4, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_DISC_INFO[] =
 	{ 0x51, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
@@ -797,6 +798,153 @@ int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
 }
 
 
+/* ts A71128 : for DVD-ROM drives which offer no reliable track information */
+static int mmc_read_toc_fmt0_al(struct burn_drive *d, int *alloc_len)
+{
+	struct burn_track *track;
+	struct burn_session *session;
+	struct burn_toc_entry *entry;
+	struct buffer buf;
+	struct command c;
+	int dlen, i, old_alloc_len, session_number, prev_session = -1;
+	int lba, size;
+	unsigned char *tdata, size_data[4], start_data[4];
+
+	if (*alloc_len < 4)
+		return 0;
+
+	scsi_init_command(&c, MMC_GET_TOC_FMT0, sizeof(MMC_GET_TOC_FMT0));
+	c.dxfer_len = *alloc_len;
+	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
+	c.opcode[8] = c.dxfer_len & 0xff;
+	c.retry = 1;
+	c.page = &buf;
+	c.page->bytes = 0;
+	c.page->sectors = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+
+	if (c.error) {
+err_ex:;
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			 0x0002010d,
+			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			 "Could not inquire TOC", 0,0);
+		d->status = BURN_DISC_UNSUITABLE;
+		d->toc_entries = 0;
+		/* Prefering memory leaks over fandangos */
+		d->toc_entry = calloc(1, sizeof(struct burn_toc_entry));
+		return 0;
+	}
+	dlen = c.page->data[0] * 256 + c.page->data[1];
+	old_alloc_len = *alloc_len;
+	*alloc_len = dlen + 2;
+	if (old_alloc_len < 12)
+		return 1;
+	if (dlen + 2 > old_alloc_len)
+		dlen = old_alloc_len - 2;
+	d->complete_sessions = 1 + c.page->data[3] - c.page->data[2];
+	d->last_track_no = d->complete_sessions;
+	if (dlen - 2 < (d->last_track_no + 1) * 8) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			 0x00020159,
+			 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			 "TOC Format 0 returns inconsistent data", 0,0);
+		goto err_ex;
+	}
+
+	d->toc_entries = d->last_track_no + d->complete_sessions;
+	if (d->toc_entries < 1)
+		return 0;
+	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
+	if(d->toc_entry == NULL)
+		return 0;
+
+	d->disc = burn_disc_create();
+	if (d->disc == NULL)
+		return 0;
+	for (i = 0; i < d->complete_sessions; i++) {
+		session = burn_session_create();
+		if (session == NULL)
+			return 0;
+		burn_disc_add_session(d->disc, session, BURN_POS_END);
+		burn_session_free(session);
+	}
+
+
+	for (i = 0; i < d->last_track_no; i++) {
+		tdata = c.page->data + 4 + i * 8;
+		session_number = i + 1;
+		if (session_number != prev_session && prev_session > 0) {
+			/* leadout entry previous session */
+			entry = &(d->toc_entry[(i - 1) + prev_session]);
+			lba = mmc_four_char_to_int(start_data) +
+			      mmc_four_char_to_int(size_data);
+			mmc_int_to_four_char(start_data, lba);
+			mmc_int_to_four_char(size_data, 0);
+			mmc_fake_toc_entry(entry, prev_session, 0xA2,
+					 size_data, start_data);
+			entry->min= entry->sec= entry->frame= 0;
+			d->disc->session[prev_session - 1]->leadout_entry =
+									entry;
+		}
+
+		/* ??? >>> d->media_capacity_remaining , d->media_lba_limit
+				as of mmc_fake_toc()
+		*/
+
+		entry = &(d->toc_entry[i + session_number - 1]);
+ 		track = burn_track_create();
+		if (track == NULL)
+			return -1;
+		burn_session_add_track(
+			d->disc->session[session_number - 1],
+			track, BURN_POS_END);
+		track->entry = entry;
+		burn_track_free(track);
+
+		memcpy(start_data, tdata + 4, 4);
+			/* size_data are estimated from next track start */
+		memcpy(size_data, tdata + 8 + 4, 4);
+		size = mmc_four_char_to_int(size_data) -
+	      		mmc_four_char_to_int(start_data);
+		mmc_int_to_four_char(size_data, size);
+		mmc_fake_toc_entry(entry, session_number, i + 1,
+					 size_data, start_data);
+		if (prev_session != session_number)
+			d->disc->session[session_number - 1]->firsttrack = i+1;
+		d->disc->session[session_number - 1]->lasttrack = i+1;
+		prev_session = session_number;
+	}
+	if (prev_session > 0 && prev_session <= d->disc->sessions) {
+		/* leadout entry of last session of closed disc */
+		tdata = c.page->data + 4 + d->last_track_no * 8;
+		entry = &(d->toc_entry[(d->last_track_no - 1) + prev_session]);
+		memcpy(start_data, tdata + 4, 4);
+		mmc_int_to_four_char(size_data, 0);
+		mmc_fake_toc_entry(entry, prev_session, 0xA2,
+				 size_data, start_data);
+		entry->min= entry->sec= entry->frame= 0;
+		d->disc->session[prev_session - 1]->leadout_entry = entry;
+	}
+	return 1;
+}
+
+
+/* ts A71128 : for DVD-ROM drives which offer no reliable track information */
+static int mmc_read_toc_fmt0(struct burn_drive *d)
+{
+	int alloc_len = 4, ret;
+
+	if (mmc_function_spy(d, "mmc_read_toc_fmt0") <= 0)
+		return -1;
+	ret = mmc_read_toc_fmt0_al(d, &alloc_len);
+	if (alloc_len >= 12)
+		ret = mmc_read_toc_fmt0_al(d, &alloc_len);
+	return ret;
+}
+
+
 /* ts A70131 : compose a disc TOC structure from d->complete_sessions
                and 52h READ TRACK INFORMATION */
 int mmc_fake_toc(struct burn_drive *d)
@@ -825,6 +973,12 @@ int mmc_fake_toc(struct burn_drive *d)
 				 msg, 0,0);
 		return 0;
 	}
+	/* ts A71128 : My DVD-ROM drive issues no reliable track info.
+			One has to try 43h READ TOC/PMA/ATIP Form 0. */
+	if (d->current_profile == 0x10 && d->last_track_no <= 1) {
+		ret = mmc_read_toc_fmt0(d);
+		return ret;
+	}
 	d->disc = burn_disc_create();
 	if (d->disc == NULL)
 		return -1;
@@ -835,11 +989,14 @@ int mmc_fake_toc(struct burn_drive *d)
 	memset(d->toc_entry, 0,d->toc_entries * sizeof(struct burn_toc_entry));
 	for (i = 0; i < d->complete_sessions; i++) {
 		session = burn_session_create();
+		if (session == NULL)
+			return -1;
 		burn_disc_add_session(d->disc, session, BURN_POS_END);
 		burn_session_free(session);
 	}
 	memset(size_data, 0, 4);
 	memset(start_data, 0, 4);
+
 
 	/* Entry Layout :
 		session 1   track 1     entry 0
@@ -943,13 +1100,15 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	if (!(d->current_profile == -1 || d->current_is_cd_profile)) {
 		/* ts A70131 : MMC_GET_TOC uses Response Format 2 
 		   For DVD this fails with 5,24,00 */
-		/* One could try Response Format 0: mmc5r03.pdf 6.26.3.2
-		   which does not yield the same result wit the same disc
+		/* mmc_read_toc_fmt0() uses
+                   Response Format 0: mmc5r03.pdf 6.26.3.2
+		   which does not yield the same result with the same disc
 		   on different drives.
 		*/
 		/* ts A70201 :
 		   This uses the session count from 51h READ DISC INFORMATION
-		   and the track records from 52h READ TRACK INFORMATION
+		   and the track records from 52h READ TRACK INFORMATION.
+		   mmc_read_toc_fmt0() is used as fallback for dull DVD-ROM.
 		*/
 		mmc_fake_toc(d);
 
@@ -1251,7 +1410,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	*alloc_len = len + 2;
 	if (old_alloc_len < 34)
 		return 1;
-	if (*alloc_len < 24) /* data[23] is the last byte used her */
+	if (*alloc_len < 24) /* data[23] is the last byte used here */
 		return 0;
 	if (len + 2 > old_alloc_len)
 		len = old_alloc_len - 2;
