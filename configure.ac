@@ -7,35 +7,84 @@ AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([subdir-objects])
 
-dnl Making releases:
-dnl   BURN_MICRO_VERSION += 1;
-dnl   BURN_INTERFACE_AGE += 1;
-dnl   BURN_BINARY_AGE += 1;
-dnl if any functions have been added, set BURN_INTERFACE_AGE to 0.
-dnl if backwards compatibility has been broken,
-dnl set BURN_BINARY_AGE and BURN_INTERFACE_AGE to 0.
+dnl Note by ts A71207:
 dnl
-dnl if MAJOR or MINOR version changes, be sure to change AC_INIT above to match
+dnl BURN_MICRO_VERSION is _not_ the third component Z of libburn-X.Y.Z
+dnl but an eternal counter which leads to SONAME. This misunderstanding
+dnl caused a messed up sequence of SONAMEs.
+dnl
+dnl SONAME and AGE describe the binary compatibility interval of a
+dnl dynamic library. See also http://www.gnu.org/software/libtool/manual.html
+dnl
+dnl The name of the library will be libburn.so.$SONAME.$REV.$AGE
+dnl In the terminology of this file:
+dnl   SONAME= LT_CURRENT
+dnl   REV   = LT_REVISION
+dnle  AGE   = LT_AGE
+dnl
+dnl In the past the following SONAMEs of libburn have been released.
+dnl All with AGE=0.
+dnl  0.2.2 = 2 , 0.2.3 = 3 , 0.2.6 = 6
+dnl  0.3.0 = 0 , 0.3.2 = 2 , 0.3.4 = 4 . 0.3.6 = 6 , 0.3.8 = 4
+dnl  0.4.0 = 4
+dnl 
+dnl Beginning with libburn-0.4.1 a rectified counting was introduced as
+dnl   SONAME=10, REV=1, AGE=6
+dnl This rectification declared the current version
+dnl to be binary compatible down to libburn-0.3.4.
+dnl Real backward compatibility is given down to libburn-0.3.2.
+dnl Beware of libburn-0.2.6 which had SONAME=6.
+dnl
+dnl SONAME=10, REV=0, AGE=6 would be appropriate for libburn-0.4.0
+dnl but was not issued, regreattably.
+dnl
+dnl If libburn-0.4.0 gets patched, its SONAME will become 10, AGE 6, and
+dnl REV will be set to one higher than the highest REV of SONAME 10.
+dnl If libburn-0.4.1 is still on SONAME 10 then its REV gets set one higher
+dnl than that.
+dnl As soon as 0.4.1 becomes upwardly incompatible, it shall become 11,0,7.
+dnl From then on it counts REV independently of libburn-0.4.0.
+dnl Whether 0.4.1 alters independent REV at all, is not decided yet.
+dnl It may well stay 0 until a release version joins SONAME 11.
+dnl
+dnl Under the preconditions
+dnl   SONAME= $BURN_MICRO_VERSION - $BURN_INTERFACE_AGE
+dnl   REV=    $BURN_INTERFACE_AGE
+dnl   AGE=    $BURN_BINARY_AGE
+dnl the following old instructions were reasonable. Their drawback
+dnl is that they cause large jumps in SONAME, when BURN_INTERFACE_AGE gets
+dnl reset to 0 from a high value. So this is outdated now:
+dnl ---------------------------------------------------------------------------
+dnl .Making releases:
+dnl .  BURN_MICRO_VERSION += 1;
+dnl .  BURN_INTERFACE_AGE += 1;
+dnl .  BURN_BINARY_AGE += 1;
+dnl .if any functions have been added, set BURN_INTERFACE_AGE to 0.
+dnl .if backwards compatibility has been broken,
+dnl .set BURN_BINARY_AGE and BURN_INTERFACE_AGE to 0.
+dnl .
+dnl .if MAJOR or MINOR version changes, be sure to change AC_INIT above to match
+dnl ---------------------------------------------------------------------------
+dnl
+dnl Instead, LT_CURRENT, LT_REVISION and LT_AGE get set directly now.
+dnl If BURN_VERSION changes, be sure to change AC_INIT above to match.
 dnl
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=4
-BURN_MICRO_VERSION=1
-BURN_INTERFACE_AGE=0
-BURN_BINARY_AGE=0
-BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
+BURN_DEV_VERSION=1
+BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_DEV_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
 AC_SUBST(BURN_MINOR_VERSION)
-AC_SUBST(BURN_MICRO_VERSION)
-AC_SUBST(BURN_INTERFACE_AGE)
-AC_SUBST(BURN_BINARY_AGE)
+AC_SUBST(BURN_DEV_VERSION)
 AC_SUBST(BURN_VERSION)
 
 dnl Libtool versioning
-LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION
-LT_CURRENT=4
-LT_REVISION=$BURN_INTERFACE_AGE
-LT_AGE=`expr $BURN_BINARY_AGE - $BURN_INTERFACE_AGE`
+# LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION
+LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_DEV_VERSION
+LT_CURRENT=10
+LT_REVISION=1
+LT_AGE=6
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
 AC_SUBST(LT_RELEASE)
@@ -43,6 +92,14 @@ AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION)
 AC_SUBST(LT_AGE)
 AC_SUBST(LT_CURRENT_MINUS_AGE)
+
+# ts A71207: This is done only not to break any old components
+BURN_INTERFACE_AGE=$LT_REVISION
+BURN_BINARY_AGE=`expr $LT_AGE + $BURN_INTERFACE_AGE`
+BURN_MICRO_VERSION=`expr $LT_CURRENT + $BURN_INTERFACE_AGE`
+AC_SUBST(BURN_MICRO_VERSION)
+AC_SUBST(BURN_INTERFACE_AGE)
+AC_SUBST(BURN_BINARY_AGE)
 
 AC_PREFIX_DEFAULT([/usr/local])
 test "$prefix" = "NONE" && prefix=$ac_default_prefix
