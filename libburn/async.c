@@ -10,9 +10,8 @@
            even if joinable and even if never joined.
 
    To be activated after release of libburn-0.4.0
-
-#define Libburn_create_detached_threadS 1
 */
+#define Libburn_create_detached_threadS 1
 
 /* Alternative : Threads are created joinable.
    Threads get detached in remove_worker() and thus should dispose themselves.
