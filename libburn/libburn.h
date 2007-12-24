@@ -376,6 +376,11 @@ struct burn_source {
 	    libburn will read a single sector by each call to (*read).
 	    The size of a sector depends on BURN_MODE_*. The known range is
 	    2048 to 2352.
+
+	    IMPORTANT:
+	    If this function pointer is NULL, then the struct burn_source is of
+	    version >= 1 and the job of .(*read)() is done by .(*read_xt)().
+	    See below, member .version.
 	*/
 	int (*read)(struct burn_source *, unsigned char *buffer, int size);
 
@@ -442,6 +447,29 @@ struct burn_source {
 	*/
 	void *data;
 
+
+	/* ts A71222 : Supposed to be binary backwards compatible extension. */
+
+	/** Valid only if above member .(*read)() is NULL. This indicates a
+	    version of struct burn_source younger than 0.
+	    From then on, member .version tells which further members exist
+	    in the memory layout of struct burn_source. libburn will only touch
+	    those announced extensions.
+
+	    Versions:
+	     0  has .(*read)() != NULL, not even .version is present.
+             1  has .version, .(*read_xt)(), .(*cancel)()
+	*/
+	int version;
+
+	/** This substitutes for (*read)() in versions above 0. */
+	int (*read_xt)(struct burn_source *, unsigned char *buffer, int size);
+
+	/** Informs the burn_source that the consumer of data prematurely
+	    ended reading. This call may or may not be issued by libburn
+	    before (*free_data)() is called.
+	*/
+	int (*cancel)(struct burn_source *source);
 };
 
 

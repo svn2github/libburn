@@ -123,7 +123,12 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 /* Next we use source data */
 	curr = valid;
 	if (!track->eos) {
-		valid = track->source->read(track->source, data + curr, count - curr);
+		if (track->source->read != NULL)
+			valid = track->source->read(track->source,
+						data + curr, count - curr);
+		else
+			valid = track->source->read_xt(track->source,
+						data + curr, count - curr);
 	} else valid = 0;
 
 	if (valid <= 0) { /* ts A61031 : extended from (valid == -1) */

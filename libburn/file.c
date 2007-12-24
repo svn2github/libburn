@@ -188,115 +188,8 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 }
 
 
-/* ts A70930 */
-/* ----------------------------- fifo ---------------------------- */
-
-/* The fifo mechanism consists of a burn_source proxy which is here,
-   a thread management team which is located in async.c,
-   and a synchronous shoveller which is here.
-*/
-
-/* fifo_ng has a ringbuffer and runs in a thread. og is on its way out. */
-#define Libburn_fifo_nG 1
-
-#ifndef Libburn_fifo_nG
-
-static int fifo_read(struct burn_source *source,
-		     unsigned char *buffer,
-		     int size)
-{
-	struct burn_source_fifo *fs = source->data;
-	int ret;
-
-        if (fs->is_started == 0) {
-		ret = burn_fifo_start(source, 0);
-		if (ret <= 0) {
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020152,
-				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-				"Cannot start fifo thread", 0, 0);
-			return -1;
-		}
-		fs->is_started = 1;
-	}
-	if (size == 0)
-		return 0;
-
-	ret = read_full_buffer(fs->outlet[0], buffer, size);
-	if (ret > 0)
-		fs->out_counter += ret;
-	return ret;
-}
-
-
-static off_t fifo_get_size(struct burn_source *source)
-{
-	struct burn_source_fifo *fs = source->data;
-
-	return fs->inp->get_size(fs->inp);
-}
-
-
-static int fifo_set_size(struct burn_source *source, off_t size)
-{
-	struct burn_source_fifo *fs = source->data;
-
-	return fs->inp->set_size(fs->inp, size);
-}
-
-
-static void fifo_free(struct burn_source *source)
-{
-	struct burn_source_fifo *fs = source->data;
-
-	if (fs->outlet[1] >= 0)
-		close(fs->outlet[1]);
-	free(fs);
-}
-
-
-int burn_fifo_source_shoveller_og(struct burn_source *source, int flag)
-{
-	struct burn_source_fifo *fs = source->data;
-	int ret;
-
-	fs->thread_pid = getpid();
-	fs->thread_pid_valid = 1;
-
-	while (1) {
-		ret = fs->inp->read(fs->inp, (unsigned char *) fs->buf,
-					 fs->chunksize);
-		if (ret > 0)
-			fs->in_counter += ret;
-		else if (ret == 0)
-	break; /* EOF */
-		else {
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020153,
-				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Read error on fifo input", errno, 0);
-	break;
-		}
-		ret = write(fs->outlet[1], fs->buf, ret);
-		if (ret == -1) {
-			/* >>> write error */;
-	break;
-		}
-	}
-
-	/* >>> check and destroy ring buffer */;
-	free(fs->buf);
-	fs->buf = NULL;
-
-	if (fs->outlet[1] >= 0)
-		close(fs->outlet[1]);
-	fs->outlet[1] = -1;
-	return (ret >= 0);
-}
-
-#endif /* Libburn_fifo_nG */
-
-
 /* ts A71003 */
-/* ----------------------------- fifo ng ------------------------- */
+/* ------------------------------ fifo --------------------------- */
 
 /* The fifo mechanism consists of a burn_source proxy which is here,
    a thread management team which is located in async.c,
@@ -311,7 +204,7 @@ static int fifo_sleep(int flag)
 }
 
 
-static int fifo_read_ng(struct burn_source *source,
+static int fifo_read(struct burn_source *source,
 		     unsigned char *buffer,
 		     int size)
 {
@@ -341,7 +234,7 @@ static int fifo_read_ng(struct burn_source *source,
 	/* This needs no mutex because each volatile variable has one thread
 	   which may write and the other which only reads and is aware of
 	   volatility.
-	   The feeder of the ringbuffer is in burn_fifo_source_shoveller_ng().
+	   The feeder of the ringbuffer is in burn_fifo_source_shoveller().
 	*/
 	todo = size;
 	bufsize = fs->chunksize * fs->chunks;
@@ -394,7 +287,7 @@ static int fifo_read_ng(struct burn_source *source,
 }
 
 
-static off_t fifo_get_size_ng(struct burn_source *source)
+static off_t fifo_get_size(struct burn_source *source)
 {
 	struct burn_source_fifo *fs = source->data;
 
@@ -402,7 +295,7 @@ static off_t fifo_get_size_ng(struct burn_source *source)
 }
 
 
-static int fifo_set_size_ng(struct burn_source *source, off_t size)
+static int fifo_set_size(struct burn_source *source, off_t size)
 {
 	struct burn_source_fifo *fs = source->data;
 
@@ -410,7 +303,7 @@ static int fifo_set_size_ng(struct burn_source *source, off_t size)
 }
 
 
-static void fifo_free_ng(struct burn_source *source)
+static void fifo_free(struct burn_source *source)
 {
 	struct burn_source_fifo *fs = source->data;
 
@@ -422,7 +315,7 @@ static void fifo_free_ng(struct burn_source *source)
 }
 
 
-int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
+int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 {
 	struct burn_source_fifo *fs = source->data;
 	int ret, bufsize, diff, wpos, rpos, trans_end, free_bytes;
@@ -469,8 +362,12 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 		}
 
 		/* Obtain next chunk */
-		ret = fs->inp->read(fs->inp, (unsigned char *) bufpt,
-					 fs->chunksize);
+		if (fs->inp->read != NULL)
+			ret = fs->inp->read(fs->inp,
+				 (unsigned char *) bufpt, fs->chunksize);
+		else
+			ret = fs->inp->read_xt( fs->inp,
+				 (unsigned char *) bufpt, fs->chunksize);
 		if (ret > 0)
 			fs->in_counter += ret;
 		else if (ret == 0)
@@ -537,15 +434,12 @@ int burn_fifo_source_shoveller_ng(struct burn_source *source, int flag)
 }
 
 
-#define Libburn_fifo_nG 1
-
-int burn_fifo_source_shoveller(struct burn_source *source, int flag)
+int burn_fifo_cancel(struct burn_source *source)
 {
-#ifndef Libburn_fifo_nG
-	return burn_fifo_source_shoveller_og(source, flag);
-#else
-	return burn_fifo_source_shoveller_ng(source, flag);
-#endif
+	struct burn_source_fifo *fs = source->data;
+
+	burn_source_cancel(fs->inp);
+	return(1);
 }
 
 
@@ -554,9 +448,6 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 {
 	struct burn_source_fifo *fs;
 	struct burn_source *src;
-#ifndef Libburn_fifo_nG
-	int ret, outlet[2];
-#endif
 
 	if (((double) chunksize) * ((double) chunks) > 1024.0*1024.0*1024.0) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020155,
@@ -570,16 +461,6 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 				"Desired fifo buffer too small", 0, 0);
 		return NULL;
 	}
-
-#ifndef Libburn_fifo_nG
-	outlet[0] = outlet[1] = -1;
-	ret = pipe(outlet);
-	if (ret == -1) {
-		/* >>> error on pipe creation */;
-		return NULL;
-	}
-#endif /* ! Libburn_fifo_nG */
-
 	fs = malloc(sizeof(struct burn_source_fifo));
 	if (fs == NULL)
 		return NULL;
@@ -587,12 +468,6 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 	fs->thread_pid = 0;
 	fs->thread_pid_valid = 0;
 	fs->inp = NULL; /* set later */
-
-#ifndef Libburn_fifo_nG
-	fs->outlet[0] = outlet[0];
-	fs->outlet[1] = outlet[1];
-#endif
-
 	fs->chunksize = chunksize;
 	fs->chunks = chunks;
 	fs->buf = NULL;
@@ -607,23 +482,15 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 		free((char *) fs);
 		return NULL;
 	}
-
-#ifndef Libburn_fifo_nG
-	src->read = fifo_read;
+	src->read = NULL;
 	src->read_sub = NULL;
 	src->get_size = fifo_get_size;
 	src->set_size = fifo_set_size;
 	src->free_data = fifo_free;
-#else /* Libburn_fifo_nG */
-	src->read = fifo_read_ng;
-	src->read_sub = NULL;
-	src->get_size = fifo_get_size_ng;
-	src->set_size = fifo_set_size_ng;
-	src->free_data = fifo_free_ng;
-#endif /* ! Libburn_fifo_nG */
-
 	src->data = fs;
-
+	src->version= 1;
+	src->read_xt = fifo_read;
+	src->cancel= burn_fifo_cancel;
 	fs->inp = inp;
 	inp->refcount++; /* make sure inp lives longer than src */
 
@@ -644,7 +511,7 @@ int burn_fifo_inquire_status(struct burn_source *source,
 	*status_text = NULL;
 	*size = 0;
 
-	if (source->free_data != fifo_free_ng) {
+	if (source->free_data != fifo_free) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020157,
 				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 		  "burn_source is not a fifo object", 0, 0);
@@ -673,4 +540,3 @@ int burn_fifo_inquire_status(struct burn_source *source,
 	return ret;
 }
 
-	

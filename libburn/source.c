@@ -18,8 +18,6 @@ void burn_source_free(struct burn_source *src)
 enum burn_source_status burn_track_set_source(struct burn_track *t,
 					      struct burn_source *s)
 {
-	if (!s->read)
-		return BURN_SOURCE_FAILED;
 	s->refcount++;
 	t->source = s;
 
@@ -43,3 +41,15 @@ struct burn_source *burn_source_new(void)
 	out->refcount = 1;
 	return out;
 }
+
+
+/* ts A71223 */
+int burn_source_cancel(struct burn_source *src)
+{
+	if(src->read == NULL)
+		if(src->version > 0)
+			if(src->cancel != NULL)
+				src->cancel(src);
+	return 1;
+}
+

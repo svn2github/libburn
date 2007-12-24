@@ -5,4 +5,6 @@
 
 struct burn_source *burn_source_new(void);
 
+int burn_source_cancel(struct burn_source *src);
+
 #endif /*__SOURCE*/

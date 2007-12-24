@@ -43,6 +43,7 @@
 #include "write.h"
 #include "options.h"
 #include "structure.h"
+#include "source.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -836,6 +837,8 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	/* ts A61103 */
 	ret = 1;
 ex:;
+	if (d->cancel)
+		burn_source_cancel(t->source);
 	if (o->write_type == BURN_WRITE_TAO) {
 
 		/* ts A71002 */
@@ -1273,6 +1276,8 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	}
 	ret = 1;
 ex:;
+	if (d->cancel)
+		burn_source_cancel(t->source);
 	if (!is_flushed)
 		d->sync_cache(d); /* burn_write_flush() was not called */
 	return ret;
@@ -1693,7 +1698,11 @@ int burn_stdio_read_source(struct burn_source *source, char *buf, int bufsize,
 	int count= 0, todo;
 
 	for(todo = bufsize; todo > 0; todo -= count) {
-		count = source->read(source,
+		if(source->read!=NULL)
+			count = source->read(source,
+			    (unsigned char *) (buf + (bufsize - todo)), todo);
+		else
+			count = source->read_xt(source,
 			    (unsigned char *) (buf + (bufsize - todo)), todo);
 		if (count <= 0)
 	break;
@@ -1717,16 +1726,6 @@ int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d,
 	return count;
 }
 
-
-/* ts A70911
-   If defined this makes stdio run on top of sector_data() rather than
-   own stdio read and write functions. The MMC function pointers d->write()
-   and d->sync_cache() get replaced by stdio substitutes.
-*/
-#define Libburn_stdio_track_by_sector_datA 1
-
-
-#ifdef Libburn_stdio_track_by_sector_datA
 
 /* ts A70910 : to be used as burn_drive.write(), emulating mmc_write() */
 int burn_stdio_mmc_write(struct burn_drive *d, int start, struct buffer *buf)
@@ -1849,9 +1848,6 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 }
 
 
-#endif /* Libburn_stdio_track_by_sector_datA */
-
-
 /* ts A70904 */
 int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 				int tnum, int flag)
@@ -1860,14 +1856,9 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
 	char buf[16*2048];
-#ifdef Libburn_stdio_track_by_sector_datA
 	int i, prev_sync_sector = 0;
 	struct buffer *out = d->buffer;
 	struct timeval prev_time;
-#else
-	int eof_seen = 0;
-	off_t t_size, w_count;
-#endif
 
 	bufsize = sizeof(buf);
 	fd = d->stdio_fd;
@@ -1875,8 +1866,6 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	sectors = burn_track_get_sectors(t);
 	burn_disc_init_track_status(o, s, tnum, sectors);
 	open_ended = burn_track_is_open_ended(t);
-
-#ifdef Libburn_stdio_track_by_sector_datA
 
 	/* attach stdio emulators for mmc_*() functions */
 	if (o->simulate)
@@ -1889,7 +1878,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	for (i = 0; open_ended || i < sectors; i++) {
 		/* transact a (CD sized) sector */
 		if (!sector_data(o, t, 0))
-			return 0;			
+			{ret= 0; goto ex;}
 		if (open_ended) {
 			d->progress.sectors = sectors = d->progress.sector;
 			if (burn_track_is_data_done(t))
@@ -1912,60 +1901,11 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		out->bytes = o->obs;
 	}
 	ret = burn_write_flush(o, t);
-
-#else /* Libburn_stdio_track_by_sector_datA */
-
-	t_size = t->source->get_size(t->source);
-
-	/* >>> write t->offset zeros */;
-
-	for(w_count = 0; w_count < t_size || open_ended; w_count += ret) {
-
-
-		if (t_size - w_count < bufsize && ! open_ended)
-
-			/* >>> what about final sector padding ? */
-
-			bufsize = t_size - w_count;
-		if (eof_seen)
-			ret = 0;
-		else
-			ret = burn_stdio_read_source(t->source, buf,
-							 bufsize, o, 0);
-		if (ret < 0)
-			return ret;
-		if (ret == 0 && open_ended)
-	break;
-		if (ret < bufsize && !open_ended) {
-			memset(buf + ret, 0, bufsize - ret);
-			eof_seen = 1;
-			ret = bufsize;
-		}
-		t->sourcecount += ret;
-		if (!o->simulate)
-			ret = burn_stdio_write(fd, buf, ret, d, 0);
-		if (ret <= 0)
-			return ret;
-
-		d->progress.sector = (w_count + (off_t) ret) / (off_t) 2048;
-		if (open_ended)
-			d->progress.sectors = d->progress.sector;
-		t->writecount += ret;
-		t->written_sectors = t->writecount / 2048;
-
-		/* Flush to physical device after each full MB */
-		if (d->progress.sector - prev_sync_sector >= 512) {
-			prev_sync_sector = d->progress.sector;
-			if (!o->simulate)
-				burn_stdio_sync_cache(fd, d, 1);
-		}
-	}
-
-	/* >>> write t->tail zeros */;
-
-#endif
-
-	return 1;
+	ret= 1;
+ex:;
+	if (d->cancel)
+		burn_source_cancel(t->source);
+	return ret;
 }
 
 
