@@ -1,8 +1,8 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006 - 2007 Thomas Schmitt <scdbackup@gmx.net>,
-   provided under GPL
+   Copyright (C) 2006 - 2008 Thomas Schmitt <scdbackup@gmx.net>,
+   provided under GPL version 2
 */
 
 #include <stdio.h>
@@ -40,7 +40,7 @@ static int libdax_msgs_item_new(struct libdax_msgs_item **item,
  if(ret==0)
    o->timestamp= tv.tv_sec+0.000001*tv.tv_usec;
  o->process_id= getpid();
- o->driveno= -1;
+ o->origin= -1;
  o->severity= LIBDAX_MSGS_SEV_ALL;
  o->priority= LIBDAX_MSGS_PRIO_ZERO;
  o->error_code= 0;
@@ -109,12 +109,12 @@ int libdax_msgs_item_get_msg(struct libdax_msgs_item *item,
 
 
 int libdax_msgs_item_get_origin(struct libdax_msgs_item *item,
-                   double *timestamp, pid_t *process_id, int *driveno,
+                   double *timestamp, pid_t *process_id, int *origin,
                    int flag)
 {
  *timestamp= item->timestamp;
  *process_id= item->process_id;
- *driveno= item->driveno;
+ *origin= item->origin;
  return(1);
 }
 
@@ -311,7 +311,7 @@ int libdax_msgs__sev_to_text(int severity, char **severity_name,
 }
 
 
-int libdax_msgs_submit(struct libdax_msgs *m, int driveno, int error_code,
+int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
                        int severity, int priority, char *msg_text,
                        int os_errno, int flag)
 {
@@ -349,7 +349,7 @@ int libdax_msgs_submit(struct libdax_msgs *m, int driveno, int error_code,
  ret= libdax_msgs_item_new(&item,m->youngest,0);
  if(ret<=0)
    goto failed;
- item->driveno= driveno;
+ item->origin= origin;
  item->error_code= error_code;
  item->severity= severity;
  item->priority= priority;

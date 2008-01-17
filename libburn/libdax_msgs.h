@@ -1,8 +1,8 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006-2007 Thomas Schmitt <scdbackup@gmx.net>,
-   provided under GPL
+   Copyright (C) 2006-2008 Thomas Schmitt <scdbackup@gmx.net>,
+   provided under GPL version 2
 */
 
 
@@ -23,7 +23,7 @@ struct libdax_msgs_item {
 
  double timestamp;
  pid_t process_id;
- int driveno;
+ int origin;
 
  int severity;
  int priority;
@@ -173,6 +173,16 @@ struct libdax_msgs_item;
 #define LIBDAX_MSGS_PRIO_NEVER                                       0x7fffffff
 
 
+/* Origin numbers of libburn drives may range from 0 to 1048575 */
+#define LIBDAX_MSGS_ORIGIN_DRIVE_BASE          0
+#define LIBDAX_MSGS_ORIGIN_DRIVE_TOP     0xfffff
+
+/* Origin numbers of libisofs images may range from 1048575 to 2097152 */
+#define LIBDAX_MSGS_ORIGIN_IMAGE_BASE   0x100000
+#define LIBDAX_MSGS_ORIGIN_IMAGE_TOP    0x1fffff
+
+
+
                             /* Public Functions */
 
        /* Calls initiated from inside the direct owner (e.g. from libburn) */
@@ -211,7 +221,10 @@ int libdax_msgs_refer(struct libdax_msgs **pt, struct libdax_msgs *o, int flag);
 
 
 /** Submit a message to a message handling facility.
-    @param driveno program specific drive number. Use -1 if no number is known.
+    @param origin  program specific identification number of the originator of
+                   a message. E.g. drive number. Programs should have an own
+                   range of origin numbers. See above LIBDAX_MSGS_ORIGIN_*_BASE
+                   Use -1 if no number is known.
     @param error_code  Unique error code. Use only registered codes. See below.
                    The same unique error_code may be issued at different
                    occasions but those should be equivalent out of the view
@@ -224,9 +237,10 @@ int libdax_msgs_refer(struct libdax_msgs **pt, struct libdax_msgs *o, int flag);
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return 1 on success, 0 on rejection, <0 for severe errors
 */
-int libdax_msgs_submit(struct libdax_msgs *m, int driveno, int error_code,
+int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
                        int severity, int priority, char *msg_text, 
                        int os_errno, int flag);
+
 
 
      /* Calls from applications (to be forwarded by direct owner) */
@@ -300,7 +314,7 @@ int libdax_msgs_item_get_msg(struct libdax_msgs_item *item,
     @return 1 on success, 0 on invalid item, <0 for servere errors
 */
 int libdax_msgs_item_get_origin(struct libdax_msgs_item *item, 
-                            double *timestamp, pid_t *process_id, int *driveno,
+                            double *timestamp, pid_t *process_id, int *origin,
                             int flag);
 
 
