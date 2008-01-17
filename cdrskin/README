@@ -5,7 +5,7 @@ cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
 http://scdbackup.sourceforge.net/cdrskin-0.4.1.tar.gz
-Copyright (C) 2006-2007 Thomas Schmitt, provided under GPL version 2.
+Copyright (C) 2006-2008 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
 
@@ -398,9 +398,8 @@ contributions in a due way.
 ------------------------------------------------------------------------------
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU General Public License version 2
+    as published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -415,7 +414,7 @@ contributions in a due way.
 Based on and sub project of:
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2008 Mario Danic, Thomas Schmitt
 
 libburnia-project.org is inspired by and in other components still containing
 parts of
