@@ -292,7 +292,7 @@ static void flipq(unsigned char *sub)
 
 
 /* ts A70904 */
-/** @param flag bit=be silent on data shortage */
+/** @param flag bit0=be silent on data shortage */
 int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
 			int flag)
 {
@@ -377,7 +377,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 		fd = open(d->devname, O_RDONLY | O_LARGEFILE);
 		if (fd == -1) {
-			if (!(flag & 1))
+			if (!(flag & 2))
 				libdax_msgs_submit(libdax_messenger,
 				  d->global_index,
 				  0x00020005,
@@ -387,10 +387,12 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			ret = 0; goto ex;
 		}
 		if (lseek(fd, byte_address, SEEK_SET) == -1) {
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020147,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Cannot address start byte", errno, 0);
+			if (!(flag & 2))
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index,
+				  0x00020147,
+				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				  "Cannot address start byte", errno, 0);
 			ret = 0; goto ex;
 		}
 	}
@@ -416,7 +418,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			err = d->read_10(d, start, chunksize, d->buffer);
 		} else {
 			ret = burn_stdio_read(fd, (char *) d->buffer->data,
-						 cpy_size, d, 0);
+						 cpy_size, d, !!(flag & 2));
 			err = 0;
 			if (ret <= 0)
 				err = BE_CANCELLED;
