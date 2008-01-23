@@ -91,6 +91,20 @@ or
 #define Cdrskin_prog_versioN "0.4.1"
 #endif
 
+/** The official libburn interface revision to use.
+    (May get changed further below)
+*/
+#ifndef Cdrskin_libburn_majoR
+#define Cdrskin_libburn_majoR 0
+#endif
+#ifndef Cdrskin_libburn_minoR
+#define Cdrskin_libburn_minoR 4
+#endif
+#ifndef Cdrskin_libburn_micrO
+#define Cdrskin_libburn_micrO 1
+#endif
+
+
 /** The source code release timestamp */
 #include "cdrskin_timestamp.h"
 #ifndef Cdrskin_timestamP
@@ -139,9 +153,29 @@ or
 #endif /* Cdrskin_libburn_0_4_1 */
 
 #ifndef Cdrskin_libburn_versioN
+#define Cdrskin_libburn_0_4_0
 #define Cdrskin_libburn_versioN "0.4.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
+
+#ifdef Cdrskin_libburn_0_4_0
+#undef Cdrskin_libburn_majoR
+#undef Cdrskin_libburn_minoR
+#undef Cdrskin_libburn_micrO
+#define Cdrskin_libburn_majoR 0
+#define Cdrskin_libburn_minoR 4
+#define Cdrskin_libburn_micrO 0
+#endif
+#ifdef Cdrskin_libburn_0_4_1
+#undef Cdrskin_libburn_majoR
+#undef Cdrskin_libburn_minoR
+#undef Cdrskin_libburn_micrO
+#define Cdrskin_libburn_majoR 0
+#define Cdrskin_libburn_minoR 4
+#define Cdrskin_libburn_micrO 1
+#endif
+
+
 
 #ifdef Cdrskin_libburn_from_pykix_svN
 #ifndef Cdrskin_oldfashioned_api_usE
@@ -1870,12 +1904,25 @@ int Cdrpreskin_set_severities(struct CdrpreskiN *preskin, char *queue_severity,
 
 int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
 {
- int ret;
+ int ret, major, minor, micro;
 
  ret= burn_initialize();
  if(ret==0) {
-   fprintf(stderr,"cdrskin : FATAL : Initialization of libburn failed\n");
+   fprintf(stderr,"cdrskin: FATAL : Initialization of libburn failed\n");
    return(0);
+ }
+ burn_version(&major, &minor, &micro);
+
+ /* <<< for testing only */
+ /* major= 0; minor= 3; micro= 6; */
+
+ if(major<Cdrskin_libburn_majoR || 
+    (major==Cdrskin_libburn_majoR && (minor<Cdrskin_libburn_minoR ||
+     (minor==Cdrskin_libburn_minoR && micro<Cdrskin_libburn_micrO)))) {
+   fprintf(stderr,"cdrskin: FATAL : libburn version too old: %d.%d.%d . Need at least: %d.%d.%d .\n",
+          major, minor, micro,
+          Cdrskin_libburn_majoR, Cdrskin_libburn_minoR, Cdrskin_libburn_micrO);
+   return(-1);
  }
  Cdrpreskin_set_severities(preskin,NULL,NULL,0);
  return(1);
@@ -2773,9 +2820,13 @@ set_severities:;
      goto set_severities;
 
    } else if(strcmp(argv[i],"-version")==0) {
+     int major, minor, micro;
+
      printf(
 "Cdrecord 2.01-Emulation Copyright (C) 2006-2007, see libburnia-project.org\n");
-     printf("libburn version   :  %s\n",Cdrskin_libburn_versioN);
+     printf("libburn interface :  %s\n",Cdrskin_libburn_versioN);
+     burn_version(&major, &minor, &micro);
+     printf("libburn in use    :  %d.%d.%d\n", major, minor, micro);
 
 #ifndef Cdrskin_extra_leaN
      printf("cdrskin version   :  %s\n",Cdrskin_prog_versioN);

@@ -9,7 +9,7 @@ AM_INIT_AUTOMAKE([subdir-objects])
 
 dnl Note by ts A71207:
 dnl
-dnl BURN_MICRO_VERSION is _not_ the third component Z of libburn-X.Y.Z
+dnl BURN_MICRO_VERSION was _not_ the third component Z of libburn-X.Y.Z
 dnl but an eternal counter which leads to CURRENT. This misunderstanding
 dnl caused a messed up sequence of CURRENTs.
 dnl
@@ -68,21 +68,34 @@ dnl .if MAJOR or MINOR version changes, be sure to change AC_INIT above to match
 dnl ---------------------------------------------------------------------------
 dnl
 dnl Instead, LT_CURRENT, LT_REVISION and LT_AGE get set directly now.
-dnl If BURN_VERSION changes, be sure to change AC_INIT above to match.
+dnl
+dnl SONAME of the emerging library is  LT_CURRENT - LT_AGE.
+dnl The linker will do no finer checks. Especially no age range check for
+dnl the cdrskin binary. If SONAME matches, then the couple starts.
+dnl 
+dnl Therefore a run time check is provided by libburn function burn_version().
+dnl It returns the major, minor and micro revision of the library. This means
+dnl BURN_*_VERSION kept its second job which does not comply to the usual ways
+dnl of configure.ac . I.e. now *officially* this is the source code release
+dnl version as announced to the public. It has no conection to SONAME or
+dnl libtool version numbering.
+dnl It rather feeds the API function burn_version().
+dnl
+dnl If BURN_*_VERSION changes, be sure to change AC_INIT above to match.
 dnl
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=4
-BURN_DEV_VERSION=1
-BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_DEV_VERSION
+BURN_MICRO_VERSION=1
+BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
 AC_SUBST(BURN_MINOR_VERSION)
-AC_SUBST(BURN_DEV_VERSION)
+AC_SUBST(BURN_MICRO_VERSION)
 AC_SUBST(BURN_VERSION)
 
 dnl Libtool versioning
-# LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION
-LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_DEV_VERSION
+LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
+# SONAME = 10 - 6 = 4 . Library name = libburn.4.6.1
 LT_CURRENT=10
 LT_REVISION=1
 LT_AGE=6
@@ -97,8 +110,6 @@ AC_SUBST(LT_CURRENT_MINUS_AGE)
 # ts A71207: This is done only not to break any old components
 BURN_INTERFACE_AGE=$LT_REVISION
 BURN_BINARY_AGE=`expr $LT_AGE + $BURN_INTERFACE_AGE`
-BURN_MICRO_VERSION=`expr $LT_CURRENT + $BURN_INTERFACE_AGE`
-AC_SUBST(BURN_MICRO_VERSION)
 AC_SUBST(BURN_INTERFACE_AGE)
 AC_SUBST(BURN_BINARY_AGE)
 
