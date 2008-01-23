@@ -2046,8 +2046,8 @@ void burn_version(int *major, int *minor, int *micro);
 
 /* ts A60924 : ticket 74 */
 /** Control queueing and stderr printing of messages from libburn.
-    Severity may be one of "NEVER", "ABORT", "FATAL", "SORRY", "WARNING",
-    "HINT", "NOTE", "UPDATE", "DEBUG", "ALL".
+    Severity may be one of "NEVER", "ABORT", "FATAL", "FAILURE", "SORRY",
+    "WARNING", "HINT", "NOTE", "UPDATE", "DEBUG", "ALL".
     @param queue_severity Gives the minimum limit for messages to be queued.
                           Default: "NEVER". If you queue messages then you
                           must consume them by burn_msgs_obtain().
@@ -2066,8 +2066,9 @@ int burn_msgs_set_severities(char *queue_severity,
 /** Obtain the oldest pending libburn message from the queue which has at
     least the given minimum_severity. This message and any older message of
     lower severity will get discarded from the queue and is then lost forever.
-    @param minimum_severity  may be one of "NEVER", "ABORT", "FATAL", "SORRY",
-                      "WARNING", "HINT", "NOTE", "UPDATE", "DEBUG", "ALL".
+    @param minimum_severity  may be one of "NEVER", "ABORT", "FATAL",
+                      "FAILURE", "SORRY", "WARNING", "HINT", "NOTE", "UPDATE",
+                      "DEBUG", "ALL".
                       To call with minimum_severity "NEVER" will discard the
                       whole queue.
     @param error_code Will become a unique error code as liste in
@@ -2093,8 +2094,8 @@ int burn_msgs_obtain(char *minimum_severity,
                       message text.
     @param os_errno   Eventual errno related to the message. Submit 0 if
                       the message is not related to a operating system error.
-    @param severity   One of "ABORT", "FATAL", "SORRY", "WARNING", "HINT",
-                      "NOTE", "UPDATE", "DEBUG". Defaults to "FATAL".
+    @param severity   One of "ABORT", "FATAL", "FAILURE", "SORRY", "WARNING",
+                      "HINT", "NOTE", "UPDATE", "DEBUG". Defaults to "FATAL".
     @param d          An eventual drive to which the message shall be related.
                       Submit NULL if the message is not specific to a
                       particular drive object.
