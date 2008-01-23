@@ -377,7 +377,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 		fd = open(d->devname, O_RDONLY | O_LARGEFILE);
 		if (fd == -1) {
-			if (!(flag & 2))
+			if (errno != ENOENT  || !(flag & 2))
 				libdax_msgs_submit(libdax_messenger,
 				  d->global_index,
 				  0x00020005,
