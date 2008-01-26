@@ -143,9 +143,11 @@ static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	attr_pt= &attr;
+/*
 	libdax_msgs_submit(libdax_messenger, -1, 0x00020158,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
 			"add_worker(): Creating detached thread.", 0, 0);
+*/
 #endif
 
 	if (pthread_create(&a->thread, attr_pt, f, a)) {
@@ -178,12 +180,14 @@ static void remove_worker(pthread_t th)
 					dispose themselves.
 			*/
 			ret = pthread_detach(th);
+/*
 			sprintf(msg,
 			 "remove_workers(): pid= %lu  pthread_detach(%lu)= %d",
 			 (unsigned long) getpid(), (unsigned long) th, ret);
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020158,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
 				msg, 0, 0);
+*/
 			
 #endif /* Libburn_detach_done_workeR */
 
