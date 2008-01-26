@@ -16,7 +16,7 @@ manpage="cdrskin"
 raw_html=$(pwd)/"cdrskin/raw_man_1_cdrskin.html"
 htmlpage=$(pwd)/"cdrskin/man_1_cdrskin.html"
 
-if test -r "$manpage"
+if test -r "$man_dir"/"$manpage".1
 then
   dummy=dummy
 else
@@ -56,7 +56,7 @@ then
   -e 's/^If you only got one CD capable drive/\&nbsp;<BR>If you only got one CD capable drive/' \
   -e 's/<b>Emulated drives:<\/b>/\&nbsp;<BR><b>Emulated drives:<\/b>/' \
   -e 's/^Alphabetical list of options/\&nbsp;<BR>Alphabetical list of options/' \
-  -e 's/and for all others\.<\/td><\/table>/and for all others.<\/td><\/table>  <BR><HR><FONT SIZE=-1><CENTER>(HTML generated from '"$manpage"'.1 on '"$(date)"' by '$(basename "$0")' )<\/CENTER><\/FONT>/' \
+  -e 's/<\/body>/<BR><HR><FONT SIZE=-1><CENTER>(HTML generated from '"$manpage"'.1 on '"$(date)"' by '$(basename "$0")' )<\/CENTER><\/FONT><\/body>/' \
   -e 's/See section FILES/See section <A HREF="#FILES">FILES<\/A>/' \
   -e 's/See section EXAMPLES/See section <A HREF="#EXAMPLES">EXAMPLES<\/A>/' \
   <"$2" >"$htmlpage"
