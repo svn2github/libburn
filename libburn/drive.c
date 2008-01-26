@@ -1698,7 +1698,10 @@ int burn_abort(int patience,
 			occup = burn_drive_is_occupied(&(drive_array[i]));
 			if(occup == -2)
 		continue;
-			if(occup <= 10) {
+			if(drive_array[i].drive_role != 1) {
+				drive_array[i].busy = BURN_DRIVE_IDLE;
+				burn_drive_forget(&(drive_array[i]), 1);
+			} else if(occup <= 10) {
 				burn_drive_forget(&(drive_array[i]), 1);
 			} else if(occup <= 100) {
 				if(first_round)
