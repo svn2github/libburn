@@ -6,7 +6,7 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2007 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2008 Mario Danic, Thomas Schmitt
 
 Still containing parts of
 Libburn. By Derek Foreman <derek@signalmarketing.com> and
@@ -19,7 +19,7 @@ commitment as written at the end of this text.
 The rights and merits of the Libburn-copyright holders Derek Foreman and
 Ben Jansens will be duely respected. 
 
-This libburnia-project.org toplevel README (C) 2006-2007 Thomas Schmitt 
+This libburnia-project.org toplevel README (C) 2006-2008 Thomas Schmitt 
 ------------------------------------------------------------------------------
 
                            Build and Installation
@@ -209,6 +209,11 @@ Project history as far as known to me:
   ISO 9660 + Rock Ridge images. cdrskin-0.4.0 got capabilities like growisofs
   by these enhancements: growing of overwriteable media and disk files.
   Taking again a bow towards Andy Polyakov.
+
+- 26th Januar 2008 version 0.4.2 rectifies the version numbering so that we
+  reliably release libburn.so.4 as should have been done since libburn-0.3.2.
+  cdrskin now is by default linked dynamically and does a runtime check
+  to ensure not to be started with a libburn which is older than itself.
 
 
 ------------------------------------------------------------------------------

@@ -289,5 +289,10 @@ sequential DVD-R[W] and with DVD+R, but also with DVD-RAM, DVD+RW and
 even regular disk files or block devices other than CD/DVD writers.
 This is enabled by option --grow_overwriteable_iso.
 
+We are currently preparing an integrated ISO-9660 multi-session tool
+named [wiki:Xorriso xorriso] which will try to go one step beyond
+growisofs. It uses a new upcoming version of [wiki:Libisofs libisofs].
+
+
 --------------------------------------------------------------------------
 

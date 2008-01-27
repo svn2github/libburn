@@ -4768,22 +4768,242 @@ Removed useless alternative after zombies turned out to be caused by gdb
 
 ------------------------------------ cycle  - cdrskin-0.3.9 - 2007.10.23.150436
 
-2007.10.23.150436  []
+2007.10.23.150436  [1240]
 cdrskin/changelog.txt
 Next cdrskin-0.3.9 cycle
 
+23 Oct 2007  [1241]
+libcevap/main.c
+Preparations for lowercase class and function names
 
------------------------------ release  - cdrskin-0.4.0.pl00 - 2007.10.
+23 Oct 2007  [1242]
+libcevap/libdax_model.txt
+Work goes on
+
+23 Oct 2007  [1243]
+libcevap/cgen.c
+libcevap/ctyp.c
+Fixed a bug about arrays
+
+2007.10.24.184233  [1248] branch/ZeroFourZero
+Makefile.am
+configure.ac
+README 
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+Made number transition to 0.4.0
+
+25 Oct 2007  [1249] branch/ZeroFourZero
+- cdrskin/add_ts_changes_to_libburn_0_3_8
+- cdrskin/add_ts_changes_to_libburn_0_3_9
++ cdrskin/add_ts_changes_to_libburn_0_4_0
++ cdrskin/add_ts_changes_to_libburn_0_4_1
+Updated cdrskin tarball generator
+
+2007.10.25.091106  [1250]
+Makefile.am
+configure.ac
+README 
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+Made number transition to 0.4.1
+
+25 Oct 2007  [1251]
+- cdrskin/add_ts_changes_to_libburn_0_3_8
+- cdrskin/add_ts_changes_to_libburn_0_3_9
++ cdrskin/add_ts_changes_to_libburn_0_4_0
++ cdrskin/add_ts_changes_to_libburn_0_4_1
+Updated cdrskin tarball generator
+
+25 Oct 2007  [1252] branch/ZeroFourZero
+cdrskin/cdrskin.c
+Added forgotten help text lines
+
+2007.10.25.131841  [1253]
+cdrskin/cdrskin.c
+Added forgotten help text lines
+
+2007.10.27.090421  [1254] [1256] branch/ZeroFourZero
+libburn/sg-linux.c
+Reacted on cdwrite@ message about INT_MAX in cdrom.h of kernel 2.6.23
+
+2007.10.27.075309  [1255]
+libburn/sg-linux.c
+Reacted on cdwrite@ message about INT_MAX in cdrom.h of kernel 2.6.23
+
+29 Oct 2007  [1272]
+- cdrskin/add_ts_changes_to_libburn_0_3_9
++ cdrskin/add_ts_changes_to_libburn_0_4_0
+Updated cdrskin release generator scripts
+
+----------------------------- release  - cdrskin-0.4.0.pl00 - 2007.10.27.090421
 * New option direct_write_amount=
 * New option --grow_overwriteable_iso
 * New option --allow_emulated_drives dev=stdio:<path>
 * More cdrecord options supported: -format, -inq, -load, -lock, -immed, -waiti
 * New option fallback_program=
 
+------------------------------------ cycle  - cdrskin-0.4.1 - 2007.10.27.114207
+
+2007.11.18.093952  [1307]
+libburn/libburn.h
+Marked loss of binary backward compatibility back in rev 655, libburn-0.3.1
+
+18 Nov 2007  [1308]
+cdrskin/cdrskin.1
+Corrected a typo in cdrskin man page
+
+2007.11.18.094209  [1309]
+cdrskin/cdrskin.c
+Reacted on build warnings on a 64 Bit system
+
+2007.11.26.154817  [1310]
+libburn/libdax_audioxtr.c
+Reacted on build warnings on another system
+
+------------------------------------ cycle  - cdrskin-0.4.1 - 2007.11.27.214003
+
+2007.11.29.185342  [1312]
+libburn/drive.c
+libburn/mmc.c
+libburn/spc.c
+libburn/libdax_msgs.h
+Enabled reading of TOC from ROM drives (direly needed for xorriso)
+
+29 Nov 2007  [1313]
+test/telltoc.c
+Adjusted meaning of --read_and_print count= -1
+
+2007.12.07.185030  [1323]
+configure.ac
+An attempt to rectify .so numbering: SONAME=10, REV=1, AGE=6
+
+2007.12.07.185206  [1324]
+libburn/async.c
+Made postponed change in thread management
+
+8 Dec 2007  [1325]
+configure.ac
+Some changes in the comments
+
+24 Dec 2008  [1338]
+libburn/libburn.h
+libburn/source.h
+libburn/source.c
+libburn/file.c
+libburn/write.c
+libburn/sector.c
+Implemented burn_source.cancel() in a binary backwards compatible way
+
+2008.01.17.185051  [1383]
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+Changed meaning of .driveno to .origin, introduced LIBDAX_MSGS_ORIGIN_* macros
+
+17 Jan 2008  [1384]
+cdrskin/README
+Removed a reference to future GPL versions
+
+2008.01.19.201702  [1396]
+libburn/read.c
+Fixed small bug about error messages with burn_read_data
+
+2008.01.23.193345  [1405]
+libburn/read.c
+Made burn_read_data() issue messages about hopeless drive access errors
+
+2008.01.23.193843  [1406]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+Introduced message severity "FAILURE"
+
+2008.01.23.211731  [1408]
+cdrskin/cdrskin.c
+configure.ac
+Implemented run time check of libburn version.
+
+2008.01.23.213607  [1409]
+Makefile.am
+Dynamic cdrskin linking patch by Simon Huggins.
+
+26 Jan 2008  [1420]
+cdrskin/convert_man_to_html.sh
+Adapted to man -H on my new system
+
+2008.01.26.123054  [1421]
+libburn/libdax_msgs.h
+Ported change in vreixo message range from isoburn_msgs
+
+2008.01.26.131519  [1422]
+libburn/drive.c
+Made a sudden end to all stdio drives in burn_abort()
+
+2008.01.26.180241  [1426] [branch 1427]
+libburn/async.c
+Disabled debugging messages about thread properties
+
+2008.01.26.200001  [branch 1428]
+Makefile.am
+configure.ac
+libburn-5.pc.in
+README 
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+Made number transition to 0.4.2 , libburn.so.4.7.0
+
+27 Jan  [branch 1429]
+cdrskin/cdrskin.c
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Adjustments after first round of testing
+
+27 Jan  [branch 1430]
+cdrskin/README
+cdrskin/cdrskin_eng.html
+Adjustments after testing
+
+2008.01.27.143022  []
+Makefile.am
+configure.ac
+libburn-5.pc.in
+README 
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Made number transition to 0.4.3 , still libburn.so.4.7.0
+
+  [branch] []
+- cdrskin/add_ts_changes_to_libburn_0_4_0
+- cdrskin/add_ts_changes_to_libburn_0_4_1
++ cdrskin/add_ts_changes_to_libburn_0_4_2
++ cdrskin/add_ts_changes_to_libburn_0_4_3
+Updated cdrskin tarball generator
+
 
 ===============================================================================
                                     TODO
 ===============================================================================
+
+Check all SORRY and FATAL errors whether they should become FAILUREs
 
 Refuse writing if track size exceeds free media space
 
@@ -4805,21 +5025,6 @@ Emulate -dummy on overwriteables ?
   []
 Emulate -dummy on DVD+R ?
 
-
-  []
-libcevap/main.c
-Preparations for lowercase class and function names
-
-  []
-libcevap/libdax_model.txt
-Work goes on
->>> struct burn_drive { int stdio_fd }
-
-
-  []
-libcevap/cgen.c
-libcevap/ctyp.c
-Fixed a bug about arrays
 
 
 

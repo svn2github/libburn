@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.4.1.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.4.3.tar.gz
 Copyright (C) 2006-2008 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
@@ -20,17 +20,17 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.4.1.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.4.3.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.4.1.tar.gz
-    cd cdrskin-0.4.1
+    tar xzf cdrskin-0.4.3.tar.gz
+    cd cdrskin-0.4.3
 
 Within that directory execute:
 
     ./configure --prefix=/usr
     make
 
-This will already produce a cdrskin binary. But it might be necessary to
+This will already produce a cdrskin binary. But it will be necessary to
 install libburn in order to use this binary. Installation of libburn is
 beyond the scope of cdrskin. For this, see included libburn docs.
 
@@ -44,11 +44,17 @@ Version identification and help texts available afterwards:
     cdrskin/cdrskin -help
     man cdrskin/cdrskin.1
 
+
 Install (eventually as superuser) cdrskin to a directory where it can be found:
-If cdrskin was already installed by a previous version, or by "make install"
-in the course of this installation, then find out where:
+The command for global installation of both, libburn and cdrskin is
+    make install
+
+But you may as well do the few necessary actions manually. If cdrskin was
+already installed by a previous version, or by "make install" in the course
+of this installation, then find out where:
     which cdrskin 
-Copy your standalone binary to exactly the address which you get as reply 
+Copy your standalone binary to exactly the address which you get as reply.
+E.g.:
 
     cp cdrskin/cdrskin /usr/bin/cdrskin
 

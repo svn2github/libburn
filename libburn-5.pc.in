@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: libburn
-Description: Disc reading/writing library
+Description: Library to read/write optical discs
 Version: @VERSION@
 Requires: 
 Libs: -L${libdir} -lburn
