@@ -38,7 +38,7 @@ original="./libburn_svn.tgz"
 # My changes are in $changes , mainly in $changes/cdrskin
 changes="./libburn-develop"
 
-skin_release="0.4.1"
+skin_release="0.4.3"
 patch_level=""
 skin_rev="$skin_release""$patch_level"
 
@@ -58,7 +58,7 @@ compile_result="cdrskin/cdrskin"
 man_to_html_cmd="./cdrskin/convert_man_to_html.sh"
 man_page_html="cdrskin/man_1_cdrskin.html"
 
-bintarget_dynamic="cdrskin_${skin_rev}-x86-suse9_0"
+bintarget_dynamic="cdrskin_${skin_rev}-amd64-suse10_2"
 bintarget_static="$bintarget_dynamic"-static
 
 if test -d "$changes"
