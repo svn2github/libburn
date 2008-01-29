@@ -66,17 +66,22 @@ dnl The linker will do no finer checks. Especially no age range check for
 dnl the application binary. If SONAME matches, then the couple starts.
 dnl 
 dnl Therefore at run time info is provided by libburn function burn_version().
-dnl It returns the MAJOR, MINOR and MICRO revision of the library.
+dnl It returns the major, minor and micro revision of the library.
 dnl Before using any API feature, a program should check for age.
+dnl
+dnl The variables BURN_*_VERSION are mere copies for informing libtool.
+dnl The true values which get issued and should be compared are macros
+dnl defined in libburn/libburn.h .
 dnl
 dnl Normally one can allow a program to run with a library which passed the
 dnl linker SONAME test and which is not older than the library it was
 dnl developed for. Library2 is younger than library1 if:
-dnl   MAJOR2>MAJOR1 || (MAJOR2==MAJOR1 &&
-dnl                     (MINOR2>MINOR1 || (MINOR2==MINOR1 && MICRO2 > MICRO1)))
+dnl   major2>major1 || (major2==major1 &&
+dnl                     (minor2>minor1 || (minor2==minor1 && micro2 > micro1)))
 dnl
 dnl If BURN_*_VERSION changes, be sure to change AC_INIT above to match.
 dnl
+dnl As said: Only copies. Original in libburn/libburn.h : burn_header_version_*
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=4
 BURN_MICRO_VERSION=3

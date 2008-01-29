@@ -2036,12 +2036,44 @@ int burn_track_get_mode(struct burn_track *track);
 */
 int burn_session_get_hidefirst(struct burn_session *session);
 
-/** Returns the library's version in its parts
+/** Returns the library's version in its parts.
+    This is the runtime counterpart of the three build time macros 
+    burn_header_version_* below.
     @param major The major version number
     @param minor The minor version number
     @param micro The micro version number
 */
 void burn_version(int *major, int *minor, int *micro);
+
+
+/* ts A80129 */
+/** These three release version numbers tell the revision of this header file
+    and of the API it describes. They are memorized by applications at build
+    time.
+    An application of libburn can easily memorize the version of the
+    libisofs.h header in its own code. Immediately after burn_initialize()
+    it should do this check:
+      burn_version(&major, &minor, &micro);
+      if(major > burn_header_version_major
+         || (major == burn_header_version_major
+             && (minor > burn_header_version_minor
+                 || (minor == burn_header_version_minor
+                     && micro >= burn_header_version_micro)))) {
+          ... Young enough. Go on with program run ....
+      } else {
+          ... Too old. Do not use this libburn version ...
+      }
+
+*/
+#define burn_header_version_major  0
+#define burn_header_version_minor  4
+#define burn_header_version_micro  3
+/** Note:
+    Above version numbers are also recorded in configure.ac because libtool
+    wants them as parameters at build time.
+    For the library compatibility check BURN_*_VERSION in configure.ac
+    are not decisive. Only the three numbers above do matter.
+*/
 
 
 /* ts A60924 : ticket 74 */
