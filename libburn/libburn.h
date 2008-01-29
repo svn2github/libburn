@@ -2050,9 +2050,7 @@ void burn_version(int *major, int *minor, int *micro);
 /** These three release version numbers tell the revision of this header file
     and of the API it describes. They are memorized by applications at build
     time.
-    An application of libburn can easily memorize the version of the
-    libisofs.h header in its own code. Immediately after burn_initialize()
-    it should do this check:
+    Immediately after burn_initialize() an application should do this check:
       burn_version(&major, &minor, &micro);
       if(major > burn_header_version_major
          || (major == burn_header_version_major
