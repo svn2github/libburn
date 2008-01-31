@@ -1909,19 +1909,49 @@ int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
 {
  int ret, major, minor, micro;
 
+/* This is the minimum requirement of cdrskin towards the libburn header
+   at compile time.
+   It gets compared against the version macros in libburn/libburn.h :
+     burn_header_version_major
+     burn_header_version_minor
+     burn_header_version_micro
+   If the header is too old then the following code shall cause failure of
+   cdrskin compilation rather than to allow production of a program with
+   unpredictable bugs or memory corruption.
+   The compiler message supposed to appear in this case is:
+      error: 'INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_libburn_dot_h_TOO_OLD__SEE_cdrskin_dot_c' undeclared (first use in this function)
+*/
+
+/* The indendation is an advise of man gcc to help old compilers ignoring */
+ #if Cdrskin_libburn_majoR > burn_header_version_major
+ #define Cdrskin_libburn_dot_h_too_olD 1
+ #endif
+ #if Cdrskin_libburn_majoR == burn_header_version_major && Cdrskin_libburn_minoR > burn_header_version_minor
+ #define Cdrskin_libburn_dot_h_too_olD 1
+ #endif
+ #if Cdrskin_libburn_minoR == burn_header_version_minor && Cdrskin_libburn_micrO > burn_header_version_micro
+ #define Cdrskin_libburn_dot_h_too_olD 1
+ #endif
+
+#ifdef Cdrskin_libburn_dot_h_too_olD
+INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_libburn_dot_h_TOO_OLD__SEE_cdrskin_dot_c = 0;
+#endif
+
  ret= burn_initialize();
  if(ret==0) {
    fprintf(stderr,"cdrskin: FATAL : Initialization of libburn failed\n");
    return(0);
  }
+
+ /* This is the runtime check towards eventual dynamically linked libburn.
+    cdrskin deliberately does not to allow the library to be older than
+    the header file which was seen at compile time. More liberal would be
+    to use here Cdrskin_libburn_* instead of burn_header_version_* .
+ */
  burn_version(&major, &minor, &micro);
-
- /* <<< for testing only */
- /* major= 0; minor= 3; micro= 6; */
-
- if(major<Cdrskin_libburn_majoR || 
-    (major==Cdrskin_libburn_majoR && (minor<Cdrskin_libburn_minoR ||
-     (minor==Cdrskin_libburn_minoR && micro<Cdrskin_libburn_micrO)))) {
+ if(major<burn_header_version_major || 
+    (major==burn_header_version_major && (minor<burn_header_version_minor ||
+     (minor==burn_header_version_minor && micro<burn_header_version_micro)))) {
    fprintf(stderr,"cdrskin: FATAL : libburn version too old: %d.%d.%d . Need at least: %d.%d.%d .\n",
           major, minor, micro,
           Cdrskin_libburn_majoR, Cdrskin_libburn_minoR, Cdrskin_libburn_micrO);
