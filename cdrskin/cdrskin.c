@@ -2857,7 +2857,9 @@ set_severities:;
 
      printf(
 "Cdrecord 2.01-Emulation Copyright (C) 2006-2008, see libburnia-project.org\n");
-     printf("libburn interface :  %s\n",Cdrskin_libburn_versioN);
+     printf("libburn interface :  %d.%d.%d\n",
+            burn_header_version_major, burn_header_version_minor,
+            burn_header_version_micro);
      burn_version(&major, &minor, &micro);
      printf("libburn in use    :  %d.%d.%d\n", major, minor, micro);
 
