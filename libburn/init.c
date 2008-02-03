@@ -281,6 +281,18 @@ int burn_text_to_sev(char *severity_name, int *sevno, int flag)
 }
 
 
+/* ts A80202 API */
+int burn_sev_to_text(int severity_number, char **severity_name, int flag)
+{
+	int ret;
+
+	ret = libdax_msgs__sev_to_text(severity_number, severity_name, 0);
+	if (ret <= 0)
+		*severity_name = "FATAL";
+	return ret;
+}
+
+
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
 

@@ -2146,6 +2146,16 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
 
 
+/* ts A80202 : @since 0.4.4 */
+/** Convert a severity number into a severity name
+    @param severity_number The rank number: the higher, the more severe.
+    @param severity_name A name as with burn_msgs_submit(), e.g. "SORRY".
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+*/
+int burn_sev_to_text(int severity_number, char **severity_name, int flag);
+
+
+
 /* ts A70915 */
 /** Replace the messenger object handle of libburn by a compatible handle
     obtained from a related library. 
