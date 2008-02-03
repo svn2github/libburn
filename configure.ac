@@ -96,13 +96,13 @@ dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
 dnl ts A80127
-dnl This ist a development version.
-dnl But LT_CURRENT++, LT_AGE++ has not happened yet.
+dnl This ist the development version after libburn-0.4.2 = libburn.so.4.7.0
+dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 11 - 7 = 4 . Library name = libburn.so.4.7.0
-LT_CURRENT=11
+dnl SONAME = 12 - 8 = 4 . Library name = libburn.so.4.8.0
+LT_CURRENT=12
 LT_REVISION=0
-LT_AGE=7
+LT_AGE=8
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
 AC_SUBST(LT_RELEASE)
