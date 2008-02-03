@@ -499,6 +499,9 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
 ------------------------------------------------------------------------------
 Range "vreixo"              :  0x00030000 to 0x0003ffff
 
+This has been abandoned and may not be re-used for other purposes than
+re-instating the old numbers and further extending them.
+
 
 ------------------------------------------------------------------------------
 Range "application"         :  0x00040000 to 0x0004ffff
@@ -511,6 +514,14 @@ Range "application"         :  0x00040000 to 0x0004ffff
  0x00040005 (NOTE,HIGH)     : Application supplied message
  0x00040006 (UPDATE,HIGH)   : Application supplied message
  0x00040007 (DEBUG,HIGH)    : Application supplied message
+
+
+------------------------------------------------------------------------------
+Range "libisofs-xorriso"    :  0x00050000 to 0x0005ffff
+
+This is the representation of libisofs.so.6 error codes in xorriso.
+Other applications are invited to map the output of ISO_ERR_CODE(e)
+into the same range of numbers.
 
 
 ------------------------------------------------------------------------------
