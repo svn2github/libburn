@@ -523,6 +523,11 @@ This is the representation of libisofs.so.6 error codes in xorriso.
 Other applications are invited to map the output of ISO_ERR_CODE(e)
 into the same range of numbers.
 
+------------------------------------------------------------------------------
+Range "libisoburn"          :  0x00060000 to 0x00006ffff
+
+ 0x00060000 (*,*)           : Message which shall be attributed to libisoburn
+
 
 ------------------------------------------------------------------------------
 
