@@ -215,6 +215,12 @@ Project history as far as known to me:
   cdrskin now is by default linked dynamically and does a runtime check
   to ensure not to be started with a libburn which is older than itself.
 
+- 3rd Feb 2008 libisofs-0.2.x (.so.5) has been deprecated and is temporarily
+  replaced by libisofs-0.6.1 (.so.6) which for now only gives a guarantee on
+  its set of version assertion features. The replacement will be made permanent
+  by release of libisofs-0.6.2 (.so.6) which will guarantee future
+  ABI compatibility for its whole feature set.
+
 
 ------------------------------------------------------------------------------
 
