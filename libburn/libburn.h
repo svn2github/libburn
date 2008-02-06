@@ -2072,6 +2072,48 @@ void burn_version(int *major, int *minor, int *micro);
     For the library compatibility check BURN_*_VERSION in configure.ac
     are not decisive. Only the three numbers above do matter.
 */
+/** Usage discussion:
+
+Some developers of the libburnia project have differing
+opinions how to ensure the compatibility of libaries
+and applications.
+
+It is about whether to use at compile time and at runtime
+the version numbers isoburn_header_version_* provided here.
+Thomas Schmitt advises to use them.
+Vreixo Formoso advises to use other means.
+
+At compile time:
+
+Vreixo Formoso advises to leave proper version matching
+to properly programmed checks in the the application's
+build system, which will eventually refuse compilation.
+
+Thomas Schmitt advises to use the macros defined here
+for comparison with the application's requirements of
+library revisions and to eventually break compilation.
+
+Both advises are combinable. I.e. be master of your
+build system and have #if checks in the source code
+of your application, nevertheless.
+
+At runtime (via *_is_compatible()):
+
+Vreixo Formoso advises to compare the application's
+requirements of library revisions with the runtime
+library. This is to allow runtime libraries which are
+young enough for the application but too old for
+the lib*.h files seen at compile time.
+
+Thomas Schmitt advises to compare the header
+revisions defined here with the runtime library.
+This is to enforce a strictly monotonous chain
+of revisions from app to header to library,
+at the cost of excluding some older libraries.
+
+These two advises are mutually exclusive.
+
+*/
 
 
 /* ts A60924 : ticket 74 */
