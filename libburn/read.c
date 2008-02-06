@@ -325,6 +325,19 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	char msg[81], *wpt;
 	struct buffer buf;
 
+/*
+#define Libburn_read_data_adr_logginG 1
+*/
+#ifdef Libburn_read_data_adr_logginG
+	static FILE *log_fp= NULL;
+
+	if(log_fp == NULL)
+		log_fp = fopen("/tmp/burn_read_data_log", "a");
+	if(log_fp!=NULL)
+		fprintf(log_fp, "%d\n", byte_address / 2048);
+#endif /* Libburn_read_data_logginG */
+
+
 	*data_count = 0;
 	sose_mem = d->silent_on_scsi_error;
 
