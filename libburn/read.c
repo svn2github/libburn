@@ -334,7 +334,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	if(log_fp == NULL)
 		log_fp = fopen("/tmp/burn_read_data_log", "a");
 	if(log_fp!=NULL)
-		fprintf(log_fp, "%d\n", byte_address / 2048);
+		fprintf(log_fp, "%d\n", (int) (byte_address / 2048));
 #endif /* Libburn_read_data_logginG */
 
 
@@ -461,6 +461,14 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				wpt += 2048;
 				*data_count += 2048;
 			}
+
+			libdax_msgs_submit(libdax_messenger,
+				 d->global_index,
+				 0x00020000,
+				 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				 "burn_read_data() returns 0",
+				 0, 0);
+
 			ret = 0; goto ex;
 		}
 		memcpy(wpt, d->buffer->data, cpy_size);
