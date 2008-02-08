@@ -1422,6 +1422,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		disc_status = 2; /* always full and finalized */
 		d->erasable = 0; /* never erasable */
 	}
+
 	switch (disc_status) {
 	case 0:
 		d->toc_entries = 0;
@@ -1443,6 +1444,15 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 			d->status = BURN_DISC_FULL;
 		do_read_toc = 1;
 		break;
+	}
+
+	/* ts A80207 : DVD +/- R DL can normally be read but not be written */
+	if((d->current_profile == 0x2b || d->current_profile == 0x15) &&
+	   !d->current_is_supported_profile) {
+		if(d->status == BURN_DISC_APPENDABLE)
+			d->status = BURN_DISC_FULL;
+		d->erasable = 0; /* never erasable */
+		d->current_is_supported_profile = 1;
 	}
 
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
