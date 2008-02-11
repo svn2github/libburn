@@ -144,10 +144,12 @@ struct libdax_msgs_item;
 /** Non-fatal error messages indicating that parts of an action failed but
     processing may go on if one accepts deviations from the desired result.
 
-    SORRY shall also be the severity for incidents which are severe enough
+    SORRY may also be the severity for incidents which are severe enough
     for FAILURE but happen within already started irrevocable actions,
     like ISO image generation. A precondition for such a severity ease is
     that the action can be continued after the incident.
+    See below MISHAP for what xorriso would need instead of this kind of SORRY
+    an generates for itself in case of libisofs image generation.
 
     E.g.: A pattern yields no result.
           A speed setting cannot be made.
@@ -159,6 +161,20 @@ struct libdax_msgs_item;
     It should - but it does not have to.
 */
 #define LIBDAX_MSGS_SEV_SORRY                                        0x60000000
+
+
+/** A FAILURE (see below) which can be tolerated during long lasting
+    operations just because they cannot simply be stopped or revoked.
+
+    xorriso converts libisofs SORRY messages issued during image generation
+    into MISHAP messages in order to allow its evaluators to distinguish
+    image generation problems from minor image composition problems.
+    E.g.:
+      A libisofs input file is inaccessible during image generation.
+
+    After a MISHAP a function should behave like after SORRY.
+*/
+#define LIBDAX_MSGS_SEV_MISHAP                                       0x64000000
 
 
 /** Non-fatal error indicating that an important part of an action failed and
