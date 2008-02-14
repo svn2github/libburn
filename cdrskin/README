@@ -48,8 +48,12 @@ Version identification and help texts available afterwards:
 Install (eventually as superuser) cdrskin to a directory where it can be found:
 The command for global installation of both, libburn and cdrskin is
     make install
+If the library libburn.so.4 is not found with a test run of cdrskin, then
+try whether command
+    ldconfig
+makes it accessible. With the statically linked binary this should not matter.
 
-But you may as well do the few necessary actions manually. If cdrskin was
+You may as well do the few necessary actions manually. If cdrskin was
 already installed by a previous version, or by "make install" in the course
 of this installation, then find out where:
     which cdrskin 
