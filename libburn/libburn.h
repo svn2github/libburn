@@ -809,8 +809,7 @@ void burn_allow_untested_profiles(int yes);
                   (cdrom/burner). Thus use with driveno 0 only. On failure
                   the array has no valid elements at all.
                   The returned array should be freed via burn_drive_info_free()
-                  when it is no longer needed, and before calling a scan
-                  function again.
+                  when it is no longer needed.
                   This is a result from call burn_drive_scan(). See there.
                   Use with driveno 0 only.
     @param adr    The persistent address of the desired drive. Either once
@@ -1107,6 +1106,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
 
 /** Tells whether a disc can be erased or not
+    @param d The drive to inquire.
     @return Non-zero means erasable
 */
 int burn_disc_erasable(struct burn_drive *d);
@@ -2258,7 +2258,7 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
                         drive buffer without further data transfer).
     @param flag         Bitfield for control purposes:
                         bit0 = flush the drive buffer after eventual writing
-    @return 1=sucessful , <=0 : number of tranfered bytes * -1
+    @return 1=sucessful , <=0 : number of transfered bytes * -1
 */
 int burn_random_access_write(struct burn_drive *d, off_t byte_address,
                              char *data, off_t data_count, int flag);
