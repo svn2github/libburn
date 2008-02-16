@@ -22,12 +22,17 @@ we would need : login on a development machine resp. a live OS on CD or DVD,
 advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
 volunteers for testing of realistic use cases.
 
-We have a workable code base for burning data and audio CDs and many DVD types.
-The burn API is quite comprehensively documented and can be used to build a
-presentable application.
+We have a well tested code base for burning data and audio CDs and many DVD
+types. The burn API is quite comprehensively documented and can be used to
+build a presentable application.
 We have a functional binary which emulates the core use cases of cdrecord in
 order to prove that usability, and in order to allow you to explore libburn's
 scope by help of existing cdrecord frontends.
+
+ISO 9660 filesystems with Rock Ridge and Joliet extensions can be created
+and manipulated quite freely. This capability together with our burn capability
+makes possible a single binary application which covers all steps of image
+composition, updating and writing. Quite unique in the Linux world.
 
 @subsection components The project components (list subject to growth, hopefully):
 
@@ -43,10 +48,10 @@ scope by help of existing cdrecord frontends.
            ISO 9660 disk image. This may then be brought to CD via libburn.
            libisofs is to be the foundation of our upcoming mkisofs emulation.
 
-- libisoburn is an add-on to libburn and libisofs which allows to grow
-           ISO-9660 filesystem images on multi-session media as well as
-           on overwriteable media via the same API. All media peculiarities
-           are handled automatically.
+- libisoburn is an add-on to libburn and libisofs which coordinates both and
+           also allows to grow ISO-9660 filesystem images on multi-session
+           media as well as on overwriteable media via the same API.
+           All media peculiarities are handled automatically.
 
 - cdrskin  is a limited cdrecord compatibility wrapper for libburn.
            cdrecord is a powerful GPL'ed burn program included in Joerg
@@ -59,12 +64,12 @@ scope by help of existing cdrecord frontends.
            runs, though.
            See cdrskin/README for more.
 
-- xorriso  is an upcomming application of all three libraries which creates,
-           loads, manipulates and writes ISO 9660 filesystem images with
-           Rock Ridge extensions. Manipulation will not only be adding or
+- xorriso  is an application of all three libraries which creates, loads,
+           manipulates and writes ISO 9660 filesystem images with
+           Rock Ridge extensions. Manipulation is not only adding or
            overwriting of files but also deletion, renaming, and attribute
            changing.
-           See SVN of libisoburn, man test/xorriso.1, test/compile_xorriso.sh
+           See libisoburn/README for more
 
 - "test"   is a collection of application gestures and examples given by the
            authors of the library features. The burn API example of libburn
@@ -72,7 +77,19 @@ scope by help of existing cdrecord frontends.
            demonstrated in test/telltoc.c .
            Explore these examples if you look for inspiration.
 
-We plan to be a responsive upstream. Bear with us.
+We strive to be a responsive upstream.
+
+Our libraries are committed to maintain older feature sets in newer versions.
+This applies to source code headers (API) as well as to linkable objects (ABI).
+The only exception from this rule is about non-release versions x.y.*[13579]
+which are allowed to introduce new features, change those new features in
+any way and even may revoke such new features before the next release of
+x.y.*[02468]. As soon as it is released, a feature is promised to persist.
+
+SONAMES:
+libburn.so.4 (since 0.3.4, March 2007),
+libisofs.so.6 (since 0.6.2, February 2008),
+libisoburn.so.1 (since 0.1.0, February 2008).
 
 
    @section using Using the libraries
