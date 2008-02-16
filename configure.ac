@@ -96,7 +96,7 @@ dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
 dnl ts A80127
-dnl This ist the development version after libburn-0.4.2 = libburn.so.4.7.0
+dnl This is the development version after libburn-0.4.2 = libburn.so.4.7.0
 dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
 dnl SONAME = 12 - 8 = 4 . Library name = libburn.so.4.8.0
