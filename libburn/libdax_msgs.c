@@ -273,7 +273,7 @@ int libdax_msgs__text_to_sev(char *severity_name, int *severity,
  else if(strncmp(severity_name,"ALL",3)==0)
    *severity= LIBDAX_MSGS_SEV_ALL;
  else {
-   *severity= LIBDAX_MSGS_SEV_NEVER;
+   *severity= LIBDAX_MSGS_SEV_ALL;
    return(0);
  }
  return(1);
