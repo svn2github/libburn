@@ -120,6 +120,19 @@ struct libdax_msgs_item;
 */
 #define LIBDAX_MSGS_SEV_ALL                                          0x00000000
 
+
+/** Messages of this severity shall transport plain disk file paths
+    whenever an event of severity SORRY or above is related with an
+    individual disk file.
+    No message text shall be added to the file path. The ERRFILE message
+    shall be issued before the human readable message which carries the
+    true event severity. That message shall contain the file path so it
+    can be found by strstr(message, path)!=NULL.
+    The error code shall be the same as with the human readable message.
+*/ 
+#define LIBDAX_MSGS_SEV_ERRFILE                                      0x08000000
+
+
 /** Debugging messages not to be visible to normal users by default
 */
 #define LIBDAX_MSGS_SEV_DEBUG                                        0x10000000
@@ -149,7 +162,7 @@ struct libdax_msgs_item;
     like ISO image generation. A precondition for such a severity ease is
     that the action can be continued after the incident.
     See below MISHAP for what xorriso would need instead of this kind of SORRY
-    an generates for itself in case of libisofs image generation.
+    and generates for itself in case of libisofs image generation.
 
     E.g.: A pattern yields no result.
           A speed setting cannot be made.
