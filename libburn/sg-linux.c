@@ -308,6 +308,28 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 
 	if(*fd < 0)
 		return(0);
+
+#ifdef CDROM_MEDIA_CHANGED_disabled_because_not_helpful
+#ifdef CDSL_CURRENT
+	/* ts A80217 : wondering whether the os knows about our activities */
+	ret = ioctl(*fd, CDROM_MEDIA_CHANGED, CDSL_CURRENT);
+	sprintf(msg, "ioctl(CDROM_MEDIA_CHANGED) == %d", ret);
+	libdax_msgs_submit(libdax_messenger, driveno, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
+
+#ifdef BLKFLSBUF_disabled_because_not_helpful
+	ret = ioctl(*fd, BLKFLSBUF, 0);
+	sprintf(msg, "ioctl(BLKFLSBUF) == %d", ret);
+	os_errno = 0;
+	if(ret == -1)
+		os_errno = errno;
+	libdax_msgs_submit(libdax_messenger, driveno, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno,0);
+#endif /* BLKFLSBUF */
+
+#endif /* CDSL_CURRENT */
+#endif /* CDROM_MEDIA_CHANGED */
+
 	ret = close(*fd);
 	*fd = -1337;
 	if(ret != -1) {
