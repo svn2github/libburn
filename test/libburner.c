@@ -443,7 +443,8 @@ int libburner_payload(struct burn_drive *drive,
 	  /* Use the fifo object as data source for the track */
 	  if (burn_track_set_source(track, fifo_src[trackno])
 							 != BURN_SOURCE_OK) {
-		printf("FATAL: Cannot attach source object to track object\n");
+		fprintf(stderr,
+		       "FATAL: Cannot attach source object to track object\n");
 		return 0;
 	  }
 
