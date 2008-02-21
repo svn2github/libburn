@@ -126,7 +126,7 @@ struct libdax_msgs_item;
     individual disk file.
     No message text shall be added to the file path. The ERRFILE message
     shall be issued before the human readable message which carries the
-    true event severity. That message shall contain the file path so it
+    true event severity. That message should contain the file path so it
     can be found by strstr(message, path)!=NULL.
     The error code shall be the same as with the human readable message.
 */ 
