@@ -247,7 +247,7 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 
 	ret = libdax_msgs__text_to_sev(severity, &sevno, 0);
 	if (ret <= 0)
-		sevno = LIBDAX_MSGS_SEV_FATAL;
+		sevno = LIBDAX_MSGS_SEV_ALL;
 	if (error_code <= 0) {
 		switch(sevno) {
 		       case LIBDAX_MSGS_SEV_ABORT:   error_code = 0x00040000;
@@ -275,8 +275,6 @@ int burn_text_to_sev(char *severity_name, int *sevno, int flag)
 	int ret;
 
 	ret = libdax_msgs__text_to_sev(severity_name, sevno, 0);
-	if (ret <= 0)
-		*sevno = LIBDAX_MSGS_SEV_FATAL;
 	return ret;
 }
 
