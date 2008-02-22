@@ -565,7 +565,7 @@ Range "vreixo"              :  0x00030000 to 0x0003ffff
  0x0003ff76 (FAILURE,HIGH) = Cannot seek to specified location
  0x0003ff75 (HINT,MEDIUM)  = File not supported in ECMA-119 tree and ignored
  0x0003ff74 (HINT,MEDIUM)  = File bigger than supported by used standard
- 0x0003ff73 (SORRY,HIGH)   = File read error during image creation
+ 0x0003ff73 (MISHAP,HIGH)  = File read error during image creation
  0x0003ff72 (HINT,MEDIUM)  = Cannot convert filename to requested charset
  0x0003ff71 (SORRY,HIGH)   = File cannot be added to the tree
  0x0003ff70 (HINT,MEDIUM)  = File path breaks specification constraints
@@ -585,7 +585,8 @@ Range "vreixo"              :  0x00030000 to 0x0003ffff
  0x0003feb5 (WARNING,HIGH) = Multiple ER SUSP entries found
  0x0003feb4 (HINT,MEDIUM)  = Unsupported volume descriptor found
  0x0003feb3 (WARNING,HIGH) = El-Torito related warning
- 0x0003feb2 (SORRY,HIGH)   = Image write cancelled
+ 0x0003feb2 (MISHAP,HIGH)  = Image write cancelled
+ 0x0003feb1 (WARNING,HIGH) = El-Torito image is hidden
 
 Outdated codes which may not be re-used for other purposes than
 re-instating them, if ever:
