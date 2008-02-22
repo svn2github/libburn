@@ -258,7 +258,7 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 		break; case LIBDAX_MSGS_SEV_NOTE:    error_code = 0x00040005;
 		break; case LIBDAX_MSGS_SEV_UPDATE:  error_code = 0x00040006;
 		break; case LIBDAX_MSGS_SEV_DEBUG:   error_code = 0x00040007;
-		break; default:                      error_code = 0x00040001;
+		break; default:                      error_code = 0x00040008;
 		}
 	}
 	if (d != NULL)
@@ -287,8 +287,6 @@ int burn_sev_to_text(int severity_number, char **severity_name, int flag)
 	int ret;
 
 	ret = libdax_msgs__sev_to_text(severity_number, severity_name, 0);
-	if (ret <= 0)
-		*severity_name = "FATAL";
 	return ret;
 }
 

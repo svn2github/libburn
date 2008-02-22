@@ -622,6 +622,7 @@ Range "application"         :  0x00040000 to 0x0004ffff
  0x00040005 (NOTE,HIGH)     : Application supplied message
  0x00040006 (UPDATE,HIGH)   : Application supplied message
  0x00040007 (DEBUG,HIGH)    : Application supplied message
+ 0x00040008 (*,HIGH)        : Application supplied message
 
 
 ------------------------------------------------------------------------------
