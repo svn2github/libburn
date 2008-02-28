@@ -967,8 +967,9 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	if (d->status == BURN_DISC_UNSUITABLE)
 		goto unsuitable_profile;
 	if (d->drive_role == 2 ||
-		d->current_profile == 0x1a || d->current_profile == 0x12) { 
-		/* DVD+RW , DVD-RAM , emulated drive on stdio file */
+		d->current_profile == 0x1a || d->current_profile == 0x12 ||
+		d->current_profile == 0x43) { 
+		/* DVD+RW , DVD-RAM , BD-RE, emulated drive on stdio file */
 		if (o->start_byte >= 0 && (o->start_byte % 2048))
 			strcat(reasons,
 			 "write start address not properly aligned to 2048, ");
@@ -1370,8 +1371,8 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		ret = burn_disc_close_session_dvd_minus_r(o, s);
 		if (ret <= 0)
 			return 0;
-	} else if (d->current_profile == 0x12) {
-		/* DVD-RAM */
+	} else if (d->current_profile == 0x12 || d->current_profile == 0x43) {
+		/* DVD-RAM , BD-RE */
 		/* ??? any finalization needed ? */;
 	} else if (d->current_profile == 0x13) {
 		/* DVD-RW restricted overwrite */
@@ -1522,8 +1523,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	d->needs_close_session = 0;
 
-	if (d->current_profile == 0x1a || d->current_profile == 0x12) { 
-		/* DVD+RW , DVD-RAM */
+	if (d->current_profile == 0x1a || d->current_profile == 0x12 ||
+	    d->current_profile == 0x43) { 
+		/* DVD+RW , DVD-RAM , BD-RE */
 		ret = 1;
 		if (d->current_profile == 0x1a)
 			ret = burn_disc_setup_dvd_plus_rw(o, disc);
@@ -2190,6 +2192,8 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
         if (d->current_profile == 0x13) /* DVD-RW restricted overwrite */
 		alignment = 32 * 1024;
 	if (d->current_profile == 0x1a) /* DVD+RW */
+		alignment = 2 * 1024;
+	if (d->current_profile == 0x43) /* BD-RE */
 		alignment = 2 * 1024;
 	if (alignment == 0) {
 		sprintf(msg, "Write start address not supported");

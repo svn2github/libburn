@@ -16,8 +16,8 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD-R[W], DVD-R[W], DVD+R[W], DVD-RAM
-via libburn.
+cdrskin \- burns preformatted data to CD-R[W], DVD-R[W], DVD+R[W], DVD+R/DL,
+DVD-RAM via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -44,7 +44,7 @@ or in Session at Once mode for seamless tracks.
 .br
 Multi session on CD (follow-up sessions in TAO only)
 .br
-or on DVD-R[W] (in Incremental mode) or on DVD+R.
+or on DVD-R[W] (in Incremental mode) or on DVD+R[/DL].
 .br
 Single session on DVD-RW or DVD-R (Disk-at-once).
 .br
@@ -163,7 +163,7 @@ Multiple cycles of blanking and overwriting with random numbers might be.
 .SS
 .B Sequentially Recordable DVD Media:
 .br
-Currently DVD-RW, DVD-R and DVD+R can be used for the Sequential recording
+Currently DVD-RW, DVD-R and DVD+R[/DL] can be used for the Sequential recording
 model.
 .br
 DVD-RW must be in state "Sequential Recording".
@@ -198,9 +198,9 @@ unpredicted length and to keep media appendable by option
 The only restriction towards CD-R[W] is the lack of support for -audio tracks.
 Multiple tracks per session are permissible.
 .br
-The write modes for DVD+R resemble those with DVD-R except that with DVD+R
+The write modes for DVD+R[/DL] resemble those with DVD-R except that with +R
 each track gets wrapped in an own session. There is no -dummy writing with
-DVD+R.
+DVD+R[/DL].
 .br
 Quite deliberately write mode -sao insists in the tradition of a predicted
 track size and blank media, whereas -tao writes the tracks open ended and
@@ -598,7 +598,7 @@ One should use it only if inavoidable.
 .TP
 .BI \-sao
 Write CD in Session At Once mode, a sequential DVD-R[W] in Disc-at-once
-(DAO) mode, or a DVD+R.
+(DAO) mode, or a DVD+R[/DL].
 .br
 With CD this mode is able to put several audio tracks on media without
 producing audible gaps between them.
@@ -606,8 +606,8 @@ producing audible gaps between them.
 With DVD-R[W] this mode can only write a single track.
 No -multi is allowed with DVD-R[W] -sao.
 .br
--sao is permissible with overwriteable DVD and with DVD+R but actually only
-imposes restrictions without providing known advantages. 
+-sao is permissible with overwriteable DVD and with DVD+R[/DL] but actually
+only imposes restrictions without providing known advantages. 
 .br
 -sao can only be used for tracks of fixely predicted size. This implies that
 track arguments which depict stdin or named pipes need to be preceeded by
@@ -647,7 +647,7 @@ suffix ".wav".
 .TP
 .BI \-tao
 Write CD in Track At Once (TAO) mode, sequential DVD-R[W] in Incremental
-Streaming mode, or DVD+R without traditional -sao restrictions.
+Streaming mode, or DVD+R[/DL] without traditional -sao restrictions.
 This mode also applies pro-forma to overwriteable DVD media.
 .br
 Mode -tao can be used with track sources of unpredictable size, like standard
@@ -951,7 +951,7 @@ tested. Currently this applies to :
 .br
 Profile 0015h , DVD-R/DL Sequential (will not allow -multi).
 .br
-Profile 002Bh , DVD+R/DL.
+Profile 0043h , BD-RE.
 .br
 If you really test such media, then please report the outcome on
 libburn-hackers@pykix.org 
@@ -1131,7 +1131,7 @@ cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
 -tao padsize=300k -
 .SS
-.B Write multi-session to the same CD, DVD-R[W] or DVD+R:
+.B Write multi-session to the same CD, DVD-R[W] or DVD+R[/DL]:
 .br
 cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso
 .br

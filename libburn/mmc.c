@@ -306,8 +306,9 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf,
 	c.opcode[1] = 1;
 	if(trackno<=0) {
 		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-		    d->current_profile == 0x12 )
-			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM */
+		    d->current_profile == 0x12 || d->current_profile == 0x43)
+			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM
+			    BD-RE */
 			trackno = 1;
 		else if (d->current_profile == 0x10 ||
 			 d->current_profile == 0x11 ||
@@ -349,7 +350,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	*nwa = mmc_four_char_to_int(data + 12);
 	num = mmc_four_char_to_int(data + 16);
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-	    d->current_profile == 0x12) {
+	    d->current_profile == 0x12 || d->current_profile == 0x43) {
 		 /* overwriteable */
 		*lba = *nwa = num = 0;
 	} else if (!(data[7]&1)) {
@@ -1490,7 +1491,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	   ts A70112 : same for DVD-RAM
 	*/
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-	    d->current_profile == 0x12)
+	    d->current_profile == 0x12 || d->current_profile == 0x43)
 		d->status = BURN_DISC_BLANK;
 
 	if (d->status == BURN_DISC_BLANK) {
@@ -2104,7 +2105,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_raM
-	if (cp == 0x12)
+	if (cp == 0x12 || (cp == 0x43 && burn_support_untested_profiles))
+							/* DVD-RAM , BD-RE */
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_r_seQ
@@ -2114,8 +2116,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_plus_R
-	if (cp == 0x1b || (cp == 0x2b && burn_support_untested_profiles))
-						/* DVD+R , DVD+R/DL */
+	if (cp == 0x1b || cp == 0x2b) /* DVD+R , DVD+R/DL */
 		d->current_is_supported_profile = 1;
 #endif
 
@@ -3004,8 +3005,9 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[13] = 16;
 
 	} else if (d->current_profile == 0x1a || d->current_profile == 0x1b ||
-	           d->current_profile == 0x2b || d->current_profile == 0x12) {
-		/* not with DVD+R[W][/DL] or DVD-RAM */;
+	           d->current_profile == 0x2b || d->current_profile == 0x12 ||
+		   d->current_profile == 0x43) {
+		/* not with DVD+R[W][/DL] or DVD-RAM or BD-RE */;
 		return 0;
 	} else {
 		/* Traditional setup for CD */

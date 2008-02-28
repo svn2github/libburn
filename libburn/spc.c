@@ -580,7 +580,7 @@ void spc_sense_write_params(struct burn_drive *d)
 
 	/* ts A70212 : try to setup d->media_capacity_remaining */
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-	    d->current_profile == 0x12)
+	    d->current_profile == 0x12 || d->current_profile == 0x43)
 		d->read_format_capacities(d, -1);
 	else if (d->status == BURN_DISC_BLANK ||
 	     (d->current_is_cd_profile && d->status == BURN_DISC_APPENDABLE)) {
