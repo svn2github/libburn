@@ -10,7 +10,7 @@ Schilling's cdrtools. cdrskin strives to be a second source for the services
 traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
 Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
 with cdrecord-ProDVD in order to offer TAO-like single track recording.
-Sequential DVD-R[W] and DVD+R are handled like CD-R[W] with TAO and
+Sequential DVD-R[W] and DVD+R[/DL] are handled like CD-R[W] with TAO and
 multi-session. Additionally cdrskin offers cdrecord-ProDVD-like mode DAO
 with DVD-R[W].
 
@@ -115,9 +115,9 @@ All files used as pseudo-drives have to offer rw-permission.
 --------------------------------------------------------------------------
 
 The DVD capabilities of cdrskin differ from those of cdrecord-ProDVD. cdrskin
-offers TAO-like multi-session with DVD-R[W], DVD+R and TAO-like single session
-with overwriteable DVD media. It also offers DAO on DVD-R[W] which is probably
-the same as the traditional cdrecord-ProDVD write mode.
+offers TAO-like multi-session with DVD-R[W], DVD+R[/DL] and TAO-like single
+session with overwriteable DVD media. It also offers DAO on DVD-R[W] which is
+probably the same as the traditional cdrecord-ProDVD write mode.
 
 Non-cdrecord blank mode blank=format_overwrite brings a DVD-RW
 disc from its initial profile "Sequential Recording" into profile state
@@ -268,10 +268,10 @@ for an illustrated example with K3b 0.10 .
 
 DVD advise:
 
-For burning of DVD media other than DVD-RAM, DVD+RW, DVD+R, DVD-RW, DVD-R,
-the cdrskin project currently advises to use Andy Polyakov's dvd+rw-tools
-which despite their historic name are capable of all the media above 
-and also do dual layer and even BD discs. 
+For burning of DVD media other than DVD-RAM, DVD+RW, DVD+R, DVD+R/DL,
+DVD-RW, DVD-R, the cdrskin project currently advises to use
+Andy Polyakov's dvd+rw-tools which despite their historic name are
+capable of all the media above and more, including BD discs. 
 
 http://fy.chalmers.se/~appro/linux/DVD+RW/tools
 
@@ -285,7 +285,7 @@ with CD media, but retrieves additional information from the existing ISO
 image and finally manipulates the start sectors of this existing image.
 
 So, inspired by growisofs, cdrskin can offer DVD multi-session not only with
-sequential DVD-R[W] and with DVD+R, but also with DVD-RAM, DVD+RW and
+sequential DVD-R[W] and with DVD+R[/DL], but also with DVD-RAM, DVD+RW and
 even regular disk files or block devices other than CD/DVD writers.
 This is enabled by option --grow_overwriteable_iso.
 

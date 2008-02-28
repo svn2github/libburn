@@ -2,7 +2,7 @@
 
 <HEAD>
 <META NAME="description" CONTENT="cdrskin, a limited cdrecord compatibility wrapper for libburn">
-<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, cdrecord, compatible, scdbackup">
+<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, cdrecord, compatible, scdbackup">
 <META NAME="robots" CONTENT="follow">
 <TITLE>cdrskin homepage english</TITLE>
 </HEAD>
@@ -24,8 +24,8 @@
 
 <P>
 <H2>Purpose:</H2>
-Burns preformatted data to CD and single layer DVD media:<BR>
-CD-R, DVD-R, DVD+R, CD-RW, DVD-RW, DVD-RAM, DVD+RW
+Burns preformatted data to CD and DVD media:<BR>
+CD-R, DVD-R, DVD+R, DVD+R/DL, CD-RW, DVD-RW, DVD-RAM, DVD+RW
 </P>
 <P>
 
@@ -125,7 +125,7 @@ as listed by option --devices.</DT>
 <DD><KBD>&nbsp;&nbsp;cdrskin -v dev=0,1,0 fs=32m speed=8 \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;-tao padsize=300k -</KBD></DD>
 
-<DT>Write several sessions to the same CD, DVD-R[W] or DVD+R:</DT>
+<DT>Write several sessions to the same CD, DVD-R[W] or DVD+R[/DL]:</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso</KBD>
 </DD>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 2.iso</KBD>
@@ -242,8 +242,9 @@ Enhancements towards previous stable version cdrskin-0.4.0:
 <DT><H3>Development snapshot, version 0.4.3 :</H3></DT>
 <DD>Enhancements towards stable version 0.4.2.pl00:
 <UL>
-<LI>none yet</LI>
+<LI>Support for DVD+R/DL media is now official</LI>
 <!--
+<LI>none yet</LI>
 -->
 </UL>
 </DD>

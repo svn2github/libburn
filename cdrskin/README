@@ -152,7 +152,7 @@ Burn image file  my_image.iso  to media
     cdrskin -v dev=0,1,0 speed=12 fs=8m driveropts=burnfree padsize=300k \
             -eject  my_image.iso 
 
-Write multi-session to the same CD , DVD-R[W] or DVD+R
+Write multi-session to the same CD , DVD-R[W] or DVD+R[/DL]
     cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
     cdrskin dev=/dev/hdc padsize=300k -multi -tao 2.iso
     cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.iso
@@ -341,10 +341,13 @@ Incremental Streaming afterwards. So blank=fast will do full blanking.
 blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 
 
-                                  DVD+R 
+                             DVD+R and DVD+R/DL 
 
 From the view of cdrskin they behave much like DVD-R. Each track gets wrapped
 into an own session, though.
+DVD+R/DL appear as extra large DVD+R. cdrskin does not allow to set the address
+of the layer break where ia reading drive might show some delay while switching
+between both media layers.
 
 
                               Emulated Drives

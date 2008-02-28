@@ -9,7 +9,7 @@
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia-project.org . It can list the available devices, can
   blank a CD-RW or DVD-RW, can format a DVD-RW, can burn to CD-R, CD-RW, DVD-R,
-  DVD+R, DVD+RW, DVD-RAM or DVD-RW. Not supported yet: double layer media.
+  DVD+R, DVD+R/DL, DVD+RW, DVD-RAM or DVD-RW. Not supported yet: DVD-R/DL, BD.
 
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
@@ -29,7 +29,7 @@
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
      libburner_format_row()
-  With the aquired drive you can burn to CD-R, CD-RW, DVD+RW, DVD-RAM, DVD-RW
+  With the aquired drive you can burn to CD or DVD
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();

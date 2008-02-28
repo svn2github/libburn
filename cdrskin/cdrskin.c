@@ -1919,7 +1919,9 @@ int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
    cdrskin compilation rather than to allow production of a program with
    unpredictable bugs or memory corruption.
    The compiler message supposed to appear in this case is:
+      error: 'LIBBURN_MISCONFIGURATION' undeclared (first use in this function)
       error: 'INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_libburn_dot_h_TOO_OLD__SEE_cdrskin_dot_c' undeclared (first use in this function)
+      error: 'LIBBURN_MISCONFIGURATION_' undeclared (first use in this function)
 */
 
 /* The indendation is an advise of man gcc to help old compilers ignoring */
@@ -1934,7 +1936,9 @@ int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
  #endif
 
 #ifdef Cdrskin_libburn_dot_h_too_olD
+LIBBURN_MISCONFIGURATION = 0;
 INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_libburn_dot_h_TOO_OLD__SEE_cdrskin_dot_c = 0;
+LIBBURN_MISCONFIGURATION_ = 0;
 #endif
 
  ret= burn_initialize();
@@ -2582,7 +2586,7 @@ set_dev:;
 
      printf("\n");
      printf("Usage: %s [options|source_addresses]\n", argv[0]);
-     printf("Burns preformatted data to CD-R, CD-RW or DVD+RW via libburn.\n");
+     printf("Burns preformatted data to CD or DVD via libburn.\n");
      printf("For the cdrecord compatible options which control the work of\n");
      printf(
       "blanking and burning see output of option -help rather than --help.\n");

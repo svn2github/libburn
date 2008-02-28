@@ -91,6 +91,8 @@ extern struct libdax_msgs *libdax_messenger;
    ts A70208 : Finally made tests with DVD-R. Worked exactly as new DVD-RW.
    ts A70306 : Implemented DVD+R (always -multi for now)
    ts A70330 : Allowed finalizing of DVD+R.
+   ts A80228 : Made DVD+R/DL support official after nightmorph reported success
+               in http://libburnia-project.org/ticket/13
 */
 
 /* ts A70519 : With MMC commands of data direction FROM_DRIVE:
