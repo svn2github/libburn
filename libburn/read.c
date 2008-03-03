@@ -388,7 +388,10 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 #define O_LARGEFILE 0
 #endif
 
-		fd = open(d->devname, O_RDONLY | O_LARGEFILE);
+		fd = d->stdio_fd;
+		if (fd < 0)
+			d->stdio_fd = fd =
+				open(d->devname, O_RDONLY | O_LARGEFILE);
 		if (fd == -1) {
 			if (errno != ENOENT  || !(flag & 2))
 				libdax_msgs_submit(libdax_messenger,
@@ -478,8 +481,10 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 	ret = 1;
 ex:;
+/* <<< let it open until drive is given up or writing shall happen
 	if (fd != -1)
 		close(fd);
+*/
 	d->buffer = NULL;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;

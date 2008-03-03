@@ -642,7 +642,7 @@ struct burn_speed_descriptor {
     This must be called before using any other functions in the library. It
     may be called more than once with no effect.
     It is possible to 'restart' the library by shutting it down and
-    re-initializing it. This is necessary if you follow the older and
+    re-initializing it. Once this was necessary if you follow the older and
     more general way of accessing a drive via burn_drive_scan() and
     burn_drive_grab(). See burn_drive_scan_and_grab() with its strong
     urges and its explanations.

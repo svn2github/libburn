@@ -439,6 +439,9 @@ int burn_drive_mark_unready(struct burn_drive *d)
 		burn_disc_free(d->disc);
 		d->disc = NULL;
 	}
+	if (d->stdio_fd >= 0)
+		close (d->stdio_fd);
+	d->stdio_fd = -1;
 	return 1;
 }
 
