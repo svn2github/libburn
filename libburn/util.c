@@ -47,7 +47,14 @@ char *burn_strndup(char *s, int n)
 
 void burn_version(int *major, int *minor, int *micro)
 {
+/* ts A80408 : switched from configure.ac versioning to libburn.h versioning */
+#ifdef burn_header_version_major
+    *major = burn_header_version_major;
+    *minor = burn_header_version_minor;
+    *micro = burn_header_version_micro;
+#else
     *major = BURN_MAJOR_VERSION;
     *minor = BURN_MINOR_VERSION;
     *micro = BURN_MICRO_VERSION;
+#endif
 }
