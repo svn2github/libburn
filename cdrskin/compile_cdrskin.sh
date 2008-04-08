@@ -1,13 +1,13 @@
 #!/bin/sh
 
 # compile_cdrskin.sh  
-# Copyright 2005 - 2008 Thomas Schmitt, scdbackup@gmx.net, GPL
+# Copyright 2005 - 2008 Thomas Schmitt, scdbackup@gmx.net, GPL version 2
 # to be executed within  ./libburn-*  resp ./cdrskin-*
 
 debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
-libvers="-DCdrskin_libburn_0_4_3"
+libvers="-DCdrskin_libburn_0_4_5"
 cleanup_src_or_obj="libburn/cleanup.o"
 libdax_msgs_o="libburn/libdax_msgs.o"
 libdax_audioxtr_o="libburn/libdax_audioxtr.o"
@@ -33,15 +33,15 @@ do
     libdax_audioxtr_o=
     libdax_msgs_o="libburn/message.o"
     cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
-  elif test "$i" = "-libburn_0_4_2"
+  elif test "$i" = "-libburn_0_4_4"
   then
-    libvers="-DCdrskin_libburn_0_4_2"
+    libvers="-DCdrskin_libburn_0_4_4"
     libdax_audioxtr_o="libburn/libdax_audioxtr.o"
     libdax_msgs_o="libburn/libdax_msgs.o"
     cleanup_src_or_obj="libburn/cleanup.o"
   elif test "$i" = "-libburn_svn"
   then
-    libvers="-DCdrskin_libburn_0_4_3"
+    libvers="-DCdrskin_libburn_0_4_5"
     libdax_audioxtr_o="libburn/libdax_audioxtr.o"
     libdax_msgs_o="libburn/libdax_msgs.o"
     cleanup_src_or_obj="libburn/cleanup.o"
@@ -76,7 +76,7 @@ do
     echo "  -compile_cdrfifo  compile program cdrskin/cdrfifo."
     echo "  -compile_dewav    compile program test/dewav without libburn."
     echo "  -cvs_A60220       set macro to match libburn-CVS of 20 Feb 2006."
-    echo "  -libburn_0_4_2    set macro to match libburn-0.4.2."
+    echo "  -libburn_0_4_4    set macro to match libburn-0.4.4."
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -no_largefile     do not use 64 bit off_t (must match libburn)."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."

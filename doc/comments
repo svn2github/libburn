@@ -7,10 +7,10 @@
 
 Libburnia is an open-source project for reading, mastering and writing
 optical discs.
-For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD-RW, DVD-R.
+For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD+R/DL, DVD-RW, DVD-R.
 
-Not supported yet are dual layer media, HD-DVD, BD (blue ray). Testers for
-dual layer DVD+/-R are wanted, though.
+Not supported yet are DVD-R/DL, HD-DVD, BD (blue ray). Testers for
+BD and DVD-R/DL are wanted, though.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -69,7 +69,7 @@ composition, updating and writing. Quite unique in the Linux world.
            Rock Ridge extensions. Manipulation is not only adding or
            overwriting of files but also deletion, renaming, and attribute
            changing.
-           See libisoburn/README for more
+           See xorriso/README for more
 
 - "test"   is a collection of application gestures and examples given by the
            authors of the library features. The burn API example of libburn

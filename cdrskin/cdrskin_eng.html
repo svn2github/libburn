@@ -56,7 +56,7 @@ and to MMC-5 for DVD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.4.2</DT>
+<DT>libburn-0.4.4</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 furthered by team of libburnia-project.org)</DD>
 <DD>transfers data to CD and DVD</DD>
@@ -166,8 +166,16 @@ man cdrecord</A></KBD></DD>
  this "don't bother Joerg" demand.)
 </DD>
 </DL>
+<DL>
+<DT>Learn to know a more versatile way to burn ISO 9660 formatted data</DT>
+<DD>
+Standalone ISO 9660 multi-session CD/DVD tool
+<A HREF="http://scdbackup.sourceforge.net/xorriso_eng.html">xorriso</A>.
+</DD>
+</DL>
 
-Testers wanted who are willing to risk some double layer DVD media.
+Testers wanted who are willing to risk some double layer DVD-R media
+or to do experiments on BD-RE.
 
 </P>
 
@@ -176,8 +184,8 @@ Testers wanted who are willing to risk some double layer DVD media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.4.2.pl00.tar.gz">cdrskin-0.4.2.pl00.tar.gz</A>
-(700 KB).
+<DD><A HREF="cdrskin-0.4.4.pl00.tar.gz">cdrskin-0.4.4.pl00.tar.gz</A>
+(715 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -185,6 +193,8 @@ of the same version number.
 They get produced via a different procedure, though.<BR>
 cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
+
+<!-- This is not offered any more for 0.4.4 and 0.4.5
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
 <DD><A HREF="cdrskin_0.4.2.pl00-x86-suse9_0.tar.gz">
@@ -199,6 +209,9 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <DD>runs on SuSE 7.2 (2.4.4), and on the systems above.</DD>
 </DL>
 </DD>
+-->
+
+
 </DL>
 <DL><DT>Documentation:</DT>
 <DD><A HREF="README_cdrskin">README</A> an introduction</DD>
@@ -221,9 +234,10 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.4.0:
+Enhancements towards previous stable version cdrskin-0.4.2:
 <UL>
-<LI>Safe dynamic linking possible with libburn.so.4</LI>
+<LI>Support for DVD+R/DL media is now official</LI>
+<LI>Experimental code for BD-RE with --allow_untested_media</LI>
 </UL>
 
 <!--
@@ -239,26 +253,25 @@ Enhancements towards previous stable version cdrskin-0.4.0:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.4.3 :</H3></DT>
-<DD>Enhancements towards stable version 0.4.2.pl00:
+<DT><H3>Development snapshot, version 0.4.5 :</H3></DT>
+<DD>Enhancements towards stable version 0.4.4.pl00:
 <UL>
-<LI>Support for DVD+R/DL media is now official</LI>
 <!--
-<LI>none yet</LI>
 -->
+<LI>none yet</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.4.3</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.3 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.3 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.3)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.4.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
 <DD>Download: <KBD><B>svn co http://svn.libburnia-project.org/libburn/trunk libburn</B>
 </KBD></DD>
-<DD>Build: <KBD><B>cd libburn ; ./bootstrap ; ./configure --prefix /usr ; make</B>
+<DD>Build: <KBD><B>cd libburn ; ./bootstrap ; ./configure --prefix /usr ; make ; cdrskin/compile_cdrskin.sh</B>
 </KBD></DD>
 <DD>Build of SVN versions needs <A HREF="http://sources.redhat.com/autobook/">
 autotools</A> of at least version 1.7 installed.
@@ -266,15 +279,20 @@ But after the run of <KBD>./bootstrap</KBD>, only
 vanilla tools like make and gcc are needed.</DD>
 </DD>
 <DD>&nbsp;</DD>
-<DT>The following downloads are intended for adventurous end users or
+<DT>The following download is intended for adventurous end users or
 admins with full system souvereignty.</DT>
 <DD>Source (./bootstrap is already applied, build tested, for more see
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.4.3.tar.gz">cdrskin-0.4.3.tar.gz</A>
-(700 KB).
+<A HREF="cdrskin-0.4.5.tar.gz">cdrskin-0.4.5.tar.gz</A>
+(715 KB).
 </DD>
+
+<!-- This is not offered any more for 0.4.4 and 0.4.5
+
+<DT>The following downloads are intended for adventurous end users or
+admins with full system souvereignty.</DT>
 <DD>Binary (untar and move to /usr/bin/cdrskin):</DD>
 <DD><A HREF="cdrskin_0.4.3-x86-suse9_0.tar.gz">
 cdrskin_0.4.3-x86-suse9_0.tar.gz</A>, (110 KB).
@@ -282,6 +300,8 @@ cdrskin_0.4.3-x86-suse9_0.tar.gz</A>, (110 KB).
 <DD><A HREF="cdrskin_0.4.3-x86-suse9_0-static.tar.gz">
 cdrskin_0.4.3-x86-suse9_0-static.tar.gz</A>, (310 KB)
 </DD>
+-->
+
 </DL>
 </P>
 
@@ -328,6 +348,8 @@ Example how to setup K3b to use cdrskin for burning data CD projects.
 (<A HREF="http://www.k3b.org">K3b</A> 
 is a GUI frontend which uses cdrecord for CD burning.)
 </P>
+
+<!--
 
 <HR>
 
@@ -382,6 +404,8 @@ and try again.
 <DD>$ <KBD><B>unset SCDBACKUP_USE_CDRSKIN</B></KBD></DD>
 </DL>
 </P>
+
+-->
 
 <HR>
 
@@ -442,13 +466,25 @@ and by <A HREF="http://sourceforge.net">sourceforge.net</A><BR>
 <HR>
 <DL>
 <DT>Links to my other published software projects :
+<DD><A HREF="http://scdbackup.webframe.org/xorriso_eng.html">
+xorriso, a standalone ISO 9660 multi-session CD/DVD burn tool.
+No mkisofs needed.
+<DL>
+<DD>
+<A HREF="http://scdbackup.sourceforge.net/xorriso_eng.html">
+(a second source of above)</A>
+</DD>
+</DL>
+</DD>
 <DD><A HREF=http://scdbackup.webframe.org/main_eng.html>
 scdbackup, multi volume CD backup</A>
 <DL><DD><A HREF=http://scdbackup.sourceforge.net/main_eng.html> 
-(a second source of above)</A></DL>
+(a second source of above)</A></DD></DL></DD>
 <DD><A HREF=http://stic.sourceforge.net>Some Tools for Image Collectors</A>
+</DD>
 <DD><A HREF=http://scdbackup.webframe.org/pppoem>
 pppoem, a DSL throughput monitor (mainly for Linux kernel 2.4)</A>
+</DD>
 </DL>
 <BR><BR>
 Legal statement: This website does not serve any commercial purpose.<BR>

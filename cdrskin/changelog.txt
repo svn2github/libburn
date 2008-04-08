@@ -5163,10 +5163,79 @@ Mentioned support for DVD+R/DL.
 * Support for DVD+R/DL media is now official
 * Experimental code for BD-RE with --allow_untested_media
 
-  []
+1 Mar 2008  [1595]
 cdrskin/changelog.txt
 Updated changelog
 
+2008.03.03.202930  [1598]
+libburn/libburn.h
+libburn/drive.c
+libburn/read.c
+Got rid of a cumbersome open-close cycle with burn_read_data() on stdio:
+
+2 Apr 2008  [1654]
+COPYRIGHT
+Corrected GPL version
+
+------------------------------------ cycle  - cdrskin-0.4.3 - 2008.04.07.152331
+* libburn: Improved read performance from stdio: pseudo-drives
+
+2008.04.08.100001  [ZeroFourFour 1669]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h (burn_header_version_*)
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+Made number transition and activated development documentation
+
+8 Apr 2008  [ZeroFourFour 1670]
+- cdrskin/add_ts_changes_to_libburn_0_4_2
+- cdrskin/add_ts_changes_to_libburn_0_4_3
++ cdrskin/add_ts_changes_to_libburn_0_4_4
++ cdrskin/add_ts_changes_to_libburn_0_4_5
+Updated cdrskin tarball generator
+
+8 Apr 2008  [ZeroFourFour 1671]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+2008.04.08.100001  [ZeroFourFour 1672]
+libburn/util.c
+Switched from configure.ac versioning to libburn.h versioning
+
+8 Apr 2008  [ZeroFourFour 1673]
+cdrskin/changelog.txt
+Documented last minute changes
+
+----------------------------- release  - cdrskin-0.4.4.pl00 - 2008.04.08.100001
+* Support for DVD+R/DL media is now official
+* Experimental code for BD-RE with --allow_untested_media
+* libburn: Improved read performance from stdio: pseudo-drives
+
+
+2008.04.08.132344  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h (burn_header_version_*)
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+cdrskin/changelog.txt
+Made number transition
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 
+------------------------------------ cycle  - cdrskin-0.4.5 - 
 
 ===============================================================================
                                     TODO

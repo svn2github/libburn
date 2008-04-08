@@ -10,7 +10,7 @@ Schilling's cdrtools. cdrskin strives to be a second source for the services
 traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
 Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
 with cdrecord-ProDVD in order to offer TAO-like single track recording.
-Sequential DVD-R[W] and DVD+R[/DL] are handled like CD-R[W] with TAO and
+Sequential DVD-R[W], DVD+R, DVD+R/DL are handled like CD-R[W] with TAO and
 multi-session. Additionally cdrskin offers cdrecord-ProDVD-like mode DAO
 with DVD-R[W].
 
@@ -23,7 +23,7 @@ About libburn API for burning CD and DVD: http://api.libburnia-project.org
 
 --------------------------------------------------------------------------
 
-For dual layer DVD types see the advice to use dvd+rw-tools at
+For yet unsupported media types see the advice to use dvd+rw-tools at
 the end of this text.
 
 --------------------------------------------------------------------------
@@ -279,21 +279,27 @@ They are not compatible or related to cdrecord resp. cdrecord-ProDVD
 (now obsoleted by original source cdrtools cdrecord with identical
 capabilities besides the license key).
 
+
+--------------------------------------------------------------------------
+
+Advanced multi-session use cases:
+
 A special feature of dvd+rw-tools is growing of ISO-9660 filesystems on
 overwriteable media. This is not the same as multi-session writing of cdrskin
 with CD media, but retrieves additional information from the existing ISO
 image and finally manipulates the start sectors of this existing image.
 
 So, inspired by growisofs, cdrskin can offer DVD multi-session not only with
-sequential DVD-R[W] and with DVD+R[/DL], but also with DVD-RAM, DVD+RW and
+sequential DVD-R[W] and with DVD+R [DL], but also with DVD-RAM, DVD+RW and
 even regular disk files or block devices other than CD/DVD writers.
 This is enabled by option --grow_overwriteable_iso.
 
-We have recently released an integrated ISO-9660 multi-session tool
+The libburnia project provides an integrated ISO-9660 multi-session tool
 named [wiki:Xorriso xorriso] which tries to go one step beyond
-growisofs. It uses [wiki:Libisoburn libisoburn] and the new version
-of [wiki:Libisofs libisofs].
+growisofs. It uses  [wiki:Libburn libburn] , [wiki:Libisofs libisofs]
+and [wiki:Libisoburn libisoburn].
 
+See [http://scdbackup.sourceforge.net/man_1_xorriso.html man xorriso].
 
 --------------------------------------------------------------------------
 

@@ -120,7 +120,7 @@ The project components (list subject to growth, hopefully):
            Rock Ridge extensions. Manipulation is not only adding or
            overwriting of files but also deletion, renaming, and attribute
            changing.
-           See libisoburn/README for more
+           See xorriso/README for more.
 
 - "test"   is a collection of application gestures and examples given by the
            authors of the library features. The burn API example of libburn
@@ -260,6 +260,9 @@ Project history as far as known to me:
 - 15th Feb 2008 libisoburn-0.1.0 (.so.1) coordinates libisofs and libburn for
   the purpose of ISO image reading and writing. It emulates multi-session on
   overwriteable media. Application xorriso makes use of all three libraries.
+
+- 8th Apr 2008 libburn-0.4.4 has proven to be capable of burning to DVD+R/DL
+  and read performance on disk file pseudo-drives has been improved.
 
 
 ------------------------------------------------------------------------------
