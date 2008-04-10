@@ -46,6 +46,9 @@ extern struct libdax_msgs *libdax_messenger;
 static struct burn_drive drive_array[255];
 static int drivetop = -1;
 
+/* ts A80410 : in init.c */
+extern int burn_support_untested_profiles;
+
 /* ts A61021 : the unspecific part of sg.c:enumerate_common()
 */
 int burn_setup_drive(struct burn_drive *d, char *fname)
@@ -2167,8 +2170,10 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		    wt == BURN_WRITE_TAO)
 			o->might_simulate = 1;
 	} else if (d->current_profile == 0x12 || d->current_profile == 0x13 ||
-			d->current_profile == 0x1a) {
-		/* DVD-RAM, overwriteable DVD-RW, DVD+RW */
+			d->current_profile == 0x1a ||
+			(d->current_profile == 0x43 &&
+					 burn_support_untested_profiles)) {
+		/* DVD-RAM, overwriteable DVD-RW, DVD+RW, BD-RE */
 		o->start_adr = 1;
 		ret = burn_disc_get_formats(d, &status, &size, &dummy,
 					&num_formats);

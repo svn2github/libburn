@@ -3052,6 +3052,8 @@ ex:;
 static double Cdrskin_cd_speed_factoR= 150.0*1024.0;
 /** The DVD payload speed factor for reporting progress: 1x */
 static double Cdrskin_dvd_speed_factoR= 1385000;
+/** The BD payload speed factor for reporting progress: 1x */
+static double Cdrskin_bd_speed_factoR= 4495625;
 
 /** The effective payload speed factor for reporting progress */
 static double Cdrskin_speed_factoR= 150.0*1024.0;
@@ -3061,6 +3063,7 @@ static double Cdrskin_speed_factoR= 150.0*1024.0;
 */
 static double Cdrskin_libburn_cd_speed_factoR= 176.4;
 static double Cdrskin_libburn_dvd_speed_factoR= 1385.0;
+static double Cdrskin_libburn_bd_speed_factoR= 4495.625;
 
 /* The effective speed conversion factor for burn_drive_set_speed() */
 static double Cdrskin_libburn_speed_factoR= 176.4;
@@ -3070,6 +3073,7 @@ static double Cdrskin_libburn_speed_factoR= 176.4;
 */
 static double Cdrskin_libburn_cd_speed_addoN= 40.0;
 static double Cdrskin_libburn_dvd_speed_addoN= 1.0; /*poor accuracy with 2.4x*/
+static double Cdrskin_libburn_bd_speed_addoN= 1.0;
 static double Cdrskin_libburn_speed_addoN = 40.0;
 
 
@@ -3704,6 +3708,10 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
      Cdrskin_speed_factoR= Cdrskin_dvd_speed_factoR;
      Cdrskin_libburn_speed_factoR= Cdrskin_libburn_dvd_speed_factoR;
      Cdrskin_libburn_speed_addoN= Cdrskin_libburn_dvd_speed_addoN;
+   } else if(strstr(profile_name,"BD")==profile_name) {
+     Cdrskin_speed_factoR= Cdrskin_bd_speed_factoR;
+     Cdrskin_libburn_speed_factoR= Cdrskin_libburn_bd_speed_factoR;
+     Cdrskin_libburn_speed_addoN= Cdrskin_libburn_bd_speed_addoN;
    }
  }
 #endif /* Cdrskin_libburn_has_get_profilE */
@@ -4473,7 +4481,8 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  if(drive_info->sao_block_types & BURN_BLOCK_SAO)
    printf(" SAO");
  if((drive_info->raw_block_types & BURN_BLOCK_RAW96R) &&
-    strstr(profile_name,"DVD")!=profile_name)
+    strstr(profile_name,"DVD")!=profile_name &&
+    strstr(profile_name,"BD")!=profile_name)
    printf(" RAW/RAW96R");
  printf("\n");
 

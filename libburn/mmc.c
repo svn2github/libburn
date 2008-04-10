@@ -54,6 +54,10 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70306 */
 #define Libburn_support_dvd_plus_R 1
 
+/* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
+#define Libburn_dvd_ram_as_bd_rE yes
+*/
+
 /* DVD progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
@@ -2107,9 +2111,16 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_raM
-	if (cp == 0x12 || (cp == 0x43 && burn_support_untested_profiles))
+	if (cp == 0x12 || (cp == 0x43 && burn_support_untested_profiles)) {
 							/* DVD-RAM , BD-RE */
 		d->current_is_supported_profile = 1;
+
+#ifdef Libburn_dvd_ram_as_bd_rE
+		cp = d->current_profile = 0x43;
+		strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
+#endif
+
+	}
 #endif
 #ifdef Libburn_support_dvd_r_seQ
 	if (cp == 0x10 || cp == 0x11 || cp == 0x14) /* DVD-ROM,DVD-R,DVD-RW */
