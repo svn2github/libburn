@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "September 26, 2007"
+.TH CDRSKIN 1 "April 12, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1084,6 +1084,15 @@ Linux specific:
 Use and report literal Bus,Target,Lun addresses rather than real SCSI and
 pseudo ATA addresses. This method is outdated and was never compatible with
 original cdrecord.
+.TP
+.BI stream_recording="on"|"off"
+By setting "on" request that compliance to the effective speed setting is
+preferred over management of write errors. With DVD-RAM this can bring
+effective write speed near to the nominal write speed of the media. But it
+will also disable the automatic use of replacement blocks if write errors
+occur. It might as well be disliked or ignored by the drive.
+.br
+Warning: This has been tested with DVD-RAM only.
 .br
 .SH EXAMPLES
 .SS
@@ -1214,23 +1223,25 @@ Formatting data track sources for cdrskin:
 .br
 .BR mkisofs (8),
 .BR genisoimage (8),
+.BR xorriso (1),
 .BR afio (1),
 .BR star (1)
 .br
 .TP
-Other CD/DVD burn programs:
+Other CD/DVD/BD burn programs:
 .br
 .BR cdrecord (1),
-.BR wodim (1)
+.BR wodim (1),
+.BR xorriso (1)
 .br
 .TP
-For DVD burning (also tutor of libburn's DVD capabilities):
+For DVD/BD burning (also tutor of libburn's DVD/BD capabilities):
 .br
 .BR growisofs (1)
 .br
 .SH AUTHOR
 cdrskin was written by Thomas Schmitt <scdbackup@gmx.net>.
 .PP
-This manual page was written by George Danchev <danchev@spnet.net> and
-Thomas Schmitt, for the Debian project and for all others.
+This manual page was started by George Danchev <danchev@spnet.net> and
+is now maintained by Thomas Schmitt.
 

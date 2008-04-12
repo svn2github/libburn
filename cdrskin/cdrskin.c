@@ -148,7 +148,9 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no novelties in 0.4.5 yet */
+#define Cdrskin_libburn_has_stream_recordinG 1
+
+/* there are novelties in 0.4.5 yet */
 
 #endif /* Cdrskin_libburn_0_4_5 */
 
@@ -2668,6 +2670,13 @@ set_dev:;
      printf(
           " --single_track     accept only last argument as source_address\n");
 
+#ifdef Cdrskin_libburn_has_stream_recordinG
+     printf(
+        " stream_recording=\"on\"|\"off\"  \"on\" requests to prefer speed\n");
+     printf(
+        "                                  over write error management.\n");
+#endif
+
 #ifdef Cdrskin_allow_libburn_taO
      printf(
           " tao_to_sao_tsize=<num>  use num as fixed track size if in a\n");
@@ -3090,6 +3099,7 @@ struct CdrskiN {
  int gracetime;
  int dummy_mode;
  int force_is_set;
+ int stream_recording_is_set;
  int single_track;
  int prodvd_cli_compatible;
 
@@ -3265,6 +3275,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->gracetime= 0;
  o->dummy_mode= 0;
  o->force_is_set= 0;
+ o->stream_recording_is_set= 0;
  o->single_track= 0;
  o->prodvd_cli_compatible= 0;
  o->do_devices= 0;
@@ -5011,9 +5022,22 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        fprintf(stderr,
        "cdrskin: NOTE : blank=format_... : DVD+RW do not need this\n");
        fprintf(stderr,
-       "cdrskin: HINT : For de-icing use option blank=format_overwrite_full");
+      "cdrskin: HINT : For de-icing use option blank=format_overwrite_full\n");
        {ret= 2; goto ex;}
      }
+   } else if((profile_number == 0x12 && skin->preskin->allow_untested_media) ||
+             (profile_number == 0x43 && skin->preskin->allow_untested_media)) {
+
+     fprintf(stderr,
+  "cdrskin: SORRY : Formatting of DVD-RAM and BD-RE is not implemented yet\n");
+     {ret= 0; goto ex;}
+
+     /* <<< for now strictly experimental */
+     /* DVD-RAM , BD-RE */
+
+     /* >>> check whether the current format is already 0x00 of maximum size */
+     /* >>> demand bit10 of blank_format_type or size>0 */;
+
    } else {
      fprintf(stderr,
             "cdrskin: SORRY : blank=%s for now does DVD+/-RW only\n",fmt_text);
@@ -5096,7 +5120,7 @@ unsupported_format_type:;
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1 || do_format==3) {
    burn_disc_format(drive,(off_t) skin->blank_format_size,
-            ((skin->blank_format_type>>8)&0xff) | ((!!skin->force_is_set)<<4));
+            ((skin->blank_format_type>>8)&7) | ((!!skin->force_is_set)<<4));
 #endif
 
  } else {
@@ -6236,6 +6260,9 @@ burn_failed:;
 #endif
 #ifdef Cdrskin_libburn_has_set_forcE
  burn_write_opts_set_force(o, !!skin->force_is_set);
+#endif
+#ifdef Cdrskin_libburn_has_stream_recordinG
+ burn_write_opts_set_stream_recording(o, !!skin->stream_recording_is_set);
 #endif
 
  if(skin->dummy_mode) {
@@ -7435,6 +7462,17 @@ set_speed:;
 
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: speed : %f\n",skin->x_speed));
+
+   } else if(strncmp(argv[i],"-stream_recording=",18)==0) {
+     value_pt= argv[i]+18;
+     goto set_stream_recording;
+   } else if(strncmp(argv[i],"stream_recording=",17)==0) {
+     value_pt= argv[i]+17;
+set_stream_recording:;
+     if(strcmp(value_pt, "on")==0)
+       skin->stream_recording_is_set= 1;
+     else
+       skin->stream_recording_is_set= 0;
 
    } else if(strcmp(argv[i],"-swab")==0) {
      skin->swap_audio_bytes= 0;
