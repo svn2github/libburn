@@ -49,6 +49,11 @@ struct burn_write_opts
 	*/
 	int force_is_set;
 
+	/* ts A80412 : whether to use WRITE12 with Streaming bit set
+	   rather than WRITE10. Speeds up DVD-RAM. Might help with BD-RE.
+	   This gets transferred to burn_drive.do_stream_recording */
+	int do_stream_recording;
+
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
 	unsigned char mediacatalog[13];

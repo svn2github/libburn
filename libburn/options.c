@@ -38,6 +38,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->start_byte = -1;
 	opts->fill_up_media = 0;
 	opts->force_is_set = 0;
+	opts->do_stream_recording = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -378,6 +379,16 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force)
 {
 	opts->force_is_set = !!use_force;
 }
+
+
+/* ts A80412: API */
+void burn_write_opts_set_stream_recording(struct burn_write_opts *opts,
+					 int value)
+{
+	opts->do_stream_recording = !!value;
+}
+
+
 
 
 /* ts A70901: API */

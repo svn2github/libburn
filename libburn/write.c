@@ -1978,6 +1978,9 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	/* ts A61224 */
 	burn_disc_init_write_status(o, disc); /* must be done very early */
 
+	/* ts A80412 */
+	d->do_stream_recording = o->do_stream_recording;
+
 	d->buffer = &buf;
 	memset(d->buffer, 0, sizeof(struct buffer));
 	d->rlba = -150;
@@ -1988,14 +1991,14 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 		ret = burn_stdio_write_sync(o, disc);
 		if (ret <= 0)
 			goto fail_wo_sync;
-		return;
+		goto ex;
 	}
 	/* ts A61218 */
 	if (! d->current_is_cd_profile) {
 		ret = burn_dvd_write_sync(o, disc);
 		if (ret <= 0)
 			goto fail_wo_sync;
-		return;
+		goto ex;
 	}
 
 	/* ts A70218 */
@@ -2148,7 +2151,7 @@ return crap.  so we send the command, then ignore the result.
 
 	/* ts A61012 : This return was traditionally missing. I suspect this
 			to have caused Cdrskin_eject() failures */
-	return;
+	goto ex;
 
 fail:
 	d->sync_cache(d);
@@ -2160,6 +2163,9 @@ fail_wo_sync:;
 			"Burn run failed", 0, 0);
 	d->cancel = 1;
 	d->busy = BURN_DRIVE_IDLE;
+ex:;
+	d->do_stream_recording = 0;
+	return;
 }
 
 /* ts A70811 : API function */

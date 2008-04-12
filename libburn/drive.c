@@ -61,6 +61,7 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->released = 1;
 	d->stdio_fd = -1;
 	d->status = BURN_DISC_UNREADY;
+	d->do_stream_recording = 0;
 	return 1;
 }
 

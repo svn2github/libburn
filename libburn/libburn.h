@@ -1758,6 +1758,20 @@ void burn_write_opts_set_fillup(struct burn_write_opts *opts,
 void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
 
 
+/* ts A80412 */
+/** Eventually makes use of the more modern write command AAh WRITE12 and
+    sets the Streaming bit. With DVD-RAM this can override the traditional
+    slowdown to half nominal speed. But if it speeds up writing then it also
+    disables error management and correction. Weigh your priorities.
+    This only affects the write operations of burn_disc_write().
+    @since 0.4.6
+    @param opts The write opts to change
+    @param value  0=use 2Ah WRITE10, 1=use AAh WRITE12 with Streaming bit
+*/
+void burn_write_opts_set_stream_recording(struct burn_write_opts *opts, 
+                                         int value);
+
+
 /** Sets whether to read in raw mode or not
     @param opts The read opts to change
     @param raw_mode If non-zero, reading will be done in raw mode, so that everything in the data tracks on the
@@ -2189,8 +2203,9 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
 int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
 
 
-/* ts A80202 : @since 0.4.4 */
+/* ts A80202 */
 /** Convert a severity number into a severity name
+    @since 0.4.4
     @param severity_number The rank number: the higher, the more severe.
     @param severity_name A name as with burn_msgs_submit(), e.g. "SORRY".
     @param flag Bitfield for control purposes (unused yet, submit 0)

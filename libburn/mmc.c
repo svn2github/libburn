@@ -707,22 +707,26 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	if(d->wait_for_buffer_free)
 		mmc_wait_for_buffer_free(d, buf);
 
-	scsi_init_command(&c, MMC_WRITE_10, sizeof(MMC_WRITE_10));
-/*
-	memcpy(c.opcode, MMC_WRITE_10, sizeof(MMC_WRITE_10));
-	c.oplen = sizeof(MMC_WRITE_10);
-*/
+	/* ts A80412 */
+	if(d->do_stream_recording > 0)  {
+
+		/* >>> ??? is WRITE12 available ?  */
+			/* >>> ??? inquire feature 107h Stream Writing bit ? */
+
+		scsi_init_command(&c, MMC_WRITE_12, sizeof(MMC_WRITE_12));
+		mmc_int_to_four_char(c.opcode + 2, start);
+		mmc_int_to_four_char(c.opcode + 6, len);
+		c.opcode[10] = 1<<7; /* Streaming bit */
+	} else {
+		scsi_init_command(&c, MMC_WRITE_10, sizeof(MMC_WRITE_10));
+		mmc_int_to_four_char(c.opcode + 2, start);
+		c.opcode[6] = 0;
+		c.opcode[7] = (len >> 8) & 0xFF;
+		c.opcode[8] = len & 0xFF;
+	}
 	c.retry = 1;
-	mmc_int_to_four_char(c.opcode + 2, start);
-	c.opcode[6] = 0;
-	c.opcode[7] = (len >> 8) & 0xFF;
-	c.opcode[8] = len & 0xFF;
 	c.page = buf;
 	c.dir = TO_DRIVE;
-/*
-	burn_print(12, "%d, %d, %d, %d - ", c->opcode[2], c->opcode[3], c->opcode[4], c->opcode[5]);
-	burn_print(12, "%d, %d, %d, %d\n", c->opcode[6], c->opcode[7], c->opcode[8], c->opcode[9]);
-*/
 
 #ifdef Libburn_log_in_and_out_streaM
 	/* <<< ts A61031 */
@@ -2612,7 +2616,9 @@ selected_not_suitable:;
 		}
 		if (!(d->current_profile == 0x13 ||
 			d->current_profile == 0x14 ||
-			d->current_profile == 0x1a))
+			d->current_profile == 0x1a ||
+			(0 && d->current_profile == 0x12) ||
+			(0 && d->current_profile == 0x43))) /* >>> */
 			goto unsuitable_media;
 		      
 		format_type = d->format_descriptors[index].type;
@@ -2741,6 +2747,31 @@ selected_not_suitable:;
 			format_type == 0x15 ? "quick" : "full");
 		return_immediately = 1; /* caller must do the waiting */
 
+	} else if (0 && d->current_profile == 0x12) {
+		/* DVD-RAM */
+		format_type = 0x00;
+		if(flag & 4) {
+			/* >>> search for largest 0x00 format descriptor */;
+		} else {
+			/* >>> search for smallest 0x00 descriptor >= size */;
+		}
+		/* >>> */;		
+
+	} else if (0 && d->current_profile == 0x43 &&
+			burn_support_untested_profiles) {
+		/* BD-RE */
+		format_type = 0x00;
+		if(flag & 4) {
+			/* >>> search for format 0x31 */;
+			/* >>> if 0x31 : */
+				/* >>> format_type = 0x31; */
+			/* >>> else */
+				/* >>> search largest 0x30 format descriptor */;
+		} else {
+			/* >>> search for smallest 0x30 descriptor >= size */;
+		}
+		/* >>> */;		
+		
 	} else { 
 
 	/* >>> other formattable types to come */

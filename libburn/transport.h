@@ -187,6 +187,11 @@ struct burn_drive
 	               synchronize chache has happened yet */
 	int needs_sync_cache;
 
+	/* ts A80412 : whether to use WRITE12 with Streaming bit set
+	               rather than WRITE10. Speeds up DVD-RAM. Might help
+	               with BD-RE */
+	int do_stream_recording;
+
 	/* ts A61218 from 51h READ DISC INFORMATION */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
 
