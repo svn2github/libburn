@@ -49,6 +49,24 @@
 extern struct libdax_msgs *libdax_messenger;
 
 
+/* The maximum output size to be used with CD media. This is also curbed
+   by BURN_OS_TRANSPORT_BUFFER_SIZE. The smaller number gets into effect.
+*/ 
+#define Libburn_cd_obS (32 * 1024)
+
+/* The size to be used with DVD media.
+*/
+#define Libburn_dvd_obS (32 * 1024)
+
+/* The size to be used with BD-RE media in normal, not streamed mode.
+*/
+#define Libburn_bd_re_obS (32 * 1024)
+
+/* The size to be used with BD-RE media in streamed mode.
+*/
+#define Libburn_bd_re_streamed_obS (64 * 1024)
+
+
 static int type_to_ctrl(int mode)
 {
 	int ctrl = 0;
@@ -1511,7 +1529,7 @@ int burn_disc_setup_dvd_plus_r(struct burn_write_opts *o,
 }
 
 
-/* ts A61218 - A70129 */
+/* ts A61218 - A70415 */
 int burn_dvd_write_sync(struct burn_write_opts *o,
 				 struct burn_disc *disc)
 {
@@ -1522,6 +1540,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 	char msg[160];
 
 	d->needs_close_session = 0;
+
+	/* buffer flush trigger for sector.c:get_sector() */
+	o->obs = Libburn_dvd_obS;
 
 	if (d->current_profile == 0x1a || d->current_profile == 0x12 ||
 	    d->current_profile == 0x43) { 
@@ -1539,6 +1560,13 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			goto early_failure;
 		}
 		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
+		if (d->current_profile == 0x43) /* BD-RE */
+			o->obs = Libburn_bd_re_obS;
+		if (d->do_stream_recording) {
+			o->obs_pad = 1;
+			if (d->current_profile == 0x43) /* BD-RE */
+				o->obs = Libburn_bd_re_streamed_obS;
+		}
 
 	} else if (d->current_profile == 0x13) {
 		 /* DVD-RW Restricted Overwrite */
@@ -1611,7 +1639,11 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		/* ??? padding needed ??? cowardly doing it for now */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 	}
-	o->obs = 32*1024; /* buffer flush trigger for sector.c:get_sector() */
+
+	sprintf(msg, "dvd/bd Profile= %2.2Xh , obs= %d , obs_pad= %d",
+		d->current_profile, o->obs, o->obs_pad);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg, 0, 0);
 
 	for (i = 0; i < disc->sessions; i++) {
 		/* update progress */
@@ -2000,6 +2032,16 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 			goto fail_wo_sync;
 		goto ex;
 	}
+
+	/* ts A70521 : Linux 2.4 USB audio fails with 64 kiB */
+	/* ts A80414 : might need 64 kiB for BD-RE streaming */
+        /* buffer flush trigger for sector.c:get_sector() */
+	o->obs = Libburn_cd_obS;
+
+	sprintf(msg, "cd Profile= %2.2Xh , obs= %d , obs_pad= %d",
+		d->current_profile, o->obs, o->obs_pad);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg, 0, 0);
 
 	/* ts A70218 */
 	if (o->write_type == BURN_WRITE_SAO) {
