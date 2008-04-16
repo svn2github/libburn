@@ -464,14 +464,13 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				wpt += 2048;
 				*data_count += 2048;
 			}
-
-			libdax_msgs_submit(libdax_messenger,
-				 d->global_index,
-				 0x00020000,
-				 LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-				 "burn_read_data() returns 0",
-				 0, 0);
-
+			if (!(flag & 2))
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index,
+				  0x00020000,
+				  LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				  "burn_read_data() returns 0",
+				  0, 0);
 			ret = 0; goto ex;
 		}
 		memcpy(wpt, d->buffer->data, cpy_size);
