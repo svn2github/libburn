@@ -2791,6 +2791,17 @@ no_suitable_formatting_type:;
 					  (16 - 8 * i)) & 0xff;
 		sprintf(descr, "%s", d->current_profile_text);
 		return_immediately = 1; /* caller must do the waiting */
+		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
+
+		/* <<< ts A80418 : experiment: MMC-5 6.5.3.2 , 6.5.4.2.1.2
+		   DCRT: Disable Certification and maintain number of blocks
+		c.page->data[1] |= 0x20;
+		*/
+
+		/* <<< ts A80418 : experiment: MMC-5 6.5.4.2.1.2
+   		   Override maintaining of number of blocks with DCRT
+		c.opcode[1] |= 0x08;
+		*/
 
 	} else if (0 && d->current_profile == 0x43 &&
 			burn_support_untested_profiles) {
@@ -2821,14 +2832,27 @@ unsuitable_media:;
 	}
 	c.page->data[8] = (format_type << 2) | (format_sub_type & 3);
 
-	sprintf(msg, "Format type %2.2Xh \"%s\", blocks = %.f\n",
+	sprintf(msg, "Format type %2.2Xh \"%s\", blocks = %.f",
 		format_type, descr, (double) num_of_blocks);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
+	sprintf(msg, "CDB: ");
+	for (i = 0; i < 6; i++)
+		sprintf(msg + strlen(msg), "%2.2X ", c.opcode[i]);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			msg, 0, 0);
+	sprintf(msg, "Format list ");
+	for (i = 0; i < 12; i++)
+		sprintf(msg + strlen(msg), "%2.2X ", c.page->data[i]);
+	strcat(msg, "\n");
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			msg, 0, 0);
+	
 
 	/* <<<
-	*/
 	if(d->current_profile == 0x12 || d->current_profile == 0x43) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00000002,
@@ -2837,6 +2861,7 @@ unsuitable_media:;
 			0, 0);
 		return 1;
 	}
+	*/
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {
