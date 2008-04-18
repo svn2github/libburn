@@ -2564,6 +2564,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
                bit2= format to maximum available size
                bit3= expand format up to at least size
                bit4= enforce re-format of (partly) formatted media
+               bit5= try to disable eventual defect management
                bit7= bit8 to bit15 contain the index of the format to use
                bit8-bit15 = see bit7
 */
@@ -2572,8 +2573,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	struct buffer buf;
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
-	int index;
-	off_t num_of_blocks = 0, diff;
+	int index, format_sub_type = 0;
+	off_t num_of_blocks = 0, diff, format_size;
 	char msg[160],descr[80];
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
@@ -2605,7 +2606,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 		if (ret <= 0)
 			goto selected_not_suitable;
 		index = (flag >> 8) & 0xff;
-		if(index < 0 || index > d->num_format_descr) {
+		if(index < 0 || index >= d->num_format_descr) {
 selected_not_suitable:;
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020132,
@@ -2617,14 +2618,16 @@ selected_not_suitable:;
 		if (!(d->current_profile == 0x13 ||
 			d->current_profile == 0x14 ||
 			d->current_profile == 0x1a ||
-			(0 && d->current_profile == 0x12) ||
+			d->current_profile == 0x12 ||
 			(0 && d->current_profile == 0x43))) /* >>> */
 			goto unsuitable_media;
 		      
 		format_type = d->format_descriptors[index].type;
-		if (!(format_type == 0x00 || format_type == 0x10 ||
+		if (!(format_type == 0x00 || format_type == 0x01 ||
+		      format_type == 0x10 ||
 		      format_type == 0x11 || format_type == 0x13 ||
-		      format_type == 0x15 || format_type == 0x26))
+		      format_type == 0x15 || format_type == 0x26 ||
+ 		      format_type == 0x30 || format_type == 0x31 ))
 			goto selected_not_suitable;
 		if (flag & 4) {
 			num_of_blocks =
@@ -2734,6 +2737,7 @@ selected_not_suitable:;
 			}
 
 		} else {
+no_suitable_formatting_type:;
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020131,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -2747,15 +2751,46 @@ selected_not_suitable:;
 			format_type == 0x15 ? "quick" : "full");
 		return_immediately = 1; /* caller must do the waiting */
 
-	} else if (0 && d->current_profile == 0x12) {
-		/* DVD-RAM */
-		format_type = 0x00;
-		if(flag & 4) {
-			/* >>> search for largest 0x00 format descriptor */;
-		} else {
-			/* >>> search for smallest 0x00 descriptor >= size */;
+	} else if (d->current_profile == 0x12) {
+		/* ts A80417 : DVD-RAM */
+		index = -1;
+		format_size = -1;
+		for (i = 0; i < d->num_format_descr; i++) {
+			format_type = d->format_descriptors[i].type;
+			if (format_type!=0x00 && format_type!=0x01)
+		continue;
+			if(flag & (4 | 32)) { /* Max size or no defect mgt */
+				/* Search for largest 0x00 or 0x01
+				   format descriptor */;
+				if (d->format_descriptors[i].size>format_size){
+					format_size =
+						d->format_descriptors[i].size;
+					index = i;
+				}
+			} else {
+				/* Search for smallest 0x0 or 0x01
+				   descriptor >= size */;
+				if (d->format_descriptors[i].size >= size &&
+				    (format_size < 0 ||
+				     d->format_descriptors[i].size<format_size)
+				   ) {
+					format_size =
+						d->format_descriptors[i].size;
+					index = i;
+				}
+			}
 		}
-		/* >>> */;		
+		if(index < 0)
+			goto no_suitable_formatting_type;
+		format_type = d->format_descriptors[index].type;
+		num_of_blocks = d->format_descriptors[index].size / 2048;
+		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+		for (i = 0; i < 3; i++)
+			 c.page->data[9 + i] =
+				( d->format_descriptors[index].tdp >>
+					  (16 - 8 * i)) & 0xff;
+		sprintf(descr, "%s", d->current_profile_text);
+		return_immediately = 1; /* caller must do the waiting */
 
 	} else if (0 && d->current_profile == 0x43 &&
 			burn_support_untested_profiles) {
@@ -2784,13 +2819,24 @@ unsuitable_media:;
 			msg, 0, 0);
 		return 0;
 	}
-	c.page->data[8] = format_type << 2;
+	c.page->data[8] = (format_type << 2) | (format_sub_type & 3);
 
 	sprintf(msg, "Format type %2.2Xh \"%s\", blocks = %.f\n",
 		format_type, descr, (double) num_of_blocks);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
+
+	/* <<<
+	*/
+	if(d->current_profile == 0x12 || d->current_profile == 0x43) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00000002,
+			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_ZERO,
+			"Formatting of DVD-RAM or BD-RE not implemented yet",
+			0, 0);
+		return 1;
+	}
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {

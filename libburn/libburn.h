@@ -1166,11 +1166,15 @@ void burn_read_opts_free(struct burn_read_opts *opts);
 void burn_disc_erase(struct burn_drive *drive, int fast);
 
 
-/* ts A70101 - A70112 */
+/* ts A70101 - A70417 */
 /** Format media for use with libburn. This currently applies to DVD-RW
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h). DVD+RW can be "de-iced"
     by setting bit2 of flag. Other media cannot be formatted yet. 
+    This function usually returns while the drive is still in the process
+    of formatting. The formatting is done, when burn_drive_get_status()
+    returns BURN_DRIVE_IDLE. This may be immediately after return or may
+    need several thousand seconds to occur.
     @param drive The drive with the disc to format.
     @param size The size in bytes to be used with the format command. It should
                 be divisible by 32*1024. The effect of this parameter may
@@ -1179,14 +1183,17 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit0= after formatting, write the given number of zero-bytes
                       to the media and eventually perform preliminary closing.
                 bit1= insist in size 0 even if there is a better default known
-                bit2= format to maximum available size
+                bit2= without bit7: format to maximum available size
+                      with bit7   : take size from indexed format descriptor
                 bit3= -reserved-
                 bit4= enforce re-format of (partly) formatted media
+                bit5= try to disable eventual defect management
                 bit7= MMC expert application mode (else libburn tries to
                       choose a suitable format type):
                       bit8 to bit15 contain the index of the format to use. See
                       burn_disc_get_formats(), burn_disc_get_format_descr().
-                      Acceptable types are: 0x00, 0x10, 0x11, 0x13, 0x15, 0x26.
+                      Acceptable types are: 0x00, 0x01, 0x10, 0x11, 0x13,
+                      0x15, 0x26, 0x30, 0x31.
                       If bit7 is set, bit4 is set automatically.
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);

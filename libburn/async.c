@@ -392,6 +392,10 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		size = 0;
 		flag &= ~(2|8); /* no insisting in size 0, no expansion */
 		flag |= 4;      /* format up to maximum size */
+	} else if (drive->current_profile == 0x12) {
+		ok = 1; /* DVD-RAM */
+	} else if (drive->current_profile == 0x43) {
+		ok = 1; /* BD-RE */
 	}
 
 	if (!ok) {

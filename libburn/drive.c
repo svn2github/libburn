@@ -592,7 +592,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 
 /*
    @param flag: bit0 = fill formatted size with zeros
-                bit1, bit2 , bit4, bit7 - bit15 are for d->format_unit()
+                bit1, bit2 , bit4, bit5, bit7 - bit15 are for d->format_unit()
 */
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
@@ -615,7 +615,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
 
-	ret = d->format_unit(d, size, flag & 0xff96); /* forward bits */
+	ret = d->format_unit(d, size, flag & 0xffb6); /* forward bits */
 	if (ret <= 0)
 		d->cancel = 1;
 
