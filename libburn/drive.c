@@ -1260,7 +1260,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		d->current_is_supported_profile = 1;
 		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
 		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
-		d->media_capacity_remaining = size;
+		burn_drive_set_media_capacity_remaining(d, size);
 
 		/* >>> ? open file for a test ? (>>> beware of "-" = stdin) */;
 
@@ -1872,8 +1872,8 @@ off_t burn_disc_available_space(struct burn_drive *d,
 		return 0;
 	if (d->drive_role != 1) {
 		if (d->media_capacity_remaining <= 0)
-			d->media_capacity_remaining = 
-			((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
+			burn_drive_set_media_capacity_remaining(d,
+			  (off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	} else {
 		if (o != NULL)
 			d->send_write_parameters(d, o);
@@ -2105,7 +2105,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		o->start_adr = 1;
 		size = d->media_capacity_remaining;
 		burn_os_stdio_capacity(d->devname, &size);
-		d->media_capacity_remaining = size;
+		burn_drive_set_media_capacity_remaining(d, size);
 		o->start_range_high = size;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		o->might_do_sao = 4;
@@ -2455,4 +2455,12 @@ int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid)
 	return 0;
 }
 
+
+/* ts A80422 : centralizing this setting for debugging purposes
+*/
+int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value)
+{
+	d->media_capacity_remaining = value;
+	return 1;
+}
 

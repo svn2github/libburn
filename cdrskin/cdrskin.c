@@ -6995,19 +6995,21 @@ set_blank:;
        skin->preskin->demands_cdrskin_caps= 1;
      } else if(strncmp(cpt,"format_defectmgt",16)==0) { 
        skin->do_blank= 1;
-       skin->blank_format_type= 4;
+       skin->blank_format_type= 4|(3<<9);  /* default payload size */
        skin->blank_format_size= 0;
        skin->preskin->demands_cdrskin_caps= 1;
        if(cpt[16]=='_') {
          cpt+= 17;
          if(strcmp(cpt,"none")==0)
-           skin->blank_format_type|= (1<<13);
+           skin->blank_format_type= 4|(1<<13);
          else if(strcmp(cpt,"max")==0)
-           ;
+           skin->blank_format_type= 4;  /* smallest payload size above 0 */
          else if(strcmp(cpt,"min")==0)
-           skin->blank_format_type|= (1<<10);
-         else if(isdigit(*cpt))
-           skin->blank_format_size= Scanf_io_size(cpt,0);
+           skin->blank_format_type= 4|(2<<9); /*largest payload size with mgt*/
+         else if(strncmp(cpt,"payload_",8)==0) {
+           skin->blank_format_size= Scanf_io_size(cpt+8,0);
+           skin->blank_format_type= 4;
+         }
        }
      } else if(strcmp(cpt,"deformat_sequential")==0) {
        skin->do_blank= 1;

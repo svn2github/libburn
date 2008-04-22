@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 17, 2008"
+.TH CDRSKIN 1 "April 22, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -382,6 +382,32 @@ This option treats already formatted media even if not option -force is given.
 .br
 For DVD+RW this is the only supported explicit formatting type. It provides
 complete "de-icing" so no reader slips on unwritten data areas.
+.TP
+format_defectmgt
+Format DVD-RAM to reserve a generous amount of spare blocks for defect
+management.
+.br
+The following format_defectmgt_* allow to submit user wishes which
+nevertheless have to match one of the available formats. These formats are
+offered by the drive after examining the media.
+.TP
+format_defectmgt_max
+Format DVD-RAM to reserve a maximum number of spare blocks.
+.TP
+format_defectmgt_min
+Format DVD-RAM to reserve a minimum number of spare blocks. It might be
+necessary to format format_defectmgt_none first in order to get
+offered the most minmal spare blocks sizes for format_defectmgt_min.
+.TP
+format_defectmgt_none
+Format DVD-RAM to the largest available payload in the hope to disable
+defect management at all. This seems not to have a speed increasing effect,
+though.
+.TP
+format_defectmgt_payload_<size>
+The text after "format_defectmgt_payload_" gives a number of bytes, eventually
+with suffixes "s", "k", "m". The largest number of spare blocks will be chosen
+which allows at least the given payload size.
 .TP
 deformat_sequential
 Like blank=all but with the additional ability to blank overwriteable DVD-RW.

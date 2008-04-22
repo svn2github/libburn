@@ -1178,13 +1178,18 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
     @param drive The drive with the disc to format.
     @param size The size in bytes to be used with the format command. It should
                 be divisible by 32*1024. The effect of this parameter may
-                depend on the media profile.
+                depend on the media profile and on parameter flag.
     @param flag Bitfield for control purposes:
                 bit0= after formatting, write the given number of zero-bytes
                       to the media and eventually perform preliminary closing.
-                bit1= insist in size 0 even if there is a better default known
-                bit2= without bit7: format to maximum available size
-                      with bit7   : take size from indexed format descriptor
+                bit1+2: size mode
+                   0 = use parameter size as far as it makes sense
+                   1 = insist in size 0 even if there is a better default known
+                       (has no effect on DVD-RAM or BD-RE)
+                   2 = without bit7: format to maximum available size
+                       with bit7   : take size from indexed format descriptor
+                   3 = without bit7: format to default size
+                       with bit7   : take size from indexed format descriptor
                 bit3= -reserved-
                 bit4= enforce re-format of (partly) formatted media
                 bit5= try to disable eventual defect management

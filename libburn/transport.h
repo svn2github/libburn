@@ -353,4 +353,9 @@ struct burn_drive
 
 /* end of generic 'drive' data structures */
 
+/* ts A80422 : centralizing this setting for debugging purposes
+*/
+int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value);
+
+
 #endif /* __TRANSPORT */

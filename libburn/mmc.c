@@ -367,7 +367,8 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 		return 0;
 	}
 	if (num > 0) {
-		d->media_capacity_remaining = ((off_t) num) * ((off_t) 2048);
+		burn_drive_set_media_capacity_remaining(d,
+					((off_t) num) * ((off_t) 2048));
 		d->media_lba_limit = *nwa + num;
 	} else
 		d->media_lba_limit = 0;
@@ -1049,9 +1050,9 @@ int mmc_fake_toc(struct burn_drive *d)
 		if (session_number > d->disc->sessions) {
 			if (i == d->last_track_no - 1) {
 				/* ts A70212 : Last track field Free Blocks */
-				d->media_capacity_remaining =
+				burn_drive_set_media_capacity_remaining(d,
 				  ((off_t) mmc_four_char_to_int(tdata + 16)) *
-				  ((off_t) 2048);
+				  ((off_t) 2048));
 				d->media_lba_limit = 0;
 			}	
 	continue;
@@ -2355,6 +2356,12 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 */
 
 	d->format_curr_max_size *= (off_t) 2048;
+	if((d->current_profile == 0x12 || d->current_profile == 0x43)
+	   && d->media_capacity_remaining == 0) {
+		burn_drive_set_media_capacity_remaining(d,
+						d->format_curr_max_size);
+		d->media_lba_limit = d->format_curr_max_size / 2048;
+	}
 
 	if (top_wanted == 0x00 || top_wanted == 0x10)
 		sign = -1; /* the caller clearly desires full format */
@@ -2387,11 +2394,6 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 		/* Criterion is proximity to quick intermediate state */
 		if (type == 0x00) { /* full format (with lead out) */
 			score = 1 * sign;
-			if(d->current_profile == 0x12 &&
-			   d->media_capacity_remaining == 0) {
-				d->media_capacity_remaining = size;
-				d->media_lba_limit = num_blocks;
-			}
 		} else if (type == 0x10) { /* DVD-RW full format */
 			score = 10 * sign;
 		} else if(type == 0x13) { /* DVD-RW quick grow last session */
@@ -2399,12 +2401,13 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 		} else if(type == 0x15) { /* DVD-RW Quick */
 			score = 50 * sign;
 			if(d->current_profile == 0x13) {
-				d->media_capacity_remaining = size;
+				burn_drive_set_media_capacity_remaining(d,
+									size);
 				d->media_lba_limit = num_blocks;
 			}
 		} else if(type == 0x26) { /* DVD+RW */
 			score = 1 * sign;
-			d->media_capacity_remaining = size;
+			burn_drive_set_media_capacity_remaining(d, size);
 			d->media_lba_limit = num_blocks;
 		} else {
 	continue;
@@ -2560,8 +2563,12 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
                and mmc5r03c.pdf, 6.5 FORMAT UNIT */
 /*
    @param size The size (in bytes) to be sent with the FORMAT comand
-   @param flag bit1= insist in size 0 even if there is a better default known
-               bit2= format to maximum available size
+   @param flag bit1+2: size mode
+                 0 = use parameter size as far as it makes sense
+                 1 = insist in size 0 even if there is a better default known
+                 2 = without bit7: format to maximum available size
+                     with bit7   : take size from indexed format descriptor
+                 3 = format to default size
                bit3= expand format up to at least size
                bit4= enforce re-format of (partly) formatted media
                bit5= try to disable eventual defect management
@@ -2573,13 +2580,14 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	struct buffer buf;
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
-	int index, format_sub_type = 0;
-	off_t num_of_blocks = 0, diff, format_size;
+	int index, format_sub_type = 0, format_00_index, size_mode;
+	off_t num_of_blocks = 0, diff, format_size, i_size, format_00_max_size;
 	char msg[160],descr[80];
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
 	if (mmc_function_spy(d, "mmc_format_unit") <= 0)
 		return 0;
+	size_mode = (flag >> 1) & 3;
 
 	scsi_init_command(&c, MMC_FORMAT_UNIT, sizeof(MMC_FORMAT_UNIT));
 /*
@@ -2649,6 +2657,8 @@ selected_not_suitable:;
 
 		/* mmc5r03c.pdf , 6.5.4.2.14, DVD+RW Basic Format */
 		format_type = 0x26;
+
+					/* >>> ??? is this "| 8" a bug ? */
 
 		if ((size <= 0 && !(flag & 2)) || (flag & (4 | 8))) {
 			/* maximum capacity */
@@ -2753,32 +2763,64 @@ no_suitable_formatting_type:;
 
 	} else if (d->current_profile == 0x12) {
 		/* ts A80417 : DVD-RAM */
-		index = -1;
-		format_size = -1;
+		/*  6.5.4.2.1  Format Type = 00h (Full Format)
+		    6.5.4.2.2  Format Type = 01h (Spare Area Expansion)
+		*/
+		index = format_00_index = -1;
+		format_size = format_00_max_size = -1;
 		for (i = 0; i < d->num_format_descr; i++) {
 			format_type = d->format_descriptors[i].type;
-			if (format_type!=0x00 && format_type!=0x01)
+			i_size = d->format_descriptors[i].size;
+			if (format_type != 0x00 && format_type != 0x01)
 		continue;
-			if(flag & (4 | 32)) { /* Max size or no defect mgt */
-				/* Search for largest 0x00 or 0x01
-				   format descriptor */;
-				if (d->format_descriptors[i].size>format_size){
-					format_size =
-						d->format_descriptors[i].size;
+			if (flag & 32) { /* No defect mgt */
+				/* Search for largest 0x00 format descriptor */
+				if (format_type != 0x00)
+		continue;
+				if (i_size < format_size)
+		continue;
+				format_size = i_size;
+				index = i;
+		continue;
+			} else if (flag & 4) { /*Max or default size with mgt*/
+				/* Search for second largest 0x00
+				   format descriptor. For max size allow
+				   format type 0x01.
+				 */
+				if (format_type == 0x00) {
+					if (i_size < format_size) 
+		continue;
+					if (i_size < format_00_max_size) {
+						format_size = i_size;
+						index = i;
+		continue;
+					}
+					format_size = format_00_max_size;
+					index = format_00_index;
+					format_00_max_size = i_size;
+					format_00_index = i;
+		continue;
+				}
+				if (size_mode==3)
+		continue;
+				if (i_size > format_size) {
+					format_size = i_size;
 					index = i;
 				}
-			} else {
-				/* Search for smallest 0x0 or 0x01
-				   descriptor >= size */;
-				if (d->format_descriptors[i].size >= size &&
-				    (format_size < 0 ||
-				     d->format_descriptors[i].size<format_size)
-				   ) {
-					format_size =
-						d->format_descriptors[i].size;
-					index = i;
-				}
+		continue;
+			} 
+			/* Search for smallest 0x0 or 0x01
+			   descriptor >= size */;
+			if (d->format_descriptors[i].size >= size &&
+			    (format_size < 0 || i_size < format_size)
+			   ) {
+				format_size = i_size;
+				index = i;
 			}
+		}
+		if(index < 0 && (flag & 4) && !(flag & 32)) {
+			format_size = format_00_max_size;
+			index = format_00_index;
 		}
 		if(index < 0)
 			goto no_suitable_formatting_type;
@@ -2797,7 +2839,6 @@ no_suitable_formatting_type:;
 		   DCRT: Disable Certification and maintain number of blocks
 		c.page->data[1] |= 0x20;
 		*/
-
 		/* <<< ts A80418 : experiment: MMC-5 6.5.4.2.1.2
    		   Override maintaining of number of blocks with DCRT
 		c.opcode[1] |= 0x08;
@@ -2843,7 +2884,7 @@ unsuitable_media:;
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
-	sprintf(msg, "Format list ");
+	sprintf(msg, "Format list: ");
 	for (i = 0; i < 12; i++)
 		sprintf(msg + strlen(msg), "%2.2X ", c.page->data[i]);
 	strcat(msg, "\n");
@@ -2851,17 +2892,21 @@ unsuitable_media:;
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
 	
-
-	/* <<<
-	if(d->current_profile == 0x12 || d->current_profile == 0x43) {
+/*
+  # define Libburn_do_not_format_dvd_raM 1
+*/
+	if(d->current_profile == 0x43
+#ifdef Libburn_do_not_format_dvd_raM
+		 			||  d->current_profile == 0x12
+#endif
+	  ) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00000002,
-			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_ZERO,
-			"Formatting of DVD-RAM or BD-RE not implemented yet",
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_ZERO,
+		  "Formatting of BD-RE not implemented yet - This is a dummy",
 			0, 0);
 		return 1;
 	}
-	*/
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {
