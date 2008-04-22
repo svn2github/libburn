@@ -2654,6 +2654,7 @@ set_dev:;
     " --grow_overwriteable_iso  emulate multi-session on media like DVD+RW\n");
      printf(
        " --ignore_signals   try to ignore any signals rather than to abort\n");
+     printf(" --list_formats     list format descriptors for loaded media.\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
 #ifdef Cdrskin_libburn_has_set_waitinG
      printf(" modesty_on_drive=<options> no writing into full drive buffer\n");
@@ -3115,6 +3116,7 @@ struct CdrskiN {
  char msifile[Cdrskin_strleN];
 
  int do_atip;
+ int do_list_formats;
 
  int do_blank;
  int blank_fast;
@@ -3295,6 +3297,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_msinfo= 0;
  o->msifile[0]= 0;
  o->do_atip= 0;
+ o->do_list_formats= 0;
  o->do_blank= 0;
  o->blank_fast= 0;
  o->no_blank_appendable= 0;
@@ -4854,6 +4857,73 @@ ex:;
     under SuSE 9.3. Waiting seems to help. I suspect the media demon. */
  usleep(200000);
 
+ return(ret);
+}
+
+
+/** Perform --list_formats
+    @param flag Bitfield for control purposes:
+    @return <=0 error, 1 success
+*/
+int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
+{
+ struct burn_drive *drive;
+ int ret, i, status, num_formats, profile_no, type;
+ off_t size;
+ unsigned dummy;
+ char status_text[80], profile_name[90];
+
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   return(ret);
+ drive= skin->drives[skin->driveno].drive;
+
+ ret = burn_disc_get_formats(drive, &status, &size, &dummy,
+                             &num_formats);
+ if(ret <= 0) {
+   fprintf(stderr, "cdrskin: SORRY: Cannot obtain format list info\n");
+   ret= 2; goto ex;
+ }
+ ret= burn_disc_get_profile(drive, &profile_no, profile_name);
+ printf("Media current: ");
+ if(profile_no > 0 && ret > 0) {
+   if(profile_name[0])
+     printf("%s\n", profile_name);
+   else
+     printf("%4.4Xh\n", profile_no);
+ } else
+   printf("is not recognizable\n");
+
+ if(status == BURN_FORMAT_IS_UNFORMATTED)
+   sprintf(status_text, "unformatted, up to %.1f MiB",
+                        ((double) size) / 1024.0 / 1024.0);
+ else if(status == BURN_FORMAT_IS_FORMATTED) {
+   if(profile_no==0x12 || profile_no==0x13 || profile_no==0x1a ||
+      profile_no==0x43)
+     sprintf(status_text, "formatted, with %.1f MiB",
+                         ((double) size) / 1024.0 / 1024.0);
+   else
+     sprintf(status_text, "written, with %.1f MiB",
+                         ((double) size) / 1024.0 / 1024.0);
+ } else if(status == BURN_FORMAT_IS_UNKNOWN) {
+   if (profile_no > 0)
+     sprintf(status_text, "intermediate or unknown");
+   else
+     sprintf(status_text, "no media or unknown media");
+ } else
+   sprintf(status_text, "illegal status according to MMC-5");
+ printf("Format status: %s\n", status_text);
+
+ for (i = 0; i < num_formats; i++) {
+   ret= burn_disc_get_format_descr(drive, i, &type, &size, &dummy);
+   if (ret <= 0)
+ continue;
+   printf("Format idx %-2d: %2.2Xh , %.fs , %.1f MiB\n",
+          i, type, ((double) size) / 2048.0, ((double) size) / 1024.0/1024.0);
+ }
+ ret= 1;
+ex:;
+ Cdrskin_release_drive(skin,0);
  return(ret);
 }
 
@@ -7288,6 +7358,9 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"-isosize")==0) {
      skin->use_data_image_size= 1;
 
+   } else if(strcmp(argv[i],"--list_formats")==0) {
+     skin->do_list_formats= 1;
+
    } else if(strcmp(argv[i],"--list_ignored_options")==0) {
      char line[80];
 
@@ -7935,6 +8008,13 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    ret= Cdrskin_atip(skin,(skin->do_atip>1));
    if(ret<=0)
      {*exit_value= 7; goto ex;}
+ }
+ if(skin->do_list_formats) {
+   if(skin->n_drives<=0)
+     {*exit_value= 14; goto no_drive;}
+   ret= Cdrskin_list_formats(skin, 0);
+   if(ret<=0)
+     {*exit_value= 14; goto ex;}
  }
  if(skin->do_blank) {
    if(skin->n_drives<=0)

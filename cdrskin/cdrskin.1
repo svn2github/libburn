@@ -345,7 +345,7 @@ audio track. Same is done for suffix ".au" and SUN Audio.
 Option -audio may be used only with CD media and not with DVD.
 .TP 
 .BI blank= type
-Blank a CD-RW, a DVD-RW, or format a DVD+/-RW.
+Blank a CD-RW, a DVD-RW, or format a DVD-RW, DVD+RW or DVD-RAM.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -1062,6 +1062,16 @@ active.
 Try to ignore any signals rather than to abort the program. This is not a
 very good idea. You might end up waiting a very long time for cdrskin
 to finish.
+.TP
+.BI \--list_formats
+List the available format descriptors as reported by the drive for the
+loaded media. Each descriptor line begins with "Format idx" and the
+descriptor's list index, followed by a ":", the format type, the number
+of payload blocks and that same number converted to MiB.
+.br
+The meaning of the format types is defined by the MMC standard
+with command FORMAT UNIT. A user will more be interested in the
+sizes than in the types.
 .TP
 .BI modesty_on_drive= <mode>[:min_percent=<num>][:max_percent=<num>]
 Mode 1 keeps the program from trying to write to the burner drive while its
