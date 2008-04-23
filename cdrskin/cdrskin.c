@@ -2396,9 +2396,15 @@ return:
      fprintf(stderr,
     "\tformat_overwrite_quickest\tto \"Restricted Overwrite intermediate\"\n");
      fprintf(stderr,
-          "\tformat_overwrite_full\tfull-size format a DVD-RW or DVD+RW\n");
+          "\tformat_overwrite_full\t\tfull-size format a DVD-RW or DVD+RW\n");
      fprintf(stderr,
-          "\tdeformat_sequential\tfully blank, even formatted DVD-RW\n");
+          "\tformat_defectmgt[_max|_min|_none]\tformat DVD-RAM or BD-RE\n");
+     fprintf(stderr,
+          "\tformat_defectmgt_payload_<size>\tformat DVD-RAM or BD-RE\n");
+     fprintf(stderr,
+          "\tformat_by_index_<number>\tformat by index from --list_formats\n");
+     fprintf(stderr,
+          "\tdeformat_sequential\t\tfully blank, even formatted DVD-RW\n");
      fprintf(stderr,
           "\tdeformat_sequential_quickest\tminimally blank, even DVD-RW\n");
 
@@ -3121,8 +3127,8 @@ struct CdrskiN {
  int do_blank;
  int blank_fast;
  int no_blank_appendable;
- int blank_format_type; /* 0=blank
-                           bit0-7:
+ int blank_format_type; /* bit0-7: job type
+                           0=blank
                            1=format_overwrite for DVD+RW, DVD-RW
                              bit8-15: bit0-7 of burn_disc_format(flag)
                                bit8 = write zeros after formatting
@@ -3131,16 +3137,33 @@ struct CdrskiN {
                                bit11= - reserved -
                                bit12= - reserved -
                                bit13= - reserved -
+                               bit15= format by index
                            2=deformat_sequential (blank_fast might matter)
                            3=format (= format_overwrite restricted to DVD+RW)
                            4=format_defectmgt for DVD-RAM, BD-RE
+                             bit8-15: bit0-7 of burn_disc_format(flag)
                                bit8 = write zeros after formatting
-                               bit9 = - reserved -
-                               bit10= format to maximum available size
+                               bit9+10: size mode
+                               0 = use parameter size as far as it makes sense
+                               1 = (identical to size mode 0)
+                               2 = without bit7: format to maximum size
+                                   with bit7   : take size from indexed format
+                                                 descriptor
+                               3 = without bit7: format to default size
+                                   with bit7   : take size from indexed format
+                                                 descriptor
                                bit11= - reserved -
                                bit12= - reserved -
                                bit13= try to disable defect management
+                               bit15= format by index
+                           5=format_by_index
+                             gets mapped to 4 with DVD-RAM and BD-RE else to 1,
+                             bit15 should be set and bit16-23 should contain
+                             a usable index number
+                           bit8-15: bit0-7 of burn_disc_format(flag)
+                                    depending on job type
                         */
+ int blank_format_index;   /* bit8-15 of burn_disc_format(flag) */
  double blank_format_size; /* to be used with burn_disc_format() */
 
  int do_direct_write;
@@ -3302,6 +3325,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->blank_fast= 0;
  o->no_blank_appendable= 0;
  o->blank_format_type= 0;
+ o->blank_format_index= -1;
  o->blank_format_size= 0.0;
  o->do_direct_write= 0;
  o->do_burn= 0;
@@ -5022,14 +5046,14 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  struct burn_progress p;
  struct burn_drive *drive;
  int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
- int wrote_well= 1;
+ int wrote_well= 1, format_flag= 0;
  double start_time;
  char *verb= "blank", *presperf="blanking", *fmt_text= "...";
  char profile_name[80];
  static char fmtp[][40]= {
                   "format_default", "format_overwrite", "deformat_sequential",
-                  "format_defectmgt"};
- static int fmtp_max= 3;
+                  "format_defectmgt", "format_by_index", ""};
+ static int fmtp_max= 5;
 
  start_time= Sfile_microtime(0); /* will be refreshed later */
  ret= Cdrskin_grab_drive(skin,0);
@@ -5046,7 +5070,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,1);
  do_format= skin->blank_format_type & 0xff;
- if(do_format == 1 || do_format == 3 || do_format == 4) {
+ if(do_format == 1 || do_format == 3 || do_format == 4 || do_format == 5) {
    verb= "format";
    presperf= "formatting";
  }
@@ -5065,6 +5089,12 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(do_format)
    if(do_format>=0 && do_format<=fmtp_max)
      fmt_text= fmtp[do_format];
+ if(do_format==5) {
+   if(profile_number == 0x12 || profile_number == 0x43)
+     do_format= 4;
+   else
+     do_format= 1;
+ }
 
  if(do_format==2) {
    /* Forceful blanking to Sequential Recording for DVD-R[W] and CD-RW */
@@ -5119,14 +5149,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
  } else if(do_format==4) {
    /* Formatting and influencing defect management of DVD-RAM , BD-RE */
-   if((profile_number == 0x12 && skin->preskin->allow_untested_media) ||
+   if(profile_number == 0x12 ||
       (profile_number == 0x43 && skin->preskin->allow_untested_media)) {
-
-     /* <<<
-     fprintf(stderr,
-  "cdrskin: SORRY : Formatting of DVD-RAM and BD-RE is not implemented yet\n");
-     {ret= 0; goto ex;}
-     */
 
      /* >>> check whether the current media is already formatted */;
 
@@ -5213,9 +5237,12 @@ unsupported_format_type:;
 
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1 || do_format==3 || do_format==4) {
-   burn_disc_format(drive,(off_t) skin->blank_format_size,
-                    ((skin->blank_format_type>>8)&(1|2|4|32)) |
-                    ((!!skin->force_is_set)<<4));
+   format_flag= (skin->blank_format_type>>8)&(1|2|4|32|128);
+   if(skin->force_is_set)
+     format_flag|= 16;
+   if(format_flag&128)
+     format_flag|= (skin->blank_format_index&255)<<8;
+   burn_disc_format(drive,(off_t) skin->blank_format_size,format_flag);
 #endif
 
  } else {
@@ -6879,7 +6906,7 @@ sorry_failed_to_eject:;
 */
 int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
- int i,k,l,ret,source_has_size=0;
+ int i,k,l,ret,source_has_size=0, idx= -1;
  double value,grab_and_wait_value= -1.0;
  char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
@@ -7081,6 +7108,20 @@ set_blank:;
            skin->blank_format_type= 4;
          }
        }
+       skin->preskin->demands_cdrskin_caps= 1;
+     } else if(strncmp(cpt,"format_by_index_",16)==0) {
+       sscanf(cpt+16, "%d", &idx);
+       if(idx<0 || idx>255) { 
+         fprintf(stderr,"cdrskin: SORRY : blank=%s provides unusable index\n",
+                 cpt);
+         return(0);
+       }
+       skin->do_blank= 1;
+       skin->blank_format_type= 5|(2<<9)|(1<<15);
+       skin->blank_format_index= idx;
+       skin->blank_format_size= 0;
+       skin->preskin->demands_cdrskin_caps= 1;
+
      } else if(strcmp(cpt,"deformat_sequential")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 2;
@@ -7360,9 +7401,11 @@ gracetime_equals:;
 
    } else if(strcmp(argv[i],"--list_formats")==0) {
      skin->do_list_formats= 1;
+     skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"--list_ignored_options")==0) {
      char line[80];
+     /* is also handled in Cdrpreskin_setup() */;
 
      line[0]= 0;
      printf("cdrskin: List of all ignored options:\n");

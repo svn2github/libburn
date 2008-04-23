@@ -2647,7 +2647,7 @@ selected_not_suitable:;
 				 c.page->data[9 + i] =
 					( d->format_descriptors[index].tdp >>
 					  (16 - 8 * i)) & 0xff;
-		sprintf(descr, "%s (bit7)", d->current_profile_text);
+		sprintf(descr, "%s (descr %d)", d->current_profile_text,index);
 		return_immediately = 1; /* caller must do the waiting */
 
 	} else if (d->current_profile == 0x1a) { /* DVD+RW */
@@ -2893,7 +2893,7 @@ unsuitable_media:;
 			msg, 0, 0);
 	
 /*
-  # define Libburn_do_not_format_dvd_raM 1
+ # define Libburn_do_not_format_dvd_raM 1
 */
 	if(d->current_profile == 0x43
 #ifdef Libburn_do_not_format_dvd_raM

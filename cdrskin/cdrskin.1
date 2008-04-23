@@ -409,6 +409,14 @@ The text after "format_defectmgt_payload_" gives a number of bytes, eventually
 with suffixes "s", "k", "m". The largest number of spare blocks will be chosen
 which allows at least the given payload size.
 .TP
+format_by_index_<number>
+The number after "format_by_index_" is used as index to the list of available
+format descriptors. This list can be obtained by option --list_formats.
+The numbers after text "Format idx" are the ones to be used with
+format_by_index_. Format descriptor lists are volatile. Do neither eject
+nor write the media between the run of --list_formats and the run of
+blank=format_by_index_ or else you may get a different format than desired.
+.TP
 deformat_sequential
 Like blank=all but with the additional ability to blank overwriteable DVD-RW.
 This will destroy their formatting and make them sequentially recordable. 
@@ -900,6 +908,16 @@ With multi-session DVD, blank=fast will act like dvd+rw-format -blank=full .
 .br
 growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
 .TP
+.BI \--list_formats
+List the available format descriptors as reported by the drive for the
+loaded media. Each descriptor line begins with "Format idx" and the
+descriptor's list index, followed by a ":", the format type, the number
+of payload blocks and that same number converted to MiB.
+.br
+The meaning of the format types is defined by the MMC standard
+with command FORMAT UNIT. A user will more be interested in the
+sizes than in the types.
+.TP
 .BI \--list_ignored_options
 List all ignored cdrecord options. The "-" options cannot be used as addresses
 of track sources. No track source address may begin with a text equal to an
@@ -1062,16 +1080,6 @@ active.
 Try to ignore any signals rather than to abort the program. This is not a
 very good idea. You might end up waiting a very long time for cdrskin
 to finish.
-.TP
-.BI \--list_formats
-List the available format descriptors as reported by the drive for the
-loaded media. Each descriptor line begins with "Format idx" and the
-descriptor's list index, followed by a ":", the format type, the number
-of payload blocks and that same number converted to MiB.
-.br
-The meaning of the format types is defined by the MMC standard
-with command FORMAT UNIT. A user will more be interested in the
-sizes than in the types.
 .TP
 .BI modesty_on_drive= <mode>[:min_percent=<num>][:max_percent=<num>]
 Mode 1 keeps the program from trying to write to the burner drive while its
