@@ -1,11 +1,11 @@
-libburnia-project.org Optical Media Rotisserie Recipes as of August 2007
+libburnia-project.org Optical Media Rotisserie Recipes as of April 2008
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
 - Sequential DVD-R[W] Cookbook
-- DVD+R Cookbook
+- DVD+R[/DL] Cookbook
 
 -------------------------------------------------------------------------------
                          TAO Multi-Session CD Cookbook
@@ -403,7 +403,8 @@ correctness of Pre-gap and Post-gap would become evident.
 -------------------------------------------------------------------------------
 Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
-and by experiments with drives NEC ND-4570A and LG GSA-4082B.
+and by experiments with drives NEC ND-4570A, LG GSA-4082B, PHILIPS SPD3300L.
+BD-RE experiments done by Giulio Orsero on LG BE06LU10.
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
@@ -416,18 +417,20 @@ DVD-RAM                        0012h
 DVD-RW Restricted Overwrite    0013h
 DVD-RW Sequential Recording    0014h (i.e. unformatted)
 DVD+RW                         001Ah
+BD-RE                          0043h (writing tested, formatting not tested)
 
 A short compilation of the write model:
 - Overwriting in general
 
 The recipes described here are depending on formatting state:
-- DVD-RAM, fully formatted DVD+RW or DVD-RW
+- DVD-RAM, fully formatted DVD+RW, DVD-RW, BD-RE
 - Unformatted DVD+RW
 - Partly formatted DVD+RW
 - Unformatted DVD-RW
 - Partly formatted DVD-RW
 - Intermediate state DVD-RW
-
+- DVD-RAM and BD-RE formatting
+- DVD-RAM and BD-RE speed tuning
 
 -------------------------------------------------------------------------------
 Overwriting in general :
@@ -444,7 +447,7 @@ Optimal performance is promised without any speed setting. But my experiments
 showed that SET STREAMING values persist after media change.
 
 In the formatted area of the media, coarse random access is possible.
-For DVD-RAM and DVD+RW write addresses and data size need to be aligned
+For DVD-RAM, DVD+RW, BD-RE write addresses and data size need to be aligned
 to 2 KiB. For DVD-RW alignment has to be 32 KiB. Within these limitations
 the write address is at the discretion of the sending program.
 Just use 2Ah WRITE to send data.
@@ -483,9 +486,12 @@ software did anything wrong.
 
 
 -------------------------------------------------------------------------------
-DVD-RAM, fully formatted DVD+RW or DVD-RW :
+DVD-RAM, fully formatted DVD+RW, DVD-RW, BD-RE :
 
-Full format is the natural state of DVD-RAM. 
+Full format is the natural state of DVD-RAM.
+
+BD-RE are sold unformatted and need to be fully formatted first.
+See paragraph about DVD-RAM and BD-RE formatting below.
 
 DVD+RW reaches this state if Background Formatting is allowed to finish without
 being stopped by 5Bh CLOSE TRACK SESSION.
@@ -669,6 +675,79 @@ One may treat such media as if Format Type 15h or 13h had been freshly applied.
 I.e. sequential writing from LBA 0. After cache sync bring the session out
 of Intermediate state by 5Bh CLOSE TRACK SESSION with Close Function 010b.
 (mmc5r03c.pdf 6.3.3.2.3)
+
+
+-------------------------------------------------------------------------------
+DVD-RAM and BD-RE formatting :
+
+Although DVD-RAM usually are sold formatted, there may still arise the wish
+to adjust formatting.
+BD-RE are sold unformatted and need to be formatted prior to usage.
+
+Two format types are relevant for DVD-RAM : 00h and 01h.
+00h offers the default size format and usually a maximum payload size format.
+Even with that maximum size payload there is hardware defect management.
+(mmc5r03c.pdf 6.5.4.2.1.2)
+01h allows to convert payload capacity into spare blocks for defect
+managment. There is no way to increase payload capacity by format 01h.
+(mmc5r03c.pdf 6.5.4.2.2.1)
+
+With BD-RE there are three format types : 00h, 30h and 31h.
+00h offers the default size format.
+30h offers several sizes with defect management. Usually there are three
+size th choose: #1: default size, #2: maximum spare area, #3: minimal spare.
+31h offers a single size and disables defect management. This has the side
+effect to speed up writing to nominal speed.
+(mmc5r03c.pdf 6.5.4.2.15, 6.24.3.3, Table 472)
+
+Only format sizes from the list of format descriptors are permissible
+for DVD-RAM. The format list can be obtained by 23h READ FORMAT CAPACITIES.
+It also includes a description of the current formatting state.
+(mmc5r03c.pdf 6.24, 6.24.3.2, 6.24.3.3)
+
+Formatting is done by command 04h FORMAT UNIT. Its data payload consists
+of a Format List Header and a Format Descriptor. It is advisable to set
+the Immed bit and the FOV bit in header byte number 1. The descriptor should
+be a copy of a descriptor from 23h READ FORMAT CAPACITIES.
+(mmc5r03c.pdf 6.5, 6.5.3.2, 6.5.3.3)
+With nearly all formats Sub-type should be set to 0. But with BD-RE formats
+30h and 31h the Sub-type selects the certification mode.
+Usable with 30h seem 10b Full Certification and 11b Quick Certification.
+Usable with 31h seem also 00b Quick Reformat and 01b No Certification.
+(mmc5r03c.pdf 6.5.4.2.15.1)
+
+
+-------------------------------------------------------------------------------
+DVD-RAM and BD-RE tuning :
+
+A special aspect of DVD-RAM and BD-RE is their low speed with write operations,
+which usually is only half than the nominal speed of media and drive.
+This is blamed to the automatic checkreading which happens ifor managing
+eventual defects. 
+
+Defect management of BD-RE can be disabled by format type 31h. See above.
+There is no drive known yet which would apply command 2Ah WRITE10 to DVD-RAM
+with full speed.
+
+The only known way to get full speed from DVD-RAM or BD-RE with enabled defect
+management is the use of AAh WRITE12 with Streaming Bit set to 1.
+(mmc5r03c.pdf 6.45)
+With some DVD-RAM drives this fails if a write buffer is not full 32 kB.
+With the tested BD-RE ione has to write write full 64 kB buffers.
+
+Although it seems not optimal, this is specified not only to disable the
+cumbersome checkread but also to ignore known defects and to write data
+to these defective addresses.
+(mmc5r03c.pdf 4.8.5)
+So the speed-up is only advisable as long as the media are free of
+incorrectable errors.
+
+Caveat:
+MMC-5 does not guarantee AAh WRITE12 to work on DVD-RAM or BD-RE at all.
+None of the features of profiles 0012h and 0043 promises the existence of
+AAh WRITE12.
+Nevertheless it worked on all tested drives is proper alignment was observed.
+(mmc5r03c.pdf 5.4.13, 6.45)
 
 
 -------------------------------------------------------------------------------
@@ -990,7 +1069,7 @@ close session if multi-session is demanded.
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-                              DVD+R Cookbook
+                             DVD+R[/DL] Cookbook
 -------------------------------------------------------------------------------
 Inspired by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 backed by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
@@ -1006,7 +1085,7 @@ DVD+R/DL                       002bh
 
 - About empty, appendable and finalized DVD+R
 - Writing a Pseudo Session to DVD+R
-- >>> Hearsay about DVD+R/DL (Dual Layer) :
+- DVD+R/DL (Dual Layer
 
 The following two chapters of the Sequential DVD-R[W] Cookbook are valid for
 DVD+R media too:
@@ -1100,9 +1179,11 @@ by closing them already after the first session.
 
 
 -------------------------------------------------------------------------------
-Hearsay about DVD+R/DL (Dual Layer) :
+DVD+R/DL (Dual Layer) :
 
->>>
+libburn treats DL media just like their single layer equivalents.
+This seems to work fine for DVD+R/DL, according to a report by nightmorph
+in http://libburnia-project.org/ticket/13 .
 
 -------------------------------------------------------------------------------
 
