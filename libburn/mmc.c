@@ -55,10 +55,15 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_support_dvd_plus_R 1
 
 /* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
-#define Libburn_dvd_ram_as_bd_rE yes
+ # define Libburn_dvd_ram_as_bd_rE yes
+*/
+/* ts A80425 : Prevents command FORMAT UNIT for DVD-RAM or BD-RE.
+               Useful only to test the selection of format descriptors without
+               actually formatting the media.
+ # define Libburn_do_not_format_dvd_ram_or_bd_rE 1
 */
 
-/* DVD progress report:
+/* DVD/BD progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
                read TOC or track info. Nevertheless, the written images verify.
@@ -97,6 +102,10 @@ extern struct libdax_msgs *libdax_messenger;
    ts A70330 : Allowed finalizing of DVD+R.
    ts A80228 : Made DVD+R/DL support official after nightmorph reported success
                in http://libburnia-project.org/ticket/13
+   ts A80416 : drive->do_stream_recording brings DVD-RAM to full nominal
+               writing speed at cost of no defect management.
+   ts A80416 : Giulio Orsero reports success with BD-RE writing. With
+               drive->do_stream_recording it does full nominal speed.
 */
 
 /* ts A70519 : With MMC commands of data direction FROM_DRIVE:
@@ -2363,6 +2372,35 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 		d->media_lba_limit = d->format_curr_max_size / 2048;
 	}
 
+
+#ifdef Libburn_dvd_ram_as_bd_rE
+	/* <<< dummy format descriptor list as obtained from dvd+rw-mediainfo
+               by Giulio Orsero in April 2008
+	*/
+	d->num_format_descr = 5;
+	d->format_descriptors[0].type = 0x00;
+	d->format_descriptors[0].size = (off_t) 11826176 * (off_t) 2048;
+	d->format_descriptors[0].tdp = 0x3000;
+	d->format_descriptors[1].type = 0x30;
+	d->format_descriptors[1].size = (off_t) 11826176 * (off_t) 2048;
+	d->format_descriptors[1].tdp = 0x3000;
+	d->format_descriptors[2].type = 0x30;
+	d->format_descriptors[2].size = (off_t) 11564032 * (off_t) 2048;
+	d->format_descriptors[2].tdp = 0x5000;
+	d->format_descriptors[3].type = 0x30;
+	d->format_descriptors[3].size = (off_t) 12088320 * (off_t) 2048;
+	d->format_descriptors[3].tdp = 0x1000;
+	d->format_descriptors[4].type = 0x31;
+	d->format_descriptors[4].size = (off_t) 12219392 * (off_t) 2048;
+	d->format_descriptors[4].tdp = 0x800;
+	d->best_format_type = 0x00;
+	d->best_format_size = (off_t) 11826176 * (off_t) 2048;
+
+	/* silencing compiler warnings about unused variables */
+	num_blocks = size = sign = i = max_score = num_descr = score = type = 0;
+
+#else /* Libburn_dvd_ram_as_bd_rE */
+
 	if (top_wanted == 0x00 || top_wanted == 0x10)
 		sign = -1; /* the caller clearly desires full format */
 
@@ -2420,6 +2458,9 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 			max_score = score;
 		}
 	}
+
+#endif /* ! Libburn_dvd_ram_as_bd_rE */
+
 
 /* <<<
 	sprintf(msg,
@@ -2627,7 +2668,7 @@ selected_not_suitable:;
 			d->current_profile == 0x14 ||
 			d->current_profile == 0x1a ||
 			d->current_profile == 0x12 ||
-			(0 && d->current_profile == 0x43))) /* >>> */
+			 d->current_profile == 0x43))
 			goto unsuitable_media;
 		      
 		format_type = d->format_descriptors[index].type;
@@ -2647,6 +2688,8 @@ selected_not_suitable:;
 				 c.page->data[9 + i] =
 					( d->format_descriptors[index].tdp >>
 					  (16 - 8 * i)) & 0xff;
+		if (format_type == 0x30)
+			format_sub_type = 3; /* Quick certification */
 		sprintf(descr, "%s (descr %d)", d->current_profile_text,index);
 		return_immediately = 1; /* caller must do the waiting */
 
@@ -2844,24 +2887,73 @@ no_suitable_formatting_type:;
 		c.opcode[1] |= 0x08;
 		*/
 
-	} else if (0 && d->current_profile == 0x43 &&
+	} else if (d->current_profile == 0x43 &&
 			burn_support_untested_profiles) {
 		/* BD-RE */
-		format_type = 0x00;
-		if(flag & 4) {
-			/* >>> search for format 0x31 */;
-			/* >>> if 0x31 : */
-				/* >>> format_type = 0x31; */
-			/* >>> else */
-				/* >>> search largest 0x30 format descriptor */;
-		} else {
-			/* >>> search for smallest 0x30 descriptor >= size */;
+		index = -1;
+		format_size = -1;
+		if (d->num_format_descr <= 0)
+			goto no_suitable_formatting_type;
+		if (d->format_descriptors[0].type != 0)
+			goto no_suitable_formatting_type;
+		for (i = 0; i < d->num_format_descr; i++) {
+			format_type = d->format_descriptors[i].type;
+			i_size = d->format_descriptors[i].size;
+			if (format_type != 0x00 && format_type != 0x30 &&
+			    format_type != 0x31)
+		continue;
+			if (flag & 32) { /* No defect mgt */
+				/* search largest format 0x31 */
+				if(format_type != 0x31)
+		continue;
+				format_sub_type = 3; /* Quick certification */
+			} else if(size_mode == 2) { /* max payload size */
+				/* search largest 0x30 format descriptor */
+				if(format_type != 0x30)
+		continue;
+				format_sub_type = 3; /* Quick certification */
+			} else if(size_mode == 3) { /* default payload size */
+				index = 0;
+		continue;
+			} else { /* defect managed format with size wish */
+				/* search for smallest 0x30 >= size */
+				if(format_type != 0x30)
+		continue;
+				if (i_size < size)
+		continue;
+				if (format_size >= 0 && i_size >= format_size)
+		continue;
+				index = i;
+				format_size = i_size;
+				format_sub_type = 3; /* Quick certification */
+		continue;
+			}
+			/* common for all cases which search largest
+			   descriptors */
+			if (i_size > format_size) {
+				format_size = i_size;
+				index = i;
+			}
 		}
-		/* >>> */;		
+		if (size_mode == 2 && index < 0 && !(flag & 32))
+			index = 0;
+		if (index < 0)
+			goto no_suitable_formatting_type;
+		format_type = d->format_descriptors[index].type;
+		num_of_blocks = d->format_descriptors[index].size / 2048;
+		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+		for (i = 0; i < 3; i++)
+			 c.page->data[9 + i] =
+				( d->format_descriptors[index].tdp >>
+					  (16 - 8 * i)) & 0xff;
+		sprintf(descr, "%s", d->current_profile_text);
+		return_immediately = 1; /* caller must do the waiting */
+		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
 		
 	} else { 
 
-	/* >>> other formattable types to come */
+		/* >>> other formattable types to come */
+
 unsuitable_media:;
 		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
 			d->current_profile, d->current_profile_text);
@@ -2892,21 +2984,18 @@ unsuitable_media:;
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
 	
-/*
- # define Libburn_do_not_format_dvd_raM 1
-*/
-	if(d->current_profile == 0x43
-#ifdef Libburn_do_not_format_dvd_raM
-		 			||  d->current_profile == 0x12
-#endif
-	  ) {
+#ifdef Libburn_do_not_format_dvd_ram_or_bd_rE
+	if(d->current_profile == 0x43 || d->current_profile == 0x12) {
+		sprintf(msg,
+		   "Formatting of %s not implemented yet - This is a dummy",
+		   d->current_profile_text);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00000002,
 			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_ZERO,
-		  "Formatting of BD-RE not implemented yet - This is a dummy",
-			0, 0);
+			msg, 0, 0);
 		return 1;
 	}
+#endif /* Libburn_do_not_format_dvd_ram_or_bd_rE */
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {
