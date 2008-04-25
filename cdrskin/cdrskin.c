@@ -4842,6 +4842,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    printf("book type:       %s (emulated booktype)\n", profile_name);
    if(profile_number==0x13) /* DVD-RW */
      printf("cdrskin: message for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
+ } else if(strstr(profile_name,"BD")==profile_name) {
+   printf("Mounted Media:   %2.2Xh, %s\n", profile_number, profile_name);
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 22, 2008"
+.TH CDRSKIN 1 "April 25, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -50,7 +50,7 @@ Single session on DVD-RW or DVD-R (Disk-at-once).
 .br
 Single session or emulated ISO-9660 multi-session 
 .br
-on overwriteable DVD+RW, DVD-RW, DVD-RAM,
+on overwriteable DVD+RW, DVD-RW, DVD-RAM, experimentally on BD-RE
 .br
 or on data file or block device.
 .br
@@ -68,7 +68,7 @@ Recordable CD Media
 .br
 Sequentially Recordable DVD Media
 .br
-Overwriteable DVD Media
+Overwriteable DVD or BD Media
 .br
 Drive preparation and addressing
 .br
@@ -96,7 +96,7 @@ These informations are also used by the operating systems' CD-ROM read drivers.
 .PP
 In general there are two types of tracks: data and audio. They differ in
 sector size, throughput and readability via the systems' CD-ROM drivers
-resp. by music CD players. With DVD there is only type data.
+resp. by music CD players. With DVD and BD there is only type data.
 .br
 If not explicitely option -audio is given, then any track is burned as type
 data, unless the track source is a file with suffix ".wav" or ".au" and has a
@@ -211,12 +211,14 @@ Option -multi might make DVD media unreadable in some DVD-ROM drives.
 Best reader compatibility is achieved without it
 (i.e. by single session media).
 .SS
-.B Overwriteable DVD Media:
+.B Overwriteable DVD or BD Media:
 .br
-Currently types DVD+RW, DVD-RW and DVD-RAM can be overwritten via cdrskin.
+Currently types DVD+RW, DVD-RW, DVD-RAM and BD-RE can be overwritten via
+cdrskin. BD-RE is supported only with option --allow_untested_media.
 .br
 DVD+RW and DVD-RAM media need no special initial formatting. They offer a
-single continuous data area for blockwise random access.
+single continuous data area for blockwise random access. BD-RE need
+explicit formatting before use. See blank=format_defectmgt .
 .br
 Option -audio is not allowed. Only one track is allowed.
 Option -multi cannot mark a recognizeable end of overwriteable media.
@@ -331,7 +333,8 @@ original cdrecord by Joerg Schilling:
 .TP
 .BI \-atip
 Retrieve some info about media state. With CD-RW print "Is erasable".
-With DVD media print "book type:" and a media type text.
+With DVD media print "book type:" and a media type text. With BD media
+print "Mounted Media:" and media type text.
 .TP 
 .BI \-audio
 Announces that the subsequent tracks are to be burned as audio.
@@ -342,10 +345,10 @@ stereo. For little-endian byte order (which is usual on PCs) use option
 those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix ".au" and SUN Audio.
 .br
-Option -audio may be used only with CD media and not with DVD.
+Option -audio may be used only with CD media and not with DVD or BD.
 .TP 
 .BI blank= type
-Blank a CD-RW, a DVD-RW, or format a DVD-RW, DVD+RW or DVD-RAM.
+Blank a CD-RW, a DVD-RW, or format a DVD-RW, DVD+RW, DVD-RAM or BD-RE.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -384,32 +387,35 @@ For DVD+RW this is the only supported explicit formatting type. It provides
 complete "de-icing" so no reader slips on unwritten data areas.
 .TP
 format_defectmgt
-Format DVD-RAM to reserve a generous amount of spare blocks for defect
-management.
+Format DVD-RAM or BD-RE to reserve the default amount of spare blocks for
+defect management.
+.br
+Note: BD-RE currently is only supported with option --allow_untested_media .
 .br
 The following format_defectmgt_* allow to submit user wishes which
 nevertheless have to match one of the available formats. These formats are
 offered by the drive after examining the media.
 .TP
 format_defectmgt_max
-Format DVD-RAM to reserve a maximum number of spare blocks.
+Format DVD-RAM or BD-RE to reserve a maximum number of spare blocks.
 .TP
 format_defectmgt_min
-Format DVD-RAM to reserve a minimum number of spare blocks. It might be
-necessary to format format_defectmgt_none first in order to get
+Format DVD-RAM or BD-RE to reserve a minimum number of spare blocks.
+It might be necessary to format format_defectmgt_none first in order to get
 offered the most minmal spare blocks sizes for format_defectmgt_min.
 .TP
 format_defectmgt_none
-Format DVD-RAM to the largest available payload in the hope to disable
+Format DVD-RAM or BD-RE to the largest available payload in the hope to disable
 defect management at all. This seems not to have a speed increasing effect,
 though.
 .TP
 format_defectmgt_payload_<size>
-The text after "format_defectmgt_payload_" gives a number of bytes, eventually
-with suffixes "s", "k", "m". The largest number of spare blocks will be chosen
-which allows at least the given payload size.
+Format DVD-RAM or BD-RE. The text after "format_defectmgt_payload_" gives a
+number of bytes, eventually with suffixes "s", "k", "m". The largest number
+of spare blocks will be chosen which allows at least the given payload size.
 .TP
 format_by_index_<number>
+Format DVD-RW, DVD+RW, DVD-RAM or BD-RE.
 The number after "format_by_index_" is used as index to the list of available
 format descriptors. This list can be obtained by option --list_formats.
 The numbers after text "Format idx" are the ones to be used with
@@ -601,7 +607,7 @@ To retrieve an archive file which was written as follow-up session,
 you may use option -toc to learn about the "lba" of the desired track number.
 This lba is the address of the 2048 byte block where the archive begins.
 .br
-With overwriteable DVD media, -multi cannot mark the end of the session.
+With overwriteable DVD or BD media, -multi cannot mark the end of the session.
 So when adding a new session this end has to be determined from the payload.
 Currently only ISO-9660 filesystems can be used that way. See option
 .B \--grow_overwriteable_iso
@@ -640,7 +646,7 @@ producing audible gaps between them.
 With DVD-R[W] this mode can only write a single track.
 No -multi is allowed with DVD-R[W] -sao.
 .br
--sao is permissible with overwriteable DVD and with DVD+R[/DL] but actually
+-sao is permissible with overwriteable DVD, BD or DVD+R[/DL] but actually
 only imposes restrictions without providing known advantages. 
 .br
 -sao can only be used for tracks of fixely predicted size. This implies that
@@ -665,6 +671,7 @@ Bus,Target,Lun Number) 'Vendor' 'Mode' 'Revision'
 .BI speed= number
 Set speed of drive. With data CD, 1x speed corresponds to a throughput of
 150,000 bytes/second. With DVD, 1x = 1,385,000 bytes/second.
+With BD 1x = 4,495,625 bytes/second.
 It is not an error to set a speed higher than is suitable for drive
 and media. One should stay within a realistic speed range, though.
 Special speed settings are:
@@ -682,7 +689,7 @@ suffix ".wav".
 .BI \-tao
 Write CD in Track At Once (TAO) mode, sequential DVD-R[W] in Incremental
 Streaming mode, or DVD+R[/DL] without traditional -sao restrictions.
-This mode also applies pro-forma to overwriteable DVD media.
+This mode also applies pro-forma to overwriteable media
 .br
 Mode -tao can be used with track sources of unpredictable size, like standard
 input or named pipes. It is also the only mode that can be used for writing
@@ -812,8 +819,9 @@ be the only finalization. It is advised to eject the media afterwards because
 the write operations circumvent the usual system i/o with its caches and
 buffers. By ejecting, those invalid memory copies get surely discarded.
 .br
-Only few media can be written this way: DVD-RAM, RVD+RW and overwriteable
-DVD-RW. Writing is restricted to the already formatted area of the media.
+Only few media can be written this way: DVD-RAM, BD-RE, RVD+RW and
+overwriteable DVD-RW. Writing is restricted to the already formatted
+area of the media.
 .br
 Writing starts at byte 0 of the media or at the address given by option
 .B write_start_address= .
@@ -828,7 +836,7 @@ padded up to the necessary size by zeros. Size -1 revokes direct writing
 and switches back to normal session oriented writing.
 .br
 Both, write_start_address and direct_write_amount size must be aligned to a
-media dependend transaction size. With DVD-RAM and DVD+RW this is 2k, with
+media dependend transaction size. With DVD-RAM, BD-RE, DVD+RW this is 2k, with
 overwriteable DVD-RW it is 32k.
 .TP
 .BI fallback_program= command
@@ -974,8 +982,8 @@ This option redirects to stderr all message output except its own result
 string and eventual output of -msinfo.
 .TP 
 .BI write_start_address= byte_offset
-Set the address on media where to start writing the track. With DVD+RW or
-DVD-RAM byte_offset must be aligned to 2 kiB blocks, but better is 32 kiB.
+Set the address on media where to start writing the track. With DVD+RW, DVD-RAM 
+or BD-RE byte_offset must be aligned to 2 kiB blocks, but better is 32 kiB.
 With DVD-RW 32 kiB alignment is mandatory.
 .br
 Other media are not suitable for this option yet.
