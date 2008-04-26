@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 25, 2008"
+.TH CDRSKIN 1 "April 26, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -364,10 +364,24 @@ fast
 Minimally blank an entire CD-RW or blank an unformatted DVD-RW.
 (See also --prodvd_cli_compatible, --grow_overwriteable_iso)
 .TP
+deformat_sequential
+Like blank=all but with the additional ability to blank overwriteable DVD-RW.
+This will destroy their formatting and make them sequentially recordable. 
+Another peculiarity is the ability to blank media which appear already blank.
+This is similar to option -force but does not try to blank media other than
+recognizable CD-RW and DVD-RW.
+.br
+(Note: blank=deformat_* are not original cdrecord options.)
+.TP
+deformat_sequential_quickest
+Like blank=deformat_sequential but blanking DVD-RW only minimally.
+This is faster than full blanking but may yield media incapable of
+Incremental Streaming (-tao).
+.TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
 .br
-(Note: blank=format_overwrite* are not original cdrecord options.)
+(Note: blank=format_* are not original cdrecord options.)
 .TP
 format_overwrite_quickest
 Like format_overwrite without creating a 128 MiB trailblazer session.
@@ -396,6 +410,22 @@ The following format_defectmgt_* allow to submit user wishes which
 nevertheless have to match one of the available formats. These formats are
 offered by the drive after examining the media.
 .TP
+format_defectmgt_cert_off
+Disable the usual media quality certification in order to save time and
+format to default size.
+The certification setting persists even if subsequent blank= options override
+the size of the format selection.
+.br
+Whether formatting without certification works properly depends much on the
+drive. One should check the "Format status:" from --list_formats afterwards.
+.TP
+format_defectmgt_cert_on
+Re-enable the usual media quality certification and format to default size.
+The certification setting persists like with format_defectmgt_cert_off.
+.br
+Whether there happens certification at all depends much on the media state
+and the actually selected format descriptor.
+.TP
 format_defectmgt_max
 Format DVD-RAM or BD-RE to reserve a maximum number of spare blocks.
 .TP
@@ -422,20 +452,6 @@ The numbers after text "Format idx" are the ones to be used with
 format_by_index_. Format descriptor lists are volatile. Do neither eject
 nor write the media between the run of --list_formats and the run of
 blank=format_by_index_ or else you may get a different format than desired.
-.TP
-deformat_sequential
-Like blank=all but with the additional ability to blank overwriteable DVD-RW.
-This will destroy their formatting and make them sequentially recordable. 
-Another peculiarity is the ability to blank media which appear already blank.
-This is similar to option -force but does not try to blank media other than
-recognizable CD-RW and DVD-RW.
-.br
-(Note: blank=deformat_sequential* are not original cdrecord options.)
-.TP
-deformat_sequential_quickest
-Like blank=deformat_sequential but blanking DVD-RW only minimally.
-This is faster than full blanking but may yield media incapable of
-Incremental Streaming (-tao).
 .RE
 .TP
 .BI \-checkdrive

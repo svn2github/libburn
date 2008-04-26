@@ -2400,6 +2400,8 @@ return:
      fprintf(stderr,
           "\tformat_defectmgt[_max|_min|_none]\tformat DVD-RAM or BD-RE\n");
      fprintf(stderr,
+          "\tformat_defectmgt[_cert_on|_cert_off]\tcertification slow|quick\n");
+     fprintf(stderr,
           "\tformat_defectmgt_payload_<size>\tformat DVD-RAM or BD-RE\n");
      fprintf(stderr,
           "\tformat_by_index_<number>\tformat by index from --list_formats\n");
@@ -3137,6 +3139,7 @@ struct CdrskiN {
                                bit11= - reserved -
                                bit12= - reserved -
                                bit13= - reserved -
+                               bit14= - reserved -
                                bit15= format by index
                            2=deformat_sequential (blank_fast might matter)
                            3=format (= format_overwrite restricted to DVD+RW)
@@ -3155,6 +3158,7 @@ struct CdrskiN {
                                bit11= - reserved -
                                bit12= - reserved -
                                bit13= try to disable defect management
+                               bit14= - reserved -
                                bit15= format by index
                            5=format_by_index
                              gets mapped to 4 with DVD-RAM and BD-RE else to 1,
@@ -3165,6 +3169,7 @@ struct CdrskiN {
                         */
  int blank_format_index;   /* bit8-15 of burn_disc_format(flag) */
  double blank_format_size; /* to be used with burn_disc_format() */
+ int blank_format_no_certify;
 
  int do_direct_write;
  int do_burn;
@@ -3327,6 +3332,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->blank_format_type= 0;
  o->blank_format_index= -1;
  o->blank_format_size= 0.0;
+ o->blank_format_no_certify= 0;
  o->do_direct_write= 0;
  o->do_burn= 0;
  o->tell_media_space= 0;
@@ -5244,6 +5250,8 @@ unsupported_format_type:;
      format_flag|= 16;
    if(format_flag&128)
      format_flag|= (skin->blank_format_index&255)<<8;
+   if(skin->blank_format_no_certify)
+     format_flag|= 64;
    burn_disc_format(drive,(off_t) skin->blank_format_size,format_flag);
 #endif
 
@@ -7108,7 +7116,12 @@ set_blank:;
          else if(strncmp(cpt,"payload_",8)==0) {
            skin->blank_format_size= Scanf_io_size(cpt+8,0);
            skin->blank_format_type= 4;
-         }
+         } else if(strcmp(cpt,"cert_off")==0)
+           skin->blank_format_no_certify= 1;
+         else if(strcmp(cpt,"cert_on")==0)
+           skin->blank_format_no_certify= 0;
+         else
+           goto unsupported_blank_option;
        }
        skin->preskin->demands_cdrskin_caps= 1;
      } else if(strncmp(cpt,"format_by_index_",16)==0) {
@@ -7138,6 +7151,7 @@ set_blank:;
        /* is handled in Cdrpreskin_setup() */;
  continue;
      } else { 
+unsupported_blank_option:;
        fprintf(stderr,"cdrskin: FATAL : Blank option '%s' not supported yet\n",
                       cpt);
        return(0);
