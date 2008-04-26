@@ -57,6 +57,7 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
  # define Libburn_dvd_ram_as_bd_rE yes
 */
+
 /* ts A80425 : Prevents command FORMAT UNIT for DVD-RAM or BD-RE.
                Useful only to test the selection of format descriptors without
                actually formatting the media.
@@ -2374,8 +2375,8 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 
 
 #ifdef Libburn_dvd_ram_as_bd_rE
-	/* <<< dummy format descriptor list as obtained from dvd+rw-mediainfo
-               by Giulio Orsero in April 2008
+	/* <<< dummy format descriptor list as obtained from
+	       dvd+rw-mediainfo by Giulio Orsero in April 2008
 	*/
 	d->num_format_descr = 5;
 	d->format_descriptors[0].type = 0x00;
@@ -2399,7 +2400,11 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 	/* silencing compiler warnings about unused variables */
 	num_blocks = size = sign = i = max_score = num_descr = score = type = 0;
 
-#else /* Libburn_dvd_ram_as_bd_rE */
+	if (d->current_profile == 0x12 || d->current_profile == 0x43)
+		return 1;
+	d->num_format_descr = 0;
+
+#endif /* Libburn_dvd_ram_as_bd_rE */
 
 	if (top_wanted == 0x00 || top_wanted == 0x10)
 		sign = -1; /* the caller clearly desires full format */
@@ -2458,9 +2463,6 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 			max_score = score;
 		}
 	}
-
-#endif /* ! Libburn_dvd_ram_as_bd_rE */
-
 
 /* <<<
 	sprintf(msg,
@@ -2613,6 +2615,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
                bit3= expand format up to at least size
                bit4= enforce re-format of (partly) formatted media
                bit5= try to disable eventual defect management
+               bit6= try to avoid lengthy media certification
                bit7= bit8 to bit15 contain the index of the format to use
                bit8-bit15 = see bit7
 */
@@ -2622,6 +2625,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	struct command c;
 	int ret, tolerate_failure = 0, return_immediately = 0, i, format_type;
 	int index, format_sub_type = 0, format_00_index, size_mode;
+	int accept_count = 0;
 	off_t num_of_blocks = 0, diff, format_size, i_size, format_00_max_size;
 	char msg[160],descr[80];
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
@@ -2688,8 +2692,19 @@ selected_not_suitable:;
 				 c.page->data[9 + i] =
 					( d->format_descriptors[index].tdp >>
 					  (16 - 8 * i)) & 0xff;
-		if (format_type == 0x30)
-			format_sub_type = 3; /* Quick certification */
+		if (format_type == 0x30 || format_type == 0x31) {
+			if (flag & 64)
+				format_sub_type = 3; /* Quick certification */
+			else
+				format_sub_type = 2; /* Full certification */
+		}
+		if (d->current_profile == 0x12 && format_type !=0x01 &&
+		    (flag & 64)) {
+			/* DCRT and CmpList, see below */
+			c.page->data[1] |= 0x20;
+			c.opcode[1] |= 0x08;
+		}
+		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
 		sprintf(descr, "%s (descr %d)", d->current_profile_text,index);
 		return_immediately = 1; /* caller must do the waiting */
 
@@ -2878,14 +2893,20 @@ no_suitable_formatting_type:;
 		return_immediately = 1; /* caller must do the waiting */
 		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
 
-		/* <<< ts A80418 : experiment: MMC-5 6.5.3.2 , 6.5.4.2.1.2
-		   DCRT: Disable Certification and maintain number of blocks
-		c.page->data[1] |= 0x20;
-		*/
-		/* <<< ts A80418 : experiment: MMC-5 6.5.4.2.1.2
-   		   Override maintaining of number of blocks with DCRT
-		c.opcode[1] |= 0x08;
-		*/
+		if ((flag & 64) && format_type != 0x01) {
+			/* MMC-5 6.5.3.2 , 6.5.4.2.1.2
+			   DCRT: Disable Certification and maintain number
+			         of blocks
+   		           CmpList: Override maintaining of number of blocks
+			            with DCRT
+			*/
+			/* ts A80426 : prevents change of formatted size
+		               with PHILIPS SPD3300L and Verbatim 3x DVD-RAM
+			       and format_type 0x00. Works on TSSTcorp SH-S203B
+			*/
+			c.page->data[1] |= 0x20;
+			c.opcode[1] |= 0x08;
+		}
 
 	} else if (d->current_profile == 0x43 &&
 			burn_support_untested_profiles) {
@@ -2906,14 +2927,18 @@ no_suitable_formatting_type:;
 				/* search largest format 0x31 */
 				if(format_type != 0x31)
 		continue;
-				format_sub_type = 3; /* Quick certification */
 			} else if(size_mode == 2) { /* max payload size */
 				/* search largest 0x30 format descriptor */
 				if(format_type != 0x30)
 		continue;
-				format_sub_type = 3; /* Quick certification */
 			} else if(size_mode == 3) { /* default payload size */
-				index = 0;
+				if (accept_count < 1)
+					index = 0; /* this cannot certify */
+				if(format_type != 0x30)
+		continue;
+				accept_count++;
+				if (accept_count == 1)
+					index = i;
 		continue;
 			} else { /* defect managed format with size wish */
 				/* search for smallest 0x30 >= size */
@@ -2925,7 +2950,6 @@ no_suitable_formatting_type:;
 		continue;
 				index = i;
 				format_size = i_size;
-				format_sub_type = 3; /* Quick certification */
 		continue;
 			}
 			/* common for all cases which search largest
@@ -2940,6 +2964,12 @@ no_suitable_formatting_type:;
 		if (index < 0)
 			goto no_suitable_formatting_type;
 		format_type = d->format_descriptors[index].type;
+		if (format_type == 0x30 || format_type == 0x31) {
+			if (flag & 64)
+				format_sub_type = 3; /* Quick certification */
+			else
+				format_sub_type = 2; /* Full certification */
+		}
 		num_of_blocks = d->format_descriptors[index].size / 2048;
 		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
 		for (i = 0; i < 3; i++)

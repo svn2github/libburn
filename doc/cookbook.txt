@@ -695,7 +695,7 @@ managment. There is no way to increase payload capacity by format 01h.
 With BD-RE there are three format types : 00h, 30h and 31h.
 00h offers the default size format.
 30h offers several sizes with defect management. Usually there are three
-size th choose: #1: default size, #2: maximum spare area, #3: minimal spare.
+size to choose: #1: default size, #2: maximum spare area, #3: minimal spare.
 31h offers a single size and disables defect management. This has the side
 effect to speed up writing to nominal speed.
 (mmc5r03c.pdf 6.5.4.2.15, 6.24.3.3, Table 472)
@@ -715,6 +715,18 @@ With nearly all formats Sub-type should be set to 0. But with BD-RE formats
 Usable with 30h seem 10b Full Certification and 11b Quick Certification.
 Usable with 31h seem also 00b Quick Reformat and 01b No Certification.
 (mmc5r03c.pdf 6.5.4.2.15.1)
+
+Other format types have their certification intensity controlled by
+a pair of bits: CmpList and DCRT.
+CmpList resides in CDB byte 1 as bit 3. DCRT resides in the payload byte 1
+as bit 5. Both together should request a quick size change without lengthy
+certification but maintaining the list of known defects.
+(mmc5r03c.pdf 6.5, table 249, 6.5.3.2)
+With DVD-RAM on my PHILIPS SPD3300L drive they prevent any format size
+change though. The TSSTcorp SH-S203B works properly.
+With BD-RE format 00h, the default is specified to be Quick Reformat,
+and with 00h in general certification can only be disabled not enabled.
+(mmc5r03c.pdf 6.5.4.2.1.7)
 
 
 -------------------------------------------------------------------------------

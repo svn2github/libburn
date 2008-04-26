@@ -615,7 +615,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;
 
-	ret = d->format_unit(d, size, flag & 0xffb6); /* forward bits */
+	ret = d->format_unit(d, size, flag & 0xfff6); /* forward bits */
 	if (ret <= 0)
 		d->cancel = 1;
 

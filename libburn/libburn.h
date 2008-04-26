@@ -1185,7 +1185,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit1+2: size mode
                    0 = use parameter size as far as it makes sense
                    1 = insist in size 0 even if there is a better default known
-                       (has no effect on DVD-RAM or BD-RE)
+                       (on DVD-RAM or BD-RE identical to size mode 0)
                    2 = without bit7: format to maximum available size
                        with bit7   : take size from indexed format descriptor
                    3 = without bit7: format to default size
@@ -1193,6 +1193,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit3= -reserved-
                 bit4= enforce re-format of (partly) formatted media
                 bit5= try to disable eventual defect management
+		bit6= try to avoid lengthy media certification
                 bit7= MMC expert application mode (else libburn tries to
                       choose a suitable format type):
                       bit8 to bit15 contain the index of the format to use. See
