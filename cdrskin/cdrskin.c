@@ -2392,7 +2392,13 @@ return:
      fprintf(stderr,"\tfast\t\tminimally blank the entire disk\n");
      fprintf(stderr,"\tminimal\t\tminimally blank the entire disk\n");
      fprintf(stderr,
-          "\tformat_overwrite\tformat a DVD-RW to \"Restricted Overwrite\"\n");
+          "\tdeformat_sequential\t\tfully blank, even formatted DVD-RW\n");
+     fprintf(stderr,
+          "\tdeformat_sequential_quickest\tminimally blank, even DVD-RW\n");
+     fprintf(stderr,
+          "\tformat_if_needed\t\tmake overwriteable if needed and possible\n");
+     fprintf(stderr,
+        "\tformat_overwrite\t\tformat a DVD-RW to \"Restricted Overwrite\"\n");
      fprintf(stderr,
     "\tformat_overwrite_quickest\tto \"Restricted Overwrite intermediate\"\n");
      fprintf(stderr,
@@ -2400,15 +2406,11 @@ return:
      fprintf(stderr,
           "\tformat_defectmgt[_max|_min|_none]\tformat DVD-RAM or BD-RE\n");
      fprintf(stderr,
-          "\tformat_defectmgt[_cert_on|_cert_off]\tcertification slow|quick\n");
+         "\tformat_defectmgt[_cert_on|_cert_off]\tcertification slow|quick\n");
      fprintf(stderr,
           "\tformat_defectmgt_payload_<size>\tformat DVD-RAM or BD-RE\n");
      fprintf(stderr,
-          "\tformat_by_index_<number>\tformat by index from --list_formats\n");
-     fprintf(stderr,
-          "\tdeformat_sequential\t\tfully blank, even formatted DVD-RW\n");
-     fprintf(stderr,
-          "\tdeformat_sequential_quickest\tminimally blank, even DVD-RW\n");
+        "\tformat_by_index_<number>\t\tformat by index from --list_formats\n");
 
 #else /* ! Cdrskin_extra_leaN */
 
@@ -3164,6 +3166,10 @@ struct CdrskiN {
                              gets mapped to 4 with DVD-RAM and BD-RE else to 1,
                              bit15 should be set and bit16-23 should contain
                              a usable index number
+                           6=format_if_needed
+                             gets mapped to default variants of specialized
+                             formats if the media state requires formatting
+                             before writing
                            bit8-15: bit0-7 of burn_disc_format(flag)
                                     depending on job type
                         */
@@ -4905,6 +4911,8 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  unsigned dummy;
  char status_text[80], profile_name[90];
 
+#ifdef Cdrskin_libburn_has_burn_disc_formaT
+
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
    return(ret);
@@ -4957,6 +4965,14 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
 ex:;
  Cdrskin_release_drive(skin,0);
  return(ret);
+
+#else /* Cdrskin_libburn_has_burn_disc_formaT */
+
+ fprintf(stderr,
+         "cdrskin: SORRY: libburn is too old to obtain format list info\n");
+ return(2);
+
+#endif /* Cdrskin_libburn_has_burn_disc_formaT */
 }
 
 
@@ -5054,14 +5070,16 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  struct burn_progress p;
  struct burn_drive *drive;
  int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
- int wrote_well= 1, format_flag= 0;
+ int wrote_well= 1, format_flag= 0, status, num_formats;
+ off_t size;
+ unsigned dummy;
  double start_time;
  char *verb= "blank", *presperf="blanking", *fmt_text= "...";
  char profile_name[80];
  static char fmtp[][40]= {
                   "format_default", "format_overwrite", "deformat_sequential",
-                  "format_defectmgt", "format_by_index", ""};
- static int fmtp_max= 5;
+                  "format_defectmgt", "format_by_index", "format_if_needed"};
+ static int fmtp_max= 6;
 
  start_time= Sfile_microtime(0); /* will be refreshed later */
  ret= Cdrskin_grab_drive(skin,0);
@@ -5078,7 +5096,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,1);
  do_format= skin->blank_format_type & 0xff;
- if(do_format == 1 || do_format == 3 || do_format == 4 || do_format == 5) {
+ if(do_format == 1 || do_format == 3 || do_format == 4 || do_format == 5 ||
+    do_format ==6) {
    verb= "format";
    presperf= "formatting";
  }
@@ -5097,11 +5116,37 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(do_format)
    if(do_format>=0 && do_format<=fmtp_max)
      fmt_text= fmtp[do_format];
- if(do_format==5) {
+ if(do_format==5) { /* format_by_index */
    if(profile_number == 0x12 || profile_number == 0x43)
      do_format= 4;
    else
      do_format= 1;
+ } else if(do_format==6) { /* format_if_needed */
+   /* Find out whether format is needed at all.
+      Eventuelly set up a suitable formatting run
+   */
+   if(profile_number == 0x14) { /* sequential DVD-RW */
+     do_format= 1;
+     skin->blank_format_type= 1|(1<<8);
+     skin->blank_format_size= 128*1024*1024;
+   } else if(profile_number == 0x12 ||
+             profile_number == 0x43) { /* DVD-RAM , BD-RE */;
+#ifdef Cdrskin_libburn_has_burn_disc_formaT
+     ret= burn_disc_get_formats(drive, &status, &size, &dummy, &num_formats);
+     if(ret>0 && status!=BURN_FORMAT_IS_FORMATTED) {
+       do_format= 4;
+       skin->blank_format_type= 4|(3<<9);  /* default payload size */
+       skin->blank_format_size= 0;
+     }
+#endif
+
+   }
+   if(do_format==6) {
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(fprintf(stderr,
+       "cdrskin: NOTE : blank=format_if_needed : did not apply formatting\n"));
+     {ret= 2; goto ex;}
+   }
  }
 
  if(do_format==2) {
@@ -7085,22 +7130,26 @@ set_blank:;
        skin->do_blank= 1;
        skin->blank_fast= 1;
        blank_mode= "fast";
-     } else if(strcmp(cpt,"format_overwrite")==0) { 
+     } else if(strcmp(cpt,"format_if_needed")==0) {
+       skin->do_blank= 1;
+       skin->blank_format_type= 6;
+       skin->preskin->demands_cdrskin_caps= 1;
+     } else if(strcmp(cpt,"format_overwrite")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 1|(1<<8);
        skin->blank_format_size= 128*1024*1024;
        skin->preskin->demands_cdrskin_caps= 1;
-     } else if(strcmp(cpt,"format_overwrite_full")==0) { 
+     } else if(strcmp(cpt,"format_overwrite_full")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 1|(1<<10);
        skin->blank_format_size= 0;
        skin->preskin->demands_cdrskin_caps= 1;
-     } else if(strcmp(cpt,"format_overwrite_quickest")==0) { 
+     } else if(strcmp(cpt,"format_overwrite_quickest")==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 1;
        skin->blank_format_size= 0;
        skin->preskin->demands_cdrskin_caps= 1;
-     } else if(strncmp(cpt,"format_defectmgt",16)==0) { 
+     } else if(strncmp(cpt,"format_defectmgt",16)==0) {
        skin->do_blank= 1;
        skin->blank_format_type= 4|(3<<9);  /* default payload size */
        skin->blank_format_size= 0;

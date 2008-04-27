@@ -36,6 +36,8 @@ You do not need to be superuser for its daily usage.
 .br
 Blanking of CD-RW and DVD-RW.
 .br
+Formatting of DVD-RW, DVD+RW, DVD-RAM, experimentally BD-RE.
+.br
 Burning of data or audio tracks to CD,
 .br
 either in versatile Track at Once mode (TAO)
@@ -348,7 +350,7 @@ audio track. Same is done for suffix ".au" and SUN Audio.
 Option -audio may be used only with CD media and not with DVD or BD.
 .TP 
 .BI blank= type
-Blank a CD-RW, a DVD-RW, or format a DVD-RW, DVD+RW, DVD-RAM or BD-RE.
+Blank a CD-RW, DVD-RW, or format a DVD-RW, DVD+RW, DVD-RAM, BD-RE.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -377,6 +379,18 @@ deformat_sequential_quickest
 Like blank=deformat_sequential but blanking DVD-RW only minimally.
 This is faster than full blanking but may yield media incapable of
 Incremental Streaming (-tao).
+.TP
+format_if_needed
+Format a media if it is not overwriteably formatted yet, 
+and if cdrskin supports formatting for the media type,
+and if formatting will not happen automatically during write.
+This currently applies to unformatted DVD-RW, DVD-RAM and BD-RE.
+Eventually the appropriate default formatting is chosen.
+.br
+Note: BD-RE currently is only supported with option --allow_untested_media .
+.br
+The following formatting types are more specialized to particular
+media families.
 .TP
 format_overwrite
 Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
