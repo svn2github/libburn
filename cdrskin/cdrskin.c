@@ -2392,6 +2392,8 @@ return:
      fprintf(stderr,"\tfast\t\tminimally blank the entire disk\n");
      fprintf(stderr,"\tminimal\t\tminimally blank the entire disk\n");
      fprintf(stderr,
+         "\tas_needed\tblank or format media to make it ready for (re-)use\n");
+     fprintf(stderr,
           "\tdeformat_sequential\t\tfully blank, even formatted DVD-RW\n");
      fprintf(stderr,
           "\tdeformat_sequential_quickest\tminimally blank, even DVD-RW\n");
@@ -3170,6 +3172,10 @@ struct CdrskiN {
                              gets mapped to default variants of specialized
                              formats if the media state requires formatting
                              before writing
+                           7=if_needed
+                             gets mapped to 6 for DVD-RAM and BD-RE,
+                             to 0 with all other non-blanks
+
                            bit8-15: bit0-7 of burn_disc_format(flag)
                                     depending on job type
                         */
@@ -4302,11 +4308,13 @@ int Cdrskin_invalidate_iso_head(struct CdrskiN *skin, int flag)
     @param flag Bitfield for control purposes: 
                 bit0= permission to check for overwriteable ISO image
                 bit1= do not report media profile
+                bit2= do not report but only check for pseudo appendable
+    @return 1=ok, 2=ok, is pseudo appendable, <=0 error
 */
 int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
                                int flag)
 {
- int ret, iso_size;
+ int ret, iso_size, pseudo_appendable= 0;
 
  if(flag&1) {
    if(skin->media_is_overwriteable && skin->grow_overwriteable_iso>0) {
@@ -4314,10 +4322,14 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
        ret= 1;
      else
        ret= Cdrskin_overwriteable_iso_size(skin,&iso_size,0);
-     if(ret>0)
+     if(ret>0) {
        s= BURN_DISC_APPENDABLE;
+       pseudo_appendable= 1;
+     }
    }
  } 
+ if(flag&4)
+   return(1+pseudo_appendable);
 
  printf("cdrskin: status %d ",s);
  if(s==BURN_DISC_FULL) {
@@ -4345,7 +4357,7 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
    printf("-unknown status code-\n");
 
  if(flag&2)
-   return(1);
+   return(1+pseudo_appendable);
 
 #ifdef Cdrskin_libburn_has_get_profilE
  if((s==BURN_DISC_FULL || s==BURN_DISC_APPENDABLE || s==BURN_DISC_BLANK ||
@@ -4367,7 +4379,7 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
  }
 #endif
 
- return(1);
+ return(1+pseudo_appendable);
 }
 
 
@@ -5077,9 +5089,10 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  char *verb= "blank", *presperf="blanking", *fmt_text= "...";
  char profile_name[80];
  static char fmtp[][40]= {
-                  "format_default", "format_overwrite", "deformat_sequential",
-                  "format_defectmgt", "format_by_index", "format_if_needed"};
- static int fmtp_max= 6;
+                  "...", "format_overwrite", "deformat_sequential",
+                  "(-format)", "format_defectmgt", "format_by_index",
+                  "format_if_needed", "as_needed"};
+ static int fmtp_max= 7;
 
  start_time= Sfile_microtime(0); /* will be refreshed later */
  ret= Cdrskin_grab_drive(skin,0);
@@ -5093,14 +5106,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
 #endif
 
- if(skin->verbosity>=Cdrskin_verbose_progresS)
-   Cdrskin_report_disc_status(skin,s,1);
+ ret= Cdrskin_report_disc_status(skin,s,
+                           1|(4*!(skin->verbosity>=Cdrskin_verbose_progresS)));
+ if(ret==2)
+   s= BURN_DISC_APPENDABLE;
  do_format= skin->blank_format_type & 0xff;
- if(do_format == 1 || do_format == 3 || do_format == 4 || do_format == 5 ||
-    do_format ==6) {
-   verb= "format";
-   presperf= "formatting";
- }
 
 #ifdef Cdrskin_libburn_has_pretend_fulL
  if(s==BURN_DISC_UNSUITABLE) {
@@ -5121,11 +5131,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      do_format= 4;
    else
      do_format= 1;
- } else if(do_format==6) { /* format_if_needed */
+ } else if(do_format==6 || do_format==7) { /* format_if_needed , if_needed */
    /* Find out whether format is needed at all.
       Eventuelly set up a suitable formatting run
    */
-   if(profile_number == 0x14) { /* sequential DVD-RW */
+   if(profile_number == 0x14 && do_format==6) { /* sequential DVD-RW */
      do_format= 1;
      skin->blank_format_type= 1|(1<<8);
      skin->blank_format_size= 128*1024*1024;
@@ -5139,16 +5149,24 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
        skin->blank_format_size= 0;
      }
 #endif
-
+   } else if(do_format==7) { /* try to blank what is not blank yet */
+     if(s!=BURN_DISC_BLANK) {
+       do_format= 0;
+       skin->blank_fast= 1;
+     }
    }
-   if(do_format==6) {
+   if(do_format==6 || do_format==7) {
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(fprintf(stderr,
-       "cdrskin: NOTE : blank=format_if_needed : did not apply formatting\n"));
+        "cdrskin: NOTE : blank=%s : no need for action detected\n", fmt_text));
      {ret= 2; goto ex;}
    }
  }
 
+ if(do_format == 1 || do_format == 3 || do_format == 4) {
+   verb= "format";
+   presperf= "formatting";
+ }
  if(do_format==2) {
    /* Forceful blanking to Sequential Recording for DVD-R[W] and CD-RW */
 
@@ -7196,7 +7214,10 @@ set_blank:;
        skin->blank_format_type= 2;
        skin->blank_fast= 1;
        skin->preskin->demands_cdrskin_caps= 1;
-     } else if(strcmp(cpt,"help")==0) { 
+     } else if(strcmp(cpt,"as_needed")==0) {
+       skin->do_blank= 1;
+       skin->blank_format_type= 7;
+     } else if(strcmp(cpt,"help")==0) {
        /* is handled in Cdrpreskin_setup() */;
  continue;
      } else { 

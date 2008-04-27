@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 26, 2008"
+.TH CDRSKIN 1 "April 27, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -168,7 +168,7 @@ Multiple cycles of blanking and overwriting with random numbers might be.
 Currently DVD-RW, DVD-R and DVD+R[/DL] can be used for the Sequential recording
 model.
 .br
-DVD-RW must be in state "Sequential Recording".
+This applies to DVD-RW only if they are in state "Sequential Recording".
 The media must be either blank or appendable.
 Newly purchased DVD-RW and DVD-R media are in this state.
 Used DVD-RW get into blank sequential state by option
@@ -218,10 +218,6 @@ Best reader compatibility is achieved without it
 Currently types DVD+RW, DVD-RW, DVD-RAM and BD-RE can be overwritten via
 cdrskin. BD-RE is supported only with option --allow_untested_media.
 .br
-DVD+RW and DVD-RAM media need no special initial formatting. They offer a
-single continuous data area for blockwise random access. BD-RE need
-explicit formatting before use. See blank=format_defectmgt .
-.br
 Option -audio is not allowed. Only one track is allowed.
 Option -multi cannot mark a recognizeable end of overwriteable media.
 Therefore -multi is banned unless ISO-9660 images shall be expandable by help
@@ -233,6 +229,12 @@ media get treated as blank regardless wether they hold data or not.
 .br
 Currently there is no difference between -sao and -tao. If ever, then -tao
 will be the mode which preserves the current behavior.
+.PP
+DVD+RW and DVD-RAM media need no special initial formatting. They offer a
+single continuous data area for blockwise random access. BD-RE need
+explicit formatting before use. See
+.B blank=as_needed
+or blank=format_defectmgt .
 .br
 DVD-RW are sold in state "Sequential Recording". To become suitable for the
 Overwriteable DVD recording model they need to get formatted to state
@@ -355,8 +357,16 @@ This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
 .TP
-help
-Print this list of blanking types.
+as_needed
+Try to make the media ready for writing from scratch. If it needs formatting,
+then format it. If it is not blank, then try to apply blank=fast.
+It is a reason to abort if the media cannot assume thoroughly writeable state,
+e.g. if it is non-blank write-once.
+.br
+This leaves unformatted DVD-RW in unformatted blank state. To format DVD-RW use
+blank=format_overwriteable.
+.TP
+The following blank types are specific to particular media familes. Use them if special features are desired.
 .TP
 all
 Blank an entire CD-RW or an unformatted DVD-RW.
@@ -386,6 +396,7 @@ and if cdrskin supports formatting for the media type,
 and if formatting will not happen automatically during write.
 This currently applies to unformatted DVD-RW, DVD-RAM and BD-RE.
 Eventually the appropriate default formatting is chosen.
+If other media or states are encountered then nothing happens.
 .br
 Note: BD-RE currently is only supported with option --allow_untested_media .
 .br
@@ -466,6 +477,9 @@ The numbers after text "Format idx" are the ones to be used with
 format_by_index_. Format descriptor lists are volatile. Do neither eject
 nor write the media between the run of --list_formats and the run of
 blank=format_by_index_ or else you may get a different format than desired.
+.TP
+help
+Print this list of blanking types.
 .RE
 .TP
 .BI \-checkdrive
