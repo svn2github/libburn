@@ -264,6 +264,17 @@ Project history as far as known to me:
 - 8th Apr 2008 libburn-0.4.4 has proven to be capable of burning to DVD+R/DL
   and read performance on disk file pseudo-drives has been improved.
 
+- 27th Apr 2008 libisofs-0.6.4 can now read data file content from images
+  and can map pieces of disk files onto image files. Image directory iteration
+  has been enhanced. Input data streams and extended information have been
+  exposed in the API to allow future development.
+
+- 29th Apr 2008 libisoburn-0.1.4 was made more efficient with reading of
+  image tree nodes. It  now depends on libisofs-0.6.4 and libburn-0.4.4.
+  xorriso makes use of new libisofs features by performing incremental
+  updates of directory trees and by cutting oversized data files into
+  pieces. A primitive single session emulation of cdrcord and mkisofs is
+  provided.
 
 ------------------------------------------------------------------------------
 
