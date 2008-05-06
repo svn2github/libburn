@@ -5220,12 +5220,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
  } else if(do_format==4) {
    /* Formatting and influencing defect management of DVD-RAM , BD-RE */
-   if(profile_number == 0x12 ||
-      (profile_number == 0x43 && skin->preskin->allow_untested_media)) {
-
-     /* >>> check whether the current media is already formatted */;
-
-   } else {
+   if(!(profile_number == 0x12 || profile_number == 0x43)) {
      fprintf(stderr,
             "cdrskin: SORRY : blank=%s for now does DVD-RAM and BD-RE only\n",
             fmt_text);

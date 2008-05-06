@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "April 27, 2008"
+.TH CDRSKIN 1 "May 06, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,8 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD-R[W], DVD-R[W], DVD+R[W], DVD+R/DL,
-DVD-RAM via libburn.
+cdrskin \- burns preformatted data to CD, DVD, and BD-RE via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -36,7 +35,7 @@ You do not need to be superuser for its daily usage.
 .br
 Blanking of CD-RW and DVD-RW.
 .br
-Formatting of DVD-RW, DVD+RW, DVD-RAM, experimentally BD-RE.
+Formatting of DVD-RW, DVD+RW, DVD-RAM, BD-RE.
 .br
 Burning of data or audio tracks to CD,
 .br
@@ -52,7 +51,7 @@ Single session on DVD-RW or DVD-R (Disk-at-once).
 .br
 Single session or emulated ISO-9660 multi-session 
 .br
-on overwriteable DVD+RW, DVD-RW, DVD-RAM, experimentally on BD-RE
+on overwriteable DVD+RW, DVD-RW, DVD-RAM, BD-RE
 .br
 or on data file or block device.
 .br
@@ -216,7 +215,7 @@ Best reader compatibility is achieved without it
 .B Overwriteable DVD or BD Media:
 .br
 Currently types DVD+RW, DVD-RW, DVD-RAM and BD-RE can be overwritten via
-cdrskin. BD-RE is supported only with option --allow_untested_media.
+cdrskin.
 .br
 Option -audio is not allowed. Only one track is allowed.
 Option -multi cannot mark a recognizeable end of overwriteable media.
@@ -365,6 +364,8 @@ e.g. if it is non-blank write-once.
 .br
 This leaves unformatted DVD-RW in unformatted blank state. To format DVD-RW use
 blank=format_overwriteable.
+.br
+(Note: blank=as_needed is not an original cdrecord option.)
 .TP
 The following blank types are specific to particular media familes. Use them if special features are desired.
 .TP
@@ -398,8 +399,6 @@ This currently applies to unformatted DVD-RW, DVD-RAM and BD-RE.
 Eventually the appropriate default formatting is chosen.
 If other media or states are encountered then nothing happens.
 .br
-Note: BD-RE currently is only supported with option --allow_untested_media .
-.br
 The following formatting types are more specialized to particular
 media families.
 .TP
@@ -428,8 +427,6 @@ complete "de-icing" so no reader slips on unwritten data areas.
 format_defectmgt
 Format DVD-RAM or BD-RE to reserve the default amount of spare blocks for
 defect management.
-.br
-Note: BD-RE currently is only supported with option --allow_untested_media .
 .br
 The following format_defectmgt_* allow to submit user wishes which
 nevertheless have to match one of the available formats. These formats are
@@ -1046,8 +1043,6 @@ Enable the use of media profiles which have been implemented but not yet
 tested. Currently this applies to :
 .br
 Profile 0015h , DVD-R/DL Sequential (will not allow -multi).
-.br
-Profile 0043h , BD-RE.
 .br
 If you really test such media, then please report the outcome on
 libburn-hackers@pykix.org 

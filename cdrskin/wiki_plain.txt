@@ -8,8 +8,8 @@
 Its paragon, cdrecord, is a powerful GPL'ed burn program included in Joerg
 Schilling's cdrtools. cdrskin strives to be a second source for the services
 traditionally provided by cdrecord. Currently it does CD-R and CD-RW this way.
-Overwriteable media DVD-RAM, DVD+RW and DVD-RW are handled differently than 
-with cdrecord-ProDVD in order to offer TAO-like single track recording.
+Overwriteable media DVD-RAM, DVD+RW, DVD-RW, and BD-RE are handled differently
+than with cdrecord-ProDVD in order to offer TAO-like single track recording.
 Sequential DVD-R[W], DVD+R, DVD+R/DL are handled like CD-R[W] with TAO and
 multi-session. Additionally cdrskin offers cdrecord-ProDVD-like mode DAO
 with DVD-R[W].
@@ -268,8 +268,8 @@ for an illustrated example with K3b 0.10 .
 
 DVD advise:
 
-For burning of DVD media other than DVD-RAM, DVD+RW, DVD+R, DVD+R/DL,
-DVD-RW, DVD-R, the cdrskin project currently advises to use
+For burning of DVD/BD media other than DVD-RAM, DVD+RW, DVD+R, DVD+R/DL,
+DVD-RW, DVD-R, BD-RE, the cdrskin project currently advises to use
 Andy Polyakov's dvd+rw-tools which despite their historic name are
 capable of all the media above and more, including BD discs. 
 
