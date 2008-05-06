@@ -2193,6 +2193,8 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 				}
 				if (i >= num_formats) /* not expandable */
 					o->start_range_high -= 32 * 1024;
+				if (o->start_range_high < 0)
+					o->start_range_high = 0;
 			} else {
 				o->start_alignment = 2 * 1024;
 				if (d->best_format_size - 2048 >
