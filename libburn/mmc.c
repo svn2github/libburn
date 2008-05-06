@@ -2354,6 +2354,8 @@ static int mmc_read_format_capacities_al(struct burn_drive *d,
 	d->format_descr_type = dpt[4] & 3;
 	d->format_curr_max_size = (((off_t) dpt[0]) << 24)
 		 		  + (dpt[1] << 16) + (dpt[2] << 8) + dpt[3];
+	if (d->format_descr_type == BURN_FORMAT_IS_UNKNOWN)
+		d->format_curr_max_size = 0;
 	d->format_curr_blsas = (dpt[5] << 16) + (dpt[6] << 8) + dpt[7];
 
 /* <<<
