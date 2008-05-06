@@ -107,6 +107,8 @@ extern struct libdax_msgs *libdax_messenger;
                writing speed at cost of no defect management.
    ts A80416 : Giulio Orsero reports success with BD-RE writing. With
                drive->do_stream_recording it does full nominal speed.
+   ts A80506 : Giulio Orsero reports success with BD-RE formatting.
+               BD-RE is now an officially supported profile.
 */
 
 /* ts A70519 : With MMC commands of data direction FROM_DRIVE:
