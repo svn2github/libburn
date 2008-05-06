@@ -7,10 +7,12 @@
 
 Libburnia is an open-source project for reading, mastering and writing
 optical discs.
-For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD+R/DL, DVD-RW, DVD-R.
+For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD+R/DL, DVD-RW,
+DVD-R, BD-RE.
 
-Not supported yet are DVD-R/DL, HD-DVD, BD (blue ray). Testers for
-BD and DVD-R/DL are wanted, though.
+Not supported yet are DVD-R/DL, HD-DVD, BD-R (blue ray). Testers for
+DVD-R/DL are wanted, though. BD-R programming efforts would be made
+if an interested tester contacts us.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -57,8 +59,8 @@ composition, updating and writing. Quite unique in the Linux world.
            cdrecord is a powerful GPL'ed burn program included in Joerg
            Schilling's cdrtools. cdrskin strives to be a second source for
            the services traditionally provided by cdrecord. Additionally it
-           provides libburn's DVD capabilities, where only -sao is compatible
-           with cdrecord.
+           provides libburn's DVD/BD capabilities, where only -sao is
+           compatible with cdrecord.
            cdrskin does not contain any bytes copied from cdrecord's sources.
            Many bytes have been copied from the message output of cdrecord
            runs, though.

@@ -8,8 +8,9 @@
   
   libburner is a minimal demo application for the library libburn as provided
   on  http://libburnia-project.org . It can list the available devices, can
-  blank a CD-RW or DVD-RW, can format a DVD-RW, can burn to CD-R, CD-RW, DVD-R,
-  DVD+R, DVD+R/DL, DVD+RW, DVD-RAM or DVD-RW. Not supported yet: DVD-R/DL, BD.
+  blank a CD-RW or DVD-RW, can format DVD-RW and BD-RE, can burn to CD-R,
+  CD-RW, DVD-R, DVD+R, DVD+R/DL, DVD+RW, DVD-RW, DVD-RAM, BD-RE. 
+  Not supported yet: DVD-R/DL, BD-R.
 
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburnia team as reference application. libburner.c does indeed
@@ -28,7 +29,8 @@
   With that aquired drive you can blank a CD-RW
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
-     libburner_format_row()
+  or an unused BD-RE to default size
+     libburner_format_owrt()
   With the aquired drive you can burn to CD or DVD
      libburner_payload()
   When everything is done, main() releases the drive and shuts down libburn:
@@ -313,26 +315,45 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 }
 
 
-/** Persistently changes DVD-RW profile 0014h "Sequential Recording" to
-    profile 0013h "Restricted Overwrite" which needs no blanking for re-use
-    but is not capable of multi-session.
-
+/** Formats unformatted DVD-RW to profile 0013h "Restricted Overwrite"
+    which needs no blanking for re-use but is not capable of multi-session.
     Expect a behavior similar to blanking with unusual noises from the drive.
+
+    Formats unformatted BD-RE to default size. This will allocate some
+    reserve space, test for bad blocks and make the media ready for writing.
+    Expect a very long run time.
 */
-int libburner_format_row(struct burn_drive *drive)
+int libburner_format_owrt(struct burn_drive *drive)
 {
 	struct burn_progress p;
 	double percent = 1.0;
+	int ret, status, num_formats, format_flag= 0;
+	off_t size = 0;
+	unsigned dummy;
 
 	if (current_profile == 0x13) {
 		fprintf(stderr, "IDLE: DVD-RW media is already formatted\n");
 		return 2;
-	} else if (current_profile != 0x14) {
-		fprintf(stderr, "FATAL: Can only format DVD-RW\n");
+	} else if (current_profile == 0x43) {
+		ret = burn_disc_get_formats(drive, &status, &size, &dummy,
+								&num_formats);
+		if (ret > 0 && status == BURN_FORMAT_IS_FORMATTED) {
+			fprintf(stderr,
+				"IDLE: BD-RE media is already formatted\n");
+			return 2;
+		}
+		size = 0;           /* does not really matter */
+		format_flag = 3<<1; /* format to default size, no quick */
+	} else if (current_profile == 0x14) { /* sequential DVD-RW */
+		size = 128 * 1024 * 1024;
+		format_flag = 1; /* write initial 128 MiB */
+	} else {
+		fprintf(stderr, "FATAL: Can only format DVD-RW or BD-RE\n");
 		return 0;
 	}
+
 	printf("Beginning to format media.\n");
-	burn_disc_format(drive, (off_t) 0, 0);
+	burn_disc_format(drive, size, format_flag);
 
 	sleep(1);
 	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
@@ -344,9 +365,10 @@ int libburner_format_row(struct burn_drive *drive)
 	}
 	burn_disc_get_profile(drive_list[0].drive, &current_profile,
 				 current_profile_name);
-	printf("Media type now: %4.4xh  \"%s\"\n",
-		 current_profile, current_profile_name);
-	if (current_profile != 0x13) {
+	if (current_profile == 0x14 || current_profile == 0x13)
+		printf("Media type now: %4.4xh  \"%s\"\n",
+				 current_profile, current_profile_name);
+	if (current_profile == 0x14) {
 		fprintf(stderr,
 		  "FATAL: Failed to change media profile to desired value\n");
 		return 0;
@@ -534,7 +556,8 @@ int libburner_payload(struct burn_drive *drive,
 	burn_session_free(session);
 	burn_disc_free(target_disc);
 	if (multi && current_profile != 0x1a && current_profile != 0x13 &&
-		current_profile != 0x12) /* not with DVD+RW, DVD-RW, DVD-RAM */
+		current_profile != 0x12 && current_profile != 0x43) 
+			/* not with DVD+RW, formatted DVD-RW, DVD-RAM, BD-RE */
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
@@ -697,7 +720,7 @@ int main(int argc, char **argv)
 		{ ret = 0; goto release_drive; }
 	if (do_blank) {
 		if (do_blank > 100)
-			ret = libburner_format_row(drive_list[driveno].drive);
+			ret = libburner_format_owrt(drive_list[driveno].drive);
 		else
 			ret = libburner_blank_disc(drive_list[driveno].drive,
 							do_blank == 1);

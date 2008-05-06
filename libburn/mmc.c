@@ -2126,8 +2126,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_raM
-	if (cp == 0x12 || (cp == 0x43 && burn_support_untested_profiles)) {
-							/* DVD-RAM , BD-RE */
+	if (cp == 0x12 || cp == 0x43) {                  /* DVD-RAM , BD-RE */
 		d->current_is_supported_profile = 1;
 
 #ifdef Libburn_dvd_ram_as_bd_rE
@@ -2910,8 +2909,7 @@ no_suitable_formatting_type:;
 			c.opcode[1] |= 0x08;
 		}
 
-	} else if (d->current_profile == 0x43 &&
-			burn_support_untested_profiles) {
+	} else if (d->current_profile == 0x43) {
 		/* BD-RE */
 		index = -1;
 		format_size = -1;

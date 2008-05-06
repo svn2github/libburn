@@ -730,7 +730,6 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
 /** Allows the use of media types which are implemented in libburn but not yet
     tested. The list of those untested profiles is subject to change.
     Currently it contains: 0x15 "DVD-R/DL sequential recording",
-                           0x43 "BD-RE"
     If you really test such media, then please report the outcome on
     libburn-hackers@pykix.org
     If ever then this call should be done soon after burn_initialize() before
@@ -1094,9 +1093,9 @@ off_t burn_disc_available_space(struct burn_drive *d,
     0x11 "DVD-R sequential recording",    0x12 "DVD-RAM",
     0x13 "DVD-RW restricted overwrite",   0x14 "DVD-RW sequential recording",
     0x1a "DVD+RW",                        0x1b "DVD+R"
-    0x2b "DVD+R/DL"
+    0x2b "DVD+R/DL",                      0x43 "BD-RE"
     If enabled by burn_allow_untested_profiles() it also writes to profiles
-    0x15 "DVD-R/DL sequential recording", 0x43 "BD-RE".
+    0x15 "DVD-R/DL sequential recording",
     Writeable stdio-drives return this profile:
     0xffff "stdio file"
     @param d The drive where the media is inserted.

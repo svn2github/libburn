@@ -3,7 +3,7 @@ libburnia-project.org Optical Media Rotisserie Recipes as of April 2008
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
 - SAO CD Cookbook (CD-R, CD-RW, pure audio or pure data only)
-- Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW)
+- Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW, BD-RE)
 - Sequential DVD-R[W] Cookbook
 - DVD+R[/DL] Cookbook
 
@@ -403,8 +403,8 @@ correctness of Pre-gap and Post-gap would become evident.
 -------------------------------------------------------------------------------
 Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
-and by experiments with drives NEC ND-4570A, LG GSA-4082B, PHILIPS SPD3300L.
-BD-RE experiments done by Giulio Orsero on LG BE06LU10.
+by own experiments with drives NEC ND-4570A, LG GSA-4082B, PHILIPS SPD3300L,
+and by BD-RE experiments done by Giulio Orsero on LG BE06LU10.
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
@@ -417,7 +417,7 @@ DVD-RAM                        0012h
 DVD-RW Restricted Overwrite    0013h
 DVD-RW Sequential Recording    0014h (i.e. unformatted)
 DVD+RW                         001Ah
-BD-RE                          0043h (writing tested, formatting not tested)
+BD-RE                          0043h
 
 A short compilation of the write model:
 - Overwriting in general

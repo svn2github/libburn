@@ -2170,10 +2170,11 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		if (wt == BURN_WRITE_NONE || wt == BURN_WRITE_SAO ||
 		    wt == BURN_WRITE_TAO)
 			o->might_simulate = 1;
-	} else if (d->current_profile == 0x12 || d->current_profile == 0x13 ||
+	} else if (d->current_profile == 0x12 ||
+			d->current_profile == 0x13 ||
 			d->current_profile == 0x1a ||
-			(d->current_profile == 0x43 &&
-					 burn_support_untested_profiles)) {
+			d->current_profile == 0x43 
+	          ) {
 		/* DVD-RAM, overwriteable DVD-RW, DVD+RW, BD-RE */
 		o->start_adr = 1;
 		ret = burn_disc_get_formats(d, &status, &size, &dummy,
