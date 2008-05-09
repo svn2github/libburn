@@ -46,6 +46,7 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_support_dvd_minusrw_overW 1
 
 /* ts A70112 */
+/* ts A80410 : applies to BD-RE too */
 #define Libburn_support_dvd_raM 1
 
 /* ts A70129 */
@@ -54,9 +55,18 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70306 */
 #define Libburn_support_dvd_plus_R 1
 
+/* ts A70509 : handling 0x41 and 0x42 as read-only types */
+#define Libburn_support_bd_r_readonlY 1
+
+
 /* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
  # define Libburn_dvd_ram_as_bd_rE yes
 */
+/* ts A80509 : <<< Experiment: pretend that DVD-COM and CD-ROM are other media
+                   like BD-ROM (0x40), BD-R seq (0x41), BD-R random (0x42)
+ # define Libburn_rom_as_profilE 0x40
+*/
+
 
 /* ts A80425 : Prevents command FORMAT UNIT for DVD-RAM or BD-RE.
                Useful only to test the selection of format descriptors without
@@ -324,15 +334,19 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf,
 	c.opcode[1] = 1;
 	if(trackno<=0) {
 		if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
-		    d->current_profile == 0x12 || d->current_profile == 0x43)
+		    d->current_profile == 0x12 || d->current_profile == 0x42 ||
+		    d->current_profile == 0x43)
 			 /* DVD+RW , DVD-RW restricted overwrite , DVD-RAM
-			    BD-RE */
+			    BD-R random recording, BD-RE */
 			trackno = 1;
 		else if (d->current_profile == 0x10 ||
 			 d->current_profile == 0x11 ||
 			 d->current_profile == 0x14 ||
-			 d->current_profile == 0x15)
-			/* DVD-ROM ,  DVD-R[W] Sequential */
+			 d->current_profile == 0x15 ||
+			 d->current_profile == 0x40 ||
+			 d->current_profile == 0x41)
+			/* DVD-ROM ,  DVD-R[W] Sequential ,
+			   BD-ROM , BD-R sequential */
 			trackno = d->last_track_no;
 		else /* mmc5r03c.pdf: valid only for CD, DVD+R, DVD+R DL */
 			trackno = 0xFF;
@@ -999,7 +1013,8 @@ int mmc_fake_toc(struct burn_drive *d)
 	}
 	/* ts A71128 : My DVD-ROM drive issues no reliable track info.
 			One has to try 43h READ TOC/PMA/ATIP Form 0. */
-	if (d->current_profile == 0x10 && d->last_track_no <= 1) {
+	if ((d->current_profile == 0x10 || d->current_profile == 0x40) &&
+	     d->last_track_no <= 1) {
 		ret = mmc_read_toc_fmt0(d);
 		return ret;
 	}
@@ -1442,10 +1457,27 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	d->erasable = !!(data[2] & 16);
 
  	disc_status = data[2] & 3;
-	if (d->current_profile == 0x10) { /* DVD-ROM */
+	if (d->current_profile == 0x10 || d->current_profile == 0x40) {
+							 /* DVD-ROM , BD-ROM */
 		disc_status = 2; /* always full and finalized */
 		d->erasable = 0; /* never erasable */
 	}
+
+	/* ts A80207 : DVD - R DL can normally be read but not be written */
+	if(d->current_profile == 0x15 && !burn_support_untested_profiles) {
+		disc_status = 2; /* always full and finalized */
+		d->erasable = 0; /* never erasable */
+	}
+
+#ifdef Libburn_support_bd_r_readonlY
+	/* <<< For now: declaring BD-R read-only
+	*/
+	if (d->current_profile == 0x41 || d->current_profile == 0x42) {
+						 /* BD-R seq, BD-R rnd */
+		disc_status = 2; /* always full and finalized */
+		d->erasable = 0; /* never erasable */
+	}
+#endif /* Libburn_support_bd_r_readonlY */
 
 	switch (disc_status) {
 	case 0:
@@ -1470,14 +1502,20 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		break;
 	}
 
-	/* ts A80207 : DVD +/- R DL can normally be read but not be written */
-	if((d->current_profile == 0x2b || d->current_profile == 0x15) &&
-	   !d->current_is_supported_profile) {
+
+#ifdef NIX
+        /* <<< on its way out. DVD-R DL are current_is_supported_profile
+               unconditionally. Writeability is handled above now.
+        */
+	/* ts A80207 : DVD - R DL can normally be read but not be written */
+	if(d->current_profile == 0x15 && !d->current_is_supported_profile) {
 		if(d->status == BURN_DISC_APPENDABLE)
 			d->status = BURN_DISC_FULL;
 		d->erasable = 0; /* never erasable */
 		d->current_is_supported_profile = 1;
 	}
+#endif /* NIX */
+
 
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
 		&& ! d->current_is_supported_profile) {
@@ -2114,9 +2152,34 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	if (len < 8 || len > 4096)
 		return 0;
 	cp = (c.page->data[6]<<8) | c.page->data[7];
+
+#ifdef Libburn_rom_as_profilE
+	if (cp == 0x08 || cp == 0x10 || cp==0x40)
+		cp = Libburn_rom_as_profilE;
+#endif /* Libburn_rom_as_profilE */
+
 	d->current_profile = cp;
 	strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
-	if (cp == 0x08 || cp == 0x09 || cp == 0x0a)
+
+	/* Read-only supported media */
+
+	if (cp == 0x08) /* CD-ROM */
+		d->current_is_supported_profile = d->current_is_cd_profile = 1;
+	if (cp == 0x10) /* DVD-ROM */
+		d->current_is_supported_profile = 1;
+	if (cp == 0x40) /* BD-ROM */
+		d->current_is_supported_profile = 1;
+
+#ifdef Libburn_support_bd_r_readonlY
+	if (cp == 0x41 || cp == 0x42) /* BD-R sequential, BD-R random */
+		d->current_is_supported_profile = 1;
+#endif
+
+
+	/* Write supported media (they get declared suitable in
+	                          burn_disc_get_multi_caps) */
+
+	if (cp == 0x09 || cp == 0x0a)
 		d->current_is_supported_profile = d->current_is_cd_profile = 1;
 
 #ifdef Libburn_support_dvd_plus_rW
@@ -2139,9 +2202,10 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	}
 #endif
 #ifdef Libburn_support_dvd_r_seQ
-	if (cp == 0x10 || cp == 0x11 || cp == 0x14) /* DVD-ROM,DVD-R,DVD-RW */
+	if (cp == 0x11 || cp == 0x14) /* DVD-R, DVD-RW */
 		d->current_is_supported_profile = 1;
-	if (cp == 0x15 && burn_support_untested_profiles) /* DVD-R/DL */
+	if (cp == 0x15) /* DVD-R/DL . */
+		 	/* Writeable only if burn_support_untested_profiles */
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_plus_R
