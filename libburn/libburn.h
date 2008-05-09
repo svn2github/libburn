@@ -1089,17 +1089,22 @@ off_t burn_disc_available_space(struct burn_drive *d,
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
     libburn currently writes only to profiles 
-    0x09 "CD-R",                          0x0a "CD-RW",
-    0x11 "DVD-R sequential recording",    0x12 "DVD-RAM",
-    0x13 "DVD-RW restricted overwrite",   0x14 "DVD-RW sequential recording",
-    0x1a "DVD+RW",                        0x1b "DVD+R"
-    0x2b "DVD+R/DL",                      0x43 "BD-RE"
+      0x09 "CD-R",                          0x0a "CD-RW",
+      0x11 "DVD-R sequential recording",    0x12 "DVD-RAM",
+      0x13 "DVD-RW restricted overwrite",   0x14 "DVD-RW sequential recording",
+      0x1a "DVD+RW",                        0x1b "DVD+R",
+      0x2b "DVD+R/DL",                      0x43 "BD-RE",
+      0xffff "stdio file"
+    Note: 0xffff is not a MMC profile but a libburn invention.
     If enabled by burn_allow_untested_profiles() it also writes to profiles
-    0x15 "DVD-R/DL sequential recording",
-    Writeable stdio-drives return this profile:
-    0xffff "stdio file"
+      0x15 "DVD-R/DL sequential recording",
+    Read-only are the profiles
+      0x08 "CD-ROM",                        0x10 "DVD-ROM",
+      0x40 "BD-ROM",
+    For now read-only are BD-R profiles (testers wanted)
+      0x41 "BD-R sequential recording",     0x42 "BD-R random recording"
     @param d The drive where the media is inserted.
-    @param pno Profile Number as of mmc5r03c.pdf, table 89
+    @param pno Profile Number. See also mmc5r03c.pdf, table 89
     @param name Profile Name (see above list, unknown profiles have empty name)
     @return 1 profile is valid, 0 no profile info available 
 */
