@@ -2,7 +2,7 @@
 
 <HEAD>
 <META NAME="description" CONTENT="cdrskin, a limited cdrecord compatibility wrapper for libburn">
-<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, cdrecord, compatible, scdbackup">
+<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, BD-RE, cdrecord, compatible, scdbackup">
 <META NAME="robots" CONTENT="follow">
 <TITLE>cdrskin homepage english</TITLE>
 </HEAD>
@@ -17,15 +17,14 @@
 </A>
 <P><H2> Homepage of </H2>
 <H1> cdrskin </H1>
-<!-- <FONT SIZE=+0><A HREF="cdrskin_ger.html">deutsch (german)</A></FONT> -->
 
 <H2>Limited cdrecord compatibility wrapper for libburn</H2>
 </CENTER>
 
 <P>
 <H2>Purpose:</H2>
-Burns preformatted data to CD and DVD media:<BR>
-CD-R, DVD-R, DVD+R, DVD+R/DL, CD-RW, DVD-RW, DVD-RAM, DVD+RW
+Burns preformatted data to CD, DVD, and BD media:<BR>
+CD-R, DVD-R, DVD+R, DVD+R/DL, CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE
 </P>
 <P>
 
@@ -35,10 +34,10 @@ CD-R, DVD-R, DVD+R, DVD+R/DL, CD-RW, DVD-RW, DVD-RAM, DVD+RW
 
 <P>
 <H2>Hardware requirements:</H2>
-A CD/DVD recorder suitable for 
+A CD/DVD/BD recorder suitable for 
 <A HREF="http://libburnia-project.org">http://libburnia-project.org</A> <BR>
 (SCSI , ATA , USB , or SATA writers compliant to standard MMC-3 for CD
-and to MMC-5 for DVD).
+and to MMC-5 for DVD or BD).
 <BR>
 </P>
 
@@ -58,7 +57,7 @@ and to MMC-5 for DVD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.4.4</DT>
+<DT>libburn-0.4.6</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 furthered by team of libburnia-project.org)</DD>
 <DD>transfers data to CD and DVD</DD>
@@ -86,10 +85,10 @@ Ports to other usable systems are appreciated. Reports are welcome.
 <DL>
 <DT>The most common options of cdrecord for data and audio on CD media
 are provided in a compatible way.<BR>
-On single layer DVD media cdrskin is able to perform any recording job
+On all DVD media except DVD-R DL, cdrskin is able to perform any recording job
 which is possible with cdrecord.
 Other than with cdrecord, options -multi and -tao are supported with
-certain DVD types.
+most DVD types and with BD-RE.
 </DT>
 <BR><BR>
 <DT>Get an overview of drives and their addresses</DT>
@@ -107,9 +106,8 @@ as listed by option --devices.</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=ATA:1,0,0 -v -atip</KBD></DD>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -toc</KBD></DD>
 
-<DT>Make used CD-RW or used unformatted DVD-RW writable again:</DT>
-<DD>$<KBD>&nbsp;cdrskin -v dev=/dev/sg1 blank=fast -eject</KBD></DD>
-<DD>$<KBD>&nbsp;cdrskin -v dev=/dev/dvd blank=all -eject</KBD></DD>
+<DT>Prepare CD-RW or DVD-RW for re-use, DVD-RAM or BD-RE for first use:</DT>
+<DD>$<KBD>&nbsp;cdrskin -v dev=/dev/sg1 blank=as_needed -eject</KBD></DD>
 
 <DT>Format DVD-RW to avoid need for blanking before re-use:</DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=/dev/sr0 blank=format_overwrite</KBD></DD>
@@ -120,12 +118,12 @@ as listed by option --devices.</DT>
 <DT>Write ISO-9660 filesystem image as only one to blank or formatted media:
 </DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=/dev/hdc speed=12 fs=8m \</KBD></DD>
-<DD><KBD>&nbsp;&nbsp;-sao -eject padsize=300k my_image.iso</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;blank=as_needed -eject padsize=300k my_image.iso</KBD></DD>
 
 <DT>Write compressed afio archive on-the-fly:</DT>
 <DD>$<KBD>&nbsp;find . | afio -oZ - | \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;cdrskin -v dev=0,1,0 fs=32m speed=8 \</KBD></DD>
-<DD><KBD>&nbsp;&nbsp;-tao padsize=300k -</KBD></DD>
+<DD><KBD>&nbsp;&nbsp;blank=as_needed padsize=300k -</KBD></DD>
 
 <DT>Write several sessions to the same CD, DVD-R[W] or DVD+R[/DL]:</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso</KBD>
@@ -176,8 +174,8 @@ Standalone ISO 9660 multi-session CD/DVD tool
 </DD>
 </DL>
 
-Testers wanted who are willing to risk some double layer DVD-R media
-or to do experiments on BD-RE.
+Testers wanted who are willing to risk some DVD-R DL media
+or to do experiments on BD-R media.
 
 </P>
 
@@ -188,8 +186,8 @@ or to do experiments on BD-RE.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.4.4.pl00.tar.gz">cdrskin-0.4.4.pl00.tar.gz</A>
-(715 KB).
+<DD><A HREF="cdrskin-0.4.6.pl00.tar.gz">cdrskin-0.4.6.pl00.tar.gz</A>
+(730 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -198,7 +196,7 @@ They get produced via a different procedure, though.<BR>
 cdrskin is part of libburn - full libburn is provided with cdrskin releases.
 </DD>
 
-<!-- This is not offered any more for 0.4.4 and 0.4.5
+<!-- This is not offered any more since spring 2008
 <DD>&nbsp;</DD>
 <DT>Download as single x86 binaries (untar and move to /usr/bin/cdrskin):</DT>
 <DD><A HREF="cdrskin_0.4.2.pl00-x86-suse9_0.tar.gz">
@@ -238,13 +236,18 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.4.2:
+Enhancements towards previous stable version cdrskin-0.4.4.pl00:
 <UL>
-<LI>Support for DVD+R/DL media is now official</LI>
+<LI>Support for BD-RE media is now official</LI>
+<LI>New option stream_recording=on can speed up DVD-RAM and BD-RE</LI>
+<LI>New option --list_formats</LI>
+<LI>New blank types for expert formatting of DVD-RAM and BD-RE</LI>
+<LI>New blank type blank=as_needed for automatic handling
+of media type and state</LI>
 </UL>
 
 <!--
- Bug fixes towards cdrskin-0.4.2.pl00:
+ Bug fixes towards cdrskin-0.4.4.pl00:
 <UL>
 <LI>none yet</LI>
 </UL>
@@ -256,27 +259,20 @@ Enhancements towards previous stable version cdrskin-0.4.2:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.4.5 :</H3></DT>
-<DD>Enhancements towards stable version 0.4.4.pl00:
+<DT><H3>Development snapshot, version 0.4.7 :</H3></DT>
+<DD>Enhancements towards current stable version 0.4.6.pl00:
 <UL>
 <!--
-<LI>none yet</LI>
 -->
-<LI>Support for BD-RE media is now official</LI>
-<LI>New blank type blank=as_needed for automatic handling
-of media type and state</LI>
-<LI>New option stream_recording=on can speed up DVD-RAM and BD-RE</LI>
-<LI>New blank type blank=format_defectmgt for DVD-RAM and BD-RE</LI>
-<LI>New option --list_formats</LI>
-<LI>New blank type blank=format_by_index_&lt;number&gt;</LI>
+<LI>none yet</LI>
 
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.4.5</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.5 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.5 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.5)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.4.7</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.7 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.7 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.7)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -296,11 +292,11 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.4.5.tar.gz">cdrskin-0.4.5.tar.gz</A>
+<A HREF="cdrskin-0.4.7.tar.gz">cdrskin-0.4.7.tar.gz</A>
 (730 KB).
 </DD>
 
-<!-- This is not offered any more for 0.4.4 and 0.4.5
+<!-- This is not offered any more since spring 2008
 
 <DT>The following downloads are intended for adventurous end users or
 admins with full system souvereignty.</DT>

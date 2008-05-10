@@ -7,7 +7,7 @@ A cdrecord compatible command line interface for libburn.
 
 This project is neither directed against original cdrecord nor does it exploit
 any source code of said program. It rather tries to be an alternative method
-to burn CD or DVD, which is not based on the same code as cdrecord.
+to burn CD, DVD, or BD, which is not based on the same code as cdrecord.
 See also :  http://scdbackup.sourceforge.net/cdrskin_eng.html
 
 Interested users of cdrecord are encouraged to contribute further option
@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.4.5"
+#define Cdrskin_prog_versioN "0.4.7"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 4
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -135,46 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_4_4
-#define Cdrskin_libburn_versioN "0.4.4"
+#ifdef Cdrskin_libburn_0_4_6
+#define Cdrskin_libburn_versioN "0.4.6"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_4_2 */
+#endif /* Cdrskin_libburn_0_4_6 */
 
-#ifdef Cdrskin_libburn_0_4_5
-#define Cdrskin_libburn_versioN "0.4.5"
+#ifdef Cdrskin_libburn_0_4_7
+#define Cdrskin_libburn_versioN "0.4.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-#define Cdrskin_libburn_has_stream_recordinG 1
+/* there are no libburn novelties in 0.4.7 yet */
 
-/* there are novelties in 0.4.5 yet */
-
-#endif /* Cdrskin_libburn_0_4_5 */
+#endif /* Cdrskin_libburn_0_4_7 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_4_4
-#define Cdrskin_libburn_versioN "0.4.4"
+#define Cdrskin_libburn_0_4_6
+#define Cdrskin_libburn_versioN "0.4.6"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_4_4
+#ifdef Cdrskin_libburn_0_4_6
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 4
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_0_4_5
+#ifdef Cdrskin_libburn_0_4_7
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 4
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -242,10 +240,14 @@ or
 #define Cdrskin_libburn_has_drive_equals_adR 1
 
 /* 0.4.2 */
-/* no novel features but rather organizational changes */
+/* no novel libburn features but rather organizational changes */
 
 /* 0.4.4 */
-/* support for DVD+R/DL media is now official, BD-RE is experimental */
+/* novel libburn features are transparent to cdrskin */
+
+/* 0.4.6 */
+#define Cdrskin_libburn_has_stream_recordinG 1
+
 
 #ifdef Cdrskin_new_api_tesT
 

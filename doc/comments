@@ -70,7 +70,7 @@ composition, updating and writing. Quite unique in the Linux world.
            manipulates and writes ISO 9660 filesystem images with
            Rock Ridge extensions. Manipulation is not only adding or
            overwriting of files but also deletion, renaming, and attribute
-           changing.
+           changing. An incremental backup feature is provided.
            See xorriso/README for more
 
 - "test"   is a collection of application gestures and examples given by the

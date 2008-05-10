@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "May 09, 2008"
+.TH CDRSKIN 1 "May 10, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1217,7 +1217,7 @@ cdrskin -v dev=/dev/sr0 blank=deformat_sequential
 .br
 cdrskin -v dev=/dev/hdc speed=12 fs=8m \\
 .br
-blank=as_needed -sao -eject padsize=300k my_image.iso
+blank=as_needed -eject padsize=300k my_image.iso
 .SS
 .B Write compressed afio archive on-the-fly (not possible with minimally blanked DVD-RW):
 .br
@@ -1225,7 +1225,7 @@ find . | afio -oZ - | \\
 .br
 cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
-blank=as_needed -tao padsize=300k -
+blank=as_needed padsize=300k -
 .SS
 .B Write multi-session to the same CD, DVD-R[W] or DVD+R[/DL]:
 .br

@@ -39,9 +39,13 @@ into its toplevel directory (here: "libburn") and execute
    ./configure --prefix=/usr
    make
 
-To make the libraries accessible for running resp. developing applications
+To make libburn accessible for running resp. application development,
 and to install the cdrecord compatibility binary cdrskin, do:
    make install
+
+
+Above procedure installs cdrskin depending on libburn.so.4 .
+For a standalone cdrskin binary, see cdrskin/README.
 
 
 An important part of the project, libisofs, is hosted in a bzr repository at
@@ -270,11 +274,16 @@ Project history as far as known to me:
   exposed in the API to allow future development.
 
 - 29th Apr 2008 libisoburn-0.1.4 was made more efficient with reading of
-  image tree nodes. It  now depends on libisofs-0.6.4 and libburn-0.4.4.
+  image tree nodes. It now depends on libisofs-0.6.4 and libburn-0.4.4.
   xorriso makes use of new libisofs features by performing incremental
   updates of directory trees and by cutting oversized data files into
   pieces. A primitive single session emulation of cdrcord and mkisofs is
   provided.
+
+- 10th May 2008 libburn-0.4.6 supports formatting and writing of BD-RE,
+  full nominal speed for DVD-RAM and BD-RE. cdrskin has a unified blank
+  type with automatic media state recognition.
+
 
 ------------------------------------------------------------------------------
 
