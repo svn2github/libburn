@@ -5219,7 +5219,7 @@ Documented last minute changes
 * libburn: Improved read performance from stdio: pseudo-drives
 
 
-2008.04.08.132344  []
+2008.04.08.132344  [1674]
 Makefile.am
 configure.ac
 README
@@ -5234,18 +5234,309 @@ doc/comments
 cdrskin/changelog.txt
 Made number transition
 
------------------------------------- cycle  - cdrskin-0.4.5 - 
------------------------------------- cycle  - cdrskin-0.4.5 - 
+8 Apr 2008 [1675]
+- cdrskin/add_ts_changes_to_libburn_0_4_2
+- cdrskin/add_ts_changes_to_libburn_0_4_3
++ cdrskin/add_ts_changes_to_libburn_0_4_4
++ cdrskin/add_ts_changes_to_libburn_0_4_5
+Updated cdrskin tarball generator
+
+2008.04.08.133452  [1676]
+libburn/util.c
+Switched from configure.ac versioning to libburn.h versioning
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.08.134413
+
+2008.04.10.211529  [1681]
+libburn/mmc.c
+libburn/drive.c
+cdrskin/cdrskin.c
+Trying to fix bugs about BD-RE, macro for simulating BD-RE on DVD-RAM
+
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.10.211529
+
+2008.04.12.164244  [1683]
+libburn/libburn.h
+libburn/transport.h
+libburn/options.h
+libburn/options.c
+libburn/write.c
+libburn/drive.c
+libburn/mmc.c
+New API call burn_write_opts_set_stream_recording()
+
+2008.04.12.164606  [1684]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+New option stream_recording=on|off
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.12.164930
+* New option stream_recording=on can speed up DVD-RAM
+
+
+2008.04.15.094133  [1685]
+libburn/os-linux.h
+libburn/write.c
+Enforced tail padding with stream_recording, enlarged transport buffer
+
+15 Apr 2008  [1686]
+cdrskin/cdrskin.1
+Some adjustments of cdrskin man page
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.15.094545
+
+2008.04.16.082208  [1687]
+libburn/read.c
+Made burn_read_data() obey its flag bit1
+
+2008.04.18.092715  [1688]
+libburn/libburn.h
+libburn/async.c
+libburn/drive.c
+libburn/mmc.c
+Began to implement formatting of DVD-RAM and experimentally of BD-RE
+
+2008.04.18.092816  [1689]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Began to implement formatting of DVD-RAM and experimentally of BD-RE
+
+2008.04.18.194602  [1691]
+libburn/mmc.c
+Adjustments with DVD-RAM formatting
+
+2008.04.22.161139  [1695]
+libburn/libburn.h
+libburn/transport.h
+libburn/mmc.c
+libburn/drive.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Adjustments with DVD-RAM formatting
+
+2008.04.22.200949  [1696]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --list_formats
+
+2008.04.23.110116  [1697]
+libburn/mmc.c
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New blank type blank=format_by_index_<number>
+
+24 Apr 2008  [1698]
+doc/cookbook.txt
+Wrote down what was learned about DVD-RAM formatting
+
+24 Apr 2008  [1699]
+cdrskin/cdrskin_eng.html
+Mentioned new features
+
+2008.04.25.131531  [1700]
+libburn/mmc.c
+Preparations for formatting BD-RE
+
+2008.04.25.132353  [1701]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Documented experimental support for BD-RE formatting
+
+25 Apr 2008  [1702]
+configure.ac
+Incremented LT_CURRENT and LT_AGE to reflect API enhancements
+
+25 Apr 2008  [1703]
+cdrskin/cdrskin_eng.html
+Documented newest enhancements
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.25.134438
+* New blank type blank=format_defectmgt for DVD-RAM
+* New option --list_formats
+* New blank type blank=format_by_index_<number>
+* Experimental support for formatting BD-RE
+
+
+2008.04.26.150646  [1704]
+libburn/libburn.h
+libburn/mmc.c
+libburn/drive.c
+doc/cookbook.txt
+Enabled quick formatting with DVD-RAM, made slow formatting default with BD-RE
+
+2008.04.26.150945  [1705]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New blank subtypes format_defectmgt_cert_[on|off], on is default
+
+2008.04.27.084704  [1706]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New blank type format_if_needed
+
+2008.04.27.140144  [1707]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New blank type as_needed
+
+27 Apr 2008  [1708]
+cdrskin/cdrskin_eng.html
+Documented newest enhancements
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.04.27.163625
+* New blank type blank=as_needed for automatic handling of media type and state
+
+
+3 May 2008  [1723]
+README
+Updated project history
+
+2008.05.06.082429  [1729]
+libburn/drive.c
+Avoided to report negative burn_multi_caps.start_range_high with DVD-RW
+
+2008.05.06.084156  [1730]
+libburn/mmc.c
+Mapped undefined size to 0 with burn_disc_get_formats() and DVD-RW
+
+2008.05.06.180813  [1733]
+libburn/libburn.h
+libburn/drive.c
+libburn/mmc.c
+doc/cookbook.txt
+doc/comments
+test/libburner.c
+Declared BD-RE to be supported
+
+2008.05.06.181100  [1734]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/wiki_plain.txt
+Declared BD-RE to be supported
+
+2008.05.06.181723  [1735]
+libburn/mmc.c
+Declared BD-RE to be supported
+
+6 May 2008  [1736]
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin.1
+Declared BD-RE to be supported
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.05.06.183436
+* Support for BD-RE media is now official
+
+2008.05.09.143130  [1748]
+libburn/libburn.h
+Documented read-only profiles CD-ROM and DVD-ROM
+
+2008.05.09.145205  [1749]
+libburn/mmc.c
+Allowed BD-ROM and BD-R for read-only purposes
+
+9 May 2008  [1750]
+cdrskin/cdrskin.1
+Changed blank examples to blank=as_needed
+
+
+------------------------------------ cycle  - cdrskin-0.4.5 - 2008.05.09.151327
+
+2008.05.10.080001  [1754] 
+Makefile.am
+configure.ac
+README
+libburn/libburn.h (burn_header_version_*)
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+cdrskin/cdrskin.1
+Made number transition to 0.4.6 and activated development documentation
+
+10 May 2008  [1755] 
+cdrskin/README
+Made number transition to 0.4.6 and activated development documentation
+
+10 May 2008  [1756]
+- cdrskin/add_ts_changes_to_libburn_0_4_4
+- cdrskin/add_ts_changes_to_libburn_0_4_5
++ cdrskin/add_ts_changes_to_libburn_0_4_6
++ cdrskin/add_ts_changes_to_libburn_0_4_7
+Updated cdrskin tarball generator
+
+10 May 2008  [1757]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+----------------------------- release  - cdrskin-0.4.6.pl00 - 2008.05.10.080001
+* Support for BD-RE media is now official
+* New option stream_recording=on can speed up DVD-RAM and BD-RE
+* New option --list_formats
+* New blank types for expert formatting of DVD-RAM and BD-RE
+* New blank type blank=as_needed for automatic handling of media type and state
+
+
+2008.05.10.132543  [1758] 
+Makefile.am
+configure.ac
+README
+libburn/libburn.h (burn_header_version_*)
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/wiki_plain.txt
+cdrskin/cdrskin_eng.html
+doc/comments
+cdrskin/cdrskin.1
+Made number transition to 0.4.7
+
+10 May 2008  [1759]
+- cdrskin/add_ts_changes_to_libburn_0_4_4
+- cdrskin/add_ts_changes_to_libburn_0_4_5
++ cdrskin/add_ts_changes_to_libburn_0_4_6
++ cdrskin/add_ts_changes_to_libburn_0_4_7
+Updated cdrskin tarball generator
+
+10 May 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.4.7 - 2008.05.10.132543
+
+
+------------------------------------ cycle  - cdrskin-0.4.7 - 
+------------------------------------ cycle  - cdrskin-0.4.7 - 
 
 ===============================================================================
                                     TODO
 ===============================================================================
 
+
+--------------------------------- bugs -------------------------------------
+
+
+- Why are DVD+R tracks labeled "invisible" by dvd+rw-mediainfo ?
+  Why does the DVD drive only show the first session ?
+READ TRACK INFORMATION[#5]:
+ Track State:           invisible
+ Track Start Address:   954960*2KB
+ Free Blocks:           0*2KB
+ Track Size:            22784*2KB
+ ROM Compatibility LBA: 265696
+
+
+------------------------------ end of bugs ---------------------------------
+
 @since tags
 
 Check all SORRY and FATAL errors whether they should become FAILUREs
-
-Refuse writing if track size exceeds free media space
 
 problem with telltoc: double descriptor list from before load and after load 
 
@@ -5257,21 +5548,10 @@ Thin out
 
 
   []
-open(,O_LARGEFILE) ?
-
-  []
 Emulate -dummy on overwriteables ?
 
   []
 Emulate -dummy on DVD+R ?
-
-
-
-
------------------------------------- cycle  - cdrskin-0.3.9 - 
-cdrskin/changelog.txt
-Next cdrskin-0.3.9 cycle
-
 
 
 
@@ -5281,14 +5561,6 @@ What about minimum track sizes ? (POWER OFF/ON , BUS RESET ?)
 After cooking: review of -do_diet ?
 
 growisofs.c : _LINUX_CAPABILITY_VERSION CAP_SYS_RAWIO SYS_capset ?
-
-Questions to post:
-    A70211_to_cdwrite_growisofs_question_finalizing
-
-
-
-Format DVD-RAM ?
-Disable error checking with DVD-RAM.
 
 
 Rectify mmc_read_atip speed interpretation. 12x media are reported as 10x. I never heard of 6x media. 
