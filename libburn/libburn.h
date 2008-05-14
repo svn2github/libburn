@@ -1244,7 +1244,8 @@ int burn_disc_get_formats(struct burn_drive *drive, int *status, off_t *size,
     @param type  The format type.  See mmc5r03c.pdf, 6.5, 04h FORMAT UNIT.
                  0x00=full, 0x10=CD-RW/DVD-RW full, 0x11=CD-RW/DVD-RW grow,
                  0x15=DVD-RW quick, 0x13=DVD-RW quick grow,
-                 0x26=DVD+RW background
+                 0x26=DVD+RW background, 0x30=BD-RE with spare areas,
+                 0x31=BD-RE without spare areas
     @param size  The maximum size in bytes achievable with this format.
     @param tdp   Type Dependent Parameter. See mmc5r03c.pdf.
     @return 1 reply is valid , <=0 failure
