@@ -4936,7 +4936,7 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
                              &num_formats);
  if(ret <= 0) {
    fprintf(stderr, "cdrskin: SORRY: Cannot obtain format list info\n");
-   ret= 2; goto ex;
+   ret= 0; goto ex;
  }
  ret= burn_disc_get_profile(drive, &profile_no, profile_name);
  printf("Media current: ");
@@ -4984,7 +4984,7 @@ ex:;
 
  fprintf(stderr,
          "cdrskin: SORRY: libburn is too old to obtain format list info\n");
- return(2);
+ return(0);
 
 #endif /* Cdrskin_libburn_has_burn_disc_formaT */
 }
@@ -5133,7 +5133,7 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      do_format= 4;
    else
      do_format= 1;
- } else if(do_format==6 || do_format==7) { /* format_if_needed , if_needed */
+ } else if(do_format==6 || do_format==7) { /* format_if_needed , as_needed */
    /* Find out whether format is needed at all.
       Eventuelly set up a suitable formatting run
    */
