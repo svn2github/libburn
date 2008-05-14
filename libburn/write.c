@@ -1419,7 +1419,6 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 	int ret;
-	char msg[160];
 
 	if (d->bg_format_status==0 || d->bg_format_status==1) {
 		d->busy = BURN_DRIVE_FORMATTING;
@@ -1429,16 +1428,6 @@ int burn_disc_setup_dvd_plus_rw(struct burn_write_opts *o,
 			return 0;
 		d->busy = BURN_DRIVE_WRITING;
 		d->needs_close_session = 1;
-	}
-	d->nwa = 0;
-	if (o->start_byte >= 0) {
-		d->nwa = o->start_byte / 2048;
-
-		sprintf(msg, "Write start address is  %d * 2048", d->nwa);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020127,
-				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
 	}
 
 	/* >>> perform OPC if needed */;
@@ -1558,6 +1547,16 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			goto early_failure;
+		}
+		d->nwa = 0;
+		if (o->start_byte >= 0) {
+			d->nwa = o->start_byte / 2048;
+			sprintf(msg, "Write start address is  %d * 2048",
+				d->nwa);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020127,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 		}
 		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
 		if (d->current_profile == 0x43) /* BD-RE */
