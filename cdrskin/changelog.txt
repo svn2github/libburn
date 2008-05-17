@@ -5447,7 +5447,7 @@ Changed blank examples to blank=as_needed
 Makefile.am
 configure.ac
 README
-libburn/libburn.h (burn_header_version_*)
+libburn/libburn.h
 cdrskin/cdrskin.c 
 cdrskin/README
 cdrskin/compile_cdrskin.sh
@@ -5504,15 +5504,82 @@ Made number transition to 0.4.7
 + cdrskin/add_ts_changes_to_libburn_0_4_7
 Updated cdrskin tarball generator
 
-10 May 2008  []
+10 May 2008  [1760]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 ------------------------------------ cycle  - cdrskin-0.4.7 - 2008.05.10.132543
 
+2008.05.14.165025  [1776]
+libburn/write.c
+Bug fix: random access addressing for DVD-RAM and BD-RE did not work
 
------------------------------------- cycle  - cdrskin-0.4.7 - 
------------------------------------- cycle  - cdrskin-0.4.7 - 
+2008.05.14.165157  [1777]
+libburn/libburn.h
+Added format types 0x30 and 0x32 to list in API comments
+
+2008.05.14.165258  [1778]
+cdrskin/cdrskin.c
+Made inability to get format list a reason to abort the program
+
+------------------------------------ cycle  - cdrskin-0.4.7 - 2008.05.14.165258
+* Bug fix: random access addressing for DVD-RAM and BD-RE did not work
+
+
+2008.05.17.080001  [1788] 
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin.1
+Made number transition to 0.4.8 and activated development documentation
+
+17 May 2008  [1789]
+- cdrskin/add_ts_changes_to_libburn_0_4_6
+- cdrskin/add_ts_changes_to_libburn_0_4_7
++ cdrskin/add_ts_changes_to_libburn_0_4_8
++ cdrskin/add_ts_changes_to_libburn_0_4_9
+Updated cdrskin tarball generator
+
+17 May 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------- release  - cdrskin-0.4.8.pl00 - 2008.05.17.080001
+* Bug fix: random access addressing for DVD-RAM and BD-RE did not work
+
+2008.05.17.115434  [1790]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin.1
+Made number transition to 0.4.9
+
+17 May 2008  [1791]
+- cdrskin/add_ts_changes_to_libburn_0_4_6
+- cdrskin/add_ts_changes_to_libburn_0_4_7
++ cdrskin/add_ts_changes_to_libburn_0_4_8
++ cdrskin/add_ts_changes_to_libburn_0_4_9
+Updated cdrskin tarball generator
+
+17 May 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-0.4.9 - 
+------------------------------------ cycle  - cdrskin-0.4.9 - 
 
 ===============================================================================
                                     TODO
@@ -5533,6 +5600,8 @@ READ TRACK INFORMATION[#5]:
 
 
 ------------------------------ end of bugs ---------------------------------
+
+provide DVD+R DL layer break setter
 
 @since tags
 
