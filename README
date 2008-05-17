@@ -284,6 +284,10 @@ Project history as far as known to me:
   full nominal speed for DVD-RAM and BD-RE. cdrskin has a unified blank
   type with automatic media state recognition.
 
+- 17th May 2008 an old bug with DVD-RAM and now with BD-RE is fixed by
+  libburn-0.4.8 to allow libisoburn emulation of multisession on those media.
+
+
 
 ------------------------------------------------------------------------------
 

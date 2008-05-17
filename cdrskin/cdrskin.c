@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.4.7"
+#define Cdrskin_prog_versioN "0.4.9"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 4
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -135,30 +135,30 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_4_6
-#define Cdrskin_libburn_versioN "0.4.6"
+#ifdef Cdrskin_libburn_0_4_8
+#define Cdrskin_libburn_versioN "0.4.8"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_4_6 */
+#endif /* Cdrskin_libburn_0_4_8 */
 
-#ifdef Cdrskin_libburn_0_4_7
-#define Cdrskin_libburn_versioN "0.4.7"
+#ifdef Cdrskin_libburn_0_4_9
+#define Cdrskin_libburn_versioN "0.4.9"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.4.7 yet */
+/* there are no libburn novelties in 0.4.9 yet */
 
-#endif /* Cdrskin_libburn_0_4_7 */
+#endif /* Cdrskin_libburn_0_4_9 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_4_6
-#define Cdrskin_libburn_versioN "0.4.6"
+#define Cdrskin_libburn_0_4_8
+#define Cdrskin_libburn_versioN "0.4.8"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_4_6
+#ifdef Cdrskin_libburn_0_4_8
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
@@ -166,13 +166,13 @@ or
 #define Cdrskin_libburn_minoR 4
 #define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_0_4_7
+#ifdef Cdrskin_libburn_0_4_9
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 4
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -248,6 +248,8 @@ or
 /* 0.4.6 */
 #define Cdrskin_libburn_has_stream_recordinG 1
 
+/* 0.4.8 */
+/* Bug fix release for  write_start_address=... on DVD-RAM and BD-RE */
 
 #ifdef Cdrskin_new_api_tesT
 

@@ -57,10 +57,10 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.4.6</DT>
+<DT>libburn-0.4.8</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 furthered by team of libburnia-project.org)</DD>
-<DD>transfers data to CD and DVD</DD>
+<DD>transfers data to CD, DVD, BD-RE</DD>
 </DL>
 </P>
 
@@ -87,8 +87,8 @@ Ports to other usable systems are appreciated. Reports are welcome.
 are provided in a compatible way.<BR>
 On all DVD media except DVD-R DL, cdrskin is able to perform any recording job
 which is possible with cdrecord.
-Other than with cdrecord, options -multi and -tao are supported with
-most DVD types and with BD-RE.
+Other than with cdrecord, option -multi is supported with many DVD types and
+write mode -tao works with anything but quickly blanked DVD-RW.
 </DT>
 <BR><BR>
 <DT>Get an overview of drives and their addresses</DT>
@@ -126,20 +126,20 @@ as listed by option --devices.</DT>
 <DD><KBD>&nbsp;&nbsp;blank=as_needed padsize=300k -</KBD></DD>
 
 <DT>Write several sessions to the same CD, DVD-R[W] or DVD+R[/DL]:</DT>
-<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso</KBD>
+<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi 1.iso</KBD>
 </DD>
-<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 2.iso</KBD>
+<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi 2.iso</KBD>
 </DD>
-<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 3.iso</KBD>
+<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -multi 3.iso</KBD>
 </DD>
-<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso</KBD></DD>
+<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -v padsize=300k 4.iso</KBD></DD>
 
 <DT>Get multi-session info for option -C of program mkisofs:</DT>
 <DD>$<KBD>&nbsp;c_values=$(cdrskin dev=/dev/sr0 -msinfo 2>/dev/null)</KBD></DD>
 <DD>$<KBD>&nbsp;mkisofs ... -C "$c_values" ...</KBD></DD>
 
-<DT>Inquire free space on media for a -tao -multi run:</DT>
-<DD>$<KBD>&nbsp;x=$(cdrskin dev=/dev/sr0 -tao -multi \</KBD></DD>
+<DT>Inquire free space on media for a -multi run:</DT>
+<DD>$<KBD>&nbsp;x=$(cdrskin dev=/dev/sr0 -multi \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;--tell_media_space 2>/dev/null)</KBD></DD>
 <DD>$<KBD>&nbsp;echo "Available: $x blocks of 2048 data bytes"</KBD></DD>
 
@@ -186,7 +186,7 @@ or to do experiments on BD-R media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.4.6.pl00.tar.gz">cdrskin-0.4.6.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.4.8.pl00.tar.gz">cdrskin-0.4.8.pl00.tar.gz</A>
 (730 KB).
 </DD>
 <DD>
@@ -236,22 +236,17 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.4.4.pl00:
+Enhancements towards previous stable version cdrskin-0.4.6.pl00:
 <UL>
-<LI>Support for BD-RE media is now official</LI>
-<LI>New option stream_recording=on can speed up DVD-RAM and BD-RE</LI>
-<LI>New option --list_formats</LI>
-<LI>New blank types for expert formatting of DVD-RAM and BD-RE</LI>
-<LI>New blank type blank=as_needed for automatic handling
-of media type and state</LI>
+<LI>none</LI>
 </UL>
 
 <!--
- Bug fixes towards cdrskin-0.4.4.pl00:
-<UL>
-<LI>none yet</LI>
-</UL>
 -->
+Bug fixes towards cdrskin-0.4.6.pl00:
+<UL>
+<LI>Random access addressing for DVD-RAM and BD-RE did not work</LI>
+</UL>
 
 </P>
 
@@ -259,8 +254,8 @@ of media type and state</LI>
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.4.7 :</H3></DT>
-<DD>Enhancements towards current stable version 0.4.6.pl00:
+<DT><H3>Development snapshot, version 0.4.9 :</H3></DT>
+<DD>Enhancements towards current stable version 0.4.8.pl00:
 <UL>
 <!--
 -->
@@ -269,10 +264,10 @@ of media type and state</LI>
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.4.7</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.7 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.7 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.7)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.4.9</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.9 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.9 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.9)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -292,7 +287,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.4.7.tar.gz">cdrskin-0.4.7.tar.gz</A>
+<A HREF="cdrskin-0.4.9.tar.gz">cdrskin-0.4.9.tar.gz</A>
 (730 KB).
 </DD>
 
@@ -426,7 +421,7 @@ cdrecord but not vice versa.
 I am a long time user of cdrecord and it works fine for me. 
 Especially i do appreciate its write mode -tao which allows to pipe arbitrary
 data on CD and CD-RW via stdin. cdrecord is reliable, versatile and well
-maintained. So for me - there would be not problem with it.
+maintained. So for me - there would be no problem with it.
 <BR>
 But the author of cdrecord and the Linux kernel people foster a very hostile 
 relationship. Ok, that's their business, not mine (or ours if you are with me).

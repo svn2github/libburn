@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "May 10, 2008"
+.TH CDRSKIN 1 "May 17, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1229,13 +1229,13 @@ blank=as_needed padsize=300k -
 .SS
 .B Write multi-session to the same CD, DVD-R[W] or DVD+R[/DL]:
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 1.iso
+cdrskin dev=/dev/hdc -v padsize=300k -multi 1.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 2.iso
+cdrskin dev=/dev/hdc -v padsize=300k -multi 2.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi -tao 3.iso
+cdrskin dev=/dev/hdc -v padsize=300k -multi 3.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -tao 4.iso
+cdrskin dev=/dev/hdc -v padsize=300k 4.iso
 .SS
 .B Get multi-session info for option -C of program mkisofs:
 .br
@@ -1243,9 +1243,9 @@ c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
 .br
 mkisofs ... -C "$c_values" ...
 .SS
-.B Inquire free space on media for a -tao -multi run:
+.B Inquire free space on media for a -multi run:
 .br
-x=$(cdrskin dev=/dev/sr0 -tao -multi \\
+x=$(cdrskin dev=/dev/sr0 -multi \\
 .br
 --tell_media_space 2>/dev/null)
 .br

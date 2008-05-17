@@ -7,7 +7,7 @@
 debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
-libvers="-DCdrskin_libburn_0_4_7"
+libvers="-DCdrskin_libburn_0_4_9"
 cleanup_src_or_obj="libburn/cleanup.o"
 libdax_msgs_o="libburn/libdax_msgs.o"
 libdax_audioxtr_o="libburn/libdax_audioxtr.o"
@@ -33,15 +33,15 @@ do
     libdax_audioxtr_o=
     libdax_msgs_o="libburn/message.o"
     cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
-  elif test "$i" = "-libburn_0_4_6"
+  elif test "$i" = "-libburn_0_4_8"
   then
-    libvers="-DCdrskin_libburn_0_4_6"
+    libvers="-DCdrskin_libburn_0_4_8"
     libdax_audioxtr_o="libburn/libdax_audioxtr.o"
     libdax_msgs_o="libburn/libdax_msgs.o"
     cleanup_src_or_obj="libburn/cleanup.o"
   elif test "$i" = "-libburn_svn"
   then
-    libvers="-DCdrskin_libburn_0_4_7"
+    libvers="-DCdrskin_libburn_0_4_9"
     libdax_audioxtr_o="libburn/libdax_audioxtr.o"
     libdax_msgs_o="libburn/libdax_msgs.o"
     cleanup_src_or_obj="libburn/cleanup.o"
@@ -76,7 +76,7 @@ do
     echo "  -compile_cdrfifo  compile program cdrskin/cdrfifo."
     echo "  -compile_dewav    compile program test/dewav without libburn."
     echo "  -cvs_A60220       set macro to match libburn-CVS of 20 Feb 2006."
-    echo "  -libburn_0_4_6    set macro to match libburn-0.4.6."
+    echo "  -libburn_0_4_8    set macro to match libburn-0.4.8."
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -no_largefile     do not use 64 bit off_t (must match libburn)."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."

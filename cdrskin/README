@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.4.7.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.4.9.tar.gz
 Copyright (C) 2006-2008 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
@@ -20,10 +20,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.4.7.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.4.9.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.4.7.tar.gz
-    cd cdrskin-0.4.7
+    tar xzf cdrskin-0.4.9.tar.gz
+    cd cdrskin-0.4.9
 
 Within that directory execute:
 
@@ -139,8 +139,8 @@ Obtain some info about the drive
 Obtain some info about the drive and the inserted media
     cdrskin dev=0,1,0 -atip -v
 
-Make used CD-RW or used unformatted DVD-RW writeable again
-    cdrskin -v dev=0,1,0 blank=fast -eject 
+Prepare CD-RW or DVD-RW for re-use, DVD-RAM or BD-RE for first use
+    cdrskin -v dev=/dev/sg1 blank=as_needed -eject
 
 Format DVD-RW to avoid need for blanking before re-use
     cdrskin -v dev=0,1,0 blank=format_overwrite
@@ -154,16 +154,16 @@ Burn image file  my_image.iso  to media
 
 Write multi-session to the same CD , DVD-R[W] or DVD+R[/DL]
     cdrskin dev=/dev/hdc padsize=300k -multi 1.iso
-    cdrskin dev=/dev/hdc padsize=300k -multi -tao 2.iso
-    cdrskin dev=/dev/hdc padsize=300k -multi -tao 3.iso
-    cdrskin dev=/dev/hdc padsize=300k -tao 4.iso
+    cdrskin dev=/dev/hdc padsize=300k -multi 2.iso
+    cdrskin dev=/dev/hdc padsize=300k -multi 3.iso
+    cdrskin dev=/dev/hdc padsize=300k 4.iso
 
 Get multi-session info for option -C of program mkisofs:
     c_values=$(cdrskin dev=/dev/hdc -msinfo 2>/dev/null)
     mkisofs ... -C "$c_values" ...
 
 Burn a compressed afio archive to media on-the-fly
-    find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 -tao \
+    find . | afio -oZ - | cdrskin -v dev=0,1,0 fs=32m speed=8 \
                                   driveropts=burnfree padsize=300k - 
 
 Burn 6 audio tracks from files with different formats to CD (not to any DVD).
@@ -186,8 +186,6 @@ See output of command
     cdrskin --list_ignored_options
 If you have use cases for them, please report your wishes and expectations.
 
-DVD support is restricted to single layer DVD for now. Double layer media
-are implemented but untested.
 On the other hand, the capability of multi-session and of writing streams
 of unpredicted lenght surpass the current DVD capabilities of cdrecord.
 
@@ -356,7 +354,7 @@ blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 From the view of cdrskin they behave much like DVD-R. Each track gets wrapped
 into an own session, though.
 DVD+R DL appear as extra large DVD+R. cdrskin does not allow to set the address
-of the layer break where ia reading drive might show some delay while switching
+of the layer break where a reading drive might show some delay while switching
 between both media layers.
 
 
@@ -407,9 +405,9 @@ Don't blame me or other authors of libburn if anything goes wrong.
 Actually, in case of severe trouble, nearly always the drive and the media
 are the cause. Any mistake of the burn program is supposed to be caught
 by the drive's firmware and to lead to mere misburns.
-The worst mishaps which hit the author implied the need to reboot the
+The worst mishaps which hit the author imposed the need to reboot the
 system because of drives gnawing endlessly on ill media. Permanent hardware
-damage did not occur in 2.5 years of development.
+damage did not occur in 2.5 years of development. But one never knows ...
 
 ------------------------------------------------------------------------------
 
