@@ -198,10 +198,12 @@ enum burn_disc_status
 	BURN_DISC_FULL,
 
 	/* ts A61007 */
+        /* @since 0.2.4 */
 	/** The drive was not grabbed when the status was inquired */
 	BURN_DISC_UNGRABBED,
 
 	/* ts A61020 */
+        /* @since 0.2.6 */
 	/** The media seems not to be suitable for burning */
 	BURN_DISC_UNSUITABLE
 };
@@ -242,6 +244,7 @@ enum burn_drive_status
 	BURN_DRIVE_GRABBING,
 
 	/* ts A61102 */
+        /* @since 0.2.6 */
 	/** The drive gets written zeroes before the track payload data */
 	BURN_DRIVE_WRITING_PREGAP,
 	/** The drive is told to close a track (TAO only) */
@@ -250,10 +253,12 @@ enum burn_drive_status
 	BURN_DRIVE_CLOSING_SESSION,
 
 	/* ts A61223 */
+        /* @since 0.3.0 */
 	/** The drive is formatting media */
 	BURN_DRIVE_FORMATTING,
 
 	/* ts A70822 */
+        /* @since 0.4.0 */
 	/** The drive is busy in synchronous read (if you see this then it
 	    has been interrupted) */
 	BURN_DRIVE_READING_SYNC,
@@ -307,6 +312,7 @@ struct burn_toc_entry
 
 	/* ts A70201 : DVD extension.
 	   If invalid the members are guaranteed to be 0. */
+        /* @since 0.3.2 */
 	/* Tracks and session numbers are 16 bit. Here are the high bytes. */
 	unsigned char session_msb;
 	unsigned char point_msb;
@@ -402,6 +408,7 @@ struct burn_source {
 
 
 	/* ts A70125 : BROKE BINARY BACKWARD COMPATIBILITY AT libburn-0.3.1. */
+        /* @since 0.3.2 */
 	/** Program the reply of (*get_size) to a fixed value. It is advised
 	    to implement this by a attribute  off_t fixed_size;  in *data .
 	    The read() function does not have to take into respect this fake
@@ -449,7 +456,7 @@ struct burn_source {
 
 
 	/* ts A71222 : Supposed to be binary backwards compatible extension. */
-
+        /* @since 0.4.2 */
 	/** Valid only if above member .(*read)() is NULL. This indicates a
 	    version of struct burn_source younger than 0.
 	    From then on, member .version tells which further members exist
@@ -574,12 +581,14 @@ struct burn_progress {
 	int sector;
 
 	/* ts A61023 */
+        /* @since 0.2.6 */
 	/** The capacity of the drive buffer */
 	unsigned buffer_capacity;
 	/** The free space in the drive buffer (might be slightly outdated) */
 	unsigned buffer_available;
 
 	/* ts A61119 */
+        /* @since 0.2.6 */
 	/** The number of bytes sent to the drive buffer */
 	off_t buffered_bytes;
 	/** The minimum number of bytes stored in buffer during write.
@@ -591,6 +600,7 @@ struct burn_progress {
 
 
 /* ts A61226 */
+/* @since 0.3.0 */
 /** Description of a speed capability as reported by the drive in conjunction
     with eventually loaded media. There can be more than one such object per
     drive. So they are chained via .next and .prev , where NULL marks the end
@@ -673,6 +683,7 @@ void burn_finish(void);
     @return 1  ok, all went well
             0  had to leave a drive in unclean state
             <0 severe error, do no use libburn again
+    @since 0.2.6
 */
 int burn_abort(int patience, 
                int (*pacifier_func)(void *handle, int patience, int elapsed),
@@ -722,6 +733,7 @@ void burn_set_verbosity(int level);
     @param abort_on_busy  Unconditionally abort process when a non blocking
                           exclusive opening attempt indicates a busy drive.
                           Use this only after thorough tests with your app.
+    @since 0.2.2
 */
 void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
 
@@ -735,6 +747,7 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
     If ever then this call should be done soon after burn_initialize() before
     any drive scanning.
     @param yes 1=allow all implemented profiles, 0=only tested media (default)
+    @since 0.3.4
 */
 void burn_allow_untested_profiles(int yes);
 
@@ -818,17 +831,21 @@ void burn_allow_untested_profiles(int yes);
     @param load   Nonzero to make the drive attempt to load a disc (close its
                   tray door, etc).
     @return       1 = success , 0 = drive not found , -1 = other error
+    @since 0.2.2
 */    
 int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[],
                              char* adr, int load);
 
 
 /* ts A51221 */
+/* @since 0.2.2 */
 /** Maximum number of particularly permissible drive addresses */
 #define BURN_DRIVE_WHITELIST_LEN 255
+
 /** Add a device to the list of permissible drives. As soon as some entry is in
     the whitelist all non-listed drives are banned from scanning.
     @return 1 success, <=0 failure
+    @since 0.2.2
 */
 int burn_drive_add_whitelist(char *device_address);
 
@@ -875,6 +892,7 @@ int burn_drive_scan(struct burn_drive_info *drive_infos[],
                  Use these two only. Further values are to be defined.
     @return 1 on success, 2 if drive was already forgotten,
             0 if not permissible, <0 on other failures, 
+    @since 0.2.2
 */
 int burn_drive_info_forget(struct burn_drive_info *drive_info, int force);
 
@@ -887,23 +905,28 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[]);
 
 
 /* ts A60823 */
+/* @since 0.2.2 */
 /** Maximum length+1 to expect with a persistent drive address string */
 #define BURN_DRIVE_ADR_LEN 1024
 
+/* ts A70906 */
 /** Inquire the persistent address of the given drive.
     @param drive The drive to inquire.
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
                  characters size. The persistent address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
+    @since 0.4.0
 */
 int burn_drive_d_get_adr(struct burn_drive *drive, char adr[]);
 
+/* A60823 */
 /** Inquire the persistent address of a drive via a given drive_info object.
     (Note: This is a legacy call.)
     @param drive_info The drive to inquire.Usually some &(drive_infos[driveno])
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
                  characters size. The persistent address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
+    @since 0.2.6
 */
 int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[]);
 
@@ -912,6 +935,7 @@ int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[]);
 /** Evaluate whether the given address would be a possible persistent drive
     address of libburn.
     @return 1 means yes, 0 means no
+    @since 0.2.6
 */
 int burn_drive_is_enumerable_adr(char *adr);
 
@@ -924,6 +948,7 @@ int burn_drive_is_enumerable_adr(char *adr);
     @param adr  An application provided array of at least BURN_DRIVE_ADR_LEN
                 characters size. The persistent address gets copied to it.
     @return     1 = success , 0 = failure , -1 = severe error
+    @since 0.2.6
 */
 int burn_drive_convert_fs_adr(char *path, char adr[]);
 
@@ -941,6 +966,7 @@ int burn_drive_convert_fs_adr(char *path, char adr[]);
     @param adr  An application provided array of at least BURN_DRIVE_ADR_LEN
                 characters size. The persistent address gets copied to it.
     @return     1 = success , 0 = failure , -1 = severe error
+    @since 0.2.6
 */
 int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 				 int target_no, int lun_no, char adr[]);
@@ -951,6 +977,7 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
     drive address obtained via burn_drive_d_get_adr(). It is also supposed to
     succeed with any device file of a (possibly emulated) SCSI device.
     @return     1 = success , 0 = failure , -1 = severe error
+    @since 0.2.6
 */
 int burn_drive_obtain_scsi_adr(char *path, int *bus_no, int *host_no,
 				int *channel_no, int *target_no, int *lun_no);
@@ -983,6 +1010,7 @@ void burn_drive_release(struct burn_drive *drive, int eject);
     @param drive The drive to release and leave locked.
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return 1 means success, <=0 means failure
+    @since 0.4.0
 */
 int burn_drive_leave_locked(struct burn_drive *d, int flag);
 
@@ -1003,6 +1031,7 @@ enum burn_disc_status burn_disc_get_status(struct burn_drive *drive);
     or BURN_DISC_UNSUITABLE. Thus marking media as writable which actually
     failed to declare themselves either blank or (partially) filled.
     @return 1 drive status has been set , 0 = unsuitable drive status
+    @since 0.2.6
 */
 int burn_disc_pretend_blank(struct burn_drive *drive);
 
@@ -1012,6 +1041,7 @@ int burn_disc_pretend_blank(struct burn_drive *drive);
     Sets the drive status to BURN_DISC_FULL if it is BURN_DISC_UNREADY
     or BURN_DISC_UNSUITABLE. Thus marking media as blankable which actually
     failed to declare themselves either blank or (partially) filled.
+    @since 0.2.6
 */
 int burn_disc_pretend_full(struct burn_drive *drive);
 
@@ -1022,6 +1052,7 @@ int burn_disc_pretend_full(struct burn_drive *drive);
     burn_drive_get_start_end_lba(). The drive must be grabbed for this call.
     @param drive The drive to query.
     @return 1=sucess, 0=no valid ATIP info read, -1 severe error
+    @since 0.2.6
 */
 int burn_disc_read_atip(struct burn_drive *drive);
 
@@ -1036,6 +1067,7 @@ int burn_disc_read_atip(struct burn_drive *drive);
     @param end_lba Returns the end lba value
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return 1 if lba values are valid , 0 if invalid
+    @since 0.2.6
 */
 int burn_drive_get_start_end_lba(struct burn_drive *drive,
                                  int *start_lba, int *end_lba, int flag);
@@ -1053,6 +1085,7 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
     @param lba return value: start lba
     @param nwa return value: Next Writeable Address
     @return 1=nwa is valid , 0=nwa is not valid , -1=error
+    @since 0.2.6
 */
 int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 				int trackno, int *lba, int *nwa);
@@ -1064,6 +1097,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
     @param d The drive to query.
     @param start_lba returns the start address of that track
     @return <= 0 : failure, 1 = ok 
+    @since 0.3.2
 */
 int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
 
@@ -1080,6 +1114,7 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
     @param d The drive to query.
     @param o If not NULL: write parameters to be set on drive before query
     @return number of most probably available free bytes
+    @since 0.3.4
 */
 off_t burn_disc_available_space(struct burn_drive *d,
                                 struct burn_write_opts *o);
@@ -1107,6 +1142,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
     @param pno Profile Number. See also mmc5r03c.pdf, table 89
     @param name Profile Name (see above list, unknown profiles have empty name)
     @return 1 profile is valid, 0 no profile info available 
+    @since 0.3.0
 */
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
 
@@ -1136,6 +1172,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive);
 /** Inquires the drive associated with a burn_write_opts object.
     @param opts object to inquire
     @return pointer to drive
+    @since 0.4.0
 */
 struct burn_drive *burn_write_opts_get_drive(struct burn_write_opts *opts);
 
@@ -1205,16 +1242,19 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                       Acceptable types are: 0x00, 0x01, 0x10, 0x11, 0x13,
                       0x15, 0x26, 0x30, 0x31.
                       If bit7 is set, bit4 is set automatically.
+    @since 0.3.0
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
 
 
 /* ts A70112 */
+/* @since 0.3.0 */
 /** Possible formatting status values */
 #define BURN_FORMAT_IS_UNFORMATTED 1
 #define BURN_FORMAT_IS_FORMATTED   2
 #define BURN_FORMAT_IS_UNKNOWN     3
 
+/* ts A70112 */
 /** Inquire the formatting status, the associated sizes and the number of
     available formats.  The info is media specific and stems from MMC command
     23h READ FORMAT CAPACITY. See mmc5r03c.pdf 6.24 for background details.
@@ -1233,10 +1273,12 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
                        burn_disc_get_format_descr() to obtain such a format
                        and eventually with burn_disc_format() to select one.
     @return 1 reply is valid , <=0 failure
+    @since 0.3.0
 */
 int burn_disc_get_formats(struct burn_drive *drive, int *status, off_t *size,
 				unsigned *bl_sas, int *num_formats);
 
+/* ts A70112 */
 /** Inquire parameters of an available media format.
     @param drive The drive with the disc to format.
     @param index The index of the format item. Beginning with 0 up to reply
@@ -1249,6 +1291,7 @@ int burn_disc_get_formats(struct burn_drive *drive, int *status, off_t *size,
     @param size  The maximum size in bytes achievable with this format.
     @param tdp   Type Dependent Parameter. See mmc5r03c.pdf.
     @return 1 reply is valid , <=0 failure
+    @since 0.3.0
 */
 int burn_disc_get_format_descr(struct burn_drive *drive, int index,
 				int *type, off_t *size, unsigned *tdp);
@@ -1267,6 +1310,7 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
 
 
 /* ts A70222 */
+/* @since 0.3.4 */
 /** The length of a rejection reasons string for burn_precheck_write() and
     burn_write_opts_auto_write_type() .
 */
@@ -1282,6 +1326,7 @@ void burn_disc_read(struct burn_drive *drive, const struct burn_read_opts *o);
     @param reasons Eventually returns a list of rejection reason statements
     @param silent 1= do not issue error messages , 0= report problems
     @return 1 ok, -1= no recordable media detected, 0= other failure
+    @since 0.3.4
 */
 int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
                         char reasons[BURN_REASONS_LEN], int silent);
@@ -1315,6 +1360,7 @@ void burn_drive_cancel(struct burn_drive *drive);
     during write, a call to burn_drive_cancel() by the application thread.
     @param d The drive to inquire.
     @return 1=burn seems to have went well, 0=burn failed 
+    @since 0.2.6
 */
 int burn_drive_wrote_well(struct burn_drive *d);
 
@@ -1431,6 +1477,7 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
     @param t The track to change
     @param swap_source_bytes 0=do not swap, 1=swap byte pairs
     @return 1=success , 0=unacceptable value
+    @since 0.2.6
 */
 int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
 
@@ -1484,6 +1531,7 @@ enum burn_source_status burn_track_set_source(struct burn_track *t,
     @param t The track to change
     @param size The size to set
     @return 0=failure 1=sucess
+    @since 0.3.4
 */
 int burn_track_set_default_size(struct burn_track *t, off_t size);
 
@@ -1543,6 +1591,7 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
                       to be disposed by calling burn_source_free() for each.
                       inp can be freed immediately, the returned fifo may be
                       kept as handle for burn_fifo_inquire_status().
+    @since 0.4.0
 */
 struct burn_source *burn_fifo_source_new(struct burn_source *inp,
                                          int chunksize, int chunks, int flag);
@@ -1564,6 +1613,7 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
              5="abandoned" : consumption has ended prematurely
              6="ended"     : consumption has ended without input error
              7="aborted"   : consumption has ended after input error
+    @since 0.4.0
 */
 int burn_fifo_inquire_status(struct burn_source *fifo, int *size, 
                             int *free_bytes, char **status_text);
@@ -1575,6 +1625,7 @@ int burn_fifo_inquire_status(struct burn_source *fifo, int *size,
     @param t The track to operate on
     @param size the number of bytes to use as track size
     @return <=0 indicates failure , >0 success
+    @since 0.3.6
 */
 int burn_track_set_size(struct burn_track *t, off_t size);
 
@@ -1587,7 +1638,12 @@ int burn_track_get_sectors(struct burn_track *);
 
 /* ts A61101 */
 /** Tells how many source bytes have been read and how many data bytes have
-    been written by the track during burn */
+    been written by the track during burn.
+    @param t The track to inquire
+    @param read_bytes Number of bytes read from the track source
+    @param written_bytes Number of bytes written to track
+    @since 0.2.6
+*/
 int burn_track_get_counters(struct burn_track *t, 
                             off_t *read_bytes, off_t *written_bytes);
 
@@ -1632,6 +1688,7 @@ void burn_drive_set_speed(struct burn_drive *d, int read, int write);
     @param min_percent Minimum of desired buffer oscillation: 25 to 100
     @param max_percent Maximum of desired buffer oscillation: 25 to 100
     @return 1=success , 0=failure
+    @since 0.3.8
 */
 int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
                                 int min_usec, int max_usec, int timeout_sec,
@@ -1669,6 +1726,7 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
                 bit1= do not issue error messages via burn_msgs queue
                       (is automatically set with bit0)
     @return Chosen write type. BURN_WRITE_NONE on failure.
+    @since 0.3.2
 */
 enum burn_write_types burn_write_opts_auto_write_type(
           struct burn_write_opts *opts, struct burn_disc *disc,
@@ -1733,6 +1791,7 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned cha
     being the last one and thus creating a BURN_DISC_APPENDABLE media.
     @param opts The option object to be manipulated
     @param multi 1=media will be appendable, 0=media will be closed (default) 
+    @since 0.2.6
 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
@@ -1749,6 +1808,7 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
     .start_range_low , .start_range_high .
     @param opts The write opts to change
     @param value The address in bytes (-1 = start at default address)
+    @since 0.3.0
 */
 void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
 
@@ -1761,6 +1821,7 @@ void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value);
     by the last track of the last session.
     @param opts The write opts to change
     @param fill_up_media If 1 : fill up by last track, if 0 = do not fill up
+    @since 0.3.4
 */
 void burn_write_opts_set_fillup(struct burn_write_opts *opts,
                                 int fill_up_media);
@@ -1772,6 +1833,7 @@ void burn_write_opts_set_fillup(struct burn_write_opts *opts,
     - the check whether the media profile supports simulated burning 
     @param opts The write opts to change
     @param use_force 1=ignore above checks, 0=refuse work on failed check
+    @since 0.3.4
 */
 void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
 
@@ -1782,9 +1844,9 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
     slowdown to half nominal speed. But if it speeds up writing then it also
     disables error management and correction. Weigh your priorities.
     This only affects the write operations of burn_disc_write().
-    @since 0.4.6
     @param opts The write opts to change
     @param value  0=use 2Ah WRITE10, 1=use AAh WRITE12 with Streaming bit
+    @since 0.4.6
 */
 void burn_write_opts_set_stream_recording(struct burn_write_opts *opts, 
                                          int value);
@@ -1860,6 +1922,7 @@ int burn_drive_get_write_speed(struct burn_drive *d);
     again by call burn_drive_grab() and again by call burn_disc_read_atip().
     @param d Drive to query
     @return Minimum write speed in K/s
+    @since 0.2.6
 */
 int burn_drive_get_min_write_speed(struct burn_drive *d);
 
@@ -1882,6 +1945,7 @@ int burn_drive_get_read_speed(struct burn_drive *d);
     @param d Drive to query
     @param speed_list The copy. If empty, *speed_list gets returned as NULL.
     @return 1=success , 0=list empty , <0 severe error
+    @since 0.3.0
 */
 int burn_drive_get_speedlist(struct burn_drive *d,
                              struct burn_speed_descriptor **speed_list);
@@ -1901,6 +1965,7 @@ int burn_drive_get_speedlist(struct burn_drive *d,
                 bit1= look for any source type (else look for source==2 first
 	              and for any other source type only with CD media)
     @return >0 indicates a valid best_descr, 0 = no valid best_descr
+    @since 0.3.8
 */
 int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
                         struct burn_speed_descriptor **best_descr, int flag);
@@ -1911,11 +1976,13 @@ int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
     burn_drive_get_speedlist().
     @param speed_list The list copy. *speed_list gets set to NULL.
     @return 1=list disposed , 0= *speedlist was already NULL
+    @since 0.3.0
 */
 int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list);
 
 
 /* ts A70203 */
+/* @since 0.3.2 */
 /** The reply structure for burn_disc_get_multi_caps()
 */
 struct burn_multi_caps {
@@ -1993,7 +2060,8 @@ struct burn_multi_caps {
 	/** Wether the current profile indicates CD media. 1=yes, 0=no */
 	int current_is_cd_profile;
 
-        /* ts A70528, added to version 0.3.7 */
+        /* ts A70528 */
+        /* @since 0.3.8 */
 	/** Wether the current profile is able to perform simulated write */
 	int might_simulate;
 };
@@ -2010,6 +2078,7 @@ struct burn_multi_caps {
     @param caps returns the info structure
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return < 0 : error , 0 : writing seems impossible , 1 : writing possible 
+    @since 0.3.2
 */
 int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 			 struct burn_multi_caps **caps, int flag);
@@ -2018,6 +2087,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
     burn_disc_get_multi_caps(). The pointer *caps gets set to NULL.
     @param caps the info structure to dispose (note: pointer to pointer)
     @return 0 : *caps was already NULL, 1 : memory object was disposed
+    @since 0.3.2
 */
 int burn_disc_free_multi_caps(struct burn_multi_caps **caps);
 
@@ -2080,6 +2150,7 @@ void burn_version(int *major, int *minor, int *micro);
 
 
 /* ts A80129 */
+/* @since 0.4.4 */
 /** These three release version numbers tell the revision of this header file
     and of the API it describes. They are memorized by applications at build
     time.
@@ -2160,12 +2231,13 @@ These two advises are mutually exclusive.
                           to stderr. Default: "FATAL".
     @param print_id       A text prefix to be printed before the message.
     @return               >0 for success, <=0 for error
-
+    @since 0.2.6
 */
 int burn_msgs_set_severities(char *queue_severity,
                              char *print_severity, char *print_id);
 
 /* ts A60924 : ticket 74 */
+/*  @since 0.2.6 */
 #define BURN_MSGS_MESSAGE_LEN 4096
 
 /** Obtain the oldest pending libburn message from the queue which has at
@@ -2183,6 +2255,7 @@ int burn_msgs_set_severities(char *queue_severity,
     @param severity   Will become the severity related to the message and
                       should provide at least 80 bytes.
     @return 1 if a matching item was found, 0 if not, <0 for severe errors
+    @since 0.2.6
 */
 int burn_msgs_obtain(char *minimum_severity,
                      int *error_code, char msg_text[], int *os_errno,
@@ -2205,6 +2278,7 @@ int burn_msgs_obtain(char *minimum_severity,
                       Submit NULL if the message is not specific to a
                       particular drive object.
     @return           1 if message was delivered, <=0 if failure
+    @since 0.4.0
 */
 int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
                      char severity[], struct burn_drive *d);
@@ -2217,6 +2291,7 @@ int burn_msgs_submit(int error_code, char msg_text[], int os_errno,
     @param severity_number The rank number: the higher, the more severe.
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return >0 success, <=0 failure
+    @since 0.4.0
 */
 int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
 
@@ -2227,6 +2302,7 @@ int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
     @param severity_number The rank number: the higher, the more severe.
     @param severity_name A name as with burn_msgs_submit(), e.g. "SORRY".
     @param flag Bitfield for control purposes (unused yet, submit 0)
+    @since 0.4.4
 */
 int burn_sev_to_text(int severity_number, char **severity_name, int flag);
 
@@ -2238,11 +2314,13 @@ int burn_sev_to_text(int severity_number, char **severity_name, int flag);
     See also: libisofs, API function iso_get_messenger().
     @param messenger The foreign but compatible message handle.
     @return 1 : success, <=0 : failure
+    @since 0.4.0
 */
 int burn_set_messenger(void *messenger);
 
 
 /* ts A61002 */
+/* @since 0.2.6 */
 /** The prototype of a handler function suitable for burn_set_abort_handling().
     Such a function has to return -2 if it does not want the process to
     exit with value 1.
@@ -2261,6 +2339,7 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     Arguments (text, NULL, 0) activate the builtin abort handler. It will
     eventually call burn_abort() and then perform exit(1). If text is not NULL
     then it is used as prefix for pacifier messages of burn_abort_pacifier().
+    @since 0.2.6
 */
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler, 
 			     int mode);
@@ -2293,6 +2372,7 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
     @param flag         Bitfield for control purposes:
                         bit0 = flush the drive buffer after eventual writing
     @return 1=sucessful , <=0 : number of transfered bytes * -1
+    @since 0.4.0
 */
 int burn_random_access_write(struct burn_drive *d, off_t byte_address,
                              char *data, off_t data_count, int flag);
@@ -2317,6 +2397,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
                         bit0= - reserved -
                         bit1= do not submit error message if read error
     @return 1=sucessful , <=0 an error occured
+    @since 0.4.0
 */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
@@ -2330,6 +2411,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                   1= real MMC drive
                   2= stdio-drive, random access, read-write
                   3= stdio-drive, sequential, write-only
+    @since 0.4.0
 */
 int burn_drive_get_drive_role(struct burn_drive *d);
 
@@ -2356,6 +2438,7 @@ int burn_drive_get_drive_role(struct burn_drive *d);
                    prefix "stdio:".
     @return        1= adr2 leads to d1 , 0= adr2 seems not to lead to d1,
                    -1 = adr2 is bad
+    @since 0.4.0
 */
 int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int drive_role2);
 
