@@ -287,6 +287,12 @@ Project history as far as known to me:
 - 17th May 2008 an old bug with DVD-RAM and now with BD-RE is fixed by
   libburn-0.4.8 to allow libisoburn emulation of multisession on those media.
 
+- 19th May 2008 libisoburn-0.1.6 brings better table-of-content emulation
+  on overwriteble media and disk files.
+
+- 1st Jun 2008 libisofs-0.6.6 fixes some problems around device files.
+
+- 3rd Jun 2008 libisoburn-0.1.8 fixes a bug with overwriteable media.
 
 
 ------------------------------------------------------------------------------
