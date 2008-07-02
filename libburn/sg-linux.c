@@ -260,6 +260,37 @@ static void sg_select_device_family(void)
 }
 
 
+/* ts A80701 */
+/* This cares for the case that no /dev/srNN but only /dev/scdNN exists.
+   A theoretical case which has its complement in SuSE 10.2 having
+   /dev/sr but not /dev/scd.
+*/
+static int sg_exchange_scd_for_sr(char *fname, int flag)
+{
+	struct stat stbuf;
+	char scd[17], msg[160];
+
+	if (burn_sg_use_family != 0 || strncmp(fname, "/dev/sr", 7)!=0 ||
+	    strlen(fname)>9 || strlen(fname)<8)
+		return 2;
+	if (fname[7] < '0' || fname[7] > '9')
+		return 2;
+	if (fname [8] != 0 && (fname[7] < '0' || fname[7] > '9'))
+		return 2;
+	if (stat(fname, &stbuf) != -1)
+		return 2;
+	strcpy(scd, "/dev/scd");
+	strcpy(scd + 8, fname + 7);
+	if (stat(scd, &stbuf) == -1)
+		return 2;
+	sprintf(msg, "%s substitutes for non-existent %s", scd, fname);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
+	strcpy(fname, scd);
+	return 1;
+}
+
+
 static int sgio_test(int fd)
 {
 	unsigned char test_ops[] = { 0, 0, 0, 0, 0, 0 };
@@ -646,7 +677,7 @@ static void sg_enumerate(void)
 	int i, fd, sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0, ret;
 	int sid_ret = 0;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
-	char fname[10];
+	char fname[17];
 	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
 
         sg_select_device_family();
@@ -660,6 +691,9 @@ static void sg_enumerate(void)
 
 	for (i = 0; i < 32; i++) {
 		sprintf(fname, linux_sg_device_family, i);
+
+		/* ts A80702 */
+		sg_exchange_scd_for_sr(fname, 0);
 
 		if (linux_sg_enumerate_debug)
 		  fprintf(stderr, "libburn_debug: %s : ", fname);
@@ -893,6 +927,10 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	if (adr_size < 10)
 		return -1;
 	sprintf(adr, linux_sg_device_family, *idx);
+
+	/* ts A80702 */
+	sg_exchange_scd_for_sr(adr, 0);
+
 	return 1;
 next_ata:;
 	baseno += sg_limit;
@@ -1378,7 +1416,6 @@ int sg_is_enumerable_adr(char *adr)
 			sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 			return 1;
 		}
-
 	}
 	sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 	return(0);
