@@ -540,3 +540,64 @@ int burn_fifo_inquire_status(struct burn_source *source,
 	return ret;
 }
 
+
+int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
+                        int flag)
+{
+	int size, free_bytes, ret, wait_count= 0;
+	char *status_text;
+	struct burn_source_fifo *fs = source->data;
+
+	/* Eventually start fifo thread by reading 0 bytes */
+	ret = fifo_read(source, (unsigned char *) NULL, 0);
+	if (ret<0)
+		return 0;
+
+	/* wait for at least bufsize bytes being ready */
+	while (1) {
+		ret= burn_fifo_inquire_status(source,
+					 &size, &free_bytes, &status_text);
+		if (size < bufsize) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002015c,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		 	"Fifo size is smaller than desired peek buffer", 0, 0);
+			return -1;
+		}
+		if (fs->out_counter > 0 || (ret & 4) || fs->buf == NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002015e,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+	 	"Fifo is already under consumption when peeking is desired",
+			0, 0);
+			return -1;
+		}
+		if(size - free_bytes >= bufsize) {
+
+			/* <<<
+			fprintf(stderr,
+		"libburn_DEBUG: after waiting cycle %d : fifo %s , %d bytes\n",
+			 wait_count, status_text, size - free_bytes);
+			*/
+
+			memcpy(buf, fs->buf, bufsize);
+			return 1;
+		}
+		if (ret&2) { /* input has ended, not enough data arrived */
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002015d,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+		 	"Fifo input ended short of desired peek buffer size",
+			0, 0);
+			return 0;
+		}
+		usleep(100000);
+		wait_count++;
+
+		/* <<<
+		if(wait_count%10==0)
+			fprintf(stderr,
+		 "libburn_DEBUG: waiting cycle %d : fifo %s , %d bytes\n",
+			 wait_count, status_text, size - free_bytes);
+		*/
+
+	}
+	return(0);
+}

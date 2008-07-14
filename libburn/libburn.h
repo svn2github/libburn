@@ -1619,6 +1619,30 @@ int burn_fifo_inquire_status(struct burn_source *fifo, int *size,
                             int *free_bytes, char **status_text);
 
 
+/* ts A80713 */
+/** Obtain a preview of the first input data of a fifo which was created
+    by burn_fifo_source_new(). The data will later be delivered normally to
+    the consumer track of the fifo.
+    bufsize may not be larger than the fifo size (chunk_size * chunks).
+    This call will succeed only if data consumption by the track has not
+    started yet, i.e. best before the call to burn_disc_write().
+    It will start the worker thread of the fifo with the expectable side
+    effects on the external data source. Then it waits either until enough
+    data have arrived or until it becomes clear that this will not happen.
+    The call may be repeated with increased bufsize. It will always yield
+    the bytes beginning from the first one in the fifo.
+    @param fifo     The fifo object to inquire
+    @param buf      Pointer to memory of at least bufsize bytes where to
+                    deliver the peeked data
+    @param bufsize  Number of bytes to peek from the start of the fifo data
+    @param flag     Bitfield for control purposes (unused yet, submit 0).
+    @return <0 on severe error, 0 if not enough data, 1 if bufsize bytes read
+    @since 0.5.0
+*/
+int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
+                        int flag);
+
+
 /* ts A70328 */
 /** Sets a fixed track size after the data source object has already been
     created.

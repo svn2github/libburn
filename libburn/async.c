@@ -43,7 +43,15 @@
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
-#define SCAN_GOING() (workers && !workers->drive)
+/* ts A80714 : introduced type codes for the worker list */
+#define Burnworker_type_scaN    0
+#define Burnworker_type_erasE   1
+#define Burnworker_type_formaT  2
+#define Burnworker_type_writE   3
+#define Burnworker_type_fifO    4
+
+#define SCAN_GOING() (workers != NULL && \
+			workers->w_type == Burnworker_type_scaN)
 
 typedef void *(*WorkerFunc) (void *);
 
@@ -85,6 +93,9 @@ struct fifo_opts
 
 struct w_list
 {
+	/* ts A80714 */
+	int w_type; /* see above define Burnworker_type_* */
+
 	struct burn_drive *drive;
 	pthread_t thread;
 
@@ -113,7 +124,8 @@ static struct w_list *find_worker(struct burn_drive *d)
 	return NULL;
 }
 
-static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
+static void add_worker(int w_type, struct burn_drive *d,
+			WorkerFunc f, void *data)
 {
 	struct w_list *a;
 	struct w_list *tmp;
@@ -124,6 +136,7 @@ static void add_worker(struct burn_drive *d, WorkerFunc f, void *data)
 #endif
 
 	a = malloc(sizeof(struct w_list));
+	a->w_type = w_type;
 	a->drive = d;
 	a->u = *(union w_list_data *)data;
 
@@ -259,7 +272,8 @@ drive_is_active:;
 		o.drives = drives;
 		o.n_drives = n_drives;
 		o.done = 0;
-		add_worker(NULL, (WorkerFunc) scan_worker_func, &o);
+		add_worker(Burnworker_type_scaN, NULL,
+				 (WorkerFunc) scan_worker_func, &o);
 	} else if (workers->u.scan.done) {
 		/* its done */
 		ret = workers->u.scan.done;
@@ -303,7 +317,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 			"NULL pointer caught in burn_disc_erase", 0, 0);
 		return;
 	}
-	if ((SCAN_GOING()) || find_worker(drive)) {
+	if ((SCAN_GOING()) || find_worker(drive) != NULL) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020102,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -343,7 +357,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 
 	o.drive = drive;
 	o.fast = fast;
-	add_worker(drive, (WorkerFunc) erase_worker_func, &o);
+	add_worker(Burnworker_type_erasE, drive,
+			(WorkerFunc) erase_worker_func, &o);
 }
 
 
@@ -364,7 +379,7 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 	int ok = 0;
 	char msg[160];
 
-	if ((SCAN_GOING()) || find_worker(drive)) {
+	if ((SCAN_GOING()) || find_worker(drive) != NULL) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020102,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -411,7 +426,8 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 	o.drive = drive;
 	o.size = size;
 	o.flag = flag;
-	add_worker(drive, (WorkerFunc) format_worker_func, &o);
+	add_worker(Burnworker_type_formaT, drive,
+			(WorkerFunc) format_worker_func, &o);
 }
 
 
@@ -441,7 +457,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
 	/* a ssert(!find_worker(opts->drive)); */
-	if ((SCAN_GOING()) || find_worker(opts->drive)) {
+	if ((SCAN_GOING()) || find_worker(opts->drive) != NULL) {
 		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
 			0x00020102,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -495,7 +511,8 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 	opts->refcount++;
 
-	add_worker(opts->drive, (WorkerFunc) write_disc_worker_func, &o);
+	add_worker(Burnworker_type_writE, opts->drive,
+			(WorkerFunc) write_disc_worker_func, &o);
 }
 
 
@@ -523,7 +540,8 @@ int burn_fifo_start(struct burn_source *source, int flag)
 
 	o.source = source;
 	o.flag = flag;
-	add_worker(NULL, (WorkerFunc) fifo_worker_func, &o);
+	add_worker(Burnworker_type_fifO, NULL,
+			(WorkerFunc) fifo_worker_func, &o);
 	fs->is_started = 1;
 	return 1;
 }
