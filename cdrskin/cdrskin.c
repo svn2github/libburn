@@ -8028,10 +8028,14 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  printf("cdrskin: scanning for devices ...\n");
  fflush(stdout);
 
+#ifdef Cdrskin_libburn_has_burn_msgS
+ if(skin->preskin->verbosity<Cdrskin_verbose_debuG)
+   burn_msgs_set_severities("NEVER", "NOTE", "cdrskin: ");
+#endif
+
  /* In cdrskin there is not much sense in queueing library messages.
     It is done here only for testing it from time to time */
  Cdrpreskin_queue_msgs(skin->preskin,1);
-
 
 #ifndef Cdrskin_oldfashioned_api_usE
  if(stdio_drive) {
@@ -8052,6 +8056,11 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
      /* >>> ??? set a timeout ? */
    }
  }
+
+#ifdef Cdrskin_libburn_has_burn_msgS
+ burn_msgs_set_severities(skin->preskin->queue_severity,
+                          skin->preskin->print_severity, "cdrskin: ");
+#endif
 
  /* This prints the eventual queued messages */
  Cdrpreskin_queue_msgs(skin->preskin,0);
