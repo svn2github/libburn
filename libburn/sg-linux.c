@@ -310,6 +310,17 @@ static int sgio_test(int fd)
 static int sg_handle_busy_device(char *fname, int os_errno)
 {
 	char msg[4096];
+	struct stat stbuf;
+	int looks_like_hd= 0;
+
+	/* ts A80713 :
+	   check existence of /dev/hdX1 as hint for hard disk rather than CD
+	*/
+	if (strncmp(fname, "/dev/hd", 7)==0) {
+		sprintf(msg, "%s1", fname);
+		if (stat(msg, &stbuf) != -1)
+			looks_like_hd= 1;
+	}
 
 	/* ts A60814 : i saw no way to do this more nicely */ 
 	if (burn_sg_open_abort_busy) {
@@ -323,10 +334,24 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 	}
 
 	/* ts A60924 : now reporting to libdax_msgs */
-	sprintf(msg, "Cannot open busy device '%s'", fname);
-	libdax_msgs_submit(libdax_messenger, -1, 0x00020001,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_LOW,
-			msg, os_errno, 0);
+	if (looks_like_hd) {
+		sprintf(msg, "Could not examine busy device '%s'", fname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002015a,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_LOW,
+				msg, os_errno, 0);
+		sprintf(msg,
+	"Busy '%s' seems to be a hard disk, as '%s1' exists. But better check.",
+				fname, fname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002015b,
+				LIBDAX_MSGS_SEV_HINT, LIBDAX_MSGS_PRIO_LOW,
+				msg, 0, 0);
+
+	} else {
+		sprintf(msg, "Cannot open busy device '%s'", fname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020001,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_LOW,
+				msg, os_errno, 0);
+	}
 	return 1;
 }
 

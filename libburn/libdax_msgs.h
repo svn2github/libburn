@@ -524,6 +524,11 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020157 (FATAL,HIGH)   = burn_source is not a fifo object
  0x00020158 (DEBUG,LOW)    = Reporting thread disposal precautions
  0x00020159 (DEBUG,HIGH)   = TOC Format 0 returns inconsistent data
+ 0x0002015a (NOTE,HIGH)    = Could not examine busy device
+ 0x0002015b (HINT,HIGH)    = Busy '...' seems to be a hard disk, as '...1' exists
+ 0x0002015c (FAILURE,HIGH) = Fifo size is smaller than desired peek buffer
+ 0x0002015d (FAILURE,HIGH) = Fifo input ended short of desired peek buffer size
+ 0x0002015e (FATAL,HIGH)   = Fifo is already under consumption when peeking
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
