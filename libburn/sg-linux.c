@@ -311,15 +311,31 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 {
 	char msg[4096];
 	struct stat stbuf;
-	int looks_like_hd= 0;
+	int looks_like_hd= 0, fd, ret;
 
 	/* ts A80713 :
 	   check existence of /dev/hdX1 as hint for hard disk rather than CD
+	   Hint by Giulio Orsero: check /proc/ide/hdX/media for "disk"
 	*/
 	if (strncmp(fname, "/dev/hd", 7)==0) {
 		sprintf(msg, "%s1", fname);
 		if (stat(msg, &stbuf) != -1)
 			looks_like_hd= 1;
+		sprintf(msg, "/proc/ide/hd%c/media", fname[7]);
+		fd = open(msg, O_RDONLY);
+		if (fd != -1) {
+			ret = read(fd, msg, 10);
+			if (ret < 0)
+				ret = 0;
+			msg[ret]= 0;
+			close(fd);
+			if (strncmp(msg, "disk\n", 5) == 0 ||
+			    strcmp(msg, "disk") == 0)
+				looks_like_hd= 2;
+			else if (strncmp(msg, "cdrom\n", 6) == 0 ||
+			         strcmp(msg, "cdrom") == 0)
+				looks_like_hd= 0;
+		}
 	}
 
 	/* ts A60814 : i saw no way to do this more nicely */ 
@@ -334,7 +350,9 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 	}
 
 	/* ts A60924 : now reporting to libdax_msgs */
-	if (looks_like_hd) {
+	if (looks_like_hd == 2) { /* is surely hard disk */
+		;
+	} else if (looks_like_hd) {
 		sprintf(msg, "Could not examine busy device '%s'", fname);
 		libdax_msgs_submit(libdax_messenger, -1, 0x0002015a,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_LOW,
