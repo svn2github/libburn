@@ -57,9 +57,9 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.4.8</DT>
+<DT>libburn-0.5.0</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
-furthered by team of libburnia-project.org)</DD>
+furthered since August 2006 by Thomas Schmitt from team of libburnia-project.org)</DD>
 <DD>transfers data to CD, DVD, BD-RE</DD>
 </DL>
 </P>
@@ -186,7 +186,7 @@ or to do experiments on BD-R media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.4.8.pl00.tar.gz">cdrskin-0.4.8.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.5.0.pl00.tar.gz">cdrskin-0.5.0.pl00.tar.gz</A>
 (730 KB).
 </DD>
 <DD>
@@ -236,16 +236,17 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.4.6.pl00:
+Enhancements towards previous stable version cdrskin-0.4.8.pl00:
 <UL>
+<LI>Ability to use /dev/scdN as fallback if /dev/srN does not exist</LI>
+<!--
 <LI>none</LI>
+-->
 </UL>
 
-<!--
--->
-Bug fixes towards cdrskin-0.4.6.pl00:
+Bug fixes towards cdrskin-0.4.8.pl00:
 <UL>
-<LI>Random access addressing for DVD-RAM and BD-RE did not work</LI>
+<LI>Option drive_scsi_dev_family=scd lead to buffer overflow</LI>
 </UL>
 
 </P>
@@ -254,8 +255,8 @@ Bug fixes towards cdrskin-0.4.6.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.4.9 :</H3></DT>
-<DD>Enhancements towards current stable version 0.4.8.pl00:
+<DT><H3>Development snapshot, version 0.5.1 :</H3></DT>
+<DD>Enhancements towards current stable version 0.5.0.pl00:
 <UL>
 <!--
 -->
@@ -264,10 +265,10 @@ Bug fixes towards cdrskin-0.4.6.pl00:
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.4.9</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.4.9 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.4.9 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.4.9)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.5.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.5.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.5.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.5.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -287,7 +288,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.4.9.tar.gz">cdrskin-0.4.9.tar.gz</A>
+<A HREF="cdrskin-0.5.1.tar.gz">cdrskin-0.5.1.tar.gz</A>
 (730 KB).
 </DD>
 
@@ -329,14 +330,33 @@ provide libburn with invaluable examples on how to deal with DVD media.
 <A NAME="examples">
 <P>
 <DL>
-<DT>Example for a setup of device permissions. To be done by the superuser:</DT>
-<DT>(CD devices which offer no rw-permission are invisible to normal users.)
+<DT>Example for a setup of device permissions.</DT>
+<DT>
+Newer Linux distros enable rw-access for the desktop user automatically.
+So try as normal user whether all your drives are found.
+CD devices which offer no rw-permission will stay invisible.
+</DT>
+<DD>$ <KBD><B>cdrskin --devices</B></KBD></DD>
+<DT>If not all desired drives show up, become superuser and do again:</DT>
 </DT>
 <DD># <KBD><B>cdrskin --devices</B></KBD></DD>
 <DD><KBD>...</KBD></DD>
-<DD><KBD>0&nbsp; dev='/dev/sr0'&nbsp; rwrwr- :&nbsp; 'TEAC'  'CD-ROM CD-532S'</KBD></DD>
+<DD><KBD>0&nbsp; dev='/dev/sr0'&nbsp; rwr-r- :&nbsp; 'TEAC'  'CD-ROM CD-532S'</KBD></DD>
 <DD><KBD>1&nbsp; dev='/dev/hdc'&nbsp; rwrw-- :&nbsp; 'LITE-ON'  'LTR-48125S'</KBD></DD>
+<DT>Most simple and most insecure is this equivalent
+of the usual cdrecord permissions u+s,a+x:</DT>
 <DD># <KBD><B>chmod a+rw /dev/sr0 /dev/hdc</B></KBD></DD>
+<DT>
+More secure is to put the permitted users into a group like
+"floppy", to assign /dev/sr0 /dev/hdc to this group,
+and to allow rw-access only to group members.
+</DT>
+<DD># <KBD><B>vi /etc/group</B></KBD></DD>
+<DD><KBD>...</KBD></DD>
+<DD><KBD>floppy:x:19:thomas,scdbackup</KBD></DD>
+<DD><KBD>...</KBD></DD>
+<DD># <KBD><B>chgrp floppy /dev/sr0 /dev/hdc</B></KBD></DD>
+<DD># <KBD><B>chmod g+rw /dev/sr0 /dev/hdc</B></KBD></DD>
 </DL>
 </P>
 
