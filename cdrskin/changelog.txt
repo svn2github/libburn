@@ -5546,12 +5546,13 @@ Made number transition to 0.4.8 and activated development documentation
 + cdrskin/add_ts_changes_to_libburn_0_4_9
 Updated cdrskin tarball generator
 
-17 May 2008  []
+17 May 2008  [1792]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 ----------------------------- release  - cdrskin-0.4.8.pl00 - 2008.05.17.080001
 * Bug fix: random access addressing for DVD-RAM and BD-RE did not work
+
 
 2008.05.17.115434  [1790]
 Makefile.am
@@ -5573,13 +5574,110 @@ Made number transition to 0.4.9
 + cdrskin/add_ts_changes_to_libburn_0_4_9
 Updated cdrskin tarball generator
 
-17 May 2008  []
+17 May 2008  [1793]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.4.9 - 2008.05.17.121250
+
+14 Jun 2008  [1852]
+README
+Updated release history
+
+2008.06.14.140711  [1853]
+libburn/libburn.h
+Inserted @since tags for all functions older than 0.2.0
+
+2008.07.02.093933  [1882]
+libburn/sg-linux.c
+With auto device family: scd is now fallback if sr does not exist
+
+------------------------------------ cycle  - cdrskin-0.4.9 - 2008.07.12.164045
+* Ability to use /dev/scd as fallback if /dev/sr does not exist
+* Bug fix: option drive_scsi_dev_family=scd lead to buffer overflow
+
+
+2008.07.14.112935  [1914]
+libburn/sg-linux.c
+libburn/libdax_msgs.h
+Trying to avoid SORRY messages when hitting busy hard disk /dev/hdX
+
+2008.07.14.113050  [1915]
+cdrskin/cdrskin.c
+Making visible the new NOTE and HINT about busy alleged hard disks
+
+2008.07.14.113152  [1916]
+configure.ac
+Did LT_CURRENT++, LT_AGE++ because of new API call
+
+2008.07.14.113903  [1917]
+libburn/libburn.h
+libburn/file.c
+libburn/async.c
+New API call burn_fifo_peek_data()
+
+2008.07.14.164528  [1922]
+libburn/sg-linux.c
+Followed hint of Giulio Orsero to recognize disk by /proc/ide/hdX/media
+
+------------------------------------ cycle  - cdrskin-0.4.9 - 2008.07.14.164906
+* New API call burn_fifo_peek_data()
+
+2008.07.16.070001  [1927]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.0 and activated development documentation
+
+16 Jul 2008  [1928]
+- cdrskin/add_ts_changes_to_libburn_0_4_8
+- cdrskin/add_ts_changes_to_libburn_0_4_9
++ cdrskin/add_ts_changes_to_libburn_0_5_0
++ cdrskin/add_ts_changes_to_libburn_0_5_1
+Updated cdrskin tarball generator
+
+16 Jul 2008  [1929]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.5.0 - 2008.07.16.070001
+* Ability to use /dev/scd as fallback if /dev/sr does not exist
+* Bug fix: option drive_scsi_dev_family=scd lead to buffer overflow
+* New API call burn_fifo_peek_data()
+
+
+  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.1 and activated development documentation
+
+  []
+- cdrskin/add_ts_changes_to_libburn_0_4_8
+- cdrskin/add_ts_changes_to_libburn_0_4_9
++ cdrskin/add_ts_changes_to_libburn_0_5_0
++ cdrskin/add_ts_changes_to_libburn_0_5_1
+Updated cdrskin tarball generator
+
+  []
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 
------------------------------------- cycle  - cdrskin-0.4.9 - 
------------------------------------- cycle  - cdrskin-0.4.9 - 
+------------------------------------ cycle  - cdrskin-0.5.1 - 
+------------------------------------ cycle  - cdrskin-0.5.1 - 
 
 ===============================================================================
                                     TODO
@@ -5601,9 +5699,9 @@ READ TRACK INFORMATION[#5]:
 
 ------------------------------ end of bugs ---------------------------------
 
-provide DVD+R DL layer break setter
+Overhaul libburn drive scan and single drive opening
 
-@since tags
+Provide DVD+R DL layer break setter
 
 Check all SORRY and FATAL errors whether they should become FAILUREs
 
