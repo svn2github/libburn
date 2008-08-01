@@ -1166,6 +1166,20 @@ int burn_drive_is_banned(char *device_address)
 }
 
 
+/* ts A80731 */
+int burn_drive_whitelist_count(void)
+{
+	return enumeration_whitelist_top + 1;
+}
+
+char *burn_drive_whitelist_item(int idx, int flag)
+{
+	if (idx < 0 || idx > enumeration_whitelist_top)
+		return NULL;
+	return enumeration_whitelist[idx];
+}
+
+
 /* ts A70924 */
 int burn_drive__fd_from_special_adr(char *adr)
 {

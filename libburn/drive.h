@@ -125,4 +125,10 @@ int burn_drive__fd_from_special_adr(char *adr);
 int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid);
 
 
+/* ts A51221 - A80731 : Whitelist inquiry functions */
+int burn_drive_is_banned(char *device_address);
+int burn_drive_whitelist_count(void);
+char *burn_drive_whitelist_item(int idx, int flag);
+
+
 #endif /* __DRIVE */

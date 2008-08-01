@@ -644,12 +644,195 @@ failed:;
 }
 
 
+#define Libburn_drive_new_deaL 1
+
+#ifdef Libburn_drive_new_deaL
+
+/* ts A80731 */
+static int is_ata_drive(char *fname)
+{
+	int fd;
+	struct hd_driveid tm;
+
+	fd = sg_open_drive_fd(fname, 1);
+	if (fd == -1) {
+		if (linux_ata_enumerate_verbous)
+			fprintf(stderr,"open failed, errno=%d  '%s'\n",
+				errno, strerror(errno));
+		return 0;
+	}
+
+	memset(&tm, 0, sizeof(tm));
+	ioctl(fd, HDIO_GET_IDENTITY, &tm);
+
+		/* not atapi */
+	if (!(tm.config & 0x8000) || (tm.config & 0x4000)) {
+		if (linux_ata_enumerate_verbous)
+			fprintf(stderr, "not marked as ATAPI\n");
+		sg_close_drive_fd(fname, -1, &fd, 0);
+		return 0;
+	}
+
+	/* if SG_IO fails on an atapi device, we should stop trying to 
+	   use hd* devices */
+	if (sgio_test(fd) == -1) {
+		if (linux_ata_enumerate_verbous)
+		  fprintf(stderr,
+			 "FATAL: sgio_test() failed: errno=%d  '%s'\n",
+			 errno, strerror(errno));
+		sg_close_drive_fd(fname, -1, &fd, 0);
+		return 0;
+	}
+	if (sg_close_drive_fd(fname, -1, &fd, 1) <= 0) {
+		if (linux_ata_enumerate_verbous)
+			fprintf(stderr,
+				"cannot close properly, errno=%d  '%s'\n",
+				errno, strerror(errno));
+		return 0;
+	}
+	return 1;
+}
+
+
+static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
+			 int *channel_no, int *target_no, int *lun_no)
+{
+	int fd, sid_ret = 0, ret;
+	struct sg_scsi_id sid;
+	int sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0;
+	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
+
+	fd = sg_open_drive_fd(fname, 1);
+	if (fd == -1) {
+		if (linux_sg_enumerate_debug)
+			fprintf(stderr, "open failed, errno=%d  '%s'\n",
+				errno, strerror(errno));
+		return 0;
+	}
+
+	sid_ret = ioctl(fd, SG_GET_SCSI_ID, &sid);
+	if (sid_ret == -1) {
+		sid.scsi_id = -1; /* mark SCSI address as invalid */
+		if(linux_sg_enumerate_debug) 
+			fprintf(stderr,
+			"ioctl(SG_GET_SCSI_ID) failed, errno=%d  '%s' , ",
+			errno, strerror(errno));
+
+		if (sgio_test(fd) == -1) {
+			if (linux_sg_enumerate_debug)
+		  		fprintf(stderr,
+				 "FATAL: sgio_test() failed: errno=%d  '%s'",
+				errno, strerror(errno));
+
+			sg_close_drive_fd(fname, -1, &fd, 0);
+			return 0;
+		}
+
+#ifdef CDROM_DRIVE_STATUS
+		if (strcmp(linux_sg_device_family,"/dev/sg%d") != 0) {
+			/* http://developer.osdl.org/dev/robustmutexes/
+			  src/fusyn.hg/Documentation/ioctl/cdrom.txt */
+			sid_ret = ioctl(fd, CDROM_DRIVE_STATUS, 0);
+			if(linux_sg_enumerate_debug)
+				  fprintf(stderr,
+					"ioctl(CDROM_DRIVE_STATUS) = %d , ",
+					sid_ret);
+			if (sid_ret != -1 && sid_ret != CDS_NO_INFO)
+				sid.scsi_type = TYPE_ROM;
+			else
+				sid_ret = -1;
+		}
+#endif /* CDROM_DRIVE_STATUS */
+
+	}
+
+#ifdef SCSI_IOCTL_GET_BUS_NUMBER
+	/* Hearsay A61005 */
+	if (ioctl(fd, SCSI_IOCTL_GET_BUS_NUMBER, bus_no) == -1)
+		*bus_no = -1;
+#endif
+
+	if (sg_close_drive_fd(fname, -1, &fd, 
+					sid.scsi_type == TYPE_ROM ) <= 0) {
+		if (linux_sg_enumerate_debug)
+			fprintf(stderr,
+				"cannot close properly, errno=%d  '%s'\n",
+				errno, strerror(errno)); 
+		return 0;
+	}
+	if ( (sid_ret == -1 || sid.scsi_type != TYPE_ROM)
+	     && !linux_sg_accept_any_type) {
+		if (linux_sg_enumerate_debug)
+			fprintf(stderr, "sid.scsi_type = %d (!= TYPE_ROM)\n",
+				sid.scsi_type); 
+		return 0;
+	}
+
+	if (sid_ret == -1 || sid.scsi_id < 0) {
+		/* ts A61211 : employ a more general ioctl */
+		ret = sg_obtain_scsi_adr(fname, bus_no, host_no,
+					   channel_no, target_no, lun_no);
+		if (ret>0) {
+			sid.host_no = *host_no;
+			sid.channel = *channel_no;
+			sid.scsi_id = *target_no;
+			sid.lun = *lun_no;
+		} else {
+			if (linux_sg_enumerate_debug)
+				fprintf(stderr,
+					"sg_obtain_scsi_adr() failed\n");
+			return 0;
+		}
+	}
+
+	/* ts A60927 : trying to do locking with growisofs */
+	if(burn_sg_open_o_excl>1) {
+		ret = sg_open_scsi_siblings(
+				fname, -1, sibling_fds, sibling_fnames,
+				&sibling_count,
+				sid.host_no, sid.channel,
+				sid.scsi_id, sid.lun);
+		if (ret<=0) {
+			if (linux_sg_enumerate_debug)
+				fprintf(stderr, "cannot lock siblings\n"); 
+				sg_handle_busy_device(fname, 0);
+			return 0;
+		}
+		/* the final occupation will be done in sg_grab() */
+		sg_release_siblings(sibling_fds, sibling_fnames,
+							&sibling_count);
+	}
+#ifdef SCSI_IOCTL_GET_BUS_NUMBER
+	if(*bus_no == -1)
+		*bus_no = 1000 * (sid.host_no + 1) + sid.channel;
+#else
+	*bus_no = sid.host_no;
+#endif
+	*host_no= sid.host_no;
+	*channel_no= sid.channel;
+	*target_no= sid.scsi_id;
+	*lun_no= sid.lun;
+	return 1;
+}	
+
+#endif /* Libburn_drive_new_deaL */
+
+
 /** Speciality of Linux: detect non-SCSI ATAPI (EIDE) which will from
    then on used used via generic SCSI as is done with (emulated) SCSI drives */ 
 static void ata_enumerate(void)
 {
+
+#ifdef Libburn_drive_new_deaL
+
+	int ret;
+
+#else 
 	struct hd_driveid tm;
-	int i, fd;
+	int fd;
+#endif
+
+	int i;
 	char fname[10];
 
 	if (linux_ata_enumerate_verbous)
@@ -670,6 +853,17 @@ static void ata_enumerate(void)
 				fprintf(stderr, "not in whitelist\n");
 	continue;
 		}
+
+#ifdef Libburn_drive_new_deaL
+
+		ret = is_ata_drive(fname);
+		if (ret < 0)
+	break;
+		if (ret == 0)
+	continue;
+
+#else /* Libburn_drive_new_deaL */
+
 		fd = sg_open_drive_fd(fname, 1);
 		if (fd == -1) {
 			if (linux_ata_enumerate_verbous)
@@ -706,6 +900,10 @@ static void ata_enumerate(void)
 				errno, strerror(errno));
 	continue;
 		}
+
+#endif /* Libburn_drive_new_deaL */
+
+
 		if (linux_ata_enumerate_verbous)
 		  fprintf(stderr, "accepting as drive without SCSI address\n");
 		enumerate_common(fname, -1, -1, -1, -1, -1);
@@ -716,12 +914,18 @@ static void ata_enumerate(void)
 /** Detects (probably emulated) SCSI drives */
 static void sg_enumerate(void)
 {
+#ifdef Libburn_drive_new_deaL
+
+#else 
 	struct sg_scsi_id sid;
-	int i, fd, sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0, ret;
+	int fd, sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0;
+	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
 	int sid_ret = 0;
+#endif
+
+	int i, ret;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[17];
-	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
 
         sg_select_device_family();
 
@@ -747,6 +951,23 @@ static void sg_enumerate(void)
 			  fprintf(stderr, "not in whitelist\n"); 
 	continue;
 		}
+
+
+#ifdef Libburn_drive_new_deaL
+
+		ret = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
+							&target_no, &lun_no);
+		if (ret < 0)
+	break;
+		if (ret == 0)
+	continue;
+		if (linux_sg_enumerate_debug)
+		  fprintf(stderr, "accepting as SCSI %d,%d,%d,%d bus=%d\n",
+			  host_no, channel_no, target_no, lun_no, bus_no);
+		enumerate_common(fname, bus_no, host_no, channel_no, 
+				target_no, lun_no);
+
+#else /* Libburn_drive_new_deaL */
 
 		/* ts A60927 */
 		fd = sg_open_drive_fd(fname, 1);
@@ -857,14 +1078,55 @@ static void sg_enumerate(void)
 #else
 		bus_no = sid.host_no;
 #endif
+
 		if (linux_sg_enumerate_debug)
 		  fprintf(stderr, "accepting as SCSI %d,%d,%d,%d bus=%d\n",
 			  sid.host_no, sid.channel, sid.scsi_id, sid.lun,
 			  bus_no);
 		enumerate_common(fname, bus_no, sid.host_no, sid.channel, 
 				 sid.scsi_id, sid.lun);
+#endif /* Libburn_drive_new_deaL */
+
 	}
 }
+
+
+#ifdef Libburn_drive_new_deaL
+
+/* ts A80731 : Directly open the given address from a single-item whitlist */
+int single_enumerate(int flag)
+{
+	int wl_count, is_ata= 0, is_scsi= 0;
+	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
+	char *fname;
+
+        wl_count= burn_drive_whitelist_count();
+	if (wl_count != 1)
+		return 0;
+	fname= burn_drive_whitelist_item(0, 0);
+	if (fname == NULL)
+		return 0;
+	
+	is_ata = is_ata_drive(fname);
+	if (is_ata < 0)
+		return -1;
+	if (!is_ata)
+		is_scsi = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
+                                                        &target_no, &lun_no);
+	if (is_scsi < 0)
+		return -1;
+	if (is_ata == 0 && is_scsi == 0)
+		return 0;
+
+	if (linux_sg_enumerate_debug)
+		  fprintf(stderr,
+			"(single) accepting as SCSI %d,%d,%d,%d bus=%d\n",
+			host_no, channel_no, target_no, lun_no, bus_no);
+	enumerate_common(fname, bus_no, host_no, channel_no, 
+				target_no, lun_no);
+	return 1;
+}
+#endif /* Libburn_drive_new_deaL */
 
 
 /* ts A61115 */
@@ -1007,6 +1269,23 @@ next_nothing:;
 /* ts A61115: replacing call to sg-implementation internals from drive.c */
 int scsi_enumerate_drives(void)
 {
+
+#ifdef Libburn_drive_new_deaL
+	int ret;
+#endif
+
+#ifdef Libburn_drive_new_deaL
+	/* Direct examination of eventually single whitelisted name */
+	ret = single_enumerate(0);
+	if (ret < 0)
+		return -1;
+	if (ret > 0)
+		return 1;
+
+	/* >>> ??? should one rather use /proc/sys/dev/cdrom/info ? */
+
+#endif /* Libburn_drive_new_deaL */
+
 	sg_enumerate();
 	ata_enumerate();
 	return 1;
