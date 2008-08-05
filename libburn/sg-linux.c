@@ -1093,26 +1093,69 @@ static void sg_enumerate(void)
 
 #ifdef Libburn_drive_new_deaL
 
-/* ts A80731 : Directly open the given address from a single-item whitlist */
-int single_enumerate(int flag)
-{
-	int wl_count, is_ata= 0, is_scsi= 0;
-	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
-	char *fname;
 
-        wl_count= burn_drive_whitelist_count();
-	if (wl_count != 1)
-		return 0;
-	fname= burn_drive_whitelist_item(0, 0);
-	if (fname == NULL)
-		return 0;
+/* ts A80805 : eventually produce the other official name of a device file */
+static int fname_other_name(char *fname, char other_name[80], int flag)
+{
+	if(strncmp(fname, "/dev/sr", 7) == 0 &&
+	   (fname[7] >= '0' && fname[7] <= '9') &&
+           (fname[8] == 0 ||
+	    (fname[8] >= '0' && fname[8] <= '9' && fname[9] == 0))) {
+		sprintf(other_name, "/dev/scd%s", fname + 7);
+		return 1;
+	}
+	if(strncmp(fname, "/dev/scd", 8) == 0 &&
+	   (fname[8] >= '0' && fname[8] <= '9') &&
+           (fname[9] == 0 ||
+	    (fname[9] >= '0' && fname[9] <= '9' && fname[10] == 0))) {
+		sprintf(other_name, "/dev/sr%s", fname + 8);
+		return 1;
+	}
+	return 0;
+}
+
+
+/* ts A80805 */
+static int fname_drive_is_listed(char *fname, int flag)
+{
+	char other_fname[80];
+
+	if (burn_drive_is_listed(fname, NULL, 0))
+		return 1;
+	if (fname_other_name(fname, other_fname, 0) > 0)
+		if (burn_drive_is_listed(other_fname, NULL, 0))
+			return 2;
+	return 0;
+}
+
+
+/* ts A80731 : Directly open the given address.
+   @param flag bit0= do not compain about missing file
+*/
+static int fname_enumerate(char *fname, int flag)
+{
+	int is_ata= 0, is_scsi= 0;
+	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
+	char msg[BURN_DRIVE_ADR_LEN + 80];
+	struct stat stbuf;
+
+	if (fname_drive_is_listed(fname, 0))
+		return 2;
+	if (stat(fname, &stbuf) == -1) {
+		sprintf(msg, "File object '%s' not found", fname);
+		if (!(flag & 1))
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002000b,
+			  LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			  msg, 0, 0);
+		return -1;
+	}
 	
 	is_ata = is_ata_drive(fname);
 	if (is_ata < 0)
 		return -1;
 	if (!is_ata)
 		is_scsi = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
-                                                        &target_no, &lun_no);
+					&target_no, &lun_no);
 	if (is_scsi < 0)
 		return -1;
 	if (is_ata == 0 && is_scsi == 0)
@@ -1126,6 +1169,124 @@ int single_enumerate(int flag)
 				target_no, lun_no);
 	return 1;
 }
+
+
+/* ts A80731 : Directly open the given address from a single-item whitlist */
+static int single_enumerate(int flag)
+{
+	int ret, wl_count;
+	char *fname, msg[BURN_DRIVE_ADR_LEN + 80];
+
+        wl_count= burn_drive_whitelist_count();
+	if (wl_count != 1)
+		return 0;
+	fname= burn_drive_whitelist_item(0, 0);
+	if (fname == NULL)
+		return 0;
+	ret = fname_enumerate(fname, 0);
+	if (ret <= 0) {
+		sprintf(msg, "Cannot access '%s' as SG_IO CDROM drive", fname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002000a,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		ret = -1;
+	}
+	return ret;
+}
+
+
+/* ts A80801 : looking up drives listed in /proc/sys/dev/cdrom/info line like:
+                drive name:             sr1     hdc     hda     sr0
+   @parm flag bit0= release list memory and exit
+*/
+static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
+{
+	FILE *fp;
+	char line[1024], fname[1024 + 5], *cpt, *retpt, *list_data;
+	int maxl= 0, pass, i;
+
+	if (*list != NULL) {
+		if ((*list)[0] != NULL)
+			free((*list)[0]);
+		free(*list);
+		*list = NULL;
+		*count = 0;
+	}
+	if (flag & 1) 
+		return 1;
+
+	*count = 0;
+	fp = fopen("/proc/sys/dev/cdrom/info", "r");
+	if (fp == NULL)
+		return 0;
+	while (1) {
+		retpt = fgets(line, sizeof(line), fp);
+		if (retpt == NULL)
+	break;
+		if(strncmp(line, "drive name:", 11) == 0)
+	break;
+	}
+	fclose(fp);
+	if (retpt == NULL)
+		return 0;
+	strcpy(fname, "/dev/");
+	for(pass = 0; pass < 2; pass++) {
+		*count = 0;
+		cpt = line + 11;
+		while (*cpt != 0) {
+			for(; *cpt == ' ' || *cpt == '\t'; cpt++);
+			if (*cpt == 0 || *cpt == '\n')
+		break;
+			sscanf(cpt, "%s", fname + 5);
+			if (strlen(fname) > maxl)
+				maxl = strlen(fname);
+			if (pass == 1)
+				strcpy((*list)[*count], fname);
+			(*count)++;
+			for(cpt++; *cpt != ' ' && *cpt != '\t'
+					 && *cpt != 0 && *cpt != '\n'; cpt++);
+		}
+		if (pass == 0) {
+			list_data = calloc(*count + 1, maxl+1);
+			*list = calloc(*count + 1, sizeof(char *));
+			if(list_data == NULL || *list == NULL) {
+				libdax_msgs_submit(libdax_messenger, -1,
+				0x00000003,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Out of virtual memory", 0, 0);
+				if (list_data != NULL)
+					free(list_data);
+				if (*list != NULL)
+					free((char *) *list);
+				return -1;
+			}
+			for (i = 0; i <= *count; i++)
+				(*list)[i] = list_data + i * (maxl + 1);
+		}
+	}
+	return 1;
+}
+
+
+static int add_proc_info_drives(int flag)
+{
+	int ret, list_count, count = 0, i;
+	char **list= NULL;
+
+	ret = proc_sys_dev_cdrom_info(&list, &list_count, 0);
+	if (ret <= 0)
+		return ret;
+	for (i = 0; i < list_count; i++) {
+		if (burn_drive_is_banned(list[i]))
+	continue;
+		ret = fname_enumerate(list[i], 1);
+		if (ret == 1)
+			count++;
+	}
+	proc_sys_dev_cdrom_info(&list, &list_count, 1); /* free memory */
+	return 1 + count;
+}
+
 #endif /* Libburn_drive_new_deaL */
 
 
@@ -1213,10 +1374,14 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 {
 	/* os-linux.h : typedef int burn_drive_enumerator_t; */
 	static int sg_limit = 32, ata_limit = 26;
-	int baseno = 0;
+	int baseno = 0, i;
+	char other_name[80];
 
-	if (initialize == -1)
+	if (initialize == -1) {
+		proc_sys_dev_cdrom_info(&(idx->info_list), &(idx->info_count),
+					1);
 		return 0;
+	}
 
         sg_select_device_family();
 	if (linux_sg_device_family[0] == 0)
@@ -1224,30 +1389,56 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	if (linux_ata_device_family[0] == 0)
 		ata_limit = 0;
 
-	if (initialize  == 1)
-		*idx = -1;
-	(*idx)++;
-	if (*idx >= sg_limit)
+	if (initialize  == 1) {
+		idx->pos = -1;
+		idx->info_count= 0;
+		idx->info_list= NULL;
+		proc_sys_dev_cdrom_info(&(idx->info_list), &(idx->info_count),
+					0);
+	}
+	(idx->pos)++;
+	if (idx->pos >= sg_limit)
 		goto next_ata;
-	if (adr_size < 10)
+	if (adr_size < 11)
 		return -1;
-	sprintf(adr, linux_sg_device_family, *idx);
+	sprintf(adr, linux_sg_device_family, idx->pos);
 
-	/* ts A80702 */
 	sg_exchange_scd_for_sr(adr, 0);
+	goto return_1_pre_proc;
 
-	return 1;
 next_ata:;
 	baseno += sg_limit;
-	if (*idx - baseno >= ata_limit)
-		goto next_nothing;
+	if (idx->pos - baseno >= ata_limit)
+		goto next_proc_info;
 	if (adr_size < 9)
 		return -1;
-	sprintf(adr, linux_ata_device_family, 'a' + (*idx - baseno));
-	return 1;
-next_nothing:;
+	sprintf(adr, linux_ata_device_family, 'a' + (idx->pos - baseno));
+	goto return_1_pre_proc;
+
+next_proc_info:;
 	baseno += ata_limit;
+	for (i = 0; i < idx->info_count; i++) {
+		if ((idx->info_list)[i][0] == 0)
+	continue;
+		if (baseno == idx->pos) {
+			if (adr_size < strlen((idx->info_list)[i]) + 1)
+				return -1;
+			strcpy(adr, (idx->info_list)[i]);
+			return 1;
+		}
+		baseno++;
+	}
 	return 0;
+
+return_1_pre_proc:;
+	for (i = 0; i < idx->info_count; i++) {
+		if (strcmp((idx->info_list)[i], adr) == 0)
+			(idx->info_list)[i][0] = 0;
+	        if (fname_other_name(adr, other_name, 0) > 0)
+			if (strcmp((idx->info_list)[i], other_name) == 0)
+				(idx->info_list)[i][0] = 0;
+	}
+	return 1;
 }
 
 
@@ -1281,13 +1472,15 @@ int scsi_enumerate_drives(void)
 		return -1;
 	if (ret > 0)
 		return 1;
-
-	/* >>> ??? should one rather use /proc/sys/dev/cdrom/info ? */
-
 #endif /* Libburn_drive_new_deaL */
 
 	sg_enumerate();
 	ata_enumerate();
+
+#ifdef Libburn_drive_new_deaL
+	add_proc_info_drives(0);
+#endif /* Libburn_drive_new_deaL */
+
 	return 1;
 }
 
@@ -1739,7 +1932,8 @@ int sg_is_enumerable_adr(char *adr)
 			return 1;
 		}
 	}
-	sg_give_next_adr(&idx, fname, sizeof(fname), -1);
+	if (first == 0)
+		sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 	return(0);
 }
 

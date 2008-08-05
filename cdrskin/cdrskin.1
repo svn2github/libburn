@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "May 17, 2008"
+.TH CDRSKIN 1 "Aug 05, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1080,8 +1080,9 @@ Linux specific: Do not ask the operating system to prevent opening busy drives.
 Wether this leads to senseful behavior depends on operating system and kernel.
 .TP
 .BI drive_scsi_dev_family= sr | scd | sg
-Linux specific: Select a SCSI device file family to be used for drive command
-transactions. Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
+Linux specific: Select a SCSI device file family to be scanned for by
+options --devices and -scanbus.
+Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
 on kernels >= 2.6 . This option allows to explicitely override that default
 in order to meet other programs at a common device file for each drive.
 On kernel 2.4 families sr and scd will find no drives.

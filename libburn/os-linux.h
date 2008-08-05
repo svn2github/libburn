@@ -51,11 +51,17 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
 
 
-/* To hold the index number of the most recently delivered address from
+/* To hold the position of the most recently delivered address from
    device enumeration.
 */
+struct burn_drive_enumerator_struct {
+	int pos;
+	int info_count;
+	char **info_list;
+};
+
 #define BURN_OS_DEFINE_DRIVE_ENUMERATOR_T \
-typedef int burn_drive_enumerator_t;
+typedef struct burn_drive_enumerator_struct burn_drive_enumerator_t;
 
 
 /* Parameters for sibling list. See sibling_fds, sibling_fnames */

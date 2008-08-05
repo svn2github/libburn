@@ -432,6 +432,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020007 (NOTE,HIGH)    = Closed O_EXCL scsi siblings
  0x00020008 (SORRY,HIGH)   = Device busy. Failed to fcntl-lock
  0x00020009 (SORRY,HIGH)   = Neither stdio-path nor its directory exist
+ 0x0002000a (FAILURE,HIGH) = Cannot accept '...' as SG_IO CDROM drive
+ 0x0002000b (FAILURE,HIGH) = File object '...' not found
            
  General library operations:
 

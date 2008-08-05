@@ -131,4 +131,8 @@ int burn_drive_whitelist_count(void);
 char *burn_drive_whitelist_item(int idx, int flag);
 
 
+/* ts A80801 */
+int burn_drive_is_listed(char *path, struct burn_drive **found, int flag);
+
+
 #endif /* __DRIVE */

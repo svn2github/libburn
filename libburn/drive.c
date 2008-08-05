@@ -196,6 +196,31 @@ unsigned int burn_drive_count(void)
 }
 
 
+/* ts A80801 */
+int burn_drive_is_listed(char *path, struct burn_drive **found, int flag)
+{
+	int i, ret;
+	char drive_adr[BURN_DRIVE_ADR_LEN], off_adr[BURN_DRIVE_ADR_LEN];
+
+	ret = burn_drive_convert_fs_adr(path, off_adr);
+	if (ret <= 0)
+		strcpy(off_adr, path);
+	for (i = 0; i <= drivetop; i++) {
+		if (drive_array[i].global_index < 0)
+	continue;
+		ret = burn_drive_d_get_adr(&(drive_array[i]), drive_adr);
+		if (ret <= 0)
+	continue;
+		if(strcmp(off_adr, drive_adr) == 0) {
+			if (found != NULL)
+				*found= &(drive_array[i]);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /* ts A61125 : media status aspects of burn_drive_grab() */
 int burn_drive_inquire_media(struct burn_drive *d)
 {
