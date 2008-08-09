@@ -62,7 +62,7 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
  # define Libburn_dvd_ram_as_bd_rE yes
 */
-/* ts A80509 : <<< Experiment: pretend that DVD-COM and CD-ROM are other media
+/* ts A80509 : <<< Experiment: pretend that DVD-ROM and CD-ROM are other media
                    like BD-ROM (0x40), BD-R seq (0x41), BD-R random (0x42)
  # define Libburn_rom_as_profilE 0x40
 */
@@ -1293,6 +1293,10 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	if (d->status == BURN_DISC_UNREADY)
 		d->status = BURN_DISC_FULL;
 	toc_find_modes(d);
+
+	/* A80808 */
+	burn_disc_cd_toc_extensions(d->disc, 0);
+
 	return 1;
 }
 

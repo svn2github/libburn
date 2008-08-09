@@ -109,4 +109,8 @@ int burn_track_apply_fillup(struct burn_track *t, off_t max_size, int flag);
 off_t burn_track_get_default_size(struct burn_track *t);
 
 
+/* ts A80808 : Enhance CD toc to DVD toc */
+int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag);
+
+
 #endif /* BURN__STRUCTURE_H */

@@ -330,11 +330,19 @@ void burn_track_clear_isrc(struct burn_track *t)
 int burn_track_get_sectors(struct burn_track *t)
 {
 	/* ts A70125 : was int */
-	off_t size;
+	off_t size = 0;
 	int sectors, seclen;
 
 	seclen = burn_sector_length(t->mode);
-	size = t->offset + t->source->get_size(t->source) + t->tail;
+	if (t->source != NULL)                /* ts A80808 : mending sigsegv */
+		size = t->offset + t->source->get_size(t->source) + t->tail;
+	else if(t->entry != NULL) {
+		/* ts A80808 : all burn_toc_entry of track starts should now
+			have (extensions_valid & 1), even those from CD.
+		*/
+		if (t->entry->extensions_valid & 1)
+			size = ((off_t) t->entry->track_blocks) * (off_t) 2048;
+	}
 	sectors = size / seclen;
 	if (size % seclen)
 		sectors++;
@@ -468,6 +476,7 @@ int burn_session_get_sectors(struct burn_session *s)
 	return sectors;
 }
 
+
 int burn_disc_get_sectors(struct burn_disc *d)
 {
 	int sectors = 0, i;
@@ -515,3 +524,40 @@ int burn_session_get_hidefirst(struct burn_session *session)
 {
 	return session->hidefirst;
 }
+
+
+/* ts A80808 : Enhance CD toc to DVD toc */
+int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
+{
+	int sidx, tidx;
+	struct burn_toc_entry *entry, *prev_entry;
+
+	for (sidx = 0; sidx < d->sessions; sidx++) {
+		for (tidx = 0; tidx < d->session[sidx]->tracks + 1; tidx++) {
+			if (tidx < d->session[sidx]->tracks)
+				entry = d->session[sidx]->track[tidx]->entry;
+			else
+				entry = d->session[sidx]->leadout_entry;
+			entry->session_msb = 0;
+			entry->point_msb = 0;
+			entry->start_lba = burn_msf_to_lba(entry->pmin,
+						entry->psec, entry->pframe);
+			if (tidx > 0) {
+				prev_entry->track_blocks =
+					entry->start_lba
+					- prev_entry->start_lba;
+				prev_entry->extensions_valid |= 1;
+			}
+			if (tidx == d->session[sidx]->tracks) {
+				entry->session_msb = 0;
+				entry->point_msb = 0;
+				entry->track_blocks = 0;
+				entry->extensions_valid |= 1;
+			}
+			prev_entry = entry;
+		}
+	}
+	return 1;
+}
+
+
