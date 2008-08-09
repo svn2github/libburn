@@ -2420,6 +2420,8 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     @param flag         Bitfield for control purposes:
                         bit0= - reserved -
                         bit1= do not submit error message if read error
+                        bit2= on error do not try to read a second time
+                              with single block steps. @since 0.5.2 
     @return 1=sucessful , <=0 an error occured
     @since 0.4.0
 */

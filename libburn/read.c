@@ -443,7 +443,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
 			/* Try to read a smaller part of the chunk */
-			for (i = 0; i < chunksize - 1; i++) {
+			if(!(flag & 4))
+			  for (i = 0; i < chunksize - 1; i++) {
 				if (flag & 2)
 					d->silent_on_scsi_error = 1;
 				if (d->drive_role == 1) {
