@@ -306,7 +306,8 @@ struct burn_toc_entry
 
 	/* Indicates whether extension data are valid and eventually override
 	   older elements in this structure:
-	     bit0= DVD extension is valid
+	     bit0= DVD extension is valid @since 0.3.2
+                   @since 0.5.2 : DVD extensions are made valid for CD too
 	*/
 	unsigned char extensions_valid;  
 
