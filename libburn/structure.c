@@ -530,7 +530,7 @@ int burn_session_get_hidefirst(struct burn_session *session)
 int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 {
 	int sidx, tidx;
-	struct burn_toc_entry *entry, *prev_entry;
+	struct burn_toc_entry *entry, *prev_entry= NULL;
 
 	for (sidx = 0; sidx < d->sessions; sidx++) {
 		for (tidx = 0; tidx < d->session[sidx]->tracks + 1; tidx++) {
