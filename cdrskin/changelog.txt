@@ -5646,13 +5646,13 @@ Updated cdrskin tarball generator
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.5.0 - 2008.07.16.070001
+------------------------------ release - cdrskin-0.5.0.pl00 - 2008.07.16.070001
 * Ability to use /dev/scd as fallback if /dev/sr does not exist
 * Bug fix: option drive_scsi_dev_family=scd lead to buffer overflow
 * New API call burn_fifo_peek_data()
 
 
-  []
+2008.07.16.090816  [1930]
 Makefile.am
 configure.ac
 README
@@ -5664,20 +5664,118 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 0.5.1 and activated development documentation
 
-  []
+16 Jul 2008  [1931]
 - cdrskin/add_ts_changes_to_libburn_0_4_8
 - cdrskin/add_ts_changes_to_libburn_0_4_9
 + cdrskin/add_ts_changes_to_libburn_0_5_0
 + cdrskin/add_ts_changes_to_libburn_0_5_1
 Updated cdrskin tarball generator
 
-  []
+16 Jul 2008  [1932]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+------------------------------------ cycle  - cdrskin-0.5.1 - 2008.07.14.164528
+
+
+2008.08.01.101053  [1954]
+libburn/drive.h
+libburn/drive.c
+libburn/sg-linux.c
+Avoiding drive scan if single drive is given
+
+2008.08.05.175930  [1963]
+libburn/os-linux.h
+libburn/drive.h
+libburn/drive.c
+libburn/sg-linux.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.1
+Taking into respect drive list from /proc/sys/dev/cdrom/info
+
+5 Aug 2008  [1964]
+cdrskin/cdrskin_eng.html
+Updated for next 0.5.1 cycle
 
 ------------------------------------ cycle  - cdrskin-0.5.1 - 
------------------------------------- cycle  - cdrskin-0.5.1 - 
+* Larger set of possibly acceptable drive device file names
+
+
+2008.08.09.071742  [1975]
+libburn/mmc.c
+libburn/structure.h
+libburn/structure.c
+CD burn_toc_entries now bear extension_valid data
+
+2008.08.09.071854  [1976]
+libburn/libburn.h
+libburn/read.c
+New flag bit2 with burn_read_data()
+
+2008.08.19.122535  [1991]
+libburn/libburn.h
+API clarification about CD burn_toc_entries
+
+2008.08.19.123513  [1992]
+libburn/structure.c
+Reacted on harmless compiler warning
+
+------------------------------------ cycle  - cdrskin-0.5.1 - 2008.08.19.123513
+
+2008.08.20.080001  [1994]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.2 and activated development documentation
+
+20 Aug 2008  [1995]
+- cdrskin/add_ts_changes_to_libburn_0_5_0
+- cdrskin/add_ts_changes_to_libburn_0_5_1
++ cdrskin/add_ts_changes_to_libburn_0_5_2
++ cdrskin/add_ts_changes_to_libburn_0_5_3
+Updated cdrskin tarball generator
+
+20 Aug 2008  [1996]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.5.2.pl00 - 2008.08.20.080001
+* Larger set of possibly acceptable drive device file names
+
+2008.08.20.100045  [1997]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.3
+
+20 Aug 2008  [1998]
+- cdrskin/add_ts_changes_to_libburn_0_5_0
+- cdrskin/add_ts_changes_to_libburn_0_5_1
++ cdrskin/add_ts_changes_to_libburn_0_5_2
++ cdrskin/add_ts_changes_to_libburn_0_5_3
+Updated cdrskin tarball generator
+
+20 Aug 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.5.3 - 2008.08.20.100045
+
+
+------------------------------------ cycle  - cdrskin-0.5.3 - 
+------------------------------------ cycle  - cdrskin-0.5.3 - 
 
 ===============================================================================
                                     TODO
@@ -5698,8 +5796,6 @@ READ TRACK INFORMATION[#5]:
 
 
 ------------------------------ end of bugs ---------------------------------
-
-Overhaul libburn drive scan and single drive opening
 
 Provide DVD+R DL layer break setter
 
