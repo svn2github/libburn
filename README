@@ -173,7 +173,7 @@ Project history as far as known to me:
   discontent.
   The situation first caused me to publically regret it and then - after i
   got the opportunity to move in with cdrskin - gave me true reason to
-  personally apologize to Derek Foreman, Ben Jansens and the contibutors at 
+  personally apologize to Derek Foreman, Ben Jansens and the contributors at 
   icculus.org/burn. Posted to both projects:
     http://lists.freedesktop.org/archives/libburn/2006-August/000446.html
     http://mailman-mail1.webfaction.com/pipermail/libburn-hackers/2006-August/000024.html
@@ -300,6 +300,13 @@ Project history as far as known to me:
 - 16th Jul 2008 libburn-0.5.0 handles systems with no /dev/sr* but only
   /dev/scd*.
 
+- 19th Jul 2008 libisoburn/xorriso-0.2.2 can do multi-session in mkisofs
+  and cdrecord style. xorriso now can serve underneath growisofs.
+
+- 20th Aug 2008 libburn-0.5.2 revokes the necessity that a drive must be
+  enumerable in order to be adressable. Enumeration is enhanced by examining
+  /proc/sys/dev/cdrom/info.
+  
 
 ------------------------------------------------------------------------------
 
