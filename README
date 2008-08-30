@@ -307,6 +307,9 @@ Project history as far as known to me:
   enumerable in order to be adressable. Enumeration is enhanced by examining
   /proc/sys/dev/cdrom/info.
   
+- 24th Aug 2008 libisoburn/xorriso-0.2.4 introduces a media readability check
+  with data retrieval option.
+
 
 ------------------------------------------------------------------------------
 
