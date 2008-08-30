@@ -773,11 +773,24 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 
 		/* >>> make this scsi_notify_error() when liberated */
 		if (c.sense[2]!=0) {
+
+#ifdef NIX
 			char msg[160];
 			sprintf(msg,
 		"SCSI error on write(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
 				start, len,
 				c.sense[2],c.sense[12],c.sense[13]);
+#else /* NIX */
+			char msg[256];
+			int key, asc, ascq;
+
+			sprintf(msg, "SCSI error on write(%d,%d): ",
+					start, len);
+			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+
+#endif /* !NIX */
+
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011d,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
@@ -1924,8 +1937,9 @@ int mmc_set_streaming(struct burn_drive *d,
 	struct buffer buf;
 	struct command c;
 	int b, eff_end_lba;
-	char msg[160];
+	char msg[256];
 	unsigned char *pd;
+	int key, asc, ascq;
 
 	if (mmc_function_spy(d, "mmc_set_streaming") <= 0)
 		return 0;
@@ -1988,6 +2002,8 @@ int mmc_set_streaming(struct burn_drive *d,
 	d->issue_command(d, &c);
 	if (c.error) {
 		if (c.sense[2]!=0 && !d->silent_on_scsi_error) {
+
+#ifdef NIX
 			sprintf(msg,
 	"SCSI error on set_streaming(%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
 				w_speed,
@@ -1997,6 +2013,15 @@ int mmc_set_streaming(struct burn_drive *d,
 				0x00020124,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
+#else /* NIX */
+
+			sprintf(msg,
+				"SCSI error on set_streaming(%d): ", w_speed);
+			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+
+#endif /* !NIX */
+
 		}
 		return 0;
 	}
@@ -2698,7 +2723,8 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	int index, format_sub_type = 0, format_00_index, size_mode;
 	int accept_count = 0;
 	off_t num_of_blocks = 0, diff, format_size, i_size, format_00_max_size;
-	char msg[160],descr[80];
+	char msg[256],descr[80];
+	int key, asc, ascq;
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
 	if (mmc_function_spy(d, "mmc_format_unit") <= 0)
@@ -3100,6 +3126,8 @@ unsuitable_media:;
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {
 		if (c.sense[2]!=0) {
+
+#ifdef NIX
 			sprintf(msg,
 		"SCSI error on format_unit(%s): key=%X asc=%2.2Xh ascq=%2.2Xh",
 				descr,
@@ -3108,6 +3136,13 @@ unsuitable_media:;
 				0x00020122,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
+#else /* NIX */
+			sprintf(msg, "SCSI error on format_unit(%s): ", descr);
+			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+
+#endif /* !NIX */
+
 		}
 		return 0;
 	} else if ((!c.error) && (format_type == 0x13 || format_type == 0x15))
@@ -3409,11 +3444,24 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 	if (c.error) {
+
+#ifdef NIX
 		char msg[160];
+
 		sprintf(msg,
 		"SCSI error on read_10(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
 			start, amount,
 			c.sense[2],c.sense[12],c.sense[13]);
+#else /* NIX */
+		char msg[256];
+		int key, asc, ascq;
+
+		sprintf(msg, "SCSI error on read_10(%d,%d): ", start, amount);
+		scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+				&key, &asc, &ascq);
+
+#endif /* !NIX */
+
 		if(!d->silent_on_scsi_error)
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020144,

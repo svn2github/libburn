@@ -117,9 +117,9 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 		i, ret, (unsigned) key, (unsigned) asc, (unsigned) ascq);
 */
 
-		if(ret > 0) /* ready */
+		if (ret > 0) /* ready */
 	break;
-		if(key!=0x2 || asc!=0x4) {
+		if (key!=0x2 || asc!=0x4) {
 			if (key == 0x2 && asc == 0x3A) {
 				ret = 1; /* medium not present = ok */
 /* <<<
@@ -568,7 +568,7 @@ void spc_sense_write_params(struct burn_drive *d)
 
 	/* ts A71128 : do not interpret reply if error */
 	m = d->mdata;
-	if(!c.error) {
+	if (!c.error) {
 		size = c.page->data[0] * 256 + c.page->data[1];
 		page = c.page->data + 8;
 		burn_print(1, "write page length 0x%x\n", page[1]);
@@ -845,7 +845,7 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	d->mdata = calloc(1, sizeof(struct scsi_mode_data));
 
 	/* ts A61007 : obsolete Assert in drive_getcaps() */
-	if(d->idata == NULL || d->mdata == NULL) {
+	if (d->idata == NULL || d->mdata == NULL) {
 	        libdax_msgs_submit(libdax_messenger, -1, 0x00020108,
 	                LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 	                "Could not allocate new drive object", 0, 0);
@@ -854,7 +854,7 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	d->idata->valid = 0;
 	d->mdata->valid = 0;
 	d->mdata->speed_descriptors = NULL;
-	if(!(flag & 1)) {
+	if (!(flag & 1)) {
 		ret = spc_setup_drive(d);
 		if (ret<=0)
 			return ret;
@@ -869,11 +869,14 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 }
 
 
-/* ts A61122  */
+/* ts A61122 - A80829 */
 enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
-			     int senselen, char msg[161],
+			     int senselen, char msg_data[161],
 			     int *key, int *asc, int *ascq)
 {
+	char *msg;
+
+	msg= msg_data;
 	*key= *asc= *ascq= -1;
 
 	if (senselen<=0 || senselen>2)
@@ -883,50 +886,236 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	if (senselen<=0 || senselen>13)
 		*ascq = sense[13];
 
+	sprintf(msg, "[%X %2.2X %2.2X]  ", *key, *asc, *ascq);
+	msg= msg + strlen(msg);
+
 	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
 		   *key, *asc, *ascq, d->idata->vendor, d->idata->product);
 
 	switch (*asc) {
-	case 0:
-		sprintf(msg, "(no error reported by SCSI transaction)");
+	case 0x00:
+		sprintf(msg, "(No error reported by SCSI transaction)");
 		return RETRY;
 
-	case 2:
-		sprintf(msg, "not ready");
+	case 0x02:
+		sprintf(msg, "Not ready");
 		return RETRY;
-	case 4:
+	case 0x04:
 		sprintf(msg,
-			"logical unit is in the process of becoming ready");
+			"Logical unit is in the process of becoming ready");
 		return RETRY;
+	case 0x09:
+		if (*key != 4)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Track following error");
+		else if (*ascq == 1)
+			sprintf(msg, "Tracking servo failure");
+		else if (*ascq == 2)
+			sprintf(msg, "Focus servo failure");
+		else if (*ascq == 3)
+			sprintf(msg, "Spindle servo failure");
+		else if (*ascq == 4)
+			sprintf(msg, "Head select fault");
+		else
+			break;
+		return FAIL;
+	case 0x0C:
+		if (*key == 2 && *ascq == 7)
+			sprintf(msg, "Write error, recovery needed"); 
+		else if (*key == 2 && *ascq == 0x0f)
+			sprintf(msg, "Defects in error window"); 
+		else if (*key == 3 && *ascq == 2)
+			sprintf(msg, "Write error, auto reallocation failed");
+		else if (*key == 3 && *ascq == 9)
+			sprintf(msg, "Write error, loss of streaming");
+		else if (*key == 3)
+			sprintf(msg, "Write error");
+		else
+			break;
+		return FAIL;
+	case 0x11:
+		if (*key != 3)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Unrecovered read error");
+		else if (*ascq == 1)
+			sprintf(msg, "Read retries exhausted");
+		else if (*ascq == 2)
+			sprintf(msg, "Error too long to correct");
+		else if (*ascq == 5)
+			sprintf(msg, "L-EC uncorrectable error");
+		else if (*ascq == 6)
+			sprintf(msg, "CIRC uncorrectable error");
+		else
+			break;
+		return FAIL;
+	case 0x15:
+		if (*key != 3 && *key != 4)
+			break;
+		sprintf(msg, "Random positioning error");
+		return FAIL;
+	case 0x1a:
+		if (*key != 5)
+			break;
+		sprintf(msg, "Parameter list length error");
+		return FAIL;
+	case 0x1b:
+		if (*key != 4)
+			break;
+		sprintf(msg, "Synchronous data transfer error");
+		return FAIL;
 	case 0x20:
-		if (*key == 5)
-			sprintf(msg, "bad opcode");
+		if (*key != 5)
+			break;
+		sprintf(msg, "Invalid command operation code");
 		return FAIL;
 	case 0x21:
-		sprintf(msg, "invalid address");
+		if (*key != 5)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Lba out of range");
+		else if (*ascq == 3)
+			sprintf(msg, "Invalid write crossing layer jump");
+		else
+			sprintf(msg, "Invalid address");
 		return FAIL;
 	case 0x24:
-		if (*key == 5)
-			sprintf(msg, "invalid field in cdb");
-		else
+		if (*key != 5)
 			break;
+		sprintf(msg, "Invalid field in cdb");
 		return FAIL;
 	case 0x26:
-		if (*key == 5 )
-			sprintf(msg, "invalid field in parameter list" );
+		if (*key != 5)
+			break;
+		if (*ascq == 1)
+			sprintf(msg, "Parameter not supported");
+		else if (*ascq == 2)
+			sprintf(msg, "Parameter value invalid");
+		else
+			sprintf(msg, "Invalid field in parameter list");
+		return FAIL;
+	case 0x27:
+		if (*key != 7)
+			break;
+		sprintf(msg, "Write protected");
 		return FAIL;
 	case 0x28:
-		if (*key == 6)
+		if (*key != 6)
+			break;
+		if (*ascq == 0)
 			sprintf(msg, "Medium may have changed");
+		else if (*ascq == 2)
+			sprintf(msg, "Format layer may have changed");
 		else
 			break;
 		return RETRY;
+	case 0x29:
+		if (*key != 6)
+			break;
+		if (*ascq == 0)
+			sprintf(msg,
+                               "Power on, reset, or bus device reset occured");
+		else if (*ascq == 1)
+			sprintf(msg, "Power on occured");
+		else if (*ascq == 2)
+			sprintf(msg, "Bus reset occured");
+		else if (*ascq == 3)
+			sprintf(msg, "Bus device reset function occured");
+		else if (*ascq == 4)
+			sprintf(msg, "Device internal reset");
+		else
+			break;
+		return RETRY;
+	case 0x2c:
+		if (*key != 5)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Command sequence error");
+		else 
+			break;
+		return FAIL;
+	case 0x2e:
+		if (*key != 6)
+			break;
+		if (*ascq == 0)
+			sprintf(msg,
+                               "Insufficient time for operation");
+		else 
+			break;
+		return FAIL;
+	case 0x30:
+		if (*key != 2)
+			break;
+		if (*ascq == 1)
+			sprintf(msg, "Cannot read medium, unknown format");
+		else if (*ascq == 2)
+			sprintf(msg,
+				"Cannot read medium, incompatible format");
+		else if (*ascq == 4)
+			sprintf(msg, "Cannot write medium, unknown format");
+		else if (*ascq == 5)
+			sprintf(msg,
+				"Cannot write medium, incompatible format");
+		else if (*ascq == 6)
+			sprintf(msg,
+				"Cannot format medium, incompatible medium");
+		else if (*ascq == 7)
+			sprintf(msg, "Cleaning failure");
+		else
+			sprintf(msg, "Incompatible medium installed");
+		return FAIL;
 	case 0x3A:
-		sprintf(msg, "Medium not present");
+		if (*key != 2)
+			break;
+		if (*ascq == 1)
+			sprintf(msg, "Medium not present, tray closed");
+		else if (*ascq == 2)
+			sprintf(msg, "Medium not present, tray open");
+		else if (*ascq == 3)
+			sprintf(msg, "Medium not present, loadable");
+		else
+			sprintf(msg, "Medium not present");
 		d->status = BURN_DISC_EMPTY;
 		return FAIL;
+	case 0x63:
+		if (*key != 5)
+			break;
+		if (*ascq == 0)
+			sprintf(msg,
+				"End of user area encountered on this track");
+		else if (*ascq == 1)
+			sprintf(msg, "Packet does not fit in available space");
+		else
+			break;
+		return FAIL;
+	case 0x64:
+		if (*key != 5)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Illegal mode for this track");
+		else if (*ascq == 1)
+			sprintf(msg, "Invalid packet size");
+		else
+			break;
+		return FAIL;
+	case 0x72:
+		if (*key == 3)
+			sprintf(msg, "Session fixation error");
+		else if (*key == 5 && *ascq == 3)
+			sprintf(msg,
+			"Session fixation error, incomplete track in session");
+		else if (*key == 5 && *ascq == 4)
+			sprintf(msg,
+			"Empty or partially written reserved track");
+		else if (*key == 5 && *ascq == 5)
+			sprintf(msg,
+			"No more track reservations allowed");
+		else
+			break;
+		return FAIL;
 	}
-	sprintf(msg,
+	sprintf(msg_data,
 		"Failure. See mmc3r10g.pdf: Sense Key %X ASC %2.2X ASCQ %2.2X",
 		*key, *asc, *ascq);
 	return FAIL;
@@ -962,12 +1151,10 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	if (d->silent_on_scsi_error)
 		return 1;
 
-	strcpy(scsi_msg, "    \"");
 	scsi_error_msg(d, sense, senselen, scsi_msg + strlen(scsi_msg),
 			 &key, &asc, &ascq);
-	strcat(scsi_msg, "\"");
 
-	if(!(flag & 1)) {
+	if (!(flag & 1)) {
 		/* SPC : TEST UNIT READY command */
 		if (c->opcode[0] == 0)
 			return 1;
@@ -978,7 +1165,9 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 				return 1;
 	}
 
-	sprintf(msg,"SCSI error condition on command %2.2Xh :", c->opcode[0]);
+	sprintf(msg,"SCSI error condition on command %2.2Xh : ", c->opcode[0]);
+
+#ifdef NIX
 	if (key>=0)
 		sprintf(msg+strlen(msg), " key=%Xh", key);
 	if (asc>=0)
@@ -992,6 +1181,13 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 			scsi_msg,0,0);
+#else
+	strcat(msg, scsi_msg);
+	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
+
+#endif /* NIX */
+
 	return ret;
 }
 
