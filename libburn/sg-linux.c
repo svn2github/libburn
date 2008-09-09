@@ -729,19 +729,17 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 		}
 
 #ifdef CDROM_DRIVE_STATUS
-		if (strcmp(linux_sg_device_family,"/dev/sg%d") != 0) {
-			/* http://developer.osdl.org/dev/robustmutexes/
+		/* http://developer.osdl.org/dev/robustmutexes/
 			  src/fusyn.hg/Documentation/ioctl/cdrom.txt */
-			sid_ret = ioctl(fd, CDROM_DRIVE_STATUS, 0);
-			if(linux_sg_enumerate_debug)
-				  fprintf(stderr,
-					"ioctl(CDROM_DRIVE_STATUS) = %d , ",
-					sid_ret);
-			if (sid_ret != -1 && sid_ret != CDS_NO_INFO)
-				sid.scsi_type = TYPE_ROM;
-			else
-				sid_ret = -1;
-		}
+		sid_ret = ioctl(fd, CDROM_DRIVE_STATUS, 0);
+		if(linux_sg_enumerate_debug)
+			  fprintf(stderr,
+				"ioctl(CDROM_DRIVE_STATUS) = %d , ",
+				sid_ret);
+		if (sid_ret != -1 && sid_ret != CDS_NO_INFO)
+			sid.scsi_type = TYPE_ROM;
+		else
+			sid_ret = -1;
 #endif /* CDROM_DRIVE_STATUS */
 
 	}
@@ -1130,7 +1128,8 @@ static int fname_drive_is_listed(char *fname, int flag)
 
 
 /* ts A80731 : Directly open the given address.
-   @param flag bit0= do not compain about missing file
+   @param flag bit0= do not complain about missing file
+               bit1= do not check whether drive is already listed
 */
 static int fname_enumerate(char *fname, int flag)
 {
@@ -1139,8 +1138,9 @@ static int fname_enumerate(char *fname, int flag)
 	char msg[BURN_DRIVE_ADR_LEN + 80];
 	struct stat stbuf;
 
-	if (fname_drive_is_listed(fname, 0))
-		return 2;
+	if (!(flag & 2))
+		if (fname_drive_is_listed(fname, 0))
+			return 2;
 	if (stat(fname, &stbuf) == -1) {
 		sprintf(msg, "File object '%s' not found", fname);
 		if (!(flag & 1))
@@ -1183,7 +1183,7 @@ static int single_enumerate(int flag)
 	fname= burn_drive_whitelist_item(0, 0);
 	if (fname == NULL)
 		return 0;
-	ret = fname_enumerate(fname, 0);
+	ret = fname_enumerate(fname, 2);
 	if (ret <= 0) {
 		sprintf(msg, "Cannot access '%s' as SG_IO CDROM drive", fname);
 		libdax_msgs_submit(libdax_messenger, -1, 0x0002000a,
