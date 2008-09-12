@@ -4,7 +4,7 @@
 /* #include <a ssert.h> */
 
 #include <stdlib.h>
-#include "../version.h"
+#include "version.h"
 #include "util.h"
 #include "libburn.h"
 
