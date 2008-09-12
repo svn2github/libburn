@@ -432,6 +432,10 @@ The recipes described here are depending on formatting state:
 - DVD-RAM and BD-RE formatting
 - DVD-RAM and BD-RE speed tuning
 
+Slightly off topic are
+- ISO 9660 multi-session emulation on overwriteable media
+- ISO 9660 based TOC emulation on overwriteable media
+
 -------------------------------------------------------------------------------
 Overwriting in general :
 
@@ -522,7 +526,7 @@ with Close Function 010b despite there is no session open in this scenario.)
 
 
 -------------------------------------------------------------------------------
-Unformatted DVD+RW
+Unformatted DVD+RW :
 
 This is the state of previously unused DVD+RW media.
 
@@ -760,6 +764,76 @@ None of the features of profiles 0012h and 0043 promises the existence of
 AAh WRITE12.
 Nevertheless it worked on all tested drives is proper alignment was observed.
 (mmc5r03c.pdf 5.4.13, 6.45)
+
+
+-------------------------------------------------------------------------------
+ISO 9660 multi-session emulation on overwriteable media :
+
+Overwriteable media provide a single overwriteable track which may grow up to
+the full media capacity. There is no builtin table-of-content which records
+the history of write sessions.
+mount -t iso9660 will use sbsector=0 as default.
+The term "superblock" shall depict the first 64 KiB after the sbsector address.
+
+ISO 9660 multi-session depends on typical TOC information in two ways:
+It needs the superblock address MSC1 of the most recently recorded session and
+it needs the Next Writeable Address NWA for which to prepare the adress offset.
+
+The following is learned from growisofs and from ECMA-119:
+http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-119.pdf
+
+ISO 9660 filesystems provide information about the number of sectors which
+is also the lowest unused block address and thus a suitable NWA.
+This block address is stored in the Primary Volume Descriptor which is supposed
+to be stored in block 16 (eventually relative to MSC1).
+The bytes 0 to 5 of a PVD block are 
+   0x01 'C' 'D' '0' '0' '1'
+The sector count can then be read from byte 80 to 83
+   sectors= pvd[80] | (pvd[81] << 8) | (pvd[82] << 16) | (pvd[83] << 24);
+To support CD, DVD and BD media alike, it is advisable to round the NWA
+to the next multiple of 32 (= 64 KiB).
+(Ecma-119.pdf 8.4)
+
+So one can use 0 as MSC1 and prepare a new ISO session for the computed NWA.
+After writing the session it is necessary to patch the PVD at LBA 16.
+The minimal change would be to update the number of image sectors.
+It is stored in both notations LSB and MSB:
+   for(i= 0; i < 4; i++)
+     pvd[87 - i]= pvd[80 + i]= (sectors >> (8 * i)) & 0xff;
+
+cdrskin --grow_overwriteable not only patches the sector fields of the
+PVD block but also the blocks up to LBA 31 which begin with
+   0xff 'C' 'D' '0' '0' '1'
+libisoburn submits 64 KiB data buffer to libisofs before image generation and
+afterwards writes these 64 KiB as new superblock to LBA 0.
+
+
+-------------------------------------------------------------------------------
+ISO 9660 based TOC emulation on overwriteable media :
+
+Above method of multi-session emulation yields a single session image after
+each add-on session. No reliable session history can be read because the
+sector size of the existing session gets overwritten by the new one.
+A TOC with session history is nevertheless desirable with incremental backups
+in order to access older backup states by mounting older superblocks at the
+start addresses of older sessions.
+
+All usual ISO 9660 formatter programs write a complete superblock to the
+start of each session.
+With a uniform NWA rounding rule it is possible to compute the address of
+superblock N+1 as the NWA after session N. The only problem is N=1
+because it gets overwritten by later sessions.
+
+libisoburn preserves the information of session 1 by writing the first session
+to LBA 32 rather than LBA 0. Afterwards it writes the overall superblock to
+LBA 0 (up to 31).
+So with all further add-on sessions the superblock at LBA 0 will enclose the
+overall image, while the superblocks of the sessions form a chain beginning
+at LBA 32. Each session superblock points to the next one by its sector count
+rounded up to 32. The chain end is marked by the overall image size.
+This chain gives the start addresses of sessions. The sector count minus start
+address gives the size of a particular session. ECMA-119 explains how to
+retrieve more info from the PVD (e.g. the volume id).
 
 
 -------------------------------------------------------------------------------
