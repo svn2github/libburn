@@ -4,7 +4,11 @@
 /* #include <a ssert.h> */
 
 #include <stdlib.h>
-#include "version.h"
+
+/* ts A80914 : This is unneeded. Version info comes from libburn.h.
+#include "v ersion.h"
+*/
+
 #include "util.h"
 #include "libburn.h"
 
@@ -48,13 +52,7 @@ char *burn_strndup(char *s, int n)
 void burn_version(int *major, int *minor, int *micro)
 {
 /* ts A80408 : switched from configure.ac versioning to libburn.h versioning */
-#ifdef burn_header_version_major
-    *major = burn_header_version_major;
-    *minor = burn_header_version_minor;
-    *micro = burn_header_version_micro;
-#else
-    *major = BURN_MAJOR_VERSION;
-    *minor = BURN_MINOR_VERSION;
-    *micro = BURN_MICRO_VERSION;
-#endif
+	*major = burn_header_version_major;
+	*minor = burn_header_version_minor;
+	*micro = burn_header_version_micro;
 }
