@@ -5508,7 +5508,7 @@ thank_you_for_patience:;
        if(skin->is_writing)
          fprintf(stderr,"\n");
        fprintf(stderr,
- "\rcdrskin: thank you for being patient since %.f seconds                   ",
+ "\rcdrskin: thank you for being patient for %.f seconds                     ",
            elapsed_total_time);
      }
      advance_interval= 1;
