@@ -277,7 +277,7 @@ Project history as far as known to me:
   image tree nodes. It now depends on libisofs-0.6.4 and libburn-0.4.4.
   xorriso makes use of new libisofs features by performing incremental
   updates of directory trees and by cutting oversized data files into
-  pieces. A primitive single session emulation of cdrcord and mkisofs is
+  pieces. A primitive single session emulation of cdrecord and mkisofs is
   provided.
 
 - 10th May 2008 libburn-0.4.6 supports formatting and writing of BD-RE,
@@ -310,6 +310,11 @@ Project history as far as known to me:
 - 24th Aug 2008 libisoburn/xorriso-0.2.4 introduces a media readability check
   with data retrieval option.
 
+- 18th Sep 2008 libisofs-0.6.8 supports ISO 9660 Level 3 which allows very
+  large data files in the image.
+
+- 20th Sep 2008 libisoburn/xorriso-0.2.6 takes into respect the new Level 3
+  capabilities of libisofs. 
 
 ------------------------------------------------------------------------------
 
