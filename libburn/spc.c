@@ -1045,7 +1045,7 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			break;
 		return FAIL;
 	case 0x30:
-		if (*key != 2)
+		if (*key != 2 && *key != 5)
 			break;
 		if (*ascq == 1)
 			sprintf(msg, "Cannot read medium, unknown format");
@@ -1151,8 +1151,7 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	if (d->silent_on_scsi_error)
 		return 1;
 
-	scsi_error_msg(d, sense, senselen, scsi_msg + strlen(scsi_msg),
-			 &key, &asc, &ascq);
+	scsi_error_msg(d, sense, senselen, scsi_msg, &key, &asc, &ascq);
 
 	if (!(flag & 1)) {
 		/* SPC : TEST UNIT READY command */
