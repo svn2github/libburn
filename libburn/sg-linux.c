@@ -1216,6 +1216,9 @@ static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 		return 1;
 
 	*count = 0;
+	sg_evaluate_kernel();
+	if (sg_kernel_age < 2) /* addresses are not suitable for kernel 2.4 */
+		return 1;
 	fp = fopen("/proc/sys/dev/cdrom/info", "r");
 	if (fp == NULL)
 		return 0;
