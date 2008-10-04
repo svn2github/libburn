@@ -323,7 +323,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
 	int sose_mem = 0, fd = -1, ret;
 	char msg[81], *wpt;
-	struct buffer buf;
+	struct buffer buf, *buffer_mem = d->buffer;
 
 /*
 #define Libburn_read_data_adr_logginG 1
@@ -485,7 +485,7 @@ ex:;
 	if (fd != -1)
 		close(fd);
 */
-	d->buffer = NULL;
+	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
 }

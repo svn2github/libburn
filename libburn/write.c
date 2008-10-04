@@ -1996,7 +1996,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 {
 	struct cue_sheet *sheet;
 	struct burn_drive *d = o->drive;
-	struct buffer buf;
+	struct buffer buf, *buffer_mem = o->drive->buffer;
 	struct burn_track *lt, *t;
 	int first = 1, i, ret, lba, nwa = 0;
 	off_t default_size;
@@ -2206,6 +2206,7 @@ fail_wo_sync:;
 	d->busy = BURN_DRIVE_IDLE;
 ex:;
 	d->do_stream_recording = 0;
+	d->buffer = buffer_mem;
 	return;
 }
 
@@ -2215,7 +2216,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 {
 	int alignment = 0, start, upto, chunksize, err, fd = -1, ret;
 	char msg[81], *rpt;
-	struct buffer buf;
+	struct buffer buf, *buffer_mem = d->buffer;
 
 	if (d->released) {
 		libdax_msgs_submit(libdax_messenger,
@@ -2326,7 +2327,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		
 	if(fd >= 0)
 		close(fd);
-	d->buffer = NULL;
+	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
 	return 1;
 }

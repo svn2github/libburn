@@ -624,7 +624,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	int ret, buf_secs, err, i, stages = 1, pbase, pfill, pseudo_sector;
 	off_t num_bufs;
 	char msg[80];
-	struct buffer buf;
+	struct buffer buf, *buf_mem = d->buffer;
 
 	/* reset the progress */
 	d->progress.session = 0;
@@ -706,7 +706,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 ex:;
 	d->progress.sector = 0x10000;
 	d->busy = BURN_DRIVE_IDLE;
-	d->buffer = NULL;
+	d->buffer = buf_mem;
 }
 
 
