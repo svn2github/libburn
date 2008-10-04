@@ -103,12 +103,12 @@ dnl
 dnl ts A80820
 dnl ### This is the release version libburn-0.5.2 = libburn.so.4.17.0
 dnl This is the development version after above release version
-dnl LT_CURRENT++, LT_AGE++ has not yet happened.
-dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
+dnl ### LT_CURRENT++, LT_AGE++ has not yet happened.
+dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 21 - 17 = 4 . Library name = libburn.so.4.17.0
-LT_CURRENT=21
-LT_AGE=17
+dnl SONAME = 22 - 18 = 4 . Library name = libburn.so.4.18.0
+LT_CURRENT=22
+LT_AGE=18
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
