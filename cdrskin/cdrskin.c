@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.5.3"
+#define Cdrskin_prog_versioN "0.5.5"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 5
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 4
 #endif
 
 
@@ -135,44 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_5_2
-#define Cdrskin_libburn_versioN "0.5.2"
+#ifdef Cdrskin_libburn_0_5_4
+#define Cdrskin_libburn_versioN "0.5.4"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_5_2 */
+#endif /* Cdrskin_libburn_0_5_4 */
 
-#ifdef Cdrskin_libburn_0_5_3
-#define Cdrskin_libburn_versioN "0.5.3"
+#ifdef Cdrskin_libburn_0_5_5
+#define Cdrskin_libburn_versioN "0.5.5"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.5.3 yet */
+/* there are no libburn novelties in 0.5.5 yet */
 
-#endif /* Cdrskin_libburn_0_5_3 */
+#endif /* Cdrskin_libburn_0_5_5 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_5_2
-#define Cdrskin_libburn_versioN "0.5.2"
+#define Cdrskin_libburn_0_5_4
+#define Cdrskin_libburn_versioN "0.5.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_5_2
+#ifdef Cdrskin_libburn_0_5_4
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 4
 #endif
-#ifdef Cdrskin_libburn_0_5_3
+#ifdef Cdrskin_libburn_0_5_5
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -251,7 +251,7 @@ or
 /* 0.4.8 */
 /* Bug fix release for  write_start_address=... on DVD-RAM and BD-RE */
 
-/* 0.5.0 , 0.5.2 */
+/* 0.5.0 , 0.5.2 , 0.5.4 */
 /* novel libburn features are transparent to cdrskin */
 
 
