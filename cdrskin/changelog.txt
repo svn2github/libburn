@@ -5767,15 +5767,123 @@ Made number transition to 0.5.3
 + cdrskin/add_ts_changes_to_libburn_0_5_3
 Updated cdrskin tarball generator
 
-20 Aug 2008  []
+20 Aug 2008  [1999]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.5.3 - 2008.08.20.100045
+------------------------------------ cycle  - cdrskin-0.5.3 - 2008.08.20.110457
+
+30 Aug 2008  [2023]
+README
+Mentioned release of libisoburn-0.2.4
+
+2008.08.30.104339  [2024]
+libburn/mmc.c
+libburn/spc.c
+Issueing many SCSI error messages in cleartext now
+
+2008.09.09.131915  [2039]
+libburn/sg-linux.c
+Trying to avoid unnecessary access to sibling device objects
+
+12 Sep 2008  [2043]
+doc/cookbook.txt
+Described ISO 9660 multi-session on overwriteable media
+
+2008.09.14.174344  [2048]
+libburn/util.c
+Gave up problematic and unused version.h
+
+2008.09.16.060250  [2052]
+cdrskin/cdrskin.c
+Corrected pacifier text (Ticket 141)
+
+24 Sep 2008  [2079]
+README
+Mentioned recent releases of libisofs and libisoburn
+
+2008.09.28.193802  [2086]
+libburn/spc.c
+Bug fix: Potential buffer overflow introduced with revision 2024
+
+2008.09.28.211741  [2087]
+libburn/sg-linux.c
+Bug fix: /dev/sr0 was accepted as enumerable address on Linux 2.4
+
+2008.10.04.072657  [2096]
+libburn/write.c
+libburn/read.c
+libburn/drive.c
+Prevented SIGSEGV after illegal drive operations during sync write
+
+2008.10.04.072657  [2097]
+cdrskin/cdrskin.1
+Mentioned new xorriso capabilities in man cdrskin
+
+2008.10.04.073814  [2098]
+configure.ac
+Incremented LT_CURRENT and LT_AGE to get libburn.so.4.18.0 
+
+------------------------------------ cycle  - cdrskin-0.5.3 - 2008.10.04.072657
+* Bug fix: /dev/sr0 was accepted as enumerable address on Linux 2.4
 
 
------------------------------------- cycle  - cdrskin-0.5.3 - 
------------------------------------- cycle  - cdrskin-0.5.3 - 
+2008.10.05.073001  [2102]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition
+
+5 Oct 2008  [2103]
+- cdrskin/add_ts_changes_to_libburn_0_5_2
+- cdrskin/add_ts_changes_to_libburn_0_5_3
++ cdrskin/add_ts_changes_to_libburn_0_5_4
++ cdrskin/add_ts_changes_to_libburn_0_5_5
+Updated cdrskin tarball generator
+
+5 Oct 2008  [2104]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.5.4.pl00 - 2008.10.06.073001
+* Bug fix: /dev/sr0 was accepted as enumerable address on Linux 2.4
+* Issueing many SCSI error messages in cleartext now
+
+
+2008.10.05.123737  [2106]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to next development cycle
+
+5 Oct 2008  [2107]
+- cdrskin/add_ts_changes_to_libburn_0_5_2
+- cdrskin/add_ts_changes_to_libburn_0_5_3
++ cdrskin/add_ts_changes_to_libburn_0_5_4
++ cdrskin/add_ts_changes_to_libburn_0_5_5
+Updated cdrskin tarball generator
+
+5 Oct 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.5.5 - 2008.10.05.123737
+
+
+------------------------------------ cycle  - cdrskin-0.5.5 - 
+------------------------------------ cycle  - cdrskin-0.5.5 - 
 
 ===============================================================================
                                     TODO
@@ -5784,6 +5892,8 @@ Documented changes and release timestamp
 
 --------------------------------- bugs -------------------------------------
 
+- Do something about drive->buffer asynchronous race conditions
+  and dangerous use of local heap memory
 
 - Why are DVD+R tracks labeled "invisible" by dvd+rw-mediainfo ?
   Why does the DVD drive only show the first session ?
@@ -5796,6 +5906,10 @@ READ TRACK INFORMATION[#5]:
 
 
 ------------------------------ end of bugs ---------------------------------
+
+Enable profile 0x41 BD-R sequential recording (much like DVD+R)
+
+? Enable profile 0x42 BD-R random recording
 
 Provide DVD+R DL layer break setter
 
@@ -5838,10 +5952,6 @@ http://developer.osdl.org/dev/robustmutexes/src/fusyn.hg/Documentation/ioctl/cdr
 
   []
 Convert burn_print() into libdax_msgs_submit()
-
-  []
-Test unlocking of all drives by burn_drive_info_free()
-Test unlocking of single drive by burn_drive_grab(), burn_drive_release()
 
   []
 Clear outdated persistent read buffer after small CD image was read (ticket 57)
