@@ -1212,7 +1212,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
 /** Format media for use with libburn. This currently applies to DVD-RW
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h). DVD+RW can be "de-iced"
-    by setting bit2 of flag. Other media cannot be formatted yet. 
+    by setting bit2 of flag. DVD-RAM and BD-RE may get formatted initially
+    or re-formatted to adjust their Defect Managment.
     This function usually returns while the drive is still in the process
     of formatting. The formatting is done, when burn_drive_get_status()
     returns BURN_DRIVE_IDLE. This may be immediately after return or may
@@ -1236,13 +1237,15 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit4= enforce re-format of (partly) formatted media
                 bit5= try to disable eventual defect management
 		bit6= try to avoid lengthy media certification
-                bit7= MMC expert application mode (else libburn tries to
-                      choose a suitable format type):
-                      bit8 to bit15 contain the index of the format to use. See
-                      burn_disc_get_formats(), burn_disc_get_format_descr().
+                bit7, bit8 to bit15 =
+                      bit7 enables MMC expert application mode (else libburn
+                      tries to choose a suitable format type):
+                      If it is set then bit8 to bit15 contain the index of
+                      the format to use. See burn_disc_get_formats(),
+                      burn_disc_get_format_descr().
                       Acceptable types are: 0x00, 0x01, 0x10, 0x11, 0x13,
                       0x15, 0x26, 0x30, 0x31.
-                      If bit7 is set, bit4 is set automatically.
+                      If bit7 is set, then bit4 is set automatically.
     @since 0.3.0
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);
