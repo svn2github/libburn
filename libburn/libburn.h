@@ -813,7 +813,8 @@ void burn_allow_untested_profiles(int yes);
     If the path does not exist in the filesystem yet, it is attempted to create
     it as a regular file as soon as write operations are started.
 
-    The capabilities of role 3 resemble a blank DVD-R.
+    The capabilities of role 3 resemble a blank DVD-R. Nevertheless each
+    burn_disc_write() run may only write a single track.
 
     One may distinguish pseudo-drives from MMC drives by call
     burn_drive_get_drive_role().

@@ -495,7 +495,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	*/
 	strcpy(reasons, "Write job parameters are unsuitable:\n");
 	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
-	     == BURN_WRITE_NONE) {
+	     <= 0) {
 		libdax_msgs_submit(libdax_messenger,
 				opts->drive->global_index, 0x00020139,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
