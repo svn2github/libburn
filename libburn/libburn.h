@@ -384,6 +384,13 @@ struct burn_source {
 	    The size of a sector depends on BURN_MODE_*. The known range is
 	    2048 to 2352.
 
+            If this call is reading from a pipe then it will learn
+            about the end of data only when that pipe gets closed on the
+            feeder side. So if the track size is not fixed or if the pipe
+            delivers less than the predicted amount or if the size is not
+            block aligned, then burning will halt until the input process
+            closes the pipe.
+
 	    IMPORTANT:
 	    If this function pointer is NULL, then the struct burn_source is of
 	    version >= 1 and the job of .(*read)() is done by .(*read_xt)().
