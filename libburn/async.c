@@ -561,9 +561,12 @@ int burn_fifo_abort(struct burn_source_fifo *fs, int flag)
 	if (fs->thread_is_valid <= 0 || fs->thread_handle == NULL)
 		return(2);
 
+#ifdef NIX
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 			"Aborting running burn_source_fifo thread", 0, 0);
+#endif /* NIX */
+
 	pt= *((pthread_t *) fs->thread_handle);
 	remove_worker(pt);
 	ret = pthread_cancel(pt);
