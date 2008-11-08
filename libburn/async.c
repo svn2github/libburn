@@ -25,9 +25,9 @@
 #include "drive.h"
 #include "write.h"
 #include "options.h"
+#include "file.h"
 #include "async.h"
 #include "init.h"
-#include "file.h"
 #include "back_hacks.h"
 
 #include <pthread.h>
@@ -518,6 +518,12 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 static void *fifo_worker_func(struct w_list *w)
 {
+	int old;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &old);
+		/* Note: Only burn_fifo_abort() shall cancel the fifo thread */
+
 	burn_fifo_source_shoveller(w->u.fifo.source, w->u.fifo.flag);
 	remove_worker(pthread_self());
 	return NULL;
@@ -544,6 +550,24 @@ int burn_fifo_start(struct burn_source *source, int flag)
 			(WorkerFunc) fifo_worker_func, &o);
 	fs->is_started = 1;
 	return 1;
+}
+
+
+int burn_fifo_abort(struct burn_source_fifo *fs, int flag)
+{
+	int ret;
+	pthread_t pt;
+
+	if (fs->thread_is_valid <= 0 || fs->thread_handle == NULL)
+		return(2);
+
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			"Aborting running burn_source_fifo thread", 0, 0);
+	pt= *((pthread_t *) fs->thread_handle);
+	remove_worker(pt);
+	ret = pthread_cancel(pt);
+	return (ret == 0);
 }
 
 

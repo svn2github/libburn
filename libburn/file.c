@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <pthread.h>
+
 #include "source.h"
 #include "libburn.h"
 #include "file.h"
@@ -307,6 +309,7 @@ static void fifo_free(struct burn_source *source)
 {
 	struct burn_source_fifo *fs = source->data;
 
+	burn_fifo_abort(fs, 0);
 	if (fs->inp != NULL)
 		burn_source_free(fs->inp);
 	if (fs->buf != NULL)
@@ -320,9 +323,12 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 	struct burn_source_fifo *fs = source->data;
 	int ret, bufsize, diff, wpos, rpos, trans_end, free_bytes;
 	char *bufpt;
+	pthread_t thread_handle_storage;
 
+	fs->thread_handle= &thread_handle_storage;
+	*((pthread_t *) fs->thread_handle)= pthread_self();
 	fs->thread_pid = getpid();
-	fs->thread_pid_valid = 1;
+	fs->thread_is_valid = 1;
 
 	bufsize = fs->chunksize * fs->chunks;
 	while (!fs->end_of_consumption) {
@@ -430,6 +436,8 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 	free(fs->buf); /* Give up fifo buffer. Next fifo might start soon. */
 	fs->buf = NULL;
 
+	fs->thread_handle= NULL;
+	fs->thread_is_valid = 0;
 	return (fs->input_error == 0);
 }
 
@@ -465,8 +473,9 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 	if (fs == NULL)
 		return NULL;
 	fs->is_started = 0;
+	fs->thread_handle = NULL;
 	fs->thread_pid = 0;
-	fs->thread_pid_valid = 0;
+	fs->thread_is_valid = 0;
 	fs->inp = NULL; /* set later */
 	fs->chunksize = chunksize;
 	fs->chunks = chunks;

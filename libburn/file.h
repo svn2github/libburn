@@ -29,8 +29,9 @@ struct burn_source_fifo {
 	*/
 	int is_started;
 
+	void *thread_handle; /* actually a pointer to a thread_t */
 	int thread_pid;
-	int thread_pid_valid;
+	int thread_is_valid;
 
 	/* the burn_source for which this fifo is acting as proxy */
 	struct burn_source *inp;
