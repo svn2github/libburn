@@ -313,6 +313,15 @@ Project history as far as known to me:
 - 6th Oct 2008 libburn-0.5.4 adjusts the changes of 0.5.2 to the needs of
   Linux kernel 2.4 and introduces human readable SCSI error messages.
 
+- 6th Oct 2008 libisofs-0.6.10 fixes two bugs which prevented adding and
+  manipulation of ISOLINUX boot images.
+
+- 15th Oct 2008 libisoburn/xorriso-0.2.8 can activate and maintain an
+  ISOLINUX boot image by an EL Torito boot record.
+
+- 12th Nov 2008 libburn-0.5.6 fixes usage of freed memory by the fifo thread
+  of an aborted burn run.
+
 
 ------------------------------------------------------------------------------
 
