@@ -5875,15 +5875,119 @@ Made number transition to next development cycle
 + cdrskin/add_ts_changes_to_libburn_0_5_5
 Updated cdrskin tarball generator
 
-5 Oct 2008  []
+5 Oct 2008  [2108]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.5.5 - 2008.10.05.123737
+------------------------------------ cycle  - cdrskin-0.5.5 - 2008.10.05.130109
 
 
------------------------------------- cycle  - cdrskin-0.5.5 - 
------------------------------------- cycle  - cdrskin-0.5.5 - 
+2008.10.15.103224  [2126]
+libburn/libburn.h
+A clarification in comment about burn_disc_format()
+
+15 Oct 2008  [2127]
+cdrskin/cdrskin.1
+Fixed incomplete sentence in man cdrskin
+
+2008.11.01.121240  [2157]
+libburn/libburn.h
+libburn/async.c
+Bug fix: Unsuitable write modes were caught silently and later than desired
+
+------------------------------------ cycle  - cdrskin-0.5.5 - 2008.11.01.121445
+
+2008.11.08.134828  [2173]
+libburn/libburn.h
+Clarified behavior of burn_source with pipes
+
+2008.11.08.141734  [2174]
+libburn/file.h
+libburn/file.c
+libburn/async.c
+Cancelling libburn fifo thread before freeing the fifo object
+
+2008.11.08.202456  [2175]
+libburn/async.c
+Disabling the sigsegv provoking new debug message
+
+2008.11.12.075111  [2180]
+libburn/async.h
+Avoiding warning message about implicitely declared burn_fifo_abort()
+
+------------------------------------ cycle  - cdrskin-0.5.5 - 2008.11.12.075411
+* Bug fix: libburn fifo thread was not aborted when burn run was aborted
+
+12 Nov 2008  [2181]
+svn copy http://svn.libburnia-project.org/libburn/trunk
+         http://svn.libburnia-project.org/libburn/branches/ZeroFiveSix
+Preparing for libburn-0.5.6
+
+12 Nov 2008  [2182]
+svn delete http://svn.libburnia-project.org/libburn/branches/ZeroFourSix
+Removing obsolete libburn branch ZeroFourSix
+
+2008.11.12.120001 [2183]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.6
+
+12 Nov 2008  [2184]
+- cdrskin/add_ts_changes_to_libburn_0_5_4
+- cdrskin/add_ts_changes_to_libburn_0_5_5
++ cdrskin/add_ts_changes_to_libburn_0_5_6
++ cdrskin/add_ts_changes_to_libburn_0_5_7
+Updated cdrskin tarball generator
+
+12 Nov 2008  [2185]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+12 Nov 2008  [2186]
+cdrskin/cdrskin.c
+Corrected wrong version number of cdrskin
+
+------------------------------ release - cdrskin-0.5.6.pl00 - 2008.11.12.120001
+* Bug fix: libburn fifo thread was not aborted when burn run was aborted
+which could lead to use of freed memory
+
+
+2008.11.12.121832  [2187]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.7
+
+12 Nov 2008  [2188]
+- cdrskin/add_ts_changes_to_libburn_0_5_4
+- cdrskin/add_ts_changes_to_libburn_0_5_5
++ cdrskin/add_ts_changes_to_libburn_0_5_6
++ cdrskin/add_ts_changes_to_libburn_0_5_7
+Updated cdrskin tarball generator
+
+12 Nov 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.5.7 - 2008.11.12.121832
+
+
+
+------------------------------------ cycle  - cdrskin-0.5.7 - 
+------------------------------------ cycle  - cdrskin-0.5.7 - 
 
 ===============================================================================
                                     TODO
@@ -5893,7 +5997,10 @@ Documented changes and release timestamp
 --------------------------------- bugs -------------------------------------
 
 - Do something about drive->buffer asynchronous race conditions
-  and dangerous use of local heap memory
+  and dangerous use of local heap memory.
+  (The various asynchronous operations use the same buffer
+   pointer in struct burn_drive and let it point to
+   their private memory.)
 
 - Why are DVD+R tracks labeled "invisible" by dvd+rw-mediainfo ?
   Why does the DVD drive only show the first session ?
