@@ -18,7 +18,7 @@
 #include <err.h> /* XXX */
 
 
-/* ts A70909 : >>> untestet yet wether this compiles */
+/* ts A70909 */
 #include <sys/statvfs.h>
 
 
@@ -622,7 +622,6 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	struct statvfs vfsbuf;
 	char testpath[4096], *cpt;
 	long blocks;
-	int open_mode = O_RDWR, fd, ret;
 	off_t add_size = 0;
 
 	testpath[0] = 0;
@@ -642,6 +641,8 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #ifdef Libburn_if_this_was_linuX
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
+		int open_mode = O_RDWR, fd, ret;
+
 		if(burn_sg_open_o_excl)
 			open_mode |= O_EXCL;
 		fd = open(path, open_mode);

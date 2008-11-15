@@ -76,7 +76,7 @@ Send feedback to libburn-hackers@pykix.org .
 #include <err.h> /* XXX */
 
 
-/* ts A70909 : >>> untestet yet wether this compiles */
+/* ts A70909 */
 #include <sys/statvfs.h>
 
 
