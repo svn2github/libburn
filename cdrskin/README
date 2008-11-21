@@ -12,7 +12,8 @@ Copyright (C) 2006-2008 Thomas Schmitt, provided under GPL version 2.
 cdrskin is a limited cdrecord compatibility wrapper which allows to use
 most of the libburn features from the command line.
 
-Currently it is only supported on Linux with kernels >= 2.4.
+Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
+with ATAPI/CAM support enabled in the kernel, see atapicam(4).
 
 By using this software you agree to the disclaimer at the end of this text
 "This software is provided as is. There is no warranty implied and ..."
