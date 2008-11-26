@@ -532,12 +532,41 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 	int sidx, tidx;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
 
+	/* ts A81126 : ticket 146 : There is a SIGSIGV in here */
+	char msg_data[81], *msg;
+
+	strcpy(msg_data, "burn_disc_cd_toc_extensions : ");
+        msg = msg_data + strlen(msg_data);
+	if (d->session == NULL) {
+		strcpy(msg, "d->session == NULL");
+		goto failure;
+	}
 	for (sidx = 0; sidx < d->sessions; sidx++) {
+		if (d->session[sidx] == NULL) {
+			sprintf(msg, "d->session[%d] == NULL", sidx);
+			goto failure;
+		}
+		if (d->session[sidx]->track == NULL) {
+			sprintf(msg, "d->session[%d]->track == NULL", sidx);
+			goto failure;
+		}
 		for (tidx = 0; tidx < d->session[sidx]->tracks + 1; tidx++) {
-			if (tidx < d->session[sidx]->tracks)
+			if (tidx < d->session[sidx]->tracks) {
+				if (d->session[sidx]->track[tidx] == NULL) {
+					sprintf(msg,
+					  "d->session[%d]->track[%d] == NULL",
+					   sidx, tidx);
+					goto failure;
+				}
 				entry = d->session[sidx]->track[tidx]->entry;
-			else
+			} else
 				entry = d->session[sidx]->leadout_entry;
+			if (entry == NULL) {
+				sprintf(msg,
+				  "session %d, track %d of %d, entry == NULL",
+				  sidx, tidx, d->session[sidx]->tracks);
+				goto failure;
+			}
 			entry->session_msb = 0;
 			entry->point_msb = 0;
 			entry->start_lba = burn_msf_to_lba(entry->pmin,
@@ -558,6 +587,10 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 		}
 	}
 	return 1;
+failure:
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000001,
+		LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
+	return 0;
 }
 
 
