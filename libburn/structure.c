@@ -529,13 +529,15 @@ int burn_session_get_hidefirst(struct burn_session *session)
 /* ts A80808 : Enhance CD toc to DVD toc */
 int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 {
-	int sidx, tidx;
+	int sidx= 0, tidx= 0;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
 
 	/* ts A81126 : ticket 146 : There is a SIGSIGV in here */
-	char msg_data[81], *msg;
+	char msg_data[321], *msg;
 
-	strcpy(msg_data, "burn_disc_cd_toc_extensions : ");
+	strcpy(msg_data,
+		"Damaged CD table-of-content detected and truncated.");
+	strcat(msg_data, " In burn_disc_cd_toc_extensions: ");
         msg = msg_data + strlen(msg_data);
 	if (d->session == NULL) {
 		strcpy(msg, "d->session == NULL");
@@ -543,19 +545,21 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 	}
 	for (sidx = 0; sidx < d->sessions; sidx++) {
 		if (d->session[sidx] == NULL) {
-			sprintf(msg, "d->session[%d] == NULL", sidx);
+			sprintf(msg, "d->session[%d of %d] == NULL",
+				sidx, d->sessions);
 			goto failure;
 		}
 		if (d->session[sidx]->track == NULL) {
-			sprintf(msg, "d->session[%d]->track == NULL", sidx);
+			sprintf(msg, "d->session[%d of %d]->track == NULL",
+				sidx, d->sessions);
 			goto failure;
 		}
 		for (tidx = 0; tidx < d->session[sidx]->tracks + 1; tidx++) {
 			if (tidx < d->session[sidx]->tracks) {
 				if (d->session[sidx]->track[tidx] == NULL) {
 					sprintf(msg,
-					  "d->session[%d]->track[%d] == NULL",
-					   sidx, tidx);
+			  "d->session[%d of %d]->track[%d of %d] == NULL",
+			   sidx, d->sessions, tidx,  d->session[sidx]->tracks);
 					goto failure;
 				}
 				entry = d->session[sidx]->track[tidx]->entry;
@@ -563,8 +567,8 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 				entry = d->session[sidx]->leadout_entry;
 			if (entry == NULL) {
 				sprintf(msg,
-				  "session %d, track %d of %d, entry == NULL",
-				  sidx, tidx, d->session[sidx]->tracks);
+			  "session %d of %d, track %d of %d, entry == NULL",
+			  sidx, d->sessions, tidx, d->session[sidx]->tracks);
 				goto failure;
 			}
 			entry->session_msb = 0;
@@ -588,8 +592,9 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 	}
 	return 1;
 failure:
-	libdax_msgs_submit(libdax_messenger, -1, 0x00000001,
-		LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
+	libdax_msgs_submit(libdax_messenger, -1, 0x0002015f,
+		LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
+	d->sessions= sidx;
 	return 0;
 }
 
