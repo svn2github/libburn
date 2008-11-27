@@ -532,7 +532,7 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 	int sidx= 0, tidx= 0;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
 
-	/* ts A81126 : ticket 146 : There is a SIGSIGV in here */
+	/* ts A81126 : ticket 146 : There is a SIGSEGV in here */
 	char msg_data[321], *msg;
 
 	strcpy(msg_data,
@@ -554,6 +554,14 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 				sidx, d->sessions);
 			goto failure;
 		}
+		/* ts A81126 : ticket 146 :
+				 This is the main suspect for the SIGSEGV */
+		if (d->session[sidx]->leadout_entry == NULL) {
+			sprintf(msg,
+				" Session %d of %d: Leadout entry missing.",
+			  	sidx, d->sessions);
+			goto failure;
+		}
 		for (tidx = 0; tidx < d->session[sidx]->tracks + 1; tidx++) {
 			if (tidx < d->session[sidx]->tracks) {
 				if (d->session[sidx]->track[tidx] == NULL) {
@@ -563,14 +571,15 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 					goto failure;
 				}
 				entry = d->session[sidx]->track[tidx]->entry;
+				if (entry == NULL) {
+					sprintf(msg,
+			  "session %d of %d, track %d of %d, entry == NULL",
+			  			sidx, d->sessions, tidx,
+						d->session[sidx]->tracks);
+					goto failure;
+				}
 			} else
 				entry = d->session[sidx]->leadout_entry;
-			if (entry == NULL) {
-				sprintf(msg,
-			  "session %d of %d, track %d of %d, entry == NULL",
-			  sidx, d->sessions, tidx, d->session[sidx]->tracks);
-				goto failure;
-			}
 			entry->session_msb = 0;
 			entry->point_msb = 0;
 			entry->start_lba = burn_msf_to_lba(entry->pmin,
@@ -593,7 +602,7 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 	return 1;
 failure:
 	libdax_msgs_submit(libdax_messenger, -1, 0x0002015f,
-		LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
+		LIBDAX_MSGS_SEV_MISHAP, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
 	d->sessions= sidx;
 	return 0;
 }
