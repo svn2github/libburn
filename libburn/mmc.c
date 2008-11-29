@@ -3030,6 +3030,17 @@ no_suitable_formatting_type:;
 			} else if(size_mode == 3) { /* default payload size */
 				if (accept_count < 1)
 					index = 0; /* this cannot certify */
+
+				/* ts A81129
+				   LG GGW-H20L YL03 refuses on 0x30 with 
+				   "Quick certification". dvd+rw-format
+				   does 0x00 by default and succeeds quickly.
+				*/
+				if ((flag & 64) && format_type == 0x00) {
+					index = i;
+		break;
+				}
+
 				if(format_type != 0x30)
 		continue;
 				accept_count++;
