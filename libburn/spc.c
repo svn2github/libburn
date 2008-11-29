@@ -1065,6 +1065,14 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			sprintf(msg, "Incompatible medium installed");
 		return FAIL;
+	case 0x31:
+		if (*key != 3)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Medium unformatted or format corrupted");
+		else if (*ascq == 1)
+			sprintf(msg, "Format command failed");
+		return FAIL;
 	case 0x3A:
 		if (*key != 2)
 			break;
@@ -1140,6 +1148,68 @@ enum response scsi_error(struct burn_drive *d, unsigned char *sense,
 }
 
 
+static char *scsi_command_name(unsigned int c, int flag)
+{
+	switch (c) {
+        case 0x00:
+		return "TEST UNIT READY";
+        case 0x03:
+		return "REQUEST SENSE";
+        case 0x04:
+		return "FORMAT UNIT";
+        case 0x1b:
+		return "START/STOP UNIT";
+	case 0x1e:
+		return "PREVENT/ALLOW MEDIA REMOVAL";
+        case 0x23:
+		return "READ FORMAT CAPACITIES";
+        case 0x28:
+		return "READ(10)";
+        case 0x2a:
+		return "WRITE(10)";
+        case 0x35:
+		return "SYNCHRONIZE CACHE";
+        case 0x43:
+		return "READ TOC/PMA/ATIP";
+        case 0x46:
+		return "GET CONFIGURATION";
+        case 0x4a:
+		return "GET EVENT STATUS NOTIFICATION";
+        case 0x51:
+		return "READ DISC INFORMATION";
+        case 0x52:
+		return "READ TRACK INFORMATION";
+        case 0x53:
+		return "RESERVE TRACK";
+        case 0x54:
+		return "SEND OPC INFORMATION";
+        case 0x55:
+		return "MODE SELECT";
+	case 0x5a:
+		return "SEND OPC INFORMATION";
+        case 0x5b:
+		return "CLOSE TRACK/SESSION";
+        case 0x5c:
+		return "READ BUFFER CAPACITY";
+        case 0x5d:
+		return "SEND CUE SHEET";
+        case 0xa1:
+		return "BLANK";
+        case 0xaa:
+		return "WRITE(12)";
+        case 0xac:
+		return "GET PERFORMANCE";
+        case 0xb6:
+		return "SET STREAMING";
+        case 0xbb:
+		return "SET CD SPEED";
+        case 0xbe:
+		return "READ CD";
+	}
+	return "(NOT IN COMMAND LIST)";
+}
+
+
 /* ts A61030 - A61115 */
 /* @param flag bit0=do report conditions which are considered not an error */
 int scsi_notify_error(struct burn_drive *d, struct command *c,
@@ -1164,7 +1234,9 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 				return 1;
 	}
 
-	sprintf(msg,"SCSI error condition on command %2.2Xh : ", c->opcode[0]);
+	sprintf(msg, "SCSI error condition on command %2.2Xh %s: ",
+		c->opcode[0],
+		scsi_command_name((unsigned int) c->opcode[0], 0));
 
 #ifdef NIX
 	if (key>=0)
