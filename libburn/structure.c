@@ -104,6 +104,30 @@ int burn_disc_add_session(struct burn_disc *d, struct burn_session *s,
 	return 1;
 }
 
+
+/* ts A81202: this function was in the API but not implemented.
+*/
+int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s)
+{
+	int i, skip = 0;
+
+	if (d->session == NULL)
+		return 0;
+	for (i = 0; i < d->sessions; i++) {
+		if (s == d->session[i]) {
+			skip++;
+	continue;
+		}
+		d->session[i - skip] = d->session[i];
+	}
+	if (!skip)
+		return 0;
+	burn_session_free(s);
+	d->sessions--;
+	return 1;
+}
+
+
 struct burn_track *burn_track_create(void)
 {
 	struct burn_track *t;
@@ -531,8 +555,7 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 {
 	int sidx= 0, tidx= 0;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
-
-	/* ts A81126 : ticket 146 : There is a SIGSEGV in here */
+	/* ts A81126 : ticket 146 : There was a SIGSEGV in here */
 	char msg_data[321], *msg;
 
 	strcpy(msg_data,
@@ -554,8 +577,6 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 				sidx, d->sessions);
 			goto failure;
 		}
-		/* ts A81126 : ticket 146 :
-				 This is the main suspect for the SIGSEGV */
 		if (d->session[sidx]->leadout_entry == NULL) {
 			sprintf(msg,
 				" Session %d of %d: Leadout entry missing.",

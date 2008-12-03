@@ -531,7 +531,9 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002015c (FAILURE,HIGH) = Fifo size is smaller than desired peek buffer
  0x0002015d (FAILURE,HIGH) = Fifo input ended short of desired peek buffer size
  0x0002015e (FATAL,HIGH)   = Fifo is already under consumption when peeking
- 0x0002015f (MISHAP,HIGH) = Damaged CD table-of-content detected and truncated
+ 0x0002015f (MISHAP,HIGH)  = Damaged CD table-of-content detected and truncated
+ 0x00020160 (WARNING,HIGH) = Session without leadout encountered
+ 0x00020161 (WARNING,HIGH) = Empty session deleted
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

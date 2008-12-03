@@ -1143,8 +1143,9 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	struct buffer buf;
 	struct command c;
 	int dlen;
-	int i, bpl= 12, old_alloc_len;
+	int i, bpl= 12, old_alloc_len, t_idx;
 	unsigned char *tdata;
+	char msg[321];
 
 	if (*alloc_len < 4)
 		return 0;
@@ -1220,7 +1221,9 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	ts A61007 : if re-enabled then not via Assert.
 	a ssert(((dlen - 2) % 11) == 0);
 */
-	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
+	/* ts A81202: plus number of sessions as reserve for leadout default */
+	d->toc_entry = calloc(d->toc_entries + (unsigned char) c.page->data[3],
+				 sizeof(struct burn_toc_entry));
 	if(d->toc_entry == NULL) /* ts A70825 */
 		return 0;
 	tdata = c.page->data + 4;
@@ -1306,6 +1309,42 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	if (d->status == BURN_DISC_UNREADY)
 		d->status = BURN_DISC_FULL;
 	toc_find_modes(d);
+
+	/* ts A81202 ticket 146 : a drive reported a session with no leadout */
+	for (i = 0; i < d->disc->sessions; i++) {
+		if (d->disc->session[i]->leadout_entry != NULL)
+	continue;
+		sprintf(msg, "Session %d of %d encountered without leadout",
+			i + 1, d->disc->sessions);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020160,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+
+		/* Produce default leadout entry from last track of session
+		   which will thus get its size set to 0 */;
+		if (d->disc->session[i]->track != NULL &&
+		    d->disc->session[i]->tracks > 0) {
+			t_idx = d->toc_entries++;
+			memcpy(d->toc_entry + t_idx,
+				d->disc->session[i]->track[
+				       d->disc->session[i]->tracks - 1]->entry,
+				sizeof(struct burn_toc_entry));
+			d->toc_entry[t_idx].point = 0xA2;
+			d->disc->session[i]->leadout_entry =
+							 d->toc_entry + t_idx;
+		} else {
+			burn_disc_remove_session(d->disc, d->disc->session[i]);
+			sprintf(msg,
+				"Empty session %d deleted. Now %d sessions.",
+				i + 1, d->disc->sessions);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020161,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			i--;
+		}
+	}
 
 	/* A80808 */
 	burn_disc_cd_toc_extensions(d->disc, 0);
