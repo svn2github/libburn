@@ -5978,16 +5978,130 @@ Made number transition to 0.5.7
 + cdrskin/add_ts_changes_to_libburn_0_5_7
 Updated cdrskin tarball generator
 
-12 Nov 2008  []
+12 Nov 2008  [2189]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.5.7 - 2008.11.12.121832
+------------------------------------ cycle  - cdrskin-0.5.7 - 2008.11.12.130026
+
+12 Nov 2008  [2191]
+svn move \
+    http://svn.libburnia-project.org/libburn/"$svn_name" \
+    http://svn.libburnia-project.org/libburn/"$tag_name"
+libburn release 0.5.6 is ready
+
+2008.11.15.220652  [2197]
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+Removed remark that use of statvfs() was untested with FreeBSD
+
+21 Nov 2008  [2208]
+README
+cdrskin/README
+cdrskin/cdrskin_eng.html
+Mentioned FreeBSD peculiarities in our docs
+
+2008.11.26.210608  [2213]
+libburn/structure.c
+Added tests against the SIGSEGV of ticket 146
+
+2008.11.27.081027  [2214]
+libburn/libdax_msgs.h
+libburn/structure.c
+Truncating eventually detected damaged CD table-of-content
+
+------------------------------------ cycle  - cdrskin-0.5.7 - 2008.11.27.081027
+* Bug fix: Session without leadout entry on CD caused SIGSEGV
+
+
+2008.11.27.172124  [2215]
+libburn/libdax_msgs.h
+libburn/structure.c
+Changed error severity with TOC truncation to MISHAP
+
+2008.11.29.140115  [2217]
+libburn/spc.c
+Translating ASC=0x31 formatting error messages, reporting command names
+
+2008.11.29.140404  [2218]
+libburn/mmc.c
+Circumventing BD-RE Quick Certification refusal of LG GGW-H20L YL03
+
+------------------------------------ cycle  - cdrskin-0.5.7 - 2008.11.29.140404
+
+
+2008.12.03.085219  [2239]
+libburn/mmc.c
+libburn/structure.c
+libburn/libdax_msgs.h
+Defaulting sessions without leadout entry
+
+------------------------------------ cycle  - cdrskin-0.5.7 - 2008.12.03.085219
+
+
+Dec 07 2008  [2248]
+svn copy http://svn.libburnia-project.org/libburn/trunk
+         http://svn.libburnia-project.org/libburn/branches/ZeroFiveEight
+Preparing for libburn-0.5.8
+
+2008.12.07.140001  [2249]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.8
+
+Dec 07 2008  [2250]
+- cdrskin/add_ts_changes_to_libburn_0_5_6
+- cdrskin/add_ts_changes_to_libburn_0_5_7
++ cdrskin/add_ts_changes_to_libburn_0_5_8
++ cdrskin/add_ts_changes_to_libburn_0_5_9
+Updated cdrskin tarball generator
+
+Dec 07 2008  [2251]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.5.8.pl00 - 2008.12.07.140001
+* Bug fix: A session without leadout entry on CD caused a SIGSEGV by NULL
+* Improvements about BD-RE formatting
+
+
+2008.12.07.155219  [2252]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.5.9
+
+Dec 07 2008  [2253]
+- cdrskin/add_ts_changes_to_libburn_0_5_6
+- cdrskin/add_ts_changes_to_libburn_0_5_7
++ cdrskin/add_ts_changes_to_libburn_0_5_8
++ cdrskin/add_ts_changes_to_libburn_0_5_9
+Updated cdrskin tarball generator
+
+Dec 07 2008  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.5.9 - 2008.12.07.155219
 
 
 
------------------------------------- cycle  - cdrskin-0.5.7 - 
------------------------------------- cycle  - cdrskin-0.5.7 - 
+------------------------------------ cycle  - cdrskin-0.5.9 - 
+------------------------------------ cycle  - cdrskin-0.5.9 - 
+
 
 ===============================================================================
                                     TODO
@@ -5996,11 +6110,15 @@ Documented changes and release timestamp
 
 --------------------------------- bugs -------------------------------------
 
+- Needed is a system dependend facility: dev_t <-> major, minor
+
 - Do something about drive->buffer asynchronous race conditions
   and dangerous use of local heap memory.
   (The various asynchronous operations use the same buffer
    pointer in struct burn_drive and let it point to
-   their private memory.)
+   their private memory.
+   Of course, any problem is due to faulty application
+   ... but then it is really hard to detect.)
 
 - Why are DVD+R tracks labeled "invisible" by dvd+rw-mediainfo ?
   Why does the DVD drive only show the first session ?
@@ -6013,6 +6131,11 @@ READ TRACK INFORMATION[#5]:
 
 
 ------------------------------ end of bugs ---------------------------------
+
+? Provide an option to open track source file O_DIRECT ?
+  (needs read chunks much larger than 2 kB)
+
+interpret feature 0023h byte 4 for BD-RE formatting capabilities
 
 Enable profile 0x41 BD-R sequential recording (much like DVD+R)
 
