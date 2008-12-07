@@ -139,8 +139,8 @@ any way and even may revoke such new features before the next release of
 x.y.*[02468]. As soon as it is released, a feature is promised to persist.
 
 SONAMES:
-libburn.so.4 (since 0.3.4, March 2007),
-libisofs.so.6 (since 0.6.2, February 2008),
+libburn.so.4    (since 0.3.4, March    2007),
+libisofs.so.6   (since 0.6.2, February 2008),
 libisoburn.so.1 (since 0.1.0, February 2008).
 
 
@@ -324,6 +324,17 @@ Project history as far as known to me:
 
 - 12th Nov 2008 libburn-0.5.6 fixes usage of freed memory by the fifo thread
   of an aborted burn run.
+
+- 26th Nov 2008 libisofs-0.6.12 can produce a ISOLINUX isohybrid MBR on the fly
+  and allows to produce ISO images which resemble old mkisofs images.
+
+- 2nd Dec 2008 libisoburn-0.3.0. xorriso now is ready for exotic character
+  sets, for legacy FreeBSD systems which expect an outdated Rock Ridge
+  signature, and for producing ISO images with MBR which boot from hard disk
+  or USB stick. Three minor bugs were fixed.
+
+- 7th Dec 2008 libburn-0.5.8 prevents a SIGSEGV with wierd CD table-of-content
+  and improves BD-RE formatting.
 
 
 ------------------------------------------------------------------------------

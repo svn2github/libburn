@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.5.7"
+#define Cdrskin_prog_versioN "0.5.9"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 5
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
 
 
@@ -135,44 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_5_6
-#define Cdrskin_libburn_versioN "0.5.6"
+#ifdef Cdrskin_libburn_0_5_8
+#define Cdrskin_libburn_versioN "0.5.8"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_5_6 */
+#endif /* Cdrskin_libburn_0_5_8 */
 
-#ifdef Cdrskin_libburn_0_5_7
-#define Cdrskin_libburn_versioN "0.5.7"
+#ifdef Cdrskin_libburn_0_5_9
+#define Cdrskin_libburn_versioN "0.5.9"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.5.7 yet */
+/* there are no libburn novelties in 0.5.9 yet */
 
-#endif /* Cdrskin_libburn_0_5_7 */
+#endif /* Cdrskin_libburn_0_5_9 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_5_6
-#define Cdrskin_libburn_versioN "0.5.6"
+#define Cdrskin_libburn_0_5_8
+#define Cdrskin_libburn_versioN "0.5.8"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_5_6
+#ifdef Cdrskin_libburn_0_5_8
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
-#ifdef Cdrskin_libburn_0_5_7
+#ifdef Cdrskin_libburn_0_5_9
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -251,7 +251,7 @@ or
 /* 0.4.8 */
 /* Bug fix release for  write_start_address=... on DVD-RAM and BD-RE */
 
-/* 0.5.0 , 0.5.2 , 0.5.4 , 0.5.6 */
+/* 0.5.0 , 0.5.2 , 0.5.4 , 0.5.6 , 0.5.8 */
 /* novel libburn features are transparent to cdrskin */
 
 
@@ -3150,7 +3150,7 @@ struct CdrskiN {
                                bit10= format to maximum available size
                                bit11= - reserved -
                                bit12= - reserved -
-                               bit13= - reserved -
+                               bit13= try to disable eventual defect management
                                bit14= - reserved -
                                bit15= format by index
                            2=deformat_sequential (blank_fast might matter)
