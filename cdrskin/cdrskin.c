@@ -5839,10 +5839,12 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
               profile_number==0x12 ||
               profile_number==0x11 || profile_number==0x14 ||
               profile_number==0x15 ||
-              profile_number==0x1b || profile_number==0x2b)
+              profile_number==0x1b || profile_number==0x2b ||
+              profile_number==0x41 || profile_number==0x43)
              && might_do_tao) {
      /* DVD+RW, DVD-RW Restricted Overwrite, DVD-RAM,
-        DVD-R[W][/DL] Sequential Recording, DVD+R[/DL] */
+        DVD-R[W][/DL] Sequential Recording, DVD+R[/DL],
+        BD-R SRM , BD-RE */
      strcpy(skin->preskin->write_mode_name,"TAO");
    } else {
      strcpy(skin->preskin->write_mode_name,"SAO");
