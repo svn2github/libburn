@@ -409,6 +409,11 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		flag |= 4;      /* format up to maximum size */
 	} else if (drive->current_profile == 0x12) {
 		ok = 1; /* DVD-RAM */
+
+	} else if (drive->current_profile == 0x41) {
+		/* >>> BD-R SRM */
+		/* >>> check whether still unformatted */;
+
 	} else if (drive->current_profile == 0x43) {
 		ok = 1; /* BD-RE */
 	}

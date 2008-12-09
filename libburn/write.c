@@ -1005,8 +1005,10 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	} else if (d->drive_role == 3 ||
 		   d->current_profile == 0x11 || d->current_profile == 0x14 ||
 	           d->current_profile == 0x15 ||
-	           d->current_profile == 0x1b || d->current_profile == 0x2b ) {
-		/* DVD-R* Sequential , DVD+R[/DL] , sequential stdio "drive" */
+	           d->current_profile == 0x1b || d->current_profile == 0x2b ||
+		   d->current_profile == 0x41) {
+		/* DVD-R* Sequential , DVD+R[/DL] , BD-R,
+		   sequential stdio "drive" */
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
 	} else {
@@ -1106,6 +1108,10 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 	if (o->write_type == BURN_WRITE_SAO &&
 	    ! burn_track_is_open_ended(s->track[tnum])) {
  		/* Round track size up to 32 KiB and reserve track */
+
+		/* ts A81208 */
+		/* >>> ??? round to 64 KiB for BD-R ? (It is not mandatory) */
+
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
 			 * (off_t) 2048;
 		size = (size + (off_t) 0x7fff) & ~((off_t) 0x7fff);
@@ -1200,7 +1206,7 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
 }
 
 
-/* ts A61218 - A70129 */
+/* ts A61218 - A81208 */
 int burn_dvd_write_track(struct burn_write_opts *o,
 			struct burn_session *s, int tnum, int is_last_track)
 {
@@ -1221,6 +1227,11 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 			goto ex;
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
+		ret = burn_disc_open_track_dvd_plus_r(o, s, tnum);
+		if (ret <= 0)
+			goto ex;
+	} else if (d->current_profile == 0x41) {
+		/* BD-R SRM */
 		ret = burn_disc_open_track_dvd_plus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
@@ -1288,6 +1299,12 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 			goto ex;
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
+		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum,
+							 is_last_track);
+		if (ret <= 0)
+			goto ex;
+	} else if (d->current_profile == 0x41) {
+		/* BD-R SRM */
 		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum,
 							 is_last_track);
 		if (ret <= 0)
@@ -1408,6 +1425,8 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		}
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL do each track as an own session */;
+	} else if (d->current_profile == 0x41) {
+		/* BD-R SRM do each track as an own session */;
 	}
 	return 1;
 }
@@ -1611,8 +1630,12 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		/* ??? padding needed ??? cowardly doing it for now */
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 		
-	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
-		/* DVD+R , DVD+R/DL */
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b ||
+		   d->current_profile == 0x41) {
+		/* DVD+R , DVD+R/DL , BD-R SRM */
+
+		/* >>> ts A81208 : with BD-R set o->obs to 64 kB ? */
+
 		t = disc->session[0]->track[0];
 		o_end = ( burn_track_is_open_ended(t) && !o->fill_up_media );
 		default_size = burn_track_get_default_size(t);
@@ -1627,8 +1650,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		}
 		ret = burn_disc_setup_dvd_plus_r(o, disc);
 		if (ret <= 0) {
-			sprintf(msg,
-			  "Write preparation setup failed for DVD+R");
+			sprintf(msg, "Write preparation setup failed for %s",
+			   	d->current_profile == 0x41 ? "BD-R" : "DVD+R");
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020121,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,

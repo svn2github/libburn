@@ -2246,8 +2246,9 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
 		o->advised_write_mode = BURN_WRITE_TAO;
-	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
-		/* DVD+R , DVD+R/DL */
+	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b ||
+		   d->current_profile == 0x41) {
+		/* DVD+R , DVD+R/DL , BD-R SRM */
 		o->multi_session = o->multi_track = 1;
 		o->might_do_tao = 2;
 		o->might_do_sao = 1;

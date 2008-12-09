@@ -58,6 +58,9 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70509 : handling 0x41 and 0x42 as read-only types */
 #define Libburn_support_bd_r_readonlY 1
 
+/* >>> ts A81208 */
+#define Libburn_support_bd_plus_r_srM 1
+
 
 /* ts A80410 : <<< Dangerous experiment: Pretend that DVD-RAM is BD-RE
  # define Libburn_dvd_ram_as_bd_rE yes
@@ -119,6 +122,8 @@ extern struct libdax_msgs *libdax_messenger;
                drive->do_stream_recording it does full nominal speed.
    ts A80506 : Giulio Orsero reports success with BD-RE formatting.
                BD-RE is now an officially supported profile.
+   ts A81209 : The first two sessions have been written to BD-R SRM
+               (auto formatted without Defect Management).
 */
 
 /* ts A70519 : With MMC commands of data direction FROM_DRIVE:
@@ -1528,8 +1533,15 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 #ifdef Libburn_support_bd_r_readonlY
 	/* <<< For now: declaring BD-R read-only
 	*/
-	if (d->current_profile == 0x41 || d->current_profile == 0x42) {
-						 /* BD-R seq, BD-R rnd */
+#ifndef Libburn_support_bd_plus_r_srM
+	if (d->current_profile == 0x41) {
+					/* BD-R seq as readonly dummy */
+		disc_status = 2; /* always full and finalized */
+		d->erasable = 0; /* never erasable */
+	}
+#endif
+	if (d->current_profile == 0x42) {
+						 /* BD-R rnd */
 		disc_status = 2; /* always full and finalized */
 		d->erasable = 0; /* never erasable */
 	}
@@ -2239,7 +2251,11 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 
 #ifdef Libburn_support_bd_r_readonlY
-	if (cp == 0x41 || cp == 0x42) /* BD-R sequential, BD-R random */
+#ifndef Libburn_support_bd_plus_r_srM
+	if (cp == 0x41) /* BD-R sequential (here as read-only dummy) */
+		d->current_is_supported_profile = 1;
+#endif
+	if (cp == 0x42) /* BD-R random recording */
 		d->current_is_supported_profile = 1;
 #endif
 
@@ -2278,6 +2294,10 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 #endif
 #ifdef Libburn_support_dvd_plus_R
 	if (cp == 0x1b || cp == 0x2b) /* DVD+R , DVD+R/DL */
+		d->current_is_supported_profile = 1;
+#endif
+#ifdef Libburn_support_bd_plus_r_srM
+	if (cp == 0x41) /* BD-R SRM */
 		d->current_is_supported_profile = 1;
 #endif
 
@@ -3440,8 +3460,9 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 
 	} else if (d->current_profile == 0x1a || d->current_profile == 0x1b ||
 	           d->current_profile == 0x2b || d->current_profile == 0x12 ||
+		   d->current_profile == 0x41 || d->current_profile == 0x42 ||
 		   d->current_profile == 0x43) {
-		/* not with DVD+R[W][/DL] or DVD-RAM or BD-RE */;
+		/* not with DVD+R[W][/DL] or DVD-RAM or BD-R[E] */;
 		return 0;
 	} else {
 		/* Traditional setup for CD */
