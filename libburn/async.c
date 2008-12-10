@@ -412,7 +412,9 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 
 	} else if (drive->current_profile == 0x41) {
 		/* >>> BD-R SRM */
-		/* >>> check whether still unformatted */;
+
+		ok= 1;
+		/* >>> check whether already formatted */;
 
 	} else if (drive->current_profile == 0x43) {
 		ok = 1; /* BD-RE */

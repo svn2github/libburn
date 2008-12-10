@@ -72,6 +72,8 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 int mmc_read_10(struct burn_drive *d, int start, int amount,
                 struct buffer *buf);
 
+/* ts A81210 : Determine the upper limit of readable data size */
+int mmc_read_capacity(struct burn_drive *d);
 
 
 /* mmc5r03c.pdf 4.3.4.4.1 d) "The maximum number of RZones is 2 302." */

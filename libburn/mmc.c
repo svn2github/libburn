@@ -203,6 +203,10 @@ static unsigned char MMC_RESERVE_TRACK[] =
 static unsigned char MMC_READ_10[] =
 	{ 0x28, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* ts A81210 : Determine the upper limit of readable data size */
+static unsigned char MMC_READ_CAPACITY[] =
+	{ 0x25, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 
 static int mmc_function_spy_do_tell = 0;
 
@@ -1463,6 +1467,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	char msg[160];
 	/* ts A70131 : had to move mmc_read_toc() to end of function */
 	int do_read_toc = 0, session_state, disc_status, len, old_alloc_len;
+	int ret;
 
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
@@ -1472,6 +1477,9 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	/* ts A70212 - A70215 */
 	d->media_capacity_remaining = 0;
 	d->media_lba_limit = 0;
+
+	/* ts A81210 */
+	d->media_read_capacity = 0x7fffffff;
 
 	/* ts A61202 */
 	d->toc_entries = 0;
@@ -1549,6 +1557,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 
 	switch (disc_status) {
 	case 0:
+regard_as_blank:;
 		d->toc_entries = 0;
 		d->start_lba = burn_msf_to_lba(data[17], data[18], data[19]);
 		d->end_lba = burn_msf_to_lba(data[21], data[22], data[23]);
@@ -1563,27 +1572,24 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		break;
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
+
 	case 2:
 		if (disc_status == 2)
 			d->status = BURN_DISC_FULL;
+
+		/* ts A81210 */
+		ret = mmc_read_capacity(d);
+		/* Freshly formatted, unwritten BD-R pretend to be appendable
+		   but in our model they need to be regarded as blank.
+		*/
+		if (d->current_profile == 0x41 && ret > 0 &&
+		    d->status == BURN_DISC_APPENDABLE &&
+		    d->media_read_capacity == 0)
+			goto regard_as_blank;
+
 		do_read_toc = 1;
 		break;
 	}
-
-
-#ifdef NIX
-        /* <<< on its way out. DVD-R DL are current_is_supported_profile
-               unconditionally. Writeability is handled above now.
-        */
-	/* ts A80207 : DVD - R DL can normally be read but not be written */
-	if(d->current_profile == 0x15 && !d->current_is_supported_profile) {
-		if(d->status == BURN_DISC_APPENDABLE)
-			d->status = BURN_DISC_FULL;
-		d->erasable = 0; /* never erasable */
-		d->current_is_supported_profile = 1;
-	}
-#endif /* NIX */
-
 
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
 		&& ! d->current_is_supported_profile) {
@@ -2773,6 +2779,7 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
                bit6= try to avoid lengthy media certification
                bit7= bit8 to bit15 contain the index of the format to use
                bit8-bit15 = see bit7
+              bit16= enable POW on blank BD-R
 */
 int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 {
@@ -3064,6 +3071,81 @@ no_suitable_formatting_type:;
 			c.opcode[1] |= 0x08;
 		}
 
+	} else if (d->current_profile == 0x41) {
+		/* BD-R SRM */
+
+		index = -1;
+		format_size = -1;
+		if (d->num_format_descr <= 0)
+			goto no_suitable_formatting_type;
+		if (d->format_descriptors[0].type != 0)
+			goto no_suitable_formatting_type;
+		for (i = 0; i < d->num_format_descr; i++) {
+			format_type = d->format_descriptors[i].type;
+			i_size = d->format_descriptors[i].size;
+			if (format_type != 0x00 && format_type != 0x32)
+		continue;
+			if (flag & 32) { /* No defect mgt */
+
+				/* >>> how to do this ? */
+
+				/* <<< */
+				goto no_suitable_formatting_type;
+
+			} else if(size_mode == 2) { /* max payload size */
+				/* search largest 0x32 format descriptor */
+				if(format_type != 0x32)
+		continue;
+			} else if(size_mode == 3) { /* default payload size */
+				if (format_type == 0x00) {
+					index = i;
+		break;
+				}
+		continue;
+			} else { /* defect managed format with size wish */
+				/* search for smallest 0x32 >= size */
+
+				/* >>> is the size freely adjustable ? */
+
+				if(format_type != 0x32)
+		continue;
+				if (i_size < size)
+		continue;
+				if (format_size >= 0 && i_size >= format_size)
+		continue;
+				index = i;
+				format_size = i_size;
+		continue;
+			}
+			/* common for all cases which search largest
+			   descriptors */
+			if (i_size > format_size) {
+				format_size = i_size;
+				index = i;
+			}
+		}
+		if (size_mode == 2 && index < 0 && !(flag & 32))
+			index = 0;
+		if (index < 0)
+			goto no_suitable_formatting_type;
+		format_type = d->format_descriptors[index].type;
+		if (flag & (1 << 16))
+			format_sub_type = 0; /* SRM + POW  */
+		else
+			format_sub_type = 1; /* SRM  (- POW) */
+
+		/* >>> is the size freely adjustable ? */
+
+		num_of_blocks = d->format_descriptors[index].size / 2048;
+		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+		for (i = 0; i < 3; i++)
+			 c.page->data[9 + i] =
+				( d->format_descriptors[index].tdp >>
+					  (16 - 8 * i)) & 0xff;
+		sprintf(descr, "%s", d->current_profile_text);
+		return_immediately = 1; /* caller must do the waiting */
+		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
+
 	} else if (d->current_profile == 0x43) {
 		/* BD-RE */
 		index = -1;
@@ -3108,6 +3190,9 @@ no_suitable_formatting_type:;
 		continue;
 			} else { /* defect managed format with size wish */
 				/* search for smallest 0x30 >= size */
+
+				/* >>> is the size freely adjustable ? */
+
 				if(format_type != 0x30)
 		continue;
 				if (i_size < size)
@@ -3136,6 +3221,9 @@ no_suitable_formatting_type:;
 			else
 				format_sub_type = 2; /* Full certification */
 		}
+
+		/* >>> is the size freely adjustable ? */
+
 		num_of_blocks = d->format_descriptors[index].size / 2048;
 		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
 		for (i = 0; i < 3; i++)
@@ -3547,6 +3635,34 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 }
 
 
+/* ts A81210 : Determine the upper limit of readable data size */
+int mmc_read_capacity(struct burn_drive *d)
+{
+	struct buffer buf;
+	struct command c;
+	int alloc_len= 8;
+
+	d->media_read_capacity = 0x7fffffff;
+	if (mmc_function_spy(d, "mmc_read_capacity") <= 0)
+		return 0;
+
+	scsi_init_command(&c, MMC_READ_CAPACITY, sizeof(MMC_READ_CAPACITY));
+	c.dxfer_len = alloc_len;
+	c.retry = 1;
+	c.page = &buf;
+	c.page->bytes = 0;
+	c.page->sectors = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+	d->media_read_capacity = mmc_four_char_to_int(c.page->data);
+	if (d->media_read_capacity < 0) {
+		d->media_read_capacity = 0x7fffffff;
+		return 0;
+	}
+	return 1;
+}
+
+
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()
 */
 int mmc_setup_drive(struct burn_drive *d)
@@ -3597,6 +3713,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->last_track_no = 1;
 	d->media_capacity_remaining = 0;
 	d->media_lba_limit = 0;
+	d->media_read_capacity = 0x7fffffff;
 	d->pessimistic_buffer_free = 0;
 	d->pbf_altered = 0;
 	d->wait_for_buffer_free = Libburn_wait_for_buffer_freE;

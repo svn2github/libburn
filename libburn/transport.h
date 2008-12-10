@@ -235,6 +235,9 @@ struct burn_drive
 	/* ts A70215 : if > 0 : first lba on media that is too high for write*/
 	int media_lba_limit;
 
+	/* ts A81210 : Upper limit of readable data size,
+	               0x7fffffff = unknown */
+	int media_read_capacity;
 
 	int toc_temp;
 	struct burn_disc *disc;	/* disc structure */
