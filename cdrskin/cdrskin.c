@@ -2414,11 +2414,11 @@ return:
      fprintf(stderr,
           "\tformat_overwrite_full\t\tfull-size format a DVD-RW or DVD+RW\n");
      fprintf(stderr,
-          "\tformat_defectmgt[_max|_min|_none]\tformat DVD-RAM or BD-RE\n");
+          "\tformat_defectmgt[_max|_min|_none]\tformat DVD-RAM or BD-R[E]\n");
      fprintf(stderr,
          "\tformat_defectmgt[_cert_on|_cert_off]\tcertification slow|quick\n");
      fprintf(stderr,
-          "\tformat_defectmgt_payload_<size>\tformat DVD-RAM or BD-RE\n");
+          "\tformat_defectmgt_payload_<size>\tformat DVD-RAM or BD-R[E]\n");
      fprintf(stderr,
         "\tformat_by_index_<number>\t\tformat by index from --list_formats\n");
 
@@ -3155,7 +3155,7 @@ struct CdrskiN {
                                bit15= format by index
                            2=deformat_sequential (blank_fast might matter)
                            3=format (= format_overwrite restricted to DVD+RW)
-                           4=format_defectmgt for DVD-RAM, BD-RE
+                           4=format_defectmgt for DVD-RAM, BD-R[E]
                              bit8-15: bit0-7 of burn_disc_format(flag)
                                bit8 = write zeros after formatting
                                bit9+10: size mode
@@ -5148,10 +5148,12 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
      skin->blank_format_type= 1|(1<<8);
      skin->blank_format_size= 128*1024*1024;
    } else if(profile_number == 0x12 ||
-             profile_number == 0x43) { /* DVD-RAM , BD-RE */;
+             profile_number == 0x43 ||
+            (profile_number == 0x41 && do_format==6)) {
+                                               /* DVD-RAM , BD-RE , BD-R SRM */
 #ifdef Cdrskin_libburn_has_burn_disc_formaT
      ret= burn_disc_get_formats(drive, &status, &size, &dummy, &num_formats);
-     if(ret>0 && status!=BURN_FORMAT_IS_FORMATTED) {
+     if((ret>0 && status!=BURN_FORMAT_IS_FORMATTED)) {
        do_format= 4;
        skin->blank_format_type= 4|(3<<9);  /* default payload size */
        skin->blank_format_size= 0;
@@ -5228,9 +5230,10 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
 
  } else if(do_format==4) {
    /* Formatting and influencing defect management of DVD-RAM , BD-RE */
-   if(!(profile_number == 0x12 || profile_number == 0x43)) {
+   if(!(profile_number == 0x12 || profile_number == 0x41 ||
+        profile_number == 0x43)) {
      fprintf(stderr,
-            "cdrskin: SORRY : blank=%s for now does DVD-RAM and BD-RE only\n",
+            "cdrskin: SORRY : blank=%s for now does DVD-RAM and BD only\n",
             fmt_text);
      {ret= 0; goto ex;}
    }
