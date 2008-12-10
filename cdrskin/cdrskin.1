@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Oct 15, 2008"
+.TH CDRSKIN 1 "Dec 10, 2008"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,7 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-cdrskin \- burns preformatted data to CD, DVD, and BD-RE via libburn.
+cdrskin \- burns preformatted data to CD, DVD, and BD via libburn.
 .SH SYNOPSIS
 .B cdrskin
 .RI [ options | track_source_addresses ]
@@ -28,14 +28,14 @@ cdrskin \- burns preformatted data to CD, DVD, and BD-RE via libburn.
 .\" respectively.
 .PP 
 \fBcdrskin\fP is a program that provides some of cdrecord's options
-in a compatible way for CD media. With DVD and BD-RE it has its own ways.
+in a compatible way for CD media. With DVD and BD it has its own ways.
 You do not need to be superuser for its daily usage.
 .SS
 .B Overview of features:
 .br
 Blanking of CD-RW and DVD-RW.
 .br
-Formatting of DVD-RW, DVD+RW, DVD-RAM, BD-RE.
+Formatting of DVD-RW, DVD+RW, DVD-RAM, BD.
 .br
 Burning of data or audio tracks to CD,
 .br
@@ -45,7 +45,7 @@ or in Session at Once mode for seamless tracks.
 .br
 Multi session on CD (follow-up sessions in TAO only)
 .br
-or on DVD-R[W] (in Incremental mode) or on DVD+R[/DL].
+or on DVD-R[W] (in Incremental mode) or DVD+R[/DL] or BD-R.
 .br
 Single session on DVD-RW or DVD-R (Disk-at-once).
 .br
@@ -164,10 +164,10 @@ make it completely unreadable. It is no effective privacy precaution.
 Multiple cycles of blanking and overwriting with random numbers might be
 needed.
 .SS
-.B Sequentially Recordable DVD Media:
+.B Sequentially Recordable DVD or BD Media:
 .br
-Currently DVD-RW, DVD-R and DVD+R[/DL] can be used for the Sequential recording
-model.
+Currently DVD-RW, DVD-R , DVD+R[/DL], and BD-R can be used for the Sequential
+recording model.
 .br
 This applies to DVD-RW only if they are in state "Sequential Recording".
 The media must be either blank or appendable.
@@ -201,13 +201,17 @@ unpredicted length and to keep media appendable by option
 The only restriction towards CD-R[W] is the lack of support for -audio tracks.
 Multiple tracks per session are permissible.
 .br
-The write modes for DVD+R[/DL] resemble those with DVD-R except that with +R
-each track gets wrapped in an own session. There is no -dummy writing with
-DVD+R[/DL].
+The write modes for DVD+R[/DL] and BD-R resemble those with DVD-R except that
+each track gets wrapped in an own session. There is no -dummy writing
+with DVD+R[/DL] or BD-R.
 .br
 Quite deliberately write mode -sao insists in the tradition of a predicted
 track size and blank media, whereas -tao writes the tracks open ended and
 allows appendable media.
+.br
+BD-R may be formatted before first use to enable the Defect Management which
+might catch and repair some bad spots at the expense of slow speed
+even with flawless media.
 .br
 .B Note:
 Option -multi might make DVD media unreadable in some DVD-ROM drives.
@@ -353,7 +357,7 @@ audio track. Same is done for suffix ".au" and SUN Audio.
 Option -audio may be used only with CD media and not with DVD or BD.
 .TP 
 .BI blank= type
-Blank a CD-RW, DVD-RW, or format a DVD-RW, DVD+RW, DVD-RAM, BD-RE.
+Blank a CD-RW, DVD-RW, or format a DVD-RW, DVD+RW, DVD-RAM, BD.
 This is combinable with burning in the same run of cdrskin.
 The type given with blank= selects the particular behavior:
 .RS
@@ -365,7 +369,7 @@ It is a reason to abort if the media cannot assume thoroughly writeable state,
 e.g. if it is non-blank write-once.
 .br
 This leaves unformatted DVD-RW in unformatted blank state. To format DVD-RW use
-blank=format_overwriteable.
+blank=format_overwriteable. Blank unformatted BD-R stay unformatted.
 .br
 (Note: blank=as_needed is not an original cdrecord option.)
 .TP
@@ -394,10 +398,11 @@ This is faster than full blanking but may yield media incapable of
 Incremental Streaming (-tao).
 .TP
 format_if_needed
-Format a media if it is not overwriteably formatted yet, 
+Format a media if it is not formatted yet, 
 and if cdrskin supports formatting for the media type,
 and if formatting will not happen automatically during write.
-This currently applies to unformatted DVD-RW, DVD-RAM and BD-RE.
+This currently applies to unformatted DVD-RW, DVD-RAM, BD-RE,
+and blank unformatted BD-R.
 Eventually the appropriate default formatting is chosen.
 If other media or states are encountered then nothing happens.
 .br
@@ -427,7 +432,7 @@ For DVD+RW this is the only supported explicit formatting type. It provides
 complete "de-icing" so no reader slips on unwritten data areas.
 .TP
 format_defectmgt
-Format DVD-RAM or BD-RE to reserve the default amount of spare blocks for
+Format DVD-RAM or BD to reserve the default amount of spare blocks for
 defect management.
 .br
 The following format_defectmgt_* allow to submit user wishes which
@@ -451,25 +456,24 @@ Whether there happens certification at all depends much on the media state
 and the actually selected format descriptor.
 .TP
 format_defectmgt_max
-Format DVD-RAM or BD-RE to reserve a maximum number of spare blocks.
+Format DVD-RAM or BD to reserve a maximum number of spare blocks.
 .TP
 format_defectmgt_min
-Format DVD-RAM or BD-RE to reserve a minimum number of spare blocks.
+Format DVD-RAM or BD to reserve a minimum number of spare blocks.
 It might be necessary to format format_defectmgt_none first in order to get
 offered the most minmal spare blocks sizes for format_defectmgt_min.
 .TP
 format_defectmgt_none
-Format DVD-RAM or BD-RE to the largest available payload in the hope to disable
-defect management at all. This seems not to have a speed increasing effect,
-though.
+Format DVD-RAM or BD to the largest available payload in the hope to disable
+defect management at all. This may or may not have a speed increasing effect.
 .TP
 format_defectmgt_payload_<size>
-Format DVD-RAM or BD-RE. The text after "format_defectmgt_payload_" gives a
+Format DVD-RAM or BD. The text after "format_defectmgt_payload_" gives a
 number of bytes, eventually with suffixes "s", "k", "m". The largest number
 of spare blocks will be chosen which allows at least the given payload size.
 .TP
 format_by_index_<number>
-Format DVD-RW, DVD+RW, DVD-RAM or BD-RE.
+Format DVD-RW, DVD+RW, DVD-RAM or BD.
 The number after "format_by_index_" is used as index to the list of available
 format descriptors. This list can be obtained by option --list_formats.
 The numbers after text "Format idx" are the ones to be used with
@@ -1182,7 +1186,7 @@ original cdrecord.
 .TP
 .BI stream_recording="on"|"off"
 By setting "on" request that compliance to the desired speed setting is
-preferred over management of write errors. With DVD-RAM and BD-RE this can
+preferred over management of write errors. With DVD-RAM and BD this can
 bring effective write speed near to the nominal write speed of the media.
 But it will also disable the automatic use of replacement blocks
 if write errors occur. It might as well be disliked or ignored by the drive.

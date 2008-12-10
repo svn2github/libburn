@@ -4,43 +4,55 @@
 This all is under GPL.
 (See GPL reference, our clarification and commitment at the end of this text)
 ------------------------------------------------------------------------------
-libburnia-project.org
+libburn-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
 Copyright (C) 2006-2008 Mario Danic, Thomas Schmitt
-
-Still containing parts of
-Libburn. By Derek Foreman <derek@signalmarketing.com> and
-            Ben Jansens <xor@orodu.net>
+Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
+and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-This libburnia-project.org toplevel README (C) 2006-2008 Thomas Schmitt 
+     http://files.libburnia-project.org/releases/libburn-0.5.8.pl00.tar.gz
+
 ------------------------------------------------------------------------------
 
                            Build and Installation
 
-Our build system is based on autotools. For preparing the build of a SVN 
-snapshot you will need autotools of at least version 1.7. 
-Check out from SVN by
-   svn co http://svn.libburnia-project.org/libburn/trunk libburn
-go into directory libburn and apply autotools by
-   ./bootstrap
+                                From tarball
 
-Alternatively you may unpack a release tarball for which you do not need
-autotools installed.
+Obtain libburn-0.5.8.pl00.tar.gz, take it to a directory of your choice and do:
 
-To build a libburnia-project.org subproject it should be sufficient to go
-into its toplevel directory (here: "libburn") and execute
+   tar xzf libburn-0.5.8.pl00.tar.gz
+   cd libburn-0.5.8
    ./configure --prefix=/usr
    make
 
 To make libburn accessible for running resp. application development,
-and to install the cdrecord compatibility binary cdrskin, do:
+and to install the cdrecord compatibility binary cdrskin, do
+(as Superuser):
+
    make install
 
-
-Above procedure installs cdrskin depending on libburn.so.4 .
+This procedure installs libburn.so.4 and cdrskin depending on it.
 For a standalone cdrskin binary, see cdrskin/README.
 
+
+                                  From SVN
+
+Our build system is based on autotools. For preparing the build of a SVN 
+snapshot you will need autotools of at least version 1.7. 
+Do in a directory of your choice:
+
+   svn co http://svn.libburnia-project.org/libburn/trunk libburn-0.5.9
+   cd libburn-0.5.9
+   ./bootstrap
+   ./configure --prefix=/usr
+   make
+   make install
+
+Warning: The trunk might contain experimental features which might not
+         persist until next release. 
+
+------------------------------------------------------------------------------
 
 An important part of the project, libisofs, is hosted in a bzr repository at
 launchpad.net :
@@ -51,7 +63,6 @@ Another part the project, libisoburn, is hosted in the libburnia SVN, too:
 
 See README files there.
 
-
 ------------------------------------------------------------------------------
 
 
@@ -59,7 +70,7 @@ See README files there.
 
 libburnia-project.org is an open-source software project for reading, mastering
 and writing optical discs.
-For now this means only CD media and all single layer DVD media except DVD+R.
+For now this means CD media, all DVD media except DVD-R DL, all BD media.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -68,18 +79,16 @@ classical (and valuable) Linux tools.
 Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
 with ATAPI/CAM support enabled in the kernel, see atapicam(4).
 
-Our scope is currently Linux 2.4 or 2.6 and FreeBSD versions with ATAPI/CAM
-support enabled in the kernel, see atapicam(4). For ports to other systems
-we would need : login on a development machine resp. a live OS on CD or DVD,
-advise from a system person about the equivalent of Linux sg or FreeBSD CAM,
-volunteers for testing of realistic use cases.
+For ports to other systems we would need : login on a development machine
+resp. a live OS on CD or DVD, advise from a system person about the equivalent
+of Linux sg or FreeBSD CAM, volunteers for testing of realistic use cases.
 
-We have a well tested code base for burning data and audio CDs and many DVD
-types. The burn API is quite comprehensively documented and can be used to
-build a presentable application.
-We have a functional binary which emulates the core use cases of cdrecord in
-order to prove that usability, and in order to allow you to explore libburn's
-scope by help of existing cdrecord frontends.
+We have a well tested code base for burning data and audio CDs, DVDs and BDs.
+The burn API is quite comprehensively documented and can be used to build a
+presentable application.
+We have a functional application which emulates the core use cases of cdrecord
+in order to prove that usability, and in order to allow you to explore
+libburn's scope by help of existing cdrecord frontends.
 
 ISO 9660 filesystems with Rock Ridge and Joliet extensions can be created
 and manipulated quite freely. This capability together with our burn capability
@@ -119,8 +128,9 @@ The project components (list subject to growth, hopefully):
 - xorriso  is an application of all three libraries which creates, loads,
            manipulates and writes ISO 9660 filesystem images with
            Rock Ridge extensions. Manipulation is not only adding or
-           overwriting of files but also deletion, renaming, and attribute
-           changing.
+           overwriting of files but also deleting, renaming, attribute
+           changing, incremental backups, activating boot images, and
+           extracting of files from ISO images to disk.
            See xorriso/README for more.
 
 - "test"   is a collection of application gestures and examples given by the
@@ -335,6 +345,8 @@ Project history as far as known to me:
 
 - 7th Dec 2008 libburn-0.5.8 prevents a SIGSEGV with wierd CD table-of-content
   and improves BD-RE formatting.
+
+- 9th Dec 2008 Our project received a donation from Thomas Weber.
 
 
 ------------------------------------------------------------------------------

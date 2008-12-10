@@ -274,8 +274,8 @@ behavior.
 BD-RE media need formatting before first use. cdrskin option "blank=as_needed"
 recognizes unformatted BD-RE and applies a lengthy formatting run.
 
-During write operations DVD-RAM and BD-RE automatically apply defect
-management. This usually slows them down to half nominal speed. If drive
+During write operations DVD-RAM and BD-RE automatically apply Defect
+Management. This usually slows them down to half nominal speed. If drive
 and media produce flawless results anyway, then one can try to reach full
 nominal speed by option "stream_recording=on".
 In this case bad blocks are not detected during write and not even previously
@@ -350,13 +350,23 @@ Incremental Streaming afterwards. So blank=fast will do full blanking.
 blank=deformat_sequential_quickest   is faster but might yield DAO-only media.
 
 
-                             DVD+R and DVD+R DL 
+                           DVD+R , DVD+R DL , BD-R
 
 From the view of cdrskin they behave much like DVD-R. Each track gets wrapped
 into an own session, though.
+
 DVD+R DL appear as extra large DVD+R. cdrskin does not allow to set the address
 of the layer break where a reading drive might show some delay while switching
 between both media layers.
+
+BD-R are sold unformatted blank. If used without initial formatting then the
+drive is supposed to format them to maximum payload size with no Defect
+Management (see also above with BD-RE).
+If Defect Management is desired then BD-R need to be formatted before the
+first attempt to write a session to them.
+blank=format_if_needed    will detect the situation and eventually apply
+                          default sized Defect Management formatting.
+blank=format_defectmgt_*  will apply non-default parameters to formatting.
 
 
                               Emulated Drives
