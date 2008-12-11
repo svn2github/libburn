@@ -376,7 +376,7 @@ static void *format_worker_func(struct w_list *w)
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 {
 	struct format_opts o;
-	int ok = 0;
+	int ok = 0, ret;
 	char msg[160];
 
 	if ((SCAN_GOING()) || find_worker(drive) != NULL) {
@@ -411,11 +411,23 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		ok = 1; /* DVD-RAM */
 
 	} else if (drive->current_profile == 0x41) {
-		/* >>> BD-R SRM */
-
+		/* BD-R SRM */
 		ok= 1;
-		/* >>> check whether already formatted */;
-
+		ret = drive->read_format_capacities(drive, 0x00);
+		if (ret > 0 &&
+		    drive->format_descr_type == BURN_FORMAT_IS_FORMATTED)
+			ok = 0;
+		if (drive->status != BURN_DISC_BLANK)
+			ok = 0;
+		if (!ok) {
+			libdax_msgs_submit(libdax_messenger,
+				drive->global_index, 0x00020129,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			 "BD-R not unformatted blank any more. Cannot format.",
+				0, 0);
+			drive->cancel = 1;
+			return;
+		}
 	} else if (drive->current_profile == 0x43) {
 		ok = 1; /* BD-RE */
 	}

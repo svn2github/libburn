@@ -534,6 +534,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002015f (MISHAP,HIGH)  = Damaged CD table-of-content detected and truncated
  0x00020160 (WARNING,HIGH) = Session without leadout encountered
  0x00020161 (WARNING,HIGH) = Empty session deleted
+ 0x00020162 (SORRY, HIG)   = BD-R not unformatted blank any more. Cannot format.
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
