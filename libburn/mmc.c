@@ -3086,10 +3086,12 @@ no_suitable_formatting_type:;
 			if (format_type != 0x00 && format_type != 0x32)
 		continue;
 			if (flag & 32) { /* No defect mgt */
-
-				/* >>> how to do this ? */
-
-				/* <<< */
+				/* ts A81211 : MMC-5 6.5.4.2.17.1
+				   When formatted with Format Type 32h,
+				   the BD-R disc is required to allocate
+				   a non-zero number of spares.
+				*/
+				/* Zero-spare format impossible with BD-R */
 				goto no_suitable_formatting_type;
 
 			} else if(size_mode == 2) { /* max payload size */

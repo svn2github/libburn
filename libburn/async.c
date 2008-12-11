@@ -421,11 +421,19 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 			ok = 0;
 		if (!ok) {
 			libdax_msgs_submit(libdax_messenger,
-				drive->global_index, 0x00020129,
+				drive->global_index, 0x00020162,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			 "BD-R not unformatted blank any more. Cannot format.",
 				0, 0);
 			drive->cancel = 1;
+			return;
+		}
+		if (flag & 32) {
+			libdax_msgs_submit(libdax_messenger,
+				drive->global_index, 0x00020163,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+			"Blank BD-R left unformatted for zero spare capacity.",
+				0, 0);
 			return;
 		}
 	} else if (drive->current_profile == 0x43) {
