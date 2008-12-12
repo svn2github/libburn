@@ -1237,7 +1237,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                 bit1+2: size mode
                    0 = use parameter size as far as it makes sense
                    1 = insist in size 0 even if there is a better default known
-                       (on DVD-RAM or BD-RE identical to size mode 0)
+                       (on DVD-RAM or BD-R identical to size mode 0,
+                        i.e. they never get formatted with payload size 0)
                    2 = without bit7: format to maximum available size
                        with bit7   : take size from indexed format descriptor
                    3 = without bit7: format to default size
@@ -1255,6 +1256,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                       Acceptable types are: 0x00, 0x01, 0x10, 0x11, 0x13,
                       0x15, 0x26, 0x30, 0x31.
                       If bit7 is set, then bit4 is set automatically.
+               bit16= enable POW on blank BD-R
     @since 0.3.0
 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag);

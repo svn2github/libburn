@@ -2789,6 +2789,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	int index, format_sub_type = 0, format_00_index, size_mode;
 	int accept_count = 0;
 	off_t num_of_blocks = 0, diff, format_size, i_size, format_00_max_size;
+	off_t min_size = -1, max_size = -1;
 	char msg[256],descr[80];
 	int key, asc, ascq;
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
@@ -3091,7 +3092,6 @@ no_suitable_formatting_type:;
 				   the BD-R disc is required to allocate
 				   a non-zero number of spares.
 				*/
-				/* Zero-spare format impossible with BD-R */
 				goto no_suitable_formatting_type;
 
 			} else if(size_mode == 2) { /* max payload size */
@@ -3105,10 +3105,10 @@ no_suitable_formatting_type:;
 				}
 		continue;
 			} else { /* defect managed format with size wish */
+
+#ifdef Libburn_bd_r_format_olD
+
 				/* search for smallest 0x32 >= size */
-
-				/* >>> is the size freely adjustable ? */
-
 				if(format_type != 0x32)
 		continue;
 				if (i_size < size)
@@ -3118,6 +3118,19 @@ no_suitable_formatting_type:;
 				index = i;
 				format_size = i_size;
 		continue;
+
+#else /* Libburn_bd_r_format_olD */
+
+				/* search largest and smallest 0x32 */
+				if(format_type != 0x32)
+		continue;
+				if (i_size < min_size || min_size < 0)
+					min_size = i_size;
+				if (i_size > max_size)
+					max_size = i_size;
+
+#endif /* ! Libburn_bd_r_format_olD */
+
 			}
 			/* common for all cases which search largest
 			   descriptors */
@@ -3136,14 +3149,35 @@ no_suitable_formatting_type:;
 		else
 			format_sub_type = 1; /* SRM  (- POW) */
 
-		/* >>> is the size freely adjustable ? */
+#ifdef Libburn_bd_r_format_olD
+		if (0) {
+#else
+		if (size_mode == 0 || size_mode == 1) {
+#endif /* ! Libburn_bd_re_format_olD */
 
-		num_of_blocks = d->format_descriptors[index].size / 2048;
-		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
-		for (i = 0; i < 3; i++)
-			 c.page->data[9 + i] =
-				( d->format_descriptors[index].tdp >>
-					  (16 - 8 * i)) & 0xff;
+			if (min_size < 0 || max_size < 0)
+				goto no_suitable_formatting_type;
+			if (size <= 0)
+				size = min_size;
+			if (size % 0x10000)
+				size += 0x10000 - (size % 0x10000);
+			if (size < min_size)
+				goto no_suitable_formatting_type;
+			else if(size > max_size)
+				goto no_suitable_formatting_type;
+			num_of_blocks = size / 2048;
+			mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+			for (i = 0; i < 3; i++)
+				 c.page->data[9 + i] = 0;
+		} else {
+			num_of_blocks = 
+				d->format_descriptors[index].size / 2048;
+			mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+			for (i = 0; i < 3; i++)
+				 c.page->data[9 + i] =
+					( d->format_descriptors[index].tdp >>
+						  (16 - 8 * i)) & 0xff;
+		}
 		sprintf(descr, "%s", d->current_profile_text);
 		return_immediately = 1; /* caller must do the waiting */
 		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */
@@ -3191,10 +3225,10 @@ no_suitable_formatting_type:;
 					index = i;
 		continue;
 			} else { /* defect managed format with size wish */
+
+#ifdef Libburn_bd_re_format_olD
+
 				/* search for smallest 0x30 >= size */
-
-				/* >>> is the size freely adjustable ? */
-
 				if(format_type != 0x30)
 		continue;
 				if (i_size < size)
@@ -3204,6 +3238,19 @@ no_suitable_formatting_type:;
 				index = i;
 				format_size = i_size;
 		continue;
+
+#else /* Libburn_bd_re_format_olD */
+
+				/* search largest and smallest 0x30 */
+				if(format_type != 0x30)
+		continue;
+				if (i_size < min_size || min_size < 0)
+					min_size = i_size;
+				if (i_size > max_size)
+					max_size = i_size;
+
+#endif /* ! Libburn_bd_re_format_olD */
+
 			}
 			/* common for all cases which search largest
 			   descriptors */
@@ -3212,6 +3259,7 @@ no_suitable_formatting_type:;
 				index = i;
 			}
 		}
+
 		if (size_mode == 2 && index < 0 && !(flag & 32))
 			index = 0;
 		if (index < 0)
@@ -3224,14 +3272,35 @@ no_suitable_formatting_type:;
 				format_sub_type = 2; /* Full certification */
 		}
 
-		/* >>> is the size freely adjustable ? */
+#ifdef Libburn_bd_re_format_olD
+		if (0) {
+#else
+		if (size_mode == 0 || size_mode == 1) {
+#endif /* ! Libburn_bd_re_format_olD */
 
-		num_of_blocks = d->format_descriptors[index].size / 2048;
-		mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
-		for (i = 0; i < 3; i++)
-			 c.page->data[9 + i] =
-				( d->format_descriptors[index].tdp >>
-					  (16 - 8 * i)) & 0xff;
+			if (min_size < 0 || max_size < 0)
+				goto no_suitable_formatting_type;
+			if (size <= 0)
+				size = min_size;
+			if (size % 0x10000)
+				size += 0x10000 - (size % 0x10000);
+			if (size < min_size)
+				goto no_suitable_formatting_type;
+			else if(size > max_size)
+				goto no_suitable_formatting_type;
+			num_of_blocks = size / 2048;
+			mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+			for (i = 0; i < 3; i++)
+				 c.page->data[9 + i] = 0;
+		} else {
+			num_of_blocks = 
+				d->format_descriptors[index].size / 2048;
+			mmc_int_to_four_char(c.page->data + 4, num_of_blocks);
+			for (i = 0; i < 3; i++)
+				 c.page->data[9 + i] =
+					( d->format_descriptors[index].tdp >>
+						  (16 - 8 * i)) & 0xff;
+		}
 		sprintf(descr, "%s", d->current_profile_text);
 		return_immediately = 1; /* caller must do the waiting */
 		c.page->data[1] |= 0x80;  /* FOV = this flag vector is valid */

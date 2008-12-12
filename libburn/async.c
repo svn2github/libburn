@@ -438,6 +438,11 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		}
 	} else if (drive->current_profile == 0x43) {
 		ok = 1; /* BD-RE */
+
+		/* >>> check feature 0023h for QCert (= bit6)
+		                           and Cert (= !bit6)
+		*/
+
 	}
 
 	if (!ok) {
