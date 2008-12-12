@@ -2211,6 +2211,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	d->current_is_supported_profile = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
+	d->current_feat23h_byte4 = 0;
+	d->current_feat23h_byte8 = 0;
 	d->current_feat2fh_byte4 = -1;
 
 	scsi_init_command(&c, MMC_GET_CONFIGURATION,
@@ -2371,6 +2373,20 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 #endif /* Libburn_print_feature_descriptorS */
 
 			}
+
+		} else if (feature_code == 0x23) {
+			d->current_feat23h_byte4 = descr[4];
+			d->current_feat23h_byte8 = descr[8];
+#ifdef Libburn_print_feature_descriptorS
+			if (cp >= 0x41 && cp <= 0x43) 
+				fprintf(stderr,
+			"LIBBURN_EXPERIMENTAL : BD formats: %s%s%s%s%s\n",
+					descr[4] & 1 ? " Cert" : "",
+					descr[4] & 2 ? " QCert" : "",
+					descr[4] & 4 ? " Expand" : "",
+					descr[4] & 8 ? " RENoSA" : "",
+					descr[8] & 1 ? " RRM" : "");
+#endif /* Libburn_print_feature_descriptorS */
 
 		} else if (feature_code == 0x2F) {
 			if (descr[2] & 1)
@@ -3153,7 +3169,7 @@ no_suitable_formatting_type:;
 		if (0) {
 #else
 		if (size_mode == 0 || size_mode == 1) {
-#endif /* ! Libburn_bd_re_format_olD */
+#endif /* ! Libburn_bd_r_format_olD */
 
 			if (min_size < 0 || max_size < 0)
 				goto no_suitable_formatting_type;
@@ -3775,6 +3791,8 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_is_supported_profile = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
+	d->current_feat23h_byte4 = 0;
+	d->current_feat23h_byte8 = 0;
 	d->current_feat2fh_byte4 = -1;
 	d->needs_close_session = 0;
 	d->needs_sync_cache = 0;

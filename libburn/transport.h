@@ -171,6 +171,19 @@ struct burn_drive
 	/* Link Size item number 0 from feature 0021h descriptor */
 	int current_feat21h_link_size;
 
+	/* Flags from feature 0023h for formatting BD mmc5r03c.pdf 5.3.13 
+           Byte 4 BD-RE:
+             bit0= Cert   format 30h sub-type 10b
+             bit1= QCert  format 30h sub-type 11b
+             bit2= Expand format 01h
+             bit3= RENoSA format 31h
+           Byte 8 BD-R:
+             bit0= RRM    format 32h sub-type 10b
+        */
+	int current_feat23h_byte4;
+	int current_feat23h_byte8;
+
+
 	/* Flags from feature 002Fh feature descriptor mmc5r03c.pdf 5.3.25 :
 	     bit1= DVD-RW supported
 	     bit2= Test Write available

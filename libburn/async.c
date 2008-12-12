@@ -439,9 +439,51 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 	} else if (drive->current_profile == 0x43) {
 		ok = 1; /* BD-RE */
 
-		/* >>> check feature 0023h for QCert (= bit6)
-		                           and Cert (= !bit6)
-		*/
+		if ((flag & 32) && !(drive->current_feat23h_byte4 & 8)) {
+			libdax_msgs_submit(libdax_messenger,
+				drive->global_index, 0x00020164,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Drive does not format BD-RE without spares.",
+				0, 0);
+			drive->cancel = 1;
+			return;
+
+		} 
+		if ((flag & 6) != 3 || (flag & 128)) {
+		    if ((flag & 64) && !(drive->current_feat23h_byte4 & 2)) {
+			if (drive->current_feat23h_byte4 & 1) {
+				libdax_msgs_submit(libdax_messenger,
+					drive->global_index, 0x00020165,
+				   	LIBDAX_MSGS_SEV_WARNING,
+					LIBDAX_MSGS_PRIO_HIGH,
+				      "Drive does not support fast formatting",
+					0, 0);
+				flag &= ~64;
+			} else {
+no_non_default_bd_re:;
+				libdax_msgs_submit(libdax_messenger,
+					drive->global_index, 0x00020167,
+				   	LIBDAX_MSGS_SEV_SORRY,
+					LIBDAX_MSGS_PRIO_HIGH,
+				"Drive does not support non-default formatting",
+					0, 0);
+				drive->cancel = 1;
+				return;
+			}
+		    }
+		    if ((!(flag & 64)) && !(drive->current_feat23h_byte4 & 1)){
+			if (drive->current_feat23h_byte4 & 2) {
+				libdax_msgs_submit(libdax_messenger,
+					drive->global_index, 0x00020166,
+				   	LIBDAX_MSGS_SEV_WARNING,
+					LIBDAX_MSGS_PRIO_HIGH,
+				      "Drive does not support full formatting",
+					0, 0);
+				flag |= 64;
+			} else
+				goto no_non_default_bd_re;
+		    }
+		}
 
 	}
 
