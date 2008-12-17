@@ -1254,7 +1254,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
                       the format to use. See burn_disc_get_formats(),
                       burn_disc_get_format_descr().
                       Acceptable types are: 0x00, 0x01, 0x10, 0x11, 0x13,
-                      0x15, 0x26, 0x30, 0x31.
+                      0x15, 0x26, 0x30, 0x31, 0x32.
                       If bit7 is set, then bit4 is set automatically.
                bit16= enable POW on blank BD-R
     @since 0.3.0
@@ -2417,6 +2417,20 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
                              char *data, off_t data_count, int flag);
 
 
+/* ts A81215 */
+/** Inquire the maximum amount of readable data.
+    It is supposed that all LBAs in the range from 0 to media_read_acpacity-1
+    can be read via burn_read_data() although some of them may never have been
+    recorded. If tracks are recognizable then it is better to only read
+    LBAs which are part of some track.
+    @param d            The drive from which to read
+    @param capacity     Will return the result if valid
+    @param flag         Bitfield for control purposes: Unused yet, submit 0.
+    @return 1=sucessful , <=0 an error occured
+    @since 0.6.0
+*/
+int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
+
 /* ts A70812 */
 /** Read data in random access mode.
     The drive must be grabbed successfully before calling this function.
@@ -2426,7 +2440,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     This is a synchronous call which returns only after the full read job
     has ended (sucessfully or not). So it is wise not to read giant amounts
     of data in a single call.
-    @param d            The drive to which to write
+    @param d            The drive from which to read
     @param byte_address The start address of the read in byte (aligned to 2048)
     @param data         A memory buffer capable of taking data_size bytes
     @param data_size    The amount of data to be read. This does not have to

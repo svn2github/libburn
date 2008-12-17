@@ -2507,3 +2507,10 @@ int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value)
 	return 1;
 }
 
+/* ts A81215 : API */
+int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag)
+{
+	*capacity = d->media_read_capacity;
+	return (d->media_read_capacity != 0x7fffffff);
+}
+
