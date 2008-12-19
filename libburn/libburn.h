@@ -183,18 +183,41 @@ enum burn_block_types
 	BURN_BLOCK_SAO = 16384
 };
 
-/** Possible status' of the drive in regard to the disc in it. */
+/** Possible status of the drive in regard to the disc in it. */
 enum burn_disc_status
 {
 	/** The current status is not yet known */
 	BURN_DISC_UNREADY,
-	/** The drive holds a blank disc */
+
+	/** The drive holds a blank disc. It is ready for writing from scratch.
+	    Unused multi-session media:
+	      CD-R, CD-RW, DVD-R, DVD-RW, DVD+R, BD-R
+	    Blanked multi-session media (i.e. treated by burn_disc_erase())
+	      CD-RW, DVD-RW
+	    Overwriteable media with or without valid data
+	      DVD-RAM, DVD+RW, formatted DVD-RW, BD-RE
+	*/
 	BURN_DISC_BLANK,
+
 	/** There is no disc at all in the drive */
 	BURN_DISC_EMPTY,
-	/** There is an incomplete disc in the drive */
+
+	/** There is an incomplete disc in the drive. It is ready for appending
+	    another session.
+	    Written but not yet closed multi-session media
+	      CD-R, CD-RW, DVD-R, DVD-RW, DVD+R, BD-R
+	*/
 	BURN_DISC_APPENDABLE,
-	/** There is a disc with data on it in the drive */
+
+	/** There is a disc with data on it in the drive. It is usable only for
+	    reading.
+	    Written and closed multi-session media
+	      CD-R, CD-RW, DVD-R, DVD-RW, DVD+R, BD-R
+	    Read-Only media
+	      CD-ROM, DVD-ROM, BD-ROM
+	    Note that many DVD-ROM drives report any written media
+	    as Read-Only media and not by their real media types.
+	*/
 	BURN_DISC_FULL,
 
 	/* ts A61007 */
@@ -204,7 +227,7 @@ enum burn_disc_status
 
 	/* ts A61020 */
         /* @since 0.2.6 */
-	/** The media seems not to be suitable for burning */
+	/** The media seems to be unsuitable for reading and for writing */
 	BURN_DISC_UNSUITABLE
 };
 
@@ -2430,6 +2453,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     @since 0.6.0
 */
 int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
+
 
 /* ts A70812 */
 /** Read data in random access mode.
