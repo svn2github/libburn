@@ -449,7 +449,7 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 			return;
 
 		} 
-		if ((flag & 6) != 3 || (flag & 128)) {
+		if ((flag & 6) != 6 || (flag & 128)) {
 		    if ((flag & 64) && !(drive->current_feat23h_byte4 & 2)) {
 			if (drive->current_feat23h_byte4 & 1) {
 				libdax_msgs_submit(libdax_messenger,
