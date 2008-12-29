@@ -1193,8 +1193,8 @@ int burn_disc_erasable(struct burn_drive *d);
 enum burn_drive_status burn_drive_get_status(struct burn_drive *drive,
 					     struct burn_progress *p);
 
-/** Creates a write_opts struct for burning to the specified drive
-    must be freed with burn_write_opts_free
+/** Creates a write_opts struct for burning to the specified drive.
+    The returned object must later be freed with burn_write_opts_free().
     @param drive The drive to write with
     @return The write_opts, NULL on error
 */

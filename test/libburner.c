@@ -260,7 +260,8 @@ int libburner_aquire_by_driveno(int *driveno)
 }
 
 
-/** Makes a previously used CD-RW ready for thorough re-usal.
+/** Makes a previously used CD-RW or unformatted DVD-RW ready for thorough
+    re-usal.
 
     To our knowledge it is hardly possible to abort an ongoing blank operation
     because after start it is entirely handled by the drive.
@@ -487,7 +488,7 @@ int libburner_payload(struct burn_drive *drive,
 	  /* Give up local reference to the data burn_source object */
 	  burn_source_free(data_src);
 	  
-        } /* trackno loop end */
+	} /* trackno loop end */
 
 	/* Evaluate drive and media */
 	disc_state = burn_disc_get_status(drive);
