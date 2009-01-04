@@ -2,7 +2,7 @@
 
 <HEAD>
 <META NAME="description" CONTENT="cdrskin, a limited cdrecord compatibility wrapper for libburn">
-<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, BD-RE, cdrecord, compatible, scdbackup">
+<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, BD-RE, BD-R, cdrecord, compatible, scdbackup">
 <META NAME="robots" CONTENT="follow">
 <TITLE>cdrskin homepage english</TITLE>
 </HEAD>
@@ -24,7 +24,7 @@
 <P>
 <H2>Purpose:</H2>
 Burns preformatted data to CD, DVD, and BD media:<BR>
-CD-R, DVD-R, DVD+R, DVD+R/DL, CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE
+CD-R, DVD-R, DVD+R, DVD+R/DL, BD-R, CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE
 </P>
 <P>
 
@@ -59,12 +59,12 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.5.8</DT>
+<DT>libburn-0.6.0</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
 </DD>
-<DD>transfers data to CD, DVD, BD-RE</DD>
+<DD>transfers data to CD, DVD, BD</DD>
 </DL>
 </P>
 
@@ -93,7 +93,7 @@ are provided in a compatible way.<BR>
 On all DVD media except DVD-R DL, cdrskin is able to perform any recording job
 which is possible with cdrecord.
 Other than with cdrecord, option -multi is supported with many DVD types and
-write mode -tao works with anything but quickly blanked DVD-RW.
+BD-R. Write mode -tao works with anything but quickly blanked DVD-RW.
 </DT>
 <BR><BR>
 <DT>Get an overview of drives and their addresses</DT>
@@ -191,8 +191,8 @@ or to do experiments on BD-R media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.5.8.pl00.tar.gz">cdrskin-0.5.8.pl00.tar.gz</A>
-(740 KB).
+<DD><A HREF="cdrskin-0.6.0.pl00.tar.gz">cdrskin-0.6.0.pl00.tar.gz</A>
+(745 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -241,21 +241,18 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.5.6.pl00:
+Enhancements towards previous stable version cdrskin-0.5.8.pl00:
 <UL>
-<LI>Improvements about BD-RE formatting</LI>
+<LI>Formatting and writing of BD-R media</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.5.6.pl00:
+Bug fixes towards cdrskin-0.5.8.pl00:
 <UL>
-<LI>
-A session without leadout entry on CD caused a SIGSEGV by NULL
-</LI>
-<!--
 <LI>none</LI>
+<!--
 -->
 </UL>
 
@@ -265,21 +262,20 @@ A session without leadout entry on CD caused a SIGSEGV by NULL
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.5.9 :</H3></DT>
-<DD>Enhancements towards current stable version 0.5.8.pl00:
+<DT><H3>Development snapshot, version 0.6.1 :</H3></DT>
+<DD>Enhancements towards current stable version 0.6.0.pl00:
 <UL>
-<!--
 <LI>none yet</LI>
+<!--
 -->
-<LI>Formatting and writing of BD-R media</LI>
 
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.5.9</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.5.9 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.5.9 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.5.9)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.6.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -299,7 +295,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.5.9.tar.gz">cdrskin-0.5.9.tar.gz</A>
+<A HREF="cdrskin-0.6.1.tar.gz">cdrskin-0.6.1.tar.gz</A>
 (740 KB).
 </DD>
 

@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2008 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2009 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2. See future commitment below.
 
 A cdrecord compatible command line interface for libburn.
@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.5.9"
+#define Cdrskin_prog_versioN "0.6.1"
 #endif
 
 /** The official libburn interface revision to use.
@@ -98,10 +98,10 @@ or
 #define Cdrskin_libburn_majoR 0
 #endif
 #ifndef Cdrskin_libburn_minoR
-#define Cdrskin_libburn_minoR 5
+#define Cdrskin_libburn_minoR 6
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 8
+#define Cdrskin_libburn_micrO 0
 #endif
 
 
@@ -135,44 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_5_8
-#define Cdrskin_libburn_versioN "0.5.8"
+#ifdef Cdrskin_libburn_0_6_0
+#define Cdrskin_libburn_versioN "0.6.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_5_8 */
+#endif /* Cdrskin_libburn_0_6_0 */
 
-#ifdef Cdrskin_libburn_0_5_9
-#define Cdrskin_libburn_versioN "0.5.9"
+#ifdef Cdrskin_libburn_0_6_1
+#define Cdrskin_libburn_versioN "0.6.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.5.9 yet */
+/* there are no libburn novelties in 0.6.1 yet */
 
-#endif /* Cdrskin_libburn_0_5_9 */
+#endif /* Cdrskin_libburn_0_6_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_5_8
-#define Cdrskin_libburn_versioN "0.5.8"
+#define Cdrskin_libburn_0_6_0
+#define Cdrskin_libburn_versioN "0.6.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_5_8
+#ifdef Cdrskin_libburn_0_6_0
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 8
+#define Cdrskin_libburn_minoR 6
+#define Cdrskin_libburn_micrO 0
 #endif
-#ifdef Cdrskin_libburn_0_5_9
+#ifdef Cdrskin_libburn_0_6_1
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 5
-#define Cdrskin_libburn_micrO 9
+#define Cdrskin_libburn_minoR 6
+#define Cdrskin_libburn_micrO 1
 #endif
 
 
@@ -251,7 +251,7 @@ or
 /* 0.4.8 */
 /* Bug fix release for  write_start_address=... on DVD-RAM and BD-RE */
 
-/* 0.5.0 , 0.5.2 , 0.5.4 , 0.5.6 , 0.5.8 */
+/* 0.5.0 , 0.5.2 , 0.5.4 , 0.5.6 , 0.5.8 , 0.6.0 */
 /* novel libburn features are transparent to cdrskin */
 
 
@@ -2892,7 +2892,7 @@ set_severities:;
      int major, minor, micro;
 
      printf(
-"Cdrecord 2.01-Emulation Copyright (C) 2006-2008, see libburnia-project.org\n");
+"Cdrecord 2.01-Emulation Copyright (C) 2006-2009, see libburnia-project.org\n");
      printf("libburn interface :  %d.%d.%d\n",
             burn_header_version_major, burn_header_version_minor,
             burn_header_version_micro);

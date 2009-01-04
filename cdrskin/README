@@ -4,8 +4,8 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.5.9.tar.gz
-Copyright (C) 2006-2008 Thomas Schmitt, provided under GPL version 2.
+http://scdbackup.sourceforge.net/cdrskin-0.6.1.tar.gz
+Copyright (C) 2006-2009 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
 
@@ -21,10 +21,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.5.9.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.6.1.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.5.9.tar.gz
-    cd cdrskin-0.5.9
+    tar xzf cdrskin-0.6.1.tar.gz
+    cd cdrskin-0.6.1
 
 Within that directory execute:
 
@@ -446,7 +446,7 @@ contributions in a due way.
 Based on and sub project of:
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2008 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2009 Mario Danic, Thomas Schmitt
 
 libburnia-project.org is inspired by and in other components still containing
 parts of
