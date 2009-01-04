@@ -6091,16 +6091,197 @@ Dec 07 2008  [2253]
 + cdrskin/add_ts_changes_to_libburn_0_5_9
 Updated cdrskin tarball generator
 
-Dec 07 2008  []
+Dec 07 2008  [2254]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+Dec 07 2008  [2255]
+svn move -m "libburn release 0.5.8 is ready" \
+     http://svn.libburnia-project.org/libburn/branches/ZeroFiveEigh \
+     http://svn.libburnia-project.org/libburn/tags/ZeroFiveEight
+
+svn delete -m 'Deleted obsolete branch' \
+    http://svn.libburnia-project.org/libburn/branches/"$svn_name"
+
+
 ------------------------------------ cycle  - cdrskin-0.5.9 - 2008.12.07.155219
 
+2008.12.09.123314  [2264]
+libburn/libburn.h
+libburn/drive.c
+libburn/async.c
+libburn/write.c
+libburn/mmc.c
+Beginning to implement write code for BD-R SRM without POW
+
+2008.12.09.123558  [2265]
+cdrskin/cdrskin.c
+Beginning to implement write code for BD-R SRM without POW
+
+2008.12.10.092535  [2271]
+libburn/transport.h
+libburn/async.c
+libburn/mmc.h
+libburn/mmc.c
+Formatting of BD-R SRM to default size and by index
+
+2008.12.10.114241  [2273]
+cdrskin/cdrskin.c
+Formatting of BD-R SRM to default size and by index
+
+10 Dec 2008  [2274]
+README
+cdrskin/README
+cdrskin/cdrskin.1
+cdrskin/wiki_plain.txt
+Mentioning BD-R in documentation
+
+2008.12.11.072308  [2276]
+libburn/libdax_msgs.h
+libburn/async.c
+Rejecting unformattable BD-R more early
+
+2008.12.11.092204  [2278]
+libburn/libdax_msgs.h
+libburn/async.c
+libburn/mmc.c
+cdrskin/cdrskin.1
+Catching BD-R zero spare formatting with NOTE rather than SORRY
+
+2008.12.12.112129  [2279]
+libburn/libburn.h
+libburn/async.c
+libburn/mmc.c
+Making format size of BD-RE and BD-R quite freely adjustable
+
+2008.12.12.214013  [2280]
+libburn/transport.h
+libburn/async.c
+libburn/mmc.c
+Interpreting feature 0023h for BD formatting capabilities
+
+2008.12.13.144909  [2284]
+configure.ac
+Now producing libburn.so.4.24.0
+
+------------------------------------ cycle  - cdrskin-0.5.9 - 2008.12.13.144909
+* Formatting and writing of BD-R media
 
 
------------------------------------- cycle  - cdrskin-0.5.9 - 
------------------------------------- cycle  - cdrskin-0.5.9 - 
+14 Dec 2008  [2289]
+test/libburner.c
+Updated libburner to BD-R
+
+14 Dec 2008 [2290]
+cdrskin/cdrskin_eng.html
+Updated cdrskin web page
+
+2008.12.17.091905  [2297]
+libburn/libburn.h
+libburn/drive.c
+New API function burn_get_read_capacity()
+
+17 Dec 2008 [2298] [2302]
+doc/comments
+Removed project overview and references to libisofs and libisoburn
+
+------------------------------------ cycle  - cdrskin-0.5.9 - 2008.12.19.070912
+* New API function burn_get_read_capacity()
+
+
+2008.12.19.203523  [2306]
+libburn/libburn.h
+Clarified blank, appendable, closed burn_disc_status 
+
+2008.12.22.130527  [2323]
+libburn/async.c
+Fixed denial of fast formatting with BD-RE introduced by revision 2280
+
+------------------------------------ cycle  - cdrskin-0.5.9 - 2008.12.23.144853
+
+
+2008.12.29.105341  [2342]
+libburn/libburn.h
+test/libburner.c
+Cosmetic changes
+
+Jan 02 2009  [2346]
+svn copy http://svn.libburnia-project.org/libburn/trunk
+         http://svn.libburnia-project.org/libburn/branches/ZeroSixZero
+Preparing for libburn-0.6.0
+
+02 Jan 2009  [2347]
+COPYRIGHT
+libburn/libdax_msgs.c
+libburn/libdax_msgs.h
+test/libburner.c
+Updated copyright claims to year 2009
+
+2009.01.02.160001  [2348]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.6.0
+
+02 Jan 2009  [2349]
+- cdrskin/add_ts_changes_to_libburn_0_5_8
+- cdrskin/add_ts_changes_to_libburn_0_5_9
++ cdrskin/add_ts_changes_to_libburn_0_6_0
++ cdrskin/add_ts_changes_to_libburn_0_6_1
+Updated cdrskin tarball generator
+
+02 Jan 2009  [2350]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.6.0.pl00 - 2009.01.02.160001
+* Formatting and writing of BD-R media
+* New API function burn_get_read_capacity()
+
+03 Jan 2009  []
+COPYRIGHT
+libburn/libdax_msgs.c
+libburn/libdax_msgs.h
+test/libburner.c
+Updated copyright claims to year 2009
+
+  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.6.0
+
+03 Jan 2009  []
+- cdrskin/add_ts_changes_to_libburn_0_5_8
+- cdrskin/add_ts_changes_to_libburn_0_5_9
++ cdrskin/add_ts_changes_to_libburn_0_6_0
++ cdrskin/add_ts_changes_to_libburn_0_6_1
+Updated cdrskin tarball generator
+
+03 Jan 2009  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-0.6.1 - 
+------------------------------------ cycle  - cdrskin-0.6.1 - 
+
+
+  []
+libburn/spc.c
+Error texts for ASC 73 : power calibration and program memory
 
 
 ===============================================================================
@@ -6132,12 +6313,10 @@ READ TRACK INFORMATION[#5]:
 
 ------------------------------ end of bugs ---------------------------------
 
+Support for BD-R SRM+POW
+
 ? Provide an option to open track source file O_DIRECT ?
   (needs read chunks much larger than 2 kB)
-
-interpret feature 0023h byte 4 for BD-RE formatting capabilities
-
-Enable profile 0x41 BD-R sequential recording (much like DVD+R)
 
 ? Enable profile 0x42 BD-R random recording
 
