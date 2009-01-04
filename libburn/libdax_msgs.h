@@ -1,7 +1,7 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006-2008 Thomas Schmitt <scdbackup@gmx.net>,
+   Copyright (C) 2006-2009 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPL version 2
 */
 
@@ -536,6 +536,10 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020161 (WARNING,HIGH) = Empty session deleted
  0x00020162 (SORRY,HIGH)   = BD-R not unformatted blank any more. Cannot format
  0x00020163 (NOTE,HIGH)    = Blank BD-R left unformatted for zero spare capacity
+ 0x00020164 (SORRY,HIGH)   = Drive does not format BD-RE without spares
+ 0x00020165 (WARNING,HIGH) = Drive does not support fast formatting
+ 0x00020166 (WARNING,HIGH) = Drive does not support full formatting
+ 0x00020167 (SORRY,HIGH)   = Drive does not support non-default formatting
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

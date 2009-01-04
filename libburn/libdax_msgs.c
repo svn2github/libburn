@@ -1,7 +1,7 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006 - 2008 Thomas Schmitt <scdbackup@gmx.net>,
+   Copyright (C) 2006 - 2009 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPL version 2
 */
 

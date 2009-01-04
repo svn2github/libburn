@@ -1,6 +1,6 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2008 Thomas Schmitt <scdbackup@gmx.net> */
+/* Copyright (C) 2005 - 2009 Thomas Schmitt <scdbackup@gmx.net> */
 /* Provided under GPLv2,see also "License and copyright aspects" at file end */
 
 
