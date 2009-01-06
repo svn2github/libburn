@@ -527,12 +527,15 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
 	struct write_opts o;
 	char reasons[BURN_REASONS_LEN+80];
+	struct burn_drive *d;
+
+	d = opts->drive;
 
 	/* ts A61006 */
 	/* a ssert(!SCAN_GOING()); */
 	/* a ssert(!find_worker(opts->drive)); */
 	if ((SCAN_GOING()) || find_worker(opts->drive) != NULL) {
-		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
+		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020102,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"A drive operation is still going on (want to write)",
@@ -541,14 +544,14 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	}
 
 	/* For the next lines any return indicates failure */
-	opts->drive->cancel = 1;
+	d->cancel = 1;
 
 	/* ts A70203 : people have been warned in API specs */
 	if (opts->write_type == BURN_WRITE_NONE)
 		return;
 
-	if (opts->drive->drive_role == 0) {
-		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
+	if (d->drive_role == 0) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020146,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
@@ -556,9 +559,9 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	}
 
 	/* ts A61007 : obsolete Assert in spc_select_write_params() */
-	if (opts->drive->drive_role == 1 && !opts->drive->mdata->valid) {
+	if (d->drive_role == 1 && !d->mdata->valid) {
 		libdax_msgs_submit(libdax_messenger,
-				opts->drive->global_index, 0x00020113,
+				d->global_index, 0x00020113,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Drive capabilities not inquired yet", 0, 0);
 		return;
@@ -571,21 +574,33 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
 	     <= 0) {
 		libdax_msgs_submit(libdax_messenger,
-				opts->drive->global_index, 0x00020139,
+				d->global_index, 0x00020139,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				reasons, 0, 0);
 		return;
 	}
 
-	opts->drive->cancel = 0; /* End of the return = failure area */
+	/* ts A90106 : early catching of unformatted BD-RE */
+	if (d->current_profile == 0x43) 
+		if (d->read_format_capacities(d, 0x00) > 0 &&
+		    d->format_descr_type != BURN_FORMAT_IS_FORMATTED) {
+			libdax_msgs_submit(libdax_messenger,
+				d->global_index, 0x00020168,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Media not properly formatted. Cannot write.",
+				0, 0);
+			return;
+		}
 
-	o.drive = opts->drive;
+	d->cancel = 0; /* End of the return = failure area */
+
+	o.drive = d;
 	o.opts = opts;
 	o.disc = disc;
 
 	opts->refcount++;
 
-	add_worker(Burnworker_type_writE, opts->drive,
+	add_worker(Burnworker_type_writE, d,
 			(WorkerFunc) write_disc_worker_func, &o);
 }
 

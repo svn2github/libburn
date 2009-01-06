@@ -540,6 +540,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020165 (WARNING,HIGH) = Drive does not support fast formatting
  0x00020166 (WARNING,HIGH) = Drive does not support full formatting
  0x00020167 (SORRY,HIGH)   = Drive does not support non-default formatting
+ 0x00020168 (FAILURE,HIGH) = Media not properly formatted
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
