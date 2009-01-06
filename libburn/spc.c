@@ -1122,6 +1122,20 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			break;
 		return FAIL;
+	case 0x73:
+		if (*key == 3 && *ascq == 0)
+			sprintf(msg, "CD control error");
+		else if (*key == 3 && *ascq == 2)
+			sprintf(msg, "Power calibration area is full");
+		else if (*key == 3 && *ascq == 3)
+			sprintf(msg, "Power calibration area error");
+		else if (*key == 3 && *ascq == 4)
+			sprintf(msg, "Program memory area update failure");
+		else if (*key == 3 && *ascq == 5)
+			sprintf(msg, "Program memory area is full");
+		else
+			break;
+		return FAIL;
 	}
 	sprintf(msg_data,
 		"Failure. See mmc3r10g.pdf: Sense Key %X ASC %2.2X ASCQ %2.2X",
