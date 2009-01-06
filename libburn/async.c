@@ -586,7 +586,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 		    d->format_descr_type != BURN_FORMAT_IS_FORMATTED) {
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x00020168,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 				"Media not properly formatted. Cannot write.",
 				0, 0);
 			return;
