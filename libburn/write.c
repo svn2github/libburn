@@ -1159,19 +1159,29 @@ int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
 int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
 {
 	struct burn_drive *d = o->drive;
+	char msg[80];
 
+	sprintf(msg, "Finalizing %s ...",
+		d->current_profile_text);
 	libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			"Finalizing DVD+R ...", 0, 0);
+			msg, 0, 0);
 
-	/* CLOSE SESSION, 101b, Finalize with minimal radius */
-	d->close_track_session(d, 2, 1);  /* (2<<1)|1 = 5 */
+	if(d->current_profile == 0x41) { /* BD-R */
+		/* CLOSE SESSION, 110b, Finalize Disc */
+		d->close_track_session(d, 3, 0);  /* (3<<1)|0 = 6 */
+	} else {
+		/* CLOSE SESSION, 101b, Finalize with minimal radius */
+		d->close_track_session(d, 2, 1);  /* (2<<1)|1 = 5 */
+	}
 
+	sprintf(msg, "... finalizing %s done               ",
+		d->current_profile_text);
 	libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			"... finalizing DVD+R done               ", 0, 0);
+			msg, 0, 0);
 
 	return 1;
 }
