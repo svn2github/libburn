@@ -1466,8 +1466,8 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	struct command c;
 	char msg[160];
 	/* ts A70131 : had to move mmc_read_toc() to end of function */
-	int do_read_toc = 0, session_state, disc_status, len, old_alloc_len;
-	int ret;
+	int do_read_toc = 0, disc_status, len, old_alloc_len;
+	int ret, number_of_sessions = -1;
 
 	/* ts A61020 */
 	d->start_lba = d->end_lba = -2000000000;
@@ -1526,6 +1526,9 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	d->erasable = !!(data[2] & 16);
 
  	disc_status = data[2] & 3;
+	d->state_of_last_session = (data[2] >> 2) & 3;
+	number_of_sessions = (data[9] << 8) | data[4];
+
 	if (d->current_profile == 0x10 || d->current_profile == 0x40) {
 							 /* DVD-ROM , BD-ROM */
 		disc_status = 2; /* always full and finalized */
@@ -1581,11 +1584,26 @@ regard_as_blank:;
 		ret = mmc_read_capacity(d);
 		/* Freshly formatted, unwritten BD-R pretend to be appendable
 		   but in our model they need to be regarded as blank.
+		   Criterion: BD-R seq, read capacity known and 0,
+		              declared appendable, single empty session
 		*/
-		if (d->current_profile == 0x41 && ret > 0 &&
+		if (d->current_profile == 0x41 &&
 		    d->status == BURN_DISC_APPENDABLE &&
-		    d->media_read_capacity == 0)
+		    ret > 0 && d->media_read_capacity == 0 &&
+		    d->state_of_last_session == 0 && number_of_sessions == 1)
 			goto regard_as_blank;
+
+		if (d->current_profile == 0x41 &&
+		    d->status == BURN_DISC_APPENDABLE &&
+		    d->state_of_last_session == 1) {
+
+			/* ??? apply this test to other media types ? */
+
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x00020169,
+				 LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				 "Last session on media is still open.", 0, 0);
+		}
 
 		do_read_toc = 1;
 		break;
@@ -1634,10 +1652,9 @@ regard_as_blank:;
 		d->complete_sessions = 0;
 	} else {
 		/* ts A70131 : number of non-empty sessions */
-		d->complete_sessions = (data[9] << 8) | data[4];
-		session_state = (data[2] >> 2) & 3;
+		d->complete_sessions = number_of_sessions;
 		/* mmc5r03c.pdf 6.22.3.1.3 State of Last Session: 3=complete */
-		if (session_state != 3 && d->complete_sessions >= 1)
+		if (d->state_of_last_session != 3 && d->complete_sessions >= 1)
 			d->complete_sessions--;
 
 		/* ts A70129 : mmc5r03c.pdf 6.22.3.1.7
@@ -2852,7 +2869,8 @@ selected_not_suitable:;
 			d->current_profile == 0x14 ||
 			d->current_profile == 0x1a ||
 			d->current_profile == 0x12 ||
-			 d->current_profile == 0x43))
+			d->current_profile == 0x41 ||
+			d->current_profile == 0x43))
 			goto unsuitable_media;
 		      
 		format_type = d->format_descriptors[index].type;
@@ -2860,7 +2878,8 @@ selected_not_suitable:;
 		      format_type == 0x10 ||
 		      format_type == 0x11 || format_type == 0x13 ||
 		      format_type == 0x15 || format_type == 0x26 ||
- 		      format_type == 0x30 || format_type == 0x31 ))
+ 		      format_type == 0x30 || format_type == 0x31 ||
+		      format_type == 0x32))
 			goto selected_not_suitable;
 		if (flag & 4) {
 			num_of_blocks =
@@ -2872,7 +2891,8 @@ selected_not_suitable:;
 				 c.page->data[9 + i] =
 					( d->format_descriptors[index].tdp >>
 					  (16 - 8 * i)) & 0xff;
-		if (format_type == 0x30 || format_type == 0x31) {
+		if (format_type == 0x30 || format_type == 0x31 ||
+		    format_type == 0x32) {
 			if (flag & 64)
 				format_sub_type = 3; /* Quick certification */
 			else
@@ -3799,6 +3819,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->bg_format_status = -1;
 	d->num_format_descr = 0;
 	d->complete_sessions = 0;
+	d->state_of_last_session = -1;
 	d->last_track_no = 1;
 	d->media_capacity_remaining = 0;
 	d->media_lba_limit = 0;

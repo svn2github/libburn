@@ -1402,7 +1402,18 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	int i,ret;
         struct burn_drive *d = o->drive;
 
-	/* >>> open_session ? */
+	/* ts A90108 */
+	if (d->current_profile == 0x41 && d->status == BURN_DISC_APPENDABLE &&
+	    d->state_of_last_session == 1) {
+		/* last session on BD-R is still open */;
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020170,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				"Closing open session before writing new one",
+				0, 0);
+ 		d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
+		d->state_of_last_session = 3; /* mark as complete session */
+	}
 
 	for (i = 0; i < s->tracks; i++) {
 		ret = burn_dvd_write_track(o, s, i,

@@ -236,6 +236,9 @@ struct burn_drive
 
 	/* ts A70131 : from 51h READ DISC INFORMATION Number of Sessions (-1)*/
 	int complete_sessions;
+	/* ts A90107 */
+	int state_of_last_session;
+
 	/* ts A70129 :
 	   from 51h READ DISC INFORMATION Last Track Number in Last Session */
 	int last_track_no;
