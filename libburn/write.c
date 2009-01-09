@@ -1399,7 +1399,7 @@ int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
 int burn_dvd_write_session(struct burn_write_opts *o,
 				struct burn_session *s, int is_last_session)
 {
-	int i,ret;
+	int i, ret, multi_mem;
         struct burn_drive *d = o->drive;
 
 	/* ts A90108 */
@@ -1424,7 +1424,11 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
 	    d->current_profile == 0x15) {
 		/* DVD-R , DVD-RW Sequential, DVD-R/DL Sequential */
+		multi_mem = o->multi;
+		if (!is_last_session)
+			o->multi = 1;
 		ret = burn_disc_close_session_dvd_minus_r(o, s);
+		o->multi = multi_mem;
 		if (ret <= 0)
 			return 0;
 	} else if (d->current_profile == 0x12 || d->current_profile == 0x43) {
@@ -2042,7 +2046,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	struct burn_drive *d = o->drive;
 	struct buffer buf, *buffer_mem = o->drive->buffer;
 	struct burn_track *lt, *t;
-	int first = 1, i, ret, lba, nwa = 0;
+	int first = 1, i, ret, lba, nwa = 0, multi_mem;
 	off_t default_size;
 	char msg[80];
 
@@ -2192,7 +2196,12 @@ return crap.  so we send the command, then ignore the result.
 				d->alba += 4500;
 			}
 		}
-		if (!burn_write_session(o, disc->session[i]))
+		multi_mem = o->multi;
+		if(i < disc->sessions - 1)
+			o->multi = 1;
+		ret = burn_write_session(o, disc->session[i]);
+		o->multi = multi_mem;
+		if (!ret)
 			goto fail;
 
 		lt = disc->session[i]->track[disc->session[i]->tracks - 1];
