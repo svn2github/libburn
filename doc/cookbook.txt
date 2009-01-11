@@ -1,4 +1,4 @@
-libburnia-project.org Optical Media Rotisserie Recipes as of April 2008
+libburnia-project.org Optical Media Rotisserie Recipes as of January 2009
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
@@ -6,6 +6,7 @@ Content:
 - Overwriteable DVD Cookbook (DVD-RAM, DVD+RW, DVD-RW, BD-RE)
 - Sequential DVD-R[W] Cookbook
 - DVD+R[/DL] Cookbook
+- BD-R Cookbook
 
 -------------------------------------------------------------------------------
                          TAO Multi-Session CD Cookbook
@@ -404,7 +405,7 @@ correctness of Pre-gap and Post-gap would become evident.
 Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 by own experiments with drives NEC ND-4570A, LG GSA-4082B, PHILIPS SPD3300L,
-and by BD-RE experiments done by Giulio Orsero on LG BE06LU10.
+LG GGW H20L, and by BD-RE experiments done by Giulio Orsero on LG BE06LU10.
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
@@ -697,9 +698,14 @@ managment. There is no way to increase payload capacity by format 01h.
 (mmc5r03c.pdf 6.5.4.2.2.1)
 
 With BD-RE there are three format types : 00h, 30h and 31h.
-00h offers the default size format.
+00h offers the default size format. This may be the only fast formatting
+mode that is offered by the drive.
+Feature 0023h tells whether format 31h and certain 30h subtypes are available.
+(mmc5r03c.pdf 5.3.13)
 30h offers several sizes with defect management. Usually there are three
-size to choose: #1: default size, #2: maximum spare area, #3: minimal spare.
+sizes given: #1: default size, #2: maximum spare area, #3: minimal spare.
+One may demand any spare size between maximum and minimum. There may be quick
+certification and full certification. See feature 0023h.
 31h offers a single size and disables defect management. This has the side
 effect to speed up writing to nominal speed.
 (mmc5r03c.pdf 6.5.4.2.15, 6.24.3.3, Table 472)
@@ -738,7 +744,7 @@ DVD-RAM and BD-RE tuning :
 
 A special aspect of DVD-RAM and BD-RE is their low speed with write operations,
 which usually is only half than the nominal speed of media and drive.
-This is blamed to the automatic checkreading which happens ifor managing
+This is blamed to the automatic checkreading which happens for managing
 eventual defects. 
 
 Defect management of BD-RE can be disabled by format type 31h. See above.
@@ -749,7 +755,7 @@ The only known way to get full speed from DVD-RAM or BD-RE with enabled defect
 management is the use of AAh WRITE12 with Streaming Bit set to 1.
 (mmc5r03c.pdf 6.45)
 With some DVD-RAM drives this fails if a write buffer is not full 32 kB.
-With the tested BD-RE ione has to write write full 64 kB buffers.
+With the tested BD-RE one has to write full 64 kB buffers.
 
 Although it seems not optimal, this is specified not only to disable the
 cumbersome checkread but also to ignore known defects and to write data
@@ -760,10 +766,10 @@ incorrectable errors.
 
 Caveat:
 MMC-5 does not guarantee AAh WRITE12 to work on DVD-RAM or BD-RE at all.
-None of the features of profiles 0012h and 0043 promises the existence of
+None of the features of profiles 0012h and 0043h promises the existence of
 AAh WRITE12.
-Nevertheless it worked on all tested drives is proper alignment was observed.
 (mmc5r03c.pdf 5.4.13, 6.45)
+Nevertheless it worked on all tested drives if proper alignment was observed.
 
 
 -------------------------------------------------------------------------------
@@ -790,9 +796,9 @@ The bytes 0 to 5 of a PVD block are
    0x01 'C' 'D' '0' '0' '1'
 The sector count can then be read from byte 80 to 83
    sectors= pvd[80] | (pvd[81] << 8) | (pvd[82] << 16) | (pvd[83] << 24);
+(Ecma-119.pdf 8.4)
 To support CD, DVD and BD media alike, it is advisable to round the NWA
 to the next multiple of 32 (= 64 KiB).
-(Ecma-119.pdf 8.4)
 
 So one can use 0 as MSC1 and prepare a new ISO session for the computed NWA.
 After writing the session it is necessary to patch the PVD at LBA 16.
@@ -801,7 +807,7 @@ It is stored in both notations LSB and MSB:
    for(i= 0; i < 4; i++)
      pvd[87 - i]= pvd[80 + i]= (sectors >> (8 * i)) & 0xff;
 
-cdrskin --grow_overwriteable not only patches the sector fields of the
+cdrskin --grow_overwriteable_iso not only patches the sector fields of the
 PVD block but also the blocks up to LBA 31 which begin with
    0xff 'C' 'D' '0' '0' '1'
 libisoburn submits 64 KiB data buffer to libisofs before image generation and
@@ -1270,6 +1276,121 @@ DVD+R/DL (Dual Layer) :
 libburn treats DL media just like their single layer equivalents.
 This seems to work fine for DVD+R/DL, according to a report by nightmorph
 in http://libburnia-project.org/ticket/13 .
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+                              BD-R Cookbook
+-------------------------------------------------------------------------------
+Inspired by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+backed by experiments iwith drive LG GGW H20L.
+
+For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
+
+-------------------------------------------------------------------------------
+Media type can be recognized by Current Profile from 46h GET CONFIGURATION.
+(mmc5r03c.pdf 6.6.2.1)
+BD-R                           0042h
+
+There are two basic recording modes defined: Sequential Recording Mode SRM and
+Random Recording Mode RRM. The latter is optional and for now not topic of this
+text.
+(mmc5r03c.pdf 4.5.3.5)
+
+
+- SRM Formatting
+- Writing a session in SRM-POW
+(- Pseudo-OverWrite SRM+POW)
+
+
+-------------------------------------------------------------------------------
+SRM Formatting:
+
+Despite being write-once media BD-R can optionally carry some formatting.
+
+SRM has a disc structure model with tracks and sessions.
+Several tracks may be open at the same time, each having its own NWA.
+(mmc5r03c.pdf 4.5.3.5.2.2)
+This structure is formatted onto blank media automatically as soon as the
+first serious write attempt occurs.
+(mmc5r03c.pdf 4.5.3.5)
+Before such a write attempt, blank media may be explicitely formatted with
+spares, which provide defect management.
+(mmc5r03c.pdf 4.5.3.5.3)
+Tracks get created from other tracks via RESERVE TRACK splitting.
+(mmc5r03c.pdf 4.5.3.5.2.5)
+
+On top of defect management there may be Pseudo-OverWrite SRM+POW, a costly
+way to write several times to the same LBA. See below.
+Fully sequential states are called SRM-POW.
+(mmc5r03c.pdf 4.5.3.5.4)
+
+Explicite formatting is done by 04h FORMAT UNIT. Its data payload consists
+of a Format List Header and a Format Descriptor. It is advisable to set
+the Immed bit and the FOV bit in header byte number 1. The descriptor should
+be a copy of a descriptor from 23h READ FORMAT CAPACITIES but the size may be
+adjusted within a certain range.
+(mmc5r03c.pdf 6.5, 6.5.3.2, 6.5.3.3)
+
+Format type 00h creates SRM layouts with a default number of spares (or
+eventually RRM) chosen by the format sub-type:
+  00b = SRM with support for POW
+  01b = SRM without POW (but with some spares for defect management)
+  10b = (RRM)
+(mmc5r03c.pdf 6.5.4.2.1.6)
+
+Format type 32h uses the same sub-types but allows to allocate non-default
+amounts of spares. Similar to BD-RE format 31h, three format descriptors are
+offered: #1: default size, #2: maximum spare area, #3: minimal spare.
+The size may be chosen within that range.
+
+The sense behind the Type Dependent Parameters is obscure
+to me. Best will be to set ISA_V and TDMA_V to 0.
+(mmc5r03c.pdf 6.5.4.2.1.17)
+
+
+-------------------------------------------------------------------------------
+Writing a session in SRM:
+
+The procedure and constraints for writing BD-R SRM-POW are very similar to
+DVD+R. libburn flatly re-uses its DVD+R code except the Close Function for
+finalizing a disc.
+
+In short:
+If all written sessions are closed, then there is exactly one NWA.
+In the beginning there is an empty session and track. A new track can be
+written either with pre-announced size (by RESERVE TRACK) or open-end by
+simply starting to write to the NWA. When done the track gets closed by
+close function 001b. Then either session or disc gets closed depending on
+the Close Function used:
+- Close Function 010b closes the session and keeps the media appendable
+  (same as with DVD+R)
+- Close Function 110b finalizes the media and makes it read-only.
+  (differs from libburn DVD+R procedure which uses 101b)
+
+-------------------------------------------------------------------------------
+Pseudo-OverWrite POW: (no used yet by libburn)
+
+This enhancement of SRM emulates overwriting of existing data blocks.
+(mmc5r03c.pdf 4.5.3.5.4)
+
+POW establishes a virtual vLBA space on top of the real address space rLBA.
+All read and write commands deal with vLBA. It seems that track NWAs are
+assumed to be identical in vLBA space and in rLBA space.
+It is not clear whether one may write to vLBA blocks which are neither written
+yet nor at one of the track NWAs. Probably not, or else one could make NWAs run
+into vLBAs which are associated with older rLBAs.
+
+Replacing invalidated blocks consumes addresses in rLBA space at the NWA of
+some track. I.e. no spares are consumed by POW. Nevertheless it is costly by
+a special map called Orphanage. It covers rLBA which have been consumed
+by differing vLBAs. It never shrinks and can grow with each write to remapped
+addresses.
+To avoid heavy Orphanage growth it is advised to write mostly to vLBA which
+still coincide with their rLBA. E.g. those addresses which have neither been
+written as rLBA nor as vLBA yet. So one should begin the vLBA of new sessions
+at the NWA of a sufficiently sized track.
+(mmc5r03c.pdf 4.5.3.5.4.2 , 4.5.3.6.9)
 
 -------------------------------------------------------------------------------
 
