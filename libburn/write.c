@@ -1406,6 +1406,52 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	if (d->current_profile == 0x41 && d->status == BURN_DISC_APPENDABLE &&
 	    d->state_of_last_session == 1) {
 		/* last session on BD-R is still open */;
+
+		/* BR-R were not closed by libburn-0.6.0.pl00 if o->multi==0.
+		   This leads to an unreadable, but recoverable) media state.
+		   Technically they are appendable although the last session
+		   is not readable.
+
+		   By default the open session gets closed here before the new
+		   session is written. E.g. after writing a small dummy seesion
+		   number 2 one can read session 1 and write session 3 which
+		   points to data of session 1.
+
+		   For the case that no media with 3 sessions is desired it is
+		   possible to activate the following coarse single-session
+		   closing code:
+		   No new session will be written but calling programs will
+		   report success. Quite misleading.
+		   Activate only if really needed by
+		   # define Libburn_bug_A90108_close_disC yes
+		*/
+
+
+#ifdef Libburn_bug_A90108_close_disC
+
+		/* Close open session and media. 
+		   That was the goal of the failed run which led to the
+		   unreadable (but recoverable) media state.
+
+		   It is not easy to implement a general close function for
+		   all media types. Therefore this pseudo write code is under
+		   control of #ifdef.
+		*/
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020171,
+				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				"Closing BD-R with accidently open session",
+				0, 0);
+ 		d->close_track_session(d, 3, 0); /* CLOSE SESSION, 110b */
+		d->state_of_last_session = 3; /* mark as complete session */
+		d->status = BURN_DISC_FULL;
+		sleep(3); /* The caller might need time to arrange itself */
+		return 1;
+
+#else /* Libburn_bug_A90108_close_disC */
+
+		/* This is the default mode.
+		*/
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020170,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
@@ -1413,6 +1459,9 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 				0, 0);
  		d->close_track_session(d, 1, 0); /* CLOSE SESSION, 010b */
 		d->state_of_last_session = 3; /* mark as complete session */
+
+#endif /* ! Libburn_bug_A90108_close_disC */
+
 	}
 
 	for (i = 0; i < s->tracks; i++) {
