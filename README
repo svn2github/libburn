@@ -153,6 +153,13 @@ libburn.so.4    (since 0.3.4, March    2007),
 libisofs.so.6   (since 0.6.2, February 2008),
 libisoburn.so.1 (since 0.1.0, February 2008).
 
+Applications must use 64 bit off_t. E.g. by defining
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
+or take special precautions to interface with the libraries by 64 bit integers
+where the .h files prescribe off_t. Not to use 64 bit file i/o will keep the
+application from producing and processing ISO images of more than 2 GB size.
+
 
 ------------------------------------------------------------------------------
 Project history as far as known to me:

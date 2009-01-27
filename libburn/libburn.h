@@ -3,11 +3,15 @@
 #ifndef LIBBURN_H
 #define LIBBURN_H
 
-/* Needed for  off_t  which is the (POSIX-ly) appropriate type for
-   expressing a file or stream size.
+/* 
 
-   XXX we should enforce 64-bitness for off_t
-   ts A61101 : this is usually done by the build system (if it is not broken)
+Applications must use 64 bit off_t. E.g. by defining
+  #define _LARGEFILE_SOURCE
+  #define _FILE_OFFSET_BITS 64
+or take special precautions to interface with the library by 64 bit integers
+where this .h files prescribe off_t. Not to use 64 bit file i/o will keep the
+application from producing and processing ISO images of more than 2 GB size.
+
 */
 #include <sys/types.h>
 
