@@ -35,6 +35,11 @@ and to install the cdrecord compatibility binary cdrskin, do
 This procedure installs libburn.so.4 and cdrskin depending on it.
 For a standalone cdrskin binary, see cdrskin/README.
 
+A behavioral conflict is known between any burn software and demons like hald
+which probe CD drives. This can spoil burn runs for CD-R or CD-RW.
+You may have to keep your hald away from the drive. See for example
+   http://www.freebsd.org/gnome/docs/halfaq.html
+
 
                                   From SVN
 

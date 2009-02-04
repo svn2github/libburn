@@ -119,6 +119,11 @@ as listed device files. This addressing via e.g. /dev/sr0 or /dev/scd1 is
 compatible with generic read programs like dd and with write program growisofs.
 For finding /dev/sg1 from /dev/sr0, the program needs rw-access to both files.
 
+A behavioral conflict is known between any burn software and demons like hald
+which probe CD drives. This can spoil burn runs for CD-R or CD-RW.
+You may have to keep your hald away from the drive. See for example
+   http://www.freebsd.org/gnome/docs/halfaq.html
+
 
                                 Usage examples 
 
