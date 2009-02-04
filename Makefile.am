@@ -82,32 +82,34 @@ noinst_PROGRAMS = \
 bin_PROGRAMS = \
 	cdrskin/cdrskin
 
+LIBBURN_EXTRALIBS = $(LIBBURN_ARCH_LIBS) $(THREAD_LIBS)
+
 test_libburner_CPPFLAGS = -Ilibburn
-test_libburner_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_libburner_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_libburner_SOURCES = test/libburner.c
 test_telltoc_CPPFLAGS = -Ilibburn
-test_telltoc_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_telltoc_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_telltoc_SOURCES = test/telltoc.c
 test_dewav_CPPFLAGS = -Ilibburn
-test_dewav_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_dewav_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_dewav_SOURCES = test/dewav.c
 test_fake_au_CPPFLAGS = 
 test_fake_au_LDADD =
 test_fake_au_SOURCES = test/fake_au.c
 test_poll_CPPFLAGS = -Ilibburn
-test_poll_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_poll_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_poll_SOURCES = test/poll.c
 test_structest_CPPFLAGS = -Ilibburn
-test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_structest_SOURCES = test/structest.c
 
 ##  cdrskin construction site - ts A60816 - A90104
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
 cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_6_1
 
-# cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(THREAD_LIBS)
+# cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 # ts A80123, change proposed by Simon Huggins to cause dynamic libburn linking
-cdrskin_cdrskin_LDADD = libburn/libburn.la $(THREAD_LIBS)
+cdrskin_cdrskin_LDADD = libburn/libburn.la $(LIBBURN_EXTRALIBS)
 
 cdrskin_cdrskin_SOURCES = cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cdrfifo.h cdrskin/cdrskin_timestamp.h
 ##
