@@ -104,7 +104,9 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
 {
 	int i, ret = 1, key = 0, asc = 0, ascq = 0;
-	char msg[160];
+	char msg[320];
+	unsigned char sense[14];
+	enum response resp;
 
 	if (!(flag & 1))
 		usleep(100000);
@@ -138,10 +140,24 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				/* media change notice = try again */
 				goto slumber;
 
+#ifdef NIX
 			sprintf(msg,
 		"Asynchromous SCSI error on %s: key=%X asc=%2.2Xh ascq=%2.2Xh",
 			 	cmd_text, (unsigned) key, (unsigned) asc,
 				(unsigned) ascq);
+#else
+
+			/* ts A90213 */
+			sprintf(msg,
+				"Asynchromous SCSI error on %s: ", cmd_text);
+			sense[2] = key;
+			sense[12] = asc;
+			sense[13] = ascq;
+			resp = scsi_error_msg(d, sense, 14, msg + strlen(msg),
+						 &key, &asc, &ascq);
+
+#endif /* ! NIX */
+
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002014d,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
