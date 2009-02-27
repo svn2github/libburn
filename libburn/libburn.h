@@ -1388,6 +1388,28 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 */
 void burn_disc_write(struct burn_write_opts *o, struct burn_disc *disc);
 
+
+/* ts A90227 */
+/** Control stream recording during the write run and eventually set the start
+    LBA for stream recording.
+    Stream recording is set from struct burn_write_opts when the write run
+    gets started. See burn_write_opts_set_stream_recording().
+    The call described here can be used later to override this setting and
+    to program automatic switching at a given LBA. It also affects subsequent
+    calls to burn_random_access_write().
+    @param drive    The drive which performs the write operation.
+    @param recmode  -1= disable stream recording
+                     0= leave setting as is
+                     1= enable stream recording
+    @param start    The LBA where actual stream recording shall start.
+                    (0 means unconditional stream recording)
+    @param flag     Bitfield for control purposes (unused yet, submit 0).
+    @return         1=success , <=0 failure
+    @since 0.6.4
+*/
+int burn_drive_set_stream_recording(struct burn_drive *drive, int recmode,
+                                    int start, int flag);
+
 /** Cancel an operation on a drive.
     This will only work when the drive's busy state is BURN_DRIVE_READING or
     BURN_DRIVE_WRITING.
@@ -1906,12 +1928,15 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
 
 /* ts A80412 */
 /** Eventually makes use of the more modern write command AAh WRITE12 and
-    sets the Streaming bit. With DVD-RAM this can override the traditional
-    slowdown to half nominal speed. But if it speeds up writing then it also
-    disables error management and correction. Weigh your priorities.
-    This only affects the write operations of burn_disc_write().
+    sets the Streaming bit. With DVD-RAM and BD this can override the
+    traditional slowdown to half nominal speed. But if it speeds up writing
+    then it also disables error management and correction. Weigh your
+    priorities. This affects the write operations of burn_disc_write()
+    and subsequent calls of burn_random_access_write().
     @param opts The write opts to change
     @param value  0=use 2Ah WRITE10, 1=use AAh WRITE12 with Streaming bit
+                  @since 0.6.4:
+                  >=16 use WRITE12 but not before the LBA given by value
     @since 0.4.6
 */
 void burn_write_opts_set_stream_recording(struct burn_write_opts *opts, 

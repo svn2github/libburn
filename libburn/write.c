@@ -2106,8 +2106,12 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	/* ts A61224 */
 	burn_disc_init_write_status(o, disc); /* must be done very early */
 
-	/* ts A80412 */
-	d->do_stream_recording = o->do_stream_recording;
+	/* ts A80412 , A90227 */
+	d->do_stream_recording = !!o->do_stream_recording;
+	if (o->do_stream_recording >= 16)
+		d->stream_recording_start = o->do_stream_recording;
+	else
+		d->stream_recording_start = 0;
 
 	d->buffer = &buf;
 	memset(d->buffer, 0, sizeof(struct buffer));

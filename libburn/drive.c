@@ -62,6 +62,7 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->stdio_fd = -1;
 	d->status = BURN_DISC_UNREADY;
 	d->do_stream_recording = 0;
+        d->stream_recording_start= 0;
 	return 1;
 }
 
@@ -790,6 +791,18 @@ enum burn_drive_status burn_drive_get_status(struct burn_drive *d,
 		/* TODO: add mutex */
 	}
 	return d->busy;
+}
+
+int burn_drive_set_stream_recording(struct burn_drive *d, int recmode,
+                                    int start, int flag)
+{
+
+	if (recmode == 1)
+		d->do_stream_recording = 1;
+	else if (recmode == -1)
+		d->do_stream_recording = 0;
+	d->stream_recording_start = start;
+	return(1);
 }
 
 void burn_drive_cancel(struct burn_drive *d)

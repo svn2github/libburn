@@ -385,7 +385,7 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force)
 void burn_write_opts_set_stream_recording(struct burn_write_opts *opts,
 					 int value)
 {
-	opts->do_stream_recording = !!value;
+	opts->do_stream_recording = value;
 }
 
 

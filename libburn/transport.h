@@ -205,6 +205,11 @@ struct burn_drive
 	               with BD-RE */
 	int do_stream_recording;
 
+        /* ts A90227 : the LBA where stream recording shall start.
+                       Writing to lower LBA will be done without streaming.
+        */
+        int stream_recording_start;
+
 	/* ts A61218 from 51h READ DISC INFORMATION */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
 

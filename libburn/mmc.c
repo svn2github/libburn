@@ -55,10 +55,10 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts A70306 */
 #define Libburn_support_dvd_plus_R 1
 
-/* ts A70509 : handling 0x41 and 0x42 as read-only types */
+/* ts A70509 : handling 0x41 as read-only type */
 #define Libburn_support_bd_r_readonlY 1
 
-/* >>> ts A81208 */
+/* ts A81208 */
 #define Libburn_support_bd_plus_r_srM 1
 
 
@@ -124,6 +124,7 @@ extern struct libdax_msgs *libdax_messenger;
                BD-RE is now an officially supported profile.
    ts A81209 : The first two sessions have been written to BD-R SRM
                (auto formatted without Defect Management).
+   ts A90107 : BD-R is now supported media type
 */
 
 /* ts A70519 : With MMC commands of data direction FROM_DRIVE:
@@ -744,7 +745,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 		mmc_wait_for_buffer_free(d, buf);
 
 	/* ts A80412 */
-	if(d->do_stream_recording > 0)  {
+	if(d->do_stream_recording > 0 && start >= d->stream_recording_start) {
 
 		/* >>> ??? is WRITE12 available ?  */
 			/* >>> ??? inquire feature 107h Stream Writing bit ? */
