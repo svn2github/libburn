@@ -2692,10 +2692,13 @@ set_dev:;
           " --single_track     accept only last argument as source_address\n");
 
 #ifdef Cdrskin_libburn_has_stream_recordinG
+     printf(" stream_recording=\"on\"|\"off\"|number\n");
      printf(
-        " stream_recording=\"on\"|\"off\"  \"on\" requests to prefer speed\n");
+         "                    \"on\" requests to prefer speed over write\n");
      printf(
-        "                                  over write error management.\n");
+         "                    error management. A number prevents this with\n");
+     printf(
+         "                    byte addresses below that number.\n");
 #endif
 
 #ifdef Cdrskin_allow_libburn_taO
@@ -3120,7 +3123,7 @@ struct CdrskiN {
  int gracetime;
  int dummy_mode;
  int force_is_set;
- int stream_recording_is_set;
+ int stream_recording_is_set; /* see burn_write_opts_set_stream_recording() */
  int single_track;
  int prodvd_cli_compatible;
 
@@ -6466,7 +6469,7 @@ burn_failed:;
  burn_write_opts_set_force(o, !!skin->force_is_set);
 #endif
 #ifdef Cdrskin_libburn_has_stream_recordinG
- burn_write_opts_set_stream_recording(o, !!skin->stream_recording_is_set);
+ burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
 #endif
 
  if(skin->dummy_mode) {
@@ -6988,7 +6991,7 @@ sorry_failed_to_eject:;
 int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
  int i,k,l,ret,source_has_size=0, idx= -1;
- double value,grab_and_wait_value= -1.0;
+ double value,grab_and_wait_value= -1.0, num;
  char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
 
@@ -7725,9 +7728,15 @@ set_speed:;
 set_stream_recording:;
      if(strcmp(value_pt, "on")==0)
        skin->stream_recording_is_set= 1;
-     else
+     else if(value_pt[0] >= '0' && value_pt[0] <= '9') {
+       num= Scanf_io_size(value_pt, 0);
+       num/= 2048.0;
+       if(num >= 16 && num <= 0x7FFFFFFF)
+         skin->stream_recording_is_set= num;
+       else
+         skin->stream_recording_is_set= 0;
+     } else
        skin->stream_recording_is_set= 0;
-
    } else if(strcmp(argv[i],"-swab")==0) {
      skin->swap_audio_bytes= 0;
 
