@@ -542,8 +542,13 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020167 (SORRY,HIGH)   = Drive does not support non-default formatting
  0x00020168 (FAILURE,HIGH) = Media not properly formatted. Cannot write.
  0x00020169 (WARNING,HIGH) = Last session on media is still open
+ 0x0002016a (FAILURE,HIGH) = No MMC transport adapter is present
+ 0x0002016b (WARNING,HIGH) = No MMC transport adapter is present
+ 0x0002016c (DEBUG,HIGH)   = No MMC transport adapter is present
+
  0x00020170 (NOTE,HIGH)    = Closing open session before writing new one
  0x00020171 (NOTE,HIGH)    = Closing BD-R with accidently open session
+ 
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
