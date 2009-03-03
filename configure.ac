@@ -162,6 +162,16 @@ TARGET_SHIZZLE
 AC_SUBST(ARCH)
 AC_SUBST(LIBBURN_ARCH_LIBS)
 
+dnl ts A90303
+dnl Check the preconditions for using statvfs() in sg-dummy
+dnl (sg-linux and sg-freebsd use statvfs() unconditionally)
+STATVFS_DEF=-DLibburn_os_has_statvfS
+AC_CHECK_HEADER(sys/statvfs.h, X=, STATVFS_DEF=)
+AC_CHECK_FUNC([statvfs], X=, STATVFS_DEF=)
+dnl If this would be done more specifically in Makefile.am
+dnl via libburn_libburn_la_CFLAGS then undesired .o file names would emerge
+CFLAGS="$CFLAGS $STATVFS_DEF"
+
 dnl Add compiler-specific flags
 
 dnl See if the user wants aggressive optimizations of the code

@@ -20,6 +20,10 @@ Present implementation: default dummy which enables libburn only to work
 #include <sys/stat.h>
 #include <string.h>
 
+#ifdef Libburn_os_has_statvfS
+#include <sys/statvfs.h>
+#endif /* Libburn_os_has_stavtfS */
+
 #include "transport.h"
 #include "drive.h"
 #include "sg.h"
@@ -32,7 +36,6 @@ Present implementation: default dummy which enables libburn only to work
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
-
 
 
 /** Returns the next index number and the next enumerated drive address.
@@ -165,7 +168,6 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 #ifdef Libburn_os_has_statvfS
 	struct statvfs vfsbuf;
-	int open_mode = O_RDONLY, fd, ret;
 #endif
 
 	char testpath[4096], *cpt;
