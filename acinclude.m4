@@ -14,7 +14,9 @@ AC_DEFUN([TARGET_SHIZZLE],
       LIBBURN_ARCH_LIBS=-lcam
       ;;
     *)
-      AC_ERROR([You are attempting to compile for an unsupported platform])
+      ARCH=
+      LIBBURN_ARCH_LIBS=
+#      AC_ERROR([You are attempting to compile for an unsupported platform])
       ;;
   esac
 
