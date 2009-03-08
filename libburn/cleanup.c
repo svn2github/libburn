@@ -97,8 +97,8 @@ static int Cleanup_handler_exit(int exit_value, int signum, int flag)
        return(2);
    }
  if(cleanup_exiting) {
-   fprintf(stderr,"cleanup: ABORT : repeat by pid=%d, signum=%d\n",
-           getpid(),signum);
+   fprintf(stderr,"cleanup: ABORT : repeat by pid=%.f, signum=%d\n",
+           (double) getpid(), signum);
    return(0);
  }
  cleanup_exiting= 1;
