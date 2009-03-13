@@ -6244,14 +6244,14 @@ Documented changes and release timestamp
 * Formatting and writing of BD-R media
 * New API function burn_get_read_capacity()
 
-03 Jan 2009  []
+2009.01.04.112716  [2351]
 COPYRIGHT
 libburn/libdax_msgs.c
 libburn/libdax_msgs.h
 test/libburner.c
 Updated copyright claims to year 2009
 
-  []
+2009.01.04.113401  [2352]
 Makefile.am
 configure.ac
 README
@@ -6261,28 +6261,286 @@ cdrskin/README
 cdrskin/compile_cdrskin.sh
 cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
-Made number transition to 0.6.0
+Made number transition to 0.6.1
 
-03 Jan 2009  []
+04 Jan 2009  [2353]
 - cdrskin/add_ts_changes_to_libburn_0_5_8
 - cdrskin/add_ts_changes_to_libburn_0_5_9
 + cdrskin/add_ts_changes_to_libburn_0_6_0
 + cdrskin/add_ts_changes_to_libburn_0_6_1
 Updated cdrskin tarball generator
 
-03 Jan 2009  []
+03 Jan 2009  [2354]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+------------------------------------ cycle  - cdrskin-0.6.1 - 2009.01.04.113401
 
------------------------------------- cycle  - cdrskin-0.6.1 - 
------------------------------------- cycle  - cdrskin-0.6.1 - 
+04 Jan 2009  [2356]
+svn move
+http://svn.libburnia-project.org/libburn/branches/ZeroSixZero
+http://svn.libburnia-project.org/libburn/tags/ZeroSixZero
+libburn release 0.6.0 is ready 
 
-
-  []
+2009.01.06.122534  [2366]
 libburn/spc.c
 Error texts for ASC 73 : power calibration and program memory
 
+2009.01.06.122808  [2367] [2369]
+libburn/async.c
+libburn/libdax_msgs.h
+Complaining and refusing more early with unformatted BD-RE
+
+7 Jan 2009  [2370]
+cdrskin/cdrskin.1
+Clarification about one-time DVD and BD media
+
+2009.01.07.154414  [2371]
+libburn/write.c
+Bug fix: BD-R were not correctly finalized
+
+7 Jan 2009  [2372]
+cdrskin/cdrskin_eng.html
+Mentioned bug fix and pl01
+
+------------------------------------ cycle  - cdrskin-0.6.1 - 2009.01.07.154414
+
+7 Jan 2009  [2373]
+svn copy -m "Branching for libburn bugfix release 0.6.0.pl01" \
+    http://svn.libburnia-project.org/libburn/ \
+    http://svn.libburnia-project.org/libburn/
+
+7 Jan 2009  [2374]
+svn rm -m 'Removing falsly copied tag' \
+    http://svn.libburnia-project.org/libburn/libburn
+
+7 Jan 2009  [2375]
+svn copy -m "Branching for libburn bugfix release 0.6.0.pl01" \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSixZero \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSixZeroPl01
+
+2009.01.07.140001  [branch 2376]
+README 
+cdrskin/README 
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin_timestamp.h
+Mentioned bug fix and pl01
+
+2009.01.07.140001  [branch 2377]
+libburn/write.c
+Bug fix: BD-R were not correctly finalized
+
+7 Jan 2009  [2378]
+svn move -m 'libburn bugfix release 0.6.0.pl01 is ready' \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSixZeroPl01 \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSixZeroPl01
+
+------------------------------------ cycle  - cdrskin-0.6.1 - 2009.01.07.154414
+
+2009.01.09.095943  [2381]
+libburn/transport.h
+libburn/write.c
+libburn/mmc.c
+libburn/libdax_msgs.h
+Recognizing BD-R media spoiled by the close bug and handling them as appendable
+
+------------------------------------ cycle  - cdrskin-0.6.1 - 2009.01.09.100210
+
+2009.01.09.161704  [2383]
+libburn/write.c
+Preventing a possible bug with a burn run of more than one session at once
+
+2009.01.11.102711  [2390]
+libburn/write.c
+libburn/libdax_msgs.h
+Prepared eventual closing of spoiled BD-R media by a pseudo write run
+
+11 Jan 2009  [2391]
+doc/cookbook.txt
+Updated cookbook about BD-R media
+
+27 Jan 2009  [2431]
+README
+libburn/libburn.h
+Mentioned the need for 64 bit file i/o
+
+2009.02.04.102822  [2447]
+Makefile.am
+Linking with $LIBBURN_ARCH_LIBS to get -lcam on FreeBSD
+
+4 Feb 2009  [2448]
+README
+cdrskin/README
+Mentioned hald as possibly conflicting service
+
+2009.02.19.192801  [2479]
+libburn/spc.c
+Human readable error messages with asynchronous SCSI errors
+
+20 Feb 2009  [2482]
+svn copy http://svn.libburnia-project.org/libburn/trunk
+         http://svn.libburnia-project.org/libburn/branches/ZeroSixZero
+Preparing for libburn-0.6.0
+
+2009.02.20.090001  [2483]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.6.2
+
+20 Feb 2009  [2484]
+- cdrskin/add_ts_changes_to_libburn_0_6_0
+- cdrskin/add_ts_changes_to_libburn_0_6_1
++ cdrskin/add_ts_changes_to_libburn_0_6_2
++ cdrskin/add_ts_changes_to_libburn_0_6_3
+Updated cdrskin tarball generator
+
+------------------------------ release - cdrskin-0.6.2.pl00 - 2009.02.20.090001
+* Improvements with build system for FreeBSD
+
+2009.02.20.124909  [2485]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.6.3
+
+20 Feb 2009  [2486]
+- cdrskin/add_ts_changes_to_libburn_0_6_0
+- cdrskin/add_ts_changes_to_libburn_0_6_1
++ cdrskin/add_ts_changes_to_libburn_0_6_2
++ cdrskin/add_ts_changes_to_libburn_0_6_3
+Updated cdrskin tarball generator
+
+------------------------------------ cycle  - cdrskin-0.6.3 - 2009.02.20.132535
+
+20 Feb 2009  [2489]
+svn move -m libburn release 0.6.2 is ready
+   http://svn.libburnia-project.org/libburn/branches/ZeroSixTwo
+   http://svn.libburnia-project.org/libburn/tags/ZeroSixTwo
+
+2009.02.27.143100  [2500]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/options.c
+libburn/write.c
+libburn/mmc.c
+New API function burn_drive_set_stream_recording()
+
+2009.02.27.211707  [2501]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New stream_recording mode with start number
+
+2009.03.02.170126  [2513]
+libburn/os.h
+libburn/libdax_msgs.h
+libburn/sg.c
++ libburn/os-dummy.h
++ libburn/sg-dummy.c
+New operating system adapter "dummy" for stdio on POSIX-like systems
+
+2009.03.02.193353  [2514]
+libburn/drive.c
+Fixed a race condition on abort with stdio writing which could cause SIGSEGV
+
+2009.03.02.200132  [2515]
+libburn/sg.c
+Added a dummy function with loud compiler warning to sg.c dummy case
+
+2009.03.03.092057  [2516]
+configure.ac
+libburn/sg-dummy.c
+Making optional use of statvfs() in sg-dummy
+
+------------------------------------ cycle  - cdrskin-0.6.3 - 2009.03.03.092057
+* New API function burn_drive_set_stream_recording()
+* New stream recording mode with start number
+
+
+2009.03.05.145309  [2520]
+acinclude.m4
+Lifted the ban on operating systems other than Linux and FreeBSD
+
+------------------------------------ cycle  - cdrskin-0.6.3 - 2009.03.05.145309
+* New operating system adapter "dummy" for stdio on POSIX-like systems
+
+
+2009.03.08.140120  [2522]
+libburn/cleanup.c
+Reacted on compiler warnings of SchilliX-0.6.7 (based on Solaris 5.11)
+
+13 Mar 2009  [2529]
+svn copy -m "Branching for libburn release 0.6.4" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSixFour
+
+2009.03.13.080001  [2530]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made libburn number transition to 0.6.4
+
+13 Mar 2009  [2531]
+- cdrskin/add_ts_changes_to_libburn_0_6_2
+- cdrskin/add_ts_changes_to_libburn_0_6_3
++ cdrskin/add_ts_changes_to_libburn_0_6_4
++ cdrskin/add_ts_changes_to_libburn_0_6_5
+Updated cdrskin tarball generator
+
+13 Mar 2009  [2534]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.6.4.pl00 - 2009.03.13.080001
+* New operating system adapter "dummy" for stdio on general X/Open systems
+* New API function burn_drive_set_stream_recording()
+* New stream recording mode with start address
+
+
+2009.03.13.135818  [2532]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made libburn number transition to 0.6.5
+
+13 Mar 2009  [2533]
+- cdrskin/add_ts_changes_to_libburn_0_6_2
+- cdrskin/add_ts_changes_to_libburn_0_6_3
++ cdrskin/add_ts_changes_to_libburn_0_6_4
++ cdrskin/add_ts_changes_to_libburn_0_6_5
+Updated cdrskin tarball generator
+
+13 Mar 2009  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.6.5 - 
+------------------------------------ cycle  - cdrskin-0.6.5 - 
 
 ===============================================================================
                                     TODO
@@ -6290,8 +6548,6 @@ Error texts for ASC 73 : power calibration and program memory
 
 
 --------------------------------- bugs -------------------------------------
-
-- Needed is a system dependend facility: dev_t <-> major, minor
 
 - Do something about drive->buffer asynchronous race conditions
   and dangerous use of local heap memory.
@@ -6328,9 +6584,6 @@ problem with telltoc: double descriptor list from before load and after load
 
 
 What about cdrskin rc files ? Forward with fallback runs ?
-
-cdrskin/README
-Thin out
 
 
   []
