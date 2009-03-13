@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.6.3"
+#define Cdrskin_prog_versioN "0.6.5"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 6
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -135,44 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_6_2
-#define Cdrskin_libburn_versioN "0.6.2"
+#ifdef Cdrskin_libburn_0_6_4
+#define Cdrskin_libburn_versioN "0.6.4"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_6_2 */
+#endif /* Cdrskin_libburn_0_6_4 */
 
-#ifdef Cdrskin_libburn_0_6_3
-#define Cdrskin_libburn_versioN "0.6.3"
+#ifdef Cdrskin_libburn_0_6_5
+#define Cdrskin_libburn_versioN "0.6.5"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.6.3 yet */
+/* there are no libburn novelties in 0.6.5 yet */
 
-#endif /* Cdrskin_libburn_0_6_3 */
+#endif /* Cdrskin_libburn_0_6_5 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_6_2
-#define Cdrskin_libburn_versioN "0.6.2"
+#define Cdrskin_libburn_0_6_4
+#define Cdrskin_libburn_versioN "0.6.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_6_2
+#ifdef Cdrskin_libburn_0_6_4
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 6
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 4
 #endif
-#ifdef Cdrskin_libburn_0_6_3
+#ifdef Cdrskin_libburn_0_6_5
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 6
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -253,6 +253,12 @@ or
 
 /* 0.5.0 , 0.5.2 , 0.5.4 , 0.5.6 , 0.5.8 , 0.6.0 , 0.6.2 */
 /* novel libburn features are transparent to cdrskin */
+
+/* 0.6.4 */
+/* Ended to mark novelties by macros.
+   libburnia libburn and cdrskin are fixely in sync now.
+   icculus libburn did not move for 30 months.
+*/
 
 
 #ifdef Cdrskin_new_api_tesT

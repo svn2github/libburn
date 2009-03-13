@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.6.3.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.6.5.tar.gz
 Copyright (C) 2006-2009 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
@@ -14,6 +14,8 @@ most of the libburn features from the command line.
 
 Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
 with ATAPI/CAM support enabled in the kernel, see atapicam(4).
+On other X/Open compliant systems there will only be pseudo drives, but no
+direct MMC operation on real CD/DVD/BD drives.
 
 By using this software you agree to the disclaimer at the end of this text
 "This software is provided as is. There is no warranty implied and ..."
@@ -21,10 +23,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.6.3.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.6.5.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.6.3.tar.gz
-    cd cdrskin-0.6.3
+    tar xzf cdrskin-0.6.5.tar.gz
+    cd cdrskin-0.6.5
 
 Within that directory execute:
 
@@ -286,6 +288,9 @@ nominal speed by option "stream_recording=on".
 In this case bad blocks are not detected during write and not even previously
 known bad blocks are avoided. So you have to make your own readability tests
 and go back to half speed as soon as the first read errors show up.
+Instead of "on" one may also set a start address for stream recording.
+Like "stream_recording=100m". This will write slowly to the first 100 MB of
+the media and accelerate when writing to higher addresses.
 
 Option --grow_overwriteable_iso allows -multi (although unneeded), enables
 -msinfo and -toc, and makes blank=fast an invalidator for ISO filesystems

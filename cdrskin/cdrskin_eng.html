@@ -59,7 +59,7 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.6.2</DT>
+<DT>libburn-0.6.4</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -148,6 +148,9 @@ as listed by option --devices.</DT>
 <DD><KBD>&nbsp;&nbsp;--tell_media_space 2>/dev/null)</KBD></DD>
 <DD>$<KBD>&nbsp;echo "Available: $x blocks of 2048 data bytes"</KBD></DD>
 
+<DT>Accelerate BD-RE writing to full nominal speed after the first 250 MB</DT>
+<DD>$<KBD>&nbsp;cdrskin ... stream_recording=250m ...</KBD>
+
 <DT>Write audio tracks to CD:</DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=ATA:1,0,0 speed=48 -sao \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;track1.wav track2.au -audio -swab track3.raw</KBD></DD>
@@ -191,7 +194,7 @@ or to do experiments on BD-R media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.6.2.pl00.tar.gz">cdrskin-0.6.2.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.6.4.pl00.tar.gz">cdrskin-0.6.4.pl00.tar.gz</A>
 (750 KB).
 </DD>
 <DD>
@@ -241,18 +244,20 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.6.0.pl00:
+Enhancements towards previous stable version cdrskin-0.6.2.pl00:
 <UL>
-<LI>Improvements with build system for FreeBSD</LI>
+<LI>New operating system adapter "dummy" for stdio on general X/Open systems
+</LI>
+<LI>New stream recording mode with start address</LI>
+<LI></LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.6.0.pl00:
+Bug fixes towards cdrskin-0.6.2.pl00:
 <UL>
-<LI>BD-R media were not closed properly.
-    The last session staid open and unreadable.</LI>
+<LI>none</LI>
 <!--
 <LI>none</LI>
 -->
@@ -262,8 +267,8 @@ Bug fixes towards cdrskin-0.6.0.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.6.3 :</H3></DT>
-<DD>Enhancements towards current stable version 0.6.0.pl00:
+<DT><H3>Development snapshot, version 0.6.5 :</H3></DT>
+<DD>Enhancements towards current stable version 0.6.4.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -272,10 +277,10 @@ Bug fixes towards cdrskin-0.6.0.pl00:
 </UL>
 </DD>
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.6.3</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.3 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.3 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.3)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.6.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -295,7 +300,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.6.3.tar.gz">cdrskin-0.6.3.tar.gz</A>
+<A HREF="cdrskin-0.6.5.tar.gz">cdrskin-0.6.5.tar.gz</A>
 (750 KB).
 </DD>
 

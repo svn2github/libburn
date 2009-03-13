@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.6.2.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.6.4.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.6.2.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.6.4.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.6.2.pl00.tar.gz
-   cd libburn-0.6.2
+   tar xzf libburn-0.6.4.pl00.tar.gz
+   cd libburn-0.6.4
    ./configure --prefix=/usr
    make
 
@@ -83,8 +83,10 @@ These are libraries, language bindings, and middleware binaries which emulate
 classical (and valuable) Linux tools.
 Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
 with ATAPI/CAM support enabled in the kernel, see atapicam(4).
+On other X/Open compliant systems there will only be pseudo drives, but no
+direct MMC operation on real CD/DVD/BD drives.
 
-For ports to other systems we would need : login on a development machine
+For full ports to other systems we would need : login on a development machine
 resp. a live OS on CD or DVD, advise from a system person about the equivalent
 of Linux sg or FreeBSD CAM, volunteers for testing of realistic use cases.
 
@@ -363,12 +365,28 @@ Project history as far as known to me:
 - 2nd Jan 2009 libburn-0.6.0 allows to format BD-R and to write to either
   formatted or unformatted BD-R.
 
-- 6th Jan 2009 libisoburn-0.3.2 can produce and execute commands for mounting
-  older sessions from all kinds of media. Pseudo-drives outside the /dev/ tree
-  can be addressed without prefix "stdio:". 
+- 6th Jan 2009 libisoburn-0.3.2. xorriso can produce and execute commands for
+  mounting older sessions from all kinds of media. Pseudo-drives outside the
+  /dev/ tree can be addressed without prefix "stdio:". 
 
 - 20th Feb 2009 libburn-0.6.2 source release now compiles out of the box
   on FreeBSD.
+
+- 28 Feb 2009 libisofs-0.6.14 can record ACLs and Extended Attributes xattr
+  in its ISO images. 
+
+- 01 Mar 2009 libisoburn-0.3.4. xorriso makes use of the ACL and xattr
+  capabilities provided by libisofs for xorriso backup features.
+
+- 11 Mar 2009 libisofs-0.6.16 of libisofs fixes two bugs which on Solaris
+  prevented to navigate the ISO images by ".." and to recognize the Rock Ridge
+  extensions of ISO images. The ban to build libisofs on operating systems
+  other than Linux and FreeBSD has been lifted.
+
+- 13 Mar 2009 libburn-0.6.4 got a dummy adapter for SCSI/MMC command transport.
+  It will show no drives and thus libburn will only be able to perform
+  operations on "stdio:" pseudo drives. Nevertheless this allowed to lift the
+  ban to build libburn on operating systems other than Linux and FreeBSD.
 
 
 ------------------------------------------------------------------------------
