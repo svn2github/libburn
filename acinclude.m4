@@ -1,9 +1,11 @@
 AC_DEFUN([TARGET_SHIZZLE],
 [
   ARCH=""
+  LIBBURNIA_PKGCONFDIR="$libdir"/pkgconfig
 
   AC_MSG_CHECKING([target operating system])
 
+  
   case $target in
     *-*-linux*)
       ARCH=linux
@@ -12,6 +14,7 @@ AC_DEFUN([TARGET_SHIZZLE],
     *-*-freebsd*)
       ARCH=freebsd
       LIBBURN_ARCH_LIBS=-lcam
+      LIBBURNIA_PKGCONFDIR=$(echo "$libdir" | sed 's/\/lib$/\/libdata/')/pkgconfig
       ;;
     *)
       ARCH=

@@ -1,4 +1,8 @@
-pkgconfigdir=$(libdir)/pkgconfig
+
+# ts A90315 : LIBBURNIA_PKGCONFDIR is defined OS specific in acinclude.m4
+# was: pkgconfigdir=$(libdir)/pkgconfig
+pkgconfigdir=$(LIBBURNIA_PKGCONFDIR)
+
 libincludedir=$(includedir)/libburn
 
 lib_LTLIBRARIES = libburn/libburn.la 
