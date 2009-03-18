@@ -920,6 +920,18 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		sprintf(msg,
 			"Logical unit is in the process of becoming ready");
 		return RETRY;
+	case 0x08:
+		if (*key != 4)
+			break;
+		if (*ascq == 0)
+			sprintf(msg, "Logical unit communication failure");
+		else if (*ascq == 1)
+			sprintf(msg, "Logical unit communication timeout");
+		else if (*ascq == 2)
+			sprintf(msg, "Logical unit communication parity error");
+		else if (*ascq == 3)
+			sprintf(msg, "Logical unit communication crc error");
+		return RETRY;
 	case 0x09:
 		if (*key != 4)
 			break;
