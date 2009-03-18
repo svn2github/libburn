@@ -1742,6 +1742,10 @@ int burn_abort(int patience,
 	unsigned long wait_grain= 100000;
 	time_t start_time, current_time, pacifier_time, end_time;
 
+#ifndef NIX
+	time_t stdio_patience = 3;
+#endif
+
 	current_time = start_time = pacifier_time = time(0);
 	end_time = start_time + patience;
 
@@ -1758,15 +1762,35 @@ int burn_abort(int patience,
 			if(occup == -2)
 		continue;
 
-#ifdef NIX
-			/* <<< this causes a race condition with drive usage
-				and drive disposal
-			*/
 			if(drive_array[i].drive_role != 1) {
+
+#ifdef NIX
+
+				/* ts A90302
+				   <<< this causes a race condition with drive
+				       usage and drive disposal.
+			  	*/
 				drive_array[i].busy = BURN_DRIVE_IDLE;
 				burn_drive_forget(&(drive_array[i]), 1);
-			} else
-#endif /* NIX */
+		continue;
+
+#else /* NIX */
+
+				/* ts A90318
+				   >>> but if a pipe breaks then the drive
+				       never gets idle.
+				   So for now with a short patience timespan
+				   and eventually a deliberate memory leak.
+			  	*/
+				if (current_time - start_time >
+				    stdio_patience) {
+					drive_array[i].global_index = -1;
+		continue;
+				}
+
+#endif /* ! NIX */
+
+			}
 
 			if(occup <= 10) {
 				burn_drive_forget(&(drive_array[i]), 1);
