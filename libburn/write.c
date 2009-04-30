@@ -2120,7 +2120,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	else
 		d->stream_recording_start = 0;
 
-        d->buffer = calloc(sizeof(struct buffer), 1);
+	d->buffer = calloc(sizeof(struct buffer), 1);
 	if (d->buffer == NULL)
 		goto fail_wo_sync;
 
