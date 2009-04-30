@@ -1845,6 +1845,13 @@ int burn_stdio_read_source(struct burn_source *source, char *buf, int bufsize,
 int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d, 
 			 int flag)
 {
+	if (d->cancel)
+		return 0;
+/*
+fprintf(stderr, "libburn_DEBUG: write(%d, %lX, %d)\n",
+                fd, (unsigned long) buf, count);
+*/
+
 	if (write(fd, buf, count) != count) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
@@ -2093,7 +2100,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 {
 	struct cue_sheet *sheet;
 	struct burn_drive *d = o->drive;
-	struct buffer buf, *buffer_mem = o->drive->buffer;
+	struct buffer *buffer_mem = o->drive->buffer;
 	struct burn_track *lt, *t;
 	int first = 1, i, ret, lba, nwa = 0, multi_mem;
 	off_t default_size;
@@ -2113,8 +2120,33 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	else
 		d->stream_recording_start = 0;
 
-	d->buffer = &buf;
+        d->buffer = calloc(sizeof(struct buffer), 1);
+	if (d->buffer == NULL)
+		goto fail_wo_sync;
+
+
+/* >>> ts A90321
+
 	memset(d->buffer, 0, sizeof(struct buffer));
+
+fprintf(stderr, "libburn_DEBUG: d->buffer = %lX , size = %d\n",
+                (unsigned long) d->buffer, (int) sizeof(struct buffer));
+
+calloc() seems not to have the desired effect. valgrind warns:
+==18251== Syscall param write(buf) points to uninitialised byte(s)
+==18251==    at 0x5071DEB: (within /lib64/libpthread-2.5.so)
+==18251==    by 0x4723FA: burn_stdio_write (write.c:1850)
+==18251==    by 0x4725DC: burn_stdio_mmc_write (write.c:1894)
+==18251==    by 0x483B7A: get_sector (sector.c:229)
+==18251==    by 0x484F11: sector_data (sector.c:639)
+==18251==    by 0x4729FE: burn_stdio_write_track (write.c:2012)
+==18251==    by 0x472CF4: burn_stdio_write_sync (write.c:2072)
+==18251==    by 0x472E8D: burn_disc_write_sync (write.c:2125) <<< we are here
+==18251==    by 0x460254: write_disc_worker_func (async.c:514)
+==18251==    by 0x506B09D: start_thread (in /lib64/libpthread-2.5.so)
+==18251==    by 0x55484CC: clone (in /lib64/libc-2.5.so)
+*/
+
 	d->rlba = -150;
 	d->toc_temp = 9;
 
@@ -2312,6 +2344,8 @@ fail_wo_sync:;
 	d->busy = BURN_DRIVE_IDLE;
 ex:;
 	d->do_stream_recording = 0;
+	if (d->buffer != NULL)
+		free((char *) d->buffer);
 	d->buffer = buffer_mem;
 	return;
 }
