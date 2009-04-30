@@ -1,6 +1,5 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
-#include <assert.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -553,11 +552,26 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	if (c->page) {
 		ccb->csio.data_ptr  = c->page->data;
 		if (c->dir == FROM_DRIVE) {
-			ccb->csio.dxfer_len = BUFFER_SIZE;
+
+			/* ts A90430 : Ticket 148 , by jwehle :
+			   "On ... FreeBSD 6.4 which has a usb memory reader in
+			    addition to a ATAPI DVD burner sg_issue_command
+			    will hang while the SCSI bus is being scanned"
+			*/
+			if (c->dxfer_len >= 0)
+				ccb->csio.dxfer_len = c->dxfer_len;
+			else
+				ccb->csio.dxfer_len = BUFFER_SIZE;
+
 /* touch page so we can use valgrind */
 			memset(c->page->data, 0, BUFFER_SIZE);
 		} else {
-			assert(c->page->bytes > 0);
+			/* ts A90430 */
+			/* a ssert(c->page->bytes > 0); */
+			if (c->page->bytes <= 0) {
+				c->error = 1;
+				return 0;
+			}
 			ccb->csio.dxfer_len = c->page->bytes;
 		}
 	} else {
