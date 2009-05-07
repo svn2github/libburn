@@ -6535,12 +6535,114 @@ Made libburn number transition to 0.6.5
 + cdrskin/add_ts_changes_to_libburn_0_6_5
 Updated cdrskin tarball generator
 
-13 Mar 2009  []
+13 Mar 2009  [2535]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.6.5 - 
------------------------------------- cycle  - cdrskin-0.6.5 - 
+------------------------------------ cycle  - cdrskin-0.6.5 - 2009.03.13.162355
+
+13 Mar 2009  [2538]
+svn move -m "libburn release 0.6.4 is ready" \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSixFour \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSixFour
+
+2009.03.16.190745  [2547]
+configure.ac
+acinclude.m4
+Makefile.am
+Get on FreeBSD pkgconfigdir=.../libdata , on Linux and others: .../lib
+
+2009.03.18.124558  [2553]
+libburn/spc.c
+Human readable error messages for asc=08 "Logical unit communication failure"
+
+2009.03.18.172512  [2554]
+libburn/drive.c
+Bug fix: burn_abort() did not work with broken output pipe (since rev 2514)
+
+2009.04.30.065653  [2623]
+libburn/write.c
+Marked alleged use of uninitialized memory reported by valgrind
+
+2009.04.30.065918  [2624]
+libburn/write.c
+Replaced 8 blanks by a tab
+
+2009.04.30.070813 [2625]
+libburn/sg-freebsd.c
+Bug fix: Device scan stalled on FreeBSD. Ticket 148 jwehle
+
+------------------------------------ cycle  - cdrskin-0.6.5 - 2009.04.30.070813
+Bug fix: burn_abort() did not work with broken output pipe (since rev 2514)
+Bug fix: Device scan stalled on FreeBSD. Ticket 148 jwehle
+
+7 May 2009 [2628]
+svn copy -m "Branching for libburn release 0.6.6"
+      http://svn.libburnia-project.org/libburn/trunk
+      http://svn.libburnia-project.org/libburn/branches/ZeroSixSix
+
+7 May 2009  [2629]
+cdrskin/cdrskin.1
+Mentioned BD were it was missing
+
+2009.05.07.100001  [2630]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+7 May 2009  [2631]
+- cdrskin/add_ts_changes_to_libburn_0_6_4
+- cdrskin/add_ts_changes_to_libburn_0_6_5
++ cdrskin/add_ts_changes_to_libburn_0_6_6
++ cdrskin/add_ts_changes_to_libburn_0_6_7
+Updated cdrskin tarball generator
+
+7 May 2009  [2632]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.6.6.pl00 - 2009.05.07.100001
+Bug fix: burn_abort() did not work with broken output pipe (since rev 2514)
+Bug fix: Device scan stalled on FreeBSD. Ticket 148 jwehle
+
+
+7 May 2009  [2633]
+cdrskin/cdrskin.1
+Mentioned BD were it was missing
+
+2009.05.07.181034  [2634]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+7 May 2009  [2635]
+- cdrskin/add_ts_changes_to_libburn_0_6_4
+- cdrskin/add_ts_changes_to_libburn_0_6_5
++ cdrskin/add_ts_changes_to_libburn_0_6_6
++ cdrskin/add_ts_changes_to_libburn_0_6_7
+Updated cdrskin tarball generator
+
+  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-0.6.7 - 
+------------------------------------ cycle  - cdrskin-0.6.7 - 
 
 ===============================================================================
                                     TODO
@@ -6548,6 +6650,7 @@ Documented changes and release timestamp
 
 
 --------------------------------- bugs -------------------------------------
+
 
 - Do something about drive->buffer asynchronous race conditions
   and dangerous use of local heap memory.
