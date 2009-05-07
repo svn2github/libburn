@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 07, 2009"
+.TH CDRSKIN 1 "May 07, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -67,7 +67,7 @@ Write mode selection
 .br
 Recordable CD Media
 .br
-Sequentially Recordable DVD Media
+Sequentially Recordable DVD or BD Media
 .br
 Overwriteable DVD or BD Media
 .br
@@ -254,7 +254,7 @@ that it has to be formatted again. If in doubt, just give it a try.
 .SS
 .B Drive preparation and addressing:
 .br
-The drives, either CD burners or DVD burners, are accessed via addresses which
+The drives, CD, DVD, or BD burners, are accessed via addresses which
 are specific to libburn and the operating system. Those addresses get listed
 by a run of \fBcdrskin --devices\fP.
 .br
@@ -638,8 +638,8 @@ To have a chance for working on overwriteable media, this option has to be
 accompanied by option --grow_overwriteable_iso.
 .TP
 .BI \-multi
-This option keeps the CD or unformatted DVD-R[W] appendable after the current
-session has been written.
+This option keeps CD, unformatted DVD-R[W], DVD+R, or BD-R appendable
+after the current session has been written.
 Without it the disc gets closed and may not be written any more  - unless it
 is a -RW and gets blanked which causes loss of its content.
 .br
@@ -687,8 +687,8 @@ then behave strange or even go bad for the next few attempts to burn a CD.
 One should use it only if inavoidable.
 .TP
 .BI \-sao
-Write CD in Session At Once mode, a sequential DVD-R[W] in Disc-at-once
-(DAO) mode, or a DVD+R[/DL].
+Write CD in Session At Once mode or sequential DVD-R[W] in Disc-at-once
+(DAO) mode.
 .br
 With CD this mode is able to put several audio tracks on media without
 producing audible gaps between them.
@@ -696,7 +696,7 @@ producing audible gaps between them.
 With DVD-R[W] this mode can only write a single track.
 No -multi is allowed with DVD-R[W] -sao.
 .br
--sao is permissible with overwriteable DVD, BD or DVD+R[/DL] but actually
+-sao is permissible with overwriteable DVD, or DVD+R[/DL], or BD but actually
 only imposes restrictions without providing known advantages. 
 .br
 -sao can only be used for tracks of fixely predicted size. This implies that
@@ -1239,15 +1239,15 @@ cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
 blank=as_needed padsize=300k -
 .SS
-.B Write multi-session to the same CD, DVD-R[W] or DVD+R[/DL]:
+.B Write multi-session to the same CD, DVD-R[W], DVD+R[/DL], or BD-R:
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi 1.iso
+cdrskin dev=/dev/sr0 -v padsize=300k -multi 1.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi 2.iso
+cdrskin dev=/dev/sr0 -v padsize=300k -multi 2.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k -multi 3.iso
+cdrskin dev=/dev/sr0 -v padsize=300k -multi 3.iso
 .br
-cdrskin dev=/dev/hdc -v padsize=300k 4.iso
+cdrskin dev=/dev/sr0 -v padsize=300k 4.iso
 .SS
 .B Get multi-session info for option -C of program mkisofs:
 .br
