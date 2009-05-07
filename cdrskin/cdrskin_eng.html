@@ -59,7 +59,7 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.6.4</DT>
+<DT>libburn-0.6.6</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -177,13 +177,10 @@ man cdrecord</A></KBD></DD>
 <DL>
 <DT>Learn to know a more versatile way to burn ISO 9660 formatted data</DT>
 <DD>
-Standalone ISO 9660 multi-session CD/DVD tool
+Standalone ISO 9660 multi-session CD/DVD/BD tool
 <A HREF="http://scdbackup.sourceforge.net/xorriso_eng.html">xorriso</A>.
 </DD>
 </DL>
-
-Testers wanted who are willing to risk some DVD-R DL media
-or to do experiments on BD-R media.
 
 </P>
 
@@ -194,7 +191,7 @@ or to do experiments on BD-R media.
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.6.4.pl00.tar.gz">cdrskin-0.6.4.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.6.6.pl00.tar.gz">cdrskin-0.6.6.pl00.tar.gz</A>
 (750 KB).
 </DD>
 <DD>
@@ -244,20 +241,20 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.6.2.pl00:
+Enhancements towards previous stable version cdrskin-0.6.4.pl00:
 <UL>
-<LI>New operating system adapter "dummy" for stdio on general X/Open systems
-</LI>
-<LI>New stream recording mode with start address</LI>
-<LI></LI>
+<LI>none</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.6.2.pl00:
+Bug fixes towards cdrskin-0.6.4.pl00:
 <UL>
-<LI>none</LI>
+<LI>Improper abort handling with broken pipe during output to
+a stdio: pseudo-drive
+</LI>
+<LI>Device scan stalled on FreeBSD with non-burner USB device</LI>
 <!--
 <LI>none</LI>
 -->
@@ -267,8 +264,8 @@ Bug fixes towards cdrskin-0.6.2.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.6.5 :</H3></DT>
-<DD>Enhancements towards current stable version 0.6.4.pl00:
+<DT><H3>Development snapshot, version 0.6.7 :</H3></DT>
+<DD>Enhancements towards current stable version 0.6.6.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -276,11 +273,20 @@ Bug fixes towards cdrskin-0.6.2.pl00:
 
 </UL>
 </DD>
+
+<DD>Bug fixes towards cdrskin-0.6.6.pl00:
+<UL>
+<LI>none yet</LI>
+<!--
+-->
+</UL>
+</DD>
+
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.6.5</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.5 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.5 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.5)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.6.7</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.7 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.7 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.7)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -300,7 +306,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.6.5.tar.gz">cdrskin-0.6.5.tar.gz</A>
+<A HREF="cdrskin-0.6.7.tar.gz">cdrskin-0.6.7.tar.gz</A>
 (750 KB).
 </DD>
 
@@ -334,7 +340,7 @@ Historic versions based on Derek's and Ben's
 <BR>
 Very special thanks to Andy Polyakov whose 
 <A HREF="http://fy.chalmers.se/~appro/linux/DVD+RW/tools">dvd+rw-tools</A>
-provide libburn with invaluable examples on how to deal with DVD media.
+provide libburn with invaluable examples on how to deal with DVD and BD media.
 </P>
 
 <HR>
@@ -496,12 +502,17 @@ and by <A HREF="http://sourceforge.net">sourceforge.net</A><BR>
 <A href="http://sourceforge.net">
 <IMG src="sflogo-88-1.png" BORDER="0" ALT="SourceForge Logo"></A>
 <!-- on sourceforge use : <IMG src="http://sourceforge.net/sflogo.php?group_id=16010" width="88" height="31" border="0" alt="SourceForge Logo"></A> -->
+<P>
+Enjoying a FreeBSD shell account with the opportunity to
+build and install cdrskin at<BR>
+<A HREF="http://www.en.free-shells.com.ar">free-shells.com.ar</A>
+</P>
 </FONT></CENTER>
 <HR>
 <DL>
 <DT>Links to my other published software projects :
 <DD><A HREF="http://scdbackup.webframe.org/xorriso_eng.html">
-xorriso, a standalone ISO 9660 multi-session CD/DVD burn tool.
+xorriso, a standalone ISO 9660 multi-session CD/DVD/BD burn tool.
 No mkisofs needed.
 <DL>
 <DD>

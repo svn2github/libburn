@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.6.5.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.6.7.tar.gz
 Copyright (C) 2006-2009 Thomas Schmitt, provided under GPL version 2.
 ------------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ most of the libburn features from the command line.
 
 Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
 with ATAPI/CAM support enabled in the kernel, see atapicam(4).
-On other X/Open compliant systems there will only be pseudo drives, but no
+On other X/Open compliant systems there will only be emulated drives, but no
 direct MMC operation on real CD/DVD/BD drives.
 
 By using this software you agree to the disclaimer at the end of this text
@@ -23,10 +23,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.6.5.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.6.7.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.6.5.tar.gz
-    cd cdrskin-0.6.5
+    tar xzf cdrskin-0.6.7.tar.gz
+    cd cdrskin-0.6.7
 
 Within that directory execute:
 

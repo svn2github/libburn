@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.6.4.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.6.6.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.6.4.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.6.6.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.6.4.pl00.tar.gz
-   cd libburn-0.6.4
+   tar xzf libburn-0.6.6.pl00.tar.gz
+   cd libburn-0.6.6
    ./configure --prefix=/usr
    make
 
@@ -387,6 +387,19 @@ Project history as far as known to me:
   It will show no drives and thus libburn will only be able to perform
   operations on "stdio:" pseudo drives. Nevertheless this allowed to lift the
   ban to build libburn on operating systems other than Linux and FreeBSD.
+
+- 16 Mar 2009 libisoburn-0.3.6: xorriso uses RRIP version 1.10 as default 
+  in order to be mountable where mkisofs images are mountable.
+
+- 17 Apr 2009 libisofs-0.6.18 introduces content filtering of data files.
+  Built-in filters allow compression to formats gzip and zisofs. External
+  filter processes allow arbitrary data conversions like encryption.
+
+- 19 Apr 2009 libisoburn-0.3.8 makes use of the new libisofs capability to
+  perform content filtering of data files.
+
+- 08 May 2009 libburn-0.6.6 fixes a bug with aborting on broken output pipe
+  and a bug with device scan on FreeBSD.
 
 
 ------------------------------------------------------------------------------
