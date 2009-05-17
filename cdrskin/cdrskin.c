@@ -4408,13 +4408,15 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
 int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
 {
  int ret,i,busno,first_on_bus,pseudo_transport_group= 0,skipped_devices= 0;
- int busmax= 16;
+ int busmax= 16, busidx;
  char shellsafe[5*Cdrskin_strleN+2],perms[40],btldev[Cdrskin_adrleN];
  char adr[Cdrskin_adrleN],*raw_dev,*drives_shown= NULL;
+ int *drives_busses= NULL;
  struct stat stbuf;
 
  drives_shown= malloc(skin->n_drives+1);
- if(drives_shown==NULL)
+ drives_busses= malloc((skin->n_drives+1) * sizeof(int));
+ if(drives_shown == NULL || drives_busses == NULL)
    {ret= -1; goto ex;}
  for(i=0;i<skin->n_drives;i++)
    drives_shown[i]= 0;
@@ -4472,7 +4474,28 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
    if(skin->preskin->old_pseudo_scsi_adr)
      printf("cdrskin: NOTE : The printed addresses are not cdrecord compatible !\n");
 
-   for(busno= 0;busno<=busmax;busno++) {
+   for(i=0;i<skin->n_drives;i++) {
+     drives_busses[i]= -1;
+     ret= Cdrskin_driveno_to_btldev(skin,i,btldev,1);
+     if(ret >= pseudo_transport_group &&
+        ret < pseudo_transport_group + 1000000) {
+       drives_busses[i]= ret - pseudo_transport_group;
+       if(ret > pseudo_transport_group + busmax)
+         busmax= 1 + ret - pseudo_transport_group;
+     }
+   }
+   for(busidx= 0; busidx < skin->n_drives + 1; busidx++) {
+     if(busidx < skin->n_drives)
+       busno= drives_busses[busidx];
+     else
+       busno= busmax;
+     if(busno < 0)
+   continue;
+     for(i= 0; i < busidx; i++)
+       if(drives_busses[i] == busno)
+     break;
+     if(i < busidx)
+   continue;
      first_on_bus= 1;
      for(i=0;i<skin->n_drives;i++) {
        ret= Cdrskin_driveno_to_btldev(skin,i,btldev,1);
@@ -4510,6 +4533,8 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
 ex:;
  if(drives_shown!=NULL)
    free((char *) drives_shown);
+ if(drives_busses!=NULL)
+   free((char *) drives_busses);
  return(ret);
 }
 
