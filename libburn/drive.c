@@ -418,6 +418,9 @@ int burn_drive_unregister(struct burn_drive *d)
 struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 {
 	struct burn_drive *t;
+	char msg[BURN_DRIVE_ADR_LEN + 160];
+	int ret;
+
 	/* ts A60821
    	<<< debug: for tracing calls which might use open drive fds */
 	int mmc_function_spy(struct burn_drive *d, char * text);
@@ -430,13 +433,19 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	mmc_function_spy(NULL, "enumerate_common : -------- doing grab");
 
 	/* try to get the drive info */
-	if (t->grab(t)) {
+	ret = t->grab(t);
+	if (ret) {
 	        burn_print(2, "getting drive info\n");
 	        t->getcaps(t);
 	        t->unlock(t);
 	        t->released = 1;
 	} else {
-	        burn_print(2, "unable to grab new located drive\n");
+		/* ts A90602 */
+		d->mdata->valid = -1;
+                sprintf(msg, "Unable to grab scanned drive %s", d->devname);
+                libdax_msgs_submit(libdax_messenger, d->global_index,
+                                0x0002016f, LIBDAX_MSGS_SEV_DEBUG,
+                                LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
 	        burn_drive_unregister(t);
 		t = NULL;
 	}
@@ -855,7 +864,7 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	a ssert(d->mdata);
 #endif
 
-	if (!d->idata->valid || !d->mdata->valid)
+	if(d->idata->valid <= 0 || d->mdata->valid <= 0)
 		return 0;
 
 	id = (struct burn_scsi_inquiry_data *)d->idata;
@@ -978,10 +987,15 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 		if (drive_array[i].global_index < 0)
 	continue;		/* invalid device */
 
-		while (!drive_getcaps(&drive_array[i],
-				      &(*drives)[*n_drives])) {
+		/* ts A90602 : This old loop is not plausible. See A70907.
+		  while (!drive_getcaps(&drive_array[i],
+		         &(*drives)[*n_drives])) {
 			sleep(1);
-		}
+		  }
+		*/
+		/* ts A90602 : A single call shall do (rather than a loop) */
+		drive_getcaps(&drive_array[i], &(*drives)[*n_drives]);
+
 		(*n_drives)++;
 		scanned[i / 8] |= 1 << (i % 8);
 	}
@@ -1140,14 +1154,14 @@ void burn_sectors_to_msf(int sectors, int *m, int *s, int *f)
 
 int burn_drive_get_read_speed(struct burn_drive *d)
 {
-	if(!d->mdata->valid)
+	if(d->mdata->valid <= 0)
 		return 0;
 	return d->mdata->max_read_speed;
 }
 
 int burn_drive_get_write_speed(struct burn_drive *d)
 {
-	if(!d->mdata->valid)
+	if(d->mdata->valid <= 0)
 		return 0;
 	return d->mdata->max_write_speed;
 }
@@ -1155,7 +1169,7 @@ int burn_drive_get_write_speed(struct burn_drive *d)
 /* ts A61021 : New API function */
 int burn_drive_get_min_write_speed(struct burn_drive *d)
 {
-	if(!d->mdata->valid)
+	if(d->mdata->valid <= 0)
 		return 0;
 	return d->mdata->min_write_speed;
 }
@@ -2082,7 +2096,7 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 	struct burn_speed_descriptor *sd, *csd = NULL;
 
 	(*speed_list) = NULL;
-	if(!d->mdata->valid)
+	if(d->mdata->valid <= 0)
 		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		ret = burn_speed_descriptor_new(&csd, NULL, csd, 0);
@@ -2107,7 +2121,7 @@ int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
 	if (speed_goal < 0)
 		best_speed = 2000000000;
 	*best_descr = NULL;
-	if(!d->mdata->valid)
+	if(d->mdata->valid <= 0)
 		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		if (flag & 1)

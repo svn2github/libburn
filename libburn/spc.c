@@ -303,12 +303,18 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	unsigned char *page;
 	struct command c;
 	struct burn_speed_descriptor *sd;
+	char msg[BURN_DRIVE_ADR_LEN + 160];
 
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
 
 	if (*alloc_len < 8)
 		return 0;
+
+	/* ts A90602 : Clearing mdata before command execution */
+	m = d->mdata;
+	m->valid = 0;
+	burn_mdata_free_subs(m);
 
 	memset(&buf, 0, sizeof(buf));
 	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
@@ -328,12 +334,11 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	d->issue_command(d, &c);
 	if (c.error) {
 		memset(&buf, 0, sizeof(buf));
-		d->mdata->valid = -1;
+		m->valid = -1;
 		was_error = 1;
 	}
 
 	size = c.page->data[0] * 256 + c.page->data[1];
-	m = d->mdata;
 	page = c.page->data + 8;
 
 	/* ts A61225 :
@@ -349,11 +354,16 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		return !was_error;
 	if (page_length + 8 > old_alloc_len)
 		page_length = old_alloc_len - 8;
-	if (page_length < 22)
+	if (page_length < 22) {
+		/* ts A90602 */
+		m->valid = -1;
+		sprintf(msg, "MODE SENSE page 2A too short: %s : %d",
+			d->devname, page_length);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002016e, LIBDAX_MSGS_SEV_DEBUG,
+				LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
 		return 0;
-
-	m->valid = 0;
-	burn_mdata_free_subs(m);
+	}
 
 	m->buffer_size = page[12] * 256 + page[13];
 	m->dvdram_read = page[2] & 32;
@@ -384,7 +394,8 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	m->min_end_lba = 0x7fffffff;
 	m->max_end_lba = 0;
 
-	m->valid = 1;
+	if (!was_error)
+		m->valid = 1;
 
 	mmc_get_configuration(d);
 

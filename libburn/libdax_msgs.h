@@ -545,7 +545,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002016a (FAILURE,HIGH) = No MMC transport adapter is present
  0x0002016b (WARNING,HIGH) = No MMC transport adapter is present
  0x0002016c (DEBUG,HIGH)   = No MMC transport adapter is present
-
+ 0x0002016e (DEBUG,HIGH)   = MODE SENSE page 2A too short
+ 0x0002016f (DEBUG,HIGH)   = Unable to grab scanned drive
  0x00020170 (NOTE,HIGH)    = Closing open session before writing new one
  0x00020171 (NOTE,HIGH)    = Closing BD-R with accidently open session
  
