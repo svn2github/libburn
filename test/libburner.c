@@ -106,7 +106,7 @@ int libburner_aquire_drive(char *drive_adr, int *driveno)
 		ret = libburner_aquire_by_adr(drive_adr);
 	else
 		ret = libburner_aquire_by_driveno(driveno);
-	if (ret <= 0)
+	if (ret <= 0 || *driveno <= 0)
 		return ret;
 	burn_disc_get_profile(drive_list[0].drive, &current_profile,
 				 current_profile_name);
