@@ -930,7 +930,7 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	*/
 	unsigned char scanned[32];
 	unsigned count = 0;
-	int i;
+	int i, ret;
 
 	/* ts A61007 : moved up to burn_drive_scan() */
 	/* a ssert(burn_running); */
@@ -994,10 +994,14 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 		  }
 		*/
 		/* ts A90602 : A single call shall do (rather than a loop) */
-		drive_getcaps(&drive_array[i], &(*drives)[*n_drives]);
-
-		(*n_drives)++;
+		ret = drive_getcaps(&drive_array[i], &(*drives)[*n_drives]);
+		if (ret > 0)
+			(*n_drives)++;
 		scanned[i / 8] |= 1 << (i % 8);
+	}
+	if (*drives != NULL && *n_drives == 0) {
+		free ((char *) *drives);
+		*drives = NULL;
 	}
 
 	return(1);
