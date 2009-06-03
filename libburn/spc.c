@@ -359,7 +359,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	if (page_length + 10 > old_alloc_len)
 		page_length = old_alloc_len - 10;
 
-	/* ts A90602 : 20 to asserts page[21]. (see SPC-1 8.3.3) */
+	/* ts A90602 : 20 asserts page[21]. (see SPC-1 8.3.3) */
 	if (page_length < 20) {
 		m->valid = -1;
 		sprintf(msg, "MODE SENSE page 2A too short: %s : %d",

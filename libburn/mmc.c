@@ -77,6 +77,12 @@ extern struct libdax_msgs *libdax_messenger;
  # define Libburn_do_not_format_dvd_ram_or_bd_rE 1
 */
 
+
+/* ts A90603 : Simulate the command restrictions of an old MMC-1 drive
+ # define Libisofs_simulate_old_mmc1_drivE 1
+*/
+
+
 /* DVD/BD progress report:
    ts A61219 : It seems to work with a used (i.e. thoroughly formatted) DVD+RW.
                Error messages of class DEBUG appear because of inability to
@@ -1460,6 +1466,75 @@ inquire_drive:;
 }
 
 
+/* ts A61201 */
+static char *mmc_obtain_profile_name(int profile_number)
+{
+	static char *texts[0x53] = {NULL};
+	int i, max_pno = 0x53;
+	
+	if (texts[0] == NULL) {
+		for (i = 0; i<max_pno; i++)
+			texts[i] = "";
+		/* mmc5r03c.pdf , Table 89, Spelling: guessed cdrecord style */
+		texts[0x01] = "Non-removable disk";
+		texts[0x02] = "Removable disk";
+		texts[0x03] = "MO erasable";
+		texts[0x04] = "Optical write once";
+		texts[0x05] = "AS-MO";
+		texts[0x08] = "CD-ROM";
+		texts[0x09] = "CD-R";
+		texts[0x0a] = "CD-RW";
+		texts[0x10] = "DVD-ROM";
+		texts[0x11] = "DVD-R sequential recording";
+		texts[0x12] = "DVD-RAM";
+		texts[0x13] = "DVD-RW restricted overwrite";
+		texts[0x14] = "DVD-RW sequential recording";
+		texts[0x15] = "DVD-R/DL sequential recording";
+		texts[0x16] = "DVD-R/DL layer jump recording";
+		texts[0x1a] = "DVD+RW";
+		texts[0x1b] = "DVD+R";
+		texts[0x2a] = "DVD+RW/DL";
+		texts[0x2b] = "DVD+R/DL";
+		texts[0x40] = "BD-ROM";
+		texts[0x41] = "BD-R sequential recording";
+		texts[0x42] = "BD-R random recording";
+		texts[0x43] = "BD-RE";
+		texts[0x50] = "HD-DVD-ROM";
+		texts[0x51] = "HD-DVD-R";
+		texts[0x52] = "HD-DVD-RAM";
+	}
+	if (profile_number<0 || profile_number>=max_pno)
+		return "";
+	return texts[profile_number];
+}
+
+
+/* ts A90603 : to be used if the drive knows no GET CONFIGURATION
+*/
+static int mmc_guess_profile(struct burn_drive *d, int flag)
+{
+	int cp;
+
+	cp = 0;
+	if (d->status == BURN_DISC_BLANK ||
+	    d->status == BURN_DISC_APPENDABLE) {
+		cp = 0x09;
+	} else if (d->status == BURN_DISC_FULL) {
+		cp = 0x08;
+	}
+	if (cp)
+		if (d->erasable)
+			cp = 0x0a;
+	d->current_profile = cp;
+	if (cp == 0)
+		return 0;
+	d->current_is_cd_profile = 1;
+	d->current_is_supported_profile = 1;
+	strcpy(d->current_profile_text, mmc_obtain_profile_name(cp));
+	return 1;
+}
+
+
 static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer buf;
@@ -1610,6 +1685,10 @@ regard_as_blank:;
 		break;
 	}
 
+	/* ts A90603 : An MMC-1 drive might not know the media type yet */
+	if (d->current_is_guessed_profile && d->current_profile == 0)
+		mmc_guess_profile(d, 0);
+
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
 		&& ! d->current_is_supported_profile) {
 		if (!d->silent_on_scsi_error) {
@@ -1625,7 +1704,7 @@ regard_as_blank:;
 		return 0;
 	}
 
-	/* >>> ts A61217 : Note for future
+	/* ts A61217 : Note for future
 	   growisofs performs OPC if (data[0]<<8)|data[1]<=32
 	   which indicates no OPC entries are attached to the
 	   reply from the drive.
@@ -2165,49 +2244,6 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 }
 
 
-/* ts A61201 */
-static char *mmc_obtain_profile_name(int profile_number)
-{
-	static char *texts[0x53] = {NULL};
-	int i, max_pno = 0x53;
-	
-	if (texts[0] == NULL) {
-		for (i = 0; i<max_pno; i++)
-			texts[i] = "";
-		/* mmc5r03c.pdf , Table 89, Spelling: guessed cdrecord style */
-		texts[0x01] = "Non-removable disk";
-		texts[0x02] = "Removable disk";
-		texts[0x03] = "MO erasable";
-		texts[0x04] = "Optical write once";
-		texts[0x05] = "AS-MO";
-		texts[0x08] = "CD-ROM";
-		texts[0x09] = "CD-R";
-		texts[0x0a] = "CD-RW";
-		texts[0x10] = "DVD-ROM";
-		texts[0x11] = "DVD-R sequential recording";
-		texts[0x12] = "DVD-RAM";
-		texts[0x13] = "DVD-RW restricted overwrite";
-		texts[0x14] = "DVD-RW sequential recording";
-		texts[0x15] = "DVD-R/DL sequential recording";
-		texts[0x16] = "DVD-R/DL layer jump recording";
-		texts[0x1a] = "DVD+RW";
-		texts[0x1b] = "DVD+R";
-		texts[0x2a] = "DVD+RW/DL";
-		texts[0x2b] = "DVD+R/DL";
-		texts[0x40] = "BD-ROM";
-		texts[0x41] = "BD-R sequential recording";
-		texts[0x42] = "BD-R random recording";
-		texts[0x43] = "BD-RE";
-		texts[0x50] = "HD-DVD-ROM";
-		texts[0x51] = "HD-DVD-R";
-		texts[0x52] = "HD-DVD-RAM";
-	}
-	if (profile_number<0 || profile_number>=max_pno)
-		return "";
-	return texts[profile_number];
-}
-
-
 /* ts A61201 : found in unfunctional state
  */
 static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
@@ -2227,6 +2263,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
         d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
+        d->current_is_guessed_profile = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
 	d->current_feat23h_byte4 = 0;
@@ -2249,8 +2286,24 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 
-	if (c.error)
+#ifdef Libisofs_simulate_old_mmc1_drivE
+	c.error = 1;
+	c.sense[2] = 0x5;
+	c.sense[12] = 0x20;
+	c.sense[13] = 0x0;
+#endif /* Libisofs_simulate_old_mmc1_drivE */
+
+	if (c.error) {
+		/* ts A90603 : MMC-1 drive do not know 46h GET CONFIGURATION */
+		if (c.sense[2] == 0x5 && c.sense[12] == 0x20 &&
+		    c.sense[13] == 0x0) {
+			d->current_is_guessed_profile = 1;
+			/* Will yield a non-zero profile only after
+			   mmc_read_disc_info_al() was called */
+			mmc_guess_profile(d, 0);
+		}
 		return 0;
+	}
 	old_alloc_len = *alloc_len;
 	*alloc_len = len = mmc_four_char_to_int(c.page->data);
 	if (len > old_alloc_len)
@@ -3475,6 +3528,14 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	c.page->bytes = 0;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
+
+#ifdef Libisofs_simulate_old_mmc1_drivE
+	c.error = 1;
+	c.sense[2] = 0x5;
+	c.sense[12] = 0x20;
+	c.sense[13] = 0x0;
+#endif /* Libisofs_simulate_old_mmc1_drivE */	
+
 	if (c.error)
 		return 0;
         len = mmc_four_char_to_int(c.page->data);
@@ -3810,6 +3871,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
+	d->current_is_guessed_profile = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
 	d->current_feat23h_byte4 = 0;

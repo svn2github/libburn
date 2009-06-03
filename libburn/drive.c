@@ -232,7 +232,7 @@ int burn_drive_inquire_media(struct burn_drive *d)
 	/* ts A61020 : d->status was set to BURN_DISC_BLANK as pure guess */
 
         /* ts A71128 : run read_disc_info() for any recognizeable profile */
-	if (d->current_profile > 0 || 
+	if (d->current_profile > 0 || d->current_is_guessed_profile ||
 	    d->mdata->cdr_write || d->mdata->cdrw_write ||
 	    d->mdata->dvdr_write || d->mdata->dvdram_write) {
 
