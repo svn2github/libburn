@@ -291,7 +291,7 @@ void spc_allow(struct burn_drive *d)
 }
 
 /*
-ts A70518 : Do not call with *alloc_len < 8
+ts A70518 - A90603 : Do not call with *alloc_len < 10
 */
 /** flag&1= do only inquire alloc_len */
 static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
@@ -308,7 +308,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
 
-	if (*alloc_len < 8)
+	if (*alloc_len < 10)
 		return 0;
 
 	/* ts A90602 : Clearing mdata before command execution */
@@ -347,15 +347,20 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	   in MMC-3 6.3.11 there are at least 28 bytes plus a variable length
 	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
 	*/
+	/* ts A90603 :
+	   SPC-1 8.3.3 enumerates mode page format bytes from 0 to n and
+	   defines Page Length as (n-1).
+	*/
 	page_length = page[1];
 	old_alloc_len = *alloc_len;
-	*alloc_len = page_length + 8;
+	*alloc_len = page_length + 10;
 	if (flag & 1)
 		return !was_error;
-	if (page_length + 8 > old_alloc_len)
-		page_length = old_alloc_len - 8;
-	if (page_length < 22) {
-		/* ts A90602 */
+	if (page_length + 10 > old_alloc_len)
+		page_length = old_alloc_len - 10;
+
+	/* ts A90602 : 20 to asserts page[21]. (see SPC-1 8.3.3) */
+	if (page_length < 20) {
 		m->valid = -1;
 		sprintf(msg, "MODE SENSE page 2A too short: %s : %d",
 			d->devname, page_length);
@@ -400,7 +405,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	mmc_get_configuration(d);
 
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
-	if (page_length < 32) /* no write speed descriptors ? */
+	if (page_length < 30) /* no write speed descriptors ? */
 		goto try_mmc_get_performance;
 
 	m->cur_write_speed = page[28] * 256 + page[29];
@@ -424,12 +429,12 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	}
 
 	for (i = 0; i < num_write_speeds; i++) {
-		speed = page[32 + 4*i + 2] * 256 + page[32 + 4*i + 3];
+		speed = page[32 + 4 * i + 2] * 256 + page[32 + 4 * i + 3];
 
 		if (speed_debug) 
 		fprintf(stderr,
 			"LIBBURN_DEBUG: write speed #%d = %d kB/s  (rc %d)\n",
-			i, speed, page[32 + 4*i +1] & 7);
+			i, speed, page[32 + 4 * i + 1] & 7);
 
 		/* ts A61226 */
 		ret = burn_speed_descriptor_new(&(d->mdata->speed_descriptors),
@@ -442,7 +447,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 				strcpy(sd->profile_name,
 					d->current_profile_text);
 			}
-			sd->wrc = (( page[32 + 4*i +1] & 7 ) == 1 );
+			sd->wrc = (( page[32 + 4 * i + 1] & 7 ) == 1 );
 			sd->write_speed = speed;
 		}
 
@@ -470,7 +475,7 @@ try_mmc_get_performance:;
 
 void spc_sense_caps(struct burn_drive *d)
 {
-	int alloc_len, start_len = 22, ret;
+	int alloc_len, start_len = 30, ret;
 
 	if (mmc_function_spy(d, "sense_caps") <= 0)
 		return;
