@@ -470,7 +470,7 @@ static int sg_fcntl_lock(int *fd, char *fd_name, int l_type, int verbous)
 /* ts A60926 */
 static int sg_open_drive_fd(char *fname, int scan_mode)
 {
-	int open_mode = O_RDWR, fd;
+	int open_mode = O_RDWR, fd, tries= 0;
 	char msg[81];
 
 	/* ts A70409 : DDLP-B */
@@ -502,7 +502,8 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 		"libburn: experimental: O_EXCL= %d , O_NDELAY= %d\n",
 		!!(open_mode&O_EXCL),!!(open_mode&O_NDELAY));
 */
-          
+
+try_open:;
 	fd = open(fname, open_mode);
 	if (fd == -1) {
 /* <<< debugging
@@ -511,6 +512,17 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 			fname,errno);
 */
 		if (errno == EBUSY) {
+			tries++;
+
+/* <<< debugging
+			fprintf(stderr,
+				"\nlibburn_DEBUG: EBUSY , tries= %d\n", tries);
+*/
+
+			if (tries < 4) {
+				usleep(2000000);
+				goto try_open;
+			}
 			sg_handle_busy_device(fname, errno);
 			return -1;
 			
@@ -793,7 +805,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 		if (ret<=0) {
 			if (linux_sg_enumerate_debug)
 				fprintf(stderr, "cannot lock siblings\n"); 
-				sg_handle_busy_device(fname, 0);
+			sg_handle_busy_device(fname, 0);
 			return 0;
 		}
 		/* the final occupation will be done in sg_grab() */
