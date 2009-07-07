@@ -195,6 +195,13 @@ else
     CFLAGS="$CFLAGS -DDEBUG"
 fi
 
+
+dnl Determine target directory for libburn-*.pc
+dnl Important: Must be performed _after_ TARGET_SHIZZLE
+dnl
+LIBBURNIA_SET_PKGCONFIG
+
+
 AC_CONFIG_FILES([
 	Makefile
 	doc/doxygen.conf
