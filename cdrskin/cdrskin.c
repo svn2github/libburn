@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.6.7"
+#define Cdrskin_prog_versioN "0.6.9"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 6
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -135,44 +135,44 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_6_6
-#define Cdrskin_libburn_versioN "0.6.6"
+#ifdef Cdrskin_libburn_0_6_8
+#define Cdrskin_libburn_versioN "0.6.8"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_6_6 */
+#endif /* Cdrskin_libburn_0_6_8 */
 
-#ifdef Cdrskin_libburn_0_6_7
-#define Cdrskin_libburn_versioN "0.6.7"
+#ifdef Cdrskin_libburn_0_6_9
+#define Cdrskin_libburn_versioN "0.6.9"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties in 0.6.7 yet */
+/* there are no libburn novelties yet */
 
-#endif /* Cdrskin_libburn_0_6_7 */
+#endif /* Cdrskin_libburn_0_6_9 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_6_6
-#define Cdrskin_libburn_versioN "0.6.6"
+#define Cdrskin_libburn_0_6_8
+#define Cdrskin_libburn_versioN "0.6.8"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_6_6
+#ifdef Cdrskin_libburn_0_6_8
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 6
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
-#ifdef Cdrskin_libburn_0_6_7
+#ifdef Cdrskin_libburn_0_6_9
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 6
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
