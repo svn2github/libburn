@@ -6636,13 +6636,128 @@ Made number transition and activated development documentation
 + cdrskin/add_ts_changes_to_libburn_0_6_7
 Updated cdrskin tarball generator
 
-  []
+7 May 2009  [2636]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+------------------------------------ cycle  - cdrskin-0.6.7 - 2009.05.07.181034
 
------------------------------------- cycle  - cdrskin-0.6.7 - 
------------------------------------- cycle  - cdrskin-0.6.7 - 
+8 May 2009  [2637]
+svn move -m libburn release 0.6.6 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroSixSix
+http://svn.libburnia-project.org/libburn/tags/ZeroSixSix
+
+2009.05.17.144304  [2645]
+cdrskin/cdrskin.c
+Made -scanbus work with SCSI bus numbers like 85 (USB, kernel 2.6.18.2)
+
+2009.06.02.162841  [2655]
+libburn/drive.c
+libburn/async.c
+libburn/options.c
+libburn/spc.c
+libburn/libdax_msgs.h
+Rectified use of burn_drive.mdata->valid
+
+2 Jun 2009  [2656]
+test/libburner.c
+Avoided SIGSEGV if no drives were found by scan
+
+2009.06.02.172201  [2657]
+libburn/drive.c
+Avoided to enumerate faulty drive objects
+
+2009.06.03.085637 [2658]
+libburn/spc.c
+Bug fix: Old MMC-1 drives were rejected because of mode page 2Ah length
+
+2009.06.03.185118  [2659]
+libburn/transport.h
+libburn/drive.c
+libburn/spc.c
+libburn/mmc.c
+Bug fix: No usable media was detected with old MMC-1 drives
+
+2009.06.14.095004  [2669]
+libburn/sg-linux.c
+Retrying 3 times on EBUSY drives with generous usleep intervals
+
+------------------------------------ cycle  - cdrskin-0.6.7 - 2009.06.14.095833
+Made -scanbus work with high SCSI bus numbers
+Bug fix: Old MMC-1 drives were rejected because of mode page 2Ah length
+Bug fix: No usable media was detected with old MMC-1 drives
+
+
+7 Jul 2009  [2691]
+acinclude.m4
+configure.ac
+configure options --enable-libdir-pkgconfig and --enable-pkgconfig-path=DIR
+
+2009.07.07.191134  [2692]
+Timestamp for revision 2691
+
+14 Jul 2009 [2894]
+svn copy -m "Branching for libburn release 0.6.8"
+      http://svn.libburnia-project.org/libburn/trunk
+      http://svn.libburnia-project.org/libburn/branches/ZeroSixEight
+
+2009.07.14.100001  [2695]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+14 Jul 2009  [2696]
+- cdrskin/add_ts_changes_to_libburn_0_6_6
+- cdrskin/add_ts_changes_to_libburn_0_6_7
++ cdrskin/add_ts_changes_to_libburn_0_6_8
++ cdrskin/add_ts_changes_to_libburn_0_6_9
+Updated cdrskin tarball generator
+
+14 Jul 2009  [2697]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.6.8.pl00 - 2009.07.14.100001
+Made -scanbus work with high SCSI bus numbers
+Bug fix: Old MMC-1 drives were rejected because of mode page 2Ah length
+Bug fix: No usable media was detected with old MMC-1 drives
+
+
+2009.07.14.133159  [2698]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+14 Jul 2009  [2699]
+- cdrskin/add_ts_changes_to_libburn_0_6_6
+- cdrskin/add_ts_changes_to_libburn_0_6_7
++ cdrskin/add_ts_changes_to_libburn_0_6_8
++ cdrskin/add_ts_changes_to_libburn_0_6_9
+Updated cdrskin tarball generator
+
+14 Jul 2009  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.6.9 - 2009.07.14.133159
+
+
+------------------------------------ cycle  - cdrskin-0.6.9 - 
+------------------------------------ cycle  - cdrskin-0.6.9 - 
 
 ===============================================================================
                                     TODO
