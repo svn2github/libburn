@@ -148,7 +148,8 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* there are no libburn novelties yet */
+#define Cdrskin_libburn_has_burn_drive_get_all_profileS 1
+
 
 #endif /* Cdrskin_libburn_0_6_9 */
 
@@ -4761,6 +4762,28 @@ cannot_read:;
  return(0);
 }
 
+int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
+                               int flag)
+{
+
+#ifdef Cdrskin_libburn_has_burn_drive_get_all_profileS
+
+ int num_profiles, profiles[64], i, ret;
+ char is_current[64], profile_name[80];
+
+ burn_drive_get_all_profiles(drive, &num_profiles, profiles, is_current);
+ for(i= 0; i < num_profiles; i++) {
+   ret= burn_obtain_profile_name(profiles[i], profile_name); 
+   if(ret <= 0)
+     strcpy(profile_name, "unknown");
+   printf("Profile: 0x%4.4X (%s)%s\n", (unsigned int) profiles[i],
+          profile_name, is_current[i] ? " (current)" : "");
+ }
+#endif /* Cdrskin_libburn_has_burn_drive_get_all_profileS */
+
+ return(1);
+}
+
 
 /** Perform -atip .
     @param flag Bitfield for control purposes:
@@ -4786,8 +4809,10 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable) {
    is_not_really_erasable= 1;
  } else if(s==BURN_DISC_EMPTY) {
-   if(skin->verbosity>=Cdrskin_verbose_progresS)
+   if(skin->verbosity>=Cdrskin_verbose_progresS) {
      printf("Current: none\n");
+     Cdrskin_print_all_profiles(skin, drive, 0);
+   }
    ret= 0; goto ex;
  }
 
@@ -4897,7 +4922,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      printf("Current: CD-RW\n");
    else
      printf("Current: CD-R\n");
+   Cdrskin_print_all_profiles(skin, drive, 0);
  }
+
  if(strstr(profile_name,"DVD")==profile_name) {
    /* These are dummy messages for project scdbackup, so its media recognition
       gets a hint that the media is suitable and not in need of blanking.
