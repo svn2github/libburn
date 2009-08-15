@@ -163,6 +163,9 @@ struct burn_drive
 	int current_is_supported_profile;
 	/* ts A90603 */
 	int current_is_guessed_profile;
+	/* ts A90815 */
+	unsigned char all_profiles[256];
+	int num_profiles;
 
 	/* ts A70128 : MMC-to-MMC feature info from 46h for DVD-RW.
            Quite internal. Regard as opaque :)

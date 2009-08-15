@@ -1998,6 +1998,34 @@ void burn_read_opts_transfer_damaged_blocks(struct burn_read_opts *opts,
 void burn_read_opts_set_hardware_error_retries(struct burn_read_opts *opts,
 					       unsigned char hardware_error_retries);
 
+
+/* ts A90815 */
+/** Gets the list of profile codes supported by the drive.
+    Profiles depict the feature sets which constitute media types. For
+    known profile codes and names see burn_disc_get_profile().
+    @param d            is the drive to query
+    @param num_profiles returns the number of supported profiles
+    @param profiles     returns the profile codes
+    @param is_current   returns the status of the corresponding profile code:
+                        1= current, i.e. the matching media is loaded
+                        0= not current, i.e. the matching media is not loaded
+    @return  always 1 for now
+    @since 0.7.0
+*/
+int burn_drive_get_all_profiles(struct burn_drive *d, int *num_profiles,
+                                int profiles[64], char is_current[64]);
+
+
+/* ts A90815 */
+/** Obtains the profile name associated with a profile code.
+    @param profile_code the profile code to be translated
+    @param name         returns the profile name (e.g. "DVD+RW")  
+    @return             1= known profile code , 0= unknown profile code
+    @since 0.7.0
+*/
+int burn_obtain_profile_name(int profile_code, char name[80]);
+
+
 /** Gets the maximum write speed for a drive and eventually loaded media.
     The return value might change by the media type of already loaded media,
     again by call burn_drive_grab() and again by call burn_disc_read_atip(). 

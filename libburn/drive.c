@@ -40,6 +40,9 @@
 /* A70903 : for burn_scsi_setup_drive() */
 #include "spc.h"
 
+/* A90815 : for mmc_obtain_profile_name() */
+#include "mmc.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -1998,6 +2001,30 @@ int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80])
 	*pno = d->current_profile;
 	strcpy(name,d->current_profile_text);
 	return *pno >= 0;
+}
+
+
+/* ts A90815 : New API function */
+int burn_drive_get_all_profiles(struct burn_drive *d, int *num_profiles,
+				int profiles[64], char is_current[64])
+{
+	int i;
+
+	*num_profiles = d->num_profiles;
+	for (i = 0; i < d->num_profiles; i++) {
+		profiles[i] = (d->all_profiles[i * 4] << 8) |
+				d->all_profiles[i * 4 + 1];
+		is_current[i] = d->all_profiles[i * 4 + 2] & 1;
+	}
+	return 1;
+}
+
+
+/* ts A90815 : New API function */
+int burn_obtain_profile_name(int profile_number, char name[80])
+{
+	strcpy(name, mmc_obtain_profile_name(profile_number));
+	return(name[0] != 0);
 }
 
 

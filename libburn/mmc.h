@@ -75,6 +75,9 @@ int mmc_read_10(struct burn_drive *d, int start, int amount,
 /* ts A81210 : Determine the upper limit of readable data size */
 int mmc_read_capacity(struct burn_drive *d);
 
+/* ts A61201 */
+char *mmc_obtain_profile_name(int profile_number);
+
 
 /* mmc5r03c.pdf 4.3.4.4.1 d) "The maximum number of RZones is 2 302." */
 #define BURN_MMC_FAKE_TOC_MAX_SIZE 2302

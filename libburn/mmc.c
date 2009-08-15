@@ -1467,7 +1467,7 @@ inquire_drive:;
 
 
 /* ts A61201 */
-static char *mmc_obtain_profile_name(int profile_number)
+char *mmc_obtain_profile_name(int profile_number)
 {
 	static char *texts[0x53] = {NULL};
 	int i, max_pno = 0x53;
@@ -2250,7 +2250,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer buf;
 	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
-	int old_alloc_len;
+	int old_alloc_len, only_current_profile = 0;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command c;
 	int phys_if_std = 0;
@@ -2264,6 +2264,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
         d->current_is_guessed_profile = 0;
+	d->num_profiles = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
 	d->current_feat23h_byte4 = 0;
@@ -2272,10 +2273,6 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 
 	scsi_init_command(&c, MMC_GET_CONFIGURATION,
 			 sizeof(MMC_GET_CONFIGURATION));
-/*
-	memcpy(c.opcode, MMC_GET_CONFIGURATION, sizeof(MMC_GET_CONFIGURATION));
-	c.oplen = sizeof(MMC_GET_CONFIGURATION);
-*/
 	c.dxfer_len= *alloc_len;
 	c.retry = 1;
 	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
@@ -2381,7 +2378,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 #endif
 
 /* Enable this to get loud and repeated reports about the feature set :
-#define Libburn_print_feature_descriptorS 1
+ #define Libburn_print_feature_descriptorS 1
 */
 	/* ts A70127 : Interpret list of profile and feature descriptors.
  	see mmc5r03c.pdf 5.2
@@ -2395,7 +2392,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	"-----------------------------------------------------------------\n");
 	fprintf(stderr,
 	  "LIBBURN_EXPERIMENTAL : feature list length = %d , shown = %d\n",
-		len, up_to - c.page->data);
+		len, (int) (up_to - c.page->data));
 #endif /* Libburn_print_feature_descriptorS */
 
 	for (descr = c.page->data + 8; descr + 3 < up_to; descr += descr_len) {
@@ -2413,8 +2410,14 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 
 		if (feature_code == 0x0) {
 			prf_end = descr + 4 + descr[3];
+			d->num_profiles = descr[3] / 4;
+			if (d->num_profiles > 64)
+				d->num_profiles = 64;
+			if (d->num_profiles > 0)
+				memcpy(d->all_profiles, descr + 4,
+							d->num_profiles * 4);
 			for (prf = descr + 4; prf + 2 < prf_end; prf += 4) {
-				if (only_current && !(prf[2] & 1))
+				if (only_current_profile && !(prf[2] & 1))
 			continue;
 				prf_number =  (prf[0] << 8) | prf[1];
 
@@ -3865,13 +3868,15 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->start_lba = -2000000000;
 	d->end_lba = -2000000000;
 
-	/* ts A61201 - A70223*/
+	/* ts A61201 - A90815*/
 	d->erasable = 0;
 	d->current_profile = -1;
 	d->current_profile_text[0] = 0;
 	d->current_is_cd_profile = 0;
 	d->current_is_supported_profile = 0;
 	d->current_is_guessed_profile = 0;
+	memset(d->all_profiles, 0, 256);
+	d->num_profiles = 0;
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
 	d->current_feat23h_byte4 = 0;
