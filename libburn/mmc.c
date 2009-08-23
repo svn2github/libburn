@@ -1159,7 +1159,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	struct buffer buf;
 	struct command c;
 	int dlen;
-	int i, bpl= 12, old_alloc_len, t_idx;
+	int i, bpl= 12, old_alloc_len, t_idx, ret;
 	unsigned char *tdata;
 	char msg[321];
 
@@ -1185,6 +1185,16 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 			d->status = BURN_DISC_FULL;
 		return 1;
 	}
+
+	/* ts A90823:
+	   SanDisk Cruzer U3 memory stick stalls on format 2.
+	   Format 0 seems to be more conservative with read-only drives.
+	*/
+	if (!(d->mdata->cdrw_write || d->current_profile != 0x08)) {
+		ret = mmc_read_toc_fmt0(d);
+		return ret;
+	}
+
 	scsi_init_command(&c, MMC_GET_TOC, sizeof(MMC_GET_TOC));
 /*
 	memcpy(c.opcode, MMC_GET_TOC, sizeof(MMC_GET_TOC));

@@ -463,12 +463,24 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		m->min_write_speed, m->max_write_speed);
 
 try_mmc_get_performance:;
-	ret = mmc_get_write_performance(d);
-
-	if (ret > 0 && speed_debug)
-		fprintf(stderr,
+	if (m->cdrw_write || page_length >= 32) {
+		/* ts A90823:
+		   One has to avoid U3 enhanced memory sticks here. On my
+		   SuSE 10.2 a SanDisk Cruzer 4GB stalls at the second occasion
+		   of ACh GET PERFORMANCE. (The first one is obviously called
+		   by the OS at plug time.)
+		   This pseudo drive returns no write capabilities and a page
+		   length of 28. MMC-3 describes page length 32. Regrettably
+		   MMC-2 prescribes a page length of 26. Here i have to trust
+		   m->cdrw_write to reliably indicate any MMC-2 burner.
+		*/
+		ret = mmc_get_write_performance(d);
+		if (ret > 0 && speed_debug)
+			fprintf(stderr,
 	  "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
-		m->min_write_speed, m->max_write_speed);
+			m->min_write_speed, m->max_write_speed);
+	}
+
 	return !was_error;
 }
 

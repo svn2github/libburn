@@ -1892,11 +1892,16 @@ int burn_disc_read_atip(struct burn_drive *d)
 	}
 	if(d->drive_role != 1)
 		return 0;
-	if (d->current_profile == -1 || d->current_is_cd_profile) {
+	if ((d->current_profile == -1 || d->current_is_cd_profile)
+	    && (d->mdata->cdrw_write || d->current_profile != 0x08)) {
 		d->read_atip(d);
 		/* >>> some control of success would be nice :) */
 	} else {
-		/* mmc5r03c.pdf 6.26.3.6.3 : ATIP is undefined for non-CD */;
+		/* mmc5r03c.pdf 6.26.3.6.3 : ATIP is undefined for non-CD
+		   (and it seems meaningless for non-burners).
+		   ts A90823: Pseudo-CD U3 memory stick stalls with ATIP.
+		              It is !cdrw_write and profile is 0x08.
+		*/
 		return 0;
 	}
 	return 1;
