@@ -21,6 +21,7 @@ int mmc_function_spy(struct burn_drive *d, char * text);
 static unsigned char SBC_LOAD[] = { 0x1b, 0, 0, 0, 3, 0 };
 static unsigned char SBC_UNLOAD[] = { 0x1b, 0, 0, 0, 2, 0 };
 static unsigned char SBC_START_UNIT[] = { 0x1b, 0, 0, 0, 1, 0 };
+static unsigned char SBC_STOP_UNIT[] = { 0x1b, 0, 0, 0, 0, 0 };
 
 void sbc_load(struct burn_drive *d)
 {
@@ -84,15 +85,8 @@ int sbc_start_unit(struct burn_drive *d)
 		return 0;
 
 	scsi_init_command(&c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
-/*
-	memcpy(c.opcode, SBC_START_UNIT, sizeof(SBC_START_UNIT));
-	c.oplen = sizeof(SBC_START_UNIT);
-	c.page = NULL;
-*/
 	c.retry = 1;
-
 	c.opcode[1] |= 1; /* ts A70918 : Immed */
-
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 	if (c.error)
@@ -100,6 +94,25 @@ int sbc_start_unit(struct burn_drive *d)
 	/* ts A70918 : now asynchronous */
 	return spc_wait_unit_attention(d, 1800, "START UNIT", 0);
 }
+
+/* ts A90824 : Trying to reduce drive noise */
+int sbc_stop_unit(struct burn_drive *d)
+{
+	struct command c;
+
+	if (mmc_function_spy(d, "stop_unit") <= 0)
+		return 0;
+
+	scsi_init_command(&c, SBC_STOP_UNIT, sizeof(SBC_STOP_UNIT));
+	c.retry = 1;
+	c.opcode[1] |= 1; /* Immed */
+	c.dir = NO_TRANSFER;
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+	return spc_wait_unit_attention(d, 1800, "STOP UNIT", 0);
+}
+
 
 
 /* ts A61021 : the sbc specific part of sg.c:enumerate_common()
@@ -109,6 +122,7 @@ int sbc_setup_drive(struct burn_drive *d)
 	d->eject = sbc_eject;
 	d->load = sbc_load;
 	d->start_unit = sbc_start_unit;
+	d->stop_unit = sbc_stop_unit;
 	return 1;
 }
 

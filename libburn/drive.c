@@ -534,6 +534,20 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 
 
 /* API */
+/* ts A90824
+   @param flag bit0= wake up (else start snoozing)
+*/
+int burn_drive_snooze(struct burn_drive *d, int flag)
+{
+	if (flag & 1)
+		d->start_unit(d);
+	else
+		d->stop_unit(d);
+	return 1;
+}
+
+
+/* API */
 void burn_drive_release(struct burn_drive *d, int le)
 {
 	burn_drive_release_fl(d, !!le);

@@ -1029,6 +1029,22 @@ int burn_drive_obtain_scsi_adr(char *path, int *bus_no, int *host_no,
 int burn_drive_grab(struct burn_drive *drive, int load);
 
 
+/* ts A90824 */
+/** Calm down or alert a drive. Some drives stay alert after reading for
+    quite some time. This saves time with the startup for the next read
+    operation but also causes noise and consumes extra energy. It makes
+    sense to calm down the drive if no read operation is expected for the
+    next few seconds. The drive will get alert automatically if operations
+    are required.
+    @param drive  The drive to influence.
+    @param flag   Bitfield for control purposes
+                  bit0= become alert (else start snoozing)
+                        This is not mandatory to allow further drive operations
+    @since 0.7.0
+*/
+int burn_drive_snooze(struct burn_drive *d, int flag);
+
+
 /** Release a drive. This should not be done until the drive is no longer
     busy (see burn_drive_get_status).
     Linux: The drive device file is not reserved afterwards. (O_EXCL, F_SETLK).
