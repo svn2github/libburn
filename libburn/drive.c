@@ -539,6 +539,8 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 */
 int burn_drive_snooze(struct burn_drive *d, int flag)
 {
+	if (d->drive_role != 1)
+		return 0;
 	if (flag & 1)
 		d->start_unit(d);
 	else

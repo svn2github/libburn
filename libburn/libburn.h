@@ -1040,6 +1040,7 @@ int burn_drive_grab(struct burn_drive *drive, int load);
     @param flag   Bitfield for control purposes
                   bit0= become alert (else start snoozing)
                         This is not mandatory to allow further drive operations
+    @return       1= success , 0= drive role not suitable for calming
     @since 0.7.0
 */
 int burn_drive_snooze(struct burn_drive *d, int flag);
