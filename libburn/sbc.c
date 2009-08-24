@@ -80,6 +80,7 @@ void sbc_eject(struct burn_drive *d)
 int sbc_start_unit(struct burn_drive *d)
 {
 	struct command c;
+	int ret;
 
 	if (mmc_function_spy(d, "start_unit") <= 0)
 		return 0;
@@ -92,13 +93,16 @@ int sbc_start_unit(struct burn_drive *d)
 	if (c.error)
 		return 0;
 	/* ts A70918 : now asynchronous */
-	return spc_wait_unit_attention(d, 1800, "START UNIT", 0);
+	d->is_stopped = 0;
+	ret = spc_wait_unit_attention(d, 1800, "START UNIT", 0);
+	return ret;
 }
 
 /* ts A90824 : Trying to reduce drive noise */
 int sbc_stop_unit(struct burn_drive *d)
 {
 	struct command c;
+	int ret;
 
 	if (mmc_function_spy(d, "stop_unit") <= 0)
 		return 0;
@@ -110,7 +114,9 @@ int sbc_stop_unit(struct burn_drive *d)
 	d->issue_command(d, &c);
 	if (c.error)
 		return 0;
-	return spc_wait_unit_attention(d, 1800, "STOP UNIT", 0);
+	ret = spc_wait_unit_attention(d, 1800, "STOP UNIT", 0);
+	d->is_stopped = 1;
+	return ret;
 }
 
 
@@ -123,6 +129,7 @@ int sbc_setup_drive(struct burn_drive *d)
 	d->load = sbc_load;
 	d->start_unit = sbc_start_unit;
 	d->stop_unit = sbc_stop_unit;
+	d->is_stopped = 0;
 	return 1;
 }
 

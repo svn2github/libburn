@@ -236,6 +236,11 @@ int mmc_function_spy(struct burn_drive *d, char * text)
 		d->cancel = 1;
 		return 0;
 	}
+	if (d->is_stopped && strcmp(text, "stop_unit") != 0 &&
+	    strcmp(text, "start_unit") != 0) {
+		d->start_unit(d);
+		d->is_stopped = 0;
+	}
 	return 1;
 }
 

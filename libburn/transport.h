@@ -317,7 +317,11 @@ struct burn_drive
 	void (*eject) (struct burn_drive *);
 	void (*load) (struct burn_drive *);
 	int (*start_unit) (struct burn_drive *);
+
+	/* ts A90824 : Calming down noisy drives */
 	int (*stop_unit) (struct burn_drive *);
+	int is_stopped;
+
 	void (*read_disc_info) (struct burn_drive *);
 	void (*read_sectors) (struct burn_drive *,
 			      int start,
