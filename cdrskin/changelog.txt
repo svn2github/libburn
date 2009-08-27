@@ -1761,6 +1761,17 @@ Version leap to 0.2.6
 Published cdrskin-0.2.6.pl01 on cdrskin home pages
 
 ------------------------------- cycle  - cdrskin-0.2.6.pl01 - 2006.11.23.114611
+* Enabled TAO
+* Bug fixed: Trailing trash appended to .wav files caused error message
+  and, if exceeding fifo size, could even stall a burn.
+* Multi-session CDs (for now restricted to write mode TAO), -multi, -msinfo
+* Bug fixed: False speed with first pacifier cycle. Potential SIGFPE by NaN.
+* Enabled named pipes and other non-plain file types as track sources
+  (actually already in previous cycle)
+* Bug fixed: Default speed was not highest possible but announced as "MAX"
+* SAO is preferred default write mode, TAO is default when needed
+* libisofs unbundled from libburn+cdrskin
+* Hints for porting to other operating systems are now in sg-*.c
 
 
 2006.11.24.121745  [437]
@@ -6749,15 +6760,120 @@ Made number transition and activated development documentation
 + cdrskin/add_ts_changes_to_libburn_0_6_9
 Updated cdrskin tarball generator
 
-14 Jul 2009  []
+14 Jul 2009  [2700]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 ------------------------------------ cycle  - cdrskin-0.6.9 - 2009.07.14.133159
 
+14 Jul 2009  [2702]
+svn move -m libburn release 0.6.8 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroSixEight
+http://svn.libburnia-project.org/libburn/tags/ZeroSixEight
 
------------------------------------- cycle  - cdrskin-0.6.9 - 
------------------------------------- cycle  - cdrskin-0.6.9 - 
+
+2009.08.15.133055  [2721]
+libburn/write.c
+Added test code about output blocks size as comment.
+
+2009.08.15.133332  [2722]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/mmc.h
+libburn/mmc.c
+New API calls burn_drive_get_all_profiles(), burn_obtain_profile_name()
+
+2009.08.15.133744  [2723]
+cdrskin/cdrskin.c
+Listing all profiles with cdrskin -v -atip
+
+2009.08.23.130326  [2735]
+libburn/drive.c
+libburn/spc.c
+libburn/mmc.c
+Adapted to pitfalls of U3 memory sticks which appear as CD-ROM drives
+
+------------------------------------ cycle  - cdrskin-0.6.9 - 2009.08.23.132942
+New API calls burn_drive_get_all_profiles(), burn_obtain_profile_name()
+Adapted to pitfalls of U3 memory sticks which appear as CD-ROM drives
+
+
+2009.08.24.131146  [2736]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/sbc.c
+New API call burn_drive_snooze()
+
+2009.08.24.161646  [2737]
+libburn/libburn.h
+libburn/drive.c
+Made burn_drive_snooze() safe for emulated drives
+
+2009.08.24.202517  [2740]
+libburn/transport.h
+libburn/sbc.c
+libburn/mmc.c
+Implemented automatic START UNIT after STOP UNIT before any other SCSI command
+
+2009.08.27.123001  [2746]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+27 Aug 2009  [2747]
+- cdrskin/add_ts_changes_to_libburn_0_6_8
+- cdrskin/add_ts_changes_to_libburn_0_6_9
++ cdrskin/add_ts_changes_to_libburn_0_7_0
++ cdrskin/add_ts_changes_to_libburn_0_7_1
+Updated cdrskin tarball generator
+
+27 Aug 2009  [2748]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.7.0.pl00 - 2009.08.27.123001
+New API calls burn_drive_get_all_profiles(), burn_obtain_profile_name()
+New API call burn_drive_snooze()
+Adapted to pitfalls of U3 memory sticks which appear as CD-ROM drives
+Listing all supported profiles with option -atip
+
+
+2009.08.27.143351  [2749]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to development version 0.7.1
+
+27 Aug 2009  [2750]
+- cdrskin/add_ts_changes_to_libburn_0_6_8
+- cdrskin/add_ts_changes_to_libburn_0_6_9
++ cdrskin/add_ts_changes_to_libburn_0_7_0
++ cdrskin/add_ts_changes_to_libburn_0_7_1
+Updated cdrskin tarball generator
+
+27 Aug 2009  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.08.27.143351
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 
+------------------------------------ cycle  - cdrskin-0.7.1 - 
 
 ===============================================================================
                                     TODO
@@ -6765,7 +6881,6 @@ Documented changes and release timestamp
 
 
 --------------------------------- bugs -------------------------------------
-
 
 - Do something about drive->buffer asynchronous race conditions
   and dangerous use of local heap memory.
