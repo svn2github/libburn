@@ -34,10 +34,12 @@ CD-R, DVD-R, DVD+R, DVD+R/DL, BD-R, CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE
 
 <P>
 <H2>Hardware requirements:</H2>
-A CD/DVD/BD recorder suitable for 
-<A HREF="http://libburnia-project.org">http://libburnia-project.org</A> <BR>
-(SCSI , ATA , USB , or SATA writers compliant to standard MMC-3 for CD
-and to MMC-5 for DVD or BD).
+About any CD, DVD, or BD recorder produced in the recent ten years.
+<BR>
+<A HREF="http://libburnia-project.org">libburn</A>
+supports recorders which are compliant to standards MMC-1 for CD and
+MMC-5 for DVD or BD. Linux and FreeBSD allow to access drives connected
+via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 <BR>
 </P>
 
@@ -59,7 +61,7 @@ and to MMC-5 for DVD or BD).
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.6.8</DT>
+<DT>libburn-0.7.0</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -191,7 +193,7 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.6.8.pl00.tar.gz">cdrskin-0.6.8.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.7.0.pl00.tar.gz">cdrskin-0.7.0.pl00.tar.gz</A>
 (750 KB).
 </DD>
 <DD>
@@ -241,19 +243,19 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.6.6.pl00:
+Enhancements towards previous stable version cdrskin-0.6.8.pl00:
 <UL>
-<LI>Made -scanbus work with high SCSI bus numbers</LI>
+<LI>Adapted to pitfalls of U3 memory sticks which appear as CD-ROM drives</LI>
+<LI>Listing all supported profiles with option -atip -v</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.6.6.pl00:
+Bug fixes towards cdrskin-0.6.8.pl00:
 <UL>
-<LI>Old MMC-1 drives were rejected</LI>
-<!--
 <LI>none</LI>
+<!--
 -->
 </UL>
 
@@ -261,8 +263,8 @@ Bug fixes towards cdrskin-0.6.6.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.6.9 :</H3></DT>
-<DD>Enhancements towards current stable version 0.6.8.pl00:
+<DT><H3>Development snapshot, version 0.7.1 :</H3></DT>
+<DD>Enhancements towards current stable version 0.7.0.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -271,7 +273,7 @@ Bug fixes towards cdrskin-0.6.6.pl00:
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-0.6.8.pl00:
+<DD>Bug fixes towards cdrskin-0.7.0.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -280,10 +282,10 @@ Bug fixes towards cdrskin-0.6.6.pl00:
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.6.9</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.6.9 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.6.9 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.6.9)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.7.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -303,7 +305,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.6.9.tar.gz">cdrskin-0.6.9.tar.gz</A>
+<A HREF="cdrskin-0.7.1.tar.gz">cdrskin-0.7.1.tar.gz</A>
 (750 KB).
 </DD>
 
