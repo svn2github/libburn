@@ -310,6 +310,15 @@ or
 #define Cdrskin_all_tracks_with_sector_paD 1
 
 
+/** ts A90901
+    The raw write modes of libburn depend in part on code borrowed from cdrdao.
+    Since this code is not understood by the current developers and since CDs
+    written with cdrskin -raw96r seem unreadable anyway, -raw96r is given up
+    for now.
+*/
+#define Cdrskin_disable_raw96R 1 
+
+
 /** A macro which is able to eat up a function call like printf() */
 #ifdef Cdrskin_extra_leaN
 #define ClN(x) 
@@ -2814,7 +2823,11 @@ see_cdrskin_eng_html:;
 #endif
      fprintf(stderr,"\t-dao\t\tWrite disk in SAO mode.\n");
      fprintf(stderr,"\t-sao\t\tWrite disk in SAO mode.\n");
+
+#ifndef Cdrskin_disable_raw96R
      fprintf(stderr,"\t-raw96r\t\tWrite disk in RAW/RAW96R mode\n");
+#endif
+
      fprintf(stderr,"\ttsize=#\t\tannounces exact size of source data\n");
      fprintf(stderr,"\tpadsize=#\tAmount of padding\n");
      fprintf(stderr,"\t-audio\t\tSubsequent tracks are CD-DA audio tracks\n");
@@ -2873,8 +2886,10 @@ see_cdrskin_eng_html:;
        fprintf(stderr,
         "cdrskin: NOTE : option --no_rc would only work as first argument.\n");
 
+#ifndef Cdrskin_disable_raw96R
    } else if(strcmp(argv[i],"-raw96r")==0) {
      strcpy(o->write_mode_name,"RAW/RAW96R");
+#endif
 
    } else if(strcmp(argv[i],"-sao")==0 || strcmp(argv[i],"-dao")==0) {
      strcpy(o->write_mode_name,"SAO");
@@ -3203,7 +3218,7 @@ struct CdrskiN {
  int do_burn;
  int tell_media_space; /* actually do not burn but tell the available space */
  int burnfree;
- /** The write mode (like SAO or RAW96/R). See libburn. 
+ /** The write mode (like SAO or TAO). See libburn. 
      Controled by preskin->write_mode_name */
  enum burn_write_types write_type;
  int block_type;
@@ -4593,10 +4608,14 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
    printf(" TAO");
  if(drive_info->sao_block_types & BURN_BLOCK_SAO)
    printf(" SAO");
+
+#ifndef Cdrskin_disable_raw96R
  if((drive_info->raw_block_types & BURN_BLOCK_RAW96R) &&
     strstr(profile_name,"DVD")!=profile_name &&
     strstr(profile_name,"BD")!=profile_name)
    printf(" RAW/RAW96R");
+#endif /* ! Cdrskin_disable_raw96R */
+
  printf("\n");
 
 #else
@@ -5771,19 +5790,28 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin,
      goto report_failure;
    }
    skin->write_type= wt;
+
+#ifndef Cdrskin_disable_raw96R
    if(wt==BURN_WRITE_RAW)
      strcpy(skin->preskin->write_mode_name,"RAW/RAW96R");
-   else if(wt==BURN_WRITE_TAO)
+   else
+#endif /* ! Cdrskin_disable_raw96R */
+   if(wt==BURN_WRITE_TAO)
      strcpy(skin->preskin->write_mode_name,"TAO");
    else if(wt==BURN_WRITE_SAO)
      strcpy(skin->preskin->write_mode_name,"SAO");
    else
      sprintf(skin->preskin->write_mode_name,"LIBBURN/%d", (int) wt);
  }
+
+#ifndef Cdrskin_disable_raw96R
  if(strcmp(skin->preskin->write_mode_name,"RAW/RAW96R")==0) {
    skin->write_type= BURN_WRITE_RAW;
    skin->block_type= BURN_BLOCK_RAW96R;
- } else if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
+ } else
+#endif /* ! Cdrskin_disable_raw96R */
+
+ if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
    skin->write_type= BURN_WRITE_TAO;
    skin->block_type= BURN_BLOCK_MODE1;
  } else if(strncmp(skin->preskin->write_mode_name,"LIBBURN/",8)==0) {
@@ -5907,9 +5935,12 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
      strcpy(skin->preskin->write_mode_name,"SAO");
    }
  }
+
+#ifndef Cdrskin_disable_raw96R
  if(strcmp(skin->preskin->write_mode_name,"RAW/RAW96R")==0) {
    skin->write_type= BURN_WRITE_RAW;
    skin->block_type= BURN_BLOCK_RAW96R;
+#endif /* ! Cdrskin_disable_raw96R */
 
 #ifdef Cdrskin_allow_libburn_taO
  } else if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
@@ -5947,9 +5978,13 @@ check_with_drive:;
      ok= 1;
    if(skin->write_type==BURN_WRITE_TAO && might_do_tao)
      ok= 1;
- } else if(skin->write_type==BURN_WRITE_RAW)
+
+#ifndef Cdrskin_disable_raw96R
+ } else if(skin->write_type==BURN_WRITE_RAW) {
    ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
- else if(skin->write_type==BURN_WRITE_SAO && !mixed_mode)
+#endif
+
+ } else if(skin->write_type==BURN_WRITE_SAO && !mixed_mode)
    ok= !!(drive_info->sao_block_types & BURN_BLOCK_SAO);
  else if(skin->write_type==BURN_WRITE_TAO) {
    block_type_demand= 0;
@@ -7057,7 +7092,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-fix", "-nofix",
-   "-raw", "-raw96p", "-raw16",
+   "-raw", "-raw96p", "-raw16", "-raw96r",
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
    "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
@@ -7733,8 +7768,10 @@ set_padsize:;
    } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
      skin->prodvd_cli_compatible= 1;
 
+#ifdef NIX
    } else if(strcmp(argv[i],"-raw96r")==0) {
      /* is handled in Cdrpreskin_setup() */;
+#endif
 
    } else if(strcmp(argv[i],"-sao")==0 || strcmp(argv[i],"-dao")==0) {
      /* is handled in Cdrpreskin_setup() */;

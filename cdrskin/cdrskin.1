@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "May 07, 2009"
+.TH CDRSKIN 1 "Aug 30, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -678,13 +678,6 @@ avoid problems with various CD-ROM read drivers.)
 Add the given amount of trailing zeros to the next data track. This option
 gets reset to padsize=0 after that next track is written. It may be set
 again before the next track argument. About size specifiers, see option fs=.
-.TP
-.BI \-raw96r
-Write CD in RAW/RAW96R mode. This mode allows to put more payload bytes
-into a CD sector but obviously at the cost of error correction. It can only
-be used for tracks of fixely predicted size. Some drives allow this mode but
-then behave strange or even go bad for the next few attempts to burn a CD.
-One should use it only if inavoidable.
 .TP
 .BI \-sao
 Write CD in Session At Once mode or sequential DVD-R[W] in Disc-at-once
