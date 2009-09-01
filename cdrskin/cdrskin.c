@@ -4465,7 +4465,7 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
        Text_shellsafe("failure:oversized string",shellsafe,0);
      else
        Text_shellsafe(adr,shellsafe,0);
-     printf("%d  dev=%s  %s :  '%s'  '%s'\n",
+     printf("%d  dev=%s  %s :  '%-8.8s'  '%s'\n",
             i,shellsafe,perms,skin->drives[i].vendor,skin->drives[i].product);
    }
    printf("-----------------------------------------------------------------------------\n");
