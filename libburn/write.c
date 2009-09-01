@@ -36,7 +36,6 @@
 #include "crc.h"
 #include "debug.h"
 #include "init.h"
-#include "lec.h"
 #include "toc.h"
 #include "util.h"
 #include "sg.h"
@@ -884,8 +883,8 @@ int burn_disc_write_is_ok(struct burn_write_opts *o, struct burn_disc *disc,
 
 	for (i = 0; i < disc->sessions; i++)
 		for (t = 0; t < disc->session[i]->tracks; t++)
-			if (!sector_headers_is_ok(
-					o, disc->session[i]->track[t]->mode))
+			if (sector_headers_is_ok(
+				o, disc->session[i]->track[t]->mode) != 1)
 				goto bad_track_mode_found;
 	return 1;
 bad_track_mode_found:;

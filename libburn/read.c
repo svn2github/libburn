@@ -27,7 +27,6 @@
 #include "crc.h"
 #include "debug.h"
 #include "init.h"
-#include "lec.h"
 #include "toc.h"
 #include "util.h"
 #include "sg.h"

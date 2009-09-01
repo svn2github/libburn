@@ -119,7 +119,8 @@ enum burn_write_types
 	      2s gaps between tracks, no fonky lead-ins
 
 	    With sequential DVD-R[W]:    Incremental Streaming
-	    With DVD-RAM/+RW:            Random Writeable (used sequentially)
+	    With DVD+R and BD-R:         Track of open size
+	    With DVD-RAM, DVD+RW, BD-RE: Random Writeable (used sequentially)
 	    With overwriteable DVD-RW:   Rigid Restricted Overwrite 
 	*/
 	BURN_WRITE_TAO,
@@ -130,12 +131,22 @@ enum burn_write_types
 
 	    With sequential DVD-R[W]:    Disc-at-once, DAO
 	      Single session, single track, fixed size mandatory, (-dvd-compat)
+	    With other DVD or BD media:  same as BURN_WRITE_TAO but may demand
+	                                 that track size is known in advance.
 	*/
 	BURN_WRITE_SAO,
 
 	/** With CD: Raw disc at once recording.
 	      all subcodes must be provided by lib or user
 	      only raw block types are supported
+	    With DVD and BD media: not supported.
+
+	    ts A90901: THIS HAS BEEN DISABLED because its implementation
+	               relied on code from cdrdao which is not understood
+	               currently.
+	               A burn run will abort with "FATAL" error message
+	               if this mode is attempted.
+	               @since 0.7.2
 	*/
 	BURN_WRITE_RAW,
 
@@ -2595,6 +2606,15 @@ int burn_drive_get_drive_role(struct burn_drive *d);
 */
 int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int drive_role2);
 
+
+/* ts A90830:
+   Give up lec.c which is copied from cdrdao and not understood.
+   This implies giving up all raw write modes for now.
+
+   This is an intermediate test state:
+   Finally the code of lec.c shall be removed completely.
+*/
+#define Libburn_disable_lec_C yes
 
 
 #ifndef DOXYGEN

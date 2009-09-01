@@ -15,9 +15,16 @@
 #include "sector.h"
 #include "crc.h"
 #include "debug.h"
+
+#ifndef Libburn_disable_lec_C
 #include "lec.h"
+#endif /* ! Libburn_disable_lec_C */
+
 #include "toc.h"
 #include "write.h"
+
+#include "libdax_msgs.h"
+extern struct libdax_msgs *libdax_messenger;
 
 
 #ifdef Libburn_log_in_and_out_streaM
@@ -413,7 +420,8 @@ int sector_toc(struct burn_write_opts *o, int mode)
 		return 0;
 	subcode_toc(d, mode, subs);
 	convert_subs(o, mode, subs, data);
-	sector_headers(o, data, mode, 1);
+	if (sector_headers(o, data, mode, 1) <= 0)
+		return 0;
 	sector_common(++)
 	return 1;
 }
@@ -433,7 +441,8 @@ int sector_pregap(struct burn_write_opts *o,
 		return 0;
 	subcode_user(o, subs, tno, control, 0, NULL, 1);
 	convert_subs(o, mode, subs, data);
-	sector_headers(o, data, mode, 0);
+	if (sector_headers(o, data, mode, 0) <= 0)
+		return 0;
 	sector_common(--)
 	return 1;
 }
@@ -450,11 +459,12 @@ int sector_postgap(struct burn_write_opts *o,
 		return 0;
 	/* ts A61010 */
 	if (convert_data(o, NULL, mode, data) <= 0)
-		return 0;;
+		return 0;
 /* use last index in track */
 	subcode_user(o, subs, tno, control, 1, NULL, 1);
 	convert_subs(o, mode, subs, data);
-	sector_headers(o, data, mode, 0);
+	if (sector_headers(o, data, mode, 0) <= 0)
+		return 0;
 	sector_common(++)
 	return 1;
 }
@@ -625,7 +635,8 @@ int sector_lout(struct burn_write_opts *o, unsigned char control, int mode)
 		return 0;
 	subcode_lout(o, control, subs);
 	convert_subs(o, mode, subs, data);
-	sector_headers(o, data, mode, 0);
+	if (sector_headers(o, data, mode, 0) <= 0)
+		return 0;
 	sector_common(++)
 	return 1;
 }
@@ -660,7 +671,8 @@ int sector_data(struct burn_write_opts *o, struct burn_track *t, int psub)
 			     t->entry->control, 1, &t->isrc, psub);
 	convert_subs(o, t->mode, subs, data);
 
-	sector_headers(o, data, t->mode, 0);
+	if (sector_headers(o, data, t->mode, 0) <= 0)
+		return 0;
 	sector_common(++)
 	return 1;
 }
@@ -711,38 +723,44 @@ int sector_headers_is_ok(struct burn_write_opts *o, int mode)
 	return 0;
 }
 
-void sector_headers(struct burn_write_opts *o, unsigned char *out,
+/* ts A90830 : changed return type to int
+   @return 0= failure
+           1= success
+*/
+int sector_headers(struct burn_write_opts *o, unsigned char *out,
 		    int mode, int leadin)
 {
+	int ret;
+
+#ifdef Libburn_disable_lec_C
+
+	/* ts A90830 : lec.c is copied from cdrdao.
+	   I have no idea yet how lec.c implements the Reed-Solomon encoding
+	   which is described in ECMA-130 for CD-ROM.
+	   So this gets disabled for now.
+	*/
+
+	ret = sector_headers_is_ok(o, mode);
+	if (ret != 2)
+		return (!! ret);
+	libdax_msgs_submit(libdax_messenger, o->drive->global_index,
+				0x0002010a,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Raw CD write modes are not supported", 0, 0);
+	return 0;
+
+#else /* Libburn_disable_lec_C */
+
 	struct burn_drive *d = o->drive;
 	unsigned int crc;
 	int min, sec, frame;
 	int modebyte = -1;
 
 	/* ts A61009 */
-#if 1
-	int ret;
-
 	ret = sector_headers_is_ok(o, mode);
 	if (ret != 2)
 		return;
 	modebyte = 1;
-
-#else
-
-	if (mode & BURN_AUDIO)	/* no headers for "audio" */
-		return;
-	if (o->write_type == BURN_WRITE_SAO)
-		return;
-
-	/* ts A61031 */
-	if (o->write_type == BURN_WRITE_TAO)
-		return;
-
-	if (mode & BURN_MODE1)
-		modebyte = 1;
-
-#endif
 
 	/* ts A61009 : now ensured by burn_disc_write_is_ok() */
 	/* a ssert(modebyte == 1); */
@@ -774,12 +792,17 @@ void sector_headers(struct burn_write_opts *o, unsigned char *out,
 		crc >>= 8;
 		out[2067] = crc & 0xFF;
 	}
+
 	if (mode & BURN_MODE1) {
 		memset(out + 2068, 0, 8);
 		parity_p(out);
 		parity_q(out);
 	}
 	scramble(out);
+	return 1;
+
+#endif /* ! Libburn_disable_lec_C */
+
 }
 
 #if 0
@@ -835,12 +858,19 @@ void process_q(struct burn_drive *d, unsigned char *q)
 */
 int sector_identify(unsigned char *data)
 {
+
+#ifndef Libburn_disable_lec_C
+
 	scramble(data);
+
 /*
 check mode byte for 1 or 2
 test parity to see if it's a valid sector
 if invalid, return BURN_MODE_AUDIO;
 else return mode byte  (what about mode 2 formless?  heh)
 */
+
+#endif /* ! Libburn_disable_lec_C */
+
 	return BURN_MODE1;
 }

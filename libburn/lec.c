@@ -1,5 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+#ifndef Libburn_disable_lec_C
+
 /* borrowed HEAVILY from cdrdao */
 
 #include <string.h>
@@ -449,3 +451,5 @@ void parity_q(unsigned char *sector)
 		q_msb_start += 2 * 43;
 	}
 }
+
+#endif /* ! Libburn_disable_lec_C */

@@ -22,7 +22,7 @@ int sector_data(struct burn_write_opts *, struct burn_track *t, int psub);
 /* ts A61009 */
 int sector_headers_is_ok(struct burn_write_opts *o, int mode);
 
-void sector_headers(struct burn_write_opts *, unsigned char *,
+int sector_headers(struct burn_write_opts *, unsigned char *,
 		    int mode, int leadin);
 void subcode_user(struct burn_write_opts *, unsigned char *s,
 		  unsigned char tno, unsigned char control,
