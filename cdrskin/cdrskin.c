@@ -2690,6 +2690,7 @@ set_dev:;
        " --ignore_signals   try to ignore any signals rather than to abort\n");
      printf(" --list_formats     list format descriptors for loaded media.\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
+     printf(" --long_toc         print overview of media content\n");
 #ifdef Cdrskin_libburn_has_set_waitinG
      printf(" modesty_on_drive=<options> no writing into full drive buffer\n");
 #endif
@@ -4678,23 +4679,31 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  struct burn_session **sessions;
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
+ enum burn_disc_status s;
+#ifdef Cdrskin_libburn_has_get_profilE
+ char profile_name[80];
+ int profile_number;
+#endif
 
  drive= skin->drives[skin->driveno].drive;
 
+ s= burn_disc_get_status(drive);
+ if(s == BURN_DISC_EMPTY || s == BURN_DISC_BLANK)
+   goto summary;
  disc= burn_drive_get_disc(drive);
  if(disc==NULL) {
    if(skin->grow_overwriteable_iso>0) {
      ret= Cdrskin_overwriteable_iso_size(skin,&lba,0);
      if(ret>0) {
        printf(
-"first: 1 last 1  (fabricated from ISO-9660 image on overwriteable media)\n");
+"first: 1 last: 1  (fabricated from ISO-9660 image on overwriteable media)\n");
        printf(
 "track:   1 lba:         0 (        0) 00:02:00 adr: 1 control: 4 mode: 1\n");
        burn_lba_to_msf(lba, &pmin, &psec, &pframe);
        printf("track:lout lba: %9d (%9d) %2.2d:%2.2d:%2.2d",
           lba,4*lba,pmin,psec,pframe);
        printf(" adr: 1 control: 4 mode: -1\n");
-       return(1);
+       goto summary;
      }
    }
    goto cannot_read;
@@ -4712,7 +4721,7 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    if(tracks==NULL)
  continue;
    if(!(flag&1))
-     printf("first: %d last %d\n",track_count+1,track_count+num_tracks);
+     printf("first: %d last: %d\n",track_count+1,track_count+num_tracks);
    for(track_no= 0; track_no<num_tracks; track_no++) {
      track_count++;
      burn_track_get_entry(tracks[track_no], &toc_entry);
@@ -4770,8 +4779,29 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    printf(" adr: %d control: %d",toc_entry.adr,toc_entry.control);
    printf(" mode: -1\n");
  }
+
+summary:
+#ifdef Cdrskin_libburn_has_get_profilE
+ ret= burn_disc_get_profile(drive, &profile_number, profile_name);
+ if(ret <= 0)
+   strcpy(profile_name, "media");
+#else
+ strcpy(profile_name, "media");
+#endif
+
+ printf("Media summary  : %d sessions, %d tracks, %s %s\n",
+        num_sessions, track_count, 
+        s==BURN_DISC_BLANK ? "blank" :
+        s==BURN_DISC_APPENDABLE ? "appendable" :
+        s==BURN_DISC_FULL ? "closed" :
+        s==BURN_DISC_EMPTY ? "no " : "unknown ",
+        profile_name);
+        
+ 
  if(disc!=NULL)
    burn_disc_free(disc);
+ if(s == BURN_DISC_EMPTY)
+   return(0);
  return(1);
 cannot_read:;
  fprintf(stderr,"cdrecord_emulation: Cannot read TOC header\n");
@@ -4800,6 +4830,7 @@ int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
 /** Perform -atip .
     @param flag Bitfield for control purposes:
                 bit0= perform -toc
+                bit1= perform -toc with session markers
     @return <=0 error, 1 success
 */
 int Cdrskin_atip(struct CdrskiN *skin, int flag)
@@ -4979,7 +5010,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
  ret= 1;
  if(flag&1)
-   Cdrskin_toc(skin,1);/*cdrecord seems to ignore -toc errors if -atip is ok */
+   Cdrskin_toc(skin, !(flag & 2));
+                       /*cdrecord seems to ignore -toc errors if -atip is ok */
 ex:;
  Cdrskin_release_drive(skin,0);
 
@@ -7869,6 +7901,10 @@ set_stream_recording:;
      skin->do_atip= 2;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
+   } else if(strcmp(argv[i],"--long_toc")==0) {
+     skin->do_atip= 3;
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
 
    } else if(strncmp(argv[i],"-tsize=",7)==0) {
      value_pt= argv[i]+7;
@@ -8248,7 +8284,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_atip) {
    if(skin->n_drives<=0)
      {*exit_value= 7; goto no_drive;}
-   ret= Cdrskin_atip(skin,(skin->do_atip>1));
+   ret= Cdrskin_atip(skin,(skin->do_atip>1) | (2 * (skin->do_atip > 2)));
    if(ret<=0)
      {*exit_value= 7; goto ex;}
  }

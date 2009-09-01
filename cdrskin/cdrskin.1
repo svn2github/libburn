@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Aug 30, 2009"
+.TH CDRSKIN 1 "Sep 01, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -973,6 +973,10 @@ sizes than in the types.
 List all ignored cdrecord options. The "-" options cannot be used as addresses
 of track sources. No track source address may begin with a text equal to an
 option which ends by "=". The list is ended by an empty line.
+.TP
+.BI \--long_toc
+Like option -toc but marking each session start by a line "first: X last: Y"
+and each session end by "track:lout ...".
 .TP
 .BI \--no_rc
 Only if used as first command line argument this option prevents reading and
