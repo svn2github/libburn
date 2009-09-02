@@ -30,8 +30,6 @@ libburn_libburn_la_SOURCES = \
 	libburn/file.h \
 	libburn/init.c \
 	libburn/init.h \
-	libburn/lec.c \
-	libburn/lec.h \
 	libburn/libburn.h \
 	libburn/libdax_audioxtr.h \
 	libburn/libdax_audioxtr.c \
@@ -66,6 +64,9 @@ libburn_libburn_la_SOURCES = \
 	libburn/write.c \
 	libburn/write.h \
 	version.h
+
+##	libburn/lec.c \
+##	libburn/lec.h \
 
 ##	libburn/sg-@ARCH@.c \
 

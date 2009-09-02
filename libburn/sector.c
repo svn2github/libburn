@@ -15,11 +15,6 @@
 #include "sector.h"
 #include "crc.h"
 #include "debug.h"
-
-#ifndef Libburn_disable_lec_C
-#include "lec.h"
-#endif /* ! Libburn_disable_lec_C */
-
 #include "toc.h"
 #include "write.h"
 
@@ -732,120 +727,22 @@ int sector_headers(struct burn_write_opts *o, unsigned char *out,
 {
 	int ret;
 
-#ifdef Libburn_disable_lec_C
+	ret = sector_headers_is_ok(o, mode);
+	if (ret != 2)
+		return (!! ret);
 
 	/* ts A90830 : lec.c is copied from cdrdao.
 	   I have no idea yet how lec.c implements the Reed-Solomon encoding
 	   which is described in ECMA-130 for CD-ROM.
-	   So this gets disabled for now.
+	   So this got removed for now.
 	*/
-
-	ret = sector_headers_is_ok(o, mode);
-	if (ret != 2)
-		return (!! ret);
 	libdax_msgs_submit(libdax_messenger, o->drive->global_index,
 				0x0002010a,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				"Raw CD write modes are not supported", 0, 0);
 	return 0;
-
-#else /* Libburn_disable_lec_C */
-
-	struct burn_drive *d = o->drive;
-	unsigned int crc;
-	int min, sec, frame;
-	int modebyte = -1;
-
-	/* ts A61009 */
-	ret = sector_headers_is_ok(o, mode);
-	if (ret != 2)
-		return;
-	modebyte = 1;
-
-	/* ts A61009 : now ensured by burn_disc_write_is_ok() */
-	/* a ssert(modebyte == 1); */
-
-	out[0] = 0;
-	memset(out + 1, 0xFF, 10);	/* sync */
-	out[11] = 0;
-
-	if (leadin) {
-		burn_lba_to_msf(d->rlba, &min, &sec, &frame);
-		out[12] = dec_to_bcd(min) + 0xA0;
-		out[13] = dec_to_bcd(sec);
-		out[14] = dec_to_bcd(frame);
-		out[15] = modebyte;
-	} else {
-		burn_lba_to_msf(d->alba, &min, &sec, &frame);
-		out[12] = dec_to_bcd(min);
-		out[13] = dec_to_bcd(sec);
-		out[14] = dec_to_bcd(frame);
-		out[15] = modebyte;
-	}
-	if (mode & BURN_MODE1) {
-		crc = crc_32(out, 2064);
-		out[2064] = crc & 0xFF;
-		crc >>= 8;
-		out[2065] = crc & 0xFF;
-		crc >>= 8;
-		out[2066] = crc & 0xFF;
-		crc >>= 8;
-		out[2067] = crc & 0xFF;
-	}
-
-	if (mode & BURN_MODE1) {
-		memset(out + 2068, 0, 8);
-		parity_p(out);
-		parity_q(out);
-	}
-	scramble(out);
-	return 1;
-
-#endif /* ! Libburn_disable_lec_C */
-
 }
 
-#if 0
-void process_q(struct burn_drive *d, unsigned char *q)
-{
-	unsigned char i[5];
-	int mode;
-
-	mode = q[0] & 0xF;
-/*      burn_print(12, "mode: %d : ", mode);*/
-	switch (mode) {
-	case 1:
-/*              burn_print(12, "tno = %d : ", q[1]);
-                burn_print(12, "index = %d\n", q[2]);
-*/
-		/* q[1] is the track number (starting at 1) q[2] is the index
-		   number (starting at 0) */
-#warning this is totally bogus
-		if (q[1] - 1 > 99)
-			break;
-		if (q[2] > d->toc->track[q[1] - 1].indices) {
-			burn_print(12, "new index at %d\n", d->alba);
-			d->toc->track[q[1] - 1].index[q[2]] = d->alba;
-			d->toc->track[q[1] - 1].indices++;
-		}
-		break;
-	case 2:
-		/* XXX dont ignore these */
-		break;
-	case 3:
-/*              burn_print(12, "ISRC data in mode 3 q\n");*/
-		i[0] = isrc[(q[1] << 2) >> 2];
-/*              burn_print(12, "0x%x 0x%x 0x%x 0x%x 0x%x\n", q[1], q[2], q[3], q[4], q[5]);
-                burn_print(12, "ISRC - %c%c%c%c%c\n", i[0], i[1], i[2], i[3], i[4]);
-*/
-		break;
-	default:
-
-		/* ts A61009 : if reactivated then witout Assert */
-		a ssert(0);
-	}
-}
-#endif
 
 /* this needs more info.  subs in the data? control/adr? */
 
@@ -859,18 +756,13 @@ void process_q(struct burn_drive *d, unsigned char *q)
 int sector_identify(unsigned char *data)
 {
 
-#ifndef Libburn_disable_lec_C
-
-	scramble(data);
-
 /*
+	scramble(data);
 check mode byte for 1 or 2
 test parity to see if it's a valid sector
 if invalid, return BURN_MODE_AUDIO;
 else return mode byte  (what about mode 2 formless?  heh)
 */
-
-#endif /* ! Libburn_disable_lec_C */
 
 	return BURN_MODE1;
 }
