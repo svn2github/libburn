@@ -1136,6 +1136,32 @@ int burn_disc_read_atip(struct burn_drive *drive);
 int burn_drive_get_start_end_lba(struct burn_drive *drive,
                                  int *start_lba, int *end_lba, int flag);
 
+
+/* ts A90902 */
+/** Guess the manufacturer name from the ATIP addresses of lead-in and
+    lead-out. (Currently only lead-in is interpreted. Lead-out may in future
+    be used to identify the media type in more detail.)
+    The parameters of this call should be obtained by burn_disc_read_atip(d),
+    burn_drive_get_start_end_lba(d, &start_lba, &end_lba, 0),
+    burn_lba_to_msf(start_lba, &m_li, &s_li, &f_li) and
+    burn_lba_to_msf(end_lba, &m_lo, &s_lo, &f_lo).
+    @param m_li  "minute" part of ATIP lead-in resp. start_lba
+    @param s_li  "second" of lead-in resp. start_lba
+    @param f_li  "frame" of lead-in
+    @param m_lo  "minute" part of ATIP lead-out
+    @param s_lo  "second" of lead-out
+    @param f_lo  "frame" of lead-out
+    @param flag  Bitfield for control purposes,
+                 bit0= append a text "(aka ...)" to reply if other brands or
+                       vendor names are known.
+    @return      Printable text or NULL on memory shortage.
+                 Dispose by free() when no longer needed.
+   @since 0.7.2
+*/
+char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
+                                 int m_lo, int s_lo, int f_lo, int flag);
+
+
 /* ts A61110 */
 /** Read start lba and Next Writeable Address of a track from media.
     Usually a track lba is obtained from the result of burn_track_get_entry().
@@ -2605,16 +2631,6 @@ int burn_drive_get_drive_role(struct burn_drive *d);
     @since 0.4.0
 */
 int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int drive_role2);
-
-
-/* ts A90830:
-   Give up lec.c which is copied from cdrdao and not understood.
-   This implies giving up all raw write modes for now.
-
-   This is an intermediate test state:
-   Finally the code of lec.c shall be removed completely.
-*/
-#define Libburn_disable_lec_C yes
 
 
 #ifndef DOXYGEN

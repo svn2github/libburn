@@ -4840,7 +4840,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  struct burn_drive *drive;
  int profile_number= 0;
- char profile_name[80];
+ char profile_name[80], *manuf= NULL;
 
  ClN(printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno));
  ret= Cdrskin_grab_drive(skin,0);
@@ -4993,26 +4993,34 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
 #ifdef Cdrskin_libburn_has_get_start_end_lbA
    { int start_lba,end_lba,min,sec,fr;
+     int m_lo, s_lo, f_lo;
+
      ret= burn_drive_get_start_end_lba(drive,&start_lba,&end_lba,0);
      if(ret>0) {
        burn_lba_to_msf(start_lba,&min,&sec,&fr);
        printf("  ATIP start of lead in:  %d (%-2.2d:%-2.2d/%-2.2d)\n",
               start_lba,min,sec,fr);
-       burn_lba_to_msf(end_lba,&min,&sec,&fr);
+       burn_lba_to_msf(end_lba,&m_lo,&s_lo,&f_lo);
        printf("  ATIP start of lead out: %d (%-2.2d:%-2.2d/%-2.2d)\n",
-              end_lba,min,sec,fr);
+              end_lba, m_lo, s_lo, f_lo);
+       if(profile_number == 0x09 || profile_number == 0x0A)
+         manuf= burn_guess_cd_manufacturer(min, sec, fr, m_lo, s_lo, f_lo, 0);
      }
    }
 #endif /* Cdrskin_libburn_has_get_start_end_lbA */
 
    printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
  }
+ if(manuf != NULL)
+   printf("Manufacturer: %s\n", manuf);
 
  ret= 1;
  if(flag&1)
    Cdrskin_toc(skin, !(flag & 2));
                        /*cdrecord seems to ignore -toc errors if -atip is ok */
 ex:;
+ if(manuf != NULL)
+   free(manuf);
  Cdrskin_release_drive(skin,0);
 
  /* A61227 :
