@@ -4840,7 +4840,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  struct burn_drive *drive;
  int profile_number= 0;
- char profile_name[80], *manuf= NULL;
+ char profile_name[80], *manuf= NULL, *media_code1= NULL, *media_code2= NULL;
+ char *book_type= NULL, *product_id= NULL;
 
  ClN(printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno));
  ret= Cdrskin_grab_drive(skin,0);
@@ -4974,12 +4975,13 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
       scdbackup will learn to interpret cdrskin's DVD messages but the
       current stable version needs to believe it is talking to its own
       growisofs_wrapper. So this is an emulation of an emulator.
+      The real book type is available meanwhile. But that one is not intended.
    */
-   printf("book type:       %s (emulated booktype)\n", profile_name);
+   printf("book type:    %s (emulated booktype)\n", profile_name);
    if(profile_number==0x13) /* DVD-RW */
      printf("cdrskin: message for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
  } else if(strstr(profile_name,"BD")==profile_name) {
-   printf("Mounted Media:   %2.2Xh, %s\n", profile_number, profile_name);
+   printf("Mounted Media: %2.2Xh, %s\n", profile_number, profile_name);
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {
@@ -5011,6 +5013,14 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
    printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
  }
+ ret= burn_get_media_product_id(drive, &product_id, &media_code1, &media_code2,
+                                &book_type, 0);
+ if(ret > 0 && profile_number != 0x09 && profile_number != 0x0A &&
+    manuf == NULL && media_code1 != NULL && media_code2 != 0) {
+   manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
+ }
+ if(product_id != NULL)
+   printf("Product Id:   %s\n", product_id);
  if(manuf != NULL)
    printf("Manufacturer: %s\n", manuf);
 
@@ -5021,6 +5031,14 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 ex:;
  if(manuf != NULL)
    free(manuf);
+ if(media_code1 != NULL)
+   free(media_code1);
+ if(media_code2 != NULL)
+   free(media_code2);
+ if(book_type != NULL)
+   free(book_type);
+ if(product_id != NULL)
+   free(product_id);
  Cdrskin_release_drive(skin,0);
 
  /* A61227 :
