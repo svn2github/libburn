@@ -4977,7 +4977,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
       growisofs_wrapper. So this is an emulation of an emulator.
       The real book type is available meanwhile. But that one is not intended.
    */
-   printf("book type:    %s (emulated booktype)\n", profile_name);
+   printf("book type:     %s (emulated booktype)\n", profile_name);
    if(profile_number==0x13) /* DVD-RW */
      printf("cdrskin: message for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
  } else if(strstr(profile_name,"BD")==profile_name) {
@@ -5020,9 +5020,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
  }
  if(product_id != NULL)
-   printf("Product Id:   %s\n", product_id);
+   printf("Product Id:    %s\n", product_id);
  if(manuf != NULL)
-   printf("Manufacturer: %s\n", manuf);
+   printf("Manufacturer:  %s\n", manuf);
 
  ret= 1;
  if(flag&1)
