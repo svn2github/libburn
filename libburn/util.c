@@ -59,7 +59,7 @@ void burn_version(int *major, int *minor, int *micro)
 }
 
 
-struct mid_record {
+struct cd_mid_record {
 	char *manufacturer;
 	int m_li;
 	int s_li;
@@ -69,7 +69,7 @@ struct mid_record {
 	int f_lo;
 	char *other_brands;
 };
-typedef struct mid_record mid_record_t;
+typedef struct cd_mid_record cd_mid_record_t;
 
 
 /* ts A90902 */
@@ -80,7 +80,7 @@ typedef struct mid_record mid_record_t;
 char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                                  int m_lo, int s_lo, int f_lo, int flag)
 {
-	static mid_record_t mid_list[]= {
+	static cd_mid_record_t mid_list[]= {
 	{"SKC",                                 96, 40,  0,  0, 0, 0, ""},
 	{"Ritek Corp"                         , 96, 43, 30,  0, 0, 0, ""},
 	{"TDK / Ritek"                        , 97, 10,  0,  0, 0, 0, "TRAXDATA"},
@@ -99,7 +99,7 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 	{"Sony Corporation"                   , 97, 24, 10,  0, 0, 0, "LeadData, Imation"},
 	{"Computer Support Italcard s.r.l"    , 97, 24, 20,  0, 0, 0, ""},
 	{"Unitech Japan Inc."                 , 97, 24, 30,  0, 0, 0, ""},
-	{"MPO, France"                        , 97, 25,  0,  0, 0, 0, ""},
+	{"MPO, France"                        , 97, 25,  0,  0, 0, 0, "TDK"},
 	{"Hitachi Maxell Ltd."                , 97, 25, 20,  0, 0, 0, ""},
 	{"Infodisc Technology Co,Ltd."        , 97, 25, 30,  0, 0, 0, "MEMOREX, SPEEDA, Lead data"},
 	{"Xcitec"                             , 97, 25, 60,  0, 0, 0, ""},
@@ -123,6 +123,8 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 	{"TDK Corporation"                    , 97, 32, 00,  0, 0, 0, ""},
 	{"Prodisc Technology Inc."            , 97, 32, 10,  0, 0, 0, "Smartbuy, Mitsubishi, Digmaster, LG, Media Market"},
 	{"Mitsubishi Chemical Corporation"    , 97, 34, 20,  0, 0, 0, "YAMAHA, Verbatim"},
+	{"Mitsui Chemicals Inc."              , 97, 48, 50, 0, 0, 0, ""},
+	{"TDK Corporation"                    , 97, 49,  0, 0, 0, 0, ""},
 	{"", 0, 0, 0, 0, 0, 0, ""}
 	};
 
@@ -138,7 +140,7 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 	break;
 	}
 	if (mid_list[i].manufacturer[0] == 0) {
-		sprintf(buf, "Unknown CD manufacturer. Please report code '%2.2dm%2.2ds%2.2df-%2.2dm%2.2ds%2.2df', human readable brand, size, and speed to scdbackup@gmx.net.", m_li, s_li, f_li, m_lo, s_lo, f_lo);
+		sprintf(buf, "Unknown CD manufacturer. Please report code '%2.2dm%2.2ds%2.2df/%2.2dm%2.2ds%2.2df', the human readable brand, size, and speed to scdbackup@gmx.net.", m_li, s_li, f_li, m_lo, s_lo, f_lo);
 		result = strdup(buf);
 		return result;
 	}
@@ -150,6 +152,111 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 		result = strdup(buf);
 	} else
 		result = strdup(mid_list[i].manufacturer);
+	return result;
+}
+
+
+/* ts A90904 */
+struct dvd_mid_record {
+	char *mc1;
+	char *mc2;
+	int mc1_sig_len;
+	char *manufacturer;
+};
+typedef struct dvd_mid_record dvd_mid_record_t;
+
+/* ts A90904 */
+char *burn_guess_manufacturer(int prf,
+			 char *media_code1, char *media_code2, int flag)
+{
+	int i, l = 0, m_li, s_li, f_li, m_lo, s_lo, f_lo;
+	char buf[1024];
+	char *result = NULL, *cpt;
+
+	static dvd_mid_record_t mid_list[]= {
+	{"AML",      "",    8, "UML"},
+	{"BeAll",    "",    5, "BeAll Developers, Inc."},
+	{"CMC",      "",    3, "CMC Magnetics Corporation"},
+	{"DAXON",    "",    5, "Daxon Technology Inc. / Acer"},
+	{"Daxon",    "",    5, "Daxon Technology Inc. / Acer"},
+	{"FUJI",     "",    4, "Fujifilm Holdings Corporation"},
+	{"INFODISC", "",    8, "New Star Digital Co., Ltd."},
+	{"INFOME",   "",    6, "InfoMedia Inc."},
+	{"ISMMBD",   "",    6, "Info Source Multi Media Ltd."},
+	{"JVC",      "",    3, "JVC Limited"},
+	{"KIC01RG",  "",    7, "AMC"},
+	{"LD",       "",    8, "Lead Data Inc."},
+	{"LGE",      "",    3, "LG Electronics"},
+	{"MAM",      "",    8, "Mitsui Advanced Media, Inc. Europe"},
+	{"MAXELL",   "",    6, "Hitachi Maxell Ltd."},
+	{"MBI",      "",    3, "Moser Baer India Limited"},
+	{"MCC",      "",    8, "Mitsubishi Chemical Corporation"},
+	{"MCI",      "",    8, "Mitsui Chemicals Inc."},
+	{"MEI",      "",    3, "Panasonic Corporation"},
+	{"MKM",      "",    3, "Mitsubishi Kagaku Media Co."},
+	{"MMC",      "",    8, "Mitsubishi Kagaku Media Co."},
+	{"MXL",      "",    8, "Hitachi Maxell Ltd."},
+	{"NANYA",    "",    5, "Nan-Ya Plastics Corporation"},
+	{"NSD",      "",    8, "NESA International Inc."},
+	{"OPTODISC", "",    8, "Optodisc Technology Corporation"},
+	{"OTCBDR",   "",    8, "Optodisc Technology Corporation"},
+	{"PHILIP",   "",    8, "Moser Baer India Limited"},
+	{"PHILIPS",  "",    8, "Philips"},
+	{"PRINCO",   "",    6, "Princo Corporation"},
+	{"PRODISC",  "",    7, "Prodisc Technology Inc."},
+	{"Prodisc",  "",    7, "Prodisc Technology Inc."},
+	{"PVC",      "",    3, "Pioneer"},
+	{"RICOHJPN", "",    8, "Ricoh Company Limited"},
+	{"RITEK",    "",    5, "Ritek Corp"},
+	{"SONY",     "",    4, "Sony Corporation"},
+	{"TDK",      "",    3, "TDK Corporation"},
+	{"TT",       "",    8, "TDK Corporation"},
+	{"TY",       "",    8, "Taiyo Yuden Company Limited"},
+	{"TYG",      "",    3, "Taiyo Yuden Company Limited"},
+	{"UTJR001",  "",    7, "Unifino Inc."},
+	{"VERBAT",   "",    5, "Mitsubishi Kagaku Media Co."},
+	{"YUDEN",    "",    5, "Taiyo Yuden Company Limited"},
+	{"", "", 0, ""}
+	};
+
+	if (media_code2 != NULL &&
+	    (prf == -1 || prf == 0x09 || prf == 0x0A)) {
+		if (strlen(media_code2) == 9 && media_code2[0] == '9' &&
+			media_code2[2] == 'm' && media_code2[5] == 's' &&
+			media_code2[8] == 'f') {
+			sscanf(media_code1, "%dm%ds%df", &m_li, &s_li, &f_li);
+			sscanf(media_code2, "%dm%ds%df", &m_lo, &s_lo, &f_lo);
+			if (m_li >= 96 && m_li <= 97 && m_lo > 0) {
+				result = burn_guess_cd_manufacturer(
+					m_li, s_li, f_li, m_lo, s_lo, f_lo, 0);
+				return result;
+			}
+		}
+	}
+
+	/* DVD-R do not keep manufacturer id apart from media id.
+	   Some manufacturers use a blank as separator.
+	*/
+	cpt = strchr(media_code1, ' ');
+	if (cpt != NULL && (prf == -1 || prf ==  0x11 || prf == 0x13 ||
+						 prf == 0x14 || prf == 0x15))
+		l = cpt - media_code1;
+
+	for (i = 0; mid_list[i].mc1[0]; i++) {
+		if (strncmp(mid_list[i].mc1, media_code1,
+			 mid_list[i].mc1_sig_len) == 0)
+	break;
+		if (l > 0)
+			if (strncmp(mid_list[i].mc1, media_code1, l) == 0)
+	break;
+	}
+	if (mid_list[i].mc1[0] == 0) {
+		sprintf(buf, "Unknown DVD/BD manufacturer. Please report code '%s/%s', the human readable brand, size, and speed to scdbackup@gmx.net.", 
+			media_code1, media_code2);
+		result = strdup(buf);
+		return result;
+	}
+	result = strdup(mid_list[i].manufacturer);
 	return result;
 }
 

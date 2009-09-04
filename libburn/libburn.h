@@ -1138,9 +1138,9 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
 
 
 /* ts A90902 */
-/** Guess the manufacturer name from the ATIP addresses of lead-in and
-    lead-out. (Currently only lead-in is interpreted. Lead-out may in future
-    be used to identify the media type in more detail.)
+/** Guess the manufacturer name of CD media from the ATIP addresses of lead-in
+    and lead-out. (Currently only lead-in is interpreted. Lead-out may in
+    future be used to identify the media type in more detail.)
     The parameters of this call should be obtained by burn_disc_read_atip(d),
     burn_drive_get_start_end_lba(d, &start_lba, &end_lba, 0),
     burn_lba_to_msf(start_lba, &m_li, &s_li, &f_li) and
@@ -1156,7 +1156,7 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
                        vendor names are known.
     @return      Printable text or NULL on memory shortage.
                  Dispose by free() when no longer needed.
-   @since 0.7.2
+    @since 0.7.2
 */
 char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                                  int m_lo, int s_lo, int f_lo, int flag);
@@ -1236,6 +1236,54 @@ off_t burn_disc_available_space(struct burn_drive *d,
     @since 0.3.0
 */
 int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
+
+
+/* ts A90903 : API */
+/** Obtain product id and standards defined media codes.
+    The product id is a printable string which is supposed to be the same
+    for identical media but should vary with non-identical media. Some media
+    do not allow to obtain such an id at all. 
+    The pair (profile_number, product_id) should be the best id to identify
+    media with identical product specifications.
+    The reply parameters media_code1 and media_code2 can be used with
+    burn_guess_manufacturer()
+    The reply parameters have to be disposed by free() when no longer needed.
+    @param d           The drive where the media is inserted.
+    @param product_id  Reply: Printable text depicting manufacturer and
+                       eventually media id.
+    @param media_code1 Reply: The eventual manufacturer identification as read
+                       from DVD/BD media or a text "XXmYYsZZf" from CD media
+                       ATIP lead-in.
+    @param media_code2 The eventual media id as read from DVD+/BD media or a
+                       text "XXmYYsZZf" from CD ATIP lead-out.
+    @param book_type   Book type text for DVD and BD.
+                       Caution: is NULL with CD, even if return value says ok.
+    @param flag        Bitfield for control purposes, submit 0
+    @return            1= ok, product_id and media codes are valid,
+                       0= no product id_available, reply parameters are NULL
+                      <0= error
+*/
+int burn_get_media_product_id(struct burn_drive *d,
+	char **product_id, char **media_code1, char **media_code2,
+	char **book_type, int flag);
+
+
+/* ts A90904 */
+/** Guess the name of a manufacturer by profile number, manufacturer code
+    and media code. The profile number can be obtained by
+    burn_disc_get_profile(), the other two parameters can be obtained as
+    media_code1 and media_code2 by burn_get_media_product_id().
+    @param profile_no   Profile number (submit -1 if not known)
+    @param manuf_code   Manufacturer code from media (e.g. "RICOHJPN")
+    @param media_code   Media ID code from media (e.g. "W11")
+    @param flag  Bitfield for control purposes, submit 0
+    @return      Printable text or NULL on memory shortage.
+                 Dispose by free() when no longer needed.
+    @since 0.7.2
+*/
+char *burn_guess_manufacturer(int profile_no,
+				 char *manuf_code, char *media_code, int flag);
+
 
 /** Tells whether a disc can be erased or not
     @param d The drive to inquire.

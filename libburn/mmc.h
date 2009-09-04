@@ -82,4 +82,12 @@ char *mmc_obtain_profile_name(int profile_number);
 /* mmc5r03c.pdf 4.3.4.4.1 d) "The maximum number of RZones is 2 302." */
 #define BURN_MMC_FAKE_TOC_MAX_SIZE 2302
 
+
+/* ts A90903 */
+/* MMC backend of API call burn_get_media_product_id()
+*/
+int mmc_get_media_product_id(struct burn_drive *d,
+        char **product_id, char **media_code1, char **media_code2,
+	char **book_type, int flag);
+
 #endif /*__MMC*/

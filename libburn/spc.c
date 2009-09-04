@@ -1233,6 +1233,8 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "PREVENT/ALLOW MEDIA REMOVAL";
         case 0x23:
 		return "READ FORMAT CAPACITIES";
+        case 0x25:
+		return "READ CAPACITY";
         case 0x28:
 		return "READ(10)";
         case 0x2a:
@@ -1269,6 +1271,8 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "WRITE(12)";
         case 0xac:
 		return "GET PERFORMANCE";
+        case 0xad:
+		return "READ DISC STRUCTURE";
         case 0xb6:
 		return "SET STREAMING";
         case 0xbb:

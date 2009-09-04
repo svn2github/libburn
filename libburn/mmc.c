@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <ctype.h>
+
 #include "error.h"
 #include "sector.h"
 #include "libburn.h"
@@ -214,6 +216,10 @@ static unsigned char MMC_READ_10[] =
 static unsigned char MMC_READ_CAPACITY[] =
 	{ 0x25, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* ts A90903 : Obtain media type specific information. E.g. manufacturer.
+*/
+static unsigned char MMC_READ_DISC_STRUCTURE[] =
+	{ 0xAD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int mmc_function_spy_do_tell = 0;
 
@@ -3850,6 +3856,283 @@ int mmc_read_capacity(struct burn_drive *d)
 }
 
 
+/* ts A90903 */
+/* mmc5r03c.pdf 6.23 ADh READ DISC STRUCTURE obtains media specific information
+*/
+static int mmc_read_disc_structure_al(struct burn_drive *d, int *alloc_len,
+				int media_type, int layer_number, int format,
+				int min_len, char **reply, int *reply_len,
+				int flag)
+{
+	struct buffer buf;
+	int old_alloc_len, len;
+	struct command c;
+	unsigned char *dpt;
+
+	*reply = NULL;
+	*reply_len = 0;
+
+	if (*alloc_len < 4)
+		return 0;
+
+	scsi_init_command(&c, MMC_READ_DISC_STRUCTURE,
+			 sizeof(MMC_READ_DISC_STRUCTURE));
+	c.dxfer_len = *alloc_len;
+	c.retry = 1;
+	c.opcode[1]= media_type;
+	c.opcode[7]= format;
+	c.opcode[8]= (c.dxfer_len >> 8) & 0xff;
+	c.opcode[9]= c.dxfer_len & 0xff;
+	c.page = &buf;
+	c.page->sectors = 0;
+	c.page->bytes = 0;
+	c.dir = FROM_DRIVE;
+
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+
+	len = (c.page->data[0] << 8) | (c.page->data[1]);
+	old_alloc_len = *alloc_len;
+	*alloc_len = len + 2;
+	if (old_alloc_len <= 4)
+		return 1;
+	if (len + 2 > old_alloc_len)
+		len = old_alloc_len - 2;
+	if (len < 4)
+		return 0;
+
+	dpt = c.page->data + 4;
+	if (len - 2 < min_len)
+		return 0;
+	*reply = calloc(len - 2, 1);
+	if (*reply == NULL)
+		return 0;
+	*reply_len = len - 2;
+	memcpy(*reply, dpt, len - 2);
+	return 1;
+}
+
+
+int mmc_read_disc_structure(struct burn_drive *d,
+		int media_type, int layer_number, int format, int min_len,
+		char **reply, int *reply_len, int flag)
+{
+	int alloc_len = 4, ret;
+
+	if (mmc_function_spy(d, "mmc_read_disc_structure") <= 0)
+		return 0;
+
+	ret = mmc_read_disc_structure_al(d, &alloc_len,
+				media_type, layer_number, format, min_len,
+				reply, reply_len, 0);
+/*
+	fprintf(stderr,"LIBBURN_DEBUG: ADh alloc_len = %d , ret = %d\n",
+		 alloc_len, ret);
+*/
+	if (alloc_len >= 12 && ret > 0)
+		ret = mmc_read_disc_structure_al(d, &alloc_len,
+				media_type, layer_number, format, min_len,
+				reply, reply_len, 0);
+	return ret;
+}
+
+/* ts A90903 */
+static int mmc_set_product_id(char *reply,
+	 int manuf_idx, int type_idx, int rev_idx,
+	char **product_id, char **media_code1, char **media_code2, int flag)
+{
+	*product_id = calloc(17, 1);
+	*media_code1 = calloc(9, 1);
+	*media_code2 = calloc(8, 1);
+	if (*product_id == NULL ||
+	    *media_code1 == NULL || *media_code2 == NULL)
+		return -1;
+	sprintf(*media_code1, "%.8s", reply + manuf_idx);
+	sprintf(*media_code2, "%.3s/%d", reply + type_idx,
+				(int) ((unsigned char *) reply)[rev_idx]);
+	sprintf(*product_id, "%s/%s", *media_code1, *media_code2);
+	return 1;
+}
+
+
+/* ts A90903 */
+/* MMC backend of API call burn_get_media_product_id()
+   See also doc/mediainfo.txt
+    @param flag        Bitfield for control purposes
+*/
+int mmc_get_media_product_id(struct burn_drive *d,
+	char **product_id, char **media_code1, char **media_code2,
+	char **book_type, int flag)
+{
+	int prf, ret, reply_len, i, has_11h = -1, bt, start_lba, end_lba;
+	int min, sec, fr, media_type = 0;
+	char *reply = NULL, *wpt;
+	static char *books[16] = {
+		"DVD-ROM", "DVD-RAM", "DVD-R", "DVD-RW",
+		"HD DVD-ROM", "HD DVD-RAM", "HD DVD-R", "unknown",
+		"unknown", "DVD+RW", "DVD+R", "unknown",
+		"unknown", "DVD+RW DL" "DVD+R DL", "unknown"};
+
+	*product_id = *media_code1 = *media_code2 = *book_type = NULL;
+	prf = d->current_profile;
+	if (prf == 0x09 || prf == 0x0A) {
+
+		*product_id = calloc(20, 1);
+		*media_code1 = calloc(10, 1);
+		*media_code2 = calloc(10, 1);
+		if (*product_id == NULL ||
+		    *media_code1 == NULL || *media_code2 == NULL) {
+			ret = -1;
+			goto ex;
+		}
+		ret = burn_disc_read_atip(d);
+		if (ret <= 0)
+			goto ex;
+		ret = burn_drive_get_start_end_lba(d, &start_lba, &end_lba, 0);
+		if (ret <= 0)
+			goto ex;
+		burn_lba_to_msf(start_lba, &min, &sec, &fr);
+		sprintf(*media_code1, "%2.2dm%2.2ds%2.2df", min, sec, fr);
+		burn_lba_to_msf(end_lba, &min, &sec, &fr);
+		sprintf(*media_code2, "%2.2dm%2.2ds%2.2df", min, sec, fr);
+		sprintf(*product_id, "%s/%s", *media_code1, *media_code2);
+		ret = 1;
+		goto ex; /* No booktype with CD media */
+
+        } else if (prf == 0x11 || prf == 0x13 || prf == 0x14 || prf == 0x15) {
+								 /* DVD-R */
+
+		ret = mmc_read_disc_structure(d, 0, 0, 0x0E, 31, &reply,
+							 &reply_len, 0);
+		if (ret <= 0)
+			goto ex;
+		if (reply[16] != 3 || reply[24] != 4 ||
+		    (reply_len > 38 && reply[32] != 5)) {
+			ret = 0;
+			goto ex;
+		}
+		*product_id = calloc(19, 1);
+		*media_code1 = calloc(19, 1);
+		*media_code2 = strdup("");
+		if (*product_id == NULL ||
+		    *media_code1 == NULL || *media_code2 == NULL) {
+			ret = -1;
+			goto ex;
+		}
+		memcpy(*product_id, reply + 17, 6);
+		memcpy(*product_id + 6, reply + 25, 6);
+		if (reply_len > 38)
+			memcpy(*product_id + 12, reply + 33, 6);
+		/* Clean out 0 bytes */
+		wpt = *product_id;
+		for (i = 0; i < 18; i++)
+			if ((*product_id)[i])
+				*(wpt++) = (*product_id)[i];
+		*wpt = 0;
+		strcpy(*media_code1, *product_id);
+
+        } else if (prf == 0x1a || prf == 0x1b || prf == 0x2b) { /* DVD+R[W] */
+
+		/* Check whether the drive supports format 11h */
+		has_11h = 0;
+		ret = mmc_read_disc_structure(d, 0, 0, 4, 0xff, &reply,
+							 &reply_len, 0);
+		if (ret > 0) {
+			for (i = 0; i < reply_len; i += 4) {
+				if (reply[i] == 0x11 && (reply[i + 1] & 64))
+					has_11h = 1;
+			}
+		}
+		if (reply != NULL)
+			free(reply);
+		reply = NULL;
+		ret = mmc_read_disc_structure(d, 0, 0, 0x11, 29, &reply,
+							 &reply_len, 0);
+		if (ret <= 0) {
+			/* Hope for format 00h */
+			has_11h = 0;
+		} else {
+			/* Dig out manufacturer, media type and revision */
+			ret = mmc_set_product_id(reply, 19, 27, 28,
+				 product_id, media_code1, media_code2, 0);
+			if (ret <= 0)
+				goto ex;
+		}
+        } else if (prf == 0x41 || prf == 0x43 || prf == 0x40 || prf == 0x42) {
+								/* BD */
+		media_type = 1;
+		ret = mmc_read_disc_structure(d, 1, 0, 0x00, 112, &reply,
+							 &reply_len, 0);
+		if (ret <= 0)
+			goto ex;
+		if (reply[0] != 'D' || reply[1] != 'I') {
+			ret = 0;
+			goto ex;
+		}
+		/* Dig out manufacturer, media type and revision */
+		ret = mmc_set_product_id(reply, 100, 106, 111,
+			 	product_id, media_code1, media_code2, 0);
+		if (ret <= 0)
+			goto ex;
+
+	} else {
+
+		/* Source of DVD-RAM manufacturer and media id not found yet */
+		ret = 0;
+		goto ex;
+	}
+
+	if (reply != NULL)
+		free(reply);
+	reply = NULL;
+	ret = mmc_read_disc_structure(d, media_type, 0, 0x00, 1, 
+							&reply, &reply_len, 0);
+	if (ret <= 0)
+		goto ex;
+	bt = (reply[0] >> 4) & 0xf;
+	*book_type = calloc(80 + strlen(books[bt]), 1);
+	if (*book_type == NULL) {
+		ret = -1;
+		goto ex;
+	}
+	sprintf(*book_type, "%2.2Xh, %s book [revision %d]",
+		bt, books[bt], reply[0] & 0xf);
+
+	if (has_11h == 0 && *product_id == NULL && reply_len > 28) {
+		/* DVD+ with no format 11h */
+		/* Get manufacturer and media type from bytes 19 and 27 */
+		ret = mmc_set_product_id(reply, 19, 27, 28, product_id,
+						 media_code1, media_code2, 0);
+		if (*product_id == NULL) {
+			ret = 0;
+			goto ex;
+		}
+	}
+
+	ret = 1;
+ex:;
+	if (reply != NULL)
+		free(reply);
+	if (ret <= 0) {
+		if (*product_id != NULL)
+			free(*product_id);
+		if (*media_code1 != NULL)
+			free(*media_code1);
+		if (*media_code2 != NULL)
+			free(*media_code2);
+		if (*book_type != NULL)
+			free(*book_type);
+		*product_id = *media_code1 = *media_code2 = *book_type = NULL;
+	} else if(*product_id != NULL) {
+		for (i = 0; (*product_id)[i]; i++)
+			if (isspace((*product_id)[i]))
+				(*product_id)[i] = '_';
+	}
+	return ret;
+}
+
+
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()
 */
 int mmc_setup_drive(struct burn_drive *d)
@@ -3923,5 +4206,4 @@ int mmc_setup_drive(struct burn_drive *d)
 
 	return 1;
 }
-
 
