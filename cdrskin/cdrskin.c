@@ -4789,7 +4789,7 @@ summary:
  strcpy(profile_name, "media");
 #endif
 
- printf("Media summary  : %d sessions, %d tracks, %s %s\n",
+ printf("Media summary: %d sessions, %d tracks, %s %s\n",
         num_sessions, track_count, 
         s==BURN_DISC_BLANK ? "blank" :
         s==BURN_DISC_APPENDABLE ? "appendable" :
