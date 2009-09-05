@@ -4841,7 +4841,7 @@ int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
 */
 int Cdrskin_atip(struct CdrskiN *skin, int flag)
 {
- int ret,is_not_really_erasable= 0;
+ int ret,is_not_really_erasable= 0, current_is_cd= 1;
  double x_speed_max, x_speed_min= -1.0;
  enum burn_disc_status s;
  struct burn_drive *drive;
@@ -4928,6 +4928,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    profile_number= 0;
    strcpy(profile_name, "-unidentified-");
  }
+ if(profile_number != 0x08 && profile_number != 0x09 && profile_number != 0x0a)
+   current_is_cd= 0;
 #endif /* Cdrskin_libburn_has_get_profilE */
 
  ret= Cdrskin_checkdrive(skin,profile_name,1);
@@ -5014,7 +5016,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
 #ifdef Cdrskin_libburn_has_product_iD
 
-       if(profile_number == 0x09 || profile_number == 0x0A)
+       if(current_is_cd)
          manuf= burn_guess_cd_manufacturer(min, sec, fr, m_lo, s_lo, f_lo, 0);
 
 #endif /* Cdrskin_libburn_has_product_iD */
@@ -5030,8 +5032,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
  ret= burn_get_media_product_id(drive, &product_id, &media_code1, &media_code2,
                                 &book_type, 0);
- if(ret > 0 && profile_number != 0x09 && profile_number != 0x0A &&
+ if(ret > 0 && (!current_is_cd) &&
     manuf == NULL && media_code1 != NULL && media_code2 != 0) {
+
    manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
  }
 
@@ -5040,7 +5043,42 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(product_id != NULL)
    printf("Product Id:    %s\n", product_id);
  if(manuf != NULL)
-   printf("Manufacturer:  %s\n", manuf);
+   printf("Producer:      %s\n", manuf);
+ if(skin->verbosity >= Cdrskin_verbose_progresS) {
+   if (current_is_cd) {
+     if(manuf != NULL)
+       printf("Manufacturer: %s\n", manuf);
+   } else if(product_id != NULL && media_code1 != NULL && media_code2 != NULL){
+     free(product_id);
+     free(media_code1);
+     free(media_code2);
+     if(book_type != NULL)
+       free(book_type);
+     product_id= media_code1= media_code2= book_type= NULL;
+
+#ifdef Cdrskin_libburn_has_product_iD
+     ret= burn_get_media_product_id(drive, &product_id, &media_code1,
+                                     &media_code2, &book_type, 1);
+#else
+     ret= 0;
+#endif /* Cdrskin_libburn_has_product_iD */
+
+     if(ret > 0) {
+       if(profile_number == 0x11 || profile_number == 0x13 ||
+          profile_number == 0x14 || profile_number == 0x15)
+         printf("Manufacturer:   '%s'\n", media_code1);
+       else if(profile_number >= 0x40 && profile_number <= 0x43) {
+         printf("Manufacturer:       '%s'\n", media_code1);
+         if(media_code2[0])
+           printf("Media type:         '%s'\n", media_code2);
+       } else {
+         printf("Manufacturer:    '%s'\n", media_code1);
+         if(media_code2[0])
+           printf("Media type:      '%s'\n", media_code2);
+       }
+     }
+   }
+ }
 
  ret= 1;
  if(flag&1)
