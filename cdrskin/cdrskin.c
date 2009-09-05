@@ -147,6 +147,7 @@ or
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
+#define Cdrskin_libburn_has_product_iD 1
 
 
 #endif /* Cdrskin_libburn_0_7_1 */
@@ -264,7 +265,6 @@ or
 
 /* put macros under test caveat here */
 
-#define Cdrskin_libburn_has_product_iD 1
 
 #endif /* Cdrskin_new_api_tesT */
 
