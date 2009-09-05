@@ -264,6 +264,8 @@ or
 
 /* put macros under test caveat here */
 
+#define Cdrskin_libburn_has_product_iD 1
+
 #endif /* Cdrskin_new_api_tesT */
 
 
@@ -5009,20 +5011,32 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
        burn_lba_to_msf(end_lba,&m_lo,&s_lo,&f_lo);
        printf("  ATIP start of lead out: %d (%-2.2d:%-2.2d/%-2.2d)\n",
               end_lba, m_lo, s_lo, f_lo);
+
+#ifdef Cdrskin_libburn_has_product_iD
+
        if(profile_number == 0x09 || profile_number == 0x0A)
          manuf= burn_guess_cd_manufacturer(min, sec, fr, m_lo, s_lo, f_lo, 0);
+
+#endif /* Cdrskin_libburn_has_product_iD */
+
      }
    }
 #endif /* Cdrskin_libburn_has_get_start_end_lbA */
 
    printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
  }
+
+#ifdef Cdrskin_libburn_has_product_iD
+
  ret= burn_get_media_product_id(drive, &product_id, &media_code1, &media_code2,
                                 &book_type, 0);
  if(ret > 0 && profile_number != 0x09 && profile_number != 0x0A &&
     manuf == NULL && media_code1 != NULL && media_code2 != 0) {
    manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
  }
+
+#endif /* Cdrskin_libburn_has_product_iD */
+
  if(product_id != NULL)
    printf("Product Id:    %s\n", product_id);
  if(manuf != NULL)
