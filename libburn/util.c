@@ -173,6 +173,10 @@ char *burn_guess_manufacturer(int prf,
 	char buf[1024];
 	char *result = NULL, *cpt;
 
+	/* Important Note: media_code1 and media_code2 are supposed to be
+	                   encoded by burn_util_make_printable_word().
+	                   Especially: ' ' -> '_' , {"_%/" unprintables -> %XY)
+	*/
 	static dvd_mid_record_t mid_list[]= {
 	{"AML",      "",    8, "UML"},
 	{"BeAll",    "",    5, "BeAll Developers, Inc."},
@@ -223,7 +227,8 @@ char *burn_guess_manufacturer(int prf,
 	    (prf == -1 || prf == 0x09 || prf == 0x0A)) {
 		if (strlen(media_code2) == 9 && media_code2[0] == '9' &&
 			media_code2[2] == 'm' && media_code2[5] == 's' &&
-			media_code2[8] == 'f') {
+			media_code2[8] == 'f' &&
+			strchr(media_code2, '%') == NULL) {
 			sscanf(media_code1, "%dm%ds%df", &m_li, &s_li, &f_li);
 			sscanf(media_code2, "%dm%ds%df", &m_lo, &s_lo, &f_lo);
 			if (m_li >= 96 && m_li <= 97 && m_lo > 0) {
@@ -235,9 +240,9 @@ char *burn_guess_manufacturer(int prf,
 	}
 
 	/* DVD-R do not keep manufacturer id apart from media id.
-	   Some manufacturers use a blank as separator.
+	   Some manufacturers use a blank as separator which would now be '_'.
 	*/
-	cpt = strchr(media_code1, ' ');
+	cpt = strchr(media_code1, '_');
 	if (cpt != NULL && (prf == -1 || prf ==  0x11 || prf == 0x13 ||
 						 prf == 0x14 || prf == 0x15))
 		l = cpt - media_code1;
@@ -258,5 +263,53 @@ char *burn_guess_manufacturer(int prf,
 	}
 	result = strdup(mid_list[i].manufacturer);
 	return result;
+}
+
+
+/* ts A90905 */
+/* IMPORTANT: text must be freeable memory !
+   @param flag bit0=escape '/' too
+*/
+int burn_util_make_printable_word(char **text, int flag)
+{
+	int i, esc_add = 0, ret;
+	char *wpt, *rpt, *new_text = NULL;
+
+	/* Make *text a single printable word */
+	for (i = 0; (*text)[i]; i++) {
+		rpt = (*text) + i;
+		if (*rpt < 32 || *rpt > 126 || *rpt == '_' ||
+			*rpt == 96 || *rpt == '%' ||
+			(*rpt == '/' && (flag & 1)))
+			esc_add += 2;
+	}
+	if (esc_add) {
+		new_text = calloc(strlen(*text) + esc_add + 1, 1);
+		if (new_text == NULL) {
+			ret = -1;
+			goto ex;
+		}
+		wpt = new_text;
+		for (i = 0; (*text)[i]; i++) {
+			rpt = (*text) + i;
+			if (*rpt < 32 || *rpt > 126 || *rpt == '_' ||
+			 	*rpt == 96 || *rpt == '%' ||
+				(*rpt == '/' && (flag & 1))) {
+				sprintf(wpt, "%%%2.2X", 
+				    (unsigned int) *((unsigned char *) rpt));
+				wpt+= 3;
+			} else
+				*(wpt++) = *rpt;
+		}
+		*wpt = 0;
+		free(*text);
+		*text = new_text;
+	}
+	for (i = 0; (*text)[i]; i++)
+		if ((*text)[i] == ' ')
+			(*text)[i] = '_';
+	ret = 1;
+ex:
+	return ret;
 }
 

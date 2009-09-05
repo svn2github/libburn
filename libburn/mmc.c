@@ -22,6 +22,7 @@
 #include "toc.h"
 #include "structure.h"
 #include "options.h"
+#include "util.h"
 
 
 /* ts A70223 : in init.c */
@@ -3942,6 +3943,8 @@ static int mmc_set_product_id(char *reply,
 	 int manuf_idx, int type_idx, int rev_idx,
 	char **product_id, char **media_code1, char **media_code2, int flag)
 {
+	int ret;
+
 	*product_id = calloc(17, 1);
 	*media_code1 = calloc(9, 1);
 	*media_code2 = calloc(8, 1);
@@ -3949,8 +3952,15 @@ static int mmc_set_product_id(char *reply,
 	    *media_code1 == NULL || *media_code2 == NULL)
 		return -1;
 	sprintf(*media_code1, "%.8s", reply + manuf_idx);
-	sprintf(*media_code2, "%.3s/%d", reply + type_idx,
-				(int) ((unsigned char *) reply)[rev_idx]);
+	ret = burn_util_make_printable_word(media_code1, 1);
+	if (ret <= 0)
+		return -1;
+	sprintf(*media_code2, "%.3sxxxx", reply + type_idx);
+	ret = burn_util_make_printable_word(media_code2, 1);
+	if (ret <= 0)
+		return -1;
+	sprintf(*media_code2 + strlen(*media_code2) - 4, "/%d",
+		(int) ((unsigned char *) reply)[rev_idx]);
 	sprintf(*product_id, "%s/%s", *media_code1, *media_code2);
 	return 1;
 }
@@ -3968,6 +3978,7 @@ int mmc_get_media_product_id(struct burn_drive *d,
 	int prf, ret, reply_len, i, has_11h = -1, bt, start_lba, end_lba;
 	int min, sec, fr, media_type = 0;
 	char *reply = NULL, *wpt;
+
 	static char *books[16] = {
 		"DVD-ROM", "DVD-RAM", "DVD-R", "DVD-RW",
 		"HD DVD-ROM", "HD DVD-RAM", "HD DVD-R", "unknown",
@@ -4012,25 +4023,30 @@ int mmc_get_media_product_id(struct burn_drive *d,
 			ret = 0;
 			goto ex;
 		}
-		*product_id = calloc(19, 1);
 		*media_code1 = calloc(19, 1);
 		*media_code2 = strdup("");
-		if (*product_id == NULL ||
-		    *media_code1 == NULL || *media_code2 == NULL) {
+		if (*media_code1 == NULL || *media_code2 == NULL) {
 			ret = -1;
 			goto ex;
 		}
-		memcpy(*product_id, reply + 17, 6);
-		memcpy(*product_id + 6, reply + 25, 6);
+		memcpy(*media_code1, reply + 17, 6);
+		memcpy(*media_code1 + 6, reply + 25, 6);
 		if (reply_len > 38)
-			memcpy(*product_id + 12, reply + 33, 6);
+			memcpy(*media_code1 + 12, reply + 33, 6);
 		/* Clean out 0 bytes */
-		wpt = *product_id;
+		wpt = *media_code1;
 		for (i = 0; i < 18; i++)
-			if ((*product_id)[i])
-				*(wpt++) = (*product_id)[i];
+			if ((*media_code1)[i])
+				*(wpt++) = (*media_code1)[i];
 		*wpt = 0;
-		strcpy(*media_code1, *product_id);
+		ret = burn_util_make_printable_word(media_code1, 1);
+		if (ret <= 0)
+			goto ex;
+		*product_id = strdup(*media_code1);
+		if (*product_id == NULL) {
+			ret = -1;
+			goto ex;
+		}
 
         } else if (prf == 0x1a || prf == 0x1b || prf == 0x2b) { /* DVD+R[W] */
 
@@ -4124,10 +4140,6 @@ ex:;
 		if (*book_type != NULL)
 			free(*book_type);
 		*product_id = *media_code1 = *media_code2 = *book_type = NULL;
-	} else if(*product_id != NULL) {
-		for (i = 0; (*product_id)[i]; i++)
-			if (isspace((*product_id)[i]))
-				(*product_id)[i] = '_';
 	}
 	return ret;
 }
