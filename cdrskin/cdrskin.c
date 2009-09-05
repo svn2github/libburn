@@ -3647,10 +3647,14 @@ int Cdrskin_determine_media_caps(struct CdrskiN *skin, int flag)
  skin->media_is_overwriteable= skin->media_does_multi= 0;
  ret= burn_disc_get_multi_caps(skin->grabbed_drive,BURN_WRITE_NONE,&caps,0);
  if(ret<=0)
-   return(0);
+   goto ex;
  skin->media_is_overwriteable= !!caps->start_adr;
  skin->media_does_multi= !!caps->multi_session;
- return(1);
+ ret= 1;
+ex:;
+ if(caps != NULL)
+   burn_disc_free_multi_caps(&caps);
+ return(ret);
 #else /* Cdrskin_libburn_has_get_multi_capS */
  return(-1);
 #endif
