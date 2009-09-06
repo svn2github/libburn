@@ -57,7 +57,9 @@ type specific information if the drive supports the particular Format Code.
 With DVD+ and BD there is a 8 character Manufacturer ID, a 3 character Media
 Id and a single character Media Revision.
 
-With DVD-R and DVD-RW there is a Manufacturer ID of up to 18 characters.
+With DVD-R, ECMA-279 promises a Manufacturer ID of up to 18 characters.
+With DVD-RW, ECMA-338 gives up the meaning of the last six-pack.
+Both, DVD-RW RITEKW01 and DVD-R RITEKF1 bear unprintable characters there.
 
 With DVD-ROM and DVD-RAM there seem to be no such ids.
 
@@ -143,6 +145,7 @@ Format code 0Eh "Pre-recorded Information in Lead-in"
    ECMA-338 (DVD-RW) says the same in:
    29.3.3.1.1 Format1 RMD Field0
    Table 24 - Copy of Pre-pit Information
+   Manufacturer ID at bytes 17 to 22, 25 to 30, but not at 33
    6.23.3.2.14 Format Code 0Eh: Pre-recorded Information in Lead-in
    Table 423 shows 4 byte header:
      MSB,LSB of Disc Structure Data Length

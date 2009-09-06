@@ -3939,6 +3939,10 @@ int mmc_read_disc_structure(struct burn_drive *d,
 }
 
 /* ts A90903 */
+/*
+    @param flag    bit0= set bit1 in flag for burn_util_make_printable_word
+                         and do not append media revision
+*/
 static int mmc_set_product_id(char *reply,
 	 int manuf_idx, int type_idx, int rev_idx,
 	char **product_id, char **media_code1, char **media_code2, int flag)
@@ -3952,15 +3956,20 @@ static int mmc_set_product_id(char *reply,
 	    *media_code1 == NULL || *media_code2 == NULL)
 		return -1;
 	sprintf(*media_code1, "%.8s", reply + manuf_idx);
-	ret = burn_util_make_printable_word(media_code1, 1);
+	ret = burn_util_make_printable_word(media_code1,
+						 1 | ((flag & 1) << 1));
 	if (ret <= 0)
 		return -1;
-	sprintf(*media_code2, "%.3sxxxx", reply + type_idx);
-	ret = burn_util_make_printable_word(media_code2, 1);
+	sprintf(*media_code2, "%.3s%s", reply + type_idx,
+					 (flag & 1) ? "" : "xxxx");
+	ret = burn_util_make_printable_word(media_code2,
+						 1 | ((flag & 1) << 1));
 	if (ret <= 0)
 		return -1;
-	sprintf(*media_code2 + strlen(*media_code2) - 4, "/%d",
-		(int) ((unsigned char *) reply)[rev_idx]);
+	if (!(flag & 1)) {
+		sprintf(*media_code2 + strlen(*media_code2) - 4, "/%d",
+			(int) ((unsigned char *) reply)[rev_idx]);
+	}
 	sprintf(*product_id, "%s/%s", *media_code1, *media_code2);
 	return 1;
 }
@@ -3970,6 +3979,9 @@ static int mmc_set_product_id(char *reply,
 /* MMC backend of API call burn_get_media_product_id()
    See also doc/mediainfo.txt
     @param flag        Bitfield for control purposes
+                       bit0= do not escape " _/" (not suitable for
+                             burn_guess_manufacturer())
+
 */
 int mmc_get_media_product_id(struct burn_drive *d,
 	char **product_id, char **media_code1, char **media_code2,
@@ -4018,8 +4030,11 @@ int mmc_get_media_product_id(struct burn_drive *d,
 							 &reply_len, 0);
 		if (ret <= 0)
 			goto ex;
-		if (reply[16] != 3 || reply[24] != 4 ||
-		    (reply_len > 38 && reply[32] != 5)) {
+		/* ECMA-279 for DVD-R promises a third sixpack in field 5,
+		   but ECMA-338 for DVD-RW defines a different meaning.
+		   DVD-R and DVD-RW bear unprintable characters in there.
+		 */
+		if (reply[16] != 3 || reply[24] != 4) {
 			ret = 0;
 			goto ex;
 		}
@@ -4031,15 +4046,15 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		}
 		memcpy(*media_code1, reply + 17, 6);
 		memcpy(*media_code1 + 6, reply + 25, 6);
-		if (reply_len > 38)
-			memcpy(*media_code1 + 12, reply + 33, 6);
+
 		/* Clean out 0 bytes */
 		wpt = *media_code1;
 		for (i = 0; i < 18; i++)
 			if ((*media_code1)[i])
 				*(wpt++) = (*media_code1)[i];
 		*wpt = 0;
-		ret = burn_util_make_printable_word(media_code1, 1);
+		ret = burn_util_make_printable_word(media_code1,
+						 1 | ((flag & 1) << 1));
 		if (ret <= 0)
 			goto ex;
 		*product_id = strdup(*media_code1);
@@ -4071,7 +4086,8 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		} else {
 			/* Dig out manufacturer, media type and revision */
 			ret = mmc_set_product_id(reply, 19, 27, 28,
-				 product_id, media_code1, media_code2, 0);
+				product_id, media_code1, media_code2,
+				flag & 1);
 			if (ret <= 0)
 				goto ex;
 		}
@@ -4088,7 +4104,8 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		}
 		/* Dig out manufacturer, media type and revision */
 		ret = mmc_set_product_id(reply, 100, 106, 111,
-			 	product_id, media_code1, media_code2, 0);
+			 	product_id, media_code1, media_code2,
+				flag & 1);
 		if (ret <= 0)
 			goto ex;
 
@@ -4119,7 +4136,8 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		/* DVD+ with no format 11h */
 		/* Get manufacturer and media type from bytes 19 and 27 */
 		ret = mmc_set_product_id(reply, 19, 27, 28, product_id,
-						 media_code1, media_code2, 0);
+						media_code1, media_code2,
+						flag & 1);
 		if (*product_id == NULL) {
 			ret = 0;
 			goto ex;
