@@ -5030,7 +5030,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
 #ifdef Cdrskin_libburn_has_product_iD
 
- ret= burn_get_media_product_id(drive, &product_id, &media_code1, &media_code2,
+ ret= burn_disc_get_media_id(drive, &product_id, &media_code1, &media_code2,
                                 &book_type, 0);
  if(ret > 0 && (!current_is_cd) &&
     manuf == NULL && media_code1 != NULL && media_code2 != 0) {
@@ -5057,7 +5057,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      product_id= media_code1= media_code2= book_type= NULL;
 
 #ifdef Cdrskin_libburn_has_product_iD
-     ret= burn_get_media_product_id(drive, &product_id, &media_code1,
+     ret= burn_disc_get_media_id(drive, &product_id, &media_code1,
                                      &media_code2, &book_type, 1);
 #else
      ret= 0;

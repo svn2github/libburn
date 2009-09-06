@@ -1258,12 +1258,15 @@ int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
                        text "XXmYYsZZf" from CD ATIP lead-out.
     @param book_type   Book type text for DVD and BD.
                        Caution: is NULL with CD, even if return value says ok.
-    @param flag        Bitfield for control purposes, submit 0
+    @param flag        Bitfield for control purposes
+                       bit0= do not escape " _/" (not suitable for
+                             burn_guess_manufacturer())
     @return            1= ok, product_id and media codes are valid,
                        0= no product id_available, reply parameters are NULL
                       <0= error
+    @since 0.7.2
 */
-int burn_get_media_product_id(struct burn_drive *d,
+int burn_disc_get_media_id(struct burn_drive *d,
 	char **product_id, char **media_code1, char **media_code2,
 	char **book_type, int flag);
 
@@ -1278,6 +1281,8 @@ int burn_get_media_product_id(struct burn_drive *d,
     @param media_code   Media ID code from media (e.g. "W11")
     @param flag  Bitfield for control purposes, submit 0
     @return      Printable text or NULL on memory shortage.
+                 If the text begins with "Unknown " then no item of the
+                 manufacturer list matched the codes.
                  Dispose by free() when no longer needed.
     @since 0.7.2
 */

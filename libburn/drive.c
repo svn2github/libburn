@@ -2627,7 +2627,7 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag)
 
 
 /* ts A90903 : API */
-int burn_get_media_product_id(struct burn_drive *d,
+int burn_disc_get_media_id(struct burn_drive *d,
 	char **product_id, char **media_code1, char **media_code2,
 	char **book_type, int flag)
 {
@@ -2637,7 +2637,8 @@ int burn_get_media_product_id(struct burn_drive *d,
 	if (burn_drive_get_drive_role(d) != 1)
 		return 0;
 	ret = mmc_get_media_product_id(d,
-			 product_id, media_code1, media_code2, book_type, 0);
+			 product_id, media_code1, media_code2, book_type,
+			 flag & 1);
 	return ret;
 }
 
