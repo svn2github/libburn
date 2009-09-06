@@ -225,10 +225,10 @@ char *burn_guess_manufacturer(int prf,
 
 	if (media_code2 != NULL &&
 	    (prf == -1 || prf == 0x09 || prf == 0x0A)) {
-		if (strlen(media_code2) == 9 && media_code2[0] == '9' &&
-			media_code2[2] == 'm' && media_code2[5] == 's' &&
-			media_code2[8] == 'f' &&
-			strchr(media_code2, '%') == NULL) {
+		if (strlen(media_code2) == 9 && media_code1[0] == '9' &&
+			media_code1[2] == 'm' && media_code1[5] == 's' &&
+			media_code1[8] == 'f' &&
+			strchr(media_code1, '%') == NULL) {
 			sscanf(media_code1, "%dm%ds%df", &m_li, &s_li, &f_li);
 			sscanf(media_code2, "%dm%ds%df", &m_lo, &s_lo, &f_lo);
 			if (m_li >= 96 && m_li <= 97 && m_lo > 0) {
@@ -267,20 +267,24 @@ char *burn_guess_manufacturer(int prf,
 
 
 /* ts A90905 */
+/* Make *text a single printable word */
 /* IMPORTANT: text must be freeable memory !
    @param flag bit0=escape '/' too
+               bit1=(overrides bit0) do not escape " _/"
 */
 int burn_util_make_printable_word(char **text, int flag)
 {
 	int i, esc_add = 0, ret;
 	char *wpt, *rpt, *new_text = NULL;
 
-	/* Make *text a single printable word */
+	if (flag & 2)
+		flag &= ~1;
+
 	for (i = 0; (*text)[i]; i++) {
 		rpt = (*text) + i;
-		if (*rpt < 32 || *rpt > 126 || *rpt == '_' ||
-			*rpt == 96 || *rpt == '%' ||
-			(*rpt == '/' && (flag & 1)))
+		if (*rpt < 32 || *rpt > 126 || *rpt == 96 ||
+		    ((*rpt == '_' || *rpt == '%') && (!(flag & 2))) ||
+		    (*rpt == '/' && (flag & 1)))
 			esc_add += 2;
 	}
 	if (esc_add) {
@@ -292,9 +296,9 @@ int burn_util_make_printable_word(char **text, int flag)
 		wpt = new_text;
 		for (i = 0; (*text)[i]; i++) {
 			rpt = (*text) + i;
-			if (*rpt < 32 || *rpt > 126 || *rpt == '_' ||
-			 	*rpt == 96 || *rpt == '%' ||
-				(*rpt == '/' && (flag & 1))) {
+			if (*rpt < 32 || *rpt > 126 || *rpt == 96 ||
+			    ((*rpt == '_' || *rpt == '%') && (!(flag & 2))) ||
+			    (*rpt == '/' && (flag & 1))) {
 				sprintf(wpt, "%%%2.2X", 
 				    (unsigned int) *((unsigned char *) rpt));
 				wpt+= 3;
@@ -305,9 +309,10 @@ int burn_util_make_printable_word(char **text, int flag)
 		free(*text);
 		*text = new_text;
 	}
-	for (i = 0; (*text)[i]; i++)
-		if ((*text)[i] == ' ')
-			(*text)[i] = '_';
+	if (!(flag & 2))
+		for (i = 0; (*text)[i]; i++)
+			if ((*text)[i] == ' ')
+				(*text)[i] = '_';
 	ret = 1;
 ex:
 	return ret;
