@@ -1,12 +1,12 @@
 
         Overview of class specific or individual media information
-             especially manufacturer and exact media type
+             especially manufacturer and exact product type
 
 Inspired by Andy Polyakov's http://fy.chalmers.se/~appro/linux/DVD+RW/tools ,
 and by Joerg Schilling's http://cdrecord.berlios.de/private/cdrecord.html,
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/,
 ECMA-279 (DVD-R), ECMA-337 (DVD+RW), ECMA-349 (DVD+R),
-and by searching the web for CD Manufacturer IDs.
+and by searching the web for media manufacturer IDs (see list of URLs below).
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 September 2009
@@ -20,6 +20,9 @@ Media sizes and nominal speeds often get expressed in the ATIP lead-out
 address.
     ATIP start of lead out: 359849 (79:59/74)
 (example media labeled "LITEON CD-RW 4x-12x", by "Nan-Ya Plastics Corporation")
+
+This is available only with profile 0x09 (CD-R) and 0x0A (CD-RW).
+CD-ROM media (0x08) cannot be inquired by command 43h READ TOC/PMA/ATIP.
 
 6.26 READ TOC/PMA/ATIP Format 4 with MSF bit produces these data as described
 in 6.26.3.6 Response Format 0100b: ATIP.
@@ -35,22 +38,28 @@ The parameters can be obtained via libburn by :
     burn_drive_get_start_end_lba(d, start_lba, end_lba, 0),
     burn_lba_to_msf(start_lba, &m_li, &s_li, &f_li) and
     burn_lba_to_msf(end_lba, &m_lo, &s_lo, &f_lo)
-This makes sense only with profile 0x09 (CD-R) and 0x0A (CD-RW).
-CD-ROM media (0x08) cannot be inquired by command 43h READ TOC/PMA/ATIP.
 
 There seems to be no public and free list of manufacturers and codes.
 Nevertheless many people report codes and manufacturer names in the web.
 Especially helpful are media compatibility lists by drive manufacturers.
 
-The items from the large CD media list below are the foundation of libburn
-API call burn_guess_cd_manufacturer() which rounds the lead-in address down to
+The items from the CD media list below are the foundation of libburn API call
+burn_guess_cd_manufacturer() which rounds the lead-in address down to
 multiples of 10 frames and then looks them up in its list.
 
 
 -------------------------------------------------------------------------------
 DVD + BD: 
+
 dvd+rw-mediainfo uses MMC-5 6.23, ADh READ DISC STRUCTURE which returns media
 type specific information if the drive supports the particular Format Code.
+
+With DVD+ and BD there is a 8 character Manufacturer ID, a 3 character Media
+Id and a single character Media Revision.
+
+With DVD-R and DVD-RW there is a Manufacturer ID of up to 18 characters.
+
+With DVD-ROM and DVD-RAM there seem to be no such ids.
 
 
 6.23.3.2.1 Format Code 00h: Physical Format Information
@@ -165,6 +174,14 @@ BD-R and BD-RE:
                   that byte  111        is Product Revision Number
 
 
+Via libburn these manufacturer and media ids can be retrieved by API call
+burn_disc_get_media_id() as a single printable word product_id and as two
+printable words media_code1, media_code2. The latter can be translated into
+a manufacturer company name by API call burn_guess_manufacturer().
+(Both calls work for CD, too. burn_get_media_product_id() eventually calls
+ burn_disc_read_atip().) 
+
+
 ===============================================================================
 
                           Collection of Media IDs
@@ -190,7 +207,7 @@ Try also : www.google.com : cd "manufacturer id" 97
                               CD Media IDs
 
 The findings from the web have been cross checked with the lists of cdrecord.
-No codes or manufacturer ids have been transfered from diskid.c out of
+But no codes or manufacturer ids have been taken from diskid.c out of
 cdrtools-2.01.01a39/cdrecord/.
 
 X = not in cdrecord 
@@ -198,6 +215,9 @@ D = different in cdrecord
 The exact lettering of manufacturer names may differ from cdrecord.
 For any exact comparison use rather the minute,second,frame tuples of the ATIP
 lead-in address directly. The vast majority of these tuples begin with 97.
+(libburn API call burn_disc_get_media_id() encodes both tuples in its reply
+ parameters as e.g. "97m15s35f/79m59s74f" , "97m15s35f", "79m59s74f")
+
 
 Chosen Name
 Lead-in   Lead-out           Name          [source]
@@ -888,17 +908,17 @@ AML         003     UME  8X   [Hij]
 
 "BeAll Developers, Inc."
 BeAll000    P40     BeAll  4X   [Hij]
-BeAll       G40001  BeAll  4X   [Hij]
+BeAll G40001        BeAll  4X   [Hij]
 
 "CMC Magnetics Corporation"
-CMC         MAG     CMC  16X   [Hij]
-CMC         MAG     CMC  2.5x   [Hij]
-CMC         MAG     CMC  2.5X   [Hij]
-CMC         MAG     CMC  4X   [Hij]
-CMC         MAG.    CMC  4X   [Hij]
-CMC         MAG     CMC  8X   [Hij]
-CMC         MAG.    CMC  8X   [Hij]
-CMC         W02     CMC  2x   [Hij]
+CMC MAG M01         CMC  16X   [Hij]
+CMC MAG F01         CMC  4X   [Hij]
+CMC MAG R01         CMC  2.5X   [Hij]
+CMC MAG W01         CMC  2.5x   [Hij]
+CMC MAG. AE1        CMC  8X   [Hij]
+CMC MAG. AF1        CMC  4X   [Hij]
+CMC MAG. AM1        CMC  12X   [Hij]
+CMCW02              CMC  2x   [Hij]
 CMC00RG200          CMC  2X   [Hij]
 CMCMAG              CMC  12X   [Hij]
 CMCMAG      BA2     CMC Magnetics Corporation 1-2X HTL 25GB (12cm)  [Blu]
@@ -907,7 +927,7 @@ CMCMAG      BA5     CMC Magnetics Corporation 1-6X HTL 25GB (12cm)  [Blu]
 CMCMAG      CN2     CMC Magnetics Corporation 1-2X HTL 25GB(12cm)  [Blu]
 
 "Daxon Technology Inc. / Acer"
-DAXON       016     DAXON  8X   [Hij]
+DAXON 016           DAXON  8X   [Hij]
 DAXON       AZ3     DAXON  16X   [Hij]
 DAXON       CY3     DAXON  12X   [Hij]
 Daxon       R2X     Daxon Technology Inc.  1-2X HTL 25GB(12cm)  [Blu]
@@ -915,13 +935,13 @@ Daxon       R4X     Daxon Technology Inc.  1-4X HTL 25GB(12cm)  [Blu]
 
 "Fujifilm Holdings Corporation"
 FUJI                     Fujifilm Corporation [Blu]
-FUJIFIL     M02          FUJIFILM  4X   [Hij]
-FUJIFIL     M03          FUJIFILM  8X   [Hij]
-FUJIFIL     M04          FUJIFILM  12X   [Hij]
+FUJIFILM02               FUJIFILM  4X   [Hij]
+FUJIFILM03               FUJIFILM  8X   [Hij]
+FUJIFILM04               FUJIFILM  12X   [Hij]
 
 "New Star Digital Co., Ltd."
 INFODISC    R20     NSD  8X   [Hij]
-INFODISC    -R2     NSD  8X   [Hij]
+INFODISC-R20        NSD  8X   [Hij]
 
 "InfoMedia Inc."
 INFOME      E20     INFOMEDIA INC.  1-2X   [Blu]
@@ -935,10 +955,10 @@ ISMMBD      R02     Info Source Multi Media Ltd.  1-6X HTL 12cm  [Blu]
 ISMMBD      RE1     Info Source Multi Media Ltd.  1-2X HTL 12cm  [Blu]
 
 "JVC Limited"
-JVC0Vict    orD     JVC  4X   [Hij]
-JVC1Vict    ord     JVC  6X   [Hij]
-JVC/Vict    orT     JVC  1x   [Hij]
-JVC_Vict    orW     JVC  2x   [Hij]
+JVC0VictorD7        JVC  4X   [Hij]
+JVC1Victord7        JVC  6X   [Hij]
+JVC/VictorT7        JVC  1x   [Hij]
+JVC_VictorW7        JVC  2x   [Hij]
 JVCRE1              Victor Company of Japan, Limited [Blu]
 
 "AMC"
@@ -973,10 +993,10 @@ MBI         F02     Moser Baer India Ltd 1-4X LTH 25GB  [Blu]
 MBI         R02     Moser Baer India Ltd 1-2X HTL 25GB  [Blu]
 MBI         R04     Moser Baer India Ltd 1-4X HTL 25GB  [Blu]
 MBI         R06     Moser Baer India Ltd 1-6X HTL 25GB  [Blu]
-MBI01R      G20     Moser Bear India  4X   [Hij]
-MBI01R      G40     MBI  16X   [Hij]
-MBI03R      G30     MBI  8X   [Hij]
-MBI03R      G40     MBI  12X   [Hij]
+MBI 01RG20          Moser Bear India  4X   [Hij]
+MBI 01RG40          MBI  16X   [Hij]
+MBI 03RG30          MBI  8X   [Hij]
+MBI 03RG40          MBI  12X   [Hij]
 MBIPG101            Moser Bear India  4X   [Hij]
 MBIPG101    R04     MBI  8X   [Hij]
 MBIPG101    R05     MBI  16X   [Hij]
@@ -984,13 +1004,12 @@ MBIPG101    R05     MBI  16X   [Hij]
 "Mitsubishi Chemical Corporation"
 MCC         002     MKM  4X   [Hij]
 MCC         003     MKM  8X   [Hij]
-MCC         004     MKM  16X   [Hij]
-MCC         00RG20  MKM  2X   [Hij]
-MCC         01RG20  MKM  4X   [Hij]
-MCC         01RW11  MKM  2x   [Hij]
-MCC         01RW4X  MKM  4X   [Hij]
-MCC         02RG20  MKM  8X   [Hij]
-MCC         03RG20  MKM  16X   [Hij]
+MCC 00RG200         MKM  2X   [Hij]
+MCC 01RG20          MKM  4X   [Hij]
+MCC 01RW11n9        MKM  2x   [Hij]
+MCC 01RW4X          MKM  4X   [Hij]
+MCC 02RG20          MKM  8X   [Hij]
+MCC 03RG20          MKM  16X   [Hij]
 MCC         A01     MKM  2.5x   [Hij]
 
 "Mitsui Chemicals Inc."
@@ -1001,41 +1020,41 @@ MEI         RA1     Panasonic Corporation 1-6X HTL 12cm  [Blu]
 MEI         RB1     Panasonic Corporation 1-6X HTL 12cm  [Blu]
 MEI         T01     Panasonic Corporation 1-2X HTL 12cm  [Blu]
 MEI         T02     Panasonic Corporation 1-4X HTL 12cm  [Blu]
-MEI00V      001     MATSUSHITA EI  2X   [Hij]
-MEI00V      002     MATSUSHITA EI  4X   [Hij]
+MEI 00V001          MATSUSHITA EI  2X   [Hij]
+MEI 00V002          MATSUSHITA EI  4X   [Hij]
 
 "Mitsubishi Kagaku Media Co."
 MKM         001     MKM  6X   [Hij]
 MKM         003     MKM  8X   [Hij]
 MKM         A02     MKM  4x   [Hij]
-MKM01R      D30     MKM  6X   [Hij]
-MKM01RW6    X01     MKM  6X   [Hij]
+MKM 01RD30          MKM  6X   [Hij]
+MKM01RW6X01         MKM  6X   [Hij]
 
 "Mitsubishi Kagaku Media Co."
 MMC         001     MKM  2.5X   [Hij]
 
 "Hitachi Maxell Ltd."
 MXL         RG01    MAXELL  2X   [Hij]
-MXL         RG02    MAXELL  4X   [Hij]
-MXL         RG03    MAXELL  8X   [Hij]
-MXL         RG04    MAXELL  16X   [Hij]
+MXL RG02            MAXELL  4X   [Hij]
+MXL RG03            MAXELL  8X   [Hij]
+MXL RG04            MAXELL  16X   [Hij]
 
 "Nan-Ya Plastics Corporation"
 NANYA       ALX     NANYA  8X   [Hij]
 
 "NESA International Inc."
-NSD         R40     NSD  8X   [Hij]
+NSDR40              NSD  8X   [Hij]
 
 "Optodisc Technology Corporation"
 OPTODISC    F16     OPTODISC  12X   [Hij]
 OPTODISC    OP1     OPTODISC  2.5x   [Hij]
 OPTODISC    OP1     OPTODISC  2.5X   [Hij]
 OPTODISC    OR8     OPTODISC  8X   [Hij]
-OPTODISC    R00     OPTODISC  4X   [Hij]
-OPTODISC    R00     OPTODISC  8X   [Hij]
+OPTODISCR004        OPTODISC  4X   [Hij]
+OPTODISCR008        OPTODISC  8X   [Hij]
 OPTODISC    R01     OPTODISC  16X   [Hij]
 OPTODISC    R02     OPTODISC  4X   [Hij]
-OPTODISC    R16     OPTODISC  8X   [Hij]
+OPTODISCR016        OPTODISC  8X   [Hij]
 
 "Optodisc Technology Corporation"
 OTCBDR      001     Optodisc Technology Corporation 1-4X HTL 25GB (12cm)  [Blu]
@@ -1055,21 +1074,21 @@ PHILIPS     CD2     CMC (PHILIPS)  2.5X   [Hij]
 PRINCO              PRONCO  4X   [Hij]
 
 "Prodisc Technology Inc."
-Prodisc     F02     PRODISC  12X   [Hij]
+ProdiscF02          PRODISC  12X   [Hij]
 PRODISC     R01     PRODISC  2.5X   [Hij]
 Prodisc     R02     PRODISC  4X   [Hij]
 Prodisc     R03     PRODISC  8X   [Hij]
 Prodisc     R04     PRODISC  16X   [Hij]
 Prodisc     R05     PRODISC  16X   [Hij]
-Prodisc     S03     PRODISC  4X   [Hij]
-Prodisc     S04     PRODISC  8X   [Hij]
-Prodisc     S05     PRODISC  16X   [Hij]
+ProdiscS03          PRODISC  4X   [Hij]
+ProdiscS04          PRODISC  8X   [Hij]
+ProdiscS05          PRODISC  16X   [Hij]
 PRODISC     W01     PRODISC  2.5x   [Hij]
 
 "Pioneer"
 PVC001001           PIONEER VIDEO  2X   [Hij]
 PVCR001002          PIONEER VIDEO  4X   [Hij]
-PVCW00D002K         PVC  2x   [Hij]
+PVCW00D002K9        PVC  2x   [Hij]
 
 "Ricoh Company Limited"
 RICOHJPN    D00     RICOH  2.5X   [Hij]
@@ -1091,20 +1110,20 @@ RITEK       D01     RITEK  2.5X   [Hij]
 RITEK       DR2     RITEK CORPORATION 1-4X HTL 50GB  [Blu]
 RITEK       DW1     RITEK CORPORATION 1-2X HTL 50GB  [Blu]
 RITEK       F16     RITEK  8X   [Hij]
-RITEK       F1      RITEK  12X   [Hij]
-RITEK       G03     RITEK  2X   [Hij]
-RITEK       G04     RITEK  4X   [Hij]
-RITEK       G05     RITEK  4X   [Hij]
-RITEK       G06     RITEK  8X   [Hij]
-RITEK       M02     RITEK  4X   [Hij]
-RITEK       M16     RITEK  12X   [Hij]
+RITEKF1             RITEK  12X   [Hij]
+RITEK G03           RITEK  2X   [Hij]
+RITEK G04           RITEK  4X   [Hij]
+RITEKG05            RITEK  4X   [Hij]
+RITEKG06            RITEK  8X   [Hij]
+RITEK M02           RITEK  4X   [Hij]
+RITEKM16            RITEK  12X   [Hij]
 RITEK       R01     RITEK  2.5X   [Hij]
 RITEK       R02     RITEK  4X   [Hij]
 RITEK       R03     RITEK  8X   [Hij]
 RITEK       R04     RITEK  12X   [Hij]
 RITEK       R05     RITEK  16X   [Hij]
-RITEK       W01     RiTEK  2x   [Hij]
-RITEK       W06     RITEK  6X   [Hij]
+RITEKW01            RiTEK  2x   [Hij]
+RITEKW06            RITEK  6X   [Hij]
 
 "Sony Corporation"
 SONY                SONY  2X   [Hij]
@@ -1136,9 +1155,9 @@ TDKBLD      RFD     TDK Corporation 1-6x HTL 12cm (50GB)  [Blu]
 TDKBLD      WBA     TDK Corporation 1-2X HTL 12cm  [Blu]
 TDKBLD      WDA     TDK Corporation 1-2X HTL 8cm  [Blu]
 TDKBLD      Wfa     TDK Corporation 1-2X HTL 12cm  [Blu]
-TDK502sa    kuM     TDK  2x   [Hij]
-TDK601sa    ku      TDK  4X   [Hij]
-TDKG0200    000     TDK  2X   [Hij]
+TDK502sakuM3        TDK  2x   [Hij]
+TDK601saku          TDK  4X   [Hij]
+TDKG02000000        TDK  2X   [Hij]
 
 "TDK Corporation"
 TTG01               TDK  4X   [Hij]
@@ -1154,7 +1173,7 @@ TYG-BD      Y01     TAIYO YUDEN Co., Ltd.  1-2X LTH   [Blu]
 TYG-BD      Y03     TAIYO YUDEN Co., Ltd.   1-4X LTH   [Blu]
 
 "Unifino Inc."
-UTJR0010    01          UNIFINO  4X   [Hij]
+UTJR001001          UNIFINO  4X   [Hij]
 
 "Mitsubishi Kagaku Media Co."
 VERBAT      IM0     Mitsubishi Kagaku Media, Co., Ltd.  1-2X 25GB (12cm) and 7.8GB (8cm)  [Blu]
