@@ -4829,7 +4829,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  int last_leadout= 0;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
- struct burn_session **sessions;
+ struct burn_session **sessions= NULL;
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
  enum burn_disc_status s;
