@@ -2653,7 +2653,7 @@ int burn_disc_get_media_id(struct burn_drive *d,
                    bit2= bar_code valid
                    bit3= disc_app_code valid
                    bit4= Disc is unrestricted (URU bit)
-                  bit31= Disc is nominally erasable (Erasable bit)
+                   bit5= Disc is nominally erasable (Erasable bit)
                          This will be set with overwriteable media which
                          libburn normally considers to be unerasable blank.
 */
@@ -2674,6 +2674,6 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
 	memcpy(bar_code, d->disc_bar_code, 8);
 	bar_code[9]= 0;
 	*app_code = d->disc_app_code;
-	*valid =  d->disc_info_valid | ((!!d->erasable) << 31);
+	*valid =  d->disc_info_valid;
 	return 1;
 }

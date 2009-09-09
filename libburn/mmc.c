@@ -1628,9 +1628,10 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		d->disc_app_code = data[32];
 		d->disc_info_valid |= 8;
 	}
-	if (data[7] & 32) {
+	if (data[7] & 32)
 		d->disc_info_valid |= 16;
-	}
+	if (data[2] & 16)
+		d->disc_info_valid |= 32;
 
  	disc_status = data[2] & 3;
 	d->state_of_last_session = (data[2] >> 2) & 3;

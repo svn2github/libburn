@@ -1181,7 +1181,7 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                      bit4= Disc is unrestricted (URU bit, 51h READ DISC INFO)
                            This seems to be broken with my drives. The bit is
                            0 and the validity bit for disc_app_code is 0 too.
-                    bit31= Disc is nominally erasable (Erasable bit)
+                     bit5= Disc is nominally erasable (Erasable bit)
                            This will be set with overwriteable media which
                            libburn normally considers to be unerasable blank.
     @since 0.7.2

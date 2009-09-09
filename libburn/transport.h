@@ -226,6 +226,7 @@ struct burn_drive
 	int disc_info_valid;  /* bit0= disc_type ,     bit1= disc_id ,
 				 bit2= disc_bar_code , bit3= disc_app_code
 				 bit4= URU bit is set (= unrestricted use)
+				 bit5= Erasable bit was set in reply
 			       */
 
 	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
