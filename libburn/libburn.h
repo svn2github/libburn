@@ -1161,6 +1161,35 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
 char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                                  int m_lo, int s_lo, int f_lo, int flag);
 
+/* ts A90909 */
+/** Retrieve some media information which is mainly specific to CD. For other
+    media only the bits in reply parameter valid are supposed to be meaningful.
+    @param drive     The drive to query.
+    @param disc_type A string saying either "CD-DA or CD-ROM", or "CD-I",
+                     or ""CD-ROM XA", or "undefined".
+    @param disc_id   A 32 bit number read from the media. (Meaning unclear yet)
+    @param bar_code  8 hex digits from a barcode on media read by the drive
+                     (if the drive has a bar code reader built in).
+    @param app_code  The Host Application Code which must be set in the Write
+                     Parameters Page if the media is not unrestricted (URU==0).
+    @param valid     Replies bits which indicate the validity of other reply
+                     parameters or the state of certain CD info bits:
+                     bit0= disc_type is valid
+                     bit1= disc_id is valid
+                     bit2= bar_code is valid
+                     bit3= disc_app_code is valid
+                     bit4= Disc is unrestricted (URU bit, 51h READ DISC INFO)
+                           This seems to be broken with my drives. The bit is
+                           0 and the validity bit for disc_app_code is 0 too.
+                    bit31= Disc is nominally erasable (Erasable bit)
+                           This will be set with overwriteable media which
+                           libburn normally considers to be unerasable blank.
+    @since 0.7.2
+*/
+int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
+                        unsigned int *disc_id, char bar_code[9], int *app_code,
+			int *valid);
+
 
 /* ts A61110 */
 /** Read start lba and Next Writeable Address of a track from media.

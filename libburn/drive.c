@@ -521,6 +521,7 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 			d->unlock(d);
 		if ((flag & 7) == 1)
 			d->eject(d);
+		burn_drive_snooze(d, 0);
 		d->release(d);
 	}
 
@@ -2621,7 +2622,7 @@ int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value)
 /* ts A81215 : API */
 int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag)
 {
-	*capacity = d->media_read_capacity;
+	*capacity = d->media_read_capacity + 1;
 	return (d->media_read_capacity != 0x7fffffff);
 }
 
@@ -2642,3 +2643,37 @@ int burn_disc_get_media_id(struct burn_drive *d,
 	return ret;
 }
 
+
+/* ts A90909 : API */
+/**
+    @param valid   Replies bits which indicate the validity of other reply
+                   parameters or the state of certain CD info bits:
+                   bit0= disc_type valid
+                   bit1= disc_id valid
+                   bit2= bar_code valid
+                   bit3= disc_app_code valid
+                   bit4= Disc is unrestricted (URU bit)
+                  bit31= Disc is nominally erasable (Erasable bit)
+                         This will be set with overwriteable media which
+                         libburn normally considers to be unerasable blank.
+*/
+int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
+			unsigned int *disc_id, char bar_code[9], int *app_code,
+	 		int *valid)
+{
+	if (d->disc_type == 0x00) {
+		strcpy(disc_type, "CD-DA or CD-ROM");
+	} else if (d->disc_type == 0x10) {
+		strcpy(disc_type, "CD-I");
+	} else if (d->disc_type == 0x20) {
+		strcpy(disc_type, "CD-ROM XA");
+	} else {
+		strcpy(disc_type, "undefined");
+	}
+	*disc_id = d->disc_id;
+	memcpy(bar_code, d->disc_bar_code, 8);
+	bar_code[9]= 0;
+	*app_code = d->disc_app_code;
+	*valid =  d->disc_info_valid | ((!!d->erasable) << 31);
+	return 1;
+}

@@ -216,7 +216,17 @@ struct burn_drive
         int stream_recording_start;
 
 	/* ts A61218 from 51h READ DISC INFORMATION */
+	int last_lead_in;
+	int last_lead_out;
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
+	int disc_type; /* 0="CD-DA or CD-ROM", 0x10="CD-I", 0x20="CD-ROM XA" */
+	unsigned int disc_id; /* a "32 bit binary integer" */
+	char disc_bar_code[9];
+	int disc_app_code;
+	int disc_info_valid;  /* bit0= disc_type ,     bit1= disc_id ,
+				 bit2= disc_bar_code , bit3= disc_app_code
+				 bit4= URU bit is set (= unrestricted use)
+			       */
 
 	/* ts A70108 from 23h READ FORMAT CAPACITY mmc5r03c.pdf 6.24 */
 	int format_descr_type;      /* 1=unformatted, 2=formatted, 3=unclear */

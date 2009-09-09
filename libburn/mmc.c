@@ -1054,8 +1054,7 @@ int mmc_fake_toc(struct burn_drive *d)
 	}
 	/* ts A71128 : My DVD-ROM drive issues no reliable track info.
 			One has to try 43h READ TOC/PMA/ATIP Form 0. */
-	if ((d->current_profile == 0x10 || d->current_profile == 0x40) &&
-	     d->last_track_no <= 1) {
+	if ((d->current_profile == 0x10) && d->last_track_no <= 1) {
 		ret = mmc_read_toc_fmt0(d);
 		return ret;
 	}
@@ -1586,15 +1585,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 
 	mmc_get_configuration(d);
 
-/* ts A70910 : found this as condition for mmc_function_spy() which went up
-	if (*alloc_len < 2)
-*/
-
 	scsi_init_command(&c, MMC_GET_DISC_INFO, sizeof(MMC_GET_DISC_INFO));
-/*
-	memcpy(c.opcode, MMC_GET_DISC_INFO, sizeof(MMC_GET_DISC_INFO));
-	c.oplen = sizeof(MMC_GET_DISC_INFO);
-*/
 	c.dxfer_len = *alloc_len;
 	c.opcode[7]= (c.dxfer_len >> 8) & 0xff;
 	c.opcode[8]= c.dxfer_len & 0xff;
@@ -1616,12 +1607,30 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	*alloc_len = len + 2;
 	if (old_alloc_len < 34)
 		return 1;
-	if (*alloc_len < 24) /* data[23] is the last byte used here */
+	if (*alloc_len < 24) /* data[23] is the last mandatory byte here */
 		return 0;
 	if (len + 2 > old_alloc_len)
 		len = old_alloc_len - 2;
 
 	d->erasable = !!(data[2] & 16);
+
+	/* ts A90908 */
+	d->disc_type = data[8];
+	d->disc_info_valid = 1;
+	d->disc_id = mmc_four_char_to_int(data + 12);
+	d->disc_info_valid |= (!!(data[7] & 128)) << 1;
+	if (len + 2 > 31 && (data[7] & 64)) {
+		memcpy(d->disc_bar_code, data + 24, 8);
+		d->disc_bar_code[9] = 0;
+		d->disc_info_valid |= 4;
+	}
+	if (len + 2 > 32 && (data[7] & 16)) {
+		d->disc_app_code = data[32];
+		d->disc_info_valid |= 8;
+	}
+	if (data[7] & 32) {
+		d->disc_info_valid |= 16;
+	}
 
  	disc_status = data[2] & 3;
 	d->state_of_last_session = (data[2] >> 2) & 3;
@@ -1656,12 +1665,26 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	}
 #endif /* Libburn_support_bd_r_readonlY */
 
+	/* MMC-5 6.22.3.1.16:
+	   Last Session Lead-in Start Address bytes 16 to 19
+	   Last Possible Lead-out Start Address bytes 20 to 23
+	   MSF for CD, LBA else
+	*/
+	if(d->current_profile == 0x08 || d->current_profile == 0x09 ||
+	   d->current_profile == 0x0a) {
+		d->last_lead_in =
+			burn_msf_to_lba(data[17], data[18], data[19]);
+		d->last_lead_out =
+			burn_msf_to_lba(data[21], data[22], data[23]);
+	} else {
+		d->last_lead_in = mmc_four_char_to_int(data + 16);
+		d->last_lead_out = mmc_four_char_to_int(data + 20);
+	}
+
 	switch (disc_status) {
 	case 0:
 regard_as_blank:;
 		d->toc_entries = 0;
-		d->start_lba = burn_msf_to_lba(data[17], data[18], data[19]);
-		d->end_lba = burn_msf_to_lba(data[21], data[22], data[23]);
 
 /*
 		fprintf(stderr, "libburn_experimental: start_lba = %d (%d %d %d) , end_lba = %d (%d %d %d)\n",
@@ -1670,6 +1693,8 @@ regard_as_blank:;
 */
 
 		d->status = BURN_DISC_BLANK;
+		d->start_lba = d->last_lead_in;
+		d->end_lba = d->last_lead_out;
 		break;
 	case 1:
 		d->status = BURN_DISC_APPENDABLE;
@@ -4213,6 +4238,13 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->needs_close_session = 0;
 	d->needs_sync_cache = 0;
 	d->bg_format_status = -1;
+	d->last_lead_in = -2000000000;
+	d->last_lead_out = -2000000000;
+	d->disc_type = 0xff;
+	d->disc_id = 0;
+	memset(d->disc_bar_code, 0, 9);
+	d->disc_app_code = 0;
+	d->disc_info_valid = 0;
 	d->num_format_descr = 0;
 	d->complete_sessions = 0;
 	d->state_of_last_session = -1;
