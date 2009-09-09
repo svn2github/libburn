@@ -349,7 +349,7 @@ struct burn_toc_entry
 	*/
 	unsigned char extensions_valid;  
 
-	/* ts A70201 : DVD extension.
+	/* ts A70201 : DVD extension. extensions_valid:bit0
 	   If invalid the members are guaranteed to be 0. */
         /* @since 0.3.2 */
 	/* Tracks and session numbers are 16 bit. Here are the high bytes. */
@@ -360,6 +360,13 @@ struct burn_toc_entry
 	/* min, sec, and frame may be too small if DVD extension is valid */
 	int track_blocks;
 	
+	/* ts A90909 : LRA extension. extensions_valid:bit1 */
+	/* @since 0.7.2 */
+	/* MMC-5 6.27.3.18 : The Last Recorded Address is valid for DVD-R,
+	                  DVD-R DL when LJRS = 00b, DVD-RW, HD DVD-R, and BD-R.
+	   This would mean profiles: 0x11, 0x15, 0x13, 0x14, 0x51, 0x41, 0x42 
+	*/
+	int last_recorded_address;
 };
 
 

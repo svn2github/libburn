@@ -835,12 +835,13 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 /* ts A70201 : Set up an entry for mmc_fake_toc() */
 int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
 			 int track_number,
-			 unsigned char *size_data, unsigned char *start_data)
+			 unsigned char *size_data, unsigned char *start_data,
+			 unsigned char *last_adr_data)
 {
 	int min, sec, frames, num;
 
-	/* mark DVD extensions as valid */
-	entry->extensions_valid |= 1; 
+	/* mark DVD extensions and Track Info extension as valid */
+	entry->extensions_valid |= (1 | 2); 
 
 	/* defaults are as of mmc5r03.pdf 6.26.3.2.4 Fabricated TOC */
 	entry->session = session_number & 0xff;
@@ -873,6 +874,7 @@ int mmc_fake_toc_entry(struct burn_toc_entry *entry, int session_number,
 	entry->pmin = min;
 	entry->psec = sec;
 	entry->pframe = frames;
+	entry->last_recorded_address = mmc_four_char_to_int(last_adr_data);
 	return 1;
 }
 
@@ -887,7 +889,7 @@ static int mmc_read_toc_fmt0_al(struct burn_drive *d, int *alloc_len)
 	struct command c;
 	int dlen, i, old_alloc_len, session_number, prev_session = -1;
 	int lba, size;
-	unsigned char *tdata, size_data[4], start_data[4];
+	unsigned char *tdata, size_data[4], start_data[4], end_data[4];
 
 	if (*alloc_len < 4)
 		return 0;
@@ -961,8 +963,9 @@ err_ex:;
 			      mmc_four_char_to_int(size_data);
 			mmc_int_to_four_char(start_data, lba);
 			mmc_int_to_four_char(size_data, 0);
+			mmc_int_to_four_char(end_data, lba - 1);
 			mmc_fake_toc_entry(entry, prev_session, 0xA2,
-					 size_data, start_data);
+					 size_data, start_data, end_data);
 			entry->min= entry->sec= entry->frame= 0;
 			d->disc->session[prev_session - 1]->leadout_entry =
 									entry;
@@ -985,11 +988,13 @@ err_ex:;
 		memcpy(start_data, tdata + 4, 4);
 			/* size_data are estimated from next track start */
 		memcpy(size_data, tdata + 8 + 4, 4);
+		mmc_int_to_four_char(end_data,
+				mmc_four_char_to_int(size_data) - 1);
 		size = mmc_four_char_to_int(size_data) -
 	      		mmc_four_char_to_int(start_data);
 		mmc_int_to_four_char(size_data, size);
 		mmc_fake_toc_entry(entry, session_number, i + 1,
-					 size_data, start_data);
+					 size_data, start_data, end_data);
 		if (prev_session != session_number)
 			d->disc->session[session_number - 1]->firsttrack = i+1;
 		d->disc->session[session_number - 1]->lasttrack = i+1;
@@ -1001,8 +1006,10 @@ err_ex:;
 		entry = &(d->toc_entry[(d->last_track_no - 1) + prev_session]);
 		memcpy(start_data, tdata + 4, 4);
 		mmc_int_to_four_char(size_data, 0);
+		mmc_int_to_four_char(end_data,
+					mmc_four_char_to_int(start_data) - 1);
 		mmc_fake_toc_entry(entry, prev_session, 0xA2,
-				 size_data, start_data);
+				 size_data, start_data, end_data);
 		entry->min= entry->sec= entry->frame= 0;
 		d->disc->session[prev_session - 1]->leadout_entry = entry;
 	}
@@ -1033,7 +1040,7 @@ int mmc_fake_toc(struct burn_drive *d)
 	struct burn_toc_entry *entry;
 	struct buffer buf;
 	int i, session_number, prev_session = -1, ret, lba, alloc_len = 34;
-	unsigned char *tdata, size_data[4], start_data[4];
+	unsigned char *tdata, size_data[4], start_data[4], end_data[4];
 	char msg[160];
 
 	if (mmc_function_spy(d, "mmc_fake_toc") <= 0)
@@ -1107,8 +1114,9 @@ int mmc_fake_toc(struct burn_drive *d)
 			      mmc_four_char_to_int(size_data);
 			mmc_int_to_four_char(start_data, lba);
 			mmc_int_to_four_char(size_data, 0);
+			mmc_int_to_four_char(end_data, lba - 1);
 			mmc_fake_toc_entry(entry, prev_session, 0xA2,
-					 size_data, start_data);
+					 size_data, start_data, end_data);
 			entry->min= entry->sec= entry->frame= 0;
 			d->disc->session[prev_session - 1]->leadout_entry =
 									entry;
@@ -1137,8 +1145,9 @@ int mmc_fake_toc(struct burn_drive *d)
 
 		memcpy(size_data, tdata + 24, 4);
 		memcpy(start_data, tdata + 8, 4);
+		memcpy(end_data, tdata + 28, 4);
 		mmc_fake_toc_entry(entry, session_number, i + 1,
-					 size_data, start_data);
+					 size_data, start_data, end_data);
 
 		if (prev_session != session_number)
 			d->disc->session[session_number - 1]->firsttrack = i+1;
@@ -1152,8 +1161,9 @@ int mmc_fake_toc(struct burn_drive *d)
 		      mmc_four_char_to_int(size_data);
 		mmc_int_to_four_char(start_data, lba);
 		mmc_int_to_four_char(size_data, 0);
+		mmc_int_to_four_char(end_data, lba - 1);
 		mmc_fake_toc_entry(entry, prev_session, 0xA2,
-				 size_data, start_data);
+				 size_data, start_data, end_data);
 		entry->min= entry->sec= entry->frame= 0;
 		d->disc->session[prev_session - 1]->leadout_entry = entry;
 	}
