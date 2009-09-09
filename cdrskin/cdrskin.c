@@ -2799,6 +2799,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,
        "\t-eject\t\teject the disk after doing the work\n");
      fprintf(stderr,"\t-dummy\t\tdo everything with laser turned off\n");
+     fprintf(stderr,"\t-minfo\t\tretrieve and print media information/status\n");
+     fprintf(stderr,"\t-media-info\tretrieve and print media information/status\n");
 #ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-msinfo\t\tretrieve multi-session info for mkisofs >= 1.10\n");
@@ -4815,6 +4817,215 @@ cannot_read:;
  return(0);
 }
 
+
+/** Perform -minfo under control of Cdrskin_atip().
+    @param flag Bitfield for control purposes:
+    @return <=0 error, 1 success
+*/
+int Cdrskin_minfo(struct CdrskiN *skin, int flag)
+{
+ int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
+ int session_no, track_no, pmin, psec, pframe, ret, size= 0, nwa= 0;
+ int last_leadout= 0;
+ struct burn_drive *drive;
+ struct burn_disc *disc= NULL;
+ struct burn_session **sessions;
+ struct burn_track **tracks;
+ struct burn_toc_entry toc_entry;
+ enum burn_disc_status s;
+#ifdef Cdrskin_libburn_has_get_profilE
+ char profile_name[80];
+ int pno;
+#endif
+ char media_class[80];
+ int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity;
+ int app_code, cd_info_valid, lra;
+ off_t avail;
+ char disc_type[80], bar_code[9];
+ unsigned int disc_id;
+
+ drive= skin->drives[skin->driveno].drive;
+
+ s= burn_disc_get_status(drive);
+ if(s == BURN_DISC_EMPTY) {
+   fprintf(stderr, "cdrecord-Emulation: No disk / Wrong disk!\n");
+   return(1);
+ }
+ ret= burn_disc_get_profile(drive, &pno, profile_name);
+ if(ret <= 0) {
+   fprintf(stderr, "cdrskin: SORRY : Cannot inquire current media profile\n");
+   return(1);
+ }
+ if(pno >= 0x08 && pno <= 0x0a)
+   strcpy(media_class, "CD");
+ else if(pno >= 0x10 && pno <= 0x2f)
+   strcpy(media_class, "DVD");
+ else if(pno >= 0x40 && pno <= 0x43)
+   strcpy(media_class, "BD");
+ else
+   sprintf(media_class, "Unknown class (profile 0x%4.4X)", pno);
+
+ printf("\n");
+ printf("Mounted media class:      %s\n", media_class);
+ printf("Mounted media type:       %s\n", profile_name);
+ ret= burn_disc_erasable(drive);
+ printf("Disk Is %serasable\n", ret ? "" : "not ");
+ printf("disk status:              %s\n",
+        s == BURN_DISC_BLANK ? "empty" :
+        s == BURN_DISC_APPENDABLE ? "incomplete/appendable" :
+        s == BURN_DISC_FULL ? "complete" :
+                              "unusable");
+ printf("session status:           %s\n",
+        s == BURN_DISC_BLANK ? "empty" :
+        s == BURN_DISC_APPENDABLE ? "empty" :
+        s == BURN_DISC_FULL ? "complete" :
+                              "unknown");
+
+
+ disc= burn_drive_get_disc(drive);
+ if(disc==NULL || s == BURN_DISC_BLANK) {
+   first_track= 1;
+   num_sessions= 0;
+   nominal_sessions= 1;
+   ftils= ltils= 1;
+ } else {
+
+   first_track= 1;
+   sessions= burn_disc_get_sessions(disc, &num_sessions);
+   nominal_sessions= num_sessions;
+   if(s == BURN_DISC_APPENDABLE)
+     nominal_sessions++;
+   for(session_no= 0; session_no<num_sessions; session_no++) {
+     ftils= total_tracks + 1;
+     tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
+     if(tracks==NULL)
+   continue;
+     total_tracks+= num_tracks;
+     ltils= total_tracks;
+     if(session_no==0 && burn_session_get_hidefirst(sessions[session_no])
+        && total_tracks >= 2)
+       first_track= 2;
+   }
+   if(s == BURN_DISC_APPENDABLE)
+     ftils= ltils= total_tracks + 1;
+ }
+ printf("first track:              %d\n", first_track);
+ printf("number of sessions:       %d\n", nominal_sessions);
+ printf("first track in last sess: %d\n", ftils);
+ printf("last track in last sess:  %d\n", ltils);
+
+ burn_disc_get_cd_info(drive, disc_type, &disc_id, bar_code, &app_code,
+                       &cd_info_valid);
+ printf("Disk Is %sunrestricted\n", (cd_info_valid & 16) ? "" : "not ");
+ if((cd_info_valid & 8) && !(cd_info_valid & 16))
+   printf("Disc application code: %d\n", app_code);
+ if(strcmp(media_class, "DVD") == 0 || strcmp(media_class, "BD") == 0)
+   printf("Disk type: DVD, HD-DVD or BD\n");
+ else if(strcmp(media_class, "CD") == 0 && (cd_info_valid & 1))
+   printf("Disk type: %s\n", disc_type);
+ else
+   printf("Disk type: unrecognizable\n");
+ if(cd_info_valid & 2)
+   printf("Disk id: 0x%-X\n", disc_id);
+
+ printf("\n");
+ printf("Track  Sess Type   Start Addr End Addr   Size\n");
+ printf("==============================================\n");
+ for(session_no= 0; session_no<num_sessions; session_no++) {
+   tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
+   if(tracks==NULL)
+ continue;
+   for(track_no= 0; track_no<num_tracks; track_no++) {
+     track_count++;
+     burn_track_get_entry(tracks[track_no], &toc_entry);
+#ifdef Cdrskin_libburn_has_toc_entry_extensionS
+     if(toc_entry.extensions_valid&1) { /* DVD extension valid */
+       lba= toc_entry.start_lba;
+       size= toc_entry.track_blocks;
+     } else {
+#else
+     {
+#endif
+       pmin= toc_entry.min;
+       psec= toc_entry.sec;
+       pframe= toc_entry.frame;
+       size= burn_msf_to_lba(pmin,psec,pframe);
+       pmin= toc_entry.pmin;
+       psec= toc_entry.psec;
+       pframe= toc_entry.pframe;
+       lba= burn_msf_to_lba(pmin,psec,pframe);
+     }
+
+     lra= lba + size - 1;
+
+#ifdef Cdrskin_with_last_recorded_addresS
+
+     /* Interesting, but obviously not what cdrecord prints as "End Addr" */
+ 
+#ifdef Cdrskin_libburn_has_toc_entry_extensionS
+     if(toc_entry.extensions_valid & 2) { /* LRA extension valid */
+       if(pno == 0x11 || pno == 0x13 || pno == 0x14 || pno == 0x15 ||
+	  pno == 0x41 || pno == 0x42 || pno == 0x51)
+         lra= toc_entry.last_recorded_address;
+     }
+#endif /* Cdrskin_libburn_has_toc_entry_extensionS */
+#endif /* Cdrskin_with_last_recorded_addresS */
+
+     printf("%5d %5d %-6s %-10d %-10d %-10d\n",
+            track_count, session_no + 1,
+            ((toc_entry.control&7)<4) ? "Audio" : "Data", lba, lra, size);
+
+     last_leadout= lba + size;
+   }
+ }
+ if(nominal_sessions > num_sessions) {
+   ret= burn_disc_track_lba_nwa(drive, NULL, 0, &lba, &nwa);
+   if(ret > 0) {
+     avail= burn_disc_available_space(drive, NULL);
+     size= avail / 2048;
+     printf("%5d %5d %-6s %-10d %-10d %-10d\n",
+            track_count + 1, nominal_sessions, "Blank",
+            nwa, lba + size - 1, size);
+   }
+ }
+ printf("\n");
+
+ if(num_sessions > 0) {
+   ret= burn_disc_get_msc1(drive, &lba);
+   if(ret > 0)
+     printf("Last session start address:         %-10d\n", lba);
+   if(last_leadout > 0)
+     printf("Last session leadout start address: %-10d\n", last_leadout);
+   if(s == BURN_DISC_FULL) {
+     ret = burn_get_read_capacity(drive, &read_capacity, 0);
+     if(ret > 0 && (last_leadout != read_capacity ||
+                    pno == 0x08 || pno == 0x10 || pno == 0x40 || pno == 0x50))
+       printf("Read capacity:                      %-10d\n", read_capacity);
+   }
+ }
+ if(nominal_sessions > num_sessions) {
+   printf("Next writable address:              %-10d\n", nwa);
+   printf("Remaining writable size:            %-10d\n", size);
+ }
+
+ printf("\n");
+ printf("Media summary: %d sessions, %d tracks, %s %s\n",
+        num_sessions, track_count, 
+        s==BURN_DISC_BLANK ? "blank" :
+        s==BURN_DISC_APPENDABLE ? "appendable" :
+        s==BURN_DISC_FULL ? "closed" :
+        s==BURN_DISC_EMPTY ? "no " : "unknown ",
+        profile_name);
+
+ 
+ if(disc!=NULL)
+   burn_disc_free(disc);
+ if(s == BURN_DISC_EMPTY)
+   return(0);
+ return(1);
+}
+
+
 int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
                                int flag)
 {
@@ -4837,6 +5048,7 @@ int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
     @param flag Bitfield for control purposes:
                 bit0= perform -toc
                 bit1= perform -toc with session markers
+                bit2= perform -minfo
     @return <=0 error, 1 success
 */
 int Cdrskin_atip(struct CdrskiN *skin, int flag)
@@ -5033,7 +5245,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  ret= burn_disc_get_media_id(drive, &product_id, &media_code1, &media_code2,
                                 &book_type, 0);
  if(ret > 0 && (!current_is_cd) &&
-    manuf == NULL && media_code1 != NULL && media_code2 != 0) {
+    manuf == NULL && media_code1 != NULL && media_code2 != NULL) {
 
    manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
  }
@@ -5084,6 +5296,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(flag&1)
    Cdrskin_toc(skin, !(flag & 2));
                        /*cdrecord seems to ignore -toc errors if -atip is ok */
+ if(flag & 4)
+   Cdrskin_minfo(skin, 0);
+
 ex:;
  if(manuf != NULL)
    free(manuf);
@@ -7210,7 +7425,6 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
    "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
-   "-media-info", "-minfo",
    ""
  };
 
@@ -7721,6 +7935,11 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"-lock")==0) {
      skin->do_load= 2;
 
+   } else if(strcmp(argv[i],"--long_toc")==0) {
+     skin->do_atip= 3;
+     if(skin->verbosity>=Cdrskin_verbose_cmD)
+       ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
+
    } else if(strncmp(argv[i],"-minbuf=",8)==0) {
      value_pt= argv[i]+8;
      goto minbuf_equals;
@@ -7744,6 +7963,10 @@ minbuf_equals:;
           "cdrskin: SORRY : Option minbuf= is not available yet.\n");
      return(0);
 #endif
+
+   } else if(strcmp(argv[i],"-minfo") == 0 ||
+             strcmp(argv[i],"-media-info") == 0) {
+     skin->do_atip= 4;
 
    } else if(strncmp(argv[i],"modesty_on_drive=",17)==0) {
 #ifdef Cdrskin_libburn_has_set_waitinG
@@ -7981,10 +8204,6 @@ set_stream_recording:;
 
    } else if(strcmp(argv[i],"-toc")==0) {
      skin->do_atip= 2;
-     if(skin->verbosity>=Cdrskin_verbose_cmD)
-       ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
-   } else if(strcmp(argv[i],"--long_toc")==0) {
-     skin->do_atip= 3;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
 
@@ -8366,7 +8585,8 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_atip) {
    if(skin->n_drives<=0)
      {*exit_value= 7; goto no_drive;}
-   ret= Cdrskin_atip(skin,(skin->do_atip>1) | (2 * (skin->do_atip > 2)));
+   ret= Cdrskin_atip(skin, skin->do_atip == 4 ? 4 :
+                                (skin->do_atip>1) | (2 * (skin->do_atip > 2)));
    if(ret<=0)
      {*exit_value= 7; goto ex;}
  }

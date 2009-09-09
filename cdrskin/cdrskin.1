@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Sep 01, 2009"
+.TH CDRSKIN 1 "Sep 09, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -615,6 +615,10 @@ Equivalent to:
 modesty_on_drive=1:min_percent=<percentage>:max_percent=95
 .br
 Percentage is permissible between 25 and 95.
+.TP
+.BI -minfo
+Print information about the loaded media. This includes media type, writability
+state, and a quite readable table of content.
 .TP
 .BI msifile= path
 Run option -msinfo and copy the result line into the file given by path.
