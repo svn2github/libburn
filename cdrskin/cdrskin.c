@@ -5008,16 +5008,6 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    printf("Remaining writable size:            %-10d\n", size);
  }
 
- printf("\n");
- printf("Media summary: %d sessions, %d tracks, %s %s\n",
-        num_sessions, track_count, 
-        s==BURN_DISC_BLANK ? "blank" :
-        s==BURN_DISC_APPENDABLE ? "appendable" :
-        s==BURN_DISC_FULL ? "closed" :
-        s==BURN_DISC_EMPTY ? "no " : "unknown ",
-        profile_name);
-
- 
  if(disc!=NULL)
    burn_disc_free(disc);
  if(s == BURN_DISC_EMPTY)
