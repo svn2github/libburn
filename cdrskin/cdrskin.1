@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Sep 09, 2009"
+.TH CDRSKIN 1 "Sep 10, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -497,7 +497,15 @@ or DVD-R[W] in Disc-at-once mode.
 .TP
 .BI \-data
 Subsequent tracks are data tracks. This option is default and only needed
-to mark the end of the range of an eventual option -audio.
+to mark the end of the range of an eventual option -audio or -xa1.
+.br
+Options -mode2, -xa, and -xa2 get mapped to -data, not using the desired CD
+sector formats and thus not taking advantage of eventual higher payload.
+.BI \-xa1
+Subsequent tracks are data tracks with input suitable for CD-ROM XA mode 2
+form 1. This differs from -data input by 8 additional header bytes per block.
+cdrskin will not write CD-ROM XA but rather strip the header bytes and write as
+-data tracks.
 .TP
 .BI dev= target
 Set the address of the drive to use. Valid are at least the
@@ -1196,6 +1204,10 @@ if write errors occur. It might as well be disliked or ignored by the drive.
 .br
 If a number is given, then error management stays enabled for all byte
 addresses below that number. Any number below 16s is the same as "off".
+.TP 
+.BI --xa1-ignore
+Silently interpret option -xa1 as -data. This may be necessary if a frontent
+does not prepare -xa1 block headers but insists in using option -xa1.
 .SH EXAMPLES
 .SS
 .B Get an overview of drives and their addresses:

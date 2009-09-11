@@ -148,7 +148,7 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 #define Cdrskin_libburn_has_product_iD 1
-
+#define Cdrskin_libburn_has_cdxa_conV 1
 
 #endif /* Cdrskin_libburn_0_7_1 */
 
@@ -910,6 +910,9 @@ struct CdrtracK {
  double sector_size;
  int track_type_by_default;
  int swap_audio_bytes;
+ int cdxa_conversion; /* bit0-30: for burn_track_set_cdxa_conv()
+                         bit31  : ignore bits 0 to 30
+                       */
 
  /** Eventually detected data image size */
  double data_image_size;
@@ -963,7 +966,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                         int *use_data_image_size,
                         double *padding, int *set_by_padsize,
                         int *track_type, int *track_type_by_default,
-                        int *swap_audio_bytes, int flag);
+                        int *swap_audio_bytes, int *cdxa_conversion, int flag);
  int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
                           int *fifo_size, int *fifo_start_at, int flag);
 
@@ -985,6 +988,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->sector_size= 2048.0;
  o->track_type_by_default= 1;
  o->swap_audio_bytes= 0;
+ o->cdxa_conversion= 0;
  o->data_image_size= -1.0;
  o->iso_fs_descr= NULL;
  o->use_data_image_size= 0;
@@ -1001,7 +1005,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                          &(o->tao_to_sao_tsize),&(o->use_data_image_size),
                          &(o->padding),&(o->set_by_padsize),&(skin_track_type),
                          &(o->track_type_by_default),&(o->swap_audio_bytes),
-                         0);
+                         &(o->cdxa_conversion), 0);
  if(ret<=0)
    goto failed;
  strcpy(o->original_source_path,o->source_path);
@@ -1611,6 +1615,11 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  burn_track_set_default_size(tr, (off_t) track->tao_to_sao_tsize);
  burn_track_set_byte_swap(tr,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
+#ifdef Cdrskin_libburn_has_cdxa_conV
+ if(!(track->cdxa_conversion & (1 << 31)))
+   burn_track_set_cdxa_conv(tr, track->cdxa_conversion & 0x7fffffff);
+#endif
+
  fixed_size= track->fixed_size;
  if((flag&2) && track->padding>0) {
    if(flag&1)
@@ -2740,6 +2749,8 @@ set_dev:;
      printf(
          " write_start_address=<num>  write to given byte address (DVD+RW)\n");
      printf(
+         " --xa1-ignore       with -xa1 do not strip 8 byte headers\n");
+     printf(
         "Preconfigured arguments are read from the following startup files\n");
      printf(
           "if they exist and are readable. The sequence is as listed here:\n");
@@ -2838,6 +2849,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\t-audio\t\tSubsequent tracks are CD-DA audio tracks\n");
      fprintf(stderr,
             "\t-data\t\tSubsequent tracks are CD-ROM data mode 1 (default)\n");
+     fprintf(stderr,
+            "\t-xa1\t\tSubsequent tracks are CD-ROM XA mode 2 form 1 - 2056 bytes\n");
      fprintf(stderr,
            "\t-isosize\tUse iso9660 file system size for next data track\n");
      fprintf(stderr,"\t-pad\t\tpadsize=30k\n");
@@ -2950,6 +2963,10 @@ set_severities:;
    } else if(strcmp(argv[i],"-waiti")==0) {
      o->do_waiti= 1;
 
+   } else if(strcmp(argv[i],"-xamix")==0) {
+     fprintf(stderr,
+       "cdrskin: FATAL : Option -xamix not implemented and data not yet convertible to other modes.\n");
+     return(0);
    }
 
  }
@@ -3228,6 +3245,9 @@ struct CdrskiN {
  enum burn_write_types write_type;
  int block_type;
  int multi;
+ int cdxa_conversion; /* bit0-30: for burn_track_set_cdxa_conv()
+                         bit31  : ignore bits 0 to 30
+                       */
  int modesty_on_drive;
  int min_buffer_percent;
  int max_buffer_percent;
@@ -3509,7 +3529,7 @@ int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
                        int *use_data_image_size,
                        double *padding, int *set_by_padsize,
                        int *track_type, int *track_type_by_default,
-                       int *swap_audio_bytes, int flag)
+                       int *swap_audio_bytes, int *cdxa_conversion, int flag)
 {
  strcpy(source_path,skin->source_path);
  *fixed_size= skin->fixed_size;
@@ -3520,6 +3540,7 @@ int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
  *track_type= skin->track_type;
  *track_type_by_default= skin->track_type_by_default;
  *swap_audio_bytes= skin->swap_audio_bytes;
+ *cdxa_conversion= skin->cdxa_conversion;
  return(1);
 }
 
@@ -5396,6 +5417,14 @@ int Cdrskin_warn_of_mini_tsize(struct CdrskiN *skin, int flag)
  off_t media_space= 0;
  enum burn_disc_status s;
  struct burn_drive *drive;
+
+#ifdef Cdrskin_libburn_has_get_drive_rolE
+ int ret;
+
+ ret= burn_drive_get_drive_role(skin->drives[skin->driveno].drive);
+ if(ret != 1)
+   return(1);
+#endif /* Cdrskin_libburn_has_get_drive_rolE */
 
 #ifdef Cdrskin_libburn_has_get_spacE
  if(skin->multi || skin->has_open_ended_track || skin->smallest_tsize<0)
@@ -7412,7 +7441,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-fix", "-nofix",
    "-raw", "-raw96p", "-raw16", "-raw96r",
-   "-clone", "-text", "-mode2", "-xa", "-xa1", "-xa2", "-xamix",
+   "-clone", "-text",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
    "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
    ""
@@ -7651,9 +7680,9 @@ unsupported_blank_option:;
      skin->do_checkdrive= 1;
 
    } else if(strcmp(argv[i],"-data")==0) {
-
-     /* >>> !!! All Subsequent Tracks Option */
-
+option_data:;
+     /* All Subsequent Tracks Option */
+     skin->cdxa_conversion= (skin->cdxa_conversion & ~0x7fffffff) | 0;
      skin->track_type= BURN_MODE1;
      skin->track_type_by_default= 0;
 
@@ -7958,6 +7987,11 @@ minbuf_equals:;
              strcmp(argv[i],"-media-info") == 0) {
      skin->do_atip= 4;
 
+   } else if(strcmp(argv[i], "-mode2") == 0) {
+     fprintf(stderr,
+             "cdrskin: NOTE : defaulting option -mode2 to option -data\n");
+     goto option_data;
+
    } else if(strncmp(argv[i],"modesty_on_drive=",17)==0) {
 #ifdef Cdrskin_libburn_has_set_waitinG
      value_pt= argv[i]+17;
@@ -8232,6 +8266,24 @@ track_too_large:;
        ClN(printf("cdrskin: write start address : %.f\n",
                   skin->write_start_address));
      skin->preskin->demands_cdrskin_caps= 1;
+
+   } else if(strcmp(argv[i], "-xa") == 0) {
+     fprintf(stderr,"cdrskin: NOTE : defaulting option -xa to option -data\n");
+     goto option_data;
+
+   } else if(strcmp(argv[i], "-xa1") == 0) {
+     /* All Subsequent Tracks Option */
+     skin->cdxa_conversion= (skin->cdxa_conversion & ~0x7fffffff) | 1;
+     skin->track_type= BURN_MODE1;
+     skin->track_type_by_default= 0;
+
+   } else if(strcmp(argv[i], "-xa2") == 0) {
+     fprintf(stderr,
+             "cdrskin: NOTE : defaulting option -xa2 to option -data\n");
+     goto option_data;
+
+   } else if(strcmp(argv[i], "--xa1-ignore") == 0) {
+     skin->cdxa_conversion|= (1 << 31);
 
    } else if( i==argc-1 ||
              (skin->single_track==0 && strchr(argv[i],'=')==NULL 
