@@ -281,9 +281,19 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
 /* ts A61024 */
 int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes)
 {
-	if(swap_source_bytes!=0 && swap_source_bytes!=1)
+	if (swap_source_bytes != 0 && swap_source_bytes != 1)
 		return 0;
 	t->swap_source_bytes = swap_source_bytes;
+	return 1;
+}
+
+
+/* ts A90911 : API */
+int burn_track_set_cdxa_conv(struct burn_track *t, int value)
+{
+	if (value < 0 || value > 1)
+		return 0;
+	t->cdxa_conversion = value;
 	return 1;
 }
 
@@ -358,6 +368,11 @@ int burn_track_get_sectors(struct burn_track *t)
 	int sectors, seclen;
 
 	seclen = burn_sector_length(t->mode);
+
+	if (t->cdxa_conversion == 1)
+		/* ts A90911 : will read blocks of 2056 bytes and write 2048 */
+		seclen += 8;
+
 	if (t->source != NULL)                /* ts A80808 : mending sigsegv */
 		size = t->offset + t->source->get_size(t->source) + t->tail;
 	else if(t->entry != NULL) {

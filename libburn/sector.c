@@ -208,8 +208,7 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 {
 	struct burn_drive *d = opts->drive;
 	struct buffer *out = d->buffer;
-	int outmode;
-	int seclen;
+	int outmode, seclen;
 	unsigned char *ret;
 
 	outmode = get_outmode(opts);
@@ -225,6 +224,7 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 	seclen += burn_subcode_length(outmode);
 
 	/* ts A61219 : opts->obs is eventually a 32k trigger for DVD */
+	/* (there is enough buffer size reserve for track->cdxa_conversion) */
 	if (out->bytes + seclen > BUFFER_SIZE ||
 	    (opts->obs > 0 && out->bytes + seclen > opts->obs)) {
 		int err;
@@ -244,7 +244,6 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 		out->bytes = 0;
 		out->sectors = 0;
 	}
-
 	ret = out->data + out->bytes;
 	out->bytes += seclen;
 	out->sectors++;
@@ -301,7 +300,15 @@ static int convert_data(struct burn_write_opts *o, struct burn_track *track,
 		return 0;
 
 	if ((outmode & BURN_MODE_BITS) == (inmode & BURN_MODE_BITS)) {
+		/* see MMC-5 4.2.3.8.5.3 Block Format for Mode 2 form 1 Data
+		            Table 24  Mode 2 Formed Sector Sub-header Format */
+		if (track->cdxa_conversion == 1)
+			inlen += 8;
+
 		get_bytes(track, inlen, data);
+
+		if (track->cdxa_conversion == 1)
+			memmove(data, data + 8, inlen - 8);
 		return 1;
 	}
 

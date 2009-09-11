@@ -40,7 +40,9 @@ struct buffer
 	   Added 4096 bytes reserve against possible buffer overflows.
 	   (Changed in sector.c buffer flush test from >= to > BUFFER_SIZE .
 	    This can at most cause a 1 sector overlap. Sometimes an offset
-	    of 16 byte is applied to the output data (in some RAW mode). ) */
+	    of 16 byte is applied to the output data (in some RAW mode). )
+	    burn_write_opts.cdxa_conversion can imply an offset of 8 bytes.
+	 */
 	unsigned char data[BUFFER_SIZE + 4096];
 	int sectors;
 	int bytes;

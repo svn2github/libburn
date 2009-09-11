@@ -1689,6 +1689,22 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
 int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
 
 
+/* ts A90910 */
+/** Activates CD XA compatibility modes.
+    libburn currently writes data only in CD mode 1. Some programs insist in
+    sending data with additional management bytes. These bytes have to be
+    stripped in order to make the input suitable for BURN_MODE1.
+    @param t     The track to manipulate
+    @param value 0= no conversion
+                 1= strip 8 byte sector headers of CD-ROM XA mode 2 form 1
+                    see MMC-5 4.2.3.8.5.3 Block Format for Mode 2 form 1 Data
+                 all other values are reserved
+    @return 1=success , 0=unacceptable value
+    @since 0.7.2
+*/
+int burn_track_set_cdxa_conv(struct burn_track *t, int value);
+
+
 /** Set the ISRC details for a track
 	@param t The track to change
 	@param country the 2 char country code. Each character must be

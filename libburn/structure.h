@@ -64,6 +64,10 @@ struct burn_track
 	/* ts A61024 */
 	/** Byte swapping on source data stream : 0=none , 1=pairwise */
 	int swap_source_bytes;
+
+	/* ts A90910 : conversions from CD XA prepared input */
+	int cdxa_conversion; /* 0=none, 1=remove -xa1 headers (first 8 bytes)*/
+
 };
 
 struct burn_session
