@@ -1280,6 +1280,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	int ret = -1, fd = -1, role = 0;
 	/* divided by 512 it needs to fit into a signed long integer */
 	off_t size = ((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
+	off_t read_size = -1;
 	struct burn_drive *d= NULL, *regd_d;
 	struct stat stbuf;
 
@@ -1292,6 +1293,16 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 			ret = fstat(fd, &stbuf);
 		else
 			ret = stat(fname, &stbuf);
+		if (ret != -1) {
+			if (S_ISREG(stbuf.st_mode))
+				read_size = stbuf.st_size;
+			else if (S_ISBLK(stbuf.st_mode)) {
+				ret = burn_os_stdio_capacity(fname,
+								&read_size);
+				if (ret <= 0)
+					read_size = -1;  
+			}
+		}
 		if (ret == -1 || S_ISBLK(stbuf.st_mode) ||
 				S_ISREG(stbuf.st_mode)) {
 			ret = burn_os_stdio_capacity(fname, &size);
@@ -1350,6 +1361,10 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		d->current_is_supported_profile = 1;
 		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
 		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
+		if (read_size >= 0)
+			/* despite its name : last valid address, not size */
+			d->media_read_capacity =
+				read_size / 2048 - !(read_size % 2048);
 		burn_drive_set_media_capacity_remaining(d, size);
 
 		/* >>> ? open file for a test ? (>>> beware of "-" = stdin) */;
