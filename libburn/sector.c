@@ -302,13 +302,15 @@ static int convert_data(struct burn_write_opts *o, struct burn_track *track,
 	if ((outmode & BURN_MODE_BITS) == (inmode & BURN_MODE_BITS)) {
 		/* see MMC-5 4.2.3.8.5.3 Block Format for Mode 2 form 1 Data
 		            Table 24  Mode 2 Formed Sector Sub-header Format */
-		if (track->cdxa_conversion == 1)
-			inlen += 8;
+		if (track != NULL)
+			if (track->cdxa_conversion == 1)
+				inlen += 8;
 
 		get_bytes(track, inlen, data);
 
-		if (track->cdxa_conversion == 1)
-			memmove(data, data + 8, inlen - 8);
+		if (track != NULL)
+			if (track->cdxa_conversion == 1)
+				memmove(data, data + 8, inlen - 8);
 		return 1;
 	}
 
