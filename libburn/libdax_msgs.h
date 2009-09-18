@@ -549,6 +549,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002016f (DEBUG,HIGH)   = Unable to grab scanned drive
  0x00020170 (NOTE,HIGH)    = Closing open session before writing new one
  0x00020171 (NOTE,HIGH)    = Closing BD-R with accidently open session
+ 0x00020172 (SORRY,HIGH)   = Read start address larger than number of readable blocks
  
 
  libdax_audioxtr:
