@@ -1801,9 +1801,11 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
     @param inp        The burn_source for which the fifo shall act as proxy.
                       It can be disposed by burn_source_free() immediately
                       after this call.
-    @param chunksize  The size in bytes of a chunk. Use 2048 for sources
-                      suitable for BURN_BLOCK_MODE1 and 2352 for sources
-                      which deliver for BURN_BLOCK_AUDIO.
+    @param chunksize  The size in bytes of a chunk.
+                      Use 2048 for sources suitable for BURN_BLOCK_MODE1,
+                      2352 for sources which deliver for BURN_BLOCK_AUDIO,
+                      2056 for sources which shall get treated by 
+                      burn_track_set_cdxa_conv(track, 1).
                       Some variations of burn_source might work only with
                       a particular chunksize. E.g. libisofs demands 2048.
     @param chunks     The number of chunks to be allocated in ring buffer.
