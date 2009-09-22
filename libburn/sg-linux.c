@@ -158,6 +158,13 @@ static char linux_ata_device_family[80] = {"/dev/hd%c"};
 static int linux_ata_enumerate_verbous = 0;
 
 
+/* The waiting time before eventually retrying a failed SCSI command.
+   Before each retry wait Libburn_sg_linux_retry_incR longer than with
+   the previous one.
+*/
+#define Libburn_sg_linux_retry_usleeP 100000
+#define Libburn_sg_linux_retry_incR   100000
+
 
 /** PORTING : ------ libburn portable headers and definitions ----- */
 
@@ -1711,8 +1718,9 @@ static int sg_log_err(struct command *c, FILE *fp,
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, no_c_page = 0;
+	int done = 0, no_c_page = 0, usleep_time, i;
 	int err;
+	time_t start_time;
 	sg_io_hdr_t s;
 
 #ifdef Libburn_log_sg_commandS
@@ -1796,7 +1804,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	}
 	s.usr_ptr = c;
 
-	do {
+	start_time = time(NULL);
+	for(i = 0; !done; i++) {
 		err = ioctl(d->fd, SG_IO, &s);
 
 		/* ts A61010 */
@@ -1830,10 +1839,22 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->error = 1;
 				break;
 			}
+
+			/* ts A90921 :
+			   Calming down retries and breaking up endless cycle
+			*/
+			usleep_time = Libburn_sg_linux_retry_usleeP +
+					i * Libburn_sg_linux_retry_incR;
+			if (time(NULL) + usleep_time / 1000000 - start_time >
+			    s.timeout / 1000 + 1) {
+				c->error = 1;
+				goto ex;
+			}
+			usleep(usleep_time);
 		} else {
 			done = 1;
 		}
-	} while (!done);
+	}
 
 	/* ts A61106 */
 ex:;
