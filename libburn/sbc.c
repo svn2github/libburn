@@ -108,7 +108,7 @@ int sbc_stop_unit(struct burn_drive *d)
 		return 0;
 
 	scsi_init_command(&c, SBC_STOP_UNIT, sizeof(SBC_STOP_UNIT));
-	c.retry = 1;
+	c.retry = 0;
 	c.opcode[1] |= 1; /* Immed */
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
