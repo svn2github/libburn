@@ -769,8 +769,18 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg, 0, 0);
-		if (nwa > d->nwa)
-			d->nwa = nwa;
+
+		/* ts A91003 */
+		if (nwa < d->nwa) {
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020173,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			   "Drive tells NWA smaller than last written address",
+				0, 0);
+			d->sync_cache(d);
+			return 0;
+		}
+		d->nwa = nwa;
 
 	}
 
@@ -867,8 +877,14 @@ ex:;
 		d->sync_cache(d);
 
 		/* ts A61030 */
-		if (burn_write_close_track(o, s, tnum) <= 0)
-			ret = 0;
+		/* ts A91003 :
+		   At least in simulation mode this causes NWA=0 for the
+		   next track. cdrecord does not use CLOSE TRACK at all but
+		   ends the tracks by SYNCHRONIZE CACHE alone.
+		*/
+		if (!o->simulate)
+			if (burn_write_close_track(o, s, tnum) <= 0)
+				ret = 0;
 	}
 	return ret;
 }
