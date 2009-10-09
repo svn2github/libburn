@@ -4861,8 +4861,8 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  char media_class[80];
  int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
  int app_code, cd_info_valid, lra;
- off_t avail;
- char disc_type[80], bar_code[9];
+ off_t avail, buf_count;
+ char disc_type[80], bar_code[9], buf[2 * 2048];
  unsigned int disc_id;
 
  drive= skin->drives[skin->driveno].drive;
@@ -4986,6 +4986,18 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
      }
 
      lra= lba + size - 1;
+     if(pno >= 0x08 && pno <= 0x0a && ((toc_entry.control & 7) >= 4) &&
+        lra >= 2 && size >= 2) {
+       /* If last two blocks not readable then assume TAO and subtract 2
+          from lra and size.
+       */;
+       ret= burn_read_data(drive, (off_t) lra * (off_t) 2048, buf, 2 * 2048,
+                           &buf_count, 2 | 4);
+       if(ret <= 0) {
+         lra-= 2;
+         size-= 2;
+       }
+     }
 
 #ifdef Cdrskin_with_last_recorded_addresS
 
@@ -5007,6 +5019,9 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
      last_leadout= lba + size;
    }
  }
+ if(last_leadout > 0)
+   if(read_capacity > last_leadout)
+     read_capacity= last_leadout;
  if(nominal_sessions > num_sessions) {
    ret= burn_disc_track_lba_nwa(drive, NULL, 0, &lba, &nwa);
    if(ret > 0) {
