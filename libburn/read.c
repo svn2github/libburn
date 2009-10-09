@@ -372,14 +372,16 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	}
 	if (d->media_read_capacity != 0x7fffffff && byte_address >=
 		((off_t) d->media_read_capacity + (off_t) 1) * (off_t) 2048) {
-		sprintf(msg,
-			"Read start address %ds larger than number of readable blocks %d",
-			(int) (byte_address / 2048 + !!(byte_address % 2048)),
-			d->media_read_capacity);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020172,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0, 0);
+		if (!(flag & 2)) {
+			sprintf(msg,
+			  "Read start address %ds larger than number of readable blocks %d",
+			  (int) (byte_address / 2048 + !!(byte_address % 2048)),
+			  d->media_read_capacity);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020172,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		}
 		return 0;
 	}
 
