@@ -4847,19 +4847,19 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
  int session_no, track_no, pmin, psec, pframe, ret, size= 0, nwa= 0;
- int last_leadout= 0;
+ int last_leadout= 0, ovwrt_full= 0;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions= NULL;
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
- enum burn_disc_status s;
+ enum burn_disc_status s, show_status;
 #ifdef Cdrskin_libburn_has_get_profilE
  char profile_name[80];
  int pno;
 #endif
  char media_class[80];
- int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity;
+ int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
  int app_code, cd_info_valid, lra;
  off_t avail;
  char disc_type[80], bar_code[9];
@@ -4890,18 +4890,26 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  printf("Mounted media class:      %s\n", media_class);
  printf("Mounted media type:       %s\n", profile_name);
  ret= burn_disc_erasable(drive);
- printf("Disk Is %serasable\n", ret ? "" : "not ");
+ printf("Disk Is %serasable\n",
+        (ret || skin->media_is_overwriteable) ? "" : "not ");
+ show_status= s;
+ ret = burn_get_read_capacity(drive, &read_capacity, 0);
+ if(ret <= 0)
+   read_capacity= 0;
+ if(skin->media_is_overwriteable && read_capacity > 0)
+   ovwrt_full= 1;
+ if(ovwrt_full)
+   show_status= BURN_DISC_FULL;
  printf("disk status:              %s\n",
-        s == BURN_DISC_BLANK ? "empty" :
-        s == BURN_DISC_APPENDABLE ? "incomplete/appendable" :
-        s == BURN_DISC_FULL ? "complete" :
-                              "unusable");
+        show_status == BURN_DISC_BLANK ?      "empty" :
+        show_status == BURN_DISC_APPENDABLE ? "incomplete/appendable" :
+        show_status == BURN_DISC_FULL ?       "complete" :
+                                              "unusable");
  printf("session status:           %s\n",
-        s == BURN_DISC_BLANK ? "empty" :
-        s == BURN_DISC_APPENDABLE ? "empty" :
-        s == BURN_DISC_FULL ? "complete" :
-                              "unknown");
-
+        show_status == BURN_DISC_BLANK ?      "empty" :
+        show_status == BURN_DISC_APPENDABLE ? "empty" :
+        show_status == BURN_DISC_FULL ?       "complete" :
+                                              "unknown");
 
  disc= burn_drive_get_disc(drive);
  if(disc==NULL || s == BURN_DISC_BLANK) {
@@ -5004,8 +5012,11 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    if(ret > 0) {
      avail= burn_disc_available_space(drive, NULL);
      size= avail / 2048;
+     if(read_capacity == 0 && skin->media_is_overwriteable)
+       size= 0; /* unformatted overwriteable media */
      printf("%5d %5d %-6s %-10d %-10d %-10d\n",
-            track_count + 1, nominal_sessions, "Blank",
+            track_count + 1, nominal_sessions,
+            ovwrt_full ? "Data" : "Blank",
             nwa, lba + size - 1, size);
    }
  }
@@ -5018,15 +5029,23 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    if(last_leadout > 0)
      printf("Last session leadout start address: %-10d\n", last_leadout);
    if(s == BURN_DISC_FULL) {
-     ret = burn_get_read_capacity(drive, &read_capacity, 0);
-     if(ret > 0 && (last_leadout != read_capacity ||
+     if(read_capacity > 0 && (last_leadout != read_capacity ||
                     pno == 0x08 || pno == 0x10 || pno == 0x40 || pno == 0x50))
        printf("Read capacity:                      %-10d\n", read_capacity);
    }
+ } else if(ovwrt_full) {
+   printf("Last session start address:         %-10d\n", nwa);
+   printf("Last session leadout start address: %-10d\n", size);
  }
- if(nominal_sessions > num_sessions) {
+ if(nominal_sessions > num_sessions && !skin->media_is_overwriteable) {
    printf("Next writable address:              %-10d\n", nwa);
    printf("Remaining writable size:            %-10d\n", size);
+ }
+
+ if(ovwrt_full) {
+   printf("\n");
+   printf("cdrskin: Media is overwriteable. No blanking needed. No reliable track size.\n");
+   printf("cdrskin: Above contrary statements follow cdrecord traditions.\n");
  }
 
  if(disc!=NULL)
@@ -6412,7 +6431,7 @@ check_with_drive:;
        skin->multi= 0;
        if(!skin->use_data_image_size)
          if(skin->verbosity>=Cdrskin_verbose_progresS)
-           fprintf(stderr, "cdrskin: NOTE : -multi cannot leave a recognizeable end mark on this media.\n");
+           fprintf(stderr, "cdrskin: NOTE : -multi cannot leave a recognizable end mark on this media.\n");
    }
  }
 
@@ -6881,7 +6900,7 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_multI
  if(skin->media_is_overwriteable && skin->multi) {
    if(skin->grow_overwriteable_iso<=0) {
-     fprintf(stderr, "cdrskin: FATAL : -multi cannot leave a recognizeable end mark on this media.\n");
+     fprintf(stderr, "cdrskin: FATAL : -multi cannot leave a recognizable end mark on this media.\n");
      fprintf(stderr, "cdrskin: HINT  : For ISO-9660 images try --grow_overwriteable_iso -multi\n");
      {ret= 0; goto ex;}
    }
