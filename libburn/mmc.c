@@ -1741,6 +1741,10 @@ regard_as_blank:;
 
 		do_read_toc = 1;
 		break;
+	case 3:
+		/* ts A91009 : DVD-RAM has disc status "others" */
+		mmc_read_capacity(d);
+		break;
 	}
 
 	/* ts A90603 : An MMC-1 drive might not know the media type yet */
