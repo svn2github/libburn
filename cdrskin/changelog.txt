@@ -6866,14 +6866,328 @@ Made number transition to development version 0.7.1
 + cdrskin/add_ts_changes_to_libburn_0_7_1
 Updated cdrskin tarball generator
 
-27 Aug 2009  []
+27 Aug 2009  [2751]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 ------------------------------------ cycle  - cdrskin-0.7.1 - 2009.08.27.143351
 
------------------------------------- cycle  - cdrskin-0.7.1 - 
------------------------------------- cycle  - cdrskin-0.7.1 - 
+2009.09.01.082602  [2773]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Disabled write mode -raw96r
+
+2009.09.01.095750  [2774] [2775]
+libburn/libburn.h
+libburn/sector.h
+libburn/sector.c
+libburn/lec.h
+libburn/lec.c
+libburn/read.c
+libburn/write.c
+Disabled code using libburn/lec.c
+
+2009.09.01.113957  [2777]
+cdrskin/cdrskin.c
+Aligned the output columns of cdrskin --devices
+
+2009.09.01.133520  [2778]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --long_toc, now printing media summary at end of TOC
+
+2009.09.02.131514  [2779]
+Makefile.am
+libburn/sector.c
+- libburn/lec.h
+- libburn/lec.c
+cdrskin/compile_cdrskin.sh
+Removed lec.c from libburn
+
+2009.09.02.133307  [2780]
+libburn/libburn.h
+libburn/util.c
++ doc/mediainfo.txt
+cdrskin/cdrskin.c
+New API call burn_guess_cd_manufacturer()
+
+2009.09.04.202255  [2781]
+libburn/libburn.h
+libburn/drive.c
+libburn/util.c
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+New API calls burn_get_media_product_id() and burn_guess_manufacturer()
+
+2009.09.04.202357  [2782]
+cdrskin/cdrskin.c
+Option -atip now reports Product Id and Manufacturer for most CD, DVD, BD types
+
+4 Sep 2009  [2783]
+doc/mediainfo.txt
+Updated media info documentation
+
+2009.09.04.204432  [2784]
+cdrskin/cdrskin.c
+Adjusted column width of media info messages
+
+2009.09.05.072512  [2785]
+cdrskin/cdrskin.c
+Adjusted column width of media summary message
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.05.072659
+* New option --long_toc, now printing media summary at end of TOC
+* New API call burn_guess_cd_manufacturer()
+* New API calls burn_get_media_product_id() and burn_guess_manufacturer()
+
+
+2009.09.05.113043  [2786]
+libburn/util.h
+libburn/util.c
+libburn/mmc.c
+Made product ID surely a single printable word
+
+2009.09.05.114326  [2787]
+libburn/sg-linux.c
+Silenced a valgrind warning caused by not recognizing side effects of a ioctl
+
+2009.09.05.115112  [2788]
+cdrskin/cdrskin.c
+Closed a small memory leak with drive inquiry
+
+2009.09.05.120947  [2789]
+cdrskin/cdrskin.c
+Made cdrskin/compile_cdrskin.sh -libburn_0_7_0 work again
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.05.121334
+
+2009.09.05.131859  [2790]
+cdrskin/cdrskin.c
+Re-enabled output of product id and manufacturer
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.05.132208
+
+2009.09.05.165127  [2791]
+libburn/libburn.h
+libburn/drive.c
+libburn/util.c
+libburn/mmc.c
+Introduced flag bit0 for API call burn_get_media_product_id()
+
+2009.09.05.165257  [2792]
+cdrskin/cdrskin.c
+"Manufacturer:", "Media type:" as cdrecord, own "Product Id:" and "Producer:"
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.05.172818
+* New -atip report lines "Product Id:" and "Producer:"
+
+
+2009.09.06.092330  [2793]
+libburn/util.c
+Made recognition of CD media codes work in burn_guess_manufacturer()
+
+2009.09.06.092654  [2794]
+libburn/libburn.h
+libburn/drive.c
+cdrskin/cdrskin.c
+Changed new API call burn_get_media_product_id() to burn_disc_get_media_id()
+
+06 Sep 2009  [2795]
+doc/mediainfo.txt
+Corrected misformatted manufacturer strings of DVD- media
+
+2009.09.06.112121  [2796]
+libburn/mmc.c
+doc/mediainfo.txt
+Avoided to read third sixpack of manufacturer bytes with DVD-R media
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.06.115138
+
+2009.09.09.125305  [2801]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/mmc.c
+New API call burn_disc_get_cd_info()
+
+2009.09.09.134030  [2802]
+libburn/transport.h
+libburn/drive.c
+libburn/mmc.c
+Correction with erasable bit of burn_disc_get_cd_info()
+
+2009.09.09.153951  [2803]
+libburn/libburn.h
+libburn/mmc.c
+New struct burn_toc_entry extension for Last Recorded Address
+
+2009.09.09.173452  [2804]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Emulation of some -minfo output
+
+2009.09.09.174337  [2805]
+cdrskin/cdrskin.c
+Silenced compiler warning
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.09.174446
+* New API call burn_disc_get_cd_info()
+* Emulation of some -minfo output
+
+
+2009.09.10.071253  [2806]
+cdrskin/cdrskin.c
+Removed Media summary from -minfo because of incompatible counting rules
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.10.084912
+
+
+2009.09.11.112528  [2807]
+libburn/libburn.h
+libburn/transport.h
+libburn/structure.h
+libburn/structure.c
+libburn/sector.c
+New API call burn_track_set_cdxa_conv()
+
+2009.09.11.120959  [2808]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Interpreting options -mode2, -xa, -xa1, -xa2 but producing CD-ROM Mode 1 tracks
+
+12 Sep 2009  [2809]
+cdrskin/cdrskin_eng.html
+Updated cdrskin web page
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.12.134510
+* New API call burn_track_set_cdxa_conv()
+* Better interpretation of options -mode2, -xa, -xa1, -xa2
+* New option --xa1-ignore
+
+
+2009.09.13.095055  [2810]
+libburn/drive.c
+Evaluating read capacity with role 2 drives (regular files and block devices)
+
+2009.09.18.161214  [2815]
+libburn/sector.c
+Fixing SIGSEGV with CD SAO introduced with revision 2807
+
+2009.09.18.161944  [2816]
+libburn/read.c
+libburn/libdax_msgs.h
+Refusing to read beyond media_read_capacity
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.09.18.164446
+
+
+2009.09.20.111911  [2820]
+libburn/libburn.h
+Mentioned need for 2056 byte fifo chunks with burn_track_set_cdxa_conv()
+
+2009.09.22.192545  [2822]
+libburn/sbc.c
+Revoked instruction to retry STOP UNIT
+
+2009.09.22.192802  [2823]
+libburn/sg-linux.c
+Restricted retry to the timeout for single SCSI commands (200 seconds) 
+
+2009.10.04.151239  [2830]
+libburn/write.c
+libburn/libdax_msgs.h
+Fixed CD TAO multi-track -dummy bug reported by Philippe Rouquier
+
+------------------------------------ cycle  - cdrskin-0.7.1 - 2009.10.08.174136
+* Bug fix: CD TAO sessions with multiple tracks did not work in -dummy mode
+
+
+2009.10.09.123651  [2847]
+libburn/mmc.c
+Determining read capacity for DVD-RAM
+
+2009.10.09.123840  [2848]
+cdrskin/cdrskin.c
+Made -minfo stupidly report overwriteable media as "erasable" and "complete"
+
+2009.10.09.200411  [2849]
+libburn/read.c
+Made read_capacity error message of burn_read_data() depending on flag bit1
+
+2009.10.09.200730  [2850]
+cdrskin/cdrskin.c
+Made -minfo subtract 2 from track size if "Data" and last 2 blocks unreadable
+
+12 Oct 2009  [2854]
+svn copy -m "Branching for libburn release 0.7.2" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwo
+
+2009.10.12.080001  [2855]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition and activated development documentation
+
+12 Oct 2009  [2856]
+- cdrskin/add_ts_changes_to_libburn_0_7_0
+- cdrskin/add_ts_changes_to_libburn_0_7_1
++ cdrskin/add_ts_changes_to_libburn_0_7_2
++ cdrskin/add_ts_changes_to_libburn_0_7_3
+Updated cdrskin tarball generator
+
+12 Oct 2009  [2867]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.7.2.pl00 - 2009.10.12.080001
+* Bug fix: CD TAO sessions with multiple tracks did not work in -dummy mode
+* Better interpretation of options -mode2, -xa, -xa1, -xa2
+* New option --xa1-ignore
+* Emulation of some -minfo output
+* New -atip report lines "Product Id:" and "Producer:"
+* New API call burn_guess_cd_manufacturer()
+* New API calls burn_get_media_product_id() and burn_guess_manufacturer()
+* New API call burn_disc_get_cd_info()
+* New API call burn_track_set_cdxa_conv()
+
+
+2009.10.12.103503  [2858]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.3
+
+12 Oct 2009  [2859]
+- cdrskin/add_ts_changes_to_libburn_0_7_0
+- cdrskin/add_ts_changes_to_libburn_0_7_1
++ cdrskin/add_ts_changes_to_libburn_0_7_2
++ cdrskin/add_ts_changes_to_libburn_0_7_3
+Updated cdrskin tarball generator
+
+12 Oct 2009  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.10.12.105750
+
+
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 
+------------------------------------ cycle  - cdrskin-0.7.3 - 
 
 ===============================================================================
                                     TODO
@@ -6881,6 +7195,9 @@ Documented changes and release timestamp
 
 
 --------------------------------- bugs -------------------------------------
+
+- handle HD DVD profiles 0x50 "HD DVD-ROM", 0x51 "HD DVD-R", 0x52 "HD DVD-RAM"
+  as readable.
 
 - Do something about drive->buffer asynchronous race conditions
   and dangerous use of local heap memory.
