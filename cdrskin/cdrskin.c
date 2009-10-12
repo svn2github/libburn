@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.7.1"
+#define Cdrskin_prog_versioN "0.7.3"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 7
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 1
+#define Cdrskin_libburn_micrO 3
 #endif
 
 
@@ -135,44 +135,42 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_7_0
-#define Cdrskin_libburn_versioN "0.7.0"
+#ifdef Cdrskin_libburn_0_7_2
+#define Cdrskin_libburn_versioN "0.7.2"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_7_0 */
+#endif /* Cdrskin_libburn_0_7_2 */
 
-#ifdef Cdrskin_libburn_0_7_1
-#define Cdrskin_libburn_versioN "0.7.1"
+#ifdef Cdrskin_libburn_0_7_3
+#define Cdrskin_libburn_versioN "0.7.3"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
-#define Cdrskin_libburn_has_product_iD 1
-#define Cdrskin_libburn_has_cdxa_conV 1
 
-#endif /* Cdrskin_libburn_0_7_1 */
+#endif /* Cdrskin_libburn_0_7_3 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_7_0
-#define Cdrskin_libburn_versioN "0.7.0"
+#define Cdrskin_libburn_0_7_2
+#define Cdrskin_libburn_versioN "0.7.2"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_7_0
+#ifdef Cdrskin_libburn_0_7_2
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 0
+#define Cdrskin_libburn_micrO 2
 #endif
-#ifdef Cdrskin_libburn_0_7_1
+#ifdef Cdrskin_libburn_0_7_3
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 1
+#define Cdrskin_libburn_micrO 3
 #endif
 
 
@@ -1615,10 +1613,8 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  burn_track_set_default_size(tr, (off_t) track->tao_to_sao_tsize);
  burn_track_set_byte_swap(tr,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
-#ifdef Cdrskin_libburn_has_cdxa_conV
  if(!(track->cdxa_conversion & (1 << 31)))
    burn_track_set_cdxa_conv(tr, track->cdxa_conversion & 0x7fffffff);
-#endif
 
  fixed_size= track->fixed_size;
  if((flag&2) && track->padding>0) {
@@ -5270,22 +5266,14 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
        burn_lba_to_msf(end_lba,&m_lo,&s_lo,&f_lo);
        printf("  ATIP start of lead out: %d (%-2.2d:%-2.2d/%-2.2d)\n",
               end_lba, m_lo, s_lo, f_lo);
-
-#ifdef Cdrskin_libburn_has_product_iD
-
        if(current_is_cd)
          manuf= burn_guess_cd_manufacturer(min, sec, fr, m_lo, s_lo, f_lo, 0);
-
-#endif /* Cdrskin_libburn_has_product_iD */
-
      }
    }
 #endif /* Cdrskin_libburn_has_get_start_end_lbA */
 
    printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
  }
-
-#ifdef Cdrskin_libburn_has_product_iD
 
  ret= burn_disc_get_media_id(drive, &product_id, &media_code1, &media_code2,
                                 &book_type, 0);
@@ -5294,9 +5282,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
    manuf= burn_guess_manufacturer(profile_number, media_code1, media_code2, 0);
  }
-
-#endif /* Cdrskin_libburn_has_product_iD */
-
  if(product_id != NULL)
    printf("Product Id:    %s\n", product_id);
  if(manuf != NULL)
@@ -5312,14 +5297,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      if(book_type != NULL)
        free(book_type);
      product_id= media_code1= media_code2= book_type= NULL;
-
-#ifdef Cdrskin_libburn_has_product_iD
      ret= burn_disc_get_media_id(drive, &product_id, &media_code1,
                                      &media_code2, &book_type, 1);
-#else
-     ret= 0;
-#endif /* Cdrskin_libburn_has_product_iD */
-
      if(ret > 0) {
        if(profile_number == 0x11 || profile_number == 0x13 ||
           profile_number == 0x14 || profile_number == 0x15)

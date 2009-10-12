@@ -61,7 +61,7 @@ via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.7.0</DT>
+<DT>libburn-0.7.2</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -111,7 +111,7 @@ as listed by option --devices.</DT>
 <DT>Get info about a particular drive or loaded media:</DT>
 <DD>$<KBD>&nbsp;cdrskin dev=0,1,0 -checkdrive</KBD></DD>
 <DD>$<KBD>&nbsp;cdrskin dev=ATA:1,0,0 -v -atip</KBD></DD>
-<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -toc</KBD></DD>
+<DD>$<KBD>&nbsp;cdrskin dev=/dev/hdc -minfo</KBD></DD>
 
 <DT>Prepare CD-RW or DVD-RW for re-use, DVD-RAM or BD-RE for first use:</DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=/dev/sg1 blank=as_needed -eject</KBD></DD>
@@ -193,8 +193,8 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.7.0.pl00.tar.gz">cdrskin-0.7.0.pl00.tar.gz</A>
-(750 KB).
+<DD><A HREF="cdrskin-0.7.2.pl00.tar.gz">cdrskin-0.7.2.pl00.tar.gz</A>
+(780 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -243,19 +243,22 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.6.8.pl00:
+Enhancements towards previous stable version cdrskin-0.7.0.pl00:
 <UL>
-<LI>Adapted to pitfalls of U3 memory sticks which appear as CD-ROM drives</LI>
-<LI>Listing all supported profiles with option -atip -v</LI>
+<LI>Better interpretation of options -mode2, -xa, -xa1, -xa2</LI>
+<LI>New option --xa1-ignore</LI>
+<LI>New -atip report lines "Product Id:" and "Producer:"</LI>
+<LI>Emulation of some -minfo output</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.6.8.pl00:
+Bug fixes towards cdrskin-0.7.0.pl00:
 <UL>
-<LI>none</LI>
+<LI>CD TAO sessions with multiple tracks did not work in -dummy mode</LI>
 <!--
+<LI>none</LI>
 -->
 </UL>
 
@@ -263,22 +266,17 @@ Bug fixes towards cdrskin-0.6.8.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.7.1 :</H3></DT>
-<DD>Enhancements towards current stable version 0.7.0.pl00:
+<DT><H3>Development snapshot, version 0.7.3 :</H3></DT>
+<DD>Enhancements towards current stable version 0.7.2.pl00:
 <UL>
-<LI>New option --long_toc, now printing media summary at end of TOC</LI>
-<LI>New -atip report lines "Product Id:" and "Producer:"</LI>
-<LI>Emulation of some -minfo output</LI>
-<LI>Better interpretation of options -mode2, -xa, -xa1, -xa2</LI>
-<LI>New option --xa1-ignore</LI>
-<!--
 <LI>none yet</LI>
+<!--
 -->
 
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-0.7.0.pl00:
+<DD>Bug fixes towards cdrskin-0.7.2.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -287,10 +285,10 @@ Bug fixes towards cdrskin-0.6.8.pl00:
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.7.1</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.1 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.1 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.1)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.7.3</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.3 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.3 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.3)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -310,7 +308,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.7.1.tar.gz">cdrskin-0.7.1.tar.gz</A>
+<A HREF="cdrskin-0.7.3.tar.gz">cdrskin-0.7.3.tar.gz</A>
 (780 KB).
 </DD>
 
