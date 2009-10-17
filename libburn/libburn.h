@@ -141,19 +141,22 @@ enum burn_write_types
 	      only raw block types are supported
 	    With DVD and BD media: not supported.
 
-	    ts A90901: THIS HAS BEEN DISABLED because its implementation
+	    ts A90901: This had been disabled because its implementation
 	               relied on code from cdrdao which is not understood
 	               currently.
 	               A burn run will abort with "FATAL" error message
 	               if this mode is attempted.
 	               @since 0.7.2
+	    ts A91016: Re-implemented according to ECMA-130 Annex A and B.
+	               Slower but understood and explained.
+	               @since 0.7.4
 	*/
 	BURN_WRITE_RAW,
 
 	/** In replies this indicates that not any writing will work.
 	    As parameter for inquiries it indicates that no particular write
             mode shall is specified.
-	    Do not use for setting a write mode for burning. It won't work.
+	    Do not use for setting a write mode for burning. It will not work.
 	*/
 	BURN_WRITE_NONE
 };

@@ -25,6 +25,8 @@ libburn_libburn_la_SOURCES = \
 	libburn/debug.h \
 	libburn/drive.c \
 	libburn/drive.h \
+	libburn/ecma130ab.c \
+	libburn/ecma130ab.h \
 	libburn/error.h \
 	libburn/file.c \
 	libburn/file.h \

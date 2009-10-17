@@ -140,6 +140,7 @@ then
     libburn/toc.o \
     \
     libburn/crc.o \
+    libburn/ecma130ab.o \
     \
     -lpthread
 
