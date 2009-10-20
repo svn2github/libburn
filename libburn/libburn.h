@@ -148,7 +148,7 @@ enum burn_write_types
 	               if this mode is attempted.
 	               @since 0.7.2
 	    ts A91016: Re-implemented according to ECMA-130 Annex A and B.
-	               Slower but understood and explained.
+	               Now understood, explained and not stemming from cdrdao.
 	               @since 0.7.4
 	*/
 	BURN_WRITE_RAW,

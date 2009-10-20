@@ -13,11 +13,11 @@
 #ifndef Libburn_ecma130ab_includeD
 #define Libburn_ecma130ab_includeD 1
 
-int burn_rspc_parity_p(unsigned char *sector);
+void burn_rspc_parity_p(unsigned char *sector);
 
-int burn_rspc_parity_q(unsigned char *sector);
+void burn_rspc_parity_q(unsigned char *sector);
 
-int burn_ecma130_scramble(unsigned char *sector);
+void burn_ecma130_scramble(unsigned char *sector);
 
 #endif /* ! Libburn_ecma130ab_includeD */
 
