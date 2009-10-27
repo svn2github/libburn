@@ -1631,7 +1631,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	d->disc_info_valid |= (!!(data[7] & 128)) << 1;
 	if (len + 2 > 31 && (data[7] & 64)) {
 		memcpy(d->disc_bar_code, data + 24, 8);
-		d->disc_bar_code[9] = 0;
+		d->disc_bar_code[8] = 0;
 		d->disc_info_valid |= 4;
 	}
 	if (len + 2 > 32 && (data[7] & 16)) {
