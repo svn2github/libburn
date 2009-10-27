@@ -72,6 +72,8 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx_)
 
 	if ((idx->fd = open(XPT_DEVICE, O_RDWR)) == -1) {
 		warn("couldn't open %s", XPT_DEVICE);
+		free(idx);
+		idx = NULL;
 		return -1;
 	}
 
