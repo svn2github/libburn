@@ -113,11 +113,13 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 	for(i = !(flag & 1); i < max_sec * 10; i++) {
 		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
 
-/* <<< 
-		fprintf(stderr,
+#ifdef Libburn_pioneer_dvr_216d_tesT
+		if ((i % 100) == 1)
+			fprintf(stderr,
 "libburn_EXPERIMENTAL: i= %d  ret= %d  key= %X  asc= %2.2X  ascq= %2.2X\n",
-		i, ret, (unsigned) key, (unsigned) asc, (unsigned) ascq);
-*/
+				i, ret, (unsigned) key,
+				(unsigned) asc, (unsigned) ascq);
+#endif /* Libburn_pioneer_dvr_216d_tesT */
 
 		if (ret > 0) /* ready */
 	break;
@@ -140,24 +142,14 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				/* media change notice = try again */
 				goto slumber;
 
-#ifdef NIX
-			sprintf(msg,
-		"Asynchromous SCSI error on %s: key=%X asc=%2.2Xh ascq=%2.2Xh",
-			 	cmd_text, (unsigned) key, (unsigned) asc,
-				(unsigned) ascq);
-#else
-
 			/* ts A90213 */
 			sprintf(msg,
-				"Asynchromous SCSI error on %s: ", cmd_text);
+				"Asynchronous SCSI error on %s: ", cmd_text);
 			sense[2] = key;
 			sense[12] = asc;
 			sense[13] = ascq;
 			resp = scsi_error_msg(d, sense, 14, msg + strlen(msg),
 						 &key, &asc, &ascq);
-
-#endif /* ! NIX */
-
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002014d,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,

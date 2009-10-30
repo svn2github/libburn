@@ -2823,7 +2823,9 @@ void mmc_sync_cache(struct burn_drive *d)
 */
 	c.retry = 1;
 
+#ifndef Libburn_pioneer_dvr_sync_not_immeD
 	c.opcode[1] |= 2; /* ts A70918 : Immed */
+#endif
 
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
@@ -2852,7 +2854,12 @@ void mmc_sync_cache(struct burn_drive *d)
 		d->cancel = 1;
 		return;
 	}
+
+#ifdef Libburn_pioneer_dvr_216d_tesT
+	if (spc_wait_unit_attention(d, 300, "SYNCHRONIZE CACHE", 0) <= 0)
+#else
 	if (spc_wait_unit_attention(d, 3600, "SYNCHRONIZE CACHE", 0) <= 0)
+#endif
 		d->cancel = 1;
 	else
 		d->needs_sync_cache = 0;

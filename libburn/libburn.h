@@ -2749,4 +2749,26 @@ BURN_END_DECLS
 
 #endif
 
+
+/* Temporary facility for exploring Problems with Pioneer DVR-216D which
+   does not end writing of DVD-R.
+   This code does not hamper normal operations but causes some extra
+   messages to stderr and lots of text lines in File
+    /tmp/libburn_sg_command_log 
+
+   Move the next line outside this remark and remove all blanks up to "define".
+   # define Libburn_pioneer_dvr_216d_tesT 1
+*/
+
+/* Temporary facility to disable asynchronous execution of the final buffer
+   flush command SYNCHRONIZE CACHE. This is suspected to cycle endlessly
+   on Pioneer DVR-216D.
+   On the other hand, synchronous execution of the command blocks a P-ATA 
+   controller for both eventually connected devices.
+
+   Move the next line outside this remark and remove all blanks up to "define".
+   # Libburn_pioneer_dvr_sync_not_immeD 1
+*/
+
+
 #endif /*LIBBURN_H*/
