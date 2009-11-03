@@ -3736,7 +3736,6 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[4] = 8;
 		/* Link size dummy */
 		pd[5] = 0;
-
 	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11 ||
 			d->current_profile == 0x15)
 		&& o->write_type == BURN_WRITE_SAO) {
@@ -3752,6 +3751,13 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[3] = 5;
 		/* Data Block Type = 8 */
 		pd[4] = 8;
+
+
+#ifdef Libburn_pioneer_dvr_216d_lsv_onE
+		pd[2] |= (1 << 5);  /* LS_V = 1 */
+		pd[5] = 16;         /* Link Size = 16 */
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_lsv_onE , LS_V=1, Link Size=16\n");
+#endif
 
 	} else if (d->current_profile == 0x14 || d->current_profile == 0x11 ||
 			d->current_profile == 0x15) {
@@ -3786,6 +3792,10 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		}
 		/* Packet Size */
 		pd[13] = 16;
+
+#ifdef Libburn_pioneer_dvr_216d_lsv_onE
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_lsv_onE , LS_V= %d, Link Size= %d\n", !!(pd[2] & 32), (int) pd[5]);
+#endif
 
 	} else if (d->current_profile == 0x1a || d->current_profile == 0x1b ||
 	           d->current_profile == 0x2b || d->current_profile == 0x12 ||
