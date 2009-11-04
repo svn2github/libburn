@@ -1096,6 +1096,15 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 			return 0;
 		}
 	}
+
+#ifdef Libburn_pioneer_dvr_216d_with_opC
+	if (!o->simulate) {
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : performing OPC\n");
+		d->perform_opc(d);
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : done\n");
+	}
+#endif
+
 	return 1;
 }
 

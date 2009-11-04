@@ -2761,10 +2761,12 @@ BURN_END_DECLS
 */
 
 /* Experiment for problems with Pioneer DVR-216D:
-   In mode page 05h set LS_V to 1 and Link Size to 16.
-   (This is done by growisofs and by wodim in DAO mode although MMC-5
-   specifies that they do not matter for DAO.)
-   # define Libburn_pioneer_dvr_216d_lsv_onE 1
+   SEND OPC INFORMATION command with DoOPC=1 after eventually reserving a
+   track on sequential DVD-R[W].
+   wodim does this, growisofs sometimes, libburn only with this macro
+
+   Move the next line outside this remark and remove all blanks up to "define".
+   # define Libburn_pioneer_dvr_216d_with_opC 1
 */
 
 
