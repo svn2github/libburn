@@ -1766,11 +1766,16 @@ regard_as_blank:;
 		return 0;
 	}
 
-	/* ts A61217 : Note for future
+	/* ts A61217 :
 	   growisofs performs OPC if (data[0]<<8)|data[1]<=32
 	   which indicates no OPC entries are attached to the
 	   reply from the drive.
+	   ts A91104 :
+	   Actually growisofs performs OPC only on DVD-R[W].
 	*/
+	d->num_opc_tables = 0;
+	if(((data[0] << 8) | data[1]) > 32) /* i.e. > 34 bytes are available */
+		d->num_opc_tables = data[33];
 
 	/* ts A61219 : mmc5r03c.pdf 6.22.3.1.13 BG Format Status
 	   0=blank (not yet started)
@@ -2274,8 +2279,15 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	/* ts A61221 : try to set DVD speed via command B6h */
 	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
 		ret = mmc_set_streaming(d, r, w, end_lba);
+
+#ifdef Libburn_pioneer_dvr_216d_set_cd_speeD
+		if (ret < 0)
+			return; /* fatal failure */
+#else
 		if (ret != 0)
 			return; /* success or really fatal failure */ 
+#endif /* ! Libburn_pioneer_dvr_216d_set_cd_speeD */
+
 	}
 
 	/* ts A61112 : MMC standards prescribe FFFFh as max speed.
@@ -3753,6 +3765,7 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[4] = 8;
 
 
+/* <<< did not help. A91104 */
 #ifdef Libburn_pioneer_dvr_216d_lsv_onE
 		pd[2] |= (1 << 5);  /* LS_V = 1 */
 		pd[5] = 16;         /* Link Size = 16 */
@@ -4270,6 +4283,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->needs_close_session = 0;
 	d->needs_sync_cache = 0;
 	d->bg_format_status = -1;
+	d->num_opc_tables = -1;
 	d->last_lead_in = -2000000000;
 	d->last_lead_out = -2000000000;
 	d->disc_type = 0xff;

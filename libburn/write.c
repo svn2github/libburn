@@ -1080,6 +1080,10 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	/* ts A70214 : eventually adjust already expanded size of track */
 	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
 
+#ifdef Libburn_pioneer_dvr_216d_double_starT
+	d->start_unit(d);
+#endif
+
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
  		/* Round track size up to 32 KiB and reserve track */
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
@@ -1098,7 +1102,8 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	}
 
 #ifdef Libburn_pioneer_dvr_216d_with_opC
-	if (!o->simulate) {
+	fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : num_opc_tables = %d\n", d->num_opc_tables);
+	if (d->num_opc_tables <= 0 && !o->simulate) {
 		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : performing OPC\n");
 		d->perform_opc(d);
 		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : done\n");

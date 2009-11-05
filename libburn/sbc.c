@@ -10,6 +10,10 @@
 #include "spc.h"
 #include "options.h"
 
+#ifdef Libburn_pioneer_dvr_216d_double_starT
+#include <stdio.h>
+#endif
+
 
 /* ts A70910
    debug: for tracing calls which might use open drive fds
@@ -95,6 +99,18 @@ int sbc_start_unit(struct burn_drive *d)
 	/* ts A70918 : now asynchronous */
 	d->is_stopped = 0;
 	ret = spc_wait_unit_attention(d, 1800, "START UNIT", 0);
+
+#ifdef Libburn_pioneer_dvr_216d_double_starT
+	fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_double_starT\n");
+	scsi_init_command(&c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
+	c.retry = 1;
+	c.opcode[1] = 0; /* Not Immed */
+	c.dir = NO_TRANSFER;
+	d->issue_command(d, &c);
+	if (c.error)
+		return 0;
+#endif
+
 	return ret;
 }
 

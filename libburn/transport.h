@@ -220,6 +220,7 @@ struct burn_drive
 	/* ts A61218 from 51h READ DISC INFORMATION */
 	int last_lead_in;
 	int last_lead_out;
+	int num_opc_tables;   /* ts A91104: -1= not yet known */
 	int bg_format_status; /* 0=needs format start, 1=needs format restart*/
 	int disc_type; /* 0="CD-DA or CD-ROM", 0x10="CD-I", 0x20="CD-ROM XA" */
 	unsigned int disc_id; /* a "32 bit binary integer" */

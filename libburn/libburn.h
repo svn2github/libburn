@@ -2769,5 +2769,20 @@ BURN_END_DECLS
    # define Libburn_pioneer_dvr_216d_with_opC 1
 */
 
+/* Experiment for problems with Pioneer DVR-216D:
+   After starting unit asynchronously issue again a synchronous START UNIT.
+   Issue an extra START UNIT pair before reserving the track.
+
+   Move the next line outside this remark and remove all blanks up to "define".
+   # define Libburn_pioneer_dvr_216d_double_starT 1
+*/
+
+/* Experiment for problems with Pioneer DVR-216D:
+   Set speed not only via SET STREAMING but also via SET CD SPEED.
+
+   Move the next line outside this remark and remove all blanks up to "define".
+   # define Libburn_pioneer_dvr_216d_set_cd_speeD 1
+*/
+
 
 #endif /*LIBBURN_H*/
