@@ -59,4 +59,11 @@ int scsi_notify_error(struct burn_drive *, struct command *c,
 /* ts A70519 */
 int scsi_init_command(struct command *c, unsigned char *opcode, int oplen);
 
+/* ts A91106 */
+int scsi_show_cmd_text(struct command *c, void *fp, int flag);
+
+/* ts A91106 */
+int scsi_show_cmd_reply(struct command *c, void *fp, int flag);
+
+
 #endif /*__SPC*/

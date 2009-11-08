@@ -1666,19 +1666,17 @@ int sg_release(struct burn_drive *d)
 /** Logs command (before execution) */
 static int sg_log_cmd(struct command *c, FILE *fp, int flag)
 {
-	int i;
 
 	if (fp != NULL) {
-		for(i = 0; i < 16 && i < c->oplen; i++)
-  			fprintf(fp,"%2.2x ", c->opcode[i]);
-		fprintf(fp, "\n");
+		scsi_show_cmd_text(c, fp, 0);
+
 #ifdef Libburn_fflush_log_sg_commandS
 		fflush(fp);
 #endif
 	}
+#ifdef Libburn_log_sg_command_stderR
 	if (fp == stderr)
 		return 1;
-#ifdef Libburn_log_sg_command_stderR
 	sg_log_cmd(c, stderr, flag);
 #endif
 	return 1;
@@ -1691,19 +1689,21 @@ static int sg_log_err(struct command *c, FILE *fp,
 		int flag)
 {
       	if(fp!=NULL) {
-		if(flag & 1)
+		if(flag & 1) {
   			fprintf(fp,
 			"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh   (%6d ms)\n",
 				s->sbp[2], s->sbp[12], s->sbp[13],s->duration);
-		else
+		} else {
+			scsi_show_cmd_reply(c, fp, 0);
 			fprintf(fp,"%6d ms\n", s->duration);
+		}
 #ifdef Libburn_fflush_log_sg_commandS
 		fflush(fp);
 #endif
 	}
+#ifdef Libburn_log_sg_command_stderR
 	if (fp == stderr)
 		return 1;
-#ifdef Libburn_log_sg_command_stderR
 	sg_log_err(c, stderr, s, flag);
 #endif
 	return 1;

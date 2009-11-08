@@ -725,11 +725,8 @@ void spc_probe_write_modes(struct burn_drive *d)
 			try_block_type = useable_block_type;
 			last_try= 1;
 		}
+
 		scsi_init_command(&c, SPC_MODE_SELECT,sizeof(SPC_MODE_SELECT));
-/*
-		memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-		c.oplen = sizeof(SPC_MODE_SELECT);
-*/
 		c.retry = 1;
 		c.opcode[8] = 8 + 2 + 0x32;
 		c.page = &buf;
@@ -748,6 +745,14 @@ void spc_probe_write_modes(struct burn_drive *d)
 		c.page->data[23] = 150;
 		c.dir = TO_DRIVE;
 
+#ifdef Libburn_pioneer_dvr_216d_no_probe_wM
+
+		key = asc = ascq = 0;
+		if (last_try)
+	break;
+		 
+#else /* Libburn_pioneer_dvr_216d_no_probe_wM */
+
 		d->silent_on_scsi_error = 1;
 		d->issue_command(d, &c);
 		d->silent_on_scsi_error = 0;
@@ -758,6 +763,8 @@ void spc_probe_write_modes(struct burn_drive *d)
 		key = c.sense[2];
 		asc = c.sense[12];
 		ascq = c.sense[13];
+
+#endif /* ! Libburn_pioneer_dvr_216d_no_probe_wM */
 
 		if (key)
 			burn_print(7, "%d not supported\n", try_block_type);
@@ -804,6 +811,7 @@ void spc_probe_write_modes(struct burn_drive *d)
 			return;
 		}
 	}
+
 }
 
 /* ( ts A61229 : shouldn't this go to mmc.c too ?) */
@@ -1134,6 +1142,11 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "Medium not present");
 		d->status = BURN_DISC_EMPTY;
 		return FAIL;
+	case 0x57:
+		if (*key != 3 || *ascq != 0)
+			break;
+		sprintf(msg, "Unable to recover Table-of-Content");
+		return FAIL;
 	case 0x63:
 		if (*key != 5)
 			break;
@@ -1221,6 +1234,8 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "FORMAT UNIT";
         case 0x1b:
 		return "START/STOP UNIT";
+	case 0x12:
+		return "INQUIRY";
 	case 0x1e:
 		return "PREVENT/ALLOW MEDIA REMOVAL";
         case 0x23:
@@ -1250,7 +1265,7 @@ static char *scsi_command_name(unsigned int c, int flag)
         case 0x55:
 		return "MODE SELECT";
 	case 0x5a:
-		return "SEND OPC INFORMATION";
+		return "MODE SENSE";
         case 0x5b:
 		return "CLOSE TRACK/SESSION";
         case 0x5c:
@@ -1328,3 +1343,66 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	return ret;
 }
 
+
+/* ts A91106 */
+/* @param flag bit0= do not show eventual data payload sent to the drive
+                     (never with WRITE commands)
+               bit1= show write length and target LBA in decimal
+*/
+int scsi_show_cmd_text(struct command *c, void *fp_in, int flag)
+{
+	int i;
+	FILE *fp = fp_in;
+
+	fprintf(fp, "\n%s\n",
+		 scsi_command_name((unsigned int) c->opcode[0], 0));
+	for(i = 0; i < 16 && i < c->oplen; i++)
+		fprintf(fp, "%2.2x ", c->opcode[i]);
+	if (i > 0)
+		fprintf(fp, "\n");
+	if (flag & 1)
+		return 1;
+	if (c->opcode[0] == 0x2A) { /* WRITE 10 */
+		if (flag & 2)
+			fprintf(fp, "%d -> %d\n",
+				(c->opcode[7] << 8) | c->opcode[8], 
+				mmc_four_char_to_int(c->opcode + 2));
+	} else if (c->opcode[0] == 0xAA) { /* WRITE 12 */
+		if (flag & 2)
+			fprintf(fp, "%d -> %d\n",
+				mmc_four_char_to_int(c->opcode + 6),
+				mmc_four_char_to_int(c->opcode + 2));	
+	} else if (c->dir == TO_DRIVE) {
+		fprintf(fp, "To drive: %db\n", c->page->bytes);
+		for (i = 0; i < c->page->bytes; i++) 
+			fprintf(fp, "%2.2x%c", c->page->data[i],
+				((i % 20) == 19 ? '\n' : ' '));
+		if (i % 20)
+			fprintf(fp, "\n");
+	}
+	return 1;
+}
+
+/* ts A91106 */
+int scsi_show_cmd_reply(struct command *c, void *fp_in, int flag)
+{
+	int i;
+	FILE *fp = fp_in;
+
+	if (c->dir != FROM_DRIVE)
+		return 2;
+	if (c->opcode[0] == 0x28 || c->opcode[0] == 0x3C ||
+	    c->opcode[0] == 0xA8 || c->opcode[0] == 0xBE) {
+							/* READ commands */
+		/* >>> report amount of data */;
+
+		return 2;
+	}
+	fprintf(fp, "From drive: %db\n", c->dxfer_len);
+	for (i = 0; i < c->dxfer_len; i++)
+		fprintf(fp, "%2.2x%c", c->page->data[i],
+			((i % 20) == 19 ? '\n' : ' '));
+	if (i % 20)
+		fprintf(fp, "\n");
+	return 1;
+}

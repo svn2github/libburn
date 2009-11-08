@@ -68,6 +68,9 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
                             const struct burn_write_opts *o,
                             unsigned char *pd);
 
+/* ts A70201 */
+int mmc_four_char_to_int(unsigned char *data);
+
 /* ts A70812 : return 0 = ok , return BE_CANCELLED = error occured */
 int mmc_read_10(struct burn_drive *d, int start, int amount,
                 struct buffer *buf);
