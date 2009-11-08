@@ -2376,7 +2376,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		return 0;
 	}
 	old_alloc_len = *alloc_len;
-	*alloc_len = len = mmc_four_char_to_int(c.page->data);
+	*alloc_len = len = mmc_four_char_to_int(c.page->data) + 4;
 	if (len > old_alloc_len)
 		len = old_alloc_len;
 	if (len < 8 || len > 4096)
