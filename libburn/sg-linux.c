@@ -1655,11 +1655,6 @@ int sg_release(struct burn_drive *d)
 #define Libburn_log_sg_command_stderR 1
 */
 
-#ifdef Libburn_pioneer_dvr_216d_tesT
-#define Libburn_log_sg_commandS 1
-#define Libburn_fflush_log_sg_commandS 1
-#endif
-
 
 #ifdef Libburn_log_sg_commandS
 

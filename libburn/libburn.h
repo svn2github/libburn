@@ -2750,38 +2750,33 @@ BURN_END_DECLS
 #endif
 
 
-/* Temporary facility for exploring problems with Pioneer DVR-216D which
-   does not end writing of DVD-R.
-   This code does not hamper normal operations but causes some extra
-   messages to stderr and lots of text lines in File
-    /tmp/libburn_sg_command_log 
+/* This solves a problem with Pioneer DVR-216D.
+   Writing of sequential DVD-R[W] happens unnaturally fast and leaves no
+   impact on the media. The drive stalls at the end of the burn run. Only a
+   power cycle makes it usable again.
 
-   Move the next line outside this remark and remove all blanks up to "define".
-   # define Libburn_pioneer_dvr_216d_tesT 1
+   Apparent reason:
+   One may not read the buffer capacity more than once before it is full
+   and physical burning begun. Strangely this happens only with libburn and
+   cdrecord-2.01.01a64 -v which both write DVD-R in 32 KB chunks. With
+   wodim's 62 KB chunks there is no endless drive business.
 */
+#define Libburn_pioneer_dvr_216d_read_buf_caP 1
 
-/* Experiment for problems with Pioneer DVR-216D:
-   SEND OPC INFORMATION command with DoOPC=1 after eventually reserving a
-   track on sequential DVD-R[W].
-   wodim does this, growisofs sometimes, libburn only with this macro
 
-   Move the next line outside this remark and remove all blanks up to "define".
+/* The following experiments did not solve the problem with Pioneer DVR-216D
+   but may nevertheless be interesting in future:
+
    # define Libburn_pioneer_dvr_216d_with_opC 1
+   # define Libburn_pioneer_dvr_216d_load_mode5 1
+   # define Libburn_pioneer_dvr_216d_get_evenT 1
 */
 
-/* Experiment for problems with Pioneer DVR-216D:
-   After starting unit asynchronously issue again a synchronous START UNIT.
-   Issue an extra START UNIT pair before reserving the track.
+/* Probing of CD write modes hampers ejecting of the drive tray.
+   Needed is a more intelligent management of probing.
+   Note to myself: check whether feature interpretation can replace probing
 
-   Move the next line outside this remark and remove all blanks up to "define".
-   # define Libburn_pioneer_dvr_216d_double_starT 1
-*/
-
-/* Experiment for problems with Pioneer DVR-216D:
-   Set speed not only via SET STREAMING but also via SET CD SPEED.
-
-   Move the next line outside this remark and remove all blanks up to "define".
-   # define Libburn_pioneer_dvr_216d_set_cd_speeD 1
+   # define Libburn_pioneer_dvr_216d_no_probe_wM 1
 */
 
 

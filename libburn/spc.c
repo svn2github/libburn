@@ -98,7 +98,9 @@ int spc_test_unit_ready(struct burn_drive *d)
 
 
 /* ts A70315 */
-/** @param flag bit0=do not wait 0.1 seconds before first test unit ready */
+/** @param flag bit0=do not wait 0.1 seconds before first test unit ready
+                bit1=do not issue success message
+ */
 /** Wait until the drive state becomes clear or until max_usec elapsed */
 int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
@@ -112,15 +114,6 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 		usleep(100000);
 	for(i = !(flag & 1); i < max_sec * 10; i++) {
 		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
-
-#ifdef Libburn_pioneer_dvr_216d_tesT
-		if ((i % 100) == 1)
-			fprintf(stderr,
-"libburn_EXPERIMENTAL: i= %d  ret= %d  key= %X  asc= %2.2X  ascq= %2.2X\n",
-				i, ret, (unsigned) key,
-				(unsigned) asc, (unsigned) ascq);
-#endif /* Libburn_pioneer_dvr_216d_tesT */
-
 		if (ret > 0) /* ready */
 	break;
 		if (key!=0x2 || asc!=0x4) {
@@ -160,11 +153,14 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 slumber:;
 		usleep(100000);
 	}
-
-	sprintf(msg, "Async %s %s after %d.%d seconds",
-		cmd_text, (ret > 0 ? "succeeded" : "failed"), i / 10, i % 10);
-	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020150,
-		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
+	if (ret <= 0 || !(flag & 2)) {
+		sprintf(msg, "Async %s %s after %d.%d seconds",
+			cmd_text, (ret > 0 ? "succeeded" : "failed"),
+			i / 10, i % 10);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			 0x00020150, LIBDAX_MSGS_SEV_DEBUG,
+			 LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
+	}
 
 	if (i < max_sec * 10)
 		return (ret > 0);
@@ -254,14 +250,14 @@ void spc_prevent(struct burn_drive *d)
 		return;
 
 	scsi_init_command(&c, SPC_PREVENT, sizeof(SPC_PREVENT));
-/*
-	memcpy(c.opcode, SPC_PREVENT, sizeof(SPC_PREVENT));
-	c.oplen = sizeof(SPC_PREVENT);
-	c.page = NULL;
-*/
 	c.retry = 1;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
+
+#ifdef Libburn_pioneer_dvr_216d_get_evenT
+        mmc_get_event(d);
+#endif
+
 }
 
 void spc_allow(struct burn_drive *d)
@@ -642,6 +638,7 @@ void spc_select_write_params(struct burn_drive *d,
 {
 	struct buffer buf;
 	struct command c;
+	int alloc_len;
 
 	if (mmc_function_spy(d, "select_write_params") <= 0)
 		return;
@@ -656,13 +653,33 @@ void spc_select_write_params(struct burn_drive *d,
 		o->block_type,spc_block_type(o->block_type));
 	*/
 
-	scsi_init_command(&c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-/*
-	memcpy(c.opcode, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
-	c.oplen = sizeof(SPC_MODE_SELECT);
-*/
+	alloc_len = 8 + 2 + d->mdata->write_page_length;
+	memset(&(buf.data), 0, alloc_len);
+
+#ifdef Libburn_pioneer_dvr_216d_load_mode5
+
+	scsi_init_command(&c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
+	c.dxfer_len = alloc_len;
+	c.opcode[7] = (alloc_len >> 8) & 0xff;
+	c.opcode[8] = alloc_len & 0xff;
 	c.retry = 1;
-	c.opcode[8] = 8 + 2 + d->mdata->write_page_length;
+	c.opcode[2] = 0x05;
+	c.page = &buf;
+	c.page->bytes = 0;
+	c.page->sectors = 0;
+	c.dir = FROM_DRIVE;
+	d->issue_command(d, &c);
+
+	if (c.error) 
+		memset(&(buf.data), 0,
+				8 + 2 + d->mdata->write_page_length);
+
+#endif /* Libburn_pioneer_dvr_216d_load_mode5 */
+
+	scsi_init_command(&c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
+	c.retry = 1;
+	c.opcode[7] = (alloc_len >> 8) & 0xff;
+	c.opcode[8] = alloc_len & 0xff;
 	c.page = &buf;
 	c.page->bytes = 0;
 	c.page->sectors = 0;
@@ -670,8 +687,7 @@ void spc_select_write_params(struct burn_drive *d,
 	/* ts A61007 : moved up to burn_disc_write() */
 	/* a ssert(d->mdata->valid); */
 
-	memset(c.page->data, 0, 8 + 2 + d->mdata->write_page_length);
-	c.page->bytes = 8 + 2 + d->mdata->write_page_length;
+	c.page->bytes = alloc_len;
 
 	burn_print(12, "using write page length %d (valid %d)\n",
 		   d->mdata->write_page_length, d->mdata->write_page_valid);

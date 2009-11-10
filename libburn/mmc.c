@@ -28,6 +28,8 @@
 /* ts A70223 : in init.c */
 extern int burn_support_untested_profiles;
 
+static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len);
+
 
 #ifdef Libburn_log_in_and_out_streaM
 /* <<< ts A61031 */
@@ -177,7 +179,7 @@ static unsigned char MMC_GET_CONFIGURATION[] =
 	{ 0x46, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 
 static unsigned char MMC_SYNC_CACHE[] = { 0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static unsigned char MMC_GET_EVENT[] = { 0x4A, 1, 0, 0, 16, 0, 0, 0, 8, 0 };
+static unsigned char MMC_GET_EVENT[] = { 0x4A, 1, 0, 0, 0x7e, 0, 0, 0, 8, 0 };
 static unsigned char MMC_CLOSE[] = { 0x5B, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char MMC_TRACK_INFO[] = { 0x52, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 
@@ -410,6 +412,11 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	*lba = mmc_four_char_to_int(data + 8);
 	*nwa = mmc_four_char_to_int(data + 12);
 	num = mmc_four_char_to_int(data + 16);
+
+#ifdef Libburn_pioneer_dvr_216d_load_mode5
+	/* >>> memorize track mode : data[6] & 0xf */;
+#endif
+
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
 	    d->current_profile == 0x12 || d->current_profile == 0x43) {
 		 /* overwriteable */
@@ -520,17 +527,19 @@ void mmc_get_event(struct burn_drive *d)
 {
 	struct buffer buf;
 	struct command c;
-	int alloc_len= 8;
+	int alloc_len = 8, len, evt_code, loops = 0;
+	unsigned char *evt;
 
 	if (mmc_function_spy(d, "mmc_get_event") <= 0)
 		return;
 
+again:;
 	scsi_init_command(&c, MMC_GET_EVENT, sizeof(MMC_GET_EVENT));
-/*
-	c.oplen = sizeof(MMC_GET_EVENT);
-	memcpy(c.opcode, MMC_GET_EVENT, sizeof(MMC_GET_EVENT));
-*/
-	c.dxfer_len = alloc_len;
+	c.dxfer_len = 8;
+
+	/* >>> have a burn_drive element for Notification Class */;
+	c.opcode[4] = 0x7e;
+
 	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
 	c.opcode[8] = c.dxfer_len & 0xff;
 	c.retry = 1;
@@ -539,11 +548,66 @@ void mmc_get_event(struct burn_drive *d)
 	c.page->sectors = 0;
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
-	burn_print(12, "0x%x:0x%x:0x%x:0x%x\n",
-		   c.page->data[0], c.page->data[1], c.page->data[2],
-		   c.page->data[3]);
-	burn_print(12, "event: %d:%d:%d:%d\n", c.page->data[4],
-		   c.page->data[5], c.page->data[6], c.page->data[7]);
+	if (c.error)
+		return;
+
+	evt = c.page->data;
+	len = ((evt[0] << 8) | evt[1]) + 2;
+	if (len < 8)
+		return;
+
+	/* >>> memorize evt[3] in burn_drive element for Notification Class */;
+	if (evt[3] == 0) /* No event */
+		return;
+
+	evt_code = evt[4] & 0xf;
+	if (evt_code == 0) /* No change */
+		return;
+
+	switch (evt[2] & 7) {
+	case 0: /* no events supported */
+		return;
+	case 1: /* Operational change */
+		if (((evt[6] << 8) | evt[7])) {
+			alloc_len = 8;
+			mmc_get_configuration_al(d, &alloc_len);
+		}
+		break;
+	case 2: /* Power Management */
+		if (evt[5] >= 2)
+			d->start_unit(d);
+		break;
+	case 3: /* External request */
+
+		/* >>> report about external request */;
+
+		break;
+	case 4: /* Media */
+		if (evt_code == 2) {
+			d->start_unit(d);
+			alloc_len = 8;
+			mmc_get_configuration_al(d, &alloc_len);
+		}
+		break;
+	case 5: /* Multiple Host Events */
+		
+		/* >>> report about foreign host interference */;
+
+		break;
+
+	case 6: /* Device busy */
+		if (evt_code == 1 && evt[5]) {
+
+			/* >>> wait the time announced in evt[6],[7]
+				 as 100ms units */;
+		}
+		break;
+	default: /* reserved */
+		break;
+	}
+	loops++;
+	if (loops < 100)
+		goto again;
 }
 
 
@@ -2167,10 +2231,6 @@ int mmc_set_streaming(struct burn_drive *d,
 		return 0;
 
 	scsi_init_command(&c, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
-/*
-	c.oplen = sizeof(MMC_SET_STREAMING);
-	memcpy(c.opcode, MMC_SET_STREAMING, sizeof(MMC_SET_STREAMING));
-*/
 	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 28;
@@ -2280,15 +2340,8 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	/* ts A61221 : try to set DVD speed via command B6h */
 	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
 		ret = mmc_set_streaming(d, r, w, end_lba);
-
-#ifdef Libburn_pioneer_dvr_216d_set_cd_speeD
-		if (ret < 0)
-			return; /* fatal failure */
-#else
 		if (ret != 0)
 			return; /* success or really fatal failure */ 
-#endif /* ! Libburn_pioneer_dvr_216d_set_cd_speeD */
-
 	}
 
 	/* ts A61112 : MMC standards prescribe FFFFh as max speed.
@@ -2835,11 +2888,7 @@ void mmc_sync_cache(struct burn_drive *d)
 	c.oplen = sizeof(MMC_SYNC_CACHE);
 */
 	c.retry = 1;
-
-#ifndef Libburn_pioneer_dvr_sync_not_immeD
 	c.opcode[1] |= 2; /* ts A70918 : Immed */
-#endif
-
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 
@@ -2868,11 +2917,7 @@ void mmc_sync_cache(struct burn_drive *d)
 		return;
 	}
 
-#ifdef Libburn_pioneer_dvr_216d_tesT
-	if (spc_wait_unit_attention(d, 300, "SYNCHRONIZE CACHE", 0) <= 0)
-#else
 	if (spc_wait_unit_attention(d, 3600, "SYNCHRONIZE CACHE", 0) <= 0)
-#endif
 		d->cancel = 1;
 	else
 		d->needs_sync_cache = 0;
@@ -2894,11 +2939,6 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 
 	scsi_init_command(&c, MMC_READ_BUFFER_CAPACITY,
 			 sizeof(MMC_READ_BUFFER_CAPACITY));
-/*
-	memcpy(c.opcode, MMC_READ_BUFFER_CAPACITY,
-		 sizeof(MMC_READ_BUFFER_CAPACITY));
-	c.oplen = sizeof(MMC_READ_BUFFER_CAPACITY);
-*/
 	c.dxfer_len = alloc_len;
 	c.opcode[7] = (c.dxfer_len >> 8) & 0xff;
 	c.opcode[8] = c.dxfer_len & 0xff;
@@ -3751,7 +3791,7 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[5] = 0;
 	} else if ((d->current_profile == 0x14 || d->current_profile == 0x11 ||
 			d->current_profile == 0x15)
-		&& o->write_type == BURN_WRITE_SAO) {
+			&& o->write_type == BURN_WRITE_SAO) {
 		/* ts A70205 : DVD-R[W][/DL] : Disc-at-once, DAO */
 		/* Learned from dvd+rw-tools and mmc5r03c.pdf .
 		   See doc/cookbook.txt for more detailed references. */
@@ -3760,18 +3800,19 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		pd[2] = ((!!o->underrun_proof) << 6)
 			| ((!!o->simulate) << 4)
 			| 2;
-		/* No multi-session , FP = 0 , Track Mode = 5 */
+
+		/* No multi-session , FP = 0 , Copy = 0, Track Mode = 5 */
 		pd[3] = 5;
+
+#ifdef Libburn_pioneer_dvr_216d_load_mode5
+
+		/* >>> use track mode from mmc_get_nwa() */
+		/* >>> pd[3] = (pd[3] & ~0xf) | (d->track_inf[5] & 0xf); */
+
+#endif
+
 		/* Data Block Type = 8 */
 		pd[4] = 8;
-
-
-/* <<< did not help. A91104 */
-#ifdef Libburn_pioneer_dvr_216d_lsv_onE
-		pd[2] |= (1 << 5);  /* LS_V = 1 */
-		pd[5] = 16;         /* Link Size = 16 */
-		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_lsv_onE , LS_V=1, Link Size=16\n");
-#endif
 
 	} else if (d->current_profile == 0x14 || d->current_profile == 0x11 ||
 			d->current_profile == 0x15) {
@@ -3806,10 +3847,6 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 		}
 		/* Packet Size */
 		pd[13] = 16;
-
-#ifdef Libburn_pioneer_dvr_216d_lsv_onE
-		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_lsv_onE , LS_V= %d, Link Size= %d\n", !!(pd[2] & 32), (int) pd[5]);
-#endif
 
 	} else if (d->current_profile == 0x1a || d->current_profile == 0x1b ||
 	           d->current_profile == 0x2b || d->current_profile == 0x12 ||

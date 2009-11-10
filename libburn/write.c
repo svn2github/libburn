@@ -43,6 +43,8 @@
 #include "options.h"
 #include "structure.h"
 #include "source.h"
+#include "mmc.h"
+#include "spc.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -1080,8 +1082,17 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	/* ts A70214 : eventually adjust already expanded size of track */
 	burn_track_apply_fillup(s->track[tnum], d->media_capacity_remaining,1);
 
-#ifdef Libburn_pioneer_dvr_216d_double_starT
-	d->start_unit(d);
+#ifdef Libburn_pioneer_dvr_216d_with_opC
+	fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : num_opc_tables = %d\n", d->num_opc_tables);
+	if (d->num_opc_tables <= 0 && !o->simulate) {
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : performing OPC\n");
+		d->perform_opc(d);
+		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : done\n");
+	}
+#endif
+
+#ifdef Libburn_pioneer_dvr_216d_get_evenT
+	mmc_get_event(d);
 #endif
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
@@ -1100,16 +1111,6 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 			return 0;
 		}
 	}
-
-#ifdef Libburn_pioneer_dvr_216d_with_opC
-	fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : num_opc_tables = %d\n", d->num_opc_tables);
-	if (d->num_opc_tables <= 0 && !o->simulate) {
-		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : performing OPC\n");
-		d->perform_opc(d);
-		fprintf(stderr, "libburn_DEBUG: Libburn_pioneer_dvr_216d_with_opC : done\n");
-	}
-#endif
-
 	return 1;
 }
 
@@ -1254,6 +1255,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	struct buffer *out = d->buffer;
 	int sectors;
 	int i, open_ended = 0, ret= 0, is_flushed = 0;
+	int first_buf_cap = 0, further_cap = 0;
 
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
@@ -1264,6 +1266,15 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
+
+#ifdef Libburn_pioneer_dvr_216d_read_buf_caP
+		/* Pioneer DVR-216D rev 1.09 hates multiple buffer inquiries
+		   before the drive buffer is full.
+		*/
+		first_buf_cap = 0;
+		further_cap = -1;
+#endif
+
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
 		ret = burn_disc_open_track_dvd_plus_r(o, s, tnum);
@@ -1299,8 +1310,16 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	for (i = 0; open_ended || i < sectors; i++) {
 
 		/* From time to time inquire drive buffer */
-		if ((i%256)==0)
+		/* ts A91110: Eventually avoid to do this more than once
+		              before the drive buffer is full. See above DVD-
+		*/
+		if (i == first_buf_cap ||
+		   ((i % 256) == 0 && (i >= further_cap || further_cap < 0))) {
 			d->read_buffer_capacity(d);
+			if (further_cap < 0)
+				further_cap =
+			 	    d->progress.buffer_capacity / 2048 + 128;
+		}
 
 		/* transact a (CD sized) sector */
 		if (!sector_data(o, t, 0))
