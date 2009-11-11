@@ -5831,7 +5831,8 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  bit0= growisofs style
 */
 {
- double bytes_to_write,written_bytes= 0.0,written_total_bytes= 0.0,buffer_size;
+ double bytes_to_write= 0.0;
+ double written_bytes= 0.0,written_total_bytes= 0.0,buffer_size;
  double fixed_size,padding,sector_size,speed_factor;
  double measured_total_speed,measured_speed;
  double elapsed_time,elapsed_total_time,current_time;
