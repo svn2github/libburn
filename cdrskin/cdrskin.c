@@ -5838,7 +5838,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  double estim_time,estim_minutes,estim_seconds,percent;
  int ret,fifo_percent,fill,space,advance_interval=0,new_mb,old_mb,time_to_tell;
  int fs,bs,old_track_idx,buffer_fill,formatting= 0,use_data_image_size;
- char fifo_text[80],mb_text[40];
+ char fifo_text[80],mb_text[40], pending[40];
  char *debug_mark= ""; /* use this to prepend a marker text for experiments */
 
  /* for debugging */
@@ -5944,9 +5944,12 @@ thank_you_for_patience:;
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
        if(skin->is_writing)
          fprintf(stderr,"\n");
+       pending[0]= 0;
+       if(bytes_to_write > 0 && skin->verbosity >= Cdrskin_verbose_debuG)
+         sprintf(pending, " pnd %.f", bytes_to_write - written_total_bytes);
        fprintf(stderr,
- "\rcdrskin: thank you for being patient for %.f seconds                     ",
-           elapsed_total_time);
+           "\rcdrskin: thank you for being patient for %.f seconds%21.21s",
+           elapsed_total_time, pending);
      }
      advance_interval= 1;
    }
