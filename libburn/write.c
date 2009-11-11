@@ -2040,6 +2040,8 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 	return 1;
 }
 
+/* Flush write buffer after each 16 MB */
+#define Libburn_stdio_flush_limiT 8192
 
 /* ts A70904 */
 int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
@@ -2078,8 +2080,9 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	break;
 		}
 		d->progress.sector++;
-		/* Flush to disk after each full MB */
-		if (d->progress.sector - prev_sync_sector >= 512) {
+		/* Flush to disk from time to time */
+		if (d->progress.sector - prev_sync_sector >=
+		    Libburn_stdio_flush_limiT) {
 			prev_sync_sector = d->progress.sector;
 			if (!o->simulate)
 				burn_stdio_sync_cache(d->stdio_fd, d, 1);
