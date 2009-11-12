@@ -2136,6 +2136,8 @@ int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv,
  int i, wp= 1;
  char *ept, *upt;
 
+ if(preskin->fallback_program[0] == 0)
+   return(1);
  if(getuid()!=geteuid() && !preskin->allow_setuid) {
    fprintf(stderr,
      "cdrskin: SORRY : uid and euid differ. Will not start external fallback program.\n");
@@ -2914,12 +2916,16 @@ see_cdrskin_eng_html:;
    } else if(strcmp(argv[i],"-tao")==0) {
      strcpy(o->write_mode_name,"TAO");
 
+   } else if(strcmp(argv[i],"-V")==0 || strcmp(argv[i],"-Verbose")==0) {
+     burn_set_scsi_logging(2 | 4); /* log SCSI to stderr */
+
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      (o->verbosity)++;
      ClN(printf("cdrskin: verbosity level : %d\n",o->verbosity));
 set_severities:;
      if(o->verbosity>=Cdrskin_verbose_debuG)
        Cdrpreskin_set_severities(o,"NEVER","DEBUG",0);
+
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
      (o->verbosity)+= strlen(argv[i])-1;
@@ -7454,7 +7460,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    ""
  };
  static char ignored_full_options[][41]= {
-   "-d", "-Verbose", "-V", "-silent", "-s", "-setdropts", "-prcap", 
+   "-d", "-silent", "-s", "-setdropts", "-prcap", 
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-fix", "-nofix",
    "-raw", "-raw96p", "-raw16", "-raw96r",
@@ -8265,6 +8271,8 @@ track_too_large:;
      if(skin->smallest_tsize<0 || skin->smallest_tsize>skin->fixed_size)
        skin->smallest_tsize= skin->fixed_size;
 
+   } else if(strcmp(argv[i],"-V")==0 || strcmp(argv[i],"-Verbose")==0) {
+     /* is handled in Cdrpreskin_setup() */;
    } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
