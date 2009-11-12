@@ -796,6 +796,11 @@ Level 2 additionally reports about option settings derived from arguments or
 startup files. Level 3 is for debugging and useful mainly in conjunction with
 somebody who had a look into the program sourcecode.
 .TP
+.BI \-V
+Enable logging of SCSI commands to stderr. This allows expert examination
+of the interaction between libburn and the drive. The commands are specified
+in SCSI-3 standards SPC, SBC, MMC.
+.TP
 .BI \-waiti
 Wait until input data is available at stdin or EOF occurs at stdin.
 Only then begin to access any drives.

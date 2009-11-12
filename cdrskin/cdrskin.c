@@ -2789,7 +2789,9 @@ see_cdrskin_eng_html:;
              "\tdev=target\tpseudo-SCSI target to use as CD-Recorder\n");
      fprintf(stderr,
          "\tgracetime=#\tset the grace time before starting to write to #.\n");
-     fprintf(stderr,"\t-v\t\tincrement verbose level by one\n");
+     fprintf(stderr,"\t-v\t\tincrement general verbose level by one\n");
+     fprintf(stderr,
+            "\t-V\t\tincrement SCSI command transport verbose level by one\n");
      fprintf(stderr,
              "\tdriveropts=opt\topt= one of {burnfree,noburnfree,help}\n");
      fprintf(stderr,
