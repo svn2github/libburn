@@ -75,6 +75,13 @@ burn_abort_handler_t burn_global_signal_handler = NULL;
 /* ts A70223 : wether implemented untested profiles are supported */
 int burn_support_untested_profiles = 0;
 
+/* ts A91111 :
+   whether to log SCSI commands (to be implemented in sg-*.c)
+   bit0= log in /tmp/libburn_sg_command_log
+   bit1= log to stderr
+   bit2= flush every line
+*/
+int burn_sg_log_scsi = 0;
 
 /* ts A60925 : ticket 74 */
 /** Create the messenger object for libburn. */
@@ -414,3 +421,9 @@ int burn_set_messenger(void *messenger)
 	return 1;
 }
 
+
+/* ts A91111 API */
+void burn_set_scsi_logging(int flag)
+{
+	burn_sg_log_scsi = flag & 7;
+}

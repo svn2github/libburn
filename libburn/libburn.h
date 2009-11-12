@@ -762,6 +762,19 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed);
 */
 void burn_set_verbosity(int level);
 
+/* ts A91111 */
+/** Enable resp. disable logging of SCSI commands (currently Linux only).
+    This call can be made at any time - even before burn_initialize().
+    It is in effect for all active drives and currently not very thread
+    safe for multiple drives.
+    @param flag  Bitfield for control purposes. The default is 0.
+                 bit0= log to file /tmp/libburn_sg_command_log
+                 bit1= log to stderr
+                 bit2= flush output after each line
+    @since 0.7.4
+*/
+void burn_set_scsi_logging(int flag);
+
 /* ts A60813 */
 /** Set parameters for behavior on opening device files. To be called early
     after burn_initialize() and before any bus scan. But not mandatory at all.
@@ -2772,12 +2785,21 @@ BURN_END_DECLS
    # define Libburn_pioneer_dvr_216d_get_evenT 1
 */
 
-/* Probing of CD write modes hampers ejecting of the drive tray.
-   Needed is a more intelligent management of probing.
-   Note to myself: check whether feature interpretation can replace probing
+/* ts A91112 */
+/* Do not probe CD modes but declare only data and audio modes supported.
+   For other modes resp. real probing one has to call
+   burn_drive_probe_cd_write_modes().
 
-   # define Libburn_pioneer_dvr_216d_no_probe_wM 1
+   # define Libburn_pioneer_dvr_216d_dummy_probe_wM 1
 */
+#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM
+
+/* Probe available CD write modes and block types.
+   @param drive_info  drive object to be inquired
+*/
+int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info)
+
+#endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
 
 
 #endif /*LIBBURN_H*/

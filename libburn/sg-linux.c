@@ -1,5 +1,11 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+
+/* <<< ts A91112 : experiments to get better speed with USB
+#define Libburn_sgio_as_growisofS 1
+*/
+
+
 /*
 
 This is the main operating system dependent SCSI part of libburn. It implements
@@ -196,17 +202,25 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 
 /* ts A60813 : storage objects are in libburn/init.c
-   wether to use O_EXCL with open(2) of devices
-   wether to use fcntl(,F_SETLK,) after open(2) of devices
+   whether to use O_EXCL with open(2) of devices
+   whether to use fcntl(,F_SETLK,) after open(2) of devices
    what device family to use : 0=default, 1=sr, 2=scd, (3=st), 4=sg
-   wether to use O_NOBLOCK with open(2) on devices
-   wether to take O_EXCL rejection as fatal error */
+   whether to use O_NOBLOCK with open(2) on devices
+   whether to take O_EXCL rejection as fatal error
+*/
 extern int burn_sg_open_o_excl;
 extern int burn_sg_fcntl_f_setlk;
 extern int burn_sg_use_family;
 extern int burn_sg_open_o_nonblock;
 extern int burn_sg_open_abort_busy;
 
+/* ts A91111 :
+   whether to log SCSI commands:
+   bit0= log in /tmp/libburn_sg_command_log
+   bit1= log to stderr
+   bit2= flush every line
+*/
+extern int burn_sg_log_scsi;
 
 /* ts A60821
    debug: for tracing calls which might use open drive fds
@@ -1642,6 +1656,7 @@ int sg_release(struct burn_drive *d)
 }
 
 
+/* <<< ts A91111: on its way out */
 /** ts A70518: 
     Debugging log facility. Controlled by existence of macros:
      Libburn_log_sg_commandS          enables logging to file
@@ -1650,10 +1665,11 @@ int sg_release(struct burn_drive *d)
      Libburn_log_sg_command_stderR    enables additional log to stderr
 */
 /*
+ ts A91111: now enabled by default and controlled burn_sg_log_scsi
+*/
 #define Libburn_log_sg_commandS 1
 #define Libburn_fflush_log_sg_commandS 1
 #define Libburn_log_sg_command_stderR 1
-*/
 
 
 #ifdef Libburn_log_sg_commandS
@@ -1661,16 +1677,16 @@ int sg_release(struct burn_drive *d)
 /** Logs command (before execution) */
 static int sg_log_cmd(struct command *c, FILE *fp, int flag)
 {
-
-	if (fp != NULL) {
+	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
 		scsi_show_cmd_text(c, fp, 0);
 
 #ifdef Libburn_fflush_log_sg_commandS
-		fflush(fp);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
 #endif
 	}
 #ifdef Libburn_log_sg_command_stderR
-	if (fp == stderr)
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
 	sg_log_cmd(c, stderr, flag);
 #endif
@@ -1683,7 +1699,7 @@ static int sg_log_err(struct command *c, FILE *fp,
 		sg_io_hdr_t *s,
 		int flag)
 {
-      	if(fp!=NULL) {
+      	if(fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
 		if(flag & 1) {
   			fprintf(fp,
 			"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh   (%6d ms)\n",
@@ -1693,11 +1709,12 @@ static int sg_log_err(struct command *c, FILE *fp,
 			fprintf(fp,"%6d ms\n", s->duration);
 		}
 #ifdef Libburn_fflush_log_sg_commandS
-		fflush(fp);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
 #endif
 	}
 #ifdef Libburn_log_sg_command_stderR
-	if (fp == stderr)
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
 	sg_log_err(c, stderr, s, flag);
 #endif
@@ -1738,11 +1755,15 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 #ifdef Libburn_log_sg_commandS
 	/* ts A61030 */
-	if(fp==NULL) {
-		fp= fopen("/tmp/libburn_sg_command_log","a");
-		fprintf(fp,"\n-----------------------------------------\n");
+	if (burn_sg_log_scsi & 1) {
+		if (fp == NULL) {
+			fp= fopen("/tmp/libburn_sg_command_log", "a");
+			fprintf(fp,
+			    "\n-----------------------------------------\n");
+		}
 	}
-	sg_log_cmd(c,fp,0);
+	if (burn_sg_log_scsi & 3)
+		sg_log_cmd(c,fp,0);
 #endif /* Libburn_log_sg_commandS */
 	  
 
@@ -1756,6 +1777,13 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	memset(&s, 0, sizeof(sg_io_hdr_t));
 
 	s.interface_id = 'S';
+
+#ifdef Libburn_sgio_as_growisofS
+	/* ??? ts A91112 : does this speed up USB ? (from growisofs)
+	--- did not help
+	 */
+	s.flags = SG_FLAG_DIRECT_IO;
+#endif /* Libburn_sgio_as_growisofS */
 
 	if (c->dir == TO_DRIVE)
 		s.dxfer_direction = SG_DXFER_TO_DEV;
@@ -1879,7 +1907,8 @@ ex:;
 	}
 
 #ifdef Libburn_log_sg_commandS
-	sg_log_err(c, fp, &s, c->error != 0);
+	if (burn_sg_log_scsi & 3)
+		sg_log_err(c, fp, &s, c->error != 0);
 #endif /* Libburn_log_sg_commandS */
 
 	return 1;

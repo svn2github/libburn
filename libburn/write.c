@@ -1255,7 +1255,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	struct buffer *out = d->buffer;
 	int sectors;
 	int i, open_ended = 0, ret= 0, is_flushed = 0;
-	int first_buf_cap = 0, further_cap = 0;
+	int first_buf_cap = 0, further_cap = 0, buf_cap_step = 256;
 
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
@@ -1314,7 +1314,8 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		              before the drive buffer is full. See above DVD-
 		*/
 		if (i == first_buf_cap ||
-		   ((i % 256) == 0 && (i >= further_cap || further_cap < 0))) {
+		   ((i % buf_cap_step) == 0 &&
+		    (i >= further_cap || further_cap < 0))) {
 			d->read_buffer_capacity(d);
 			if (further_cap < 0)
 				further_cap =
@@ -1787,8 +1788,10 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	/* <<< test only : Does this increase effective speed with USB ?
 		ts A90801 : 64kB: speed with 16x DVD-R is 12 rather than 8
-		>>> next try is 128 kB
-	o->obs = 128 * 1024;
+		            128kB: glibc complains about double free
+		                   BURN_OS_TRANSPORT_BUFFER_SIZE would need to
+		                   be enlarged anyway.
+	o->obs = 64 * 1024;
 	*/
 
 
