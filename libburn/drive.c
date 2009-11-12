@@ -910,6 +910,22 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	out->write_simulate = !!d->mdata->simulate;
 	out->c2_errors = !!d->mdata->c2_pointers;
 	out->drive = d;
+
+#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM
+
+	/* ts A91112 */
+	/* Set default block types. The call d->probe_write_modes() is quite
+	   obtrusive. It may be performed explicitely by new API call
+             burn_drive_probe_cd_write_modes().
+	*/
+	out->tao_block_types = d->block_types[BURN_WRITE_TAO] =
+					 BURN_BLOCK_MODE1 | BURN_BLOCK_RAW0;
+	out->sao_block_types = d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
+	out->raw_block_types = d->block_types[BURN_WRITE_RAW] = 0;
+	out->packet_block_types = 0;
+
+#else /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
+
 	/* update available block types for burners */
 	if (out->write_dvdram || out->write_dvdr ||
 	    out->write_cdrw || out->write_cdr)
@@ -918,8 +934,35 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	out->sao_block_types = d->block_types[BURN_WRITE_SAO];
 	out->raw_block_types = d->block_types[BURN_WRITE_RAW];
 	out->packet_block_types = d->block_types[BURN_WRITE_PACKET];
+
+#endif /* ! Libburn_pioneer_dvr_216d_dummy_probe_wM */
+
 	return 1;
 }
+
+
+#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM 
+
+/* ts A91112 candidate for API */
+/* Probe available CD write modes and block types.
+*/
+int burn_drive_probe_cd_write_modes(struct burn_drive_info *dinfo)
+{
+	struct burn_drive *d = dinfo->drive;
+
+	if (d == NULL)
+		return 0;
+	if (dinfo->write_dvdram || dinfo->write_dvdr ||
+	    dinfo->write_cdrw || dinfo->write_cdr)
+		d->probe_write_modes(d);
+	dinfo->tao_block_types = d->block_types[BURN_WRITE_TAO];
+	dinfo->sao_block_types = d->block_types[BURN_WRITE_SAO];
+	dinfo->raw_block_types = d->block_types[BURN_WRITE_RAW];
+	dinfo->packet_block_types = d->block_types[BURN_WRITE_PACKET];
+	return 1;
+}
+
+#endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
 
 
 /* ts A70907 : added parameter flag */
