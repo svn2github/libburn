@@ -245,8 +245,14 @@ int mmc_function_spy(struct burn_drive *d, char * text)
 		d->cancel = 1;
 		return 0;
 	}
+
+	/* >>> should one rather have a positve list ? */
+
 	if (d->is_stopped && strcmp(text, "stop_unit") != 0 &&
+	    strcmp(text, "eject") != 0 &&
 	    strcmp(text, "start_unit") != 0 &&
+	    strcmp(text, "load") != 0 &&
+	    strncmp(text, "enumerate", 9) != 0 &&
 	    strncmp(text, "sg_", 3) != 0) {
 		d->start_unit(d);
 		d->is_stopped = 0;

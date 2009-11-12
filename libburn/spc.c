@@ -761,14 +761,6 @@ void spc_probe_write_modes(struct burn_drive *d)
 		c.page->data[23] = 150;
 		c.dir = TO_DRIVE;
 
-#ifdef Libburn_pioneer_dvr_216d_no_probe_wM
-
-		key = asc = ascq = 0;
-		if (last_try)
-	break;
-		 
-#else /* Libburn_pioneer_dvr_216d_no_probe_wM */
-
 		d->silent_on_scsi_error = 1;
 		d->issue_command(d, &c);
 		d->silent_on_scsi_error = 0;
@@ -779,9 +771,6 @@ void spc_probe_write_modes(struct burn_drive *d)
 		key = c.sense[2];
 		asc = c.sense[12];
 		ascq = c.sense[13];
-
-#endif /* ! Libburn_pioneer_dvr_216d_no_probe_wM */
-
 		if (key)
 			burn_print(7, "%d not supported\n", try_block_type);
 		else {
