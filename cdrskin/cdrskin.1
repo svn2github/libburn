@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Sep 10, 2009"
+.TH CDRSKIN 1 "Nov 15, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -899,6 +899,13 @@ Both, write_start_address and direct_write_amount size must be aligned to a
 media dependend transaction size. With DVD-RAM, BD-RE, DVD+RW this is 2k, with
 overwriteable DVD-RW it is 32k.
 .TP
+.BI dvd_obs= default|32k|64k
+Linux specific:
+Set the number of bytes to be transmitted with each write operation to DVD
+or BD media. A number of 64 KB may improve throughput with bus systems which
+show latency problems. The default depends on media type and option
+stream_recording= .
+.TP
 .BI fallback_program= command
 Set a command name to be executed if cdrskin encounters a known cdrecord
 option which it does not yet support. If a non-empty command is given with
@@ -1013,6 +1020,22 @@ which can only do DAO but not Incremental Streaming.
 .BI \--single_track
 Accept only the last argument of the command line as track source address.
 .TP
+.BI stdio_sync= on|off|number
+Set the number of bytes after which to force output to drives with prefix
+"stdio:". This forcing keeps the memory from being clogged with lots of
+pending data for slow devices. Default "on" is the same as "16m".
+Forced output can be disabled by "off".
+.TP
+.BI stream_recording= on|off|number
+By setting "on" request that compliance to the desired speed setting is
+preferred over management of write errors. With DVD-RAM and BD this can
+bring effective write speed near to the nominal write speed of the media.
+But it will also disable the automatic use of replacement blocks
+if write errors occur. It might as well be disliked or ignored by the drive.
+.br
+If a number is given, then error management stays enabled for all byte
+addresses below that number. Any number below 16s is the same as "off".
+.TP 
 .BI tao_to_sao_tsize= size
 Set an exact fixed size for the next track to be in effect only if the track
 source cannot deliver a size prediction and no tsize= was specified and an
@@ -1199,17 +1222,6 @@ Linux specific:
 Use and report literal Bus,Target,Lun addresses rather than real SCSI and
 pseudo ATA addresses. This method is outdated and was never compatible with
 original cdrecord.
-.TP
-.BI stream_recording="on"|"off"|number
-By setting "on" request that compliance to the desired speed setting is
-preferred over management of write errors. With DVD-RAM and BD this can
-bring effective write speed near to the nominal write speed of the media.
-But it will also disable the automatic use of replacement blocks
-if write errors occur. It might as well be disliked or ignored by the drive.
-.br
-If a number is given, then error management stays enabled for all byte
-addresses below that number. Any number below 16s is the same as "off".
-.TP 
 .BI --xa1-ignore
 Silently interpret option -xa1 as -data. This may be necessary if a frontent
 does not prepare -xa1 block headers but insists in using option -xa1.

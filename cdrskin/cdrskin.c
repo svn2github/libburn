@@ -148,6 +148,10 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
+/* burn_write_opts_set_dvd_obs() and burn_write_opts_set_stdio_fsync()
+*/
+#define Cdrskin_libburn_has_fsync_obS 1
+
 #endif /* Cdrskin_libburn_0_7_3 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -2695,6 +2699,11 @@ set_dev:;
      printf(
          " --drive_scsi_exclusive  try to exclusively reserve device files\n");
      printf("                    /dev/srN, /dev/scdM, /dev/stK of drive.\n");
+#ifdef Cdrskin_libburn_has_fsync_obS
+     printf(" dvd_obs=\"default\"|number\n");
+     printf(
+     "                    set number of bytes per DVD/BD write: 32k or 64k\n");
+#endif
 #ifdef Cdrskin_burn_drive_eject_brokeN
      printf(
           " eject_device=<path>  set the device address for command eject\n");
@@ -2744,6 +2753,13 @@ set_dev:;
          "                    error management. A number prevents this with\n");
      printf(
          "                    byte addresses below that number.\n");
+#endif
+#ifdef Cdrskin_libburn_has_fsync_obS
+     printf(" stdio_sync=\"default\"|\"off\"|number\n");
+     printf(
+     "                    set number of bytes after which to force output\n");
+     printf(
+     "                    to drives with prefix \"stdio:\".\n");
 #endif
 
 #ifdef Cdrskin_allow_libburn_taO
@@ -3191,6 +3207,8 @@ struct CdrskiN {
  int dummy_mode;
  int force_is_set;
  int stream_recording_is_set; /* see burn_write_opts_set_stream_recording() */
+ int dvd_obs;                 /* DVD write chunk size: 0, 32k or 64k */
+ int stdio_sync;              /* stdio fsync interval: -1, 0, >=32 */
  int single_track;
  int prodvd_cli_compatible;
 
@@ -3409,6 +3427,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->dummy_mode= 0;
  o->force_is_set= 0;
  o->stream_recording_is_set= 0;
+ o->dvd_obs= 0;
+ o->stdio_sync= 0;
  o->single_track= 0;
  o->prodvd_cli_compatible= 0;
  o->do_devices= 0;
@@ -6951,6 +6971,10 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_stream_recordinG
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
 #endif
+#ifdef Cdrskin_libburn_has_fsync_obS
+ burn_write_opts_set_dvd_obs(o, skin->dvd_obs);
+ burn_write_opts_set_stdio_fsync(o, skin->stdio_sync);
+#endif     
 
  if(skin->dummy_mode) {
    fprintf(stderr,
@@ -7825,6 +7849,22 @@ set_driveropts:;
    } else if(strcmp(argv[i],"-dummy")==0) {
      skin->dummy_mode= 1;
 
+   } else if(strncmp(argv[i], "-dvd_obs=", 9)==0) {
+     value_pt= argv[i] + 9;
+     goto dvd_obs;
+   } else if(strncmp(argv[i], "dvd_obs=", 8)==0) {
+     value_pt= argv[i] + 8;
+dvd_obs:;
+     if(strcmp(value_pt, "default") == 0)
+       num= 0;
+     else
+       num = Scanf_io_size(value_pt,0);
+     if(num != 0 && num != 32768 && num != 65536) {
+       fprintf(stderr,
+       "cdrskin: SORRY : Option dvd_obs= accepts only sizes 0, 32k, 64k\n");
+     } else
+       skin->dvd_obs= num;
+
    } else if(strcmp(argv[i],"-eject")==0) {
      skin->do_eject= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
@@ -8214,6 +8254,26 @@ set_speed:;
 
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: speed : %f\n",skin->x_speed));
+
+   } else if(strncmp(argv[i], "-stdio_sync=", 12)==0) {
+     value_pt= argv[i] + 12;
+     goto stdio_sync;
+   } else if(strncmp(argv[i], "stdio_sync=", 11)==0) {
+     value_pt= argv[i] + 11;
+stdio_sync:;
+     if(strcmp(value_pt, "default") == 0 || strcmp(value_pt, "on") == 0)
+       num= 0;
+     else if(strcmp(value_pt, "off") == 0)
+       num= -1;
+     else
+       num = Scanf_io_size(value_pt,0);
+     if(num > 0)
+       num/= 2048;
+     if(num != -1 && num != 0 && (num < 32 || num > 512 * 1024)) {
+       fprintf(stderr,
+ "cdrskin: SORRY : Option stdio_sync= accepts only sizes -1, 0, 32k ... 1g\n");
+     } else
+       skin->stdio_sync= num;
 
    } else if(strncmp(argv[i],"-stream_recording=",18)==0) {
      value_pt= argv[i]+18;
