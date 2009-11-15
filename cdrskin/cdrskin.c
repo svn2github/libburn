@@ -339,6 +339,23 @@ or
 /** Verbosity level for fifo debugging */
 #define Cdrskin_verbose_debug_fifO 4
 
+#ifdef Cdrskin_read_o_direcT
+/* Linux 2.6.18:
+   This can avoid low write speed via USB with 32 KB SCSI write chunks.
+   64 KB write chunking is 20% more effective, though, and this size is
+   not in need for O_DIRECT.
+   Strange: Vanilla read() brings USB 32 KB WRITE down from 11x to 7.5x.
+   Throughput from /dev/zero to /dev/null is 230x. The disk delivers 56x.
+   Clearly Linux USB has a problem with 32 KB chunks. read() without O_DIRECT
+   makes it worse.
+   cdrecord and growisofs bring 11x. At least growisofs uses O_DIRECT for its
+   fifo input.
+*/
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+# endif
+#endif /* Cdrskin_read_o_direcT */
+
 
 #include <stdio.h>
 #include <ctype.h>
@@ -1388,7 +1405,11 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    if(is_wav==-3)
      return(0);
    if(is_wav==0)
-     *fd= open(track->source_path,O_RDONLY);
+#ifdef Cdrskin_read_o_direcT
+     *fd= open64(track->source_path, O_RDONLY | O_DIRECT);
+#else
+     *fd= open(track->source_path, O_RDONLY);
+#endif
    if(*fd==-1) {
      fprintf(stderr,"cdrskin: failed to open source address '%s'\n",
              track->source_path);

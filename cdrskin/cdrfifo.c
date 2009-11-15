@@ -25,6 +25,10 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
+#ifdef Cdrskin_read_o_direcT
+#include <sys/mman.h>
+#endif /* Cdrskin_read_o_direcT */
+
 #include "cdrfifo.h"
 
 
@@ -174,9 +178,18 @@ int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,
  o->follow_up_fd_idx= -1;
  o->next= o->prev= NULL;
  o->chain_idx= 0;
+
+#ifdef Cdrskin_read_o_direcT
+ o->buffer= mmap(NULL, (size_t) buffer_size, PROT_READ | PROT_WRITE,
+                 MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
+ if(o->buffer == MAP_FAILED)
+   goto failed;
+#else
  o->buffer= TSOB_FELD(char,buffer_size);
  if(o->buffer==NULL)
    goto failed;
+#endif /* Cdrskin_read_o_direcT */
+
  return(1);
 failed:;
  Cdrfifo_destroy(ff,0);
@@ -226,8 +239,14 @@ int Cdrfifo_destroy(struct CdrfifO **ff, int flag)
 
  if(o->iso_fs_descr!=NULL)
    free((char *) o->iso_fs_descr);
+
  if(o->buffer!=NULL)
+#ifdef Cdrskin_read_o_direcT
+   munmap(o->buffer, o->buffer_size);
+#else
    free((char *) o->buffer);
+#endif /* Cdrskin_read_o_direcT */
+
  free((char *) o);
  (*ff)= NULL;
  return(1);
@@ -659,6 +678,49 @@ return: <0 = error , 0 = idle , 1 = did some work
 after_write:;
  if(o->source_fd>=0) if(FD_ISSET((o->source_fd),rds)) {
    can_read= o->buffer_size - o->write_idx;
+
+#ifdef Cdrskin_read_o_direcT
+
+   /* ts A91115
+      This chunksize must be aligned to filesystem blocksize.
+      One might try to inquire the block size behind o->source_fd, but since
+      O_DIRECT is a dirty hack anyway, i just guess that 64 KiB is divisible
+      by any existing block size on Linux.
+    */
+#define Cdrfifo_o_direct_chunK 65536
+
+   if(o->write_idx < o->read_idx && o->write_idx + can_read > o->read_idx)
+     can_read= o->read_idx - o->write_idx;
+   if(o->fd_in_limit>=0.0)
+     if(can_read > o->fd_in_limit - o->fd_in_counter)
+       can_read= o->fd_in_limit - o->fd_in_counter;
+   /* Make sure to read with properly aligned size */
+   if(can_read > Cdrfifo_o_direct_chunK)
+     can_read= Cdrfifo_o_direct_chunK;
+   else if(can_read < Cdrfifo_o_direct_chunK)
+     can_read= -1;
+   ret= 0;
+   if(can_read>0)
+     ret= read(o->source_fd,o->buffer+o->write_idx,can_read);
+   if(can_read < 0) {
+     /* waiting for a full Cdrfifo_o_direct_chunK to fit */
+     if(can_write <= 0 && o->dest_fd >= 0) {
+        fd_set rds,wts,exs;
+        struct timeval wt;
+
+        FD_ZERO(&rds);
+        FD_ZERO(&wts);
+        FD_ZERO(&exs);
+        FD_SET((o->dest_fd),&wts);
+        wt.tv_sec=  0;
+        wt.tv_usec= 10000;
+        select(o->dest_fd + 1,&rds, &wts, &exs, &wt);
+
+     }
+   } else
+
+#else /* Cdrskin_read_o_direcT */
+
    if(can_read>o->chunk_size)
      can_read= o->chunk_size;
    if(o->write_idx<o->read_idx && o->write_idx+can_read > o->read_idx)
@@ -669,6 +731,9 @@ after_write:;
    ret= 0;
    if(can_read>0)
      ret= read(o->source_fd,o->buffer+o->write_idx,can_read);
+
+#endif /* ! Cdrskin_read_o_direcT */
+
    if(ret==-1) {
 
      /* >>> handle input error */;

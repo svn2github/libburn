@@ -55,6 +55,9 @@ do
   elif test "$i" = "-no_largefile"
   then
     largefile_opts=	
+  elif test "$i" = "-o_direct"
+  then
+    def_opts="$def_opts -DCdrskin_read_o_direcT"
   elif test "$i" = "-do_not_compile_cdrskin"
   then
     compile_cdrskin=0
@@ -77,6 +80,7 @@ do
     echo "  -compile_dewav    compile program test/dewav without libburn."
     echo "  -libburn_0_7_2    set macro to match libburn-0.7.2"
     echo "  -libburn_svn      set macro to match current libburn-SVN."
+    echo "  -o_direct         use open(O_DIRECT) on fifo input (Linux only)."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."
     echo "  -experimental     use newly introduced libburn features."
     echo "  -oldfashioned     use pre-0.2.2 libburn features only."
