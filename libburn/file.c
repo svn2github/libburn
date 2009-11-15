@@ -1,5 +1,6 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -27,8 +28,6 @@ an unreadable disc */
 /* This is a generic OS oriented function wrapper which compensates
    shortcommings of read() in respect to a guaranteed amount of return data.
    See  man 2 read , paragraph "RETURN VALUE".
-   Possibly libburn/file.c is not the right storage location for this.
-   To make it ready for a move, this function is not declared static.
 */
 static int read_full_buffer(int fd, unsigned char *buffer, int size)
 {
