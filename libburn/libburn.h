@@ -767,6 +767,9 @@ void burn_set_verbosity(int level);
     This call can be made at any time - even before burn_initialize().
     It is in effect for all active drives and currently not very thread
     safe for multiple drives.
+
+    >>> ??? Shouldn't the file path with bit1 be adjustable ?
+
     @param flag  Bitfield for control purposes. The default is 0.
                  bit0= log to file /tmp/libburn_sg_command_log
                  bit1= log to stderr
@@ -2118,6 +2121,32 @@ void burn_write_opts_set_force(struct burn_write_opts *opts, int use_force);
 */
 void burn_write_opts_set_stream_recording(struct burn_write_opts *opts, 
                                          int value);
+
+/* ts A91115 */
+/** Overrides the write chunk size for DVD and BD media which is normally
+    determined according to media type and setting of stream recording.
+    A chunk size of 64 KB may improve throughput with bus systems which show
+    latency problems.
+    @param opts The write opts to change
+    @param obs  Number of bytes which shall be sent by a single write command.
+                0 means automatic size, 32768 and 65336 are the only other
+                accepted sizes for now.
+    @since 0.7.4
+*/
+void burn_write_opts_set_dvd_obs(struct burn_write_opts *opts, int obs);
+
+/* ts A91115 */
+/** Sets the rythm by which stdio pseudo drives force their output data to
+    be consumed by the receiving storage device. This forcing keeps the memory
+    from being clogged with lots of pending data for slow devices.
+    @param opts   The write opts to change
+    @param rythm  Number of 2KB output blocks after which fsync(2) is
+                  performed. -1 means no fsync(), 0 means default,
+                  elsewise the value must be >= 32.
+                  Default is currently 8192 = 16 MB.
+    @since 0.7.4
+*/
+void burn_write_opts_set_stdio_fsync(struct burn_write_opts *opts, int rythm);
 
 
 /** Sets whether to read in raw mode or not

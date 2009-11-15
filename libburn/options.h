@@ -51,8 +51,18 @@ struct burn_write_opts
 
 	/* ts A80412 : whether to use WRITE12 with Streaming bit set
 	   rather than WRITE10. Speeds up DVD-RAM. Might help with BD-RE.
-	   This gets transferred to burn_drive.do_stream_recording */
+	   This gets transferred to burn_drive.do_stream_recording
+	*/
 	int do_stream_recording;
+
+	/* ts A91115 : override value for .obs on DVD media.
+	   Only values 0, 32K and 64K are allowed for now. */
+	int dvd_obs_override;
+
+	/* ts A91115 : size of the fsync() interval for stdio writing.
+	   Values 0 or >= 32 counted in 2 KB blocks. */
+	int stdio_fsync_size;
+
 
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
@@ -63,6 +73,11 @@ struct burn_write_opts
 	unsigned char control;
 	unsigned char multi;
 };
+
+/* Default value for burn_write_opts.stdio_flush_size
+*/
+#define Libburn_stdio_fsync_limiT 8192
+
 
 /** Options for disc reading operations. This should be created with
     burn_read_opts_new() and freed with burn_read_opts_free(). */

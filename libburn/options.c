@@ -39,6 +39,8 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->fill_up_media = 0;
 	opts->force_is_set = 0;
 	opts->do_stream_recording = 0;
+	opts->dvd_obs_override = 0;
+	opts->stdio_fsync_size = Libburn_stdio_fsync_limiT;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -389,6 +391,25 @@ void burn_write_opts_set_stream_recording(struct burn_write_opts *opts,
 }
 
 
+/* ts A91115: API */
+void burn_write_opts_set_dvd_obs(struct burn_write_opts *opts, int obs)
+{
+	if (obs != 0 && obs != 32 * 1024 && obs != 64 * 1024)
+		return;
+	opts->dvd_obs_override = obs;
+}
+
+
+/* ts A91115: API */
+void burn_write_opts_set_stdio_fsync(struct burn_write_opts *opts, int rythm)
+{
+	if (rythm == -1)
+		opts->stdio_fsync_size = 0;
+	else if (rythm == 0)
+		opts->stdio_fsync_size = Libburn_stdio_fsync_limiT;
+	else if (rythm >= 32)
+		opts->stdio_fsync_size = rythm;
+}
 
 
 /* ts A70901: API */
