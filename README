@@ -57,6 +57,25 @@ Do in a directory of your choice:
 Warning: The trunk might contain experimental features which might not
          persist until next release. 
 
+
+                        Special ./configure options
+
+In some situations Linux delivers a better write performance to drives if
+the track input is read with O_DIRECT (see man 2 open). The input reader of
+the cdrskin fifo can be told to use this peculiar read mode by :
+   --enable-cdrskin-fifo-odirect
+
+But typically libburn call burn_write_opts_set_dvd_obs(opts, 64*1024) will
+yield even better performance in such a situation. 64k can be made default
+at configure time by :
+    --enable-dvd-obs-64k
+This may be combined with above --enable-cdrskin-fifo-odirect .
+
+Make sure to re-compile all source files after running ./configure
+   make clean ; make
+   make install
+
+
 ------------------------------------------------------------------------------
 
 An important part of the project, libisofs, is hosted in a bzr repository at
@@ -137,7 +156,8 @@ The project components (list subject to growth, hopefully):
            Rock Ridge extensions. Manipulation is not only adding or
            overwriting of files but also deleting, renaming, attribute
            changing, incremental backups, activating boot images, and
-           extracting of files from ISO images to disk.
+           extracting of files from ISO images to disk. An own ISO 9660
+           extension stores ACLs, xattr, and MD5 of file content.
            See xorriso/README for more.
 
 - "test"   is a collection of application gestures and examples given by the
@@ -442,6 +462,14 @@ Project history as far as known to me:
 - 12 Oct 2009 libburn-0.7.2 fixes a bug with CD TAO multi-track dummy sessions.
   It can retrieve media product info and can process track input which was
   prepared for CD-ROM XA Mode 2 Form 1. cdrskin now performs option -minfo.
+
+- 28 Oct 2009 libisoburn-0.4.4 fixes a bug with cdrecord emulation and
+  introduces new information options about media type and ISO image id strings.
+  On Linux it helps with mounting two sessions of the same media
+  simultaneously.
+
+- 12 Nov 2009 libburn-0.7.2.pl01 works around problems with Pioneer DVR-216D.
+  DVD-R runs made the drive stuck. Ejecting the tray did not work properly.
 
 
 ------------------------------------------------------------------------------

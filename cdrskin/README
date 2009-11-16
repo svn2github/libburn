@@ -35,8 +35,7 @@ Within that directory execute:
     make
 
 This will already produce a cdrskin binary. But it will be necessary to
-install libburn in order to use this binary. Installation of libburn is
-beyond the scope of cdrskin. For this, see included libburn docs.
+install libburn in order to use this binary.
 
 In order to surely get a standalone binary, execute
 
@@ -73,7 +72,7 @@ It is not necessary for the standalone cdrskin binary to have libburn
 installed, since it incorporates the necessary libburn parts at compile time.
 It will not collide with an installed version of libburn either.
 But libpthread must be installed on the system and glibc has to match. (See
-below for a way to create a statically linked binary.)
+below for a way to create a totally static linked binary.)
 
 To install the man page, you may do: echo $MANPATH and choose one of the
 listed directories to copy the man-page under its ./man1 directory. Like:
@@ -397,6 +396,19 @@ drive. See man page section FILES for a way to lift that ban.
 ------------------------------------------------------------------------------
 
                         Special compilation variations
+
+All following options of cdrskin/compile_cdrskin.sh are combinable.
+
+In some situations Linux delivers a better write performance to drives if
+the track input is read with O_DIRECT (see man 2 open). The input reader of
+the cdrskin fifo can be told to use this peculiar read mode by :
+    cdrskin/compile_cdrskin.sh -o_direct
+
+But typically cdrskin option dvd_obs=64k will yield even better performance in
+such a situation. 64k can be made default at compile time by 
+    cdrskin/compile_cdrskin.sh -dvd_obs_64k
+It can also be enabled at configure time by
+    ./configure ... --enable-dvd-obs-64k ...
 
 You may get a (super fat) statically linked binary by :
     cdrskin/compile_cdrskin.sh -static

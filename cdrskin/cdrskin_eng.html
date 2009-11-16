@@ -193,7 +193,7 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.7.2.pl00.tar.gz">cdrskin-0.7.2.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.7.2.pl01.tar.gz">cdrskin-0.7.2.pl01.tar.gz</A>
 (780 KB).
 </DD>
 <DD>
@@ -262,6 +262,12 @@ Bug fixes towards cdrskin-0.7.0.pl00:
 -->
 </UL>
 
+Bug fixes towards cdrskin-0.7.2.pl00:
+<UL>
+<LI>Workaround for Pioneer DVR-216D which got stuck on DVD-R burns.</LI>
+<LI>Workaround for Pioneer DVR-216D which did not always eject the tray.</LI>
+</UL>
+
 <HR>
 
 <P>
@@ -269,8 +275,11 @@ Bug fixes towards cdrskin-0.7.0.pl00:
 <DT><H3>Development snapshot, version 0.7.3 :</H3></DT>
 <DD>Enhancements towards current stable version 0.7.2.pl00:
 <UL>
-<LI>none yet</LI>
+<LI>Implemented option -V for logging of SCSI commands</LI>
+<LI>New options dvd_obs= and stdio_fsync=</LI>
+<LI>New compile_cdrskin.sh options -o_direct (Linux only), -dvd_obs_64k</LI>
 <!--
+<LI>none yet</LI>
 -->
 
 </UL>
@@ -278,8 +287,8 @@ Bug fixes towards cdrskin-0.7.0.pl00:
 
 <DD>Bug fixes towards cdrskin-0.7.2.pl00:
 <UL>
-<LI>Workaround for firmware bug of Pioneer DVR-216D which prevented DVD-R
-burns from ever ending.</LI>
+<LI>Workaround for Pioneer DVR-216D which got stuck on DVD-R burns.</LI>
+<LI>Workaround for Pioneer DVR-216D which did not always eject the tray.</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -311,7 +320,7 @@ admins with full system souvereignty.</DT>
 </DD>
 <DD>
 <A HREF="cdrskin-0.7.3.tar.gz">cdrskin-0.7.3.tar.gz</A>
-(780 KB).
+(800 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008
