@@ -8,9 +8,10 @@ debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
 libvers="-DCdrskin_libburn_0_7_3"
-cleanup_src_or_obj="libburn/cleanup.o"
-libdax_msgs_o="libburn/libdax_msgs.o"
-libdax_audioxtr_o="libburn/libdax_audioxtr.o"
+burn="libburn/libburn_libburn_la-"
+cleanup_src_or_obj="$burn"cleanup.o
+libdax_msgs_o="$burn"libdax_msgs.o
+libdax_audioxtr_o="$burn"libdax_audioxtr.o
 do_strip=0
 static_opts=
 warn_opts="-Wall"
@@ -31,20 +32,20 @@ do
   then
     libvers="-DCdrskin_libburn_cvs_A60220_tS"
     libdax_audioxtr_o=
-    libdax_msgs_o="libburn/message.o"
+    libdax_msgs_o="$burn"message.o
     cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-libburn_0_7_2"
   then
     libvers="-DCdrskin_libburn_0_7_2"
-    libdax_audioxtr_o="libburn/libdax_audioxtr.o"
-    libdax_msgs_o="libburn/libdax_msgs.o"
-    cleanup_src_or_obj="libburn/cleanup.o"
+    libdax_audioxtr_o="$burn"libdax_audioxtr.o
+    libdax_msgs_o="$burn"libdax_msgs.o
+    cleanup_src_or_obj="$burn"cleanup.o
   elif test "$i" = "-libburn_svn"
   then
     libvers="-DCdrskin_libburn_0_7_3"
-    libdax_audioxtr_o="libburn/libdax_audioxtr.o"
-    libdax_msgs_o="libburn/libdax_msgs.o"
-    cleanup_src_or_obj="libburn/cleanup.o"
+    libdax_audioxtr_o="$burn"libdax_audioxtr.o
+    libdax_msgs_o="$burn"libdax_msgs.o
+    cleanup_src_or_obj="$burn"cleanup.o
   elif test "$i" = "-newapi" -o "$i" = "-experimental"
   then
     def_opts="$def_opts -DCdrskin_new_api_tesT"
@@ -58,6 +59,9 @@ do
   elif test "$i" = "-o_direct"
   then
     def_opts="$def_opts -DCdrskin_read_o_direcT"
+  elif test "$i" = "-dvd_obs_64k"
+  then
+    def_opts="$def_opts -DCdrskin_dvd_obs_default_64K"
   elif test "$i" = "-do_not_compile_cdrskin"
   then
     compile_cdrskin=0
@@ -81,6 +85,7 @@ do
     echo "  -libburn_0_7_2    set macro to match libburn-0.7.2"
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -o_direct         use open(O_DIRECT) on fifo input (Linux only)."
+    echo "  -dvd_obs_64k      64 KB default size for cdrskin DVD/BD writing."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."
     echo "  -experimental     use newly introduced libburn features."
     echo "  -oldfashioned     use pre-0.2.2 libburn features only."
@@ -120,31 +125,31 @@ then
     \
     $cleanup_src_or_obj \
     \
-    libburn/async.o \
-    libburn/debug.o \
-    libburn/drive.o \
-    libburn/file.o \
-    libburn/init.o \
-    libburn/options.o \
-    libburn/source.o \
-    libburn/structure.o \
+    "$burn"async.o \
+    "$burn"debug.o \
+    "$burn"drive.o \
+    "$burn"file.o \
+    "$burn"init.o \
+    "$burn"options.o \
+    "$burn"source.o \
+    "$burn"structure.o \
     \
-    libburn/sg.o \
-    libburn/write.o \
-    libburn/read.o \
+    "$burn"sg.o \
+    "$burn"write.o \
+    "$burn"read.o \
     $libdax_audioxtr_o \
     $libdax_msgs_o \
     \
-    libburn/mmc.o \
-    libburn/sbc.o \
-    libburn/spc.o \
-    libburn/util.o \
+    "$burn"mmc.o \
+    "$burn"sbc.o \
+    "$burn"spc.o \
+    "$burn"util.o \
     \
-    libburn/sector.o \
-    libburn/toc.o \
+    "$burn"sector.o \
+    "$burn"toc.o \
     \
-    libburn/crc.o \
-    libburn/ecma130ab.o \
+    "$burn"crc.o \
+    "$burn"ecma130ab.o \
     \
     -lpthread
 
@@ -187,8 +192,8 @@ then
      -DDewav_without_libburN \
      -o test/dewav \
      test/dewav.c \
-     libburn/libdax_audioxtr.o \
-     libburn/libdax_msgs.o \
+     "$burn"libdax_audioxtr.o \
+     "$burn"libdax_msgs.o \
      \
     -lpthread
 
