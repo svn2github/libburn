@@ -33,7 +33,7 @@ struct CdrfifO;
                    struct burn_source object.
     @param chunk_size Size of buffer block for a single transaction (0=default)
     @param buffer_size Size of fifo buffer
-    @param flag unused yet
+    @param flag bit0= Debugging verbosity
     @return 1 on success, <=0 on failure
 */
 int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,

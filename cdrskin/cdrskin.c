@@ -1319,6 +1319,7 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
                 bit0=debugging verbosity
                 bit1=open as source for direct write: 
                      no audio extract, no minimum track size
+                bit2=permission to use O_DIRECT (if enabled at compile time)
     @return <=0 error, 1 success
 */
 int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
@@ -1408,12 +1409,18 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
      return(-1);
    if(is_wav==-3)
      return(0);
-   if(is_wav==0)
+   if(is_wav==0) {
 #ifdef Cdrskin_read_o_direcT
-     *fd= open64(track->source_path, O_RDONLY | O_DIRECT);
-#else
-     *fd= open(track->source_path, O_RDONLY);
+     if(flag & 4) {
+       *fd= open64(track->source_path, O_RDONLY | O_DIRECT);
+       if(flag & 1)
+         fprintf(stderr,"cdrskin: DEBUG : opened track inlet O_DIRECT\n");
+     } else
 #endif
+     {
+       *fd= open(track->source_path, O_RDONLY);
+     }
+   }
    if(*fd==-1) {
      fprintf(stderr,"cdrskin: failed to open source address '%s'\n",
              track->source_path);
@@ -1499,7 +1506,8 @@ int Cdrtrack_attach_fifo(struct CdrtracK *track, int *outlet_fd,
  *outlet_fd= -1;
  if(track->fifo_size<=0)
    return(2);
- ret= Cdrtrack_open_source_path(track,&source_fd,flag&1);
+ ret= Cdrtrack_open_source_path(track,&source_fd,
+                            (flag&1) | (4 * (track->fifo_size >= 256 * 1024)));
  if(ret<=0)
    return(ret);
  if(pipe(pipe_fds)==-1)
@@ -1516,7 +1524,7 @@ int Cdrtrack_attach_fifo(struct CdrtracK *track, int *outlet_fd,
 
    /* >>> ??? obtain track sector size and use instead of 2048 ? */
 
-   ret= Cdrfifo_new(&ff,source_fd,pipe_fds[1],2048,track->fifo_size,0);
+   ret= Cdrfifo_new(&ff,source_fd,pipe_fds[1],2048,track->fifo_size, flag & 1);
    if(ret<=0)
      return(ret);
    if(previous_fifo!=NULL)
@@ -1591,6 +1599,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 /*
  bit0= debugging verbosity
  bit1= apply padding hack (<<< should be unused for now)
+ bit2= permission to use O_DIRECT (if enabled at compile time)
 */
 {
  struct burn_track *tr;
@@ -1606,7 +1615,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 
  /* Note: track->track_type may get set in here */
  if(track->source_fd==-1) {
-   ret= Cdrtrack_open_source_path(track,&source_fd,(flag&1));
+   ret= Cdrtrack_open_source_path(track, &source_fd, flag & (4 | 1));
    if(ret<=0)
      goto ex;
  }
@@ -5995,8 +6004,10 @@ thank_you_for_patience:;
        if(skin->is_writing)
          fprintf(stderr,"\n");
        pending[0]= 0;
+/*
        if(bytes_to_write > 0 && skin->verbosity >= Cdrskin_verbose_debuG)
          sprintf(pending, " pnd %.f", bytes_to_write - written_total_bytes);
+*/
        fprintf(stderr,
            "\rcdrskin: thank you for being patient for %.f seconds%21.21s",
            elapsed_total_time, pending);
@@ -6602,7 +6613,8 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
                           &source_path,&source_fd,&is_from_stdin,0);
  if(source_fd==-1) {
    ret= Cdrtrack_open_source_path(skin->tracklist[0],&source_fd,
-                                  2|(skin->verbosity>=Cdrskin_verbose_debuG));
+                               2 | (skin->verbosity >= Cdrskin_verbose_debuG) |
+                               (4 * (skin->fifo_size >= 256 * 1024)));
    if(ret<=0)
      goto ex;
  }
@@ -6836,6 +6848,8 @@ burn_failed:;
    hflag= (skin->verbosity>=Cdrskin_verbose_debuG);
    if(i==skin->track_counter-1)
      Cdrtrack_ensure_padding(skin->tracklist[i],hflag&1);
+   if(skin->fifo_size >= 256 * 1024)
+     hflag|= 4;
    ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
    if(ret<=0) {
      fprintf(stderr,"cdrskin: FATAL : Cannot add track %d to session.\n",i+1);
@@ -6972,9 +6986,14 @@ burn_failed:;
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
 #endif
 #ifdef Cdrskin_libburn_has_fsync_obS
- burn_write_opts_set_dvd_obs(o, skin->dvd_obs);
+#ifdef Cdrskin_dvd_obs_default_64K
+ if(skin->dvd_obs == 0)
+   burn_write_opts_set_dvd_obs(o, 64 * 1024);
+ else
+#endif
+   burn_write_opts_set_dvd_obs(o, skin->dvd_obs);
  burn_write_opts_set_stdio_fsync(o, skin->stdio_sync);
-#endif     
+#endif /* Cdrskin_libburn_has_fsync_obS */     
 
  if(skin->dummy_mode) {
    fprintf(stderr,

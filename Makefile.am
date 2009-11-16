@@ -12,6 +12,7 @@ lib_LTLIBRARIES = libburn/libburn.la
 # Build libraries
 libburn_libburn_la_LDFLAGS = \
 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+libburn_libburn_la_CFLAGS = $(LIBBURN_DVD_OBS_64K)
 libburn_libburn_la_LIBADD = $(LIBBURN_ARCH_LIBS) $(THREAD_LIBS)
 libburn_libburn_la_SOURCES = \
 	libburn/async.c \
@@ -112,7 +113,8 @@ test_structest_SOURCES = test/structest.c
 
 ##  cdrskin construction site - ts A60816 - A91012
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
-cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_7_3
+cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_7_3 \
+                         $(CDRSKIN_O_DIRECT_DEF) $(CDRSKIN_DVD_OBS_64K)
 
 # cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 # ts A80123, change proposed by Simon Huggins to cause dynamic libburn linking

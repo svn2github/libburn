@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Nov 15, 2009"
+.TH CDRSKIN 1 "Nov 16, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -902,9 +902,10 @@ overwriteable DVD-RW it is 32k.
 .BI dvd_obs= default|32k|64k
 Linux specific:
 Set the number of bytes to be transmitted with each write operation to DVD
-or BD media. A number of 64 KB may improve throughput with bus systems which
-show latency problems. The default depends on media type and option
-stream_recording= .
+or BD media. Tracks get padded up to the next multiple of this write
+size. A number of 64 KB may improve throughput with bus systems which
+show latency problems. The default depends on media type, option
+stream_recording=, and on compile time options.
 .TP
 .BI fallback_program= command
 Set a command name to be executed if cdrskin encounters a known cdrecord

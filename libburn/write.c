@@ -1914,6 +1914,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 	}
 
+#ifdef Libburn_dvd_obs_default_64K
+	o->obs = 64 * 1024;
+#endif
 
 	/* <<< test only : Does this increase effective speed with USB ?
 		ts A90801 : 64kB: speed with 16x DVD-R is 12 rather than 8
@@ -1932,7 +1935,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				 0x00000002, LIBDAX_MSGS_SEV_DEBUG,
 				 LIBDAX_MSGS_PRIO_ZERO, msg, 0, 0);
-		o->obs = BUFFER_SIZE;
+		o->obs = 32 * 1024; /* This size is required to work */
 	}
 
 	sprintf(msg, "dvd/bd Profile= %2.2Xh , obs= %d , obs_pad= %d",

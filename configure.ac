@@ -111,15 +111,15 @@ AC_SUBST(BURN_VERSION)
 dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
-dnl ts A91012
+dnl ts A91116
 dnl ### This is the release version libburn-0.7.2 = libburn.so.4.37.0
 dnl This is the development version after above release version
-dnl LT_CURRENT++, LT_AGE++ has not yet happened.
-dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
+dnl ### LT_CURRENT++, LT_AGE++ has not yet happened.
+dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 41 - 37 = 4 . Linux library name = libburn.so.4.37.0
-LT_CURRENT=41
-LT_AGE=37
+dnl SONAME = 42 - 38 = 4 . Linux library name = libburn.so.4.38.0
+LT_CURRENT=42
+LT_AGE=38
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
@@ -197,6 +197,32 @@ else
     fi
     CFLAGS="$CFLAGS -DDEBUG"
 fi
+
+# ts A91116
+AC_ARG_ENABLE(cdrskin-fifo-odirect,
+[  --enable-cdrskin-fifo-odirect   Enable use of O_DIRECT with cdrskin fifo inlet, default=no],
+               , enable_cdrskin_fifo_odirect=no)
+if test x$enable_cdrskin_fifo_odirect = xyes; then
+    CDRSKIN_O_DIRECT_DEF="-DCdrskin_read_o_direcT"
+    echo "enabled  use of O_DIRECT with cdrskin fifo inlet"
+else
+    CDRSKIN_O_DIRECT_DEF=
+    echo "disabled use of O_DIRECT with cdrskin fifo inlet"
+fi
+AC_SUBST(CDRSKIN_O_DIRECT_DEF)
+
+# ts A91116
+AC_ARG_ENABLE(dvd-obs-64k,
+[  --enable-dvd-obs-64k            64 KB default size for DVD/BD writing, default=no],
+               , enable_fifo_odirect=no)
+if test x$enable_dvd_obs_64k = xyes; then
+    LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
+    echo "enabled  write size default 64 KB on DVD and BD"
+else
+    LIBBURN_DVD_OBS_64K=
+    echo "disabled write size default 64 KB on DVD and BD"
+fi
+AC_SUBST(LIBBURN_DVD_OBS_64K)
 
 
 dnl Determine target directory for libburn-*.pc
