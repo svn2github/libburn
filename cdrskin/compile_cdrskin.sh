@@ -8,7 +8,11 @@ debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
 libvers="-DCdrskin_libburn_0_7_3"
-burn="libburn/libburn_libburn_la-"
+
+# To be used if Makefile.am uses libburn_libburn_la_CFLAGS
+# burn="libburn/libburn_libburn_la-"
+burn="libburn/"
+
 cleanup_src_or_obj="$burn"cleanup.o
 libdax_msgs_o="$burn"libdax_msgs.o
 libdax_audioxtr_o="$burn"libdax_audioxtr.o

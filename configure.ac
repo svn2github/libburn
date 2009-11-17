@@ -179,6 +179,35 @@ dnl If this would be done more specifically in Makefile.am
 dnl via libburn_libburn_la_CFLAGS then undesired .o file names would emerge
 CFLAGS="$CFLAGS $STATVFS_DEF"
 
+dnl ts A91116
+AC_ARG_ENABLE(cdrskin-fifo-odirect,
+[  --enable-cdrskin-fifo-odirect   Enable use of O_DIRECT with cdrskin fifo inlet, default=no],
+               , enable_cdrskin_fifo_odirect=no)
+if test x$enable_cdrskin_fifo_odirect = xyes; then
+    CDRSKIN_O_DIRECT_DEF="-DCdrskin_read_o_direcT"
+    echo "enabled  use of O_DIRECT with cdrskin fifo inlet"
+else
+    CDRSKIN_O_DIRECT_DEF=
+    echo "disabled use of O_DIRECT with cdrskin fifo inlet"
+fi
+AC_SUBST(CDRSKIN_O_DIRECT_DEF)
+
+dnl ts A91116
+AC_ARG_ENABLE(dvd-obs-64k,
+[  --enable-dvd-obs-64k            64 KB default size for DVD/BD writing, default=no],
+               , enable_fifo_odirect=no)
+if test x$enable_dvd_obs_64k = xyes; then
+    LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
+    echo "enabled  write size default 64 KB on DVD and BD"
+else
+    LIBBURN_DVD_OBS_64K=
+    echo "disabled write size default 64 KB on DVD and BD"
+fi
+dnl Avoid the need for libburn_libburn_la_CFLAGS in Makefile.am (ugly .o names)
+dnl ### AC_SUBST(LIBBURN_DVD_OBS_64K)
+CFLAGS="$CFLAGS $LIBBURN_DVD_OBS_64K"
+
+
 dnl Add compiler-specific flags
 
 dnl See if the user wants aggressive optimizations of the code
@@ -197,33 +226,6 @@ else
     fi
     CFLAGS="$CFLAGS -DDEBUG"
 fi
-
-# ts A91116
-AC_ARG_ENABLE(cdrskin-fifo-odirect,
-[  --enable-cdrskin-fifo-odirect   Enable use of O_DIRECT with cdrskin fifo inlet, default=no],
-               , enable_cdrskin_fifo_odirect=no)
-if test x$enable_cdrskin_fifo_odirect = xyes; then
-    CDRSKIN_O_DIRECT_DEF="-DCdrskin_read_o_direcT"
-    echo "enabled  use of O_DIRECT with cdrskin fifo inlet"
-else
-    CDRSKIN_O_DIRECT_DEF=
-    echo "disabled use of O_DIRECT with cdrskin fifo inlet"
-fi
-AC_SUBST(CDRSKIN_O_DIRECT_DEF)
-
-# ts A91116
-AC_ARG_ENABLE(dvd-obs-64k,
-[  --enable-dvd-obs-64k            64 KB default size for DVD/BD writing, default=no],
-               , enable_fifo_odirect=no)
-if test x$enable_dvd_obs_64k = xyes; then
-    LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
-    echo "enabled  write size default 64 KB on DVD and BD"
-else
-    LIBBURN_DVD_OBS_64K=
-    echo "disabled write size default 64 KB on DVD and BD"
-fi
-AC_SUBST(LIBBURN_DVD_OBS_64K)
-
 
 dnl Determine target directory for libburn-*.pc
 dnl Important: Must be performed _after_ TARGET_SHIZZLE
