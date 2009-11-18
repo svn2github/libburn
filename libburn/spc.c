@@ -27,11 +27,6 @@
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
-/* ts A70910
-   debug: for tracing calls which might use open drive fds
-          or for catching SCSI usage of emulated drives. */
-int mmc_function_spy(struct burn_drive *d, char * text);
-
 
 /* spc command set */
 /* ts A70519 : allocation length byte 3+4 was 0,255 */
@@ -477,6 +472,7 @@ void spc_sense_caps(struct burn_drive *d)
 {
 	int alloc_len, start_len = 30, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_caps") <= 0)
 		return;
 
@@ -501,6 +497,7 @@ void spc_sense_error_params(struct burn_drive *d)
 	unsigned char *page;
 	struct command c;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_error_params") <= 0)
 		return;
 
@@ -534,6 +531,7 @@ void spc_select_error_params(struct burn_drive *d,
 	struct buffer buf;
 	struct command c;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "select_error_params") <= 0)
 		return;
 
@@ -575,6 +573,7 @@ void spc_sense_write_params(struct burn_drive *d)
 	unsigned char *page;
 	struct command c;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_write_params") <= 0)
 		return;
 
@@ -640,6 +639,7 @@ void spc_select_write_params(struct burn_drive *d,
 	struct command c;
 	int alloc_len;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "select_write_params") <= 0)
 		return;
 
@@ -724,6 +724,7 @@ void spc_probe_write_modes(struct burn_drive *d)
 	int last_try = 0;
 	struct command c;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "spc_probe_write_modes") <= 0)
 		return;
 

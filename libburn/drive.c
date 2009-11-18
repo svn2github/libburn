@@ -424,10 +424,6 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	char msg[BURN_DRIVE_ADR_LEN + 160];
 	int ret;
 
-	/* ts A60821
-   	<<< debug: for tracing calls which might use open drive fds */
-	int mmc_function_spy(struct burn_drive *d, char * text);
-
 	d->drive_role = 1; /* MMC drive */
 
 	t = burn_drive_register(d);

@@ -93,4 +93,12 @@ int mmc_get_media_product_id(struct burn_drive *d,
         char **product_id, char **media_code1, char **media_code2,
 	char **book_type, int flag);
 
+
+/* ts A60910 (estimated) */
+int mmc_function_spy(struct burn_drive *d, char * text);
+
+/* ts A91118 */
+int mmc_start_if_needed(struct burn_drive *d, int flag);
+
+
 #endif /*__MMC*/

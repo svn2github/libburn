@@ -245,18 +245,6 @@ int mmc_function_spy(struct burn_drive *d, char * text)
 		d->cancel = 1;
 		return 0;
 	}
-
-	/* >>> should one rather have a positve list ? */
-
-	if (d->is_stopped && strcmp(text, "stop_unit") != 0 &&
-	    strcmp(text, "eject") != 0 &&
-	    strcmp(text, "start_unit") != 0 &&
-	    strcmp(text, "load") != 0 &&
-	    strncmp(text, "enumerate", 9) != 0 &&
-	    strncmp(text, "sg_", 3) != 0) {
-		d->start_unit(d);
-		d->is_stopped = 0;
-	}
 	return 1;
 }
 
@@ -285,12 +273,29 @@ int mmc_int_to_four_char(unsigned char *data, int num)
 }
 
 
+static int mmc_start_for_bit0 = 0;
+
+/* @param flag bit0= the calling function should need no START UNIT.
+                     (Handling depends on mmc_start_for_bit0)
+*/
+int mmc_start_if_needed(struct burn_drive *d, int flag)
+{
+	if (!d->is_stopped)
+		return 2;
+	if ((flag & 1) && !mmc_start_for_bit0)
+		return 2;
+	d->start_unit(d);
+	d->is_stopped = 0;
+	return 1;
+}
+
+
 void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 {
 	struct buffer buf;
 	struct command c;
 
-
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_send_cue_sheet") <= 0)
 		return;
 
@@ -322,6 +327,7 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 	int lba;
 	char msg[80];
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_reserve_track") <= 0)
 		return 0;
 
@@ -356,6 +362,7 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf,
 {
 	struct command c;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_track_info") <= 0)
 		return 0;
 
@@ -408,6 +415,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	int ret, num, alloc_len = 20;
 	unsigned char *data;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_nwa") <= 0)
 		return -1;
 
@@ -758,6 +766,7 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	struct command c;
 	int len;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_write_12") <= 0)
 		return;
 
@@ -800,6 +809,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 				O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
 #endif /* Libburn_log_in_and_out_streaM */
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_write") <= 0)
 		return BE_CANCELLED;
 
@@ -1093,6 +1103,7 @@ static int mmc_read_toc_fmt0(struct burn_drive *d)
 {
 	int alloc_len = 4, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_toc_fmt0") <= 0)
 		return -1;
 	ret = mmc_read_toc_fmt0_al(d, &alloc_len);
@@ -1475,6 +1486,7 @@ void mmc_read_toc(struct burn_drive *d)
 {
 	int alloc_len = 4, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_toc") <= 0)
 		return;
 
@@ -1505,6 +1517,7 @@ int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 	struct burn_track **tracks;
 	struct burn_toc_entry toc_entry;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_multi_session_c1") <= 0)
 		return 0;
 
@@ -1894,6 +1907,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 {
 	int alloc_len = 34, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_disc_info") <= 0)
 		return;
 
@@ -1925,6 +1939,7 @@ void mmc_read_atip(struct burn_drive *d)
 	                   4234, 5646, 7056, 8468, -12, -13, -14, -15};
 	               /*    24,   32,   40,   48,   -,   -,   -,   - */
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_atip") <= 0)
 		return;
 
@@ -2082,6 +2097,7 @@ void mmc_read_sectors(struct burn_drive *d,
 	int errorblock, req;
 	struct command c;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_read_sectors") <= 0)
 		return;
 
@@ -2152,6 +2168,7 @@ void mmc_erase(struct burn_drive *d, int fast)
 {
 	struct command c;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_erase") <= 0)
 		return;
 
@@ -2173,6 +2190,7 @@ void mmc_read_lead_in(struct burn_drive *d, struct buffer *buf)
 	int len;
 	struct command c;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_read_lead_in") <= 0)
 		return;
 
@@ -2201,6 +2219,7 @@ void mmc_perform_opc(struct burn_drive *d)
 {
 	struct command c;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_perform_opc") <= 0)
 		return;
 
@@ -2233,6 +2252,7 @@ int mmc_set_streaming(struct burn_drive *d,
 	unsigned char *pd;
 	int key, asc, ascq;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_set_streaming") <= 0)
 		return 0;
 
@@ -2323,6 +2343,7 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	int ret, end_lba = 0;
 	struct burn_speed_descriptor *best_sd = NULL;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_set_speed") <= 0)
 		return;
 
@@ -2663,6 +2684,7 @@ void mmc_get_configuration(struct burn_drive *d)
 {
 	int alloc_len = 8, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_configuration") <= 0)
 		return;
 
@@ -2866,6 +2888,7 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 {
 	int alloc_len = 4, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_format_capacities") <= 0)
 		return 0;
 
@@ -3012,6 +3035,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	int key, asc, ascq;
 	int full_format_type = 0x00; /* Full Format (or 0x10 for DVD-RW ?) */
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_format_unit") <= 0)
 		return 0;
 	size_mode = (flag >> 1) & 3;
@@ -3753,6 +3777,7 @@ int mmc_get_write_performance(struct burn_drive *d)
 {
 	int alloc_len = 8, max_descr = 0, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_write_performance") <= 0)
 		return 0;
 
@@ -3893,6 +3918,7 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 {
 	struct command c;
 
+	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_read_10") <= 0)
 		return -1;
 ;
@@ -3951,6 +3977,7 @@ int mmc_read_capacity(struct burn_drive *d)
 	int alloc_len= 8;
 
 	d->media_read_capacity = 0x7fffffff;
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_capacity") <= 0)
 		return 0;
 
@@ -4035,6 +4062,7 @@ int mmc_read_disc_structure(struct burn_drive *d,
 {
 	int alloc_len = 4, ret;
 
+	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_disc_structure") <= 0)
 		return 0;
 
