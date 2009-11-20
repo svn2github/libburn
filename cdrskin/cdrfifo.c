@@ -637,7 +637,7 @@ return: <0 = error , 0 = idle , 1 = did some work
 */
 {
  double buffer_space;
- int can_read,can_write,ret,did_work= 0,idx,sod,eop_is_near,eop_idx;
+ int can_read,can_write= 0,ret,did_work= 0,idx,sod,eop_is_near,eop_idx;
 
  buffer_space= Cdrfifo_tell_buffer_space(o,0);
  if(o->dest_fd>=0) if(FD_ISSET((o->dest_fd),wts)) {
