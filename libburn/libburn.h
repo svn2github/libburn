@@ -2831,4 +2831,11 @@ int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info)
 #endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
 
 
+/* ts A91120 */
+/* Allocate write buffer via mmap() rather than calloc() and use flag
+   SG_FLAG_DIRECT_IO when running ioctl(SG_IO).
+#define Libburn_mmap_write_buffeR 1
+*/
+
+
 #endif /*LIBBURN_H*/

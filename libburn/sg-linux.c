@@ -2,8 +2,10 @@
 
 
 /* <<< ts A91112 : experiments to get better speed with USB
-#define Libburn_sgio_as_growisofS 1
 */
+#ifdef Libburn_mmap_write_buffeR
+#define Libburn_sgio_as_growisofS 1
+#endif
 
 
 /*

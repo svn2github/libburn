@@ -50,6 +50,12 @@
 extern struct libdax_msgs *libdax_messenger;
 
 
+/* ts A91120 : <<< experimental */
+#ifdef Libburn_mmap_write_buffeR
+#include <sys/mman.h>
+#endif
+
+
 /* The maximum output size to be used with CD media. This is also curbed
    by BURN_OS_TRANSPORT_BUFFER_SIZE. The smaller number gets into effect.
 */ 
@@ -2307,6 +2313,11 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	off_t default_size;
 	char msg[80];
 
+#ifdef Libburn_mmap_write_buffeR
+	size_t buffer_size;
+#endif
+
+
 /* ts A60924 : libburn/message.c gets obsoleted
 	burn_message_clear_queue();
 */
@@ -2321,9 +2332,21 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	else
 		d->stream_recording_start = 0;
 
+#ifdef Libburn_mmap_write_buffeR
+	fprintf(stderr,
+		"libburn_EXPERIMENTAL: allocating write buffer via mmap()\n");
+	buffer_size = sizeof(struct buffer);
+	if (buffer_size % (64 * 1024))
+		buffer_size += 64 * 1024 - (buffer_size % (64 * 1024));
+	d->buffer = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE,
+				MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
+	if(d->buffer == MAP_FAILED)
+		goto fail_wo_sync;
+#else
 	d->buffer = calloc(sizeof(struct buffer), 1);
 	if (d->buffer == NULL)
 		goto fail_wo_sync;
+#endif /* ! Libburn_mmap_write_buffeR */
 
 
 /* >>> ts A90321
@@ -2546,7 +2569,11 @@ fail_wo_sync:;
 ex:;
 	d->do_stream_recording = 0;
 	if (d->buffer != NULL)
+#ifdef Libburn_mmap_write_buffeR
+		munmap(d->buffer, buffer_size);
+#else
 		free((char *) d->buffer);
+#endif
 	d->buffer = buffer_mem;
 	return;
 }
