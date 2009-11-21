@@ -1379,7 +1379,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	struct buffer *out = d->buffer;
 	int sectors;
 	int i, open_ended = 0, ret= 0, is_flushed = 0;
-	int first_buf_cap = 0, further_cap = 0, buf_cap_step = 256;
+	int first_buf_cap = 0, further_cap = 0, buf_cap_step = 1024;
 
 	/* ts A70213 : eventually expand size of track to max */
 	burn_track_apply_fillup(t, d->media_capacity_remaining, 0);
