@@ -6848,8 +6848,11 @@ burn_failed:;
    hflag= (skin->verbosity>=Cdrskin_verbose_debuG);
    if(i==skin->track_counter-1)
      Cdrtrack_ensure_padding(skin->tracklist[i],hflag&1);
-   if(skin->fifo_size >= 256 * 1024)
+
+/* if(skin->fifo_size >= 256 * 1024) */
+
      hflag|= 4;
+
    ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
    if(ret<=0) {
      fprintf(stderr,"cdrskin: FATAL : Cannot add track %d to session.\n",i+1);
