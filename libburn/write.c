@@ -1103,10 +1103,10 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
  		/* Round track size up to write chunk size and reserve track */
-		size = ((off_t) burn_track_get_sectors(s->track[tnum]));
+		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+			* (off_t) 2048;
 		if (size % o->obs)
 			size += (off_t) (o->obs - (size % o->obs));
-		size *= (off_t) 2048;
 		ret = d->reserve_track(d, size);
 		if (ret <= 0) {
 			sprintf(msg, "Cannot reserve track of %.f bytes",
@@ -1145,10 +1145,10 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 	if (o->write_type == BURN_WRITE_SAO &&
 	    ! burn_track_is_open_ended(s->track[tnum])) {
  		/* Round track size up to write chunk size and reserve track */
-		size = ((off_t) burn_track_get_sectors(s->track[tnum]));
+		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+			* (off_t) 2048;
 		if (size % o->obs)
 			size += (off_t) (o->obs - (size % o->obs));
-		size *= (off_t) 2048;
 		ret = d->reserve_track(d, size);
 		if (ret <= 0) {
 			sprintf(msg, "Cannot reserve track of %.f bytes",
