@@ -152,6 +152,9 @@ or
 */
 #define Cdrskin_libburn_has_fsync_obS 1
 
+/* >>> do not forget to remove Libburn_has_open_trac_srC at release of 0.7.4 */
+
+
 #endif /* Cdrskin_libburn_0_7_3 */
 
 #ifndef Cdrskin_libburn_versioN
@@ -342,23 +345,6 @@ or
 
 /** Verbosity level for fifo debugging */
 #define Cdrskin_verbose_debug_fifO 4
-
-#ifdef Cdrskin_read_o_direcT
-/* Linux 2.6.18:
-   This can avoid low write speed via USB with 32 KB SCSI write chunks.
-   64 KB write chunking is 20% more effective, though, and this size is
-   not in need for O_DIRECT.
-   Strange: Vanilla read() brings USB 32 KB WRITE down from 11x to 7.5x.
-   Throughput from /dev/zero to /dev/null is 230x. The disk delivers 56x.
-   Clearly Linux USB has a problem with 32 KB chunks. read() without O_DIRECT
-   makes it worse.
-   cdrecord and growisofs bring 11x. At least growisofs uses O_DIRECT for its
-   fifo input.
-*/
-# ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-# endif
-#endif /* Cdrskin_read_o_direcT */
 
 
 #include <stdio.h>
@@ -1319,7 +1305,7 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
                 bit0=debugging verbosity
                 bit1=open as source for direct write: 
                      no audio extract, no minimum track size
-                bit2=permission to use O_DIRECT (if enabled at compile time)
+                bit2=permission to use burn_os_open_track_src() (evtl O_DIRECT)
     @return <=0 error, 1 success
 */
 int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
@@ -1410,16 +1396,12 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    if(is_wav==-3)
      return(0);
    if(is_wav==0) {
-#ifdef Cdrskin_read_o_direcT
-     if(flag & 4) {
-       *fd= open64(track->source_path, O_RDONLY | O_DIRECT);
-       if(flag & 1)
-         fprintf(stderr,"cdrskin: DEBUG : opened track inlet O_DIRECT\n");
-     } else
+#ifdef Libburn_has_open_trac_srC
+     if(flag & 4)
+       *fd= burn_os_open_track_src(track->source_path, O_RDONLY, 0);
+     else
 #endif
-     {
        *fd= open(track->source_path, O_RDONLY);
-     }
    }
    if(*fd==-1) {
      fprintf(stderr,"cdrskin: failed to open source address '%s'\n",
@@ -1603,7 +1585,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 */
 {
  struct burn_track *tr;
- struct burn_source *src= NULL;
+ struct burn_source *src= NULL, *fd_src= NULL;
  double padding,lib_padding;
  int ret,sector_pad_up;
  double fixed_size;
@@ -1660,6 +1642,33 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  }
  src= burn_fd_source_new(track->source_fd,-1,(off_t) fixed_size);
 
+/*
+#define Cdrskin_try_libburn_fifO 1
+*/
+
+#ifdef Cdrskin_try_libburn_fifO
+
+ if(src != NULL) {
+   int fifo_enabled, fifo_size, fifo_start_at;
+   int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
+                            int *fifo_size, int *fifo_start_at, int flag);
+
+   Cdrskin_get_fifo_par(track->boss, &fifo_enabled, &fifo_size, &fifo_start_at,
+                        0);
+   if(fifo_size <= 0) { /* currently: hardcoded 32m if fs=0 */
+     fd_src= src;
+
+     /* >>> ??? will chunksize 2048 work with audio ? */
+
+     src= burn_fifo_source_new(fd_src, 2048, 16384, 1);
+
+     fprintf(stderr, "cdrskin_DEBUG: %s 32m libburn fifo\n",
+             src != NULL ? "installed" : "failed to install");
+   }
+ }
+
+#endif
+
  if(src==NULL) {
    fprintf(stderr,
            "cdrskin: FATAL : Could not create libburn data source object\n");
@@ -1672,6 +1681,8 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  burn_session_add_track(session,tr,BURN_POS_END);
  ret= 1;
 ex:
+ if(fd_src!=NULL)
+   burn_source_free(fd_src);
  if(src!=NULL)
    burn_source_free(src);
  return(ret);

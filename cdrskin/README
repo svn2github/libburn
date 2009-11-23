@@ -397,14 +397,16 @@ drive. See man page section FILES for a way to lift that ban.
 
                         Special compilation variations
 
-All following options of cdrskin/compile_cdrskin.sh are combinable.
+All following options of ./configure and cdrskin/compile_cdrskin.sh are
+combinable.
 
-In some situations Linux delivers a better write performance to drives if
-the track input is read with O_DIRECT (see man 2 open). The input reader of
-the cdrskin fifo can be told to use this peculiar read mode by :
-    cdrskin/compile_cdrskin.sh -o_direct
+In some situations Linux may deliver a better write performance to drives if
+the track input is read with O_DIRECT (see man 2 open). The API call
+burn_os_open_track_src() and the input readers of cdrskin and libburn fifo
+can be told to use this peculiar read mode by:
+   --enable-track-src-odirect
 
-But typically cdrskin option dvd_obs=64k will yield even better performance in
+But often cdrskin option dvd_obs=64k will yield even better performance in
 such a situation. 64k can be made default at compile time by 
     cdrskin/compile_cdrskin.sh -dvd_obs_64k
 It can also be enabled at configure time by

@@ -25,9 +25,10 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
-#ifdef Cdrskin_read_o_direcT
-#include <sys/mman.h>
-#endif /* Cdrskin_read_o_direcT */
+#ifndef Cdrfifo_standalonE
+/* <<< until release of 0.7.4 : for Libburn_has_open_trac_srC */
+#include "../libburn/libburn.h"
+#endif
 
 #include "cdrfifo.h"
 
@@ -179,19 +180,14 @@ int Cdrfifo_new(struct CdrfifO **ff, int source_fd, int dest_fd,
  o->next= o->prev= NULL;
  o->chain_idx= 0;
 
-#ifdef Cdrskin_read_o_direcT
- if(flag & 1)
-   fprintf(stderr,"cdrfifo: DEBUG : allocating fifo buffer via mmap()\n");
- o->buffer= mmap(NULL, (size_t) buffer_size, PROT_READ | PROT_WRITE,
-                 MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
- if(o->buffer == MAP_FAILED)
-   goto failed;
+#ifdef Libburn_has_open_trac_srC
+ o->buffer= burn_os_alloc_buffer((size_t) buffer_size, 0);
 #else
  o->buffer= TSOB_FELD(char,buffer_size);
+#endif /* ! Libburn_has_open_trac_srC */
+
  if(o->buffer==NULL)
    goto failed;
-#endif /* ! Cdrskin_read_o_direcT */
-
  return(1);
 failed:;
  Cdrfifo_destroy(ff,0);
@@ -243,11 +239,11 @@ int Cdrfifo_destroy(struct CdrfifO **ff, int flag)
    free((char *) o->iso_fs_descr);
 
  if(o->buffer!=NULL)
-#ifdef Cdrskin_read_o_direcT
-   munmap(o->buffer, o->buffer_size);
+#ifdef Libburn_has_open_trac_srC
+   burn_os_free_buffer(o->buffer, o->buffer_size, 0);
 #else
    free((char *) o->buffer);
-#endif /* Cdrskin_read_o_direcT */
+#endif /* Libburn_has_open_trac_srC */
 
  free((char *) o);
  (*ff)= NULL;
@@ -681,15 +677,12 @@ after_write:;
  if(o->source_fd>=0) if(FD_ISSET((o->source_fd),rds)) {
    can_read= o->buffer_size - o->write_idx;
 
-#ifdef Cdrskin_read_o_direcT
+#ifdef Libburn_has_open_trac_srC
 
    /* ts A91115
       This chunksize must be aligned to filesystem blocksize.
-      One might try to inquire the block size behind o->source_fd, but since
-      O_DIRECT is a dirty hack anyway, i just guess that 64 KiB is divisible
-      by any existing block size on Linux.
     */
-#define Cdrfifo_o_direct_chunK 65536
+#define Cdrfifo_o_direct_chunK 32768
 
    if(o->write_idx < o->read_idx && o->write_idx + can_read > o->read_idx)
      can_read= o->read_idx - o->write_idx;
@@ -721,7 +714,7 @@ after_write:;
      }
    } else
 
-#else /* Cdrskin_read_o_direcT */
+#else /* Libburn_has_open_trac_srC */
 
    if(can_read>o->chunk_size)
      can_read= o->chunk_size;
@@ -734,7 +727,7 @@ after_write:;
    if(can_read>0)
      ret= read(o->source_fd,o->buffer+o->write_idx,can_read);
 
-#endif /* ! Cdrskin_read_o_direcT */
+#endif /* ! Libburn_has_open_trac_srC */
 
    if(ret==-1) {
 

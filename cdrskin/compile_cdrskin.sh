@@ -60,9 +60,6 @@ do
   elif test "$i" = "-no_largefile"
   then
     largefile_opts=	
-  elif test "$i" = "-o_direct"
-  then
-    def_opts="$def_opts -DCdrskin_read_o_direcT"
   elif test "$i" = "-dvd_obs_64k"
   then
     def_opts="$def_opts -DCdrskin_dvd_obs_default_64K"
@@ -88,7 +85,6 @@ do
     echo "  -compile_dewav    compile program test/dewav without libburn."
     echo "  -libburn_0_7_2    set macro to match libburn-0.7.2"
     echo "  -libburn_svn      set macro to match current libburn-SVN."
-    echo "  -o_direct         use open(O_DIRECT) on fifo input (Linux only)."
     echo "  -dvd_obs_64k      64 KB default size for DVD/BD writing."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."
     echo "  -experimental     use newly introduced libburn features."
