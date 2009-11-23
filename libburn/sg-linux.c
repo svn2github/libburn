@@ -2,10 +2,8 @@
 
 
 /* <<< ts A91112 : experiments to get better speed with USB
-*/
-#ifdef Libburn_mmap_write_buffeR
 #define Libburn_sgio_as_growisofS 1
-#endif
+*/
 
 
 /*
@@ -56,7 +54,22 @@ sg_issue_command()      sends a SCSI command to the drive, receives reply,
 
 sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
+
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
+
+burn_os_open_track_src()  opens a disk file in a way that allows best
+                        throughput with file reading and/or SCSI write command
+                        transmission.
+
+burn_os_close_track_src()  closes a filedescriptor obtained by
+                        burn_os_open_track_src().
+
+burn_os_alloc_buffer()  allocates a memory area that is suitable for file
+                        descriptors issued by burn_os_open_track_src().
+                        The buffer size may be rounded up for alignment
+                        reasons.
+
+burn_os_free_buffer()   delete a buffer obtained by burn_os_alloc_buffer().
 
 
 Porting hints are marked by the text "PORTING:".
@@ -69,6 +82,13 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 
 
 /** PORTING : ------- OS dependent headers and definitions ------ */
+
+
+#ifdef Libburn_read_o_direcT
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+# endif
+#endif /* Libburn_read_o_direcT */
 
 #include <errno.h>
 #include <unistd.h>
@@ -176,6 +196,7 @@ static int linux_ata_enumerate_verbous = 0;
 
 /** PORTING : ------ libburn portable headers and definitions ----- */
 
+#include "libburn.h"
 #include "transport.h"
 #include "drive.h"
 #include "sg.h"
@@ -2062,6 +2083,93 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
+	return 1;
+}
+
+
+/* ts A91122 : an interface to open(O_DIRECT) or similar OS tricks. */
+
+#ifdef Libburn_read_o_direcT
+
+#include <sys/mman.h>
+
+#ifdef PROT_READ
+#ifdef PROT_WRITE
+#ifdef MAP_SHARED
+#ifdef MAP_ANONYMOUS
+#ifdef MAP_FAILED
+#ifdef O_DIRECT
+
+#define Libburn_linux_do_o_direcT 1
+
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif /* Libburn_read_o_direcT */
+
+
+int burn_os_open_track_src(char *path, int open_flags, int flag)
+{
+	int fd;
+
+#ifdef Libburn_linux_do_o_direcT
+
+	fprintf(stderr,
+		"libburn_EXPERIMENTAL : opening track source with O_DIRECT\n");
+
+	fd = open(path, open_flags | O_DIRECT);
+#else
+	fd = open(path, open_flags);
+#endif
+	return fd;
+}
+
+
+int burn_os_close_track_src(int fd, int flag)
+{
+	int ret = 0;
+
+	if(fd != -1)
+		ret = close(fd);
+	return ret;
+}
+
+
+void *burn_os_alloc_buffer(size_t amount, int flag)
+{
+	void *buf = NULL;
+
+#ifdef Libburn_linux_do_o_direcT
+
+	/* >>> check whether size is suitable */;
+
+	fprintf(stderr,
+		"libburn_EXPERIMENTAL : allocating buffer via mmap()\n");
+
+	buf = mmap(NULL, amount, PROT_READ | PROT_WRITE,
+			 	MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
+	if (buf == MAP_FAILED)
+		buf = NULL;
+	else
+		memset(buf, 0, amount);
+#else
+	buf = calloc(1, amount);
+#endif /* ! Libburn_linux_do_o_direcT */
+
+	return buf;
+}
+
+
+int burn_os_free_buffer(void *buffer, size_t amount, int flag)
+{
+#ifdef Libburn_linux_do_o_direcT
+	munmap(buffer, amount);
+#else
+	free(buffer);
+#endif
 	return 1;
 }
 

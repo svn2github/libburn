@@ -627,7 +627,8 @@ int burn_fifo_start(struct burn_source *source, int flag)
 	fs->is_started = -1;
 
 	/* create and set up ring buffer */;
-	fs->buf = calloc(fs->chunksize, fs->chunks);
+	fs->buf = burn_os_alloc_buffer(
+			((size_t) fs->chunksize) * (size_t) fs->chunks, 0);
 	if (fs->buf == NULL) {
 		/* >>> could not start ring buffer */;
 		return -1;

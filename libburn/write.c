@@ -2313,10 +2313,6 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	off_t default_size;
 	char msg[80];
 
-#ifdef Libburn_mmap_write_buffeR
-	size_t buffer_size;
-#endif
-
 
 /* ts A60924 : libburn/message.c gets obsoleted
 	burn_message_clear_queue();
@@ -2332,22 +2328,11 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	else
 		d->stream_recording_start = 0;
 
-#ifdef Libburn_mmap_write_buffeR
-	fprintf(stderr,
-		"libburn_EXPERIMENTAL: allocating write buffer via mmap()\n");
-	buffer_size = sizeof(struct buffer);
-	if (buffer_size % (64 * 1024))
-		buffer_size += 64 * 1024 - (buffer_size % (64 * 1024));
-	d->buffer = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE,
-				MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
-	if(d->buffer == MAP_FAILED)
-		goto fail_wo_sync;
-#else
-	d->buffer = calloc(sizeof(struct buffer), 1);
+	/* ts A91122 : Get buffer suitable for sources made by
+	               burn_os_open_track_src() */
+	d->buffer = burn_os_alloc_buffer(sizeof(struct buffer), 0);
 	if (d->buffer == NULL)
 		goto fail_wo_sync;
-#endif /* ! Libburn_mmap_write_buffeR */
-
 
 /* >>> ts A90321
 
@@ -2569,11 +2554,8 @@ fail_wo_sync:;
 ex:;
 	d->do_stream_recording = 0;
 	if (d->buffer != NULL)
-#ifdef Libburn_mmap_write_buffeR
-		munmap(d->buffer, buffer_size);
-#else
-		free((char *) d->buffer);
-#endif
+		burn_os_free_buffer((char *) d->buffer,
+					sizeof(struct buffer), 0);
 	d->buffer = buffer_mem;
 	return;
 }

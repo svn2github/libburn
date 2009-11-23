@@ -629,3 +629,47 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	return 1;
 }
 
+
+/* ts A91122 : an interface to open(O_DIRECT) or similar OS tricks. */
+
+#ifdef Libburn_read_o_direcT
+
+	/* No special O_DIRECT-like precautions are implemented here */
+
+#endif /* Libburn_read_o_direcT */
+
+
+int burn_os_open_track_src(char *path, int open_flags, int flag)
+{
+	int fd;
+
+	fd = open(path, open_flags);
+	return fd;
+}
+
+
+int burn_os_close_track_src(int fd, int flag)
+{
+	int ret = 0;
+
+	if(fd != -1)
+		ret = close(fd);
+	return ret;
+}
+
+
+void *burn_os_alloc_buffer(size_t amount, int flag)
+{
+	void *buf = NULL;
+
+	buf = calloc(1, amount);
+	return buf;
+}
+
+
+int burn_os_free_buffer(void *buffer, size_t amount, int flag)
+{
+	free(buffer);
+	return 1;
+}
+

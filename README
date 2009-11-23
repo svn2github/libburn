@@ -60,16 +60,17 @@ Warning: The trunk might contain experimental features which might not
 
                         Special ./configure options
 
-In some situations Linux delivers a better write performance to drives if
-the track input is read with O_DIRECT (see man 2 open). The input reader of
-the cdrskin fifo can be told to use this peculiar read mode by :
-   --enable-cdrskin-fifo-odirect
+In some situations Linux may deliver a better write performance to drives if
+the track input is read with O_DIRECT (see man 2 open). The API call
+burn_os_open_track_src() and the input readers of cdrskin and libburn fifo
+can be told to use this peculiar read mode by:
+   --enable-track-src-odirect
 
-But typically libburn call burn_write_opts_set_dvd_obs(opts, 64*1024) will
-yield even better performance in such a situation. 64k can be made default
-at configure time by :
+But often libburn call burn_write_opts_set_dvd_obs(opts, 64*1024) will yield
+even better performance in such a situation. 64k can be made default at
+configure time by:
     --enable-dvd-obs-64k
-This may be combined with above --enable-cdrskin-fifo-odirect .
+This may be combined with above --enable-track-src-odirect .
 
 Make sure to re-compile all source files after running ./configure
    make clean ; make

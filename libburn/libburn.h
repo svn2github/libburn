@@ -1791,6 +1791,67 @@ void burn_source_free(struct burn_source *s);
 struct burn_source *burn_file_source_new(const char *path,
 					 const char *subpath);
 
+
+/* ts A91122 : An interface to open(O_DIRECT) or similar OS tricks. */
+
+/* <<< temporary indicator until release 0.7.4
+*/
+#define Libburn_has_open_trac_srC 1
+
+/** Opens a file with eventual acceleration preparations which may depend
+    on the operating system and on compile time options of libburn.
+    You may use this call instead of open(2) for opening file descriptors
+    which shall be handed to burn_fd_source_new().
+
+    If you use this call then you MUST allocate the buffers which you use
+    with read(2) by call burn_os_alloc_buffer(). Read sizes MUST be a multiple
+    of a safe buffer amount. Else you risk that track data get altered during
+    transmission.
+    burn_disk_write() will allocate a suitable read/write buffer for its own
+    operations. A fifo created by burn_fifo_source_new() will allocate
+    suitable memory for its buffer if called with flag bit0 and a multiple
+    of a safe buffer amount. 
+    @param path       The file address to open
+    @param open_flags The flags as of man 2 open. Normally just O_RDONLY.
+    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @return           A file descriptor as of open(2). Close it by
+                      burn_os_close_track_src().
+                      -1 indicates failure.
+    @since 0.7.4
+*/
+int burn_os_open_track_src(char *path, int open_flags, int flag);
+
+/** Close a file descriptor opened by burn_os_open_track_src().
+    @param fd         Filedescriptor to be closed
+    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @return           like close(2): 0 on success, -1 on error
+    @since 0.7.4
+*/
+int burn_os_close_track_src(int fd, int flag);
+
+/** Allocate a memory area that is suitable for reading with a file descriptor
+    opened by burn_os_open_track_src().
+    @param amount     Number of bytes to allocate. This should be a multiple
+                      of the operating system's i/o block size. 32 KB is
+                      guaranteed by libburn to be safe.
+    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @return           The address of the allocated memory, or NULL on failure.
+                      A non-NULL return value has finally to be disposed via
+                      burn_os_free_buffer().
+    @since 0.7.4
+*/
+void *burn_os_alloc_buffer(size_t amount, int flag);
+
+/** Dispose a memory area which was obtained by burn_os_alloc_buffer(),
+    @param buffer     Memory address to be freed.
+    @param amount     The number of bytes which was allocated at that
+                      address.
+    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @since 0.7.4
+*/
+int burn_os_free_buffer(void *buffer, size_t amount, int flag);
+
+
 /** Creates a data source for an image file (a track) from an open
     readable filedescriptor, an eventually open readable subcodes file
     descriptor and eventually a fixed size in bytes.
@@ -1829,7 +1890,17 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
                       a particular chunksize. E.g. libisofs demands 2048.
     @param chunks     The number of chunks to be allocated in ring buffer.
                       This value must be >= 2.
-    @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @param flag       Bitfield for control purposes:
+                      bit0= The read method of inp is capable of delivering
+                            arbitrary amounts of data per call. Not only one
+                            sector.
+                            Suitable for inp from burn_file_source_new()
+                            and burn_fd_source_new() if not the fd has
+                            exotic limitations on read size.
+                            You MUST use this on inp which uses an fd opened
+                            with burn_os_open_track_src().
+                            Better do not use with other inp types.
+                            @since 0.7.4
     @return           A pointer to the newly created burn_source.
                       Later both burn_sources, inp and the returned fifo, have
                       to be disposed by calling burn_source_free() for each.
@@ -2829,13 +2900,6 @@ BURN_END_DECLS
 int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info)
 
 #endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
-
-
-/* ts A91120 */
-/* Allocate write buffer via mmap() rather than calloc() and use flag
-   SG_FLAG_DIRECT_IO when running ioctl(SG_IO).
-#define Libburn_mmap_write_buffeR 1
-*/
 
 
 #endif /*LIBBURN_H*/

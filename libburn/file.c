@@ -311,8 +311,10 @@ static void fifo_free(struct burn_source *source)
 	burn_fifo_abort(fs, 0);
 	if (fs->inp != NULL)
 		burn_source_free(fs->inp);
+
 	if (fs->buf != NULL)
-		free(fs->buf);
+		burn_os_free_buffer(fs->buf,
+			((size_t) fs->chunksize) * (size_t) fs->chunks, 0);
 	free((char *) fs);
 }
 
@@ -344,10 +346,10 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 				free_bytes = diff - 1;
 			else {
 				free_bytes = (bufsize - wpos) + rpos - 1;
-				if (bufsize - wpos < fs->chunksize)
+				if (bufsize - wpos < fs->inp_read_size)
 					trans_end = 1;
 			}
-			if (free_bytes >= fs->chunksize)
+			if (free_bytes >= fs->inp_read_size)
 		break;
 			fifo_sleep(0);
 		}
@@ -355,7 +357,8 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		/* prepare the receiving memory */
 		bufpt = fs->buf + wpos;
 		if (trans_end) {
-			bufpt = calloc(fs->chunksize, 1);
+			bufpt = burn_os_alloc_buffer(
+					(size_t) fs->inp_read_size, 0);
 			if (bufpt == NULL) {
 				libdax_msgs_submit(libdax_messenger, -1,
 				  0x00000003,
@@ -369,10 +372,10 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		/* Obtain next chunk */
 		if (fs->inp->read != NULL)
 			ret = fs->inp->read(fs->inp,
-				 (unsigned char *) bufpt, fs->chunksize);
+				 (unsigned char *) bufpt, fs->inp_read_size);
 		else
 			ret = fs->inp->read_xt( fs->inp,
-				 (unsigned char *) bufpt, fs->chunksize);
+				 (unsigned char *) bufpt, fs->inp_read_size);
 		if (ret > 0)
 			fs->in_counter += ret;
 		else if (ret == 0)
@@ -388,15 +391,17 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		}
 
 		/* activate read chunk */
-		if (ret > fs->chunksize) /* beware of ill custom burn_source */
-			ret = fs->chunksize;
+		if (ret > fs->inp_read_size)
+					/* beware of ill custom burn_source */
+			ret = fs->inp_read_size;
 		if (trans_end) {
 			/* copy to end of buffer */
 			memcpy(fs->buf + wpos, bufpt, bufsize - wpos);
 			/* copy to start of buffer */
 			memcpy(fs->buf, bufpt + (bufsize - wpos),
-				fs->chunksize - (bufsize - wpos));
-			free(bufpt);
+				fs->inp_read_size - (bufsize - wpos));
+			burn_os_free_buffer(bufpt, (size_t) fs->inp_read_size,
+						0);
 			if (ret >= bufsize - wpos)
 				fs->buf_writepos = ret - (bufsize - wpos);
 			else
@@ -432,7 +437,9 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 	   So in both cases the consumer is aware that reading is futile
 	   or even fatal.
 	*/
-	free(fs->buf); /* Give up fifo buffer. Next fifo might start soon. */
+	if(fs->buf != NULL)
+		burn_os_free_buffer(fs->buf,
+			((size_t) fs->chunksize) * (size_t) fs->chunks, 0);
 	fs->buf = NULL;
 
 	fs->thread_handle= NULL;
@@ -449,7 +456,9 @@ int burn_fifo_cancel(struct burn_source *source)
 	return(1);
 }
 
-
+/*
+   @param flag bit0= allow larger read chunks
+*/
 struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 		 		int chunksize, int chunks, int flag)
 {
@@ -476,6 +485,10 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 	fs->thread_pid = 0;
 	fs->thread_is_valid = 0;
 	fs->inp = NULL; /* set later */
+	if (flag & 1)
+		fs->inp_read_size = 32 * 1024;
+	else
+		fs->inp_read_size = chunksize;
 	fs->chunksize = chunksize;
 	fs->chunks = chunks;
 	fs->buf = NULL;

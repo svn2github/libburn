@@ -179,18 +179,20 @@ dnl If this would be done more specifically in Makefile.am
 dnl via libburn_libburn_la_CFLAGS then undesired .o file names would emerge
 CFLAGS="$CFLAGS $STATVFS_DEF"
 
-dnl ts A91116
-AC_ARG_ENABLE(cdrskin-fifo-odirect,
-[  --enable-cdrskin-fifo-odirect   Enable use of O_DIRECT with cdrskin fifo inlet, default=no],
-               , enable_cdrskin_fifo_odirect=no)
-if test x$enable_cdrskin_fifo_odirect = xyes; then
-    CDRSKIN_O_DIRECT_DEF="-DCdrskin_read_o_direcT"
-    echo "enabled  use of O_DIRECT with cdrskin fifo inlet"
+dnl ts A91122
+AC_ARG_ENABLE(track-src-odirect,
+[  --enable-track-src-odirect   Enable use of O_DIRECT with track input, default=no],
+               , enable_track_src_odirect=no)
+if test x$enable_track_src_odirect = xyes; then
+    LIBBURN_O_DIRECT_DEF="-DLibburn_read_o_direcT"
+    echo "enabled  use of O_DIRECT with track input"
 else
-    CDRSKIN_O_DIRECT_DEF=
-    echo "disabled use of O_DIRECT with cdrskin fifo inlet"
+    LIBBURN_O_DIRECT_DEF=
+    echo "disabled use of O_DIRECT with track input"
 fi
-AC_SUBST(CDRSKIN_O_DIRECT_DEF)
+dnl Avoid the need for libburn_libburn_la_CFLAGS in Makefile.am (ugly .o names)
+dnl ### AC_SUBST(LIBBURN_O_DIRECT_DEF)
+CFLAGS="$CFLAGS $LIBBURN_O_DIRECT_DEF"
 
 dnl ts A91116
 AC_ARG_ENABLE(dvd-obs-64k,
