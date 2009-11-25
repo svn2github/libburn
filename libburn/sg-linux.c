@@ -2128,16 +2128,6 @@ int burn_os_open_track_src(char *path, int open_flags, int flag)
 }
 
 
-int burn_os_close_track_src(int fd, int flag)
-{
-	int ret = 0;
-
-	if(fd != -1)
-		ret = close(fd);
-	return ret;
-}
-
-
 void *burn_os_alloc_buffer(size_t amount, int flag)
 {
 	void *buf = NULL;
@@ -2165,11 +2155,15 @@ void *burn_os_alloc_buffer(size_t amount, int flag)
 
 int burn_os_free_buffer(void *buffer, size_t amount, int flag)
 {
+	int ret = 0;
+
+	if (buffer == NULL)
+		return 0;
 #ifdef Libburn_linux_do_o_direcT
-	munmap(buffer, amount);
+	ret = munmap(buffer, amount);
 #else
 	free(buffer);
 #endif
-	return 1;
+	return (ret == 0);
 }
 

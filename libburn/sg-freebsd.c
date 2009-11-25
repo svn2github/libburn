@@ -707,16 +707,6 @@ int burn_os_open_track_src(char *path, int open_flags, int flag)
 }
 
 
-int burn_os_close_track_src(int fd, int flag)
-{
-	int ret = 0;
-
-	if(fd != -1)
-		ret = close(fd);
-	return ret;
-}
-
-
 void *burn_os_alloc_buffer(size_t amount, int flag)
 {
 	void *buf = NULL;
@@ -728,6 +718,8 @@ void *burn_os_alloc_buffer(size_t amount, int flag)
 
 int burn_os_free_buffer(void *buffer, size_t amount, int flag)
 {
+	if (buffer == NULL)
+		return 0;
 	free(buffer);
 	return 1;
 }

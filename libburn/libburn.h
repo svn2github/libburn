@@ -1814,20 +1814,12 @@ struct burn_source *burn_file_source_new(const char *path,
     @param path       The file address to open
     @param open_flags The flags as of man 2 open. Normally just O_RDONLY.
     @param flag       Bitfield for control purposes (unused yet, submit 0).
-    @return           A file descriptor as of open(2). Close it by
-                      burn_os_close_track_src().
+    @return           A file descriptor as of open(2). Finally to be disposed
+                      by close(2).
                       -1 indicates failure.
     @since 0.7.4
 */
 int burn_os_open_track_src(char *path, int open_flags, int flag);
-
-/** Close a file descriptor opened by burn_os_open_track_src().
-    @param fd         Filedescriptor to be closed
-    @param flag       Bitfield for control purposes (unused yet, submit 0).
-    @return           like close(2): 0 on success, -1 on error
-    @since 0.7.4
-*/
-int burn_os_close_track_src(int fd, int flag);
 
 /** Allocate a memory area that is suitable for reading with a file descriptor
     opened by burn_os_open_track_src().
@@ -1847,6 +1839,7 @@ void *burn_os_alloc_buffer(size_t amount, int flag);
     @param amount     The number of bytes which was allocated at that
                       address.
     @param flag       Bitfield for control purposes (unused yet, submit 0).
+    @return           1 success , <=0 failure
     @since 0.7.4
 */
 int burn_os_free_buffer(void *buffer, size_t amount, int flag);
@@ -1946,9 +1939,9 @@ int burn_fifo_inquire_status(struct burn_source *fifo, int *size,
     data have arrived or until it becomes clear that this will not happen.
     The call may be repeated with increased bufsize. It will always yield
     the bytes beginning from the first one in the fifo.
-    @param fifo     The fifo object to inquire
+    @param fifo     The fifo object to inquire resp. start
     @param buf      Pointer to memory of at least bufsize bytes where to
-                    deliver the peeked data
+                    deliver the peeked data.
     @param bufsize  Number of bytes to peek from the start of the fifo data
     @param flag     Bitfield for control purposes (unused yet, submit 0).
     @return <0 on severe error, 0 if not enough data, 1 if bufsize bytes read
