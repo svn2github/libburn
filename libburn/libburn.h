@@ -1802,6 +1802,8 @@ struct burn_source *burn_file_source_new(const char *path,
     on the operating system and on compile time options of libburn.
     You may use this call instead of open(2) for opening file descriptors
     which shall be handed to burn_fd_source_new().
+    This should only be done for tracks with BURN_BLOCK_MODE1 (2048 bytes
+    per block).
 
     If you use this call then you MUST allocate the buffers which you use
     with read(2) by call burn_os_alloc_buffer(). Read sizes MUST be a multiple
@@ -1926,12 +1928,11 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 int burn_fifo_inquire_status(struct burn_source *fifo, int *size, 
                             int *free_bytes, char **status_text);
 
-
 /* ts A80713 */
 /** Obtain a preview of the first input data of a fifo which was created
     by burn_fifo_source_new(). The data will later be delivered normally to
     the consumer track of the fifo.
-    bufsize may not be larger than the fifo size (chunk_size * chunks).
+    bufsize may not be larger than the fifo size (chunk_size * chunks) - 32k.
     This call will succeed only if data consumption by the track has not
     started yet, i.e. best before the call to burn_disc_write().
     It will start the worker thread of the fifo with the expectable side
@@ -1949,6 +1950,22 @@ int burn_fifo_inquire_status(struct burn_source *fifo, int *size,
 */
 int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
                         int flag);
+
+/* ts A91125 */
+/** Start the fifo worker thread and wait either until the requested number
+    of bytes have arrived or until it becomes clear that this will not happen.
+    Filling will go on asynchronously after burn_fifo_fill() returned.
+    This call and burn_fifo_peek_data() do not disturb each other.
+    @param fifo     The fifo object to start
+    @param fill     Number of bytes desired. Expect to get return 1 if 
+                    at least fifo size - 32k were read.
+    @param flag     Bitfield for control purposes.
+                    bit0= fill fifo to maximum size
+    @return <0 on severe error, 0 if not enough data,
+             1 if desired amount or fifo full
+    @since 0.7.4
+*/
+int burn_fifo_fill(struct burn_source *source, int bufsize, int flag);
 
 
 /* ts A70328 */

@@ -562,12 +562,20 @@ int burn_fifo_inquire_status(struct burn_source *source,
 }
 
 
-int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
+/* @param flag bit0= do not copy to buf but only wait until the fifo has read
+                     bufsize or input ended.
+                     The same happens if buf is NULL.
+               bit1= fill to max fifo size
+*/
+int burn_fifo_fill_data(struct burn_source *source, char *buf, int bufsize,
                         int flag)
 {
 	int size, free_bytes, ret, wait_count= 0;
 	char *status_text;
 	struct burn_source_fifo *fs = source->data;
+
+	if (buf == NULL)
+		flag |= 1;
 
 	/* Eventually start fifo thread by reading 0 bytes */
 	ret = fifo_read(source, (unsigned char *) NULL, 0);
@@ -578,11 +586,26 @@ int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
 	while (1) {
 		ret= burn_fifo_inquire_status(source,
 					 &size, &free_bytes, &status_text);
-		if (size < bufsize) {
-			libdax_msgs_submit(libdax_messenger, -1, 0x0002015c,
-			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-		 	"Fifo size is smaller than desired peek buffer", 0, 0);
-			return -1;
+		if (flag & 2) {
+			bufsize = size - (size % fs->inp_read_size) -
+					fs->inp_read_size;
+			if (bufsize <= 0)
+				return 0;
+		}
+		if (size - fs->inp_read_size < bufsize) {
+			if (flag & 1) {
+				bufsize = size - (size % fs->inp_read_size) -
+						fs->inp_read_size;
+				if (bufsize <= 0)
+					return 0;
+			} else {
+				libdax_msgs_submit(libdax_messenger, -1,
+					0x0002015c, LIBDAX_MSGS_SEV_FAILURE,
+					 LIBDAX_MSGS_PRIO_HIGH,
+			 	"Fifo size too small for desired peek buffer",
+					 0, 0);
+				return -1;
+			}
 		}
 		if (fs->out_counter > 0 || (ret & 4) || fs->buf == NULL) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x0002015e,
@@ -598,17 +621,33 @@ int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
 		"libburn_DEBUG: after waiting cycle %d : fifo %s , %d bytes\n",
 			 wait_count, status_text, size - free_bytes);
 			*/
-
-			memcpy(buf, fs->buf, bufsize);
+			if(!(flag & 1))
+				memcpy(buf, fs->buf, bufsize);
 			return 1;
 		}
-		if (ret&2) { /* input has ended, not enough data arrived */
+
+		if (ret & 2) {
+			/* input has ended, not enough data arrived */
+			if (flag & 1)
+				return 0;
 			libdax_msgs_submit(libdax_messenger, -1, 0x0002015d,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 		 	"Fifo input ended short of desired peek buffer size",
 			0, 0);
 			return 0;
 		}
+
+		if (free_bytes < fs->inp_read_size) {
+			/* Usable fifo size filled, not enough data arrived */
+			if (flag & 1)
+				return 0;
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020174,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+		 	"Fifo alignment does not allow desired read size",
+			0, 0);
+			return 0;
+		}
+
 		usleep(100000);
 		wait_count++;
 
@@ -622,3 +661,20 @@ int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
 	}
 	return(0);
 }
+
+
+/* ts A80713 : API */
+int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
+                        int flag)
+{
+	return burn_fifo_fill_data(source, buf, bufsize, 0);
+}
+
+
+/* ts A91125 : API */
+int burn_fifo_fill(struct burn_source *source, int bufsize, int flag)
+{
+	return burn_fifo_fill_data(source, NULL, bufsize,
+					1 | ((flag & 1) << 1));
+}
+

@@ -528,7 +528,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020159 (DEBUG,HIGH)   = TOC Format 0 returns inconsistent data
  0x0002015a (NOTE,HIGH)    = Could not examine busy device
  0x0002015b (HINT,HIGH)    = Busy '...' seems to be a hard disk, as '...1' exists
- 0x0002015c (FAILURE,HIGH) = Fifo size is smaller than desired peek buffer
+ 0x0002015c (FAILURE,HIGH) = Fifo size too small for desired peek buffer
  0x0002015d (FAILURE,HIGH) = Fifo input ended short of desired peek buffer size
  0x0002015e (FATAL,HIGH)   = Fifo is already under consumption when peeking
  0x0002015f (MISHAP,HIGH)  = Damaged CD table-of-content detected and truncated
@@ -551,6 +551,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020171 (NOTE,HIGH)    = Closing BD-R with accidently open session
  0x00020172 (SORRY,HIGH)   = Read start address larger than number of readable blocks
  0x00020173 (FAILURE,HIGH) = Drive tells NWA smaller than last written address
+ 0x00020174 (SORRY,HIGH)   = Fifo alignment does not allow desired read size
  
 
  libdax_audioxtr:
