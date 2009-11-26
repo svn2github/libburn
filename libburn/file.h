@@ -52,6 +52,14 @@ struct burn_source_fifo {
 
 	off_t in_counter;
 	off_t out_counter;
+
+	int total_min_fill;
+	int interval_min_fill;
+	int put_counter;
+	int get_counter;
+	int empty_counter;
+	int full_counter;
+
 };
 
 

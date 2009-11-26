@@ -1928,6 +1928,38 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 int burn_fifo_inquire_status(struct burn_source *fifo, int *size, 
                             int *free_bytes, char **status_text);
 
+/* ts A91125 */
+/** Inquire various counters which reflect the fifo operation.
+    @param fifo              The fifo object to inquire
+    @param total_min_fill    The minimum number of bytes in the fifo. Beginning
+                             from the moment when fifo consumption is enabled.
+    @param interval_min_fill The minimum byte number beginning from the moment
+                             when fifo consumption is enabled or from the
+                             most recent moment when burn_fifo_next_interval()
+                             was called.
+    @param put_counter       The number of data transactions into the fifo.
+    @param get_counter       The number of data transactions out of the fifo.
+    @param empty_counter     The number of times the fifo was empty.
+    @param full_counter      The number of times the fifo was full.
+    @since 0.7.4
+*/
+void burn_fifo_get_statistics(struct burn_source *source,
+                             int *total_min_fill, int *interval_min_fill,
+                             int *put_counter, int *get_counter,
+                             int *empty_counter, int *full_counter);
+
+/* ts A91125 */
+/** Inquire the fifo minimum fill counter for intervals and reset that counter.
+    @param fifo              The fifo object to inquire
+    @param interval_min_fill The minimum number of bytes in the fifo. Beginning
+                             from the moment when fifo consumption is enabled
+                             or from the most recent moment when
+                             burn_fifo_next_interval() was called.
+    @since 0.7.4
+*/
+void burn_fifo_next_interval(struct burn_source *source,
+                            int *interval_min_fill);
+
 /* ts A80713 */
 /** Obtain a preview of the first input data of a fifo which was created
     by burn_fifo_source_new(). The data will later be delivered normally to
