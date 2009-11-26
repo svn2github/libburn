@@ -74,6 +74,13 @@ do
   elif test "$i" = "-do_strip"
   then
     do_strip=1
+  elif test "$i" = "-use_libburn_fifo"
+  then
+    def_opts="$def_opts -DCdrskin_use_libburn_fifO"
+  elif test "$i" = "-use_no_cdrfifo"
+  then
+    fifo_source=
+    def_opts="$def_opts -DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
   elif test "$i" = "-g"
   then
     debug_opts="-g"
@@ -87,6 +94,8 @@ do
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -dvd_obs_64k      64 KB default size for DVD/BD writing."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."
+    echo "  -use_libburn_fifo use fifo of libburn for single track non-CD"
+    echo "  -use_no_cdrfifo   use fifo of libburn and never cdrfifo"
     echo "  -experimental     use newly introduced libburn features."
     echo "  -oldfashioned     use pre-0.2.2 libburn features only."
     echo "  -do_diet          produce capability reduced lean version."
@@ -107,7 +116,7 @@ echo "Build timestamp   :  $timestamp"
 
 if test "$compile_cdrskin"
 then
-  echo "compiling program cdrskin/cdrskin.c $static_opts $debug_opts $libvers $def_opts $cleanup_src_or_obj"
+  echo "compiling program cdrskin/cdrskin.c $fifo_source $static_opts $debug_opts $libvers $def_opts $cleanup_src_or_obj"
   cc -I. \
     $warn_opts \
     $static_opts \
