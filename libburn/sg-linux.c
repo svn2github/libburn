@@ -108,6 +108,9 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 /* for ioctl(BLKGETSIZE) */
 #include <linux/fs.h>
 
+/* for mmap() */
+#include <sys/mman.h>
+
 
 #include <scsi/sg.h>
 /* Values within sg_io_hdr_t indicating success after ioctl(SG_IO) : */
@@ -2089,24 +2092,21 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 /* ts A91122 : an interface to open(O_DIRECT) or similar OS tricks. */
 
-#ifdef Libburn_read_o_direcT
-
-#include <sys/mman.h>
-
 #ifdef PROT_READ
 #ifdef PROT_WRITE
 #ifdef MAP_SHARED
 #ifdef MAP_ANONYMOUS
 #ifdef MAP_FAILED
+#define Libburn_linux_do_mmaP 1
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#ifdef Libburn_read_o_direcT
 #ifdef O_DIRECT
-
 #define Libburn_linux_do_o_direcT 1
-
-#endif
-#endif
-#endif
-#endif
-#endif
 #endif
 #endif /* Libburn_read_o_direcT */
 
@@ -2132,7 +2132,7 @@ void *burn_os_alloc_buffer(size_t amount, int flag)
 {
 	void *buf = NULL;
 
-#ifdef Libburn_linux_do_o_direcT
+#ifdef Libburn_linux_do_mmaP
 
 	/* >>> check whether size is suitable */;
 
@@ -2147,7 +2147,7 @@ void *burn_os_alloc_buffer(size_t amount, int flag)
 		memset(buf, 0, amount);
 #else
 	buf = calloc(1, amount);
-#endif /* ! Libburn_linux_do_o_direcT */
+#endif /* ! Libburn_linux_do_mmaP */
 
 	return buf;
 }
@@ -2159,7 +2159,7 @@ int burn_os_free_buffer(void *buffer, size_t amount, int flag)
 
 	if (buffer == NULL)
 		return 0;
-#ifdef Libburn_linux_do_o_direcT
+#ifdef Libburn_linux_do_mmaP
 	ret = munmap(buffer, amount);
 #else
 	free(buffer);
