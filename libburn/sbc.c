@@ -17,7 +17,27 @@
 int mmc_function_spy(struct burn_drive *d, char * text);
 
 
-/* spc command set */
+/* START STOP UNIT as of SBC-1 and SBC-2
+   0:  Opcode 0x1B
+   1:  bit0= Immed
+       bit1-7= reserved 
+   2:  reserved
+   3:  reserved
+   4:  bit0= Start (else Stop unit)
+       bit1= Load/Eject (according to Start resp. Stop)
+       bit2-3= reserved
+       bit4-7= Power Condition
+               0= Start Valid: process Start and Load/Eject bits
+               1= assume Active state
+               2= assume Idle state
+               3= assume Stanby state
+              (5= SBC-1 only: assume Sleep state)
+               7= transfer control of power conditions to logical unit
+              10= force idle condition timer to 0
+              11= force standby condition timer to 0
+              All others are reserved.
+   5:  Control (set to 0)
+*/
 static unsigned char SBC_LOAD[] = { 0x1b, 0, 0, 0, 3, 0 };
 static unsigned char SBC_UNLOAD[] = { 0x1b, 0, 0, 0, 2, 0 };
 static unsigned char SBC_START_UNIT[] = { 0x1b, 0, 0, 0, 1, 0 };
@@ -101,7 +121,7 @@ int sbc_start_unit(struct burn_drive *d)
 	ret = sbc_start_unit_flag(d, 1);
 	if (ret <= 0)
 		return ret;
-	/* Synchronous to catch Pioneer DVD-216D which is ready too early.
+	/* Synchronous to catch Pioneer DVR-216D which is ready too early.
 	   A pending START UNIT can prevent ejecting of the tray.
 	*/
 	ret = sbc_start_unit_flag(d, 0);
