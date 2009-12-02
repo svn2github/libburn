@@ -890,9 +890,14 @@ ex:;
 		   next track. cdrecord does not use CLOSE TRACK at all but
 		   ends the tracks by SYNCHRONIZE CACHE alone.
 		*/
-		if (!o->simulate)
-			if (burn_write_close_track(o, s, tnum) <= 0)
-				ret = 0;
+		/* ts A91202 :
+		   Peng Shao reports that his LG GH22LS30 issues an SCSI error
+		   on CLOSE TRACK even in non-dummy mode. So i better give up
+		   this gesture which seems not be needed by any drive.
+			if (!o->simulate)
+				if (burn_write_close_track(o, s, tnum) <= 0)
+					ret = 0;
+		*/
 	}
 	return ret;
 }
