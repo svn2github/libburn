@@ -1395,15 +1395,11 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		ret = burn_disc_open_track_dvd_minus_r(o, s, tnum);
 		if (ret <= 0)
 			goto ex;
-
-#ifdef Libburn_pioneer_dvr_216d_read_buf_caP
 		/* Pioneer DVR-216D rev 1.09 hates multiple buffer inquiries
 		   before the drive buffer is full.
 		*/
 		first_buf_cap = 0;
 		further_cap = -1;
-#endif
-
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
 		ret = burn_disc_open_track_dvd_plus_r(o, s, tnum);

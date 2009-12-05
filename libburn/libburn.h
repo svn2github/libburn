@@ -1581,9 +1581,11 @@ void burn_drive_cancel(struct burn_drive *drive);
 
 
 /* ts A61223 */
-/** Inquire whether the most recent write run was successful. Reasons for
-    non-success may be: rejection of burn parameters, abort during fatal errors
-    during write, a call to burn_drive_cancel() by the application thread.
+/** Inquire whether the most recent asynchronous media job was successful.
+    This applies to burn_disc_erase(), burn_disc_format(), burn_disc_write().
+    Reasons for non-success may be: rejection of burn parameters, abort due to
+    fatal errors during write, blank or format, a call to burn_drive_cancel()
+    by the application thread.
     @param d The drive to inquire.
     @return 1=burn seems to have went well, 0=burn failed 
     @since 0.2.6
@@ -2905,25 +2907,19 @@ BURN_END_DECLS
 #endif
 
 
-/* This solves a problem with Pioneer DVR-216D.
-   Writing of sequential DVD-R[W] happens unnaturally fast and leaves no
-   impact on the media. The drive stalls at the end of the burn run. Only a
-   power cycle makes it usable again.
-
-   Apparent reason:
-   One may not read the buffer capacity more than once before it is full
-   and physical burning begun. Strangely this happens only with libburn and
-   cdrecord-2.01.01a64 -v which both write DVD-R in 32 KB chunks. With
-   wodim's 62 KB chunks there is no endless drive business.
+/* ts A91205 */
+/* The following experiments may be interesting in future:
 */
-#define Libburn_pioneer_dvr_216d_read_buf_caP 1
 
-
-/* The following experiments did not solve the problem with Pioneer DVR-216D
-   but may nevertheless be interesting in future:
-
+/* Perform OPC explicitely.
    # define Libburn_pioneer_dvr_216d_with_opC 1
+*/
+
+/* Load mode page 5 and modify it rather than composing from scratch.
    # define Libburn_pioneer_dvr_216d_load_mode5 1
+*/
+
+/* Inquire drive events and react by reading configuration or starting unit.
    # define Libburn_pioneer_dvr_216d_get_evenT 1
 */
 
