@@ -4061,6 +4061,7 @@ int mmc_read_disc_structure(struct burn_drive *d,
 		char **reply, int *reply_len, int flag)
 {
 	int alloc_len = 4, ret;
+	char msg[80];
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_disc_structure") <= 0)
@@ -4073,7 +4074,42 @@ int mmc_read_disc_structure(struct burn_drive *d,
 	fprintf(stderr,"LIBBURN_DEBUG: ADh alloc_len = %d , ret = %d\n",
 		 alloc_len, ret);
 */
-	if (alloc_len >= 12 && ret > 0)
+	if (ret <= 0)
+		return ret;
+	if (alloc_len < 12) {
+		sprintf(msg,
+		    "READ DISC STRUCTURE announces only %d bytes of reply\n", 
+		    alloc_len);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			msg, 0, 0);
+		ret = 0;
+
+/* LG GH22LS30 revision 1.00 returns for DVD-R an allocation
+   length of 4 (= 0 payload). A MS-Windows tool can inquire
+   media code "RITEKF1", though.
+   This macro causes a try to unconditionally read the desired
+   payload bytes.
+#define Libburn_enforce_structure_code_0x0E 1
+*/
+
+#ifdef Libburn_enforce_structure_code_0x0E
+		if (format == 0x0E) {
+			alloc_len = min_len + 4;
+			ret = mmc_read_disc_structure_al(d, &alloc_len,
+				media_type, layer_number, format, min_len,
+				reply, reply_len, 0);
+			if (*reply_len < min_len || *reply == NULL)
+				ret = 0;
+			sprintf(msg, "READ DISC STRUCTURE returns %d bytes of required %d\n", 
+				*reply_len + 4, min_len + 4);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				msg, 0, 0);
+		}
+#endif
+
+	} else
 		ret = mmc_read_disc_structure_al(d, &alloc_len,
 				media_type, layer_number, format, min_len,
 				reply, reply_len, 0);
