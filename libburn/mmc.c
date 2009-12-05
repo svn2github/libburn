@@ -2310,26 +2310,10 @@ int mmc_set_streaming(struct burn_drive *d,
 	d->issue_command(d, &c);
 	if (c.error) {
 		if (c.sense[2]!=0 && !d->silent_on_scsi_error) {
-
-#ifdef NIX
-			sprintf(msg,
-	"SCSI error on set_streaming(%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
-				w_speed,
-				c.sense[2],c.sense[12],c.sense[13]);
-				libdax_msgs_submit(libdax_messenger,
-				d->global_index,
-				0x00020124,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-#else /* NIX */
-
 			sprintf(msg,
 				"SCSI error on set_streaming(%d): ", w_speed);
 			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
-
-#endif /* !NIX */
-
 		}
 		return 0;
 	}

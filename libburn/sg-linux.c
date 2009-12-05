@@ -2116,10 +2116,9 @@ int burn_os_open_track_src(char *path, int open_flags, int flag)
 	int fd;
 
 #ifdef Libburn_linux_do_o_direcT
-
-	fprintf(stderr,
-		"libburn_EXPERIMENTAL : opening track source with O_DIRECT\n");
-
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+		"Opening track source with O_DIRECT" , 0, 0);
 	fd = open(path, open_flags | O_DIRECT);
 #else
 	fd = open(path, open_flags);
@@ -2136,9 +2135,9 @@ void *burn_os_alloc_buffer(size_t amount, int flag)
 
 	/* >>> check whether size is suitable */;
 
-	fprintf(stderr,
-		"libburn_EXPERIMENTAL : allocating buffer via mmap()\n");
-
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+		"Allocating buffer via mmap()" , 0, 0);
 	buf = mmap(NULL, amount, PROT_READ | PROT_WRITE,
 			 	MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
 	if (buf == MAP_FAILED)
