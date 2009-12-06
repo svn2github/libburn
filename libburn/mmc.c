@@ -4069,12 +4069,19 @@ int mmc_read_disc_structure(struct burn_drive *d,
 			msg, 0, 0);
 		ret = 0;
 
-/* LG GH22LS30 revision 1.00 returns for DVD-R an allocation
-   length of 4 (= 0 payload). A MS-Windows tool can inquire
-   media code "RITEKF1", though.
-   This macro causes a try to unconditionally read the desired
-   payload bytes.
-#define Libburn_enforce_structure_code_0x0E 1
+/* ts A91205
+   LG GH22LS30 revision 1.00 returns for DVD-R format
+   code 0x0E an allocation length of 4 (= 0 payload).
+   A MS-Windows tool can inquire media code "RITEKF1",
+   though.
+   This macro causes a try to unconditionally read the
+   desired payload bytes. The drive then returns 35
+   bytes as requested and the media id is "RITEKF1".
+   Nevertheless this is not a generally usable gesture
+   because older Linux USB dislikes requests to fetch
+   more bytes than the drive will deliver.
+
+   # define Libburn_enforce_structure_code_0x0E 1
 */
 
 #ifdef Libburn_enforce_structure_code_0x0E
