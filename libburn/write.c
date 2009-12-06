@@ -1285,6 +1285,12 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
                      MAP_SHARED | MAP_ANONYMOUS, -1, (off_t) 0);
             is supposed to allocate a properly aligned buffer.
             64 KB is supposed to be a safe size.
+            Actually mmap() seems to be the main cause for a positive effect
+            of O_DIRECT.
+
+   This simplified transmission function did not bring visible benefit.
+   So for now it is not worth to teach it all applicable details of old
+   CD sector oriented transmission.
 
    @return 1= ok, go on , 2= no input with track->open_ended = nothing written
            <= 0 = error
