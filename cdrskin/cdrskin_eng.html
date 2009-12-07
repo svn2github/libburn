@@ -61,7 +61,7 @@ via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.7.2</DT>
+<DT>libburn-0.7.4</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -193,8 +193,8 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.7.2.pl01.tar.gz">cdrskin-0.7.2.pl01.tar.gz</A>
-(780 KB).
+<DD><A HREF="cdrskin-0.7.4.pl00.tar.gz">cdrskin-0.7.4.pl00.tar.gz</A>
+(810 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -245,18 +245,11 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <P>
 Enhancements towards previous stable version cdrskin-0.7.0.pl00:
 <UL>
-<LI>Better interpretation of options -mode2, -xa, -xa1, -xa2</LI>
-<LI>New option --xa1-ignore</LI>
-<LI>New -atip report lines "Product Id:" and "Producer:"</LI>
-<LI>Emulation of some -minfo output</LI>
-<!--
-<LI>none</LI>
--->
-</UL>
-
-Bug fixes towards cdrskin-0.7.0.pl00:
-<UL>
-<LI>CD TAO sessions with multiple tracks did not work in -dummy mode</LI>
+<LI>Implemented option -V for logging of SCSI commands</LI>
+<LI>New options dvd_obs= and stdio_fsync=</LI>
+<LI>New ./configure options --enable-track-src-odirect, --enable-dvd-obs-64k
+</LI>
+<LI>New compile_cdrskin.sh option -dvd_obs_64k</LI>
 <!--
 <LI>none</LI>
 -->
@@ -266,40 +259,40 @@ Bug fixes towards cdrskin-0.7.2.pl00:
 <UL>
 <LI>Workaround for Pioneer DVR-216D which got stuck on DVD-R burns.</LI>
 <LI>Workaround for Pioneer DVR-216D which did not always eject the tray.</LI>
+<LI>DVD DAO track size was rounded up much too generously</LI>
+<LI>SIGSEGV from NULL pointer with media product id inquiry on LG GH22LS30</LI>
+<!--
+<LI>none</LI>
+-->
 </UL>
 
 <HR>
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.7.3 :</H3></DT>
-<DD>Enhancements towards current stable version 0.7.2.pl00:
+<DT><H3>Development snapshot, version 0.7.5 :</H3></DT>
+<DD>Enhancements towards current stable version 0.7.4.pl00:
 <UL>
-<LI>Implemented option -V for logging of SCSI commands</LI>
-<LI>New options dvd_obs= and stdio_fsync=</LI>
-<LI>New compile_cdrskin.sh options -o_direct (Linux only), -dvd_obs_64k</LI>
-<!--
 <LI>none yet</LI>
+<!--
 -->
 
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-0.7.2.pl00:
+<DD>Bug fixes towards cdrskin-0.7.4.pl00:
 <UL>
-<LI>Workaround for Pioneer DVR-216D which got stuck on DVD-R burns.</LI>
-<LI>Workaround for Pioneer DVR-216D which did not always eject the tray.</LI>
-<!--
 <LI>none yet</LI>
+<!--
 -->
 </UL>
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.7.3</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.3 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.3 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.3)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.7.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -319,8 +312,8 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.7.3.tar.gz">cdrskin-0.7.3.tar.gz</A>
-(800 KB).
+<A HREF="cdrskin-0.7.5.tar.gz">cdrskin-0.7.5.tar.gz</A>
+(810 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008

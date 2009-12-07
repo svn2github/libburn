@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.7.3"
+#define Cdrskin_prog_versioN "0.7.5"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 7
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -135,49 +135,43 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_7_2
-#define Cdrskin_libburn_versioN "0.7.2"
+#ifdef Cdrskin_libburn_0_7_4
+#define Cdrskin_libburn_versioN "0.7.4"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_7_2 */
+#endif /* Cdrskin_libburn_0_7_4 */
 
-#ifdef Cdrskin_libburn_0_7_3
-#define Cdrskin_libburn_versioN "0.7.3"
+#ifdef Cdrskin_libburn_0_7_5
+#define Cdrskin_libburn_versioN "0.7.5"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* burn_write_opts_set_dvd_obs() and burn_write_opts_set_stdio_fsync()
-*/
-#define Cdrskin_libburn_has_fsync_obS 1
 
-/* >>> do not forget to remove Libburn_has_open_trac_srC at release of 0.7.4 */
-
-
-#endif /* Cdrskin_libburn_0_7_3 */
+#endif /* Cdrskin_libburn_0_7_5 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_7_2
-#define Cdrskin_libburn_versioN "0.7.2"
+#define Cdrskin_libburn_0_7_4
+#define Cdrskin_libburn_versioN "0.7.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_7_2
+#ifdef Cdrskin_libburn_0_7_4
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 4
 #endif
-#ifdef Cdrskin_libburn_0_7_3
+#ifdef Cdrskin_libburn_0_7_5
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -1463,14 +1457,12 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    if(is_wav==-3)
      return(0);
    if(is_wav==0) {
-#ifdef Libburn_has_open_trac_srC
      if(track->track_type != BURN_MODE1 ||
         (track->cdxa_conversion & 0x7fffffff))
        flag&= ~4;                  /* Better avoid O_DIRECT with odd sectors */
      if(flag & 4)
        *fd= burn_os_open_track_src(track->source_path, O_RDONLY, 0);
      else
-#endif
        *fd= open(track->source_path, O_RDONLY);
    }
    if(*fd==-1) {
@@ -2880,11 +2872,9 @@ set_dev:;
      printf(
          " --drive_scsi_exclusive  try to exclusively reserve device files\n");
      printf("                    /dev/srN, /dev/scdM, /dev/stK of drive.\n");
-#ifdef Cdrskin_libburn_has_fsync_obS
      printf(" dvd_obs=\"default\"|number\n");
      printf(
      "                    set number of bytes per DVD/BD write: 32k or 64k\n");
-#endif
 #ifdef Cdrskin_burn_drive_eject_brokeN
      printf(
           " eject_device=<path>  set the device address for command eject\n");
@@ -2935,13 +2925,11 @@ set_dev:;
      printf(
          "                    byte addresses below that number.\n");
 #endif
-#ifdef Cdrskin_libburn_has_fsync_obS
      printf(" stdio_sync=\"default\"|\"off\"|number\n");
      printf(
      "                    set number of bytes after which to force output\n");
      printf(
      "                    to drives with prefix \"stdio:\".\n");
-#endif
 
 #ifdef Cdrskin_allow_libburn_taO
      printf(
@@ -7218,7 +7206,6 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_stream_recordinG
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
 #endif
-#ifdef Cdrskin_libburn_has_fsync_obS
 #ifdef Cdrskin_dvd_obs_default_64K
  if(skin->dvd_obs == 0)
    burn_write_opts_set_dvd_obs(o, 64 * 1024);
@@ -7226,7 +7213,6 @@ burn_failed:;
 #endif
    burn_write_opts_set_dvd_obs(o, skin->dvd_obs);
  burn_write_opts_set_stdio_fsync(o, skin->stdio_sync);
-#endif /* Cdrskin_libburn_has_fsync_obS */     
 
  if(skin->dummy_mode) {
    fprintf(stderr,

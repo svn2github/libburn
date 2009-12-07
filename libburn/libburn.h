@@ -767,9 +767,6 @@ void burn_set_verbosity(int level);
     This call can be made at any time - even before burn_initialize().
     It is in effect for all active drives and currently not very thread
     safe for multiple drives.
-
-    >>> ??? Shouldn't the file path with bit1 be adjustable ?
-
     @param flag  Bitfield for control purposes. The default is 0.
                  bit0= log to file /tmp/libburn_sg_command_log
                  bit1= log to stderr
@@ -1796,10 +1793,6 @@ struct burn_source *burn_file_source_new(const char *path,
 
 /* ts A91122 : An interface to open(O_DIRECT) or similar OS tricks. */
 
-/* <<< temporary indicator until release 0.7.4
-*/
-#define Libburn_has_open_trac_srC 1
-
 /** Opens a file with eventual acceleration preparations which may depend
     on the operating system and on compile time options of libburn.
     You may use this call instead of open(2) for opening file descriptors
@@ -2609,7 +2602,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  0
 #define burn_header_version_minor  7
-#define burn_header_version_micro  3
+#define burn_header_version_micro  5
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.

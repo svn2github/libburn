@@ -1,4 +1,4 @@
-AC_INIT([libburn], [0.7.3], [http://libburnia-project.org])
+AC_INIT([libburn], [0.7.5], [http://libburnia-project.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -75,6 +75,7 @@ dnl    0.6.6 = libburn.so.4.31.0
 dnl    0.6.8 = libburn.so.4.33.0
 dnl    0.7.0 = libburn.so.4.35.0
 dnl    0.7.2 = libburn.so.4.37.0
+dnl    0.7.4 = libburn.so.4.39.0
 dnl
 dnl So LT_CURRENT, LT_REVISION and LT_AGE get set directly here.
 dnl SONAME of the emerging library is  LT_CURRENT - LT_AGE.
@@ -100,7 +101,7 @@ dnl
 dnl As said: Only copies. Original in libburn/libburn.h : burn_header_version_*
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=7
-BURN_MICRO_VERSION=3
+BURN_MICRO_VERSION=5
 BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
@@ -111,15 +112,15 @@ AC_SUBST(BURN_VERSION)
 dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
-dnl ts A91116
-dnl ### This is the release version libburn-0.7.2 = libburn.so.4.37.0
+dnl ts A91206
+dnl ### This is the release version libburn-0.7.4 = libburn.so.4.39.0
 dnl This is the development version after above release version
-dnl ### LT_CURRENT++, LT_AGE++ has not yet happened.
-dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
+dnl LT_CURRENT++, LT_AGE++ has not yet happened.
+dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 42 - 38 = 4 . Linux library name = libburn.so.4.38.0
-LT_CURRENT=42
-LT_AGE=38
+dnl SONAME = 43 - 39 = 4 . Linux library name = libburn.so.4.39.0
+LT_CURRENT=43
+LT_AGE=39
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
@@ -196,7 +197,7 @@ CFLAGS="$CFLAGS $LIBBURN_O_DIRECT_DEF"
 
 dnl ts A91116
 AC_ARG_ENABLE(dvd-obs-64k,
-[  --enable-dvd-obs-64k            64 KB default size for DVD/BD writing, default=no],
+[  --enable-dvd-obs-64k         64 KB default size for DVD/BD writing, default=no],
                , enable_fifo_odirect=no)
 if test x$enable_dvd_obs_64k = xyes; then
     LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
