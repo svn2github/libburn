@@ -7178,16 +7178,445 @@ Made number transition to 0.7.3
 + cdrskin/add_ts_changes_to_libburn_0_7_3
 Updated cdrskin tarball generator
 
-12 Oct 2009  []
+12 Oct 2009  [2860]
 cdrskin/changelog.txt
 Documented changes and release timestamp
+
+12 Oct 2009  [2861]
+svn move -m "libburn release 0.7.2 is ready" \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwo \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSevenTwo
 
 ------------------------------------ cycle  - cdrskin-0.7.3 - 2009.10.12.105750
 
 
+2009.10.17.131852  [2865] [2864]
+Makefile.am
+libburn/libburn.h
+libburn/sector.c
++ libburn/ecma130ab.h
++ libburn/ecma130ab.c
+cdrskin/compile_cdrskin.sh
+Re-implemented ECMA-130 P-parity, Q-parity and scrambling for BURN_WRITE_RAW
 
 ------------------------------------ cycle  - cdrskin-0.7.3 - 
------------------------------------- cycle  - cdrskin-0.7.3 - 
+* Re-implemented ECMA-130 P-parity, Q-parity and scrambling for BURN_WRITE_RAW
+
+
+2009.10.19.115722  [2867]
+libburn/ecma130ab.c
+Optimizations with parity computation, clarification about nature of logarithms
+
+2009.10.20.160131  [2868]
+libburn/libburn.h
+libburn/ecma130ab.c
+More optimizations with parity computation
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.10.20.160131
+
+
+2009.10.27.100637  [2871]
+libburn/mmc.c
+Bug fix: burn_drive->disc_id or burn_drive->disc_app_code altered by stray 0. Thanks to George Danchev.
+
+2009.10.27.101031  [2872]
+libburn/sg-freebsd.c
+Bug fix: Closed memory leak with failure to open device file under FreeBSD. Thanks to George Danchev.
+
+2009.10.30.134640  [2880]
+libburn/libburn.h
+libburn/spc.c
+libburn/mmc.c
+libburn/sg-linux.c
+Test macros for finding reason of stall problem with Pioneer DVD-216D on DVD-R
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.10.30.134640
+
+
+2009.11.03.184626  [2881]
+libburn/libburn.h
+libburn/mmc.c
+Test macro for SL_V in mode page 05
+
+2009.11.04.084506  [2882]
+libburn/libburn.h
+libburn/write.c
+Test macro for SEND OPC INFORMATION before DVD-R track
+
+2009.11.05.170409  [2883]
+libburn/libburn.h
+libburn/transport.h
+libburn/write.c
+libburn/sbc.c
+libburn/mmc.c
+Test macros for double START UNIT and SET CD SPEED
+
+2009.11.08.120917  [2884]
+libburn/mmc.c
+Corrected allocation length with GET CONFIGURATION
+
+2009.11.08.121334  [2885]
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.h
+libburn/sg-linux.c
+Made SCSI command log more complete and more readable
+
+2009.11.10.132154  [2886]
+libburn/mmc.c
+Avoiding START UNIT before the drive gets released
+
+2009.11.10.203412  [2887]
+libburn/libburn.h
+libburn/write.c
+libburn/spc.c
+libburn/sbc.c
+libburn/mmc.c
+libburn/sg-linux.c
+Hopefully solved the endless burn problem with Pioneer DVR-216D
+
+2009.11.11.100714  [2888]
+libburn/write.c
+Increased stdio flush interval from 1 MB to 16 MB
+
+2009.11.11.100822  [2889]
+cdrskin/cdrskin.c
+Reporting number of pending bytes while thanking for patience in -vvv mode
+
+2009.11.11.105028  [2890]
+cdrskin/cdrskin.c
+Silenced a compiler warning about potentially uninitialized variable
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.11.105159
+* Workaround for Pioneer DVR-216D which got stuck on DVD-R burns
+
+
+11 Nov 2009  [2891]
+cdrskin/cdrskin_eng.html
+Updated cdrskin home page about DVR-216D workaround
+
+2009.11.12.175514  [2892]
+libburn/libburn.h
+libburn/init.c
+libburn/write.c
+libburn/sg-linux.c
+Made SCSI logger permanent and controllable via API call
+
+2009.11.12.175735  [2893]
+libburn/spc.c
+libburn/sbc.c
+libburn/mmc.c
+Workaround for Pioneer DVR-216D refusal to eject
+
+2009.11.12.180048  [2894]
+libburn/drive.c
+Macro Libburn_pioneer_dvr_216d_dummy_probe_wM for omitting write mode probe
+
+2009.11.12.180241  [2895]
+cdrskin/cdrskin.c
+Implemented option -V for logging of SCSI commands
+
+2009.11.12.193617  [2896]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Man page entry and help text for option -V
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.12.194644
+* Implemented option -V for logging of SCSI commands
+* Workaround for Pioneer DVR-216D refusal to eject
+
+
+13 Nov 2009  [2898]
+svn copy -m Branching for libburn bugfix release 0.7.2.pl01 \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSevenTwo \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwoPl01
+
+2009.11.12.230001  [2899]
+README
+libburn/write.c
+libburn/sbc.c
+cdrskin/README
+cdrskin/cdrskin_eng.html
+cdrskin/cdrskin_timestamp.h
+libburn-0.7.2.pl01 : Workarounds for Pioneer DVR-216D rev 1.09
+
+13 Nov 2009  [2900]
+svn move -m libburn bugfix release 0.7.2.pl01 is ready \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwoPl01 \
+    http://svn.libburnia-project.org/libburn/tags/ZeroSevenTwoPl01
+
+-------------------------------- patch - cdrskin-0.7.2.pl01 - 2009.11.12.230001
+* Workaround for Pioneer DVR-216D which got stuck on DVD-R burns
+* Workaround for Pioneer DVR-216D refusal to eject
+
+
+2009.11.15.115923  [2901]
+libburn/file.c
+Corrected an outdated remark
+
+2009.11.15.152541  [2902]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.c
+cdrskin/compile_cdrskin.sh
+New compile_cdrskin.sh option -o_direct (Linux only)
+
+2009.11.15.153140  [2903]
+libburn/libburn.h
+libburn/options.h
+libburn/options.c
+libburn/write.c
+New API calls burn_write_opts_set_dvd_obs(), burn_write_opts_set_stdio_fsync()
+
+2009.11.15.165016  [2904]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New options dvd_obs= and stdio_fsync=
+
+2009.11.16.165420  [2905]
+configure.ac
+Makefile.am
+libburn/write.c
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+cdrskin/cdrfifo.c
+cdrskin/cdrskin.1
+Configure options --enable-cdrskin-fifo-odirect, --enable-dvd-obs-64k
+
+16 Nov 2009  [2906]
+cdrskin/compile_cdrskin.sh
+New compile_cdrskin.sh option -dvd_obs_64k, adapted to new .o names of libburn
+
+16 Nov 2009  [2907]
+README
+cdrskin/README
+cdrskin/cdrskin_eng.html
+Updated build instructions of libburn and cdrskin
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.16.180334
+* New API calls burn_write_opts_set_dvd_obs(), burn_write_opts_set_stdio_fsync()
+* New options dvd_obs= and stdio_fsync=
+* Configure option --enable-dvd-obs-64k
+* New compile_cdrskin.sh option -dvd_obs_64k
+
+
+2009.11.17.093602  [2908]
+configure.ac
+Makefile.am
+cdrskin/compile_cdrskin.sh
+Revoked usage of libburn_libburn_la_CFLAGS in Makefile.am (ugly .o names)
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.17.100248
+
+
+17 Nov 2009  [2912]
+cdrskin/compile_cdrskin.sh
+Corrected help text of cdrskin static compile script
+
+2009.11.18.122713  [2913]
+libburn/drive.c
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+Split automatic drive start function from mmc_function_spy()
+
+2009.11.18.185733  [2914]
+libburn/write.c
+Reserving enough track space for 64 kB write chunks
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.18.190403
+
+
+2009.11.20.134952  [2915]
+libburn/libburn.h
+libburn/write.c
+libburn/sg-linux.c
+Experiment about SG_FLAG_DIRECT_IO
+
+2009.11.20.175854  [2916]
+cdrskin/cdrfifo.c
+Avoided use of uninitialized variable
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.21.122202
+
+
+2009.11.21.191516  [2917]
+libburn/write.c
+Longer READ BUFFER CAPACITY interval with DVD/BD writing
+
+2009.11.21.191717  [2918]
+cdrskin/cdrskin.c
+Enabled cdrskin O_DIRECT with fs=0
+
+2009.11.22.115227  [2919]
+libburn/write.c   
+Bug fix: DVD DAO track size was rounded up much too generously 
+
+2009.11.23.185725  [2920]
+configure.ac
+Makefile.am
+README
+libburn/libburn.h
+libburn/file.h
+libburn/file.c
+libburn/async.c
+libburn/write.c
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-dummy.c
+New API calls burn_os_open_track_src() , burn_os_alloc_buffer()
+
+2009.11.23.193252  [2921]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.c
+cdrskin/compile_cdrskin.sh
+cdrskin/README
+Gave up cdrskin specific O_DIRECT compile option
+
+2009.11.25.122233  [2920]
+libburn/libburn.h
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-dummy.c
+Gave up call burn_os_close_track_src() introduced by rev 2920
+
+2009.11.25.160153  [2923]
+libburn/libburn.h
+libburn/file.c
+libburn/libdax_msgs.h
+New API call burn_fifo_fill()
+
+2009.11.26.144452  [2924]
+libburn/libburn.h
+libburn/file.h
+libburn/file.c
+New API calls burn_fifo_get_statistics(), burn_fifo_next_interval()
+
+2009.11.26.211418  [2925]
+cdrskin/cdrskin.c
+cdrskin/compile_cdrskin.sh
+Compiler option -use_libburn_fifo to switch non-CD from cdrfifo to libburn fifo
+
+2009.11.28.122436  [2926]
+libburn/sg-linux.c
+Using mmap() by default for allocating read buffers
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.11.28.165658
+* Bug fix: DVD DAO track size was rounded up much too generously
+* New API call burn_fifo_fill()
+* New API calls burn_fifo_get_statistics(), burn_fifo_next_interval()
+* Configure option --enable-track-src-odirect
+
+
+2009.11.30.100152  [2929]
+libburn/sbc.c
+Documented meaning of START/STOP UNIT bits
+
+2009.12.02.103036  [2930]
+libburn/write.c
+Gave up CLOSE TRACK with CD TAO burn runs
+
+2009.12.05.111822  [2931]
+libburn/mmc.c
+Bug fix: SIGSEGV with LG GH22LS30 when inquiring media product id
+
+------------------------------------ cycle  - cdrskin-0.7.3 - 2009.12.05.112623
+* Bug fix: SIGSEGV from NULL pointer with media product id inquiry on LG GH22LS30
+
+
+2009.12.05.142309  [2932]
+libburn/libburn.h
+libburn/write.c
+Made effect of macro Libburn_pioneer_dvr_216d_read_buf_caP unconditional
+
+2009.12.05.143707  [2933]
+libburn/mmc.c
+libburn/sg-linux.c
+Converted stderr experiment messages to DEBUG messages
+
+2009.12.06.073404  [2934]
+libburn/mmc.c
+Some clarifications about the GH22LS30 problem
+
+2009.12.06.074622  [2935]
+libburn/write.c
+Some clarifications about the Linux throughput problem
+
+2009.12.06.093847  [2936]
+cdrskin/compile_cdrskin.sh
+Now default in cdrskin: use of libburn fifo with DVD and BD single track
+
+06 Dec 2009  [2937]
+svn copy -m Branching for libburn release 0.7.4
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFour
+
+
+2009.12.06.160001  [2938]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.4
+
+06 Dec 2009  [2939]
+- cdrskin/add_ts_changes_to_libburn_0_7_2
+- cdrskin/add_ts_changes_to_libburn_0_7_3
++ cdrskin/add_ts_changes_to_libburn_0_7_4
++ cdrskin/add_ts_changes_to_libburn_0_7_5
+Updated cdrskin tarball generator
+
+06 Dec 2009  [2940]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.7.4.pl00 - 2009.12.06.160001
+* Configure options --enable-dvd-obs-64k, --enable-track-src-odirect
+* New API calls burn_write_opts_set_dvd_obs(), burn_write_opts_set_stdio_fsync()
+* New API call burn_set_scsi_logging()
+* New API calls burn_fifo_get_statistics(), burn_fifo_next_interval(), burn_fifo_fill()
+* Re-implemented ECMA-130 P-parity, Q-parity and scrambling for BURN_WRITE_RAW
+* Workaround for Pioneer DVR-216D which got stuck on DVD-R burns
+* Workaround for Pioneer DVR-216D refusal to eject
+* Bug fix: SIGSEGV from NULL pointer with media product id inquiry on LG GH22LS30
+* Bug fix: DVD DAO track size was rounded up much too generously
+* cdrskin option -V for logging of SCSI commands
+* New cdrskin options dvd_obs= and stdio_fsync=
+* New compile_cdrskin.sh option -dvd_obs_64k
+
+
+2009.12.07.070029  [2941]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.5
+
+07 Dec 2009  [2942]
+- cdrskin/add_ts_changes_to_libburn_0_7_2
+- cdrskin/add_ts_changes_to_libburn_0_7_3
++ cdrskin/add_ts_changes_to_libburn_0_7_4
++ cdrskin/add_ts_changes_to_libburn_0_7_5
+Updated cdrskin tarball generator
+
+  []
+
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.7.5 - 
+------------------------------------ cycle  - cdrskin-0.7.5 - 
 
 ===============================================================================
                                     TODO
@@ -7218,6 +7647,9 @@ READ TRACK INFORMATION[#5]:
 
 
 ------------------------------ end of bugs ---------------------------------
+
+
+- Make Libburn_stdio_flush_limiT adjustable
 
 Support for BD-R SRM+POW
 
