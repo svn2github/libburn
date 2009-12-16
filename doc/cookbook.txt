@@ -119,10 +119,13 @@ A track must at least contain 300 payload blocks: 4 seconds of audio or
 600 KiB of data.
 (mmc5r03c.pdf 6.3.3.1.2)
 
-The track has to be closed by 5Bh CLOSE TRACK SESSION Close Function 001b.
-Older MMC specifies a valid Logical Track Number FFh to depict the open track.
-MMC-5 is quite silent about this. FFh works for my drives.
+Up to december 2009 the track was closed by 5Bh CLOSE TRACK SESSION Close
+Function 001b. Older MMC specifies a valid Logical Track Number FFh to depict
+the open track.  MMC-5 is quite silent about this. FFh worked for my drives.
 (mmc5r03c.pdf 6.3.3.1.2)
+This is omitted since libburn-0.7.4, relying entirely on 35h SYNCHRONIZE CACHE.
+First appeared a drive where CLOSE TRACK fails in simulation mode, later
+another one produced error replies even with real burning.
 
 After that, a new track may be written beginning with sending the mode page 05h
 again. It is not tested wether 05h can be omitted if Track Mode and Data Block
