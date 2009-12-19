@@ -206,9 +206,29 @@ else
     LIBBURN_DVD_OBS_64K=
     echo "disabled write size default 64 KB on DVD and BD"
 fi
-dnl Avoid the need for libburn_libburn_la_CFLAGS in Makefile.am (ugly .o names)
-dnl ### AC_SUBST(LIBBURN_DVD_OBS_64K)
 CFLAGS="$CFLAGS $LIBBURN_DVD_OBS_64K"
+
+dnl ts A91218
+AC_ARG_ENABLE(libcdio,
+[  --enable-libcdio         Enable EXPERIMENTAL use of libcdio as system adapter, default=no],
+               , enable_libcdio=no)
+if test x$enable_libcdio = xyes; then
+dnl Check whether there is libcdio-devel and libcdio-runtime.
+dnl If not, erase this macro
+    LIBCDIO_DEF="-DLibburn_use_libcdiO" 
+dnl The empty yes case obviously causes -lacl to be linked
+    AC_CHECK_HEADER(cdio/cdio.h, AC_CHECK_LIB(cdio, cdio_open, , LIBCDIO_DEF= ), LIBCDIO_DEF= )
+else
+    LIBCDIO_DEF=
+fi
+if test x$LIBCDIO_DEF = x
+then
+    LIBCDIO_DEF=
+else
+    echo "enabled  EXPERIMENTAL use of libcdio as system adapter"
+    CFLAGS="$CFLAGS $LIBCDIO_DEF"
+fi
+
 
 
 dnl Add compiler-specific flags

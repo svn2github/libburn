@@ -13,6 +13,15 @@
    Operating system case distinction
 */
 
+
+#ifdef Libburn_use_libcdiO
+
+
+/* -------------------------- X/Open with GNU libcdio ---------------------- */
+#include "os-libcdio.h"
+
+
+#else
 #ifdef __FreeBSD__
 
 
@@ -37,6 +46,7 @@
 
 #endif /* ! __linux */
 #endif /* ! __FreeBSD__ */
+#endif /* ! Libburn_use_libcdiO */
 
 
 #endif /* ! BURN_OS_H_INCLUDED */

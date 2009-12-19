@@ -201,8 +201,10 @@ EXTRA_DIST = \
 	cdrskin/cleanup.c \
 	libburn/os-freebsd.h \
 	libburn/os-linux.h \
+	libburn/os-libcdio.h \
 	libburn/sg-freebsd.c \
 	libburn/sg-linux.c \
+	libburn/sg-libcdio.c \
 	COPYING \
 	NEWS \
 	ChangeLog \

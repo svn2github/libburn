@@ -5,7 +5,7 @@
 This is the main operating system dependent SCSI part of libburn. It implements
 the transport level aspects of SCSI control and command i/o.
 
-Present implementation: FreeBSD CAM (untested)
+Present implementation: GNU libcdio , for X/Open compliant operating systems
 
 
 PORTING:
@@ -50,6 +50,16 @@ sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
 
+burn_os_open_track_src()  opens a disk file in a way that allows best
+                        throughput with file reading and/or SCSI write command
+                        transmission.
+
+burn_os_alloc_buffer()  allocates a memory area that is suitable for file
+                        descriptors issued by burn_os_open_track_src().
+                        The buffer size may be rounded up for alignment
+                        reasons.
+
+burn_os_free_buffer()   delete a buffer obtained by burn_os_alloc_buffer().
 
 Porting hints are marked by the text "PORTING:".
 Send feedback to libburn-hackers@pykix.org .
@@ -59,25 +69,22 @@ Send feedback to libburn-hackers@pykix.org .
 
 /** PORTING : ------- OS dependent headers and definitions ------ */
 
-#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <stdlib.h>
+#include <sys/stat.h>
 #include <string.h>
-#include <sys/poll.h>
-#include <camlib.h>
-#include <cam/scsi/scsi_message.h>
-#include <cam/scsi/scsi_pass.h>
+#include <stdlib.h>
 
-#include <err.h> /* XXX */
-
-
-/* ts A70909 */
+#ifdef Libburn_os_has_statvfS
 #include <sys/statvfs.h>
+#endif /* Libburn_os_has_stavtfS */
+
+
+#include <cdio/cdio.h>
+#include <cdio/mmc.h>
 
 
 /** PORTING : ------ libburn portable headers and definitions ----- */
@@ -86,7 +93,9 @@ Send feedback to libburn-hackers@pykix.org .
 #include "drive.h"
 #include "sg.h"
 #include "spc.h"
-#include "mmc.h"
+/* collides with symbols of <cdio/mmc.h>
+ #include "mmc.h"
+*/
 #include "sbc.h"
 #include "debug.h"
 #include "toc.h"
@@ -100,80 +109,28 @@ extern struct libdax_msgs *libdax_messenger;
 int burn_drive_is_banned(char *device_address);
 
 
+/* Whether to log SCSI commands:
+   bit0= log in /tmp/libburn_sg_command_log
+   bit1= log to stderr
+   bit2= flush every line
+*/
+extern int burn_sg_log_scsi;
+
 
 /* ------------------------------------------------------------------------ */
-/* ts A61115:  Private functions. Port only if needed by public functions   */
-/*            (Public functions are listed below)                           */
+/* PORTING: Private functions. Port only if needed by public functions      */
+/*          (Public functions are listed below)                             */
 /* ------------------------------------------------------------------------ */
-
-
-/* Helper function for scsi_give_next_adr() */
-static int sg_init_enumerator(burn_drive_enumerator_t *idx)
-{
-	idx->skip_device = 0;
-
-	if ((idx->fd = open(XPT_DEVICE, O_RDWR)) == -1) {
-		warn("couldn't open %s", XPT_DEVICE);
-		return -1;
-	}
-
-	bzero(&(idx->ccb), sizeof(union ccb));
-
-	idx->ccb.ccb_h.path_id = CAM_XPT_PATH_ID;
-	idx->ccb.ccb_h.target_id = CAM_TARGET_WILDCARD;
-	idx->ccb.ccb_h.target_lun = CAM_LUN_WILDCARD;
-
-	idx->ccb.ccb_h.func_code = XPT_DEV_MATCH;
-	idx->bufsize = sizeof(struct dev_match_result) * 100;
-	idx->ccb.cdm.match_buf_len = idx->bufsize;
-	idx->ccb.cdm.matches = (struct dev_match_result *)malloc(idx->bufsize);
-	if (idx->ccb.cdm.matches == NULL) {
-		warnx("can't malloc memory for matches");
-		close(idx->fd);
-		return -1;
-	}
-	idx->ccb.cdm.num_matches = 0;
-	idx->i = idx->ccb.cdm.num_matches; /* to trigger buffer load */
-
-	/*
-	 * We fetch all nodes, since we display most of them in the default
-	 * case, and all in the verbose case.
-	 */
-	idx->ccb.cdm.num_patterns = 0;
-	idx->ccb.cdm.pattern_buf_len = 0;
-
-	return 1;
-}
-
-
-/* Helper function for scsi_give_next_adr() */
-static int sg_next_enumeration_buffer(burn_drive_enumerator_t *idx)
-{
-	/*
-	 * We do the ioctl multiple times if necessary, in case there are
-	 * more than 100 nodes in the EDT.
-	 */
-	if (ioctl(idx->fd, CAMIOCOMMAND, &(idx->ccb)) == -1) {
-		warn("error sending CAMIOCOMMAND ioctl");
-		return -1;
-	}
-
-	if ((idx->ccb.ccb_h.status != CAM_REQ_CMP)
-	    || ((idx->ccb.cdm.status != CAM_DEV_MATCH_LAST)
-		&& (idx->ccb.cdm.status != CAM_DEV_MATCH_MORE))) {
-		warnx("got CAM error %#x, CDM error %d\n",
-		      idx->ccb.ccb_h.status, idx->ccb.cdm.status);
-		return -1;
-	}
-	return 1;
-}
 
 
 static int sg_close_drive(struct burn_drive * d)
 {
-	if (d->cam != NULL) {
-		cam_close_device(d->cam);
-		d->cam = NULL;
+	CdIo_t *p_cdio;
+
+	if (d->p_cdio != NULL) {
+		p_cdio = (CdIo_t *) d->p_cdio;
+		cdio_destroy(p_cdio);
+		d->p_cdio = NULL;
 	}
 	return 0;
 }
@@ -203,14 +160,14 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	   (seems the adapter would know better than its boss, if ever) */
 	ret = burn_scsi_setup_drive(&out, bus_no, host_no, channel_no,
                                  target_no, lun_no, 0);
-        if (ret<=0)
+        if (ret <= 0)
                 return;
 
 	/* PORTING: ------------------- non portable part --------------- */
 
-	/* Operating system adapter is CAM */
+	/* Transport adapter is libcdio */
 	/* Adapter specific handles and data */
-	out.cam = NULL;
+	out.p_cdio = NULL;
 
 	/* PORTING: ---------------- end of non portable part ------------ */
 
@@ -224,7 +181,6 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 }
 
 
-/* ts A61115 */
 /* ------------------------------------------------------------------------ */
 /* PORTING:           Public functions. These MUST be ported.               */
 /* ------------------------------------------------------------------------ */
@@ -248,72 +204,25 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int ret;
-
 	if (initialize == 1) {
-		ret = sg_init_enumerator(idx);
-		if (ret<=0)
-			return ret;
-	} else if (initialize == -1) {
-		if(idx->fd != -1)
-			close(idx->fd);
-		idx->fd = -1;
-		return 0;
-	}
-
-
-try_item:; /* This spaghetti loop keeps the number of tabs small  */
-
-	/* Loop content from old scsi_enumerate_drives() */
-
-	while (idx->i >= idx->ccb.cdm.num_matches) {
-		ret = sg_next_enumeration_buffer(idx);
-		if (ret<=0)
-			return -1;
-		if (!((idx->ccb.ccb_h.status == CAM_REQ_CMP)
-			&& (idx->ccb.cdm.status == CAM_DEV_MATCH_MORE)) )
+		idx->pos = idx->ppsz_cd_drives =
+					cdio_get_devices(DRIVER_DEVICE);
+		if (idx->ppsz_cd_drives == NULL)
 			return 0;
-		idx->i = 0;
+	} else if (initialize == -1) {
+		if (*(idx->ppsz_cd_drives) != NULL)
+			cdio_free_device_list(idx->ppsz_cd_drives);
+		idx->ppsz_cd_drives = NULL;
 	}
-
-	switch (idx->ccb.cdm.matches[idx->i].type) {
-	case DEV_MATCH_BUS:
-		break;
-	case DEV_MATCH_DEVICE: {
-		struct device_match_result* result;
-
-		result = &(idx->ccb.cdm.matches[i].result.device_result);
-		if (result->flags & DEV_RESULT_UNCONFIGURED)
-			idx->skip_device = 1;
-		else
-			idx->skip_device = 0;
-		break;
-	}
-	case DEV_MATCH_PERIPH: {
-		struct periph_match_result* result;
-		char buf[64];
-
-		result = &(idx->ccb.cdm.matches[i].result.periph_result);
-		if (idx->skip_device || 
-		    strcmp(result->periph_name, "pass") == 0)
-			break;
-		snprintf(buf, sizeof (buf), "/dev/%s%d",
-			 result->periph_name, result->unit_number);
-		if(adr_size <= strlen(buf)
-			return -1;
-		strcpy(adr, buf);
-
-		/* Found next enumerable address */
-		return 1;
-
-	}
-	default:
-		/* printf(stderr, "unknown match type\n"); */
-		break;
-	}
-
-	(idx->i)++;
-	goto try_item; /* Regular function exit is return 1 above  */
+	if (idx->pos == NULL)
+		return 0;
+	if (*(idx->pos) == NULL)
+		return 0;
+	if (strlen(*(idx->pos)) >= adr_size)
+		return -1;
+	strcpy(adr, *(idx->pos));
+	(idx->pos)++;
+	return 1;
 }
 
 
@@ -333,9 +242,10 @@ int scsi_enumerate_drives(void)
 	break;
 		if (burn_drive_is_banned(buf))
 	continue; 
-		enumerate_common(buf, idx.result->path_id, idx.result->path_id,
-				0, idx.result->target_id, 
-				idx.result->target_lun);
+
+		/* >>> try to obtain bus,host,channel,target,lun */;
+
+		enumerate_common(buf, -1, -1, -1, -1, -1);
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 	return 1;
@@ -349,7 +259,7 @@ int scsi_enumerate_drives(void)
 /** Published as burn_drive.drive_is_open() */
 int sg_drive_is_open(struct burn_drive * d)
 {
-	return (d->cam != NULL);
+	return (d->p_cdio != NULL);
 }
 
 
@@ -361,29 +271,28 @@ int sg_drive_is_open(struct burn_drive * d)
 */  
 int sg_grab(struct burn_drive *d)
 {
-	struct cam_device *cam;
+	CdIo_t *p_cdio;
 
-	if(d->cam != NULL) {
+	if(d->p_cdio != NULL) {
 		d->released = 0;
 		return 1;
 	}
+	p_cdio = cdio_open(d->devname, DRIVER_DEVICE);
 
-	cam = cam_open_device(d->devname, O_RDWR);
-	if (cam == NULL) {
+	if (p_cdio == NULL) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
-		0x00020003,
-		LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-		"Could not grab drive", 0/*os_errno*/, 0);
+			0x00020003,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Could not grab drive", 0/*os_errno*/, 0);
 		return 0;
 	}
-	d->cam = cam;
-	fcntl(cam->fd, F_SETOWN, getpid());
+	d->p_cdio = p_cdio;
 	d->released = 0;
 	return 1;
 }
 
 
-/** PORTING: Is mainly about the call to sg_close_drive() and wether it
+/** PORTING: Is mainly about the call to sg_close_drive() and whether it
              implements the demanded functionality.
 */
 /** Gives up the drive for SCSI commands and releases eventual access locks.
@@ -391,7 +300,7 @@ int sg_grab(struct burn_drive *d)
 */
 int sg_release(struct burn_drive *d)
 {
-	if (d->cam == NULL) {
+	if (d->p_cdio == NULL) {
 		burn_print(1, "release an ungrabbed drive.  die\n");
 		return 0;
 	}
@@ -411,102 +320,97 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0;
-	int err;
-	union ccb *ccb;
-
-	if (d->cam == NULL) {
-		c->error = 0;
-		return 0;
-	}
+	int i_status;
+	unsigned int dxfer_len;
+        static FILE *fp = NULL;
+	mmc_cdb_t cdb = {{0, }};
+	cdio_mmc_direction_t e_direction;
+	CdIo_t *p_cdio;
+	char msg[160];
 
 	c->error = 0;
-
-	ccb = cam_getccb(d->cam);
-	cam_fill_csio(&ccb->csio,
-				  1,                              /* retries */
-				  NULL,                           /* cbfncp */
-				  CAM_DEV_QFRZDIS,                /* flags */
-				  MSG_SIMPLE_Q_TAG,               /* tag_action */
-				  NULL,                           /* data_ptr */
-				  0,                              /* dxfer_len */
-				  sizeof (ccb->csio.sense_data),  /* sense_len */
-				  0,                              /* cdb_len */
-				  30*1000);                       /* timeout */
-	switch (c->dir) {
-	case TO_DRIVE:
-		ccb->csio.ccb_h.flags |= CAM_DIR_OUT;
-		break;
-	case FROM_DRIVE:
-		ccb->csio.ccb_h.flags |= CAM_DIR_IN;
-		break;
-	case NO_TRANSFER:
-		ccb->csio.ccb_h.flags |= CAM_DIR_NONE;
-		break;
+	if (d->p_cdio == NULL) {
+		return 0;
 	}
+	p_cdio = (CdIo_t *) d->p_cdio;
+        if (burn_sg_log_scsi & 1) {
+                if (fp == NULL) {
+                        fp= fopen("/tmp/libburn_sg_command_log", "a");
+                        fprintf(fp,
+                            "\n-----------------------------------------\n");
+                }
+        }
+        if (burn_sg_log_scsi & 3)
+                scsi_log_cmd(c,fp,0);
 
-	ccb->csio.cdb_len = c->oplen;
-	memcpy(&ccb->csio.cdb_io.cdb_bytes, &c->opcode, c->oplen);
-	
-	memset(&ccb->csio.sense_data, 0, sizeof (ccb->csio.sense_data));
-
-	if (c->page) {
-		ccb->csio.data_ptr  = c->page->data;
-		if (c->dir == FROM_DRIVE) {
-			ccb->csio.dxfer_len = BUFFER_SIZE;
-/* touch page so we can use valgrind */
-			memset(c->page->data, 0, BUFFER_SIZE);
-		} else {
-
-			/* ts A61115: removed a ssert() */
-			if(c->page->bytes <= 0)
-				return 0;
-
-			ccb->csio.dxfer_len = c->page->bytes;
-		}
+	memcpy(cdb.field, c->opcode, c->oplen);
+	if (c->dir == TO_DRIVE) {
+		dxfer_len = c->page->bytes;
+		e_direction = SCSI_MMC_DATA_WRITE;
+	} else if (c->dir == FROM_DRIVE) {
+		if (c->dxfer_len >= 0)
+			dxfer_len = c->dxfer_len;
+		else
+			dxfer_len = BUFFER_SIZE;
+		e_direction = SCSI_MMC_DATA_READ;
+		/* touch page so we can use valgrind */
+		memset(c->page->data, 0, BUFFER_SIZE);
 	} else {
-		ccb->csio.data_ptr  = NULL;
-		ccb->csio.dxfer_len = 0;
+		dxfer_len = 0;
+#ifdef SCSI_MMC_HAS_DIR_NONE
+		e_direction = SCSI_MMC_DATA_NONE;
+#else
+		e_direction = SCSI_MMC_DATA_READ;
+#endif
 	}
+		
+	/* >>> longer timeout , sg-linux has 200 s */
 
-	do {
-		err = cam_send_ccb(d->cam, ccb);
-		if (err == -1) {
+	/* >>> retry-loop */
+
+		i_status = mmc_run_cmd(p_cdio, 10000, &cdb, e_direction,
+				 	dxfer_len, c->page->data);
+	
+		if (i_status == 0)
+			return 1;
+
+		/* >>> One would need to get info about the nature of failure
+		       SCSI SK,ASC,ASCQ would be nice.
+		       One would need to distinguish between drive error and
+		       transport error.
+		 */;
+
+/* This is for failure of the transport mechanism itself:
+
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x0002010c,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				"Failed to transfer command to drive",
 				errno, 0);
-			cam_freeccb(ccb);
 			sg_close_drive(d);
 			d->released = 1;
 			d->busy = BURN_DRIVE_IDLE;
-			c->error = 1;
-			return -1;
-		}
-		/* XXX */
-		memcpy(c->sense, &ccb->csio.sense_data, ccb->csio.sense_len);
-		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
-			if (!c->retry) {
-				c->error = 1;
-				cam_freeccb(ccb);
-				return 1;
-			}
-			switch (scsi_error(d, c->sense, 0)) {
-			case RETRY:
-				done = 0;
-				break;
-			case FAIL:
-				done = 1;
-				c->error = 1;
-				break;
-			}
-		} else {
-			done = 1;
-		}
-	} while (!done);
-	cam_freeccb(ccb);
-	return 1;
+*/
+
+	/* >>> end retry-loop */
+
+
+	if (c->opcode[0] != 0x00) {
+		sprintf(msg, "SCSI command %2.2Xh failed",
+			(unsigned int) c->opcode[0]);
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x0002010f,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, errno, 0);
+	}
+
+	/* 2 04 00 LOGICAL UNIT NOT READY, CAUSE NOT REPORTABLE */
+	c->sense[2] = 0x02;
+	c->sense[12] = 0x04;
+	c->sense[13] = 0x00;
+
+	c->error = 1;
+	return -1;
 }
 
 
@@ -516,28 +420,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
-	burn_drive_enumerator_t idx;
-	int initialize = 1, ret;
-	char buf[64];
-	struct periph_match_result* result;
 
-	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
-		initialize = 0;
-		if (ret <= 0)
-	break;
-		if (strcmp(path, buf) != 0)
-	continue;
-		result = &(idx->ccb.cdm.matches[i].result.periph_result);
-		*bus_no = result->path_id;
-		*host_no = result->path_id;
-		*channel_no = 0;
-		*target_no = result->target_id
-		*lun_no = result->target_lun;
-		sg_give_next_adr(&idx, buf, sizeof(buf), -1);
-		return 1;
-	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
+	/* >>> any chance to get them from libcdio ? */;
+
+	*bus_no = *host_no = *channel_no = *target_no = *lun_no = -1;
 	return (0);
 }
 
@@ -566,11 +452,11 @@ int sg_is_enumerable_adr(char* adr)
 }
 
 
-/* ts A70909 */
 /** Estimate the potential payload capacity of a file address.
     @param path  The address of the file to be examined. If it does not
                  exist yet, then the directory will be inquired.
-    @param bytes This value gets modified if an estimation is possible
+    @param bytes The pointed value gets modified, but only if an estimation is
+                 possible.
     @return      -2 = cannot perform necessary operations on file object
                  -1 = neither path nor dirname of path exist
                   0 = could not estimate size capacity of file object
@@ -579,10 +465,13 @@ int sg_is_enumerable_adr(char* adr)
 int burn_os_stdio_capacity(char *path, off_t *bytes)
 {
 	struct stat stbuf;
+
+#ifdef Libburn_os_has_statvfS
 	struct statvfs vfsbuf;
+#endif
+
 	char testpath[4096], *cpt;
 	long blocks;
-	int open_mode = O_RDWR, fd, ret;
 	off_t add_size = 0;
 
 	testpath[0] = 0;
@@ -602,8 +491,6 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #ifdef Libburn_if_this_was_linuX
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
-		if(burn_sg_open_o_excl)
-			open_mode |= O_EXCL;
 		fd = open(path, open_mode);
 		if (fd == -1)
 			return -2;
@@ -615,7 +502,6 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 #endif /* Libburn_if_this_was_linuX */
 
-
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
@@ -623,10 +509,20 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		return 0;
 
 	if (testpath[0]) {	
+
+#ifdef Libburn_os_has_statvfS
+
 		if (statvfs(testpath, &vfsbuf) == -1)
 			return -2;
 		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
 						(off_t) vfsbuf.f_bavail;
+
+#else /* Libburn_os_has_statvfS */
+
+		return 0;
+
+#endif /* ! Libburn_os_has_stavtfS */
+
 	}
 	return 1;
 }

@@ -5,6 +5,11 @@
 */
 
 
+#ifdef Libburn_use_libcdiO
+
+#include "sg-libcdio.c"
+
+#else
 #ifdef __FreeBSD__
 
 #include "sg-freebsd.c"
@@ -38,4 +43,5 @@ static int intentional_compiler_warning(void)
 
 #endif /* ! __linux */
 #endif /* ! __FreeBSD__ */
+#endif /* ! Libburn_use_libcdiO */
 
