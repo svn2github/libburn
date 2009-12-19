@@ -61,9 +61,6 @@ burn_os_open_track_src()  opens a disk file in a way that allows best
                         throughput with file reading and/or SCSI write command
                         transmission.
 
-burn_os_close_track_src()  closes a filedescriptor obtained by
-                        burn_os_open_track_src().
-
 burn_os_alloc_buffer()  allocates a memory area that is suitable for file
                         descriptors issued by burn_os_open_track_src().
                         The buffer size may be rounded up for alignment
@@ -1682,44 +1679,6 @@ int sg_release(struct burn_drive *d)
 }
 
 
-/* <<< ts A91111: on its way out */
-/** ts A70518: 
-    Debugging log facility. Controlled by existence of macros:
-     Libburn_log_sg_commandS          enables logging to file
-                                        /tmp/libburn_sg_command_log
-     Libburn_fflush_log_sg_commandS   enables fflush after each output line
-     Libburn_log_sg_command_stderR    enables additional log to stderr
-*/
-/*
- ts A91111: now enabled by default and controlled burn_sg_log_scsi
-*/
-#define Libburn_log_sg_commandS 1
-#define Libburn_fflush_log_sg_commandS 1
-#define Libburn_log_sg_command_stderR 1
-
-
-#ifdef Libburn_log_sg_commandS
-
-/** Logs command (before execution) */
-static int sg_log_cmd(struct command *c, FILE *fp, int flag)
-{
-	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
-		scsi_show_cmd_text(c, fp, 0);
-
-#ifdef Libburn_fflush_log_sg_commandS
-		if (burn_sg_log_scsi & 4)
-			fflush(fp);
-#endif
-	}
-#ifdef Libburn_log_sg_command_stderR
-	if (fp == stderr || !(burn_sg_log_scsi & 2))
-		return 1;
-	sg_log_cmd(c, stderr, flag);
-#endif
-	return 1;
-}
-
-
 /** logs outcome of a sg command. flag&1 causes an error message */
 static int sg_log_err(struct command *c, FILE *fp, 
 		sg_io_hdr_t *s,
@@ -1734,21 +1693,14 @@ static int sg_log_err(struct command *c, FILE *fp,
 			scsi_show_cmd_reply(c, fp, 0);
 			fprintf(fp,"%6d ms\n", s->duration);
 		}
-#ifdef Libburn_fflush_log_sg_commandS
 		if (burn_sg_log_scsi & 4)
 			fflush(fp);
-#endif
 	}
-#ifdef Libburn_log_sg_command_stderR
 	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
 	sg_log_err(c, stderr, s, flag);
-#endif
 	return 1;
 }
-
-
-#endif /* Libburn_log_sg_commandS */
 
 
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
@@ -1756,8 +1708,6 @@ static int sg_log_err(struct command *c, FILE *fp,
     Returned SCSI errors shall not lead to a return value indicating failure.
     The callers get notified by c->error. An SCSI failure which leads not to
     a retry shall be notified via scsi_notify_error().
-    The Libburn_log_sg_commandS facility might be of help when problems with
-    a drive have to be examined. It shall stay disabled for normal use.
     @return: 1 success , <=0 failure
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
@@ -1766,11 +1716,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	int err;
 	time_t start_time;
 	sg_io_hdr_t s;
-
-#ifdef Libburn_log_sg_commandS
 	/* ts A61030 */
 	static FILE *fp= NULL;
-#endif /* Libburn_log_sg_commandS */
 
 	/* <<< ts A60821
 	   debug: for tracing calls which might use open drive fds */
@@ -1779,7 +1726,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		d->fd,d->released);
 	mmc_function_spy(NULL, buf);
 
-#ifdef Libburn_log_sg_commandS
 	/* ts A61030 */
 	if (burn_sg_log_scsi & 1) {
 		if (fp == NULL) {
@@ -1789,9 +1735,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 	}
 	if (burn_sg_log_scsi & 3)
-		sg_log_cmd(c,fp,0);
-#endif /* Libburn_log_sg_commandS */
-	  
+		scsi_log_cmd(c,fp,0);
 
 	/* ts A61010 : with no fd there is no chance to send an ioctl */
 	if (d->fd < 0) {
@@ -1931,12 +1875,8 @@ ex:;
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 	}
-
-#ifdef Libburn_log_sg_commandS
 	if (burn_sg_log_scsi & 3)
 		sg_log_err(c, fp, &s, c->error != 0);
-#endif /* Libburn_log_sg_commandS */
-
 	return 1;
 }
 

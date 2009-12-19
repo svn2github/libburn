@@ -65,5 +65,9 @@ int scsi_show_cmd_text(struct command *c, void *fp, int flag);
 /* ts A91106 */
 int scsi_show_cmd_reply(struct command *c, void *fp, int flag);
 
+/* ts A91218 (former sg_log_cmd ts A70518) */
+/** Logs command (before execution) */
+int scsi_log_cmd(struct command *c, void *fp, int flag);
+
 
 #endif /*__SPC*/
