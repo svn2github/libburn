@@ -27,6 +27,14 @@
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
+/* ts A91111 :
+   whether to log SCSI commands:
+   bit0= log in /tmp/libburn_sg_command_log
+   bit1= log to stderr
+   bit2= flush every line
+*/
+extern int burn_sg_log_scsi;
+
 
 /* spc command set */
 /* ts A70519 : allocation length byte 3+4 was 0,255 */
@@ -36,8 +44,7 @@ static unsigned char SPC_INQUIRY[] = { 0x12, 0, 0, 0, 36, 0 };
 static unsigned char SPC_PREVENT[] = { 0x1e, 0, 0, 0, 1, 0 };
 static unsigned char SPC_ALLOW[] = { 0x1e, 0, 0, 0, 0, 0 };
 static unsigned char SPC_MODE_SENSE[] = { 0x5a, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
-static unsigned char SPC_MODE_SELECT[] =
-	{ 0x55, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static unsigned char SPC_MODE_SELECT[] = { 0x55, 16, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char SPC_REQUEST_SENSE[] = { 0x03, 0, 0, 0, 18, 0 };
 static unsigned char SPC_TEST_UNIT_READY[] = { 0x00, 0, 0, 0, 0, 0 };
 
@@ -1412,3 +1419,22 @@ int scsi_show_cmd_reply(struct command *c, void *fp_in, int flag)
 		fprintf(fp, "\n");
 	return 1;
 }
+
+
+/* ts A91218 (former sg_log_cmd ts A70518) */ 
+/** Logs command (before execution) */
+int scsi_log_cmd(struct command *c, void *fp_in, int flag)
+{
+	FILE *fp = fp_in;
+
+	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		scsi_show_cmd_text(c, fp, 0);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
+	}
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
+		return 1;
+	scsi_log_cmd(c, stderr, flag);
+	return 1;
+}
+
