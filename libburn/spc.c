@@ -1438,3 +1438,37 @@ int scsi_log_cmd(struct command *c, void *fp_in, int flag)
 	return 1;
 }
 
+
+/* ts A91221 (former sg_log_err ts A91108) */
+/** Logs outcome of a sg command.
+    @param flag  bit0 causes an error message
+                 bit1 do not print duration
+*/
+int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
+		 int duration, int flag)
+{
+	char durtxt[20];
+	FILE *fp = fp_in;
+
+      	if(fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		if(flag & 1) {
+			durtxt[0] = 0;
+			if (!(flag & 2))
+  				sprintf(durtxt, "   (%6d ms)\n",duration);
+  			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh%s\n",
+				sense[2], sense[12], sense[13], durtxt);
+
+		} else {
+			scsi_show_cmd_reply(c, fp, 0);
+			if (!(flag & 2))
+				fprintf(fp,"%6d ms\n", duration);
+		}
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
+	}
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
+		return 1;
+	scsi_log_err(c, stderr, sense, duration, flag);
+	return 1;
+}
+

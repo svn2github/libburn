@@ -87,6 +87,14 @@ Send feedback to libburn-hackers@pykix.org .
 #include <cdio/mmc.h>
 
 
+/* The waiting time before eventually retrying a failed SCSI command.
+   Before each retry wait Libburn_sg_linux_retry_incR longer than with
+   the previous one.
+*/
+#define Libburn_sg_libcdio_retry_usleeP 100000
+#define Libburn_sg_libcdio_retry_incR   100000
+
+
 /** PORTING : ------ libburn portable headers and definitions ----- */
 
 #include "transport.h"
@@ -115,6 +123,18 @@ int burn_drive_is_banned(char *device_address);
    bit2= flush every line
 */
 extern int burn_sg_log_scsi;
+
+
+/* ------------------------------------------------------------------------ */
+/* PORTING:   Private definitions. Port only if needed by public functions. */
+/*            (Public functions are listed below)                           */
+/* ------------------------------------------------------------------------ */
+
+
+/* Storage object is in libburn/init.c
+   whether to strive for exclusive access to the drive
+*/
+extern int burn_sg_open_o_excl;
 
 
 /* ------------------------------------------------------------------------ */
@@ -232,7 +252,8 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 int scsi_enumerate_drives(void)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1, ret;
+	int initialize = 1, ret, i_bus_no = -1;
+        int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char buf[64];
 
 	while(1) {
@@ -242,10 +263,10 @@ int scsi_enumerate_drives(void)
 	break;
 		if (burn_drive_is_banned(buf))
 	continue; 
-
-		/* >>> try to obtain bus,host,channel,target,lun */;
-
-		enumerate_common(buf, -1, -1, -1, -1, -1);
+		sg_obtain_scsi_adr(buf, &i_bus_no, &i_host_no,
+				&i_channel_no, &i_target_no, &i_lun_no);
+		enumerate_common(buf, i_bus_no, i_host_no, i_channel_no,
+				i_target_no, i_lun_no);
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 	return 1;
@@ -272,12 +293,44 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	CdIo_t *p_cdio;
+	char *am, *version_text;
+	char msg[160];
+	int cdio_ver = 82;
 
-	if(d->p_cdio != NULL) {
+	if (d->p_cdio != NULL) {
 		d->released = 0;
 		return 1;
 	}
-	p_cdio = cdio_open(d->devname, DRIVER_DEVICE);
+
+	sprintf(msg, "Using sg-libcdio-%d with libcdio version ",
+		LIBCDIO_VERSION_NUM );
+
+/* >>> change this to #if LIBCDIO_VERSION_NUM < 83 */
+#ifdef LIBCDIO_HAS_VERSION_CALL
+	cdio_ver = cdio_version(&version_text);
+#else
+LIBBURN_MISCONFIGURATION = 0;
+INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_HAS_VERSION_CALL = 0;
+LIBBURN_MISCONFIGURATION_ = 0;
+#endif /* ! LIBCDIO_HAS_VERSION_CALL */
+
+	strncat(msg, version_text, 80);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+		msg , 0, 0);
+	if (cdio_ver < LIBCDIO_VERSION_NUM) {
+		sprintf(msg,
+		    "libcdio TOO OLD: numeric version %d , need at least %d",
+		    cdio_ver, LIBCDIO_VERSION_NUM);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020003,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		return 0;
+	}
+
+	p_cdio = cdio_open_am(d->devname, DRIVER_DEVICE, 
+			burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR");
 
 	if (p_cdio == NULL) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -286,6 +339,16 @@ int sg_grab(struct burn_drive *d)
 			"Could not grab drive", 0/*os_errno*/, 0);
 		return 0;
 	}
+	am = (char *) cdio_get_arg(p_cdio, "access-mode");
+        if (strncmp(am, "MMC_RDWR", 8) != 0) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020003,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"libcdio provides no MMC_RDWR access mode", 0, 0);
+		cdio_destroy(p_cdio);
+		return 0;
+        }
+
 	d->p_cdio = p_cdio;
 	d->released = 0;
 	return 1;
@@ -320,13 +383,15 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int i_status;
+	int sense_valid = 0, i, usleep_time, timeout_ms;
+	time_t start_time;
+        driver_return_code_t i_status;
 	unsigned int dxfer_len;
         static FILE *fp = NULL;
 	mmc_cdb_t cdb = {{0, }};
 	cdio_mmc_direction_t e_direction;
 	CdIo_t *p_cdio;
-	char msg[160];
+	unsigned char sense[18], *sense_pt = NULL;
 
 	c->error = 0;
 	if (d->p_cdio == NULL) {
@@ -357,31 +422,35 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		memset(c->page->data, 0, BUFFER_SIZE);
 	} else {
 		dxfer_len = 0;
+
+/* >>> remove this condition when #if LIBCDIO_VERSION_NUM < 83
+       is in effect above*/
 #ifdef SCSI_MMC_HAS_DIR_NONE
 		e_direction = SCSI_MMC_DATA_NONE;
 #else
 		e_direction = SCSI_MMC_DATA_READ;
 #endif
+
 	}
 		
-	/* >>> longer timeout , sg-linux has 200 s */
+	/* retry-loop */
+	start_time = time(NULL);
+	timeout_ms = 200000;
+	for(i = 0; ; i++) {
 
-	/* >>> retry-loop */
-
-		i_status = mmc_run_cmd(p_cdio, 10000, &cdb, e_direction,
+		i_status = mmc_run_cmd(p_cdio, timeout_ms, &cdb, e_direction,
 				 	dxfer_len, c->page->data);
-	
-		if (i_status == 0)
-			return 1;
+		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
+		if (sense_valid >= 18)
+			memcpy(sense, sense_pt, 18);
+		if (sense_pt != NULL)
+			free(sense_pt);
 
-		/* >>> One would need to get info about the nature of failure
-		       SCSI SK,ASC,ASCQ would be nice.
-		       One would need to distinguish between drive error and
-		       transport error.
-		 */;
+/* Regrettably mmc_run_cmd() does not clearly distinguish between transport
+   failure and SCSI error reply.
+   This reaction here would be for transport failure:
 
-/* This is for failure of the transport mechanism itself:
-
+		if (i_status != 0 && i_status != DRIVER_OP_ERROR) {
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x0002010c,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
@@ -390,27 +459,56 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			sg_close_drive(d);
 			d->released = 1;
 			d->busy = BURN_DRIVE_IDLE;
+			c->error = 1;
+			return -1;
+		}
 */
 
-	/* >>> end retry-loop */
+		if (!sense_valid) {
+			memset(sense, 0, 18);
+			if (i_status != 0) { /* set dummy sense */
+				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
+				sense[2] = 0x02;
+				sense[12] = 0x04;
+			}
+		} else
+			sense[2] &= 15;
+	
+		if (i_status != 0 || (sense[2] || sense[12] || sense[13])) {
+			if (!c->retry) {
+				c->error = 1;
+				goto ex;
+			}
+			switch (scsi_error(d, sense, 18)) {
+			case RETRY:
+				break;
+			case FAIL:
+				c->error = 1;
+				goto ex;
+			}
+			/* 
+			   Calming down retries and breaking up endless cycle
+			*/
+			usleep_time = Libburn_sg_libcdio_retry_usleeP +
+					i * Libburn_sg_libcdio_retry_incR;
+			if (time(NULL) + usleep_time / 1000000 - start_time >
+			    timeout_ms / 1000 + 1) {
+				c->error = 1;
+				goto ex;
+			}
+			usleep(usleep_time);
+		} else
+			break; /* retry-loop */
+	} /* end of retry-loop */
 
+ex:;
+	if (c->error)
+		scsi_notify_error(d, c, sense, 18, 0);
 
-	if (c->opcode[0] != 0x00) {
-		sprintf(msg, "SCSI command %2.2Xh failed",
-			(unsigned int) c->opcode[0]);
-		libdax_msgs_submit(libdax_messenger,
-			d->global_index, 0x0002010f,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-			msg, errno, 0);
-	}
-
-	/* 2 04 00 LOGICAL UNIT NOT READY, CAUSE NOT REPORTABLE */
-	c->sense[2] = 0x02;
-	c->sense[12] = 0x04;
-	c->sense[13] = 0x00;
-
-	c->error = 1;
-	return -1;
+	if (burn_sg_log_scsi & 3) 
+		/* >>> Need own duration time measurement. Then remove bit1 */
+		scsi_log_err(c, fp, sense, 0, (c->error != 0) | 2);
+	return 1;
 }
 
 

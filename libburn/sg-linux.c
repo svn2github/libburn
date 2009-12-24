@@ -1679,6 +1679,9 @@ int sg_release(struct burn_drive *d)
 }
 
 
+#ifdef NIX
+/* <<< now in spc.c as scsi_log_err */
+
 /** logs outcome of a sg command. flag&1 causes an error message */
 static int sg_log_err(struct command *c, FILE *fp, 
 		sg_io_hdr_t *s,
@@ -1698,9 +1701,12 @@ static int sg_log_err(struct command *c, FILE *fp,
 	}
 	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
+
 	sg_log_err(c, stderr, s, flag);
 	return 1;
 }
+
+#endif /* NIX */
 
 
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
@@ -1876,7 +1882,8 @@ ex:;
 				msg, 0, 0);
 	}
 	if (burn_sg_log_scsi & 3)
-		sg_log_err(c, fp, &s, c->error != 0);
+		/* <<< sg_log_err(c, fp, &s, c->error != 0); */
+		scsi_log_err(c, fp, s.sbp, s.duration, c->error != 0);
 	return 1;
 }
 

@@ -217,13 +217,16 @@ dnl Check whether there is libcdio-devel and libcdio-runtime.
 dnl If not, erase this macro
     LIBCDIO_DEF="-DLibburn_use_libcdiO" 
 dnl The empty yes case obviously causes -lacl to be linked
-    AC_CHECK_HEADER(cdio/cdio.h, AC_CHECK_LIB(cdio, cdio_open, , LIBCDIO_DEF= ), LIBCDIO_DEF= )
+    AC_CHECK_HEADER(cdio/cdio.h, AC_CHECK_LIB(cdio, mmc_last_cmd_sense, , LIBCDIO_DEF= ), LIBCDIO_DEF= )
 else
     LIBCDIO_DEF=
 fi
 if test x$LIBCDIO_DEF = x
 then
-    LIBCDIO_DEF=
+    if test x$enable_libcdio = xyes
+    then
+      echo "WARNING: could not enable use of libcdio as system adapter"
+    fi
 else
     echo "enabled  EXPERIMENTAL use of libcdio as system adapter"
     CFLAGS="$CFLAGS $LIBCDIO_DEF"

@@ -69,5 +69,10 @@ int scsi_show_cmd_reply(struct command *c, void *fp, int flag);
 /** Logs command (before execution) */
 int scsi_log_cmd(struct command *c, void *fp, int flag);
 
+/* ts A91221 (former sg_log_err ts A91108) */
+/** Logs outcome of a sg command. */
+int scsi_log_err(struct command *c, void *fp, unsigned char sense[18], 
+                 int duration, int flag);
+
 
 #endif /*__SPC*/
