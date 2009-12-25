@@ -230,8 +230,12 @@ then
 else
     echo "enabled  EXPERIMENTAL use of libcdio as system adapter"
     CFLAGS="$CFLAGS $LIBCDIO_DEF"
-fi
 
+    dnl Bump to 0.83 when released
+    LIBCDIO_REQUIRED=0.82
+    PKG_CHECK_MODULES(LIBCDIO, libcdio >= $LIBCDIO_REQUIRED)
+
+fi
 
 
 dnl Add compiler-specific flags
