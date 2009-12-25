@@ -20,6 +20,7 @@ libdax_audioxtr_o="$burn"libdax_audioxtr.o
 do_strip=0
 static_opts=
 warn_opts="-Wall"
+libcdio=
 fifo_source="cdrskin/cdrfifo.c"
 compile_cdrskin=1
 compile_cdrfifo=0
@@ -85,6 +86,9 @@ do
   then
     fifo_source=
     fifo_opts="-DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
+  elif test "$i" = "-use_libcdio"
+  then
+    libcdio="-lcdio"
   elif test "$i" = "-g"
   then
     debug_opts="-g"
@@ -97,6 +101,7 @@ do
     echo "  -libburn_0_7_4    set macro to match libburn-0.7.4"
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -dvd_obs_64k      64 KB default size for DVD/BD writing."
+    echo "  -use_libcdio      link with -lcdio because libburn uses it."
     echo "  -do_not_compile_cdrskin  omit compilation of cdrskin/cdrskin."
     echo "  -use_no_libburn_fifo  use cdrfifo even for single track non-CD"
     echo "  -use_no_cdrfifo   always use fifo of libburn and never cdrfifo"
@@ -120,7 +125,7 @@ echo "Build timestamp   :  $timestamp"
 
 if test "$compile_cdrskin"
 then
-  echo "compiling program cdrskin/cdrskin.c $fifo_source $static_opts $debug_opts $libvers $fifo_opts $def_opts $cleanup_src_or_obj"
+  echo "compiling program cdrskin/cdrskin.c $fifo_source $static_opts $debug_opts $libvers $fifo_opts $def_opts $cleanup_src_or_obj $libcdio"
   cc -I. \
     $warn_opts \
     $static_opts \
@@ -165,6 +170,7 @@ then
     "$burn"crc.o \
     "$burn"ecma130ab.o \
     \
+    $libcdio \
     -lpthread
 
     ret=$?
