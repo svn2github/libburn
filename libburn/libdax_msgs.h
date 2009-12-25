@@ -552,6 +552,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020172 (SORRY,HIGH)   = Read start address larger than number of readable blocks
  0x00020173 (FAILURE,HIGH) = Drive tells NWA smaller than last written address
  0x00020174 (SORRY,HIGH)   = Fifo alignment does not allow desired read size
+ 0x00020175 (FATAL,HIGH)   = Supporting library is too old
  
 
  libdax_audioxtr:
