@@ -224,6 +224,10 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
+	int i, max_link_depth = 100, ret;
+	char path[4096], link_target[4096];
+	struct stat stbuf;
+
 	if (initialize == 1) {
 		idx->pos = idx->ppsz_cd_drives =
 					cdio_get_devices(DRIVER_DEVICE);
@@ -238,9 +242,30 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		return 0;
 	if (*(idx->pos) == NULL)
 		return 0;
-	if (strlen(*(idx->pos)) >= adr_size)
+
+	/* Resolve eventual softlink, E.g. /dev/cdrom . */;
+	/* (burn_drive_resolve_link() relies on a completed drive list and
+	    cannot be used here) */
+	strcpy(path, *(idx->pos));
+	for (i= 0; i < max_link_depth; i++) {
+		if (lstat(path, &stbuf) == -1) {
+			strcpy(path, *(idx->pos));
+	break; /* dead link */
+		}
+		if ((stbuf.st_mode & S_IFMT) != S_IFLNK)
+	break; /* found target */
+		ret = readlink(path, link_target, sizeof(link_target));
+		if (ret == -1) {
+			strcpy(path, *(idx->pos));
+	break; /* unreadable link pointer */
+		}
+		strcpy(path, link_target);
+	}
+	if (i >= max_link_depth) /* endless link loop */
+			strcpy(path, *(idx->pos));
+	if (strlen(path) >= adr_size)
 		return -1;
-	strcpy(adr, *(idx->pos));
+	strcpy(adr, path);
 	(idx->pos)++;
 	return 1;
 }
@@ -323,8 +348,8 @@ LIBBURN_MISCONFIGURATION_ = 0;
 		    "libcdio TOO OLD: numeric version %d , need at least %d",
 		    cdio_ver, LIBCDIO_VERSION_NUM);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020003,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			0x00020175,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
 		return 0;
 	}
