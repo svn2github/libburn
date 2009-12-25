@@ -33,4 +33,15 @@ int sg_drive_is_open(struct burn_drive * d);
 
 int burn_os_stdio_capacity(char *path, off_t *bytes);
 
+/* ts A91225 */
+/** Performs global initialization of the SCSI transport adapter and eventually
+    needed operating system facilities. Checks for compatibility supporting
+    software components.
+    @param msg   returns ids and/or error messages of eventual helpers
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure 
+*/      
+int sg_initialize(char msg[1024], int flag);
+
+
 #endif /* __SG */

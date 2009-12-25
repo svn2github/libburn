@@ -59,6 +59,12 @@ int burn_sg_open_o_nonblock = 1;
 	    to unconditional abort of the process  */
 int burn_sg_open_abort_busy = 0;
 
+
+/* The message returned from sg_initialize()
+*/
+char sg_initialize_msg[1024] = {""};
+
+
 /* ts A61002 */
 
 #include "cleanup.h"
@@ -110,6 +116,14 @@ int burn_initialize(void)
 	ret = burn_msgs_initialize();
 	if (ret <= 0)
 		return 0;
+	ret = sg_initialize(sg_initialize_msg, 0);
+	if (ret <= 0) {
+                libdax_msgs_submit(libdax_messenger, -1,
+                        0x00020175,
+                        LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+                        sg_initialize_msg, 0, 0);
+		return 0;
+	}
 	burn_running = 1;
 	return 1;
 }

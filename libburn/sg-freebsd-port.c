@@ -29,6 +29,11 @@ and of deriving the following system specific files from existing examples:
 Said sg-*.c operations are defined by a public function interface, which has
 to be implemented in a way that provides libburn with the desired services:
  
+sg_initialize()         performs global initialization of the SCSI transport
+                        adapter and eventually needed operating system
+                        facilities. Checks for compatibility of supporting
+                        software components.
+
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
 
@@ -228,6 +233,20 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 /* ------------------------------------------------------------------------ */
 /* PORTING:           Public functions. These MUST be ported.               */
 /* ------------------------------------------------------------------------ */
+
+
+/** Performs global initialization of the SCSI transport adapter and eventually
+    needed operating system facilities. Checks for compatibility supporting
+    software components.
+    @param msg   returns ids and/or error messages of eventual helpers
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_initialize(char msg[1024], int flag)
+{
+	/* nothing to be done */
+	return 1;
+}
 
 
 /** Returns the next index number and the next enumerated drive address.

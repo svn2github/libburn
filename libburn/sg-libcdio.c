@@ -28,6 +28,11 @@ and of deriving the following system specific files from existing examples:
 
 Said sg-*.c operations are defined by a public function interface, which has
 to be implemented in a way that provides libburn with the desired services:
+
+sg_initialize()         performs global initialization of the SCSI transport
+                        adapter and eventually needed operating system
+                        facilities. Checks for compatibility of supporting
+                        software components.
  
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
@@ -206,6 +211,54 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 /* ------------------------------------------------------------------------ */
 
 
+/** Performs global initialization of the SCSI transport adapter and eventually
+    needed operating system facilities. Checks for compatibility of supporting
+    software components.
+    @param msg   returns ids and/or error messages of eventual helpers
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/ 
+int sg_initialize(char msg[1024], int flag)
+{
+	char *version_text, *msg_pt;
+	int cdio_ver;
+
+	sprintf(msg, "Using sg-libcdio-%d with libcdio version ",
+		LIBCDIO_VERSION_NUM );
+
+ #if LIBCDIO_VERSION_NUM < 83 
+
+LIBBURN_MISCONFIGURATION = 0;
+INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_VERSION_NUM_83 = 0;
+LIBBURN_MISCONFIGURATION_ = 0;
+
+ #else
+
+	cdio_ver = libcdio_version_num;
+	version_text = (char *) cdio_version_string;
+
+ #endif /* ! LIBCDIO_VERSION_NUM < 83  */
+
+	strncat(msg, version_text, 800);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+		msg , 0, 0);
+	if (cdio_ver < LIBCDIO_VERSION_NUM) {
+		strcat(msg, " ---> ");
+		msg_pt = msg + strlen(msg);
+		sprintf(msg_pt,
+		    "libcdio TOO OLD: numeric version %d , need at least %d",
+		    cdio_ver, LIBCDIO_VERSION_NUM);
+		libdax_msgs_submit(libdax_messenger, -1,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg_pt, 0, 0);
+		return 0;
+	}
+	return 1;
+}
+
+
 /** Returns the next index number and the next enumerated drive address.
     The enumeration has to cover all available and accessible drives. It is
     allowed to return addresses of drives which are not available but under
@@ -318,44 +371,11 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	CdIo_t *p_cdio;
-	char *am, *version_text;
-	char msg[160];
-	int cdio_ver = 82;
+	char *am;
 
 	if (d->p_cdio != NULL) {
 		d->released = 0;
 		return 1;
-	}
-
-	sprintf(msg, "Using sg-libcdio-%d with libcdio version ",
-		LIBCDIO_VERSION_NUM );
-
- #if LIBCDIO_VERSION_NUM < 83 
-
-LIBBURN_MISCONFIGURATION = 0;
-INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_VERSION_NUM_83 = 0;
-LIBBURN_MISCONFIGURATION_ = 0;
-
- #else
-
-	cdio_ver = libcdio_version_num;
-	version_text = (char *) cdio_version_string;
-
- #endif /* ! LIBCDIO_VERSION_NUM < 83  */
-
-	strncat(msg, version_text, 80);
-	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-		msg , 0, 0);
-	if (cdio_ver < LIBCDIO_VERSION_NUM) {
-		sprintf(msg,
-		    "libcdio TOO OLD: numeric version %d , need at least %d",
-		    cdio_ver, LIBCDIO_VERSION_NUM);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-			0x00020175,
-			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-			msg, 0, 0);
-		return 0;
 	}
 
 	p_cdio = cdio_open_am(d->devname, DRIVER_DEVICE, 

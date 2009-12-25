@@ -54,6 +54,21 @@ int burn_drive_is_banned(char *device_address);
 int mmc_function_spy(struct burn_drive *d, char * text);
 
 
+/* ts A91225 */
+/** Performs global initialization of the SCSI transport adapter and eventually
+    needed operating system facilities. Checks for compatibility supporting
+    software components.
+    @param msg   returns ids and/or error messages of eventual helpers
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_initialize(char msg[1024], int flag)
+{
+	/* nothing to be done */
+	return 1;
+}
+
+
 /* ts A61021 : Moved most code from scsi_enumerate_drives under
                sg_give_next_adr() */
 /* Some helper functions for scsi_give_next_adr() */
