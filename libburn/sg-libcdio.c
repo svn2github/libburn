@@ -330,14 +330,18 @@ int sg_grab(struct burn_drive *d)
 	sprintf(msg, "Using sg-libcdio-%d with libcdio version ",
 		LIBCDIO_VERSION_NUM );
 
-/* >>> change this to #if LIBCDIO_VERSION_NUM < 83 */
-#ifdef LIBCDIO_HAS_VERSION_CALL
-	cdio_ver = cdio_version(&version_text);
-#else
+ #if LIBCDIO_VERSION_NUM < 83 
+
 LIBBURN_MISCONFIGURATION = 0;
-INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_HAS_VERSION_CALL = 0;
+INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_VERSION_NUM_83 = 0;
 LIBBURN_MISCONFIGURATION_ = 0;
-#endif /* ! LIBCDIO_HAS_VERSION_CALL */
+
+ #else
+
+	cdio_ver = libcdio_version_num;
+	version_text = (char *) cdio_version_string;
+
+ #endif /* ! LIBCDIO_VERSION_NUM < 83  */
 
 	strncat(msg, version_text, 80);
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
