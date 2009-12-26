@@ -154,6 +154,13 @@ void burn_finish(void)
 	burn_running = 0;
 }
 
+/* ts A9122 */
+/** API function. See libburn.h */
+char *burn_scsi_transport_id(int flag)
+{
+	return sg_initialize_msg;
+}
+
 
 /* ts A60813 */
 /** API function. See libburn.h */

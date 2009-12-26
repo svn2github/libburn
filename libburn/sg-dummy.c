@@ -7,8 +7,8 @@ the transport level aspects of SCSI control and command i/o.
 
 Present implementation: default dummy which enables libburn only to work
                         with stdio: pseudo drive addresses.
-                        For real implementations see sg-linux.c or sg-freebsd.c
-
+                        For real implementations see sg-linux.c, sg-freebsd.c,
+                        sg-libcdio.c
 */
 
 
@@ -38,6 +38,19 @@ Present implementation: default dummy which enables libburn only to work
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
+
+/** Performs global initialization of the SCSI transport adapter and eventually
+    needed operating system facilities. Checks for compatibility supporting
+    software components.
+    @param msg   returns ids and/or error messages of eventual helpers
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_initialize(char msg[1024], int flag)
+{
+	strcpy(msg, "internal X/Open adapter sg-dummy");
+	return 1;
+}
 
 /** Returns the next index number and the next enumerated drive address.
     The enumeration has to cover all available and accessible drives. It is

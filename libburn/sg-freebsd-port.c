@@ -244,7 +244,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 */
 int sg_initialize(char msg[1024], int flag)
 {
-	/* nothing to be done */
+	strcpy(msg, "internal FreeBSD CAM adapter sg-freebsd-port");
 	return 1;
 }
 

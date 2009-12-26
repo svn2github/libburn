@@ -223,8 +223,8 @@ int sg_initialize(char msg[1024], int flag)
 	char *version_text, *msg_pt;
 	int cdio_ver;
 
-	sprintf(msg, "Using sg-libcdio-%d with libcdio version ",
-		LIBCDIO_VERSION_NUM );
+	sprintf(msg, "sg-libcdio adapter v%d with libcdio version ",
+		LIBCDIO_VERSION_NUM);
 
  #if LIBCDIO_VERSION_NUM < 83 
 

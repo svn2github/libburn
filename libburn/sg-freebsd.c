@@ -64,7 +64,7 @@ int mmc_function_spy(struct burn_drive *d, char * text);
 */
 int sg_initialize(char msg[1024], int flag)
 {
-	/* nothing to be done */
+	strcpy(msg, "internal FreeBSD CAM adapter sg-freebsd");
 	return 1;
 }
 
