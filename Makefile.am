@@ -199,9 +199,11 @@ EXTRA_DIST = \
 	cdrskin/wiki_plain.txt \
 	cdrskin/cleanup.h \
 	cdrskin/cleanup.c \
+	libburn/os-dummy.h \
 	libburn/os-freebsd.h \
 	libburn/os-linux.h \
 	libburn/os-libcdio.h \
+	libburn/sg-dummy.c \
 	libburn/sg-freebsd.c \
 	libburn/sg-linux.c \
 	libburn/sg-libcdio.c \
