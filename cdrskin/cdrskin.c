@@ -148,6 +148,8 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
+#define Libburn_has_burn_scsi_transport_iD 1
+
 
 #endif /* Cdrskin_libburn_0_7_5 */
 
@@ -3184,6 +3186,13 @@ set_severities:;
 final_checks:;
  if(flag&1)
    goto ex;
+
+#ifdef Libburn_has_burn_scsi_transport_iD
+ if(o->verbosity >= Cdrskin_verbose_debuG)
+   ClN(fprintf(stderr,
+       "cdrskin: DEBUG : Using %s\n", burn_scsi_transport_id(0)));
+#endif
+
 
  if(o->do_waiti) {
    fprintf(stderr,
