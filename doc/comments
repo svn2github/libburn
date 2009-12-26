@@ -73,9 +73,9 @@ compatible for a good while.
    @subsection libburner-help Libburner --help
 <pre>
 Usage: test/libburner
-       [--drive <address>|<driveno>|"-"]  [--audio]
+       [--drive address|driveno|"-"]  [--audio]
        [--blank_fast|--blank_full|--format]  [--try_to_simulate]
-       [--multi]  [<one or more imagefiles>|"-"]
+       [--multi]  [one or more imagefiles|"-"]
 Examples
 A bus scan (needs rw-permissions to see a drive):
   test/libburner --drive -

@@ -865,12 +865,12 @@ void burn_allow_untested_profiles(int yes);
     If the path leads to an existing file of any type other than directory,
     then the result is a sequential write-only stdio-drive = drive role 3.
 
-    The special address form "stdio:/dev/fd/<number>" is interpreted literally
-    as reference to open file descriptor <number>. This address form coincides
+    The special address form "stdio:/dev/fd/{number}" is interpreted literally
+    as reference to open file descriptor {number}. This address form coincides
     with real files on some systems, but it is in fact hardcoded in libburn.
     Special address "stdio:-" means stdout = "stdio:/dev/fd/1".
     The role of such a drive is determined by the file type obtained via
-    fstat(<number>).
+    fstat({number}).
    
     Roles 2 and 3 perform all their eventual data transfer activities on a file
     via standard i/o functions open(2), lseek(2), read(2), write(2), close(2).
@@ -1070,7 +1070,7 @@ int burn_drive_grab(struct burn_drive *drive, int load);
     sense to calm down the drive if no read operation is expected for the
     next few seconds. The drive will get alert automatically if operations
     are required.
-    @param drive  The drive to influence.
+    @param d      The drive to influence.
     @param flag   Bitfield for control purposes
                   bit0= become alert (else start snoozing)
                         This is not mandatory to allow further drive operations
@@ -1094,7 +1094,7 @@ void burn_drive_release(struct burn_drive *drive, int eject);
     eject button disabled. This physically locked drive state will last until
     the drive is grabbed again and released via burn_drive_release().
     Programs like eject, cdrecord, growisofs will break that ban too.
-    @param drive The drive to release and leave locked.
+    @param d    The drive to release and leave locked.
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return 1 means success, <=0 means failure
     @since 0.4.0
@@ -1187,7 +1187,7 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 /* ts A90909 */
 /** Retrieve some media information which is mainly specific to CD. For other
     media only the bits in reply parameter valid are supposed to be meaningful.
-    @param drive     The drive to query.
+    @param d         The drive to query.
     @param disc_type A string saying either "CD-DA or CD-ROM", or "CD-I",
                      or ""CD-ROM XA", or "undefined".
     @param disc_id   A 32 bit number read from the media. (Meaning unclear yet)
@@ -1938,7 +1938,7 @@ int burn_fifo_inquire_status(struct burn_source *fifo, int *size,
     @param full_counter      The number of times the fifo was full.
     @since 0.7.4
 */
-void burn_fifo_get_statistics(struct burn_source *source,
+void burn_fifo_get_statistics(struct burn_source *fifo,
                              int *total_min_fill, int *interval_min_fill,
                              int *put_counter, int *get_counter,
                              int *empty_counter, int *full_counter);
@@ -1952,8 +1952,7 @@ void burn_fifo_get_statistics(struct burn_source *source,
                              burn_fifo_next_interval() was called.
     @since 0.7.4
 */
-void burn_fifo_next_interval(struct burn_source *source,
-                            int *interval_min_fill);
+void burn_fifo_next_interval(struct burn_source *fifo, int *interval_min_fill);
 
 /* ts A80713 */
 /** Obtain a preview of the first input data of a fifo which was created
@@ -1975,7 +1974,7 @@ void burn_fifo_next_interval(struct burn_source *source,
     @return <0 on severe error, 0 if not enough data, 1 if bufsize bytes read
     @since 0.5.0
 */
-int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
+int burn_fifo_peek_data(struct burn_source *fifo, char *buf, int bufsize,
                         int flag);
 
 /* ts A91125 */
@@ -1992,7 +1991,7 @@ int burn_fifo_peek_data(struct burn_source *source, char *buf, int bufsize,
              1 if desired amount or fifo full
     @since 0.7.4
 */
-int burn_fifo_fill(struct burn_source *source, int bufsize, int flag);
+int burn_fifo_fill(struct burn_source *fifo, int fill, int flag);
 
 
 /* ts A70328 */
@@ -2652,6 +2651,15 @@ These two advises are mutually exclusive.
 
 */
 
+/* ts A91226 */
+/** Obtain the id string of the SCSI transport interface.
+    This interface may be a system specific adapter module of libburn or
+    an adapter to a supporting library like libcdio.
+    @flag     Bitfield for control puposes, submit 0 for now
+    @return   A pointer to the id string. Do not alter the string content.
+    @since 0.7.6
+*/
+char *burn_scsi_transport_id(int flag);
 
 /* ts A60924 : ticket 74 */
 /** Control queueing and stderr printing of messages from libburn.
