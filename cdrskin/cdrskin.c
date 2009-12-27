@@ -3146,6 +3146,20 @@ set_severities:;
 
      printf(
 "Cdrecord 2.01-Emulation Copyright (C) 2006-2009, see libburnia-project.org\n");
+     if(o->fallback_program[0]) {
+       char *hargv[2];
+
+       printf("Fallback program  :  %s\n",o->fallback_program);
+       printf("Fallback version  :\n");
+       hargv[0]= argv[0];
+       hargv[1]= "-version";
+       Cdrpreskin_fallback(o,2,hargv,1); /* dirty never come back */
+     }
+
+#ifdef Libburn_has_burn_scsi_transport_iD
+     printf("System adapter    :  %s\n", burn_scsi_transport_id(0));
+#endif
+
      printf("libburn interface :  %d.%d.%d\n",
             burn_header_version_major, burn_header_version_minor,
             burn_header_version_micro);
@@ -3161,15 +3175,6 @@ set_severities:;
 
      printf("Version timestamp :  %s\n",Cdrskin_timestamP);
      printf("Build timestamp   :  %s\n",Cdrskin_build_timestamP);
-     if(o->fallback_program[0]) {
-       char *hargv[2];
-
-       printf("Fallback program  :  %s\n",o->fallback_program);
-       printf("Fallback version  :\n");
-       hargv[0]= argv[0];
-       hargv[1]= "-version";
-       Cdrpreskin_fallback(o,2,hargv,1); /* dirty never come back */
-     }
      {ret= 2; goto ex;}
 
    } else if(strcmp(argv[i],"-waiti")==0) {
