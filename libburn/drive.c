@@ -90,6 +90,7 @@ void burn_drive_free_subs(struct burn_drive *d)
 	if (d->stdio_fd >= 0)
 		close (d->stdio_fd);
 	d->stdio_fd = -1;
+	sg_dispose_drive(d, 0);
 }
 
 

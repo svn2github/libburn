@@ -35,16 +35,27 @@ and of deriving the following system specific files from existing examples:
 Said sg-*.c operations are defined by a public function interface, which has
 to be implemented in a way that provides libburn with the desired services:
  
+sg_id_string()          returns an id string of the SCSI transport adapter.
+                        It may be called before initialization but then may
+                        return only a preliminary id.
+
 sg_initialize()         performs global initialization of the SCSI transport
                         adapter and eventually needed operating system
                         facilities. Checks for compatibility of supporting
                         software components.
+
+sg_shutdown()           performs global finalizations and releases golbally
+                        aquired resources.
 
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
 
 scsi_enumerate_drives() brings all available, not-whitelist-banned, and
                         accessible drives into libburn's list of drives.
+
+sg_dispose_drive()      finalizes adapter specifics of struct burn_drive
+                        on destruction. Releases resources which were aquired
+                        underneath scsi_enumerate_drives().
 
 sg_drive_is_open()      tells wether libburn has the given drive in use.
 
@@ -1412,6 +1423,22 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 /* ------------------------------------------------------------------------ */
 
 
+/** Returns the id string  of the SCSI transport adapter and eventually
+    needed operating system facilities.
+    This call is usable even if sg_initialize() was not called yet. In that
+    case a preliminary constant message might be issued if detailed info is
+    not available yet.
+    @param msg   returns id string
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_id_string(char msg[1024], int flag)
+{
+	strcpy(msg, "internal Linux SG_IO adapter sg-linux");
+	return 1;
+}
+
+
 /** Performs global initialization of the SCSI transport adapter and eventually
     needed operating system facilities. Checks for compatibility supporting
     software components.
@@ -1421,8 +1448,33 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 */
 int sg_initialize(char msg[1024], int flag)
 {
-	strcpy(msg, "internal Linux SG_IO adapter sg-linux"); 
+	return sg_id_string(msg, 0);
+}
+
+
+/** Performs global finalization of the SCSI transport adapter and eventually
+    needed operating system facilities. Releases globally aquired resources.
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/  
+int sg_shutdown(int flag)
+{
 	return 1;
+}
+
+
+/** Finalizes BURN_OS_TRANSPORT_DRIVE_ELEMENTS, the components of
+    struct burn_drive which are defined in os-*.h.
+    The eventual initialization of those components was made underneath
+    scsi_enumerate_drives().
+    This will be called when a burn_drive gets disposed.
+    @param d     the drive to be finalized
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_dispose_drive(struct burn_drive *d, int flag)
+{
+        return 1;
 }
 
 

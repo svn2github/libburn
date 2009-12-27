@@ -39,6 +39,22 @@ Present implementation: default dummy which enables libburn only to work
 extern struct libdax_msgs *libdax_messenger;
 
 
+/** Returns the id string  of the SCSI transport adapter and eventually
+    needed operating system facilities.
+    This call is usable even if sg_initialize() was not called yet. In that
+    case a preliminary constant message might be issued if detailed info is
+    not available yet.
+    @param msg   returns id string
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_id_string(char msg[1024], int flag)
+{
+	strcpy(msg, "internal X/Open adapter sg-dummy");
+	return 1;
+}
+
+
 /** Performs global initialization of the SCSI transport adapter and eventually
     needed operating system facilities. Checks for compatibility supporting
     software components.
@@ -48,9 +64,33 @@ extern struct libdax_msgs *libdax_messenger;
 */
 int sg_initialize(char msg[1024], int flag)
 {
-	strcpy(msg, "internal X/Open adapter sg-dummy");
+	return sg_id_string(msg, 0);
+}
+
+
+/** Performs global finalization of the SCSI transport adapter and eventually
+    needed operating system facilities. Releases globally aquired resources.
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/  
+int sg_shutdown(int flag)
+{
 	return 1;
 }
+
+
+/** Finalizes BURN_OS_TRANSPORT_DRIVE_ELEMENTS, the components of
+    struct burn_drive which are defined in os-*.h.
+    This will be called when a burn_drive gets disposed.
+    @param d     the drive to be finalized
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_dispose_drive(struct burn_drive *d, int flag)
+{
+        return 1;
+}
+
 
 /** Returns the next index number and the next enumerated drive address.
     The enumeration has to cover all available and accessible drives. It is

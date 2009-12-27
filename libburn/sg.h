@@ -33,6 +33,18 @@ int sg_drive_is_open(struct burn_drive * d);
 
 int burn_os_stdio_capacity(char *path, off_t *bytes);
 
+/* ts A91227 */
+/** Returns the id string of the SCSI transport adapter and eventually
+    needed operating system facilities.
+    This call is usable even if sg_initialize() was not called yet. In that
+    case a preliminary constant message might be issued if detailed info is
+    not available yet.
+    @param msg   returns id string
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_id_string(char msg[1024], int flag);
+
 /* ts A91225 */
 /** Performs global initialization of the SCSI transport adapter and eventually
     needed operating system facilities. Checks for compatibility supporting
@@ -42,6 +54,26 @@ int burn_os_stdio_capacity(char *path, off_t *bytes);
     @return      1 = success, <=0 = failure 
 */      
 int sg_initialize(char msg[1024], int flag);
+
+/* ts A91227 */
+/** Performs global finalization of the SCSI transport adapter and eventually
+    needed operating system facilities. Releases globally aquired resources.
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_shutdown(int flag);
+
+/* ts A91227 */
+/** Finalizes BURN_OS_TRANSPORT_DRIVE_ELEMENTS, the components of
+    struct burn_drive which are defined in os-*.h.
+    The eventual initialization of those components was made underneath
+    scsi_enumerate_drives().
+    This will be called when a burn_drive gets disposed.
+    @param d     the drive to be finalized
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_dispose_drive(struct burn_drive *d, int flag);
 
 
 #endif /* __SG */

@@ -54,7 +54,24 @@ int burn_drive_is_banned(char *device_address);
 int mmc_function_spy(struct burn_drive *d, char * text);
 
 
-/* ts A91225 */
+/* ts A91227 */
+/** Returns the id string  of the SCSI transport adapter and eventually
+    needed operating system facilities.
+    This call is usable even if sg_initialize() was not called yet. In that
+    case a preliminary constant message might be issued if detailed info is
+    not available yet.
+    @param msg   returns id string
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_id_string(char msg[1024], int flag)
+{
+	strcpy(msg, "internal FreeBSD CAM adapter sg-freebsd");
+	return 1;
+}
+
+
+/* ts A91227 */
 /** Performs global initialization of the SCSI transport adapter and eventually
     needed operating system facilities. Checks for compatibility supporting
     software components.
@@ -64,8 +81,34 @@ int mmc_function_spy(struct burn_drive *d, char * text);
 */
 int sg_initialize(char msg[1024], int flag)
 {
-	strcpy(msg, "internal FreeBSD CAM adapter sg-freebsd");
+	return sg_id_string(msg, 0);
+}
+
+
+/* ts A91227 */
+/** Performs global finalization of the SCSI transport adapter and eventually
+    needed operating system facilities. Releases globally aquired resources.
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/  
+int sg_shutdown(int flag)
+{
 	return 1;
+}
+
+
+/** Finalizes BURN_OS_TRANSPORT_DRIVE_ELEMENTS, the components of
+    struct burn_drive which are defined in os-*.h.
+    The eventual initialization of those components was made underneath
+    scsi_enumerate_drives().
+    This will be called when a burn_drive gets disposed.
+    @param d     the drive to be finalized
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_dispose_drive(struct burn_drive *d, int flag)
+{
+        return 1;
 }
 
 

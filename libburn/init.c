@@ -60,9 +60,9 @@ int burn_sg_open_o_nonblock = 1;
 int burn_sg_open_abort_busy = 0;
 
 
-/* The message returned from sg_initialize()
+/* The message returned from sg_id_string() and/or sg_initialize()
 */
-char sg_initialize_msg[1024] = {""};
+static char sg_initialize_msg[1024] = {""};
 
 
 /* ts A61002 */
@@ -151,13 +151,18 @@ void burn_finish(void)
 	/* ts A60924 : ticket 74 */
 	libdax_msgs_destroy(&libdax_messenger,0);
 
+	sg_shutdown(0);
+
 	burn_running = 0;
 }
 
-/* ts A9122 */
+
+/* ts A91226 */
 /** API function. See libburn.h */
 char *burn_scsi_transport_id(int flag)
 {
+	if (!burn_running)
+		sg_id_string(sg_initialize_msg, 0);
 	return sg_initialize_msg;
 }
 

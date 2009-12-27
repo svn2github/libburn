@@ -29,17 +29,28 @@ and of deriving the following system specific files from existing examples:
 Said sg-*.c operations are defined by a public function interface, which has
 to be implemented in a way that provides libburn with the desired services:
 
+sg_id_string()          returns an id string of the SCSI transport adapter.
+                        It may be called before initialization but then may
+                        return only a preliminary id.
+
 sg_initialize()         performs global initialization of the SCSI transport
                         adapter and eventually needed operating system
                         facilities. Checks for compatibility of supporting
                         software components.
- 
+
+sg_shutdown()           performs global finalizations and releases golbally
+                        aquired resources.
+
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
 
 scsi_enumerate_drives() brings all available, not-whitelist-banned, and
                         accessible drives into libburn's list of drives.
 
+sg_dispose_drive()      finalizes adapter specifics of struct burn_drive
+                        on destruction. Releases resources which were aquired
+                        underneath scsi_enumerate_drives().
+ 
 sg_drive_is_open()      tells wether libburn has the given drive in use.
 
 sg_grab()               opens the drive for SCSI commands and ensures
@@ -281,6 +292,35 @@ static void enumerate_common(char *fname, char *cdio_name,
 /* ------------------------------------------------------------------------ */
 
 
+/** Returns the id string  of the SCSI transport adapter and eventually
+    needed operating system facilities.
+    This call is usable even if sg_initialize() was not called yet. In that
+    case a preliminary constant message might be issued if detailed info is
+    not available yet.
+    @param msg   returns id string
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_id_string(char msg[1024], int flag)
+{
+	char *version_text;
+
+	sprintf(msg, "sg-libcdio h%d with libcdio ", LIBCDIO_VERSION_NUM);
+
+ #if LIBCDIO_VERSION_NUM < 83 
+
+LIBBURN_MISCONFIGURATION = 0;
+INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_libcdio_VERSION_NUM_83 = 0;
+LIBBURN_MISCONFIGURATION_ = 0;
+
+ #endif /* LIBCDIO_VERSION_NUM < 83  */
+
+	version_text = (char *) cdio_version_string;
+	strncat(msg, version_text, 800);
+	return 1;
+}
+
+
 /** Performs global initialization of the SCSI transport adapter and eventually
     needed operating system facilities. Checks for compatibility of supporting
     software components.
@@ -290,26 +330,12 @@ static void enumerate_common(char *fname, char *cdio_name,
 */ 
 int sg_initialize(char msg[1024], int flag)
 {
-	char *version_text, *msg_pt;
 	int cdio_ver;
+	char *msg_pt;
 
-	sprintf(msg, "sg-libcdio adapter v%d with libcdio version ",
-		LIBCDIO_VERSION_NUM);
-
- #if LIBCDIO_VERSION_NUM < 83 
-
-LIBBURN_MISCONFIGURATION = 0;
-INTENTIONAL_ABORT_OF_COMPILATION__HEADERFILE_cdio_version_dot_h_TOO_OLD__NEED_LIBCDIO_VERSION_NUM_83 = 0;
-LIBBURN_MISCONFIGURATION_ = 0;
-
- #else
-
+	msg[0] = 0;
+	sg_id_string(msg, 0);
 	cdio_ver = libcdio_version_num;
-	version_text = (char *) cdio_version_string;
-
- #endif /* ! LIBCDIO_VERSION_NUM < 83  */
-
-	strncat(msg, version_text, 800);
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 		msg , 0, 0);
@@ -325,6 +351,32 @@ LIBBURN_MISCONFIGURATION_ = 0;
 			msg_pt, 0, 0);
 		return 0;
 	}
+	return 1;
+}
+
+
+/** Performs global finalization of the SCSI transport adapter and eventually
+    needed operating system facilities. Releases globally aquired resources.
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/ 
+int sg_shutdown(int flag)
+{
+	return 1;
+}
+
+
+/** Finalizes BURN_OS_TRANSPORT_DRIVE_ELEMENTS, the components of
+    struct burn_drive which are defined in os-*.h.
+    The eventual initialization of those components was made underneath
+    scsi_enumerate_drives().
+    This will be called when a burn_drive gets disposed.
+    @param d     the drive to be finalized
+    @param flag  unused yet, submit 0
+    @return      1 = success, <=0 = failure
+*/
+int sg_dispose_drive(struct burn_drive *d, int flag)
+{
 	return 1;
 }
 

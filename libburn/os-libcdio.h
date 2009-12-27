@@ -1,8 +1,8 @@
 
-/* os-dummy.h
+/* os-libcdio.h
    Operating system specific libburn definitions and declarations. Included
    by os.h in case of compilation for
-           Unknown POSIX like systems
+           Unknown X/Open-like systems
            with GNU libcdio MMC transport adapter sg-libcdio.c
 
    Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
@@ -40,6 +40,10 @@ SIGKILL, SIGCHLD, SIGSTOP
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */
 /* (It might be risky to use 64k. FreeBSD is said to can only 32k.) */
+/* On Linux kernel 2.6.18 when stream recording 2x BD-RE 
+   this would bring about 10 % more speed:
+     BURN_OS_TRANSPORT_BUFFER_SIZE 65536
+*/
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
 
 
