@@ -161,6 +161,72 @@ static int sg_close_drive(struct burn_drive * d)
 }
 
 
+static int sg_give_next_adr_raw(burn_drive_enumerator_t *idx,
+				     char adr[], int adr_size, int initialize)
+{
+	if (initialize == 1) {
+		idx->pos = idx->ppsz_cd_drives =
+					cdio_get_devices(DRIVER_DEVICE);
+		if (idx->ppsz_cd_drives == NULL)
+			return 0;
+	} else if (initialize == -1) {
+		if (*(idx->ppsz_cd_drives) != NULL)
+			cdio_free_device_list(idx->ppsz_cd_drives);
+		idx->ppsz_cd_drives = NULL;
+	}
+	if (idx->pos == NULL)
+		return 0;
+	if (*(idx->pos) == NULL)
+		return 0;
+	if (strlen(*(idx->pos)) >= adr_size)
+		return -1;
+	strcpy(adr, *(idx->pos));
+	(idx->pos)++;
+	return 1;
+}
+
+
+/* Resolve eventual softlink, E.g. /dev/cdrom . */
+static int sg_resolve_link(char *in_path, char target[], int target_size,
+			   int flag)
+{
+	int i, max_link_depth = 100, ret;
+	char path[4096], link_target[4096];
+	struct stat stbuf;
+
+	if (strlen(in_path) >= sizeof(path)) {
+		if (strlen(in_path) >= target_size)
+			return -1;
+		strcpy(target, path);
+		return 1;
+	}
+	strcpy(path, in_path);
+
+	/* (burn_drive_resolve_link() relies on a completed drive list and
+	    cannot be used here) */
+	for (i= 0; i < max_link_depth; i++) {
+		if (lstat(path, &stbuf) == -1) {
+			strcpy(path, in_path);
+	break; /* dead link */
+		}
+		if ((stbuf.st_mode & S_IFMT) != S_IFLNK)
+	break; /* found target */
+		ret = readlink(path, link_target, sizeof(link_target));
+		if (ret == -1) {
+			strcpy(path, in_path);
+	break; /* unreadable link pointer */
+		}
+		strcpy(path, link_target);
+	}
+	if (i >= max_link_depth) /* endless link loop */
+			strcpy(path, in_path);
+	if (strlen(path) >= target_size)
+		return -1;
+	strcpy(target, path);
+	return 1;
+}
+
+
 /* ----------------------------------------------------------------------- */
 /* PORTING: Private functions which contain publicly needed functionality. */
 /*          Their portable part must be performed. So it is probably best  */
@@ -172,8 +238,9 @@ static int sg_close_drive(struct burn_drive * d)
 /** Wraps a detected drive into libburn structures and hands it over to
     libburn drive list.
 */
-static void enumerate_common(char *fname, int bus_no, int host_no,
-			     int channel_no, int target_no, int lun_no)
+static void enumerate_common(char *fname, char *cdio_name,
+				int bus_no, int host_no,
+				int channel_no, int target_no, int lun_no)
 {
 	int ret;
 	struct burn_drive out;
@@ -193,6 +260,9 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	/* Transport adapter is libcdio */
 	/* Adapter specific handles and data */
 	out.p_cdio = NULL;
+	strcpy(out.libcdio_name, fname);
+	if (strlen(cdio_name) < sizeof(out.libcdio_name))
+		strcpy(out.libcdio_name, cdio_name);
 
 	/* PORTING: ---------------- end of non portable part ------------ */
 
@@ -277,50 +347,17 @@ LIBBURN_MISCONFIGURATION_ = 0;
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int i, max_link_depth = 100, ret;
-	char path[4096], link_target[4096];
-	struct stat stbuf;
+	int ret;
+	char path[4096];
 
-	if (initialize == 1) {
-		idx->pos = idx->ppsz_cd_drives =
-					cdio_get_devices(DRIVER_DEVICE);
-		if (idx->ppsz_cd_drives == NULL)
-			return 0;
-	} else if (initialize == -1) {
-		if (*(idx->ppsz_cd_drives) != NULL)
-			cdio_free_device_list(idx->ppsz_cd_drives);
-		idx->ppsz_cd_drives = NULL;
-	}
-	if (idx->pos == NULL)
-		return 0;
-	if (*(idx->pos) == NULL)
-		return 0;
-
-	/* Resolve eventual softlink, E.g. /dev/cdrom . */;
-	/* (burn_drive_resolve_link() relies on a completed drive list and
-	    cannot be used here) */
-	strcpy(path, *(idx->pos));
-	for (i= 0; i < max_link_depth; i++) {
-		if (lstat(path, &stbuf) == -1) {
-			strcpy(path, *(idx->pos));
-	break; /* dead link */
-		}
-		if ((stbuf.st_mode & S_IFMT) != S_IFLNK)
-	break; /* found target */
-		ret = readlink(path, link_target, sizeof(link_target));
-		if (ret == -1) {
-			strcpy(path, *(idx->pos));
-	break; /* unreadable link pointer */
-		}
-		strcpy(path, link_target);
-	}
-	if (i >= max_link_depth) /* endless link loop */
-			strcpy(path, *(idx->pos));
-	if (strlen(path) >= adr_size)
-		return -1;
-	strcpy(adr, path);
-	(idx->pos)++;
-	return 1;
+	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
+	if (ret <= 0)
+		return ret;
+	if (strlen(adr) >= sizeof(path))
+		return ret;
+	strcpy(path, adr);
+	ret = sg_resolve_link(path, adr, adr_size, 0);
+	return ret;
 }
 
 
@@ -332,18 +369,22 @@ int scsi_enumerate_drives(void)
 	burn_drive_enumerator_t idx;
 	int initialize = 1, ret, i_bus_no = -1;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
-	char buf[64];
+	char buf[4096], target[4096];
 
 	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
+		ret = sg_give_next_adr_raw(&idx, buf, sizeof(buf), initialize);
 		initialize = 0;
 		if (ret <= 0)
 	break;
-		if (burn_drive_is_banned(buf))
+		ret = sg_resolve_link(buf, target, sizeof(target), 0);
+		if (ret <= 0)
+			strcpy(target, buf);
+		if (burn_drive_is_banned(target))
 	continue; 
 		sg_obtain_scsi_adr(buf, &i_bus_no, &i_host_no,
 				&i_channel_no, &i_target_no, &i_lun_no);
-		enumerate_common(buf, i_bus_no, i_host_no, i_channel_no,
+		enumerate_common(target, buf,
+				i_bus_no, i_host_no, i_channel_no,
 				i_target_no, i_lun_no);
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
@@ -351,7 +392,7 @@ int scsi_enumerate_drives(void)
 }
 
 
-/** Tells wether libburn has the given drive in use or exclusively reserved.
+/** Tells whether libburn has the given drive in use or exclusively reserved.
     If it is "open" then libburn will eventually call sg_release() on it when
     it is time to give up usage resp. reservation.
 */
@@ -377,8 +418,9 @@ int sg_grab(struct burn_drive *d)
 		d->released = 0;
 		return 1;
 	}
-
-	p_cdio = cdio_open_am(d->devname, DRIVER_DEVICE, 
+	if (d->libcdio_name[0] == 0) /* just to be sure it is initialized */
+		strcpy(d->libcdio_name, d->devname);
+	p_cdio = cdio_open_am(d->libcdio_name, DRIVER_DEVICE, 
 			burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR");
 
 	if (p_cdio == NULL) {
@@ -471,15 +513,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		memset(c->page->data, 0, BUFFER_SIZE);
 	} else {
 		dxfer_len = 0;
-
-/* >>> remove this condition when #if LIBCDIO_VERSION_NUM < 83
-       is in effect above*/
-#ifdef SCSI_MMC_HAS_DIR_NONE
 		e_direction = SCSI_MMC_DATA_NONE;
-#else
-		e_direction = SCSI_MMC_DATA_READ;
-#endif
-
 	}
 		
 	/* retry-loop */

@@ -39,7 +39,8 @@ SIGKILL, SIGCHLD, SIGSTOP
 
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */
-#define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
+/* (It might be risky to use 64k. FreeBSD is said to can only 32k.) */
+#define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
 
 
 /* To hold the position of the most recently delivered address from
@@ -59,4 +60,5 @@ typedef struct burn_drive_enumerator_struct burn_drive_enumerator_t;
 */
 #define BURN_OS_TRANSPORT_DRIVE_ELEMENTS \
 	void *p_cdio; /* actually a pointer to CdIo_t */ \
+	char libcdio_name[4096]; /* The drive path as used by libcdio */ \
 
