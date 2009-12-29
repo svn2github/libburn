@@ -328,7 +328,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		was_error = 1;
 	}
 
-	size = c.page->data[0] * 256 + c.page->data[1];
+	size = c.page->data[0] * 256 + c.page->data[1] + 2;
 	page = c.page->data + 8;
 
 	/* ts A61225 :
@@ -524,7 +524,7 @@ void spc_sense_error_params(struct burn_drive *d)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 
-	size = c.page->data[0] * 256 + c.page->data[1];
+	size = c.page->data[0] * 256 + c.page->data[1] + 2;
 	m = d->mdata;
 	page = c.page->data + 8;
 	d->params.retries = page[3];
@@ -607,7 +607,7 @@ void spc_sense_write_params(struct burn_drive *d)
 	/* ts A71128 : do not interpret reply if error */
 	m = d->mdata;
 	if (!c.error) {
-		size = c.page->data[0] * 256 + c.page->data[1];
+		size = c.page->data[0] * 256 + c.page->data[1] + 2;
 		page = c.page->data + 8;
 		burn_print(1, "write page length 0x%x\n", page[1]);
 		m->write_page_length = page[1];
