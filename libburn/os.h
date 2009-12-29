@@ -30,6 +30,14 @@
 
 
 #else
+#ifdef __FreeBSD_kernel__
+
+
+/* ----------------------- FreeBSD with CAM under Debian ------------------- */
+#include "os-freebsd.h"
+
+
+#else
 #ifdef __linux
 
 
@@ -45,6 +53,7 @@
 
 
 #endif /* ! __linux */
+#endif /* ! __FreeBSD__kernel__ */
 #endif /* ! __FreeBSD__ */
 #endif /* ! Libburn_use_libcdiO */
 

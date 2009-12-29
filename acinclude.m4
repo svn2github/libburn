@@ -16,6 +16,10 @@ AC_DEFUN([TARGET_SHIZZLE],
       LIBBURN_ARCH_LIBS=-lcam
       LIBBURNIA_PKGCONFDIR=$(echo "$libdir" | sed 's/\/lib$/\/libdata/')/pkgconfig
       ;;
+    kfreebsd*-gnu)
+      ARCH=freebsd
+      LIBBURN_ARCH_LIBS=-lcam
+      ;;
     *)
       ARCH=
       LIBBURN_ARCH_LIBS=

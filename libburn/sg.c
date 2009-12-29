@@ -15,6 +15,11 @@
 #include "sg-freebsd.c"
 
 #else
+#ifdef __FreeBSD_kernel__
+
+#include "sg-freebsd.c"
+
+#else
 #ifdef __linux
 
 #include "sg-linux.c"
@@ -42,6 +47,7 @@ static int intentional_compiler_warning(void)
 #include "sg-dummy.c"
 
 #endif /* ! __linux */
+#endif /* ! __FreeBSD_kernel__ */
 #endif /* ! __FreeBSD__ */
 #endif /* ! Libburn_use_libcdiO */
 
