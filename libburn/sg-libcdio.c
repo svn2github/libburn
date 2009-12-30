@@ -100,6 +100,7 @@ Send feedback to libburn-hackers@pykix.org .
 
 
 #include <cdio/cdio.h>
+#include <cdio/logging.h>
 #include <cdio/mmc.h>
 
 
@@ -303,6 +304,8 @@ int sg_initialize(char msg[1024], int flag)
 	int cdio_ver;
 	char *msg_pt;
 
+	cdio_loglevel_default = CDIO_LOG_ASSERT;
+
 	msg[0] = 0;
 	sg_id_string(msg, 0);
 	cdio_ver = libcdio_version_num;
@@ -434,7 +437,8 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	CdIo_t *p_cdio;
-	char *am;
+	char *am, msg[4096];
+	int os_errno;
 
 	if (d->p_cdio != NULL) {
 		d->released = 0;
@@ -446,10 +450,12 @@ int sg_grab(struct burn_drive *d)
 			burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR");
 
 	if (p_cdio == NULL) {
+		os_errno = errno;
+		sprintf(msg, "Could not grab drive '%s'", d->devname);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Could not grab drive", 0/*os_errno*/, 0);
+			msg, os_errno, 0);
 		return 0;
 	}
 	am = (char *) cdio_get_arg(p_cdio, "access-mode");
