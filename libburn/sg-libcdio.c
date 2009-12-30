@@ -131,7 +131,8 @@ extern struct libdax_msgs *libdax_messenger;
 
 /* is in portable part of libburn */
 int burn_drive_is_banned(char *device_address);
-
+int burn_drive_resolve_link(char *path, char adr[],
+			 int *recursion_count, int flag); /* drive.c */
 
 /* Whether to log SCSI commands:
    bit0= log in /tmp/libburn_sg_command_log
@@ -175,11 +176,21 @@ static int sg_close_drive(struct burn_drive * d)
 static int sg_give_next_adr_raw(burn_drive_enumerator_t *idx,
 				     char adr[], int adr_size, int initialize)
 {
+	char **pos;
+	int count = 0;
+
 	if (initialize == 1) {
 		idx->pos = idx->ppsz_cd_drives =
 					cdio_get_devices(DRIVER_DEVICE);
 		if (idx->ppsz_cd_drives == NULL)
 			return 0;
+
+		for (pos = idx->ppsz_cd_drives ; pos != NULL; pos++) {
+			if (*pos == NULL)
+		break;
+			count++;
+		}
+
 	} else if (initialize == -1) {
 		if (*(idx->ppsz_cd_drives) != NULL)
 			cdio_free_device_list(idx->ppsz_cd_drives);
@@ -193,47 +204,6 @@ static int sg_give_next_adr_raw(burn_drive_enumerator_t *idx,
 		return -1;
 	strcpy(adr, *(idx->pos));
 	(idx->pos)++;
-	return 1;
-}
-
-
-/* Resolve eventual softlink, E.g. /dev/cdrom . */
-static int sg_resolve_link(char *in_path, char target[], int target_size,
-			   int flag)
-{
-	int i, max_link_depth = 100, ret;
-	char path[4096], link_target[4096];
-	struct stat stbuf;
-
-	if (strlen(in_path) >= sizeof(path)) {
-		if (strlen(in_path) >= target_size)
-			return -1;
-		strcpy(target, path);
-		return 1;
-	}
-	strcpy(path, in_path);
-
-	/* (burn_drive_resolve_link() relies on a completed drive list and
-	    cannot be used here) */
-	for (i= 0; i < max_link_depth; i++) {
-		if (lstat(path, &stbuf) == -1) {
-			strcpy(path, in_path);
-	break; /* dead link */
-		}
-		if ((stbuf.st_mode & S_IFMT) != S_IFLNK)
-	break; /* found target */
-		ret = readlink(path, link_target, sizeof(link_target));
-		if (ret == -1) {
-			strcpy(path, in_path);
-	break; /* unreadable link pointer */
-		}
-		strcpy(path, link_target);
-	}
-	if (i >= max_link_depth) /* endless link loop */
-			strcpy(path, in_path);
-	if (strlen(path) >= target_size)
-		return -1;
-	strcpy(target, path);
 	return 1;
 }
 
@@ -399,7 +369,7 @@ int sg_dispose_drive(struct burn_drive *d, int flag)
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int ret;
+	int ret, recursion_count = 0;
 	char path[4096];
 
 	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
@@ -408,8 +378,8 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	if (strlen(adr) >= sizeof(path))
 		return ret;
 	strcpy(path, adr);
-	ret = sg_resolve_link(path, adr, adr_size, 0);
-	return ret;
+	ret = burn_drive_resolve_link(path, adr, &recursion_count, 2);
+	return (ret >= 0);
 }
 
 
@@ -419,7 +389,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 int scsi_enumerate_drives(void)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1, ret, i_bus_no = -1;
+	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char buf[4096], target[4096];
 
@@ -428,7 +398,7 @@ int scsi_enumerate_drives(void)
 		initialize = 0;
 		if (ret <= 0)
 	break;
-		ret = sg_resolve_link(buf, target, sizeof(target), 0);
+		ret = burn_drive_resolve_link(buf, target, &recursion_count,2);
 		if (ret <= 0)
 			strcpy(target, buf);
 		if (burn_drive_is_banned(target))
@@ -653,11 +623,24 @@ ex:;
 int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
                        int *target_no, int *lun_no)
 {
-
-	/* >>> any chance to get them from libcdio ? */;
+	CdIo_t *p_cdio;
+	char *tuple;
 
 	*bus_no = *host_no = *channel_no = *target_no = *lun_no = -1;
-	return (0);
+
+	p_cdio = cdio_open(path, DRIVER_DEVICE);
+	if (p_cdio == NULL)
+		return 0;
+
+	/* Try whether a Linux address tuple is available */
+	tuple = (char *) cdio_get_arg(p_cdio, "scsi-tuple-linux");
+        if (tuple != NULL) if (tuple[0]) {
+		sscanf(tuple, "%d,%d,%d,%d,%d",
+			bus_no, host_no, channel_no, target_no, lun_no);
+	}
+
+	cdio_destroy(p_cdio);
+	return (*bus_no >= 0);
 }
 
 

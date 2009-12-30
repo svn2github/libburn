@@ -1560,14 +1560,23 @@ int burn_drive_is_enumerable_adr(char *adr)
 #define BURN_DRIVE_MAX_LINK_DEPTH 20
 
 /* ts A60922 ticket 33 */
-int burn_drive_resolve_link(char *path, char adr[], int *recursion_count)
+/* @param flag  bit0= no debug messages
+                bit1= resolve only links,
+                      do not rely on drive list for resolving via st_rdev
+*/
+int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
+				int flag)
 {
 	int ret;
 	char link_target[4096], msg[4096+100], link_adr[4096], *adrpt;
+	struct stat stbuf;
 
-	burn_drive_adr_debug_msg("burn_drive_resolve_link( %s )", path);
+	if (flag & 1)
+		burn_drive_adr_debug_msg("burn_drive_resolve_link( %s )",
+									path);
 	if (*recursion_count >= BURN_DRIVE_MAX_LINK_DEPTH) {
-		burn_drive_adr_debug_msg(
+		if (flag & 1)
+			burn_drive_adr_debug_msg(
 			"burn_drive_resolve_link aborts because link too deep",
 			NULL);
 		return 0;
@@ -1575,12 +1584,15 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count)
 	(*recursion_count)++;
 	ret = readlink(path, link_target, sizeof(link_target));
 	if (ret == -1) {
-		burn_drive_adr_debug_msg("readlink( %s ) returns -1", path);
+		if (flag & 1)
+			burn_drive_adr_debug_msg("readlink( %s ) returns -1",
+									path);
 		return 0;
 	}
 	if (ret >= sizeof(link_target) - 1) {
 		sprintf(msg,"readlink( %s ) returns %d (too much)", path, ret);
-		burn_drive_adr_debug_msg(msg, NULL);
+		if (flag & 1)
+			burn_drive_adr_debug_msg(msg, NULL);
 		return -1;
 	}
 	link_target[ret] = 0;
@@ -1593,10 +1605,25 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count)
 		} else
 			adrpt = link_target;
 	}
-	ret = burn_drive_convert_fs_adr_sub(adrpt, adr, recursion_count);
-	sprintf(msg,"burn_drive_convert_fs_adr( %s ) returns %d",
-		link_target, ret);
-	burn_drive_adr_debug_msg(msg, NULL);
+	if (flag & 2) {
+		/* Link-only recursion */
+		if (lstat(adrpt, &stbuf) == -1) {
+			;
+		} else if((stbuf.st_mode & S_IFMT) == S_IFLNK) {
+			ret = burn_drive_resolve_link(adrpt, adr,
+						 recursion_count, flag);
+		} else {
+			strcpy(adr, adrpt);
+		}
+	} else {
+		/* Link and device number recursion */
+		ret = burn_drive_convert_fs_adr_sub(adrpt, adr,
+							recursion_count);
+		sprintf(msg,"burn_drive_convert_fs_adr( %s ) returns %d",
+			link_target, ret);
+	}
+	if (flag & 1)
+		burn_drive_adr_debug_msg(msg, NULL);
 	return ret;
 }
 
@@ -1770,7 +1797,7 @@ int burn_drive_convert_fs_adr_sub(char *path, char adr[], int *rec_count)
 		return 0;
 	}
 	if((stbuf.st_mode & S_IFMT) == S_IFLNK) {
-		ret = burn_drive_resolve_link(path, adr, rec_count);
+		ret = burn_drive_resolve_link(path, adr, rec_count, 0);
 		if(ret > 0)
 			return 1;
 		burn_drive_adr_debug_msg("link fallback via stat( %s )", path);
