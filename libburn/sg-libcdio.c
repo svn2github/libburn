@@ -98,6 +98,11 @@ Send feedback to libburn-hackers@pykix.org .
 #include <sys/statvfs.h>
 #endif /* Libburn_os_has_stavtfS */
 
+#ifdef __linux
+/* for ioctl(BLKGETSIZE) */
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#endif
 
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
@@ -710,9 +715,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		if (stat(testpath, &stbuf) == -1)
 			return -1;
 
-#ifdef Libburn_if_this_was_linuX
+#ifdef __linux
 
+	/* Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
+		int open_mode = O_RDONLY, fd, ret;
+
 		fd = open(path, open_mode);
 		if (fd == -1)
 			return -2;
@@ -722,7 +730,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 			return -2;
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
-#endif /* Libburn_if_this_was_linuX */
+#endif /* __linux */
 
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
