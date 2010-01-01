@@ -1340,7 +1340,8 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				ret = burn_os_stdio_capacity(fname,
 								&read_size);
 				if (ret <= 0)
-					read_size = -1;  
+					read_size = (off_t) 0x7ffffff0 *
+								(off_t) 2048;  
 			}
 		}
 		if (ret == -1 || S_ISBLK(stbuf.st_mode) ||
