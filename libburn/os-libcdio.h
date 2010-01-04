@@ -39,12 +39,16 @@ SIGKILL, SIGCHLD, SIGSTOP
 
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */
-/* (It might be risky to use 64k. FreeBSD is said to can only 32k.) */
-/* On Linux kernel 2.6.18 when stream recording 2x BD-RE 
-   this would bring about 10 % more speed:
-     BURN_OS_TRANSPORT_BUFFER_SIZE 65536
+/* My Blu-ray burner LG GGW-H20 writes junk if stream recording is combined
+   with buffer size 32 kB. So stream recording is allowed only with size 64k.
+   This makes it worth to have a special case for Linux buffer size here.
 */
+#ifdef __linux
+#define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
+#else
+/* (It might be risky to use 64k. FreeBSD is said to can only 32k.) */
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
+#endif
 
 
 /* To hold the position of the most recently delivered address from
