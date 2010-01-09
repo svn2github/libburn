@@ -74,14 +74,17 @@ void sbc_eject(struct burn_drive *d)
 		return;
 
 	scsi_init_command(&c, SBC_UNLOAD, sizeof(SBC_UNLOAD));
-	c.opcode[1] |= 1; /* ts A70918 : Immed */
+	/* c.opcode[1] |= 1; / * ts A70918 : Immed , ts B00109 : revoked */
 	c.page = NULL;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
+	/* ts A70918 : Wait long. A late eject could surprise or hurt user.
+	   ts B00109 : Asynchronous eject revoked, as one cannot reliably
+	               distinguish out from unready.
 	if (c.error)
 		return;
-	/* ts A70918 : Wait long. A late eject could surprise or hurt user. */
 	spc_wait_unit_attention(d, 1800, "STOP UNIT (+ EJECT)", 0);
+	*/
 }
 
 
