@@ -932,6 +932,24 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			     int *key, int *asc, int *ascq)
 {
 	char *msg;
+	static char key_def[16][40] = {
+		"(no specific error)",
+		"Recovered error",
+		"Drive not ready",
+		"Medium error",
+		"Drive error",
+		"Illegal request",
+		"Drive event",
+		"Data protected",
+		"Blank/Nonblank",
+		"Vendor specific code",
+		"Copy aborted",
+		"Command aborted",
+		"(obsolete error code)",
+		"Volume overflow",
+		"Miscompare",
+		"(reserved error code)",
+	};
 
 	msg= msg_data;
 	*key= *asc= *ascq= -1;
@@ -943,7 +961,7 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	if (senselen<=0 || senselen>13)
 		*ascq = sense[13];
 
-	sprintf(msg, "[%X %2.2X %2.2X]  ", *key, *asc, *ascq);
+	sprintf(msg, "[%X %2.2X %2.2X]", (*key) & 0xf, *asc, *ascq);
 	msg= msg + strlen(msg);
 
 	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
@@ -1212,8 +1230,8 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		return FAIL;
 	}
 	sprintf(msg_data,
-		"Failure. See mmc3r10g.pdf: Sense Key %X ASC %2.2X ASCQ %2.2X",
-		*key, *asc, *ascq);
+		"See MMC specs: Sense Key %X \"%s\", ASC %2.2X ASCQ %2.2X",
+		*key & 0xf, key_def[(*key) & 0xf], *asc, *ascq);
 	return FAIL;
 }
 
