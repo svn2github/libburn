@@ -442,8 +442,8 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	CdIo_t *p_cdio;
-	char *am, msg[4096];
-	int os_errno;
+	char *am_eff, msg[4096], *am_wanted;
+	int os_errno, second_try = 0;
 
 	if (d->p_cdio != NULL) {
 		d->released = 0;
@@ -451,9 +451,9 @@ int sg_grab(struct burn_drive *d)
 	}
 	if (d->libcdio_name[0] == 0) /* just to be sure it is initialized */
 		strcpy(d->libcdio_name, d->devname);
-	p_cdio = cdio_open_am(d->libcdio_name, DRIVER_DEVICE, 
-			burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR");
-
+	am_wanted = burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR";
+try_to_open:;
+	p_cdio = cdio_open_am(d->libcdio_name, DRIVER_DEVICE, am_wanted);
 	if (p_cdio == NULL) {
 		os_errno = errno;
 		sprintf(msg, "Could not grab drive '%s'", d->devname);
@@ -463,13 +463,19 @@ int sg_grab(struct burn_drive *d)
 			msg, os_errno, 0);
 		return 0;
 	}
-	am = (char *) cdio_get_arg(p_cdio, "access-mode");
-        if (strncmp(am, "MMC_RDWR", 8) != 0) {
+	am_eff = (char *) cdio_get_arg(p_cdio, "access-mode");
+        if (strncmp(am_eff, "MMC_RDWR", 8) != 0) {
+		cdio_destroy(p_cdio);
+		if (!second_try) {
+			am_wanted = burn_sg_open_o_excl ?
+						"MMC_RDWR" : "MMC_RDWR_EXCL";
+			second_try = 1;
+			goto try_to_open;
+		}
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"libcdio provides no MMC_RDWR access mode", 0, 0);
-		cdio_destroy(p_cdio);
 		return 0;
         }
 
@@ -515,7 +521,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	mmc_cdb_t cdb = {{0, }};
 	cdio_mmc_direction_t e_direction;
 	CdIo_t *p_cdio;
-	unsigned char sense[18], *sense_pt = NULL;
+	unsigned char *sense_pt = NULL;
 
 	c->error = 0;
 	if (d->p_cdio == NULL) {
@@ -558,7 +564,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				 	dxfer_len, c->page->data);
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
 		if (sense_valid >= 18)
-			memcpy(sense, sense_pt, 18);
+			memcpy(c->sense, sense_pt,
+				sense_valid >= sizeof(c->sense) ?
+				sizeof(c->sense) : sense_valid );
 		if (sense_pt != NULL)
 			free(sense_pt);
 
@@ -581,21 +589,22 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 */
 
 		if (!sense_valid) {
-			memset(sense, 0, 18);
+			memset(c->sense, 0, sizeof(c->sense));
 			if (i_status != 0) { /* set dummy sense */
 				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
-				sense[2] = 0x02;
-				sense[12] = 0x04;
+				c->sense[2] = 0x02;
+				c->sense[12] = 0x04;
 			}
 		} else
-			sense[2] &= 15;
+			c->sense[2] &= 15;
 	
-		if (i_status != 0 || (sense[2] || sense[12] || sense[13])) {
+		if (i_status != 0 ||
+		    (c->sense[2] || c->sense[12] || c->sense[13])) {
 			if (!c->retry) {
 				c->error = 1;
 				goto ex;
 			}
-			switch (scsi_error(d, sense, 18)) {
+			switch (scsi_error(d, c->sense, 18)) {
 			case RETRY:
 				break;
 			case FAIL:
@@ -619,11 +628,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 ex:;
 	if (c->error)
-		scsi_notify_error(d, c, sense, 18, 0);
+		scsi_notify_error(d, c, c->sense, 18, 0);
 
 	if (burn_sg_log_scsi & 3) 
 		/* >>> Need own duration time measurement. Then remove bit1 */
-		scsi_log_err(c, fp, sense, 0, (c->error != 0) | 2);
+		scsi_log_err(c, fp, c->sense, 0, (c->error != 0) | 2);
 	return 1;
 }
 
