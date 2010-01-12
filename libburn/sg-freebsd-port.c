@@ -696,7 +696,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	if (testpath[0]) {	
 		if (statvfs(testpath, &vfsbuf) == -1)
 			return -2;
-		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
+		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
 	return 1;

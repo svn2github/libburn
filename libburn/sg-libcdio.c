@@ -753,7 +753,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 		if (statvfs(testpath, &vfsbuf) == -1)
 			return -2;
-		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
+		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 
 #else /* Libburn_os_has_statvfS */
