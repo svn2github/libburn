@@ -86,7 +86,7 @@ parameters:
  BUFE             Buffer Underrun protection      0=off, 1=on
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              01h = TAO
- Multi-session    Wether to keep appendable       00b = finalize
+ Multi-session    Whether to keep appendable      00b = finalize
                                                   11b = keep appendable
  Track Mode       Describes frame type            4 for data , 0 for audio
  Data Block Type  Layout of payload blocks        8 for 2048 byte data blocks
@@ -128,13 +128,13 @@ First appeared a drive where CLOSE TRACK fails in simulation mode, later
 another one produced error replies even with real burning.
 
 After that, a new track may be written beginning with sending the mode page 05h
-again. It is not tested wether 05h can be omitted if Track Mode and Data Block
+again. It is not tested whether 05h can be omitted if Track Mode and Data Block
 Type are the same as with the previous track.
 The new track will be added to the session which was opened by the first track.
 
 After the last track of a session, 5Bh CLOSE TRACK SESSION Close Function 010b
 with Logical Track Number 0 closes the session. It depends on the Multi-Session
-value in mode page 05h wether the disc is finalized or stays appendable.
+value in mode page 05h whether the disc is finalized or stays appendable.
 (mmc5r03c.pdf 6.3.3.1.3)
 
 
@@ -205,7 +205,7 @@ for finalized disc.
 In libburn the address of the first track in the last session is obtained from
 the last session's POINT = A0h and from the track descriptor with the POINT
 value matching the PMIN value of the A0h descriptor.
-Untested is wether POINT = B0h and 52h READ TRACK INFORMATION are always in
+Untested is whether POINT = B0h and 52h READ TRACK INFORMATION are always in
 sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
 
 
@@ -311,7 +311,7 @@ A Write Parameters mode page 05h has to be composed and transmitted via
  BUFE             Buffer Underrun protection      0=off, 1=on
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              02h = SAO
- Multi-session    Wether to keep appendable       00b = finalize
+ Multi-session    Whether to keep appendable      00b = finalize
                                                   11b = keep appendable
  Track Mode       Describes frame type            0 (is ignored)
  Data Block Type  Layout of payload blocks        0 (is ignored)
@@ -352,7 +352,7 @@ There is no separator between the tracks of a pure mode SAO session.
 (If the session was mixed mode, there would be extended Pre-gaps and Post-gaps
 between data mode tracks and audio mode tracks.)
 (libburn sends its own buffer to the drive at the end of each track but does
-not sync the drive's chache. It is unclear wether this separation of tracks
+not sync the drive's chache. It is unclear whether this separation of tracks
 on the level of 2Ah WRITE is necessary with a pure mode session. It does not
 harm in any case and would probably be unavoidable if audio and data tracks
 were mixed.)
@@ -758,7 +758,8 @@ The only known way to get full speed from DVD-RAM or BD-RE with enabled defect
 management is the use of AAh WRITE12 with Streaming Bit set to 1.
 (mmc5r03c.pdf 6.45)
 With some DVD-RAM drives this fails if a write buffer is not full 32 kB.
-With the tested BD-RE one has to write full 64 kB buffers.
+With the tested BD-RE one must write full 64 kB buffers, or else writing
+might not get into effect at all.
 
 Although it seems not optimal, this is specified not only to disable the
 cumbersome checkread but also to ignore known defects and to write data
@@ -772,7 +773,8 @@ MMC-5 does not guarantee AAh WRITE12 to work on DVD-RAM or BD-RE at all.
 None of the features of profiles 0012h and 0043h promises the existence of
 AAh WRITE12.
 (mmc5r03c.pdf 5.4.13, 6.45)
-Nevertheless it worked on all tested drives if proper alignment was observed.
+Nevertheless it worked on all tested drives if proper alignment and block
+size was observed.
 
 
 -------------------------------------------------------------------------------
@@ -843,6 +845,8 @@ rounded up to 32. The chain end is marked by the overall image size.
 This chain gives the start addresses of sessions. The sector count minus start
 address gives the size of a particular session. ECMA-119 explains how to
 retrieve more info from the PVD (e.g. the volume id).
+
+See also the multi-session example in libisofs/doc/checksums.txt.
 
 
 -------------------------------------------------------------------------------
@@ -936,7 +940,7 @@ Multi-Session by the application.
  LS_V             Link size valid                 1=true
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              00h = Incremental (Packet)
- Multi-session    Wether to keep appendable       00b = finalize
+ Multi-session    Whether to keep appendable      00b = finalize
                                                   11b = keep appendable
  Track Mode       Describes frame type            5  [*1]
  Data Block Type  Layout of payload blocks        8  [*2]
@@ -983,7 +987,7 @@ from the reply of  51h READ DISC INFORMATION requesting Data Type 000b
 Multiple tracks are permissible in a single session. After all of them have
 been written, 5Bh CLOSE TRACK SESSION Close Function 010b with Logical Track
 Number 0 closes the session. It depends on the Multi-Session value in mode
-page 05h wether the disc is finalized or stays appendable.
+page 05h whether the disc is finalized or stays appendable.
 (mmc5r03c.pdf 6.3.3.2.3)
 
 
@@ -1008,7 +1012,7 @@ The mode page 05h to be sent :
  LS_V             Link size valid                 0=false [*3]
  Test Write       -dummy mode for writing         0=off, 1=on
  Write Type       Packet/TAO/SAO/RAW              02h = DAO (same code as SAO)
- Multi-session    Wether to keep appendable       00b = finalize
+ Multi-session    Whether to keep appendable      00b = finalize
  Track Mode       Describes frame type            5  [*1]
  Data Block Type  Layout of payload blocks        8  [*2]
  Link Size        ???                             0 [*3]
@@ -1225,7 +1229,7 @@ No mode page 05h is to be sent.
 growisofs sends a page but the specs clearly state that one shall not do.
 (mmc5r03c.pdf 7.5.3)
 
-It is optional wether a track size is reserved in advance or not. Eventually
+It is optional whether a track size is reserved in advance or not. Eventually
 this is done by 53h RESERVE TRACK, RMZ=ARSV=0. Reservation size should better
 already be aligned to 32 KiB.
 (mmc5r03c.pdf 6.31)
