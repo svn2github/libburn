@@ -203,7 +203,7 @@ static int sg_next_enumeration_buffer(burn_drive_enumerator_t *idx_)
 }
 
 
-/** Returns the next index number and the next enumerated drive address.
+/** Returns the next index object state and the next enumerated drive address.
     @param idx An opaque handle. Make no own theories about it.
     @param adr Takes the reply
     @param adr_size Gives maximum size of reply including final 0
@@ -257,8 +257,14 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx_,
 				struct periph_match_result* result;
 
 				result = &(idx->ccb.cdm.matches[idx->i].result.periph_result);
+/* ts B00112 : we really want only "cd" devices.
+
 				if (idx->skip_device || 
 				    strcmp(result->periph_name, "pass") == 0)
+					break;
+*/
+				if (idx->skip_device || 
+				    strcmp(result->periph_name, "cd") != 0)
 					break;
 				ret = snprintf(adr, adr_size, "/dev/%s%d",
 					 result->periph_name, result->unit_number);
@@ -270,7 +276,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx_,
 
 			}
 			default:
-				/* printf(stderr, "unknown match type\n"); */
+				/* fprintf(stderr, "unknown match type\n"); */
 				break;
 			}
 			(idx->i)++;
@@ -509,7 +515,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 */
 int sg_grab(struct burn_drive *d)
 {
-	int count;
+	int count, os_errno;
 	struct cam_device *cam;
 
 	if (mmc_function_spy(d, "sg_grab") <= 0)
@@ -522,12 +528,13 @@ int sg_grab(struct burn_drive *d)
 
 	cam = cam_open_device(d->devname, O_RDWR);
 	if (cam == NULL) {
-		libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020003,
-		LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-		"Could not grab drive", 0/*os_errno*/, 0);
+		os_errno = errno;
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020003,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Could not grab drive", os_errno, 0);
 		return 0;
 	}
-/*	er = ioctl(fd, SG_GET_ACCESS_COUNT, &count);*/
 	count = 1;
 	if (1 == count) {
 		d->cam = cam;
@@ -565,8 +572,7 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0;
-	int err;
+	int done = 0, err, sense_len;
 	union ccb *ccb;
 
 	char buf[161];
@@ -655,6 +661,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			return -1;
 		}
 		/* XXX */
+
+		/* ts B00110 */
+		/* Better curb sense_len */
+		sense_len = ccb->csio.sense_len;
+		if (sense_len > sizeof(c->sense))
+			sense_len = sizeof(c->sense);
 		memcpy(c->sense, &ccb->csio.sense_data, ccb->csio.sense_len);
 		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
 			if (!c->retry) {
@@ -740,7 +752,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	if (testpath[0]) {	
 		if (statvfs(testpath, &vfsbuf) == -1)
 			return -2;
-		*bytes = add_size + ((off_t) vfsbuf.f_bsize) *
+		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
 	return 1;
