@@ -104,6 +104,14 @@ Send feedback to libburn-hackers@pykix.org .
 #include <linux/fs.h>
 #endif
 
+#ifdef __FreeBSD__
+/* To avoid ATAPI devices */
+#define Libburn_guess_freebsd_atapi_devicE 1
+#endif
+#ifdef __FreeBSD_kernel__
+#define Libburn_guess_freebsd_atapi_devicE 1
+#endif
+
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
 #include <cdio/mmc.h>
@@ -202,10 +210,23 @@ static int sg_give_next_adr_raw(burn_drive_enumerator_t *idx,
 			cdio_free_device_list(idx->ppsz_cd_drives);
 		idx->ppsz_cd_drives = NULL;
 	}
+
+#ifdef Libburn_guess_freebsd_atapi_devicE
+try_next:;
+#endif
+
 	if (idx->pos == NULL)
 		return 0;
 	if (*(idx->pos) == NULL)
 		return 0;
+
+#ifdef Libburn_guess_freebsd_atapi_devicE
+	if (strncmp(*(idx->pos), "/dev/acd", 8) == 0) {
+		(idx->pos)++;
+		goto try_next;
+	}
+#endif
+
 	if (strlen(*(idx->pos)) >= adr_size)
 		return -1;
 	strcpy(adr, *(idx->pos));
@@ -451,7 +472,7 @@ int sg_grab(struct burn_drive *d)
 	}
 	if (d->libcdio_name[0] == 0) /* just to be sure it is initialized */
 		strcpy(d->libcdio_name, d->devname);
-	am_wanted = burn_sg_open_o_excl ?  "MMC_RDWR_EXCL" : "MMC_RDWR";
+	am_wanted = (burn_sg_open_o_excl & 63) ?  "MMC_RDWR_EXCL" : "MMC_RDWR";
 try_to_open:;
 	p_cdio = cdio_open_am(d->libcdio_name, DRIVER_DEVICE, am_wanted);
 	if (p_cdio == NULL) {
@@ -467,7 +488,7 @@ try_to_open:;
         if (strncmp(am_eff, "MMC_RDWR", 8) != 0) {
 		cdio_destroy(p_cdio);
 		if (!second_try) {
-			am_wanted = burn_sg_open_o_excl ?
+			am_wanted = (burn_sg_open_o_excl & 63) ?
 						"MMC_RDWR" : "MMC_RDWR_EXCL";
 			second_try = 1;
 			goto try_to_open;
