@@ -38,6 +38,16 @@
      burn_finish()
   
 */
+/*
+  Applications must use 64 bit off_t. E.g. by defining
+    #define _LARGEFILE_SOURCE
+    #define _FILE_OFFSET_BITS 64
+  or take special precautions to interface with the library by 64 bit integers
+  where this .h files prescribe off_t.
+  This program gets fed with appropriate settings externally by libburn's
+  autotools generated build system.
+*/
+
 
 /** See this for the decisive API specs . libburn.h is The Original */
 /*  For using the installed header file :  #include <libburn/libburn.h> */
