@@ -908,20 +908,27 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	out->c2_errors = !!d->mdata->c2_pointers;
 	out->drive = d;
 
-#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM
+#ifdef Libburn_dummy_probe_write_modeS
 
 	/* ts A91112 */
 	/* Set default block types. The call d->probe_write_modes() is quite
 	   obtrusive. It may be performed explicitely by new API call
              burn_drive_probe_cd_write_modes().
 	*/
-	out->tao_block_types = d->block_types[BURN_WRITE_TAO] =
-					 BURN_BLOCK_MODE1 | BURN_BLOCK_RAW0;
-	out->sao_block_types = d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
+	if (out->write_dvdram || out->write_dvdr ||
+	    out->write_cdrw || out->write_cdr) {
+		out->tao_block_types = d->block_types[BURN_WRITE_TAO] =
+					BURN_BLOCK_MODE1 | BURN_BLOCK_RAW0;
+		out->sao_block_types = d->block_types[BURN_WRITE_SAO] =
+					BURN_BLOCK_SAO;
+	} else {
+		out->tao_block_types = d->block_types[BURN_WRITE_TAO] = 0;
+		out->sao_block_types = d->block_types[BURN_WRITE_SAO] = 0;
+	}
 	out->raw_block_types = d->block_types[BURN_WRITE_RAW] = 0;
 	out->packet_block_types = 0;
 
-#else /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
+#else /* Libburn_dummy_probe_write_modeS */
 
 	/* update available block types for burners */
 	if (out->write_dvdram || out->write_dvdr ||
@@ -932,15 +939,14 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	out->raw_block_types = d->block_types[BURN_WRITE_RAW];
 	out->packet_block_types = d->block_types[BURN_WRITE_PACKET];
 
-#endif /* ! Libburn_pioneer_dvr_216d_dummy_probe_wM */
+#endif /* ! Libburn_dummy_probe_write_modeS */
 
 	return 1;
 }
 
 
-#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM 
 
-/* ts A91112 candidate for API */
+/* ts A91112 - B00114 API */
 /* Probe available CD write modes and block types.
 */
 int burn_drive_probe_cd_write_modes(struct burn_drive_info *dinfo)
@@ -958,8 +964,6 @@ int burn_drive_probe_cd_write_modes(struct burn_drive_info *dinfo)
 	dinfo->packet_block_types = d->block_types[BURN_WRITE_PACKET];
 	return 1;
 }
-
-#endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
 
 
 /* ts A70907 : added parameter flag */

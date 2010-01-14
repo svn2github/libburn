@@ -1064,6 +1064,19 @@ int burn_drive_obtain_scsi_adr(char *path, int *bus_no, int *host_no,
 */
 int burn_drive_grab(struct burn_drive *drive, int load);
 
+/* ts B00114 */
+/* Probe available CD write modes and block types. In earlier versions this
+   was done unconditionally on drive examination or aquiration. But it is
+   lengthy and obtrusive, up to spoiling burn runs on the examined drives.
+   So now this probing is omitted by default. All drives which announce to be
+   capable of CD or DVD writing, get blindly attributed the capability for
+   SAO and TAO. Applications which are interested in RAW modes or want to
+   rely on the traditional write mode information, may use this call.
+   @param drive_info  drive object to be inquired
+   @return            >0 indicates success, <=0 means failure
+   @since 0.7.6
+*/
+int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info);
 
 /* ts A90824 */
 /** Calm down or alert a drive. Some drives stay alert after reading for
@@ -2931,16 +2944,9 @@ BURN_END_DECLS
    For other modes resp. real probing one has to call
    burn_drive_probe_cd_write_modes().
 
-   # define Libburn_pioneer_dvr_216d_dummy_probe_wM 1
 */
-#ifdef Libburn_pioneer_dvr_216d_dummy_probe_wM
+#define Libburn_dummy_probe_write_modeS 1
 
-/* Probe available CD write modes and block types.
-   @param drive_info  drive object to be inquired
-*/
-int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info)
-
-#endif /* Libburn_pioneer_dvr_216d_dummy_probe_wM */
 
 
 #endif /*LIBBURN_H*/
