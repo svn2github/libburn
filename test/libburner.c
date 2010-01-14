@@ -43,7 +43,7 @@
     #define _LARGEFILE_SOURCE
     #define _FILE_OFFSET_BITS 64
   or take special precautions to interface with the library by 64 bit integers
-  where this .h files prescribe off_t.
+  where libburn/libburn.h prescribes off_t.
   This program gets fed with appropriate settings externally by libburn's
   autotools generated build system.
 */
