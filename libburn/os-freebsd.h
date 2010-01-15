@@ -57,5 +57,7 @@ typedef struct burn_drive_enumeration_state *burn_drive_enumerator_t;
    To be initialized and used within sg-*.c .
 */
 #define BURN_OS_TRANSPORT_DRIVE_ELEMENTS \
-struct cam_device* cam;
+struct cam_device* cam; \
+int lock_fd; \
+
 

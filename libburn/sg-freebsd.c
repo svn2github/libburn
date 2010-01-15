@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/file.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/poll.h>
@@ -52,6 +53,21 @@ int burn_drive_is_banned(char *device_address);
    debug: for tracing calls which might use open drive fds
           or for catching SCSI usage of emulated drives. */
 int mmc_function_spy(struct burn_drive *d, char * text);
+
+
+/* ts B00113
+   Whether to log SCSI commands:
+   bit0= log in /tmp/libburn_sg_command_log
+   bit1= log to stderr
+   bit2= flush every line
+*/
+extern int burn_sg_log_scsi;
+
+/* ts B00114 */
+/* Storage object is in libburn/init.c
+   whether to strive for exclusive access to the drive
+*/
+extern int burn_sg_open_o_excl;
 
 
 /* ts A91227 */
@@ -351,6 +367,10 @@ int sg_close_drive(struct burn_drive * d)
 		cam_close_device(d->cam);
 		d->cam = NULL;
 	}
+	if (d->lock_fd > 0) {
+		close(d->lock_fd);
+		d->lock_fd = -1;
+	}
 	return 0;
 }
 
@@ -404,7 +424,9 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.lun = lun_no;
 
 	out.devname = burn_strdup(fname);
+
 	out.cam = NULL;
+	out.lock_fd = -1;
 
 	out.start_lba= -2000000000;
 	out.end_lba= -2000000000;
@@ -496,6 +518,8 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	/* Operating system adapter is CAM */
 	/* Adapter specific handles and data */
 	out.cam = NULL;
+	out.lock_fd = -1;
+
 	/* Adapter specific functions */
 	out.grab = sg_grab;
 	out.release = sg_release;
@@ -508,14 +532,143 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 #endif /* ! Scsi_freebsd_make_own_enumeratE */
 
-/* ts A61021: do not believe this:
-	we use the sg reference count to decide whether we can use the
-	drive or not.
-	if refcount is not one, drive is open somewhere else.
+
+/* Lock the inode associated to dev_fd and the inode associated to devname.
+   Return OS errno, number of pass device of dev_fd, locked fd to devname,
+   error message.
+   A return value of > 0 means success, <= 0 means failure.
 */
+static int freebsd_dev_lock(int dev_fd, char *devname,
+	 int *os_errno, int *pass_dev_no, int *lock_fd, char msg[4096],
+	 int flag)
+{
+	int lock_denied = 0, fd_stbuf_valid, name_stbuf_valid, i, pass_l = 100;
+	int max_retry = 3, tries = 0;
+	struct stat fd_stbuf, name_stbuf;
+	char pass_name[16], *lock_name;
+
+	*os_errno = 0;
+	*pass_dev_no = -1;
+	*lock_fd = -1;
+	msg[0] = 0;
+
+	fd_stbuf_valid = !fstat(dev_fd, &fd_stbuf);
+
+	/* Try to find name of pass device by inode number */
+	lock_name = (char *) "effective device";
+	if(fd_stbuf_valid) {
+		for (i = 0; i < pass_l; i++) {
+			sprintf(pass_name, "/dev/pass%d", i);
+			if (stat(pass_name, &name_stbuf) != -1)
+				if(fd_stbuf.st_ino == name_stbuf.st_ino &&
+			   	fd_stbuf.st_dev == name_stbuf.st_dev)	
+		break;
+		}
+		if (i < pass_l) {
+			lock_name = pass_name;
+			*pass_dev_no = i;
+		}
+	}
+
+	name_stbuf_valid = !stat(devname, &name_stbuf);
+	for (tries= 0; tries <= max_retry; tries++) {
+		lock_denied = flock(dev_fd, LOCK_EX | LOCK_NB);
+		*os_errno = errno;
+		if (lock_denied) {
+			if (errno == EAGAIN && tries < max_retry) {
+				/* <<< debugging
+				fprintf(stderr,
+				"\nlibcdio_DEBUG: EAGAIN pass, tries= %d\n",
+					tries);
+				*/
+				usleep(2000000);
+	continue;
+			}
+			sprintf(msg,
+			    "Device busy. flock(LOCK_EX) failed on %s of %s",
+			    strlen(lock_name) > 2000 || *pass_dev_no < 0 ?
+						 "pass device" : lock_name,
+			    strlen(devname) > 2000 ? "drive" : devname);
+			return 0;
+		}
+	break;
+	}
+
+	/*
+	fprintf(stderr, "libburn_DEBUG: flock obtained on %s of %s\n",
+			lock_name, devname);
+	*/
+
+	/* Eventually lock the official device node too */
+	if (fd_stbuf_valid && name_stbuf_valid &&
+		(fd_stbuf.st_ino != name_stbuf.st_ino ||
+		 fd_stbuf.st_dev != name_stbuf.st_dev)) {
+
+		*lock_fd = open(devname, O_RDONLY);
+		if (*lock_fd == 0) {
+			close(*lock_fd);
+			*lock_fd = -1;
+		} if (*lock_fd > 0) {
+			for (tries = 0; tries <= max_retry; tries++) {
+				lock_denied = 
+					flock(*lock_fd, LOCK_EX | LOCK_NB);
+				if (lock_denied) {
+					if (errno == EAGAIN &&
+							 tries < max_retry) {
+						/* <<< debugging
+						fprintf(stderr,
+				"\nlibcdio_DEBUG: EAGAIN dev, tries= %d\n",
+							tries);
+						*/
+
+						usleep(2000000);
+			continue;
+					}
+					close(*lock_fd);
+					*lock_fd = -1;
+					sprintf(msg,
+				 "Device busy. flock(LOCK_EX) failed on %s",
+				 strlen(devname) > 4000 ? "drive" : devname);
+					return 0;
+				}
+			break;
+			}
+		}
+
+/*
+		fprintf(stderr, "libburn_DEBUG: flock obtained on %s\n",
+				devname);
+*/
+
+	}
+	return 1;
+}
+
+
+static int sg_lock(struct burn_drive *d, int flag)
+{
+	int ret, os_errno, pass_dev_no = -1, flock_fd = -1;
+	char msg[4096];
+
+	ret = freebsd_dev_lock(d->cam->fd, d->devname,
+				&os_errno, &pass_dev_no, &flock_fd, msg, 0);
+	if (ret <= 0) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020008,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, os_errno, 0);
+		sg_close_drive(d);
+		return 0;
+	}
+	if (d->lock_fd > 0)
+		close(d->lock_fd);
+	d->lock_fd = flock_fd;
+	return 1;
+}
+
+
 int sg_grab(struct burn_drive *d)
 {
-	int count, os_errno;
 	struct cam_device *cam;
 
 	if (mmc_function_spy(d, "sg_grab") <= 0)
@@ -528,23 +681,19 @@ int sg_grab(struct burn_drive *d)
 
 	cam = cam_open_device(d->devname, O_RDWR);
 	if (cam == NULL) {
-		os_errno = errno;
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020003,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				"Could not grab drive", os_errno, 0);
+				"Could not grab drive", errno, 0);
 		return 0;
 	}
-	count = 1;
-	if (1 == count) {
-		d->cam = cam;
-		fcntl(cam->fd, F_SETOWN, getpid());
-		d->released = 0;
-		return 1;
-	}
-	burn_print(1, "could not acquire drive - already open\n");
-	sg_close_drive(d);
-	return 0;
+	d->cam = cam;
+	if (burn_sg_open_o_excl & 63)
+		if (sg_lock(d, 0) <= 0)
+			return 0;
+	fcntl(cam->fd, F_SETOWN, getpid());
+	d->released = 0;
+	return 1;
 }
 
 
@@ -572,10 +721,11 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len;
+	int done = 0, err, sense_len, ret;
 	union ccb *ccb;
-
 	char buf[161];
+	static FILE *fp = NULL;
+
 	snprintf(buf, sizeof (buf), "sg_issue_command  d->cam=%p d->released=%d",
 		(void*)d->cam, d->released);
 	mmc_function_spy(NULL, buf);
@@ -584,6 +734,15 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		c->error = 0;
 		return 0;
 	}
+	if (burn_sg_log_scsi & 1) {
+		if (fp == NULL) {
+			fp= fopen("/tmp/libburn_sg_command_log", "a");
+			fprintf(fp,
+			    "\n-----------------------------------------\n");
+		}
+	}
+	if (burn_sg_log_scsi & 3)
+		scsi_log_cmd(c,fp,0);
 
 	c->error = 0;
 
@@ -632,12 +791,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 /* touch page so we can use valgrind */
 			memset(c->page->data, 0, BUFFER_SIZE);
 		} else {
-			/* ts A90430 */
-			/* a ssert(c->page->bytes > 0); */
-			if (c->page->bytes <= 0) {
-				c->error = 1;
-				return 0;
-			}
 			ccb->csio.dxfer_len = c->page->bytes;
 		}
 	} else {
@@ -653,12 +806,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				"Failed to transfer command to drive",
 				errno, 0);
-			cam_freeccb(ccb);
 			sg_close_drive(d);
 			d->released = 1;
 			d->busy = BURN_DRIVE_IDLE;
 			c->error = 1;
-			return -1;
+			{ret = -1; goto ex;}
 		}
 		/* XXX */
 
@@ -671,8 +823,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
 			if (!c->retry) {
 				c->error = 1;
-				cam_freeccb(ccb);
-				return 1;
+				{ret = 1; goto ex;}
 			}
 			switch (scsi_error(d, c->sense, 0)) {
 			case RETRY:
@@ -687,8 +838,17 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			done = 1;
 		}
 	} while (!done);
+	ret = 1;
+ex:;
+	if (c->error)
+		scsi_notify_error(d, c, c->sense, 18, 0);
+
+	if (burn_sg_log_scsi & 3)
+		/* >>> Need own duration time measurement. Then remove bit1 */
+		scsi_log_err(c, fp, c->sense, 0, (c->error != 0) | 2);
+
 	cam_freeccb(ccb);
-	return 1;
+	return ret;
 }
 
 
