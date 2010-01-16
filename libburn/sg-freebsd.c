@@ -852,6 +852,47 @@ ex:;
 }
 
 
+/* ts B00115 */
+/* Return 1 if the given path leads to a regular file or a device that can be
+   seeked, read and eventually written with 2 kB granularity.
+*/
+int burn_os_is_2k_seekrw(char *path, int flag)
+{
+        struct stat stbuf;
+	char *spt;
+	int i, e;
+
+        if (stat(path, &stbuf) == -1)
+                return 0;
+        if (S_ISREG(stbuf.st_mode))
+                return 1;
+	if (!S_ISCHR(stbuf.st_mode))
+		return 0;
+	spt = strrchr(path, '/');
+	if (spt == NULL)
+	        spt = path;
+	else
+	        spt++;
+	e = strlen(spt);
+	for (i = strlen(spt) - 1; i > 0; i--)
+		if (spt[i] >= '0' && spt[i] <= '9')
+			e = i;
+	if (strncmp(spt, "da", e) == 0) /* SCSI disk. E.g. USB stick. */
+		return 1;
+	if (strncmp(spt, "cd", e) == 0) /* SCSI CD drive might be writeable. */
+		return 1;
+	if (strncmp(spt, "ad", e) == 0) /* IDE hard drive */
+		return 1;
+	if (strncmp(spt, "acd", e) == 0) /* IDE CD drive might be writeable */
+		return 1;
+	if (strncmp(spt, "fd", e) == 0) /* Floppy disk */
+		return 1;
+	if (strncmp(spt, "fla", e) == 0) /* Flash drive */
+		return 1;
+	return 0;
+}
+
+
 /* ts A70909 */
 /** Estimate the potential payload capacity of a file address.
     @param path  The address of the file to be examined. If it does not

@@ -71,6 +71,11 @@ sg_issue_command()      sends a SCSI command to the drive, receives reply,
 sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
 
+burn_os_is_2k_seekrw()  tells whether the given path leads to a file object
+                        that can be used in 2 kB granularity by lseek(2),
+                        read(2), and possibly write(2).
+                        E.g. a USB stick or a hard disk.
+
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
 
 burn_os_open_track_src()  opens a disk file in a way that allows best
@@ -2047,6 +2052,24 @@ int sg_is_enumerable_adr(char *adr)
 	if (first == 0)
 		sg_give_next_adr(&idx, fname, sizeof(fname), -1);
 	return(0);
+}
+
+
+/* ts B00115 */
+/* Return 1 if the given path leads to a regular file or a device that can be
+   seeked, read, and possibly written with 2 kB granularity. 
+*/
+int burn_os_is_2k_seekrw(char *path, int flag)
+{
+	struct stat stbuf;
+
+	if (stat(path, &stbuf) == -1)
+		return 0;
+	if (S_ISREG(stbuf.st_mode))
+		return 1;
+	if (S_ISBLK(stbuf.st_mode))
+		return 1;
+	return 0;
 }
 
 

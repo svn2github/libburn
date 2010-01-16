@@ -1322,7 +1322,7 @@ int burn_drive__fd_from_special_adr(char *adr)
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
 	int ret = -1, fd = -1, role = 0;
-	int is_fabricated_block_dev, is_block_dev = 0;
+	int is_block_dev = 0;
 	/* divided by 512 it needs to fit into a signed long integer */
 	off_t size = ((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	off_t read_size = -1;
@@ -1330,36 +1330,6 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	struct stat stbuf;
 
 	static int allow_role_3 = 1;
-
-/* ts B00112 : 
-   >>> this is just a test hack to work with an USB stick on FreeBSD
-*/
-#ifdef __FreeBSD__
-#define Libburn_guess_block_devicE 1
-#endif
-#ifdef __FreeBSD_kernel__
-#define Libburn_guess_block_devicE 1
-#endif
-
-	is_fabricated_block_dev = 0;
-
-#ifdef Libburn_guess_block_devicE
-	{
-		char *spt;
-		spt = strrchr(fname, '/');
-		if (spt == NULL)
-			spt = fname;
-		else
-			spt++;
-		if (spt[0] == 'd' && spt[1] == 'a' &&
-		    (spt[2] >= '0' || spt[2] <= '9') && spt[3] == 0)
-			is_fabricated_block_dev = 1;
-		if (spt[0] == 'c' && spt[1] == 'd' &&
-		    (spt[2] >= '0' || spt[2] <= '9') && spt[3] == 0)
-			is_fabricated_block_dev = 1;
-
-	}
-#endif /* Libburn_guess_block_devicE */
 
 	if (fname[0] != 0) {
 		memset(&stbuf, 0, sizeof(stbuf));
@@ -1369,8 +1339,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		else
 			ret = stat(fname, &stbuf);
 		if (ret != -1) {
-			is_block_dev = S_ISBLK(stbuf.st_mode) ||
-						is_fabricated_block_dev;
+			is_block_dev = burn_os_is_2k_seekrw(fname, 0);
 			if (S_ISREG(stbuf.st_mode))
 				read_size = stbuf.st_size;
 			else if (is_block_dev) {

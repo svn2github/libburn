@@ -64,6 +64,12 @@ sg_issue_command()      sends a SCSI command to the drive, receives reply,
 
 sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
+
+burn_os_is_2k_seekrw()  tells whether the given path leads to a file object
+                        that can be used in 2 kB granularity by lseek(2),
+                        read(2), and possibly write(2) if not read-only..
+                        E.g. a USB stick or a hard disk.
+
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
 
 burn_os_open_track_src()  opens a disk file in a way that allows best
@@ -706,6 +712,79 @@ int sg_is_enumerable_adr(char* adr)
 	}
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 	return (0);
+}
+
+
+#ifdef __FreeBSD__
+#define Libburn_guess_block_devicE 1
+#endif
+#ifdef __FreeBSD_kernel__
+#define Libburn_guess_block_devicE 1
+#endif
+
+#ifdef Libburn_guess_block_devicE
+
+/* ts B00115 */
+/* The FreeBSD implementation of burn_os_is_2k_seekrw().
+   On FreeBSD there are no block devices.
+*/
+static int freebsd_is_2k_seekrw(char *path, int flag)
+{
+        struct stat stbuf;
+	char *spt;
+	int i, e;
+
+        if (stat(path, &stbuf) == -1)
+                return 0;
+        if (S_ISREG(stbuf.st_mode))
+                return 1;
+	if (!S_ISCHR(stbuf.st_mode))
+		return 0;
+	spt = strrchr(path, '/');
+	if (spt == NULL)
+	        spt = path;
+	else
+	        spt++;
+	e = strlen(spt);
+	for (i = strlen(spt) - 1; i > 0; i--)
+		if (spt[i] >= '0' && spt[i] <= '9')
+			e = i;
+	if (strncmp(spt, "da", e) == 0) /* SCSI disk. E.g. USB stick. */
+		return 1;
+	if (strncmp(spt, "cd", e) == 0) /* SCSI CD drive might be writeable. */
+		return 1;
+	if (strncmp(spt, "ad", e) == 0) /* IDE hard drive */
+		return 1;
+	if (strncmp(spt, "acd", e) == 0) /* IDE CD drive might be writeable */
+		return 1;
+	if (strncmp(spt, "fd", e) == 0) /* Floppy disk */
+		return 1;
+	if (strncmp(spt, "fla", e) == 0) /* Flash drive */
+		return 1;
+	return 0;
+}
+
+#endif /* Libburn_guess_block_devicE */
+
+
+/* Return 1 if the given path leads to a regular file or a device that can be
+   seeked, read, and possibly written with 2 kB granularity. 
+*/
+int burn_os_is_2k_seekrw(char *path, int flag)
+{
+#ifdef Libburn_guess_block_devicE
+	return freebsd_is_2k_seekrw(path, flag);
+#else 
+	struct stat stbuf;
+
+	if (stat(path, &stbuf) == -1)
+		return 0;
+	if (S_ISREG(stbuf.st_mode))
+		return 1;
+	if (S_ISBLK(stbuf.st_mode))
+		return 1;
+	return 0;
+#endif /* ! Libburn_guess_block_devicE */
 }
 
 
