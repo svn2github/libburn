@@ -72,8 +72,8 @@ sg_obtain_scsi_adr()    tries to obtain SCSI address parameters.
 
 
 burn_os_is_2k_seekrw()  tells whether the given path leads to a file object
-                        that can be used in 2 kB granularity by lseek(2),
-                        read(2), and possibly write(2).
+                        that can be used in 2 kB granularity by lseek(2) and
+                        read(2), and possibly write(2) if not read-only.
                         E.g. a USB stick or a hard disk.
 
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
