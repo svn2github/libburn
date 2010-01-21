@@ -17,9 +17,11 @@
 
 #include <err.h> /* XXX */
 
-
 /* ts A70909 */
 #include <sys/statvfs.h>
+
+/* ts B00121 */
+#include <sys/disk.h> /* DIOCGMEDIASIZE */
 
 
 #include "transport.h"
@@ -910,6 +912,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	char testpath[4096], *cpt;
 	long blocks;
 	off_t add_size = 0;
+	int fd, ret;
 
 	testpath[0] = 0;
 	blocks = *bytes / 512;
@@ -944,6 +947,15 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #endif /* Libburn_if_this_was_linuX */
 
 
+	} else if(S_ISCHR(stbuf.st_mode)) {
+		fd = open(path, O_RDONLY);
+		if (fd == -1)
+			return -2;
+		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
+		close(fd);
+		if (ret == -1)
+			return -2;
+		*bytes = add_size;
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);

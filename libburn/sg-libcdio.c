@@ -111,12 +111,19 @@ Send feedback to libburn-hackers@pykix.org .
 #endif
 
 #ifdef __FreeBSD__
-/* To avoid ATAPI devices */
-#define Libburn_guess_freebsd_atapi_devicE 1
+#define Libburn_is_on_freebsD 1
 #endif
 #ifdef __FreeBSD_kernel__
-#define Libburn_guess_freebsd_atapi_devicE 1
+#define Libburn_is_on_freebsD 1
 #endif
+#ifdef Libburn_is_on_freebsD
+/* To avoid ATAPI devices */
+#define Libburn_guess_freebsd_atapi_devicE 1
+/* To obtain size of disk-like devices */
+#include <sys/disk.h> /* DIOCGMEDIASIZE */
+#endif /* Libburn_is_on_freebsD */
+
+#define Libburn_guess_freebsd_atapi_devicE 1
 
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
@@ -679,8 +686,9 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	if (p_cdio == NULL)
 		return 0;
 
-	/* Try whether a Linux address tuple is available */
-	tuple = (char *) cdio_get_arg(p_cdio, "scsi-tuple-linux");
+	/* Try whether a bus,host,channel,target,lun address tuple is
+	   available */
+	tuple = (char *) cdio_get_arg(p_cdio, "scsi-tuple");
         if (tuple != NULL) if (tuple[0]) {
 		sscanf(tuple, "%d,%d,%d,%d,%d",
 			bus_no, host_no, channel_no, target_no, lun_no);
@@ -840,6 +848,22 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
 #endif /* __linux */
+
+#ifdef Libburn_is_on_freebsD
+
+	} else if(S_ISCHR(stbuf.st_mode)) {
+		int fd, ret;
+
+		fd = open(path, O_RDONLY);
+		if (fd == -1)
+			return -2;
+		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
+		close(fd);
+		if (ret == -1)
+			return -2;
+		*bytes = add_size;
+
+#endif/* Libburn_is_on_freebsD */
 
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
