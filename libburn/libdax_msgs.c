@@ -1,8 +1,8 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006 - 2009 Thomas Schmitt <scdbackup@gmx.net>,
-   provided under GPL version 2
+   Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>,
+   provided under GPL
 */
 
 #include <stdio.h>

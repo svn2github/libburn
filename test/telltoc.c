@@ -1,7 +1,7 @@
 
 /*  test/telltoc.c , API illustration of obtaining media status info */
-/*  Copyright (C) 2006 - 2007 Thomas Schmitt <scdbackup@gmx.net> 
-    Provided under GPL version 2 */
+/*  Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net> 
+    Provided under GPL */
 
 /**                               Overview 
   

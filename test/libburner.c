@@ -1,7 +1,7 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2009 Thomas Schmitt <scdbackup@gmx.net> */
-/* Provided under GPLv2,see also "License and copyright aspects" at file end */
+/* Copyright (C) 2005 - 2010 Thomas Schmitt <scdbackup@gmx.net> */
+/* Provided under GPL, see also "License and copyright aspects" at file end */
 
 
 /**                               Overview 
@@ -777,37 +777,6 @@ This all is provided under GPL.
 Read. Try. Think. Play. Write yourself some code. Be free of my copyright.
 
 Be also invited to study the code of cdrskin/cdrskin.c et al.
-
-
-Clarification in my name and in the name of Mario Danic, copyright holder
-on toplevel of libburnia. To be fully in effect after the remaining other
-copyrighted code has been replaced by ours and by copyright-free contributions
-of our friends:
-
-We, the copyright holders, agree on the interpretation that
-dynamical linking of our libraries constitutes "use of" and
-not "derivation from" our work in the sense of GPL, provided
-those libraries are compiled from our unaltered code.
-
-Thus you may link our libraries dynamically with applications
-which are not under GPL. You may distribute our libraries and
-application tools in binary form, if you fulfill the usual
-condition of GPL to offer a copy of the source code -altered
-or unaltered- under GPL.
-
-We ask you politely to use our work in open source spirit
-and with the due reference to the entire open source community.
-
-If there should really arise the case where above clarification
-does not suffice to fulfill a clear and neat request in open source
-spirit that would otherwise be declined for mere formal reasons,
-only in that case we will duely consider to issue a special license
-covering only that special case.
-It is the open source idea of responsible freedom which will be
-decisive and you will have to prove that you exhausted all own
-means to qualify for GPL.
-
-For now we are firmly committed to maintain one single license: GPL.
 
 History:
 libburner is a compilation of my own contributions to test/burniso.c and

@@ -1,4 +1,4 @@
-libburnia-project.org Optical Media Rotisserie Recipes as of January 2009
+libburnia-project.org Optical Media Rotisserie Recipes as of January 2010
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
