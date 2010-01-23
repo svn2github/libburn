@@ -1,7 +1,7 @@
 
 /*
- cdrskin.c , Copyright 2006-2009 Thomas Schmitt <scdbackup@gmx.net>
-Provided under GPL version 2. See future commitment below.
+ cdrskin.c , Copyright 2006-2010 Thomas Schmitt <scdbackup@gmx.net>
+Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
 
@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.7.5"
+#define Cdrskin_prog_versioN "0.7.7"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 7
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -135,45 +135,43 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_7_4
-#define Cdrskin_libburn_versioN "0.7.4"
+#ifdef Cdrskin_libburn_0_7_6
+#define Cdrskin_libburn_versioN "0.7.6"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_7_4 */
+#endif /* Cdrskin_libburn_0_7_6 */
 
-#ifdef Cdrskin_libburn_0_7_5
-#define Cdrskin_libburn_versioN "0.7.5"
+#ifdef Cdrskin_libburn_0_7_7
+#define Cdrskin_libburn_versioN "0.7.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-#define Libburn_has_burn_scsi_transport_iD 1
 
-
-#endif /* Cdrskin_libburn_0_7_5 */
+#endif /* Cdrskin_libburn_0_7_7 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_7_4
-#define Cdrskin_libburn_versioN "0.7.4"
+#define Cdrskin_libburn_0_7_6
+#define Cdrskin_libburn_versioN "0.7.6"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_7_4
+#ifdef Cdrskin_libburn_0_7_6
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_0_7_5
+#ifdef Cdrskin_libburn_0_7_7
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -3145,7 +3143,7 @@ set_severities:;
      int major, minor, micro;
 
      printf(
-"Cdrecord 2.01-Emulation Copyright (C) 2006-2009, see libburnia-project.org\n");
+"Cdrecord 2.01-Emulation Copyright (C) 2006-2010, see libburnia-project.org\n");
      if(o->fallback_program[0]) {
        char *hargv[2];
 
@@ -3155,11 +3153,7 @@ set_severities:;
        hargv[1]= "-version";
        Cdrpreskin_fallback(o,2,hargv,1); /* dirty never come back */
      }
-
-#ifdef Libburn_has_burn_scsi_transport_iD
      printf("System adapter    :  %s\n", burn_scsi_transport_id(0));
-#endif
-
      printf("libburn interface :  %d.%d.%d\n",
             burn_header_version_major, burn_header_version_minor,
             burn_header_version_micro);
@@ -3191,14 +3185,9 @@ set_severities:;
 final_checks:;
  if(flag&1)
    goto ex;
-
-#ifdef Libburn_has_burn_scsi_transport_iD
  if(o->verbosity >= Cdrskin_verbose_debuG)
    ClN(fprintf(stderr,
        "cdrskin: DEBUG : Using %s\n", burn_scsi_transport_id(0)));
-#endif
-
-
  if(o->do_waiti) {
    fprintf(stderr,
        "cdrskin: Option -waiti pauses program until input appears at stdin\n");

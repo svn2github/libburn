@@ -1,4 +1,4 @@
-AC_INIT([libburn], [0.7.5], [http://libburnia-project.org])
+AC_INIT([libburn], [0.7.7], [http://libburnia-project.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -7,7 +7,7 @@ AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([subdir-objects])
 
-dnl Notes by ts A71207 - A91012 :
+dnl Notes by ts A71207 - B00122 :
 dnl
 dnl Regrettably the meaning of the various version types was misunderstood
 dnl before version 0.4.1.
@@ -76,6 +76,7 @@ dnl    0.6.8 = libburn.so.4.33.0
 dnl    0.7.0 = libburn.so.4.35.0
 dnl    0.7.2 = libburn.so.4.37.0
 dnl    0.7.4 = libburn.so.4.39.0
+dnl    0.7.6 = libburn.so.4.41.0
 dnl
 dnl So LT_CURRENT, LT_REVISION and LT_AGE get set directly here.
 dnl SONAME of the emerging library is  LT_CURRENT - LT_AGE.
@@ -101,7 +102,7 @@ dnl
 dnl As said: Only copies. Original in libburn/libburn.h : burn_header_version_*
 BURN_MAJOR_VERSION=0
 BURN_MINOR_VERSION=7
-BURN_MICRO_VERSION=5
+BURN_MICRO_VERSION=7
 BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
@@ -112,15 +113,15 @@ AC_SUBST(BURN_VERSION)
 dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
-dnl ts A91206
-dnl ### This is the release version libburn-0.7.4 = libburn.so.4.39.0
+dnl ts B00122
+dnl ### This is the release version libburn-0.7.6 = libburn.so.4.41.0
 dnl This is the development version after above release version
-dnl ### LT_CURRENT++, LT_AGE++ has not yet happened.
-dnl LT_CURRENT++, LT_AGE++ has happened meanwhile.
+dnl LT_CURRENT++, LT_AGE++ has not yet happened.
+dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 44 - 40 = 4 . Linux library name = libburn.so.4.40.0
-LT_CURRENT=44
-LT_AGE=40
+dnl SONAME = 45 - 41 = 4 . Linux library name = libburn.so.4.41.0
+LT_CURRENT=45
+LT_AGE=41
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 
@@ -216,7 +217,7 @@ if test x$enable_libcdio = xyes; then
 dnl Check whether there is libcdio-devel and libcdio-runtime.
 dnl If not, erase this macro
     LIBCDIO_DEF="-DLibburn_use_libcdiO" 
-dnl The empty yes case obviously causes -lacl to be linked
+dnl The empty yes case obviously causes -lcdio to be linked
     AC_CHECK_HEADER(cdio/cdio.h, AC_CHECK_LIB(cdio, mmc_last_cmd_sense, , LIBCDIO_DEF= ), LIBCDIO_DEF= )
 else
     LIBCDIO_DEF=

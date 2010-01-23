@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburn-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2009 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2010 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.7.4.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.7.6.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.7.4.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.7.6.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.7.4.pl00.tar.gz
-   cd libburn-0.7.4
+   tar xzf libburn-0.7.6.pl00.tar.gz
+   cd libburn-0.7.6
    ./configure --prefix=/usr
    make
 
@@ -71,6 +71,10 @@ even better performance in such a situation. 64k can be made default at
 configure time by:
     --enable-dvd-obs-64k
 This may be combined with above --enable-track-src-odirect .
+
+Alternatively the transport of SCSI commands can be done via libcdio-0.83.
+You may install it and re-run libburn's ./configure with option
+    --enable-libcdio
 
 Make sure to re-compile all source files after running ./configure
    make clean ; make
@@ -185,8 +189,8 @@ Applications must use 64 bit off_t. E.g. by defining
 #define _LARGEFILE_SOURCE
 #define _FILE_OFFSET_BITS 64
 or take special precautions to interface with the libraries by 64 bit integers
-where the .h files prescribe off_t. Not to use 64 bit file i/o will keep the
-application from producing and processing ISO images of more than 2 GB size.
+where the .h files prescribe off_t. To reduce libburn's off_t size to 32 bit
+will keep it from processing tracks of more than 2 GB size.
 
 
 ------------------------------------------------------------------------------
@@ -476,11 +480,27 @@ Project history as far as known to me:
   provides throughput enhancements with hampered busses on Linux, and new
   API calls to log SCSI commands and to control the libburn fifo.
 
+- 09 Dec 2009 libisoburn-0.4.6 allows performance tuning of output to DVD
+  drives or disk files.
+
+- 26 Dec 2009 libburn-0.7.4.pl01 fixes the release tarball which was lacking
+  the files of the generic system adapter for X/Open.
+
+- 29 Dec 2009 Our project received a donation for purchasing a fine small
+  computer which shall serve as OS farm for development and support.
+
+- 20 Jan 2010 Version 0.6.26 of libisofs fixes minor bugs and shall enhance
+  portability.
+
+- 22 Jan 2010 libburn-0.7.6 has an improved system adapter for FreeBSD,
+  fixes bugs about the generic X/Open system adapter, and allows to use
+  libcdio >= 0.83 as SCSI transport facility.
+
 ------------------------------------------------------------------------------
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation. To be exact: version 2 of that License.
+    it under the terms of the GNU General Public License version 2 or later
+    as published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -498,16 +518,16 @@ other copyrighted code has been replaced by ours and by copyright-free
 contributions of our friends:
 ------------------------------------------------------------------------------
 
-We, the copyright holders, agree on the interpretation that
-dynamical linking of our libraries constitutes "use of" and
-not "derivation from" our work in the sense of GPL, provided
-those libraries are compiled from our unaltered code.
+We, the copyright holders, agree on the interpretation that dynamical linking
+of our libraries constitutes "use of" and not "derivation from" our work in
+the sense of GPL, provided those libraries are compiled from our unaltered
+code or from altered code published under GPL.
 
-Thus you may link our libraries dynamically with applications
-which are not under GPL. You may distribute our libraries and
-application tools in binary form, if you fulfill the usual
-condition of GPL to offer a copy of the source code -altered
-or unaltered- under GPL.
+So we will not raise legal protest if you link our libraries dynamically with
+applications which are not under GPL, or if you distribute our libraries
+and application tools in binary form, as long as you fulfill the usual
+condition of GPL to offer a copy of their source code -altered or unaltered-
+under GPL.
 
 We ask you politely to use our work in open source spirit
 and with the due reference to the entire open source community.
@@ -524,4 +544,5 @@ means to qualify for GPL.
 For now we are firmly committed to maintain one single license: GPL.
 
 signed: Mario Danic, Thomas Schmitt
+Agreement joined later by: Vreixo Formoso
 
