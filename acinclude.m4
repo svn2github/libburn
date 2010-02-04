@@ -1,3 +1,14 @@
+AC_DEFUN([LIBBURNIA_SET_FLAGS],
+[
+case $target_os in
+freebsd*)
+        LDFLAGS="$LDFLAGS -L/usr/local/lib"
+        CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+        ;;
+esac
+])
+
+
 AC_DEFUN([TARGET_SHIZZLE],
 [
   ARCH=""
