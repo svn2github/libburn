@@ -2,7 +2,7 @@
 /* os-linux.h
    Operating system specific libburn definitions and declarations. Included
    by os.h in case of compilation for
-           GNU/Linux kernels 2.4 and 2.6 with Linux SCSI Generic (sg)
+           Linux kernels 2.4 and 2.6, GNU/Linux SCSI Generic (sg)
 
    Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */

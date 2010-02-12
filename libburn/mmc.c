@@ -4078,7 +4078,7 @@ int mmc_read_disc_structure(struct burn_drive *d,
    desired payload bytes. The drive then returns 35
    bytes as requested and the media id is "RITEKF1".
    Nevertheless this is not a generally usable gesture
-   because older Linux USB dislikes requests to fetch
+   because older GNU/Linux USB dislikes requests to fetch
    more bytes than the drive will deliver.
 
    # define Libburn_enforce_structure_code_0x0E 1

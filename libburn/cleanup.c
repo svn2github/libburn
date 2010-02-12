@@ -40,7 +40,8 @@ static int non_signal_list_count=  BURN_OS_NON_SIGNAL_COUNT;
 #else /* ! Cleanup_has_no_libburn_os_H */
 
 
-/* Outdated. Linux only. For backward compatibility with pre-libburn-0.2.3 */
+/* Outdated. GNU/Linux only.
+   For backward compatibility with pre-libburn-0.2.3 */
 
 /* Signals to be caught */
 static int signal_list[]= {

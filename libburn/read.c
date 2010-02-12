@@ -1,6 +1,6 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
-/* #include <m alloc.h>  ts A61013 : not in Linux man 3 malloc */
+/* #include <m alloc.h>  ts A61013 : not in GNU/Linux man 3 malloc */
 
 #include <stdlib.h>
 #include <unistd.h>

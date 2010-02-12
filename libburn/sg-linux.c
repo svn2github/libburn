@@ -143,7 +143,7 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <linux/cdrom.h>
 
 
-/** Indication of the GNU/Linux kernel this software is running on */
+/** Indication of the Linux kernel this software is running on */
 /* -1 = not evaluated , 0 = unrecognizable , 1 = 2.4 , 2 = 2.6 */
 static int sg_kernel_age = -1;
 
@@ -543,7 +543,7 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 
 	/* ts A60813 - A60927
 	   O_EXCL with devices is a non-POSIX feature
-	   of GNU/Linux kernels. Possibly introduced 2002.
+	   of Linux kernels. Possibly introduced 2002.
 	   Mentioned in "The Linux SCSI Generic (sg) HOWTO" */
 	if(burn_sg_open_o_excl)
 		open_mode |= O_EXCL;
@@ -1657,7 +1657,7 @@ int sg_grab(struct burn_drive *d)
 
 	/* ts A60813 - A60927
 	   O_EXCL with devices is a non-POSIX feature
-	   of GNU/Linux kernels. Possibly introduced 2002.
+	   of Linux kernels. Possibly introduced 2002.
 	   Mentioned in "The Linux SCSI Generic (sg) HOWTO".
 	*/
 	if(burn_sg_open_o_excl)

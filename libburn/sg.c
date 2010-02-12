@@ -34,11 +34,11 @@
 static int intentional_compiler_warning(void)
 {
  int INTENTIONAL_COMPILER_WARNING_;
- int Cannot_recognize_Linux_nor_FreeBSD_;
+ int Cannot_recognize_GNU_Linux_nor_FreeBSD_;
  int Have_to_use_dummy_MMC_transport_adapter_;
  int This_libburn_will_not_be_able_to_operate_on_real_CD_drives;
  int Have_to_use_dummy_MMC_transport_adapter;
- int Cannot_recognize_Linux_nor_FreeBSD;
+ int Cannot_recognize_GNU_Linux_nor_FreeBSD;
  int INTENTIONAL_COMPILER_WARNING;
 
  return(0);

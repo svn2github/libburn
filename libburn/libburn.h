@@ -765,7 +765,7 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed);
 void burn_set_verbosity(int level);
 
 /* ts A91111 */
-/** Enable resp. disable logging of SCSI commands (currently Linux only).
+/** Enable resp. disable logging of SCSI commands (currently GNU/Linux only).
     This call can be made at any time - even before burn_initialize().
     It is in effect for all active drives and currently not very thread
     safe for multiple drives.
@@ -782,12 +782,11 @@ void burn_set_scsi_logging(int flag);
     after burn_initialize() and before any bus scan. But not mandatory at all.
     Parameter value 1 enables a feature, 0 disables.  
     Default is (1,0,0). Have a good reason before you change it.
-    @param exclusive Linux only:
+    @param exclusive
                      0 = no attempt to make drive access exclusive.
                      1 = Try to open only devices which are not marked as busy
-                     and try to mark them busy if opened sucessfully. (O_EXCL)
-                     There are kernels which simply don't care about O_EXCL.
-                     Some have it off, some have it on, some are switchable.
+                     and try to mark them busy if opened sucessfully. (O_EXCL
+                     on GNU/Linux , flock(LOCK_EX) on FreeBSD.)
                      2 = in case of a SCSI device, also try to open exclusively
                          the matching /dev/sr, /dev/scd and /dev/st .
                      One may select a device SCSI file family by adding
@@ -796,8 +795,8 @@ void burn_set_scsi_logging(int flag);
                       8 = /dev/scd%d
                      16 = /dev/sg%d
                      Do not use other values !
-                     Add 32 to demand an exclusive lock by fcntl(,F_SETLK,)
-                     after open() has succeeded.
+                     Add 32 to demand on GNU/Linux an exclusive lock by
+                     fcntl(,F_SETLK,) after open() has succeeded.
     @param blocking  Try to wait for drives which do not open immediately but
                      also do not return an error as well. (O_NONBLOCK)
                      This might stall indefinitely with /dev/hdX hard disks.
@@ -1097,7 +1096,6 @@ int burn_drive_snooze(struct burn_drive *d, int flag);
 
 /** Release a drive. This should not be done until the drive is no longer
     busy (see burn_drive_get_status).
-    Linux: The drive device file is not reserved afterwards. (O_EXCL, F_SETLK).
 	@param drive The drive to release.
 	@param eject Nonzero to make the drive eject the disc in it.
 */

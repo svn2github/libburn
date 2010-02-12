@@ -32,14 +32,16 @@ struct libdax_msgs *libdax_messenger= NULL;
 
 int burn_running = 0;
 
-/* ts A60813 : Linux: wether to use O_EXCL on open() of device files */
+/* ts A60813 : GNU/Linux: whether to use O_EXCL on open() of device files
+   ts B00212 : FreeBSD:   whether to use flock(LOCK_EX) after open()
+*/
 int burn_sg_open_o_excl = 1;
 
-/* ts A70403 : Linux: wether to use fcntl(,F_SETLK,)
+/* ts A70403 : GNU/Linux: wether to use fcntl(,F_SETLK,)
                       after open() of device files  */
 int burn_sg_fcntl_f_setlk = 1;
 
-/* ts A70314 : Linux: what device family to use :
+/* ts A70314 : GNU/Linux: what device family to use :
     0= default family
     1= sr
     2= scd

@@ -41,7 +41,7 @@ SIGKILL, SIGCHLD, SIGSTOP
 /* Important : MUST be at least 32768 ! */
 /* My Blu-ray burner LG GGW-H20 writes junk if stream recording is combined
    with buffer size 32 kB. So stream recording is allowed only with size 64k.
-   This makes it worth to have a special case for Linux buffer size here.
+   This makes it worth to have a special case for GNU/Linux buffer size here.
 */
 #ifdef __linux
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 65536

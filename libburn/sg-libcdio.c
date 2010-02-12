@@ -834,7 +834,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 #ifdef __linux
 
-	/* Linux specific determination of block device size */
+	/* GNU/Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		int open_mode = O_RDONLY, fd, ret;
 

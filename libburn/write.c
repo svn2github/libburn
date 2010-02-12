@@ -1263,8 +1263,8 @@ int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
 
 /* ts A91114 : EXPERIMENTAL, NOT COMPLETELY IMPLEMENTED
 
-   Simplified data transmission for DVD. libburn via Linux USB is 30 % slower
-   than growisofs or cdrecord when transmitting 32 KB chunks.
+   Simplified data transmission for DVD. libburn via GNU/Linux USB is 30 %
+   slower than growisofs or cdrecord when transmitting 32 KB chunks.
    With 64 KB chunks it is 20% faster than the competitors.
    No heavy CPU load is visible but there might be subtle race conditions in
    the USB driver which work better with shorter time gaps between WRITE
@@ -2397,7 +2397,7 @@ calloc() seems not to have the desired effect. valgrind warns:
 		goto ex;
 	}
 
-	/* ts A70521 : Linux 2.4 USB audio fails with 64 kiB */
+	/* ts A70521 : GNU/Linux 2.4 USB audio fails with 64 kiB */
 	/* ts A80414 : might need 64 kiB for BD-RE streaming */
         /* buffer flush trigger for sector.c:get_sector() */
 	o->obs = Libburn_cd_obS;
