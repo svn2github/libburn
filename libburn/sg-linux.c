@@ -11,7 +11,7 @@
 This is the main operating system dependent SCSI part of libburn. It implements
 the transport level aspects of SCSI control and command i/o.
 
-Present implementation: Linux SCSI Generic (sg)
+Present implementation: GNU/Linux SCSI Generic (sg)
 
 
 PORTING:
@@ -143,7 +143,7 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 #include <linux/cdrom.h>
 
 
-/** Indication of the Linux kernel this software is running on */
+/** Indication of the GNU/Linux kernel this software is running on */
 /* -1 = not evaluated , 0 = unrecognizable , 1 = 2.4 , 2 = 2.6 */
 static int sg_kernel_age = -1;
 
@@ -543,7 +543,7 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 
 	/* ts A60813 - A60927
 	   O_EXCL with devices is a non-POSIX feature
-	   of Linux kernels. Possibly introduced 2002.
+	   of GNU/Linux kernels. Possibly introduced 2002.
 	   Mentioned in "The Linux SCSI Generic (sg) HOWTO" */
 	if(burn_sg_open_o_excl)
 		open_mode |= O_EXCL;
@@ -893,7 +893,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 #endif /* Libburn_drive_new_deaL */
 
 
-/** Speciality of Linux: detect non-SCSI ATAPI (EIDE) which will from
+/** Speciality of GNU/Linux: detect non-SCSI ATAPI (EIDE) which will from
    then on used used via generic SCSI as is done with (emulated) SCSI drives */ 
 static void ata_enumerate(void)
 {
@@ -1402,7 +1402,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 	/* PORTING: ------------------- non portable part --------------- */
 
-	/* Operating system adapter is Linux Generic SCSI (sg) */
+	/* Operating system adapter is GNU/Linux Generic SCSI (sg) */
 	/* Adapter specific handles and data */
 	out.fd = -1337;
 	out.sibling_count = 0;
@@ -1439,7 +1439,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 */
 int sg_id_string(char msg[1024], int flag)
 {
-	strcpy(msg, "internal Linux SG_IO adapter sg-linux");
+	strcpy(msg, "internal GNU/Linux SG_IO adapter sg-linux");
 	return 1;
 }
 
@@ -1484,7 +1484,7 @@ int sg_dispose_drive(struct burn_drive *d, int flag)
 
 
 /** PORTING:
-    In this Linux implementation, this function mirrors the enumeration
+    In this GNU/Linux implementation, this function mirrors the enumeration
     done in sg_enumerate and ata_enumerate(). It would be better to base those
     functions on this sg_give_next_adr() but the situation is not inviting. 
 */
@@ -1581,7 +1581,7 @@ return_1_pre_proc:;
     libburn's list of drives.
 */
 /** PORTING:
-    If not stricken with an incompletely unified situation like in Linux
+    If not stricken with an incompletely unified situation like in GNU/Linux
     one would rather implement this by a loop calling sg_give_next_adr().
     If needed with your sg_give_next_adr() results, do a test for existence
     and accessability. If burn activities are prone to external interference
@@ -1657,7 +1657,7 @@ int sg_grab(struct burn_drive *d)
 
 	/* ts A60813 - A60927
 	   O_EXCL with devices is a non-POSIX feature
-	   of Linux kernels. Possibly introduced 2002.
+	   of GNU/Linux kernels. Possibly introduced 2002.
 	   Mentioned in "The Linux SCSI Generic (sg) HOWTO".
 	*/
 	if(burn_sg_open_o_excl)
