@@ -39,7 +39,6 @@
 #include "libburn.h"
 #include "drive.h"
 #include "transport.h"
-#include "crc.h"
 #include "debug.h"
 #include "init.h"
 #include "toc.h"

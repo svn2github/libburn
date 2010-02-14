@@ -100,7 +100,13 @@ drive, or only store a subset of the _opts structs in drives */
 		fakesub[20] = 2;
 		fakesub[12] = (d->toc->toc_entry[0].control << 4) +
 			d->toc->toc_entry[0].adr;
+
+#ifdef Libburn_no_crc_C
+		crc = 0; /* dummy */
+#else
 		crc = crc_ccitt(fakesub + 12, 10);
+#endif
+
 		fakesub[22] = crc >> 8;
 		fakesub[23] = crc & 0xFF;
 		write(o->subfd, fakesub, 96);
@@ -247,6 +253,8 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 			}
 		}
 		crc = (*(sub + 22) << 8) + *(sub + 23);
+
+#ifndef Libburn_no_crc_C
 		if (crc != crc_ccitt(sub + 12, 10)) {
 			burn_print(1, "sending error on %s %s\n",
 				   d->idata->vendor, d->idata->product);
@@ -255,6 +263,8 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 */
 			burn_print(1, "crc mismatch in Q\n");
 		}
+#endif
+
 		/* else process_q(d, sub + 12); */
 		/* 
 		   if (o->subfd != -1) write(o->subfd, sub, 96); */

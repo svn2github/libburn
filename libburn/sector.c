@@ -411,7 +411,13 @@ a2 - lout ctrl
 	q[7] = dec_to_bcd(d->toc_entry[track].pmin);
 	q[8] = dec_to_bcd(d->toc_entry[track].psec);
 	q[9] = dec_to_bcd(d->toc_entry[track].pframe);
+
+#ifdef Libburn_no_crc_C
+	crc = 0; /* dummy */
+#else
 	crc = crc_ccitt(q, 10);
+#endif
+
 	q[10] = crc >> 8;
 	q[11] = crc & 0xFF;
 	d->toc_temp++;
@@ -508,7 +514,13 @@ static void subcode_lout(struct burn_write_opts *o, unsigned char control,
 	q[7] = dec_to_bcd(min);
 	q[8] = dec_to_bcd(sec);
 	q[9] = dec_to_bcd(frame);
+
+#ifdef Libburn_no_crc_C
+	crc = 0; /* dummy */
+#else
 	crc = crc_ccitt(q, 10);
+#endif
+
 	q[10] = crc >> 8;
 	q[11] = crc & 0xFF;
 }
@@ -628,7 +640,13 @@ void subcode_user(struct burn_write_opts *o, unsigned char *subcodes,
 	}
 	q[0] = (control << 4) + qmode;
 
+
+#ifdef Libburn_no_crc_C
+	crc = 0; /* dummy */
+#else
 	crc = crc_ccitt(q, 10);
+#endif
+
 	q[10] = crc >> 8;
 	q[11] = crc & 0xff;
 }
@@ -774,7 +792,13 @@ int sector_headers(struct burn_write_opts *o, unsigned char *out,
 		out[15] = modebyte;
 	}
 	if (mode & BURN_MODE1) {
+
+#ifdef Libburn_no_crc_C
+		crc = 0; /* dummy */
+#else
 		crc = crc_32(out, 2064);
+#endif
+
 		out[2064] = crc & 0xFF;
 		crc >>= 8;
 		out[2065] = crc & 0xFF;
