@@ -5,7 +5,7 @@
            Unknown POSIX like systems
            with the dummy MMC transport adapter sg-dummy.c
 
-   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
 

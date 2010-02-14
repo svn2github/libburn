@@ -1,5 +1,11 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+/* 
+   Copyright (c) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPL version 2 or later.
+*/
+
+
 /*
 
 This is the main operating system dependent SCSI part of libburn. It implements

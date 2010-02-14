@@ -1,7 +1,7 @@
 
 /* sg.c
    Switcher for operating system dependent transport level modules of libburn.
-   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
 

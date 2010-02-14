@@ -1,4 +1,6 @@
 /**
+ Copyright (c) 2006 Thomas Schmitt <scdbackup@gmx.net>
+ Provided under GPL version 2 or later.
 
  This file bundles variables which disable changes in libburn which are
  not yet completely accepted.

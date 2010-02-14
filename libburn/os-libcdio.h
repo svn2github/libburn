@@ -5,7 +5,7 @@
            Unknown X/Open-like systems
            with GNU libcdio MMC transport adapter sg-libcdio.c
 
-   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
 

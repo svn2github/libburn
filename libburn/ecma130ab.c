@@ -4,6 +4,7 @@
 /* ts A91016 : libburn/ecma130ab.c is the replacement for old libburn/lec.c
 
    Copyright 2009, Thomas Schmitt <scdbackup@gmx.net>, libburnia-project.org
+   Provided under GPL version 2 or later.
 
    This code module implements the production of RSPC parity bytes (P- and Q-
    parity) and the scrambling of raw CD-ROM sectors as specified in ECMA-130:

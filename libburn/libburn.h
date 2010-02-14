@@ -1,5 +1,14 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+/* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
+   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPL version 2 or later.
+
+   This is the official API definition of libburn.
+
+*/
+
+
 #ifndef LIBBURN_H
 #define LIBBURN_H
 

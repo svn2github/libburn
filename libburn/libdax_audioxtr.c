@@ -1,7 +1,7 @@
 
 /* libdax_audioxtr 
    Audio track data extraction facility of libdax and libburn.
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
 #include <stdio.h>

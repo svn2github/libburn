@@ -4,6 +4,7 @@
 /* ts A91016 : libburn/ecma130ab.h is the replacement for old libburn/lec.h
 
    Copyright 2009, Thomas Schmitt <scdbackup@gmx.net>, libburnia-project.org
+   Provided under GPL version 2 or later.
 
    This code module implements the computations prescribed in ECMA-130 Annex A
    and B. For explanations of the underlying mathematics see ecma130ab.c .

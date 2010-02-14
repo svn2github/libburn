@@ -4,7 +4,8 @@
    by os.h in case of compilation for
            Linux kernels 2.4 and 2.6, GNU/Linux SCSI Generic (sg)
 
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+   Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPL version 2 or later.
 */
 
 

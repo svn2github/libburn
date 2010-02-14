@@ -2,7 +2,7 @@
 /* libdax_msgs
    Message handling facility of libdax.
    Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>,
-   provided under GPL
+   provided under GPL version 2 or later.
 */
 
 #include <stdio.h>

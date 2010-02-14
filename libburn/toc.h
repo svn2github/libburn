@@ -1,5 +1,10 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+/* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
+   Provided under GPL version 2 or later.
+*/
+
+
 #ifndef __TOC_H
 #define __TOC_H
 

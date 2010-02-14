@@ -3,7 +3,7 @@
 
  A signal handler which cleans up an application and exits.
 
- Provided under GPL license within GPL projects, BSD license elsewise.
+ Provided under GPLv2+ within GPL projects, BSD license elsewise.
 */
 
 #ifndef Cleanup_includeD

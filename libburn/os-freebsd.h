@@ -4,7 +4,7 @@
    by os.h in case of compilation for
                                   FreeBSD with CAM
 
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
 /** List of all signals which shall be caught by signal handlers and trigger

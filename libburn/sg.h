@@ -1,5 +1,8 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+/* Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+*/
+
 #ifndef __SG
 #define __SG
 
