@@ -5,7 +5,7 @@
 
 
 #ifdef Xorriso_standalonE
-/* Do not use source module crc.c of yet unclear ancestry in GNU xorriso */
+/* Source module crc.c of yet unclear ancestry is excluded from GNU xorriso */
 #ifndef Libburn_no_crc_C
 #define Libburn_no_crc_C 1
 #endif
