@@ -89,7 +89,9 @@ static off_t file_size(struct burn_source *source)
 
 	if (fs->fixed_size > 0)
 		return fs->fixed_size;
-	if (fstat(fs->datafd, &buf) == -1)
+	if (fstat(fs->datafd, &buf) != 0)
+		return (off_t) 0;
+	if ((buf.st_mode & S_IFMT) != S_IFREG)
 		return (off_t) 0;
 	return (off_t) buf.st_size;
 }
