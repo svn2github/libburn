@@ -942,6 +942,8 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 
 	d->cancel = 0;
 
+#ifdef Libburn_reset_progress_asynC
+	/* <<< This is now done in async.c */
 	/* init progress before showing the state */
 	d->progress.session = 0;
 	d->progress.sessions = disc->sessions;
@@ -956,6 +958,7 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 	d->progress.sectors = 0;
 	d->progress.sector = 0;
 	d->progress.track = 0;
+#endif /* Libburn_reset_progress_asynC */
 
 	/* ts A61023 */
 	d->progress.buffer_capacity = 0;

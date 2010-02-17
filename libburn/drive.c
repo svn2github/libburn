@@ -621,8 +621,9 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 		   d->idata->product);
 
 	d->cancel = 0;
-	d->busy = BURN_DRIVE_ERASING;
-	d->erase(d, fast);
+
+#ifdef Libburn_reset_progress_asynC
+	/* <<< This is now done in async.c */
 	/* reset the progress */
 	d->progress.session = 0;
 	d->progress.sessions = 1;
@@ -633,6 +634,11 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	d->progress.start_sector = 0;
 	d->progress.sectors = 0x10000;
 	d->progress.sector = 0;
+#endif /* Libburn_reset_progress_asynC */
+
+	d->erase(d, fast);
+	d->busy = BURN_DRIVE_ERASING;
+
 	/* read the initial 0 stage */
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
@@ -659,6 +665,8 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	char msg[80];
 	struct buffer buf, *buf_mem = d->buffer;
 
+#ifdef Libburn_reset_progress_asynC
+	/* <<< This is now done in async.c */
 	/* reset the progress */
 	d->progress.session = 0;
 	d->progress.sessions = 1;
@@ -669,6 +677,8 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	d->progress.start_sector = 0;
 	d->progress.sectors = 0x10000;
 	d->progress.sector = 0;
+#endif /* Libburn_reset_progress_asynC */
+
 	stages = 1 + ((flag & 1) && size > 1024 * 1024);
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_FORMATTING;

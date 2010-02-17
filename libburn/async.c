@@ -232,6 +232,22 @@ static void *scan_worker_func(struct w_list *w)
 	return NULL;
 }
 
+static void reset_progress(struct burn_drive *d, int sessions, int tracks,
+				int indices, int sectors, int flag)
+{
+	/* reset the progress indicator */
+	d->progress.session = 0;
+	d->progress.sessions = sessions;
+	d->progress.track = 0;
+	d->progress.tracks = tracks;
+	d->progress.index = 0;
+	d->progress.indices = indices;
+	d->progress.start_sector = 0;
+	d->progress.sectors = sectors;
+	d->progress.sector = 0;
+}
+
+
 int burn_drive_scan(struct burn_drive_info *drives[], unsigned int *n_drives)
 {
 	struct scan_opts o;
@@ -314,6 +330,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	/* a ssert(drive); */
 	/* a ssert(!SCAN_GOING()); */
 	/* a ssert(!find_worker(drive)); */
+
 	if((drive == NULL)) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020104,
@@ -329,6 +346,9 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 			0, 0);
 		return;
 	}
+
+	reset_progress(drive, 1, 1, 1, 0x10000, 0);
+
 	/* A70103 : will be set to 0 by burn_disc_erase_sync() */
 	drive->cancel = 1;
 
@@ -382,6 +402,8 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 	struct format_opts o;
 	int ok = 0, ret;
 	char msg[160];
+
+	reset_progress(drive, 1, 1, 1, 0x10000, 0);
 
 	if ((SCAN_GOING()) || find_worker(drive) != NULL) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
@@ -546,6 +568,9 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 			0, 0);
 		return;
 	}
+
+	reset_progress(d, disc->sessions, disc->session[0]->tracks,
+			 disc->session[0]->track[0]->indices, 0, 0);
 
 	/* For the next lines any return indicates failure */
 	d->cancel = 1;
