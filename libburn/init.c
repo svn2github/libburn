@@ -417,10 +417,16 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 			     int mode)
 {
-	if(handler == NULL && mode == 0) {
+
+/*
+	fprintf(stderr, "libburn_experimental: burn_set_signal_handling, handler==%lx  mode=%d\n", (unsigned long) handler, mode);
+*/
+
+	if(handler == NULL) {
 		handler = burn_builtin_abort_handler;
 /*
-		fprintf(stderr, "libburn_experimental: activated burn_builtin_abort_handler() with handle '%s'\n",(handle==NULL ? "libburn : " : (char *) handle));
+		if ((mode & ~4) == 0)
+			fprintf(stderr, "libburn_experimental: activated burn_builtin_abort_handler() with handle '%s'\n",(handle==NULL ? "libburn : " : (char *) handle));
 */
 
 	}
