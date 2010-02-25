@@ -2265,8 +2265,9 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 			prev_sync_sector = d->progress.sector;
 			if (!o->simulate)
 				burn_stdio_sync_cache(d->stdio_fd, d, 1);
-			burn_stdio_slowdown(d, &prev_time, 512 * 2, 0);
 		}
+		if ((d->progress.sector % 512) == 0) 
+			burn_stdio_slowdown(d, &prev_time, 512 * 2, 0);
 	}
 
 	/* Pad up buffer to next full o->obs (usually 32 kB) */
