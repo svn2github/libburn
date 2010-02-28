@@ -3615,6 +3615,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->write_type= BURN_WRITE_SAO;
  o->block_type= BURN_BLOCK_SAO;
  o->multi= 0;
+ o->cdxa_conversion= 0;
  o->modesty_on_drive= 0;
  o->min_buffer_percent= 65;
  o->max_buffer_percent= 95;
