@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 19, 2010"
+.TH CDRSKIN 1 "Feb 29, 2010"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -82,7 +82,7 @@ A \fBtrack\fP stores a stream of bytes.
 .br
 Each track is initiated by one track source address argument, which may either
 be "-" for standard input or the address of a readable file. If no write mode
-is given explicitely then one will be chosen which matches the peculiarities
+is given explicitly then one will be chosen which matches the peculiarities
 of track sources and the state of the output media.
 .PP
 More than one track can be burned by a single run of cdrskin. 
@@ -93,13 +93,13 @@ Some media types can be kept appendable so that further tracks can
 be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
 content (TOC) on media and can be retrieved via cdrskin option -toc.
-These informations are also used by the operating systems' CD-ROM read drivers.
+This information is also used by the operating systems' CD-ROM read drivers.
 .PP
 In general there are two types of tracks: data and audio. They differ in
 sector size, throughput and readability via the systems' CD-ROM drivers
 resp. by music CD players. With DVD and BD there is only type data.
 .br
-If not explicitely option -audio is given, then any track is burned as type
+If not explicitly option -audio is given, then any track is burned as type
 data, unless the track source is a file with suffix ".wav" or ".au" and has a
 header part which identifies it as MS-WAVE resp. SUN Audio with suitable
 parameters. Such files are burned as audio tracks by default.
@@ -138,7 +138,7 @@ try to choose a write mode which matches the defined recording job,
 the capabilities of the drive and the state of the present media.
 .br
 So the mentioning of write modes in the following paragraphs and in the
-examples is not so much a demand that the user shall choose one explicitely,
+examples is not so much a demand that the user shall choose one explicitly,
 but rather an illustration of what to expect with particular media types.
 .SS
 .B Recordable CD Media:
@@ -181,20 +181,20 @@ With DVD-R[W] two write modes may be available:
 Mode DAO has many restrictions. It does not work with
 appendable media, allows no -multi and only a single track. The size of the
 track needs to be known in advance. So either its source has to be a disk file
-of recognizable size or the size has to be announced explicitely by options
+of recognizable size or the size has to be announced explicitly by options
 .B tsize= 
 or
 .B tao_to_sao_tsize= .
 .br
 DAO is the only mode for media which do not offer feature 21h Incremental
-Streaming. DAO may also be selected explicitely by option
+Streaming. DAO may also be selected explicitly by option
 .B -sao .
 Program growisofs uses DAO on sequential DVD-R[W] media for maximum
 DVD-ROM/-Video compatibility.
 .br
 The other mode, Incremental Streaming, is the default write mode if
 it is available and if the restrictions of DAO would prevent the job.
-Incremental Streaming may be selected explicitely by option
+Incremental Streaming may be selected explicitly by option
 .B -tao
 as it resembles much CD TAO by allowing track sources of
 unpredicted length and to keep media appendable by option
@@ -225,7 +225,7 @@ Currently types DVD+RW, DVD-RW, DVD-RAM and BD-RE can be overwritten via
 cdrskin.
 .br
 Option -audio is not allowed. Only one track is allowed.
-Option -multi cannot mark a recognizeable end of overwriteable media.
+Option -multi cannot mark a recognizable end of overwriteable media.
 Therefore -multi is banned unless ISO-9660 images shall be expandable by help
 of option
 .B --grow_overwriteable_iso .
@@ -350,7 +350,7 @@ print "Mounted Media:" and media type text.
 Announces that the subsequent tracks are to be burned as audio.
 The source is supposed to be uncompressed headerless PCM, 44100 Hz, 16 bit,
 stereo. For little-endian byte order (which is usual on PCs) use option
--swab. Unless marked explicitely by option -data, input files with suffix
+-swab. Unless marked explicitly by option -data, input files with suffix
 ".wav" are examined wether they have a header in MS-WAVE format confirming
 those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix ".au" and SUN Audio.
@@ -527,7 +527,7 @@ of Bus,Target,Lun addresses.
 Set "driveropts=noburnfree" to disable the drive's eventual protection
 mechanism against temporary lack of source data (i.e. buffer underrun).
 A drive that announces no such capabilities will not get them enabled anyway,
-even if attempted explicitely via "driveropts=burnfree".
+even if attempted explicitly via "driveropts=burnfree".
 .TP
 .BI \-dummy
 Try to perform the drive operations without actually affecting the inserted
@@ -597,7 +597,7 @@ will be used under the assumption that it is a single session filesystem.
 .br
 If not, then the burn run will be aborted.
 .br
-The range of -isosize is exactly one track. Further tracks may be preceeded
+The range of -isosize is exactly one track. Further tracks may be preceded
 by further -isosize options, though. At least 15 blocks of padding will be
 added to each -isosize track. But be advised to rather use padsize=300k.
 .br
@@ -705,7 +705,7 @@ No -multi is allowed with DVD-R[W] -sao.
 only imposes restrictions without providing known advantages. 
 .br
 -sao can only be used for tracks of fixely predicted size. This implies that
-track arguments which depict stdin or named pipes need to be preceeded by
+track arguments which depict stdin or named pipes need to be preceded by
 option tsize= or by option tao_to_sao_tsize=.
 .br
 -sao cannot be used on appendable media.
@@ -822,7 +822,7 @@ Alphabetical list of options which are genuine to cdrskin and intended for
 normal use:
 .TP
 .BI \--adjust_speed_to_drive
-Curb explicitely given speed= values to the maximum which is announced by the
+Curb explicitly given speed= values to the maximum which is announced by the
 drive for the loaded media. By default, such an adjustment is only made with
 pseudo-speeds 0 and -1 whereas speed settings > 0 are sent unchanged to the
 drive which will then choose an appropriate speed on its own.
@@ -916,7 +916,7 @@ to cdrskin, then cdrskin will delegate the job to said command.
 The natural commands to be given are cdrecord or wodim but one may well submit
 the address of an own program. 
 .br
-The fallback programm will get all arguments of cdrskin which do not match
+The fallback program will get all arguments of cdrskin which do not match
 the shell patterns --?* or *_*=* . This eventually suppresses path names of
 track sources which happen to match those patterns. The options from the
 startup files are not handed to the fallback program.
@@ -962,12 +962,12 @@ source is a ISO-9660 filesystem image.
 With overwriteable media and no option blank=fast|all present it expands an
 eventual ISO-9660 filesystem on media. It is assumed that this image's inner
 size description points to the end of the valuable data.
-Overwriteable media with a recognizeable ISO-9660 size will be regarded as
+Overwriteable media with a recognizable ISO-9660 size will be regarded as
 appendable rather than as blank. I.e. options -msinfo and -toc will work.
 -toc will always show a single session with its size increasing with
 every added mkisofs image.
 .br
-If not overriden by option write_start_address=, the track with the new image
+If not overridden by option write_start_address=, the track with the new image
 will be placed behind the end of the old one. One may use option
 assert_write_lba= to make sure that media state and mkisofs job do match.
 .br
@@ -1062,7 +1062,7 @@ the available capacity. So for most realistic results one may set up
 the full burn session and add --tell_media_space. But if one has to expect
 a cdrskin version prior to 0.3.3 no track source should be given in order
 not to start an involuntary burn session.
-In this case set at least -sao or -tao explicitely.
+In this case set at least -sao or -tao explicitly.
 .br
 The result gets printed to standard output. It is 0 or empty if no writing
 is possible with the given options.
@@ -1130,7 +1130,7 @@ Wether this leads to senseful behavior depends on operating system and kernel.
 Linux specific: Select a SCSI device file family to be scanned for by
 options --devices and -scanbus.
 Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
-on kernels >= 2.6 . This option allows to explicitely override that default
+on kernels >= 2.6 . This option allows to explicitly override that default
 in order to meet other programs at a common device file for each drive.
 On kernel 2.4 families sr and scd will find no drives.
 .br
