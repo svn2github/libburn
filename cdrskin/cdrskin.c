@@ -1796,7 +1796,6 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 
    Cdrskin_get_fifo_par(track->boss, &fifo_enabled, &fifo_size, &fifo_start_at,
                         0);
-   fd_src= src;
 
    if(track->track_type == BURN_AUDIO)
      chunksize= 2352;
@@ -1806,6 +1805,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
      chunksize= 2048;
    chunks= fifo_size / chunksize;
    if(chunks > 1 && fifo_enabled) {
+     fd_src= src;
      src= burn_fifo_source_new(fd_src, chunksize, chunks,
                                (chunksize * chunks >= 128 * 1024));
      if((flag & 1) || src == NULL)
