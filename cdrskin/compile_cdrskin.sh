@@ -7,7 +7,7 @@
 debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
-fifo_opts="-DCdrskin_use_libburn_fifO"
+fifo_opts=""
 libvers="-DCdrskin_libburn_0_7_7"
 
 # To be used if Makefile.am uses libburn_libburn_la_CFLAGS
@@ -25,6 +25,13 @@ fifo_source="cdrskin/cdrfifo.c"
 compile_cdrskin=1
 compile_cdrfifo=0
 compile_dewav=0
+
+libcam=
+os=$(uname -s)
+case $os in
+ *FreeBSD)
+  libcam="-lcam"
+esac
 
 for i in "$@"
 do
@@ -86,6 +93,10 @@ do
   then
     fifo_source=
     fifo_opts="-DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
+  elif test "$i" = "-use_libburn_cleanup"
+  then
+    fifo_source=
+    fifo _opts="-Ddrskin_use_libburn_cleanuP -DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
   elif test "$i" = "-use_libcdio"
   then
     libcdio="-lcdio"
@@ -125,7 +136,7 @@ echo "Build timestamp   :  $timestamp"
 
 if test "$compile_cdrskin"
 then
-  echo "compiling program cdrskin/cdrskin.c $fifo_source $static_opts $debug_opts $libvers $fifo_opts $def_opts $cleanup_src_or_obj $libcdio"
+  echo "compiling program cdrskin/cdrskin.c $fifo_source $static_opts $debug_opts $libvers $fifo_opts $def_opts $cleanup_src_or_obj $libcdio $libcam"
   cc -I. \
     $warn_opts \
     $static_opts \
@@ -171,6 +182,7 @@ then
     "$burn"ecma130ab.o \
     \
     $libcdio \
+    $libcam \
     -lpthread
 
     ret=$?
