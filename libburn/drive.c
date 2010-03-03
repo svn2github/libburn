@@ -1896,7 +1896,7 @@ int burn_abort(int patience,
 		change status on their own.
 	 */
 
-	while(current_time-end_time < patience) {
+	while(current_time < end_time || (patience <= 0 && first_round)) {
 		still_not_done = 0;
 
 		for(i = 0; i < drivetop + 1; i++) {
@@ -1946,7 +1946,7 @@ int burn_abort(int patience,
 		}
 		first_round = 0;
 
-		if(still_not_done == 0)
+		if(still_not_done == 0 || patience <= 0)
 	break;
 		usleep(wait_grain);
 		current_time = time(0);
@@ -1959,7 +1959,8 @@ int burn_abort(int patience,
 			pacifier_time = current_time;
 		}
 	}
-	burn_finish();
+	if (patience > 0)
+		burn_finish();
 	return(still_not_done == 0); 
 }
 
