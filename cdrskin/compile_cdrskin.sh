@@ -96,7 +96,7 @@ do
   elif test "$i" = "-use_libburn_cleanup"
   then
     fifo_source=
-    fifo _opts="-Ddrskin_use_libburn_cleanuP -DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
+    fifo_opts="-DCdrskin_use_libburn_cleanuP -DCdrskin_use_libburn_fifO -DCdrskin_no_cdrfifO"
   elif test "$i" = "-use_libcdio"
   then
     libcdio="-lcdio"
