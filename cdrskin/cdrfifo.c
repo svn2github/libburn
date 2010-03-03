@@ -203,10 +203,11 @@ int Cdrfifo_close(struct CdrfifO *o, int flag)
  if(o->dest_fd!=-1)
    close(o->dest_fd);
  o->dest_fd= -1;
- for(i=0; i<o->follow_up_fd_counter; i++)
+ for(i=0; i<o->follow_up_fd_counter; i++) {
    if(o->follow_up_fds[i][1]!=-1)
      close(o->follow_up_fds[i][1]);
    o->follow_up_fds[i][1]= -1;
+ }
  return(1);
 }
 
