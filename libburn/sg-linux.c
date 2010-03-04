@@ -1651,6 +1651,7 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	int fd, os_errno= 0, ret;
+	int max_tries = 3, tries = 0;
 
 	/* ts A60813 */
 	int open_mode = O_RDWR;
@@ -1684,6 +1685,7 @@ int sg_grab(struct burn_drive *d)
 	   value -1 of open(2) war used. */
 	if(! burn_drive_is_open(d)) {
 
+try_open:;
 		/* ts A60821
    		<<< debug: for tracing calls which might use open drive fds */
 		mmc_function_spy(NULL, "sg_grab ----------- opening");
@@ -1717,13 +1719,19 @@ int sg_grab(struct burn_drive *d)
 		fcntl(fd, F_SETOWN, getpid());
 		d->released = 0;
 		return 1;
-	}
+	} else if (errno == EBUSY)
+		goto drive_is_in_use;
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Could not grab drive", os_errno, 0);
 	return 0;
 
 drive_is_in_use:;
+	tries++;
+	if (tries < max_tries) {
+		usleep(2000000);
+		goto try_open;
+	}
 	libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
