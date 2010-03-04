@@ -4236,7 +4236,7 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
 
  Cdrskin_abort_leveL= -1;
  if (!(flag & 1))
- burn_abort(0, burn_abort_pacifier, "cdrskin: ");
+ burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
  fprintf(stderr,
         "cdrskin: ABORT : Urged drive worker threads to do emergency halt.\n");
  return -2;
