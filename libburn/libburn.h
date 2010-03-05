@@ -736,17 +736,22 @@ void burn_finish(void);
 
 
 /* ts A61002 */
-/** Abort any running drive operation and finally call burn_finish().
-    You MUST calm down the busy drive if an aborting event occurs during a
+/** Abort any running drive operation and eventually call burn_finish().
+
+    You MUST shut down the busy drives if an aborting event occurs during a
     burn run. For that you may call this function either from your own signal
-    handling code or indirectly by activating the builtin signal handling:
+    handling code or indirectly by activating the built-in signal handling:
       burn_set_signal_handling("my_app_name : ", NULL, 0);
-    Else you may eventually call burn_drive_cancel() on the active drive and
-    wait for it to assume state BURN_DRIVE_IDLE.
-    @param patience Maximum number of seconds to wait for drives to finish
+    Else you may eventually call burn_drive_cancel() on the active drives and
+    wait for them to assume state BURN_DRIVE_IDLE.
+    @param patience      Maximum number of seconds to wait for drives to
+                         finish.
+                         @since 0.7.8 :
+                         If this is -1, then only the cancel operations will
+                         be performed and no burn_finish() will happen.
     @param pacifier_func If not NULL: a function to produce appeasing messages.
                          See burn_abort_pacifier() for an example.
-    @param handle Opaque handle to be used with pacifier_func
+    @param handle        Opaque handle to be used with pacifier_func
     @return 1  ok, all went well
             0  had to leave a drive in unclean state
             <0 severe error, do no use libburn again
@@ -2784,28 +2789,76 @@ int burn_set_messenger(void *messenger);
 
 /* ts A61002 */
 /* @since 0.2.6 */
-/** The prototype of a handler function suitable for burn_set_abort_handling().
+/** The prototype of a handler function suitable for burn_set_signal_handling()
     Such a function has to return -2 if it does not want the process to
     exit with value 1.
 */
 typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
 
-/** Control builtin signal handling. See also burn_abort().
+/** Control built-in signal handling. Either by setting an own handler or
+    by activating the built-in signal handler.
+
+    A function parameter handle of NULL activates the built-in abort handler. 
+    Depending on mode it may cancel all drive operations, wait for all drives
+    to become idle, exit(1). It may also prepare function
+    burn_drive_get_status() for waiting and performing exit(1). 
+    If text is not NULL then it is used as prefix for pacifier messages of
+    burn_abort_pacifier().
+    Before version 0.7.8 only action 0 was available. I.e. the built-in handler
+    waited for the drives to become idle and then performed exit(1) directly.
+    But FreeBSD 8.0 sometimes pauses the other threads until the signal handler
+    returns.
+    The new actions try to avoid this deadlock. It is advised to use action 3
+      burn_set_signal_handling(text, NULL, 48);
+    and call burn_is_aborting(0) frequently. If it replies 1, then call
+    burn_abort() and exit(1).
     @param handle Opaque handle eventually pointing to an application
                   provided memory object
     @param handler A function to be called on signals. It will get handle as
-                  argument. It should finally call burn_abort(). See there.
-    @param mode : 0 call handler(handle, signum, 0) on nearly all signals
-                  1 enable system default reaction on all signals
-                  2 try to ignore nearly all signals
-                 10 like mode 2 but handle SIGABRT like with mode 0
-    Arguments (text, NULL, 0) activate the builtin abort handler. It will
-    eventually call burn_abort() and then perform exit(1). If text is not NULL
-    then it is used as prefix for pacifier messages of burn_abort_pacifier().
+                  argument. flag will be 0.
+                  It should finally call burn_abort(). See there.
+    @param mode : bit0 - bit3:
+                    Receiving signals:
+                    0 Call handler(handle, signum, 0) on nearly all signals
+                    1 Enable system default reaction on all signals
+                    2 Try to ignore nearly all signals
+                   10 like mode 2 but handle SIGABRT like with mode 0
+                  bit4 - bit7: With handler == NULL :
+                    Action of built-in handler. "control thread" is the one
+                    which called burn_set_signal_handling().
+                    All actions activate receive mode 2 to ignore further
+                    signals.
+                    0 Same as 1 (for pre-0.7.8 backward compatibility)
+                    @since 0.7.8
+                    1 Catch the control thread in abort handler, call
+                      burn_abort(>0) and finally exit(1).
+                      Does not always work with FreeBSD.
+                    2 Call burn_abort(-1) and return from handler. When the
+                      control thread calls burn_drive_get_status(), then do
+                      burn_abort(>0) instead, and finally exit(1).
+                      Does not always work with FreeBSD.
+                    3 Call burn_abort(-1), return from handler. It is duty of
+                      the application to detect a pending abort condition
+                      by calling burn_is_aborting() and to wait for all
+                      drives to become idle. E.g. by calling burn_abort(>0).
+                    4 Like 3, but without calling burn_abort(-1). Only the
+                      indicator of burn_is_aborting() gets set.
     @since 0.2.6
 */
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler, 
 			     int mode);
+
+
+/* ts B00304 */
+/* Inquire whether the built-in abort handler was triggered by a signal.
+   This has to be done to detect pending abort handling if signal handling
+   was set to the built-in handler and action was set to 2 or 3.
+   @param flag  Bitfield for control purposes (unused yet, submit 0)
+   @return    0 = no abort was triggered
+             >0 = action that was triggered (action 0 is reported as 1)
+   @since 0.7.8
+*/
+int burn_is_aborting(int flag);
 
 
 /* ts A70811 */
@@ -2954,6 +3007,12 @@ BURN_END_DECLS
 */
 #define Libburn_dummy_probe_write_modeS 1
 
+
+/* ts B00225 */
+/* Leave abort handler quickly and catch control thread in
+   burn_drive_get_status().
+*/
+#define Libburn_signal_handler_return_2 1
 
 
 #endif /*LIBBURN_H*/

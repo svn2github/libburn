@@ -31,7 +31,7 @@ extern struct libdax_msgs *libdax_messenger;
 
 
 #ifdef Libburn_log_in_and_out_streaM
-/* <<< ts A61031 */
+/* ts A61031 */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -102,7 +102,7 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 	int valid, shortage, curr, i, tr;
 
 #ifdef Libburn_log_in_and_out_streaM 
-        /* <<< ts A61031 */
+        /* ts A61031 */
         static int tee_fd= -1;
         if(tee_fd==-1)
                 tee_fd= open("/tmp/libburn_sg_readin",
@@ -148,7 +148,7 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 	track->sourcecount += valid;
 
 #ifdef Libburn_log_in_and_out_streaM
-	/* <<< ts A61031 */
+	/* ts A61031 */
         if(tee_fd!=-1 && valid>0) {
                 write(tee_fd, data + curr, valid);
         }
@@ -678,7 +678,7 @@ int sector_data(struct burn_write_opts *o, struct burn_track *t, int psub)
 	unsigned char *data;
 
 	data = get_sector(o, t, t->mode);
-	if (!data)
+	if (data == NULL)
 		return 0;
 	/* ts A61010 */
 	if (convert_data(o, t, t->mode, data) <= 0)

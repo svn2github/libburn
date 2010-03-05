@@ -127,8 +127,9 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 int burn_drive__fd_from_special_adr(char *adr);
 
 
-/* ts A70929 : Find the drive which is being worked on by pid */
-int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid);
+/* ts A70929 : Find the drive which is being worked on by pid , tid */
+int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid,
+					pthread_t tid);
 
 
 /* ts A51221 - A80731 : Whitelist inquiry functions */
@@ -140,5 +141,20 @@ char *burn_drive_whitelist_item(int idx, int flag);
 /* ts A80801 */
 int burn_drive_is_listed(char *path, struct burn_drive **found, int flag);
 
+#ifdef NIX
+/* <<< did not help. Is on its way out */
+/* ts B00226 */
+int burn_abort_write(int patience,
+               int (*pacifier_func)(void *handle, int patience, int elapsed),
+               void *handle);
+#endif /* NIX */
+
+/* ts B00226 : Outsourced backend of burn_abort()
+   @param elapsed  to be subtracted from start time
+   @param flag     bit0= do not shutdown the library
+*/ 
+int burn_abort_5(int patience,
+               int (*pacifier_func)(void *handle, int patience, int elapsed),
+               void *handle, int elapsed, int flag);
 
 #endif /* __DRIVE */

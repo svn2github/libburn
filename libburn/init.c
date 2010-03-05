@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 /* ts A70928 : init.h is for others, not for init .c
 #include "init.h"
@@ -80,10 +81,13 @@ static char sg_initialize_msg[1024] = {""};
 /* Parameters for builtin abort handler */
 static char abort_message_prefix[81] = {"libburn : "};
 static pid_t abort_control_pid= 0;
+static pthread_t abort_control_thread;
 volatile int burn_global_abort_level= 0;
 int burn_global_abort_signum= 0;
 void *burn_global_signal_handle = NULL;
 burn_abort_handler_t burn_global_signal_handler = NULL;
+int burn_builtin_signal_action = 0;            /* burn_set_signal_handling() */
+volatile int burn_builtin_triggered_action = 0;       /*  burn_is_aborting() */
 
 
 /* ts A70223 : wether implemented untested profiles are supported */
@@ -329,22 +333,74 @@ int burn_sev_to_text(int severity_number, char **severity_name, int flag)
 	return ret;
 }
 
+/* ts B00224 */
+char *burn_util_thread_id(pid_t pid, pthread_t tid, char text[80])
+{
+	int i, l;
+
+	sprintf(text, "[%d,", getpid());
+	l= strlen(text);
+	for(i= 0; i < sizeof(pthread_t) && 2 * i < 80 - l - 3; i++)
+		sprintf(text + l + 2 * i,
+			 "%2.2X", ((unsigned char *) &tid)[i]);
+
+	sprintf(text + l + 2 * i, "]");
+	return text;
+}
 
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
 
 #define Libburn_new_thread_signal_handleR 1
 /*
-#define Libburn_signal_handler_verbouS 1
 */
+#define Libburn_signal_handler_verbouS 1
+
 	int ret;
 	struct burn_drive *d;
 
 #ifdef Libburn_signal_handler_verbouS
-	fprintf(stderr,
-		"libburn_ABORT: pid = %d , abort_control_pid = %d , sig= %d\n",
-		getpid(), abort_control_pid, signum);
+	char text[80];
+
+	fprintf(stderr, "libburn_ABORT: in = %s\n",
+		burn_util_thread_id(getpid(), pthread_self(), text));
+	fprintf(stderr, "libburn_ABORT: ctrl = %s\n",
+		burn_util_thread_id(abort_control_pid, abort_control_thread,
+					text));
+	if (burn_global_signal_handler == burn_builtin_abort_handler)
+		fprintf(stderr, "libburn_ABORT: signal action = %d\n",
+				burn_builtin_signal_action);
+
+	/* >>> find writing drives and report their tid
+	fprintf(stderr, "libburn_ABORT: wrt = %s\n",
+		burn_util_thread_id(0, burn_write_thread_id, text));
+	fprintf(stderr, "libburn_ABORT: sig= %d\n", signum);
+	*/
 #endif
+
+	burn_builtin_triggered_action = burn_builtin_signal_action;
+	burn_global_abort_level = -1;
+
+	if (burn_builtin_signal_action > 1) {
+		Cleanup_set_handlers(NULL, NULL, 2);
+		if (burn_builtin_signal_action == 4)
+			return -2;
+		fprintf(stderr,"%sABORT : Trying to shut down busy drives\n",
+			abort_message_prefix);
+		fprintf(stderr,
+		 "%sABORT : Wait the normal burning time before any kill -9\n",
+		 	abort_message_prefix);
+		burn_abort_5(0, burn_abort_pacifier, abort_message_prefix,
+				0, 1);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020177,
+			LIBDAX_MSGS_SEV_ABORT, LIBDAX_MSGS_PRIO_HIGH,
+			"Urged drive worker threads to do emergency halt",
+			0, 0);
+		return -2;
+	}
+
+
+	/* ---- old deprecated stuck-in-abort-handler loop ---- */
 
 	/* ts A70928:
 	Must be quick. Allowed to coincide with other thread and to share
@@ -358,7 +414,8 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 
 #ifdef Libburn_new_thread_signal_handleR
 
-		ret = burn_drive_find_by_thread_pid(&d, getpid());
+		ret = burn_drive_find_by_thread_pid(&d, getpid(),
+							pthread_self());
 		if (ret > 0 && d->busy == BURN_DRIVE_WRITING) {
 					/* This is an active writer thread */
 
@@ -398,13 +455,13 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 	}
 	burn_global_abort_level = -1;
 	Cleanup_set_handlers(NULL, NULL, 2);
+
 	fprintf(stderr,"%sABORT : Trying to shut down drive and library\n",
 		abort_message_prefix);
 	fprintf(stderr,
 		"%sABORT : Wait the normal burning time before any kill -9\n",
 		abort_message_prefix);
 	close(0); /* somehow stdin as input blocks abort until EOF */
-
 	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
 
 	fprintf(stderr,
@@ -414,8 +471,10 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 	return(1);
 }
 
+
+/* ts A61002 : API */
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
-			     int mode)
+				int mode)
 {
 
 /*
@@ -436,9 +495,53 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 			sizeof(abort_message_prefix)-1);
 	abort_message_prefix[sizeof(abort_message_prefix)-1] = 0;
 	abort_control_pid = getpid();
-	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler, mode|4);
+	abort_control_thread = pthread_self();
+	burn_builtin_signal_action = (mode >> 4) & 15;
+	if((mode & 11) != 0)
+		burn_builtin_signal_action = 0;
+	if(burn_builtin_signal_action > 1)
+		burn_builtin_triggered_action = 0;
+	if(burn_builtin_signal_action == 0)
+		burn_builtin_signal_action = 1;
+
+fprintf(stderr, "libburn_EXPERIMENTAL: mode = %d , burn_builtin_signal_action = %d\n",
+mode, burn_builtin_signal_action);
+
+	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler,
+				 (mode & 15) | 4);
 	burn_global_signal_handle = handle;
 	burn_global_signal_handler = handler;
+}
+
+
+/* ts B00304 : API */
+int burn_is_aborting(int flag)
+{
+	return burn_builtin_triggered_action;
+}
+
+
+/* ts B00225 */
+/* @return 0= no abort action 2 pending , 1= not control thread
+*/
+int burn_init_catch_on_abort(int flag)
+{
+	if (burn_builtin_triggered_action != 2)
+		return 0;
+	if (abort_control_pid != getpid() ||
+		abort_control_thread != pthread_self())
+		return 1;
+
+#ifdef NIX
+	burn_abort_write(4440, burn_abort_pacifier, abort_message_prefix);
+#else
+	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
+#endif
+
+	fprintf(stderr,
+	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
+		abort_message_prefix);
+	exit(1);
 }
 
 

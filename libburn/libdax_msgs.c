@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 /* Only this single source module is entitled to do this */ 
 #define LIBDAX_MSGS_H_INTERNAL 1

@@ -1312,7 +1312,7 @@ static int transact_dvd_chunk(struct burn_write_opts *opts,
 	unsigned char *data = out->data;
 
 #ifdef Libburn_log_in_and_out_streaM
-	/* <<< ts A61031 */
+	/* ts A61031 */
 	static int tee_fd= -1;
 	if(tee_fd==-1)
 		tee_fd= open("/tmp/libburn_sg_readin",
@@ -2002,7 +2002,7 @@ ex:;
 	burn_drive_mark_unready(d);
 	burn_drive_inquire_media(d);
 
-	d->busy = BURN_DRIVE_IDLE;
+	/* <<< d->busy = BURN_DRIVE_IDLE; */
 	return ret;
 early_failure:;
 	return 0;
@@ -2330,7 +2330,7 @@ ex:;
 	/* update media state records */
 	burn_drive_mark_unready(d);
 
-	d->busy = BURN_DRIVE_IDLE;
+	/* <<< d->busy = BURN_DRIVE_IDLE; */
 	return ret;
 }
 
@@ -2567,7 +2567,7 @@ return crap.  so we send the command, then ignore the result.
 	burn_drive_inquire_media(d);
 
 	burn_print(1, "done\n");
-	d->busy = BURN_DRIVE_IDLE;
+	/* <<< d->busy = BURN_DRIVE_IDLE; */
 
 	/* ts A61012 : This return was traditionally missing. I suspect this
 			to have caused Cdrskin_eject() failures */
@@ -2582,7 +2582,7 @@ fail_wo_sync:;
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Burn run failed", 0, 0);
 	d->cancel = 1;
-	d->busy = BURN_DRIVE_IDLE;
+	/* <<< d->busy = BURN_DRIVE_IDLE; */
 ex:;
 	d->do_stream_recording = 0;
 	if (d->buffer != NULL)

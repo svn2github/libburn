@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
 /*
 #include <a ssert.h>
@@ -534,8 +535,22 @@ no_non_default_bd_re:;
 static void *write_disc_worker_func(struct w_list *w)
 {
 	struct burn_drive *d = w->u.write.drive;
+	char msg[80];
+
+#define Libburn_protect_write_threaD 1
+
+#ifdef Libburn_protect_write_threaD
+	sigset_t sigset, oldset;
+
+	/* Protect write thread from being interrupted by external signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGILL);
+	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif /* Libburn_protect_write_threaD */
 
 	d->thread_pid = getpid();
+	d->thread_tid = pthread_self();
 	d->thread_pid_valid= 1;
 	burn_disc_write_sync(w->u.write.opts, w->u.write.disc);
 	d->thread_pid_valid= 0;
@@ -545,7 +560,18 @@ static void *write_disc_worker_func(struct w_list *w)
 	 */
 	burn_write_opts_free(w->u.write.opts);
 
+	sprintf(msg, "Write thread on drive %d ended", d->global_index);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00020178,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+
+#ifdef Libburn_protect_write_threaD
+	/* (just in case it would not end with all signals blocked) */
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif /* Libburn_protect_write_threaD */
+
 	remove_worker(pthread_self());
+	d->busy = BURN_DRIVE_IDLE;
 	return NULL;
 }
 
@@ -653,6 +679,18 @@ int burn_fifo_start(struct burn_source *source, int flag)
 	struct fifo_opts o;
 	struct burn_source_fifo *fs = source->data;
 
+#define Libburn_protect_fifo_threaD 1
+
+#ifdef Libburn_protect_fifo_threaD
+	sigset_t sigset, oldset;
+
+	/* Protect write thread from being interrupted by external signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGILL);
+	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif /* Libburn_protect_fifo_threaD */
+
 	fs->is_started = -1;
 
 	/* create and set up ring buffer */;
@@ -668,6 +706,12 @@ int burn_fifo_start(struct burn_source *source, int flag)
 	add_worker(Burnworker_type_fifO, NULL,
 			(WorkerFunc) fifo_worker_func, &o);
 	fs->is_started = 1;
+
+#ifdef Libburn_protect_fifo_threaD
+	/* (just in case it would not end with all signals blocked) */
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif /* Libburn_protect_fifo_threaD */
+
 	return 1;
 }
 

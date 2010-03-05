@@ -312,6 +312,8 @@ struct burn_drive
 	/* ts A70929 */
 	pid_t thread_pid;
 	int thread_pid_valid;
+	/* ts B00225 */
+	pthread_t thread_tid;
 
 
 /* transport functions */

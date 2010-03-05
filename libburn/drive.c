@@ -376,6 +376,7 @@ struct burn_drive *burn_drive_register(struct burn_drive *d)
 	d->busy = BURN_DRIVE_IDLE;
 	d->thread_pid = 0;
 	d->thread_pid_valid = 0;
+	memset(&(d->thread_tid), 0, sizeof(d->thread_tid));
 	d->toc_entries = 0;
 	d->toc_entry = NULL;
 	d->disc = NULL;
@@ -815,10 +816,22 @@ int burn_disc_erasable(struct burn_drive *d)
 enum burn_drive_status burn_drive_get_status(struct burn_drive *d,
 					     struct burn_progress *p)
 {
+	/* --- Part of asynchronous signal handling --- */
+	/* This frequently used call may be used to react on messages from
+	   the libburn built-in signal handler.
+	*/
+
+	/* ts B00225 :
+	   If aborting with action 2:
+	   catch control thread after it returned from signal handler.
+	   Let it run burn_abort(4440,...) 
+	*/
+	burn_init_catch_on_abort(0);
+
 	/* ts A70928 : inform control thread of signal in sub-threads */
-	if (burn_global_abort_level > 0)
+	if (burn_builtin_triggered_action < 2 && burn_global_abort_level > 0)
 		burn_global_abort_level++;
-	if (burn_global_abort_level > 5) {
+	if (burn_builtin_triggered_action < 2 && burn_global_abort_level > 5) {
 		if (burn_global_signal_handler == NULL)
 			kill(getpid(), burn_global_abort_signum);
 		else
@@ -827,6 +840,9 @@ enum burn_drive_status burn_drive_get_status(struct burn_drive *d,
 				 burn_global_abort_signum, 0);
 		burn_global_abort_level = -1;
 	}
+
+	/* --- End of asynchronous signal handling --- */
+
 
 	if (p != NULL) {
 		memcpy(p, &(d->progress), sizeof(struct burn_progress));
@@ -849,9 +865,13 @@ int burn_drive_set_stream_recording(struct burn_drive *d, int recmode,
 
 void burn_drive_cancel(struct burn_drive *d)
 {
+/* ts B00225 : these mutexes are unnecessary because "= 1" is atomar.
 	pthread_mutex_lock(&d->access_lock);
+*/
 	d->cancel = 1;
+/*
 	pthread_mutex_unlock(&d->access_lock);
+*/
 }
 
 /* ts A61007 : defunct because unused */
@@ -1868,17 +1888,12 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed)
 }
 
 
-/** Abort any running drive operation and finish libburn.
-    @param patience Maximum number of seconds to wait for drives to finish
-    @param pacifier_func Function to produce appeasing messages. See
-                         burn_abort_pacifier() for an example.
-    @return 1  ok, all went well
-            0  had to leave a drive in unclean state
-            <0 severe error, do no use libburn again
+/* ts B00226 : Outsourced backend of burn_abort()
+   @param flag  bit0= do not call burn_finish()
 */
-int burn_abort(int patience, 
+int burn_abort_5(int patience, 
                int (*pacifier_func)(void *handle, int patience, int elapsed),
-               void *handle)
+               void *handle, int elapsed, int flag)
 {
 	int ret, i, occup, still_not_done= 1, pacifier_off= 0, first_round= 1;
 	unsigned long wait_grain= 100000;
@@ -1888,7 +1903,11 @@ int burn_abort(int patience,
 	time_t stdio_patience = 3;
 #endif
 
+
+fprintf(stderr, "libburn_EXPERIMENTAL: burn_abort_5(%d,%d)\n", patience, flag);
+
 	current_time = start_time = pacifier_time = time(0);
+	start_time -= elapsed;
 	end_time = start_time + patience;
 
 	/* >>> ts A71002 : are there any threads at work ?
@@ -1935,6 +1954,9 @@ int burn_abort(int patience,
 			}
 
 			if(occup <= 10) {
+				if (drive_array[i].drive_role != 1)
+		 			/* occup == -1 comes early */
+					usleep(1000000);
 				burn_drive_forget(&(drive_array[i]), 1);
 			} else if(occup <= 100) {
 				if(first_round)
@@ -1959,9 +1981,92 @@ int burn_abort(int patience,
 			pacifier_time = current_time;
 		}
 	}
-	if (patience > 0)
+	if (!(flag & 1))
 		burn_finish();
 	return(still_not_done == 0); 
+}
+
+
+#ifdef NIX
+
+/* <<< did not help. Is on its way out */
+/* ts B00226 */
+/* Wait for the most delicate drive states to end
+*/
+int burn_abort_write(int patience, 
+               int (*pacifier_func)(void *handle, int patience, int elapsed),
+               void *handle)
+{
+	int ret, i, still_not_done= 1, pacifier_off= 0;
+	unsigned long wait_grain= 100000;
+	time_t start_time, current_time, pacifier_time, end_time;
+	struct burn_drive *d;
+
+fprintf(stderr, "libburn_EXPERIMENTAL: burn_abort_write\n");
+
+	current_time = start_time = pacifier_time = time(0);
+	end_time = start_time + patience;
+
+	while(current_time < end_time || patience <= 0) {
+		still_not_done = 0;
+
+		for(i = 0; i < drivetop + 1; i++) {
+			d = &(drive_array[i]);
+			if(d->global_index < 0)
+		continue;
+			if(d->busy != BURN_DRIVE_WRITING &&
+			   d->busy != BURN_DRIVE_WRITING_LEADIN &&
+			   d->busy != BURN_DRIVE_WRITING_LEADOUT &&
+			   d->busy != BURN_DRIVE_WRITING_PREGAP &&
+			   d->busy != BURN_DRIVE_CLOSING_TRACK &&
+			   d->busy != BURN_DRIVE_CLOSING_SESSION)
+		continue;
+			still_not_done = 1;
+		}
+
+		if(still_not_done == 0 || patience <= 0)
+	break;
+		usleep(wait_grain);
+		current_time = time(0);
+		if(current_time>pacifier_time) {
+			if(pacifier_func != NULL && !pacifier_off) {
+				ret = (*pacifier_func)(handle, patience,
+						current_time - start_time);
+				pacifier_off = (ret <= 0);
+			}
+			pacifier_time = current_time;
+		}
+	}
+	if (current_time - start_time > patience - 3)
+		patience = current_time - start_time + 3;
+	ret = burn_abort_5(patience, pacifier_func, handle,
+				current_time - start_time, 0);
+	return ret; 
+}
+
+#endif /* NIX */
+
+
+/** Abort any running drive operation and finish libburn.
+    @param patience Maximum number of seconds to wait for drives to finish
+    @param pacifier_func Function to produce appeasing messages. See
+                         burn_abort_pacifier() for an example.
+    @return 1  ok, all went well
+            0  had to leave a drive in unclean state
+            <0 severe error, do no use libburn again
+*/
+int burn_abort(int patience, 
+               int (*pacifier_func)(void *handle, int patience, int elapsed),
+               void *handle)
+{
+	int ret, flg = 0;
+
+	if (patience < 0) {
+		patience = 0;
+		flg |= 1;
+	}
+	ret = burn_abort_5(patience, pacifier_func, handle, 0, flg);
+	return ret;
 }
 
 
@@ -2698,7 +2803,8 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 }
 
 
-int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid)
+int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid,
+								 pthread_t tid)
 {
 	int i;
 
@@ -2710,7 +2816,8 @@ int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid)
 */
 
 		if (drive_array[i].thread_pid_valid &&
-		    drive_array[i].thread_pid == pid) {
+		    drive_array[i].thread_pid == pid &&
+		    pthread_equal(drive_array[i].thread_tid, tid)) {
 			*d = &(drive_array[i]);
 			return 1;
 		}

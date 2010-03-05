@@ -17,5 +17,15 @@ extern int burn_global_abort_signum;
 extern void *burn_global_signal_handle;
 extern burn_abort_handler_t burn_global_signal_handler;
 
+extern int burn_builtin_signal_action;         /* burn_set_signal_handling() */
+extern volatile int burn_builtin_triggered_action;    /*  burn_is_aborting() */
+
+
+/* ts B00225 */
+/* @return 0= no abort pending , 1= not control thread ,
+          -1= surprisingly burn_abort returned
+*/
+int burn_init_catch_on_abort(int flag);
+
 
 #endif /* BURN__INIT_H */
