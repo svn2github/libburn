@@ -318,8 +318,27 @@ drive_is_active:;
 
 static void *erase_worker_func(struct w_list *w)
 {
+
+#define Libburn_protect_erase_threaD 1
+
+#ifdef Libburn_protect_erase_threaD
+	sigset_t sigset, oldset;
+
+	/* Protect blank thread from being interrupted by external signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGILL);
+	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif /* Libburn_protect_erase_threaD */
+
 	burn_disc_erase_sync(w->u.erase.drive, w->u.erase.fast);
 	remove_worker(pthread_self());
+
+#ifdef Libburn_protect_erase_threaD
+	/* (just in case it would not end with all signals blocked) */
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif /* Libburn_protect_erase_threaD */
+
 	return NULL;
 }
 
@@ -390,9 +409,28 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 /* ts A61230 */
 static void *format_worker_func(struct w_list *w)
 {
+
+#define Libburn_protect_format_threaD 1
+
+#ifdef Libburn_protect_format_threaD
+	sigset_t sigset, oldset;
+
+	/* Protect format thread from being interrupted by external signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGILL);
+	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif /* Libburn_protect_format_threaD */
+
 	burn_disc_format_sync(w->u.format.drive, w->u.format.size,
 				w->u.format.flag);
 	remove_worker(pthread_self());
+
+#ifdef Libburn_protect_format_threaD
+	/* (just in case it would not end with all signals blocked) */
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif /* Libburn_protect_format_threaD */
+
 	return NULL;
 }
 
@@ -565,13 +603,14 @@ static void *write_disc_worker_func(struct w_list *w)
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
 
+	remove_worker(pthread_self());
+	d->busy = BURN_DRIVE_IDLE;
+
 #ifdef Libburn_protect_write_threaD
 	/* (just in case it would not end with all signals blocked) */
 	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 #endif /* Libburn_protect_write_threaD */
 
-	remove_worker(pthread_self());
-	d->busy = BURN_DRIVE_IDLE;
 	return NULL;
 }
 
@@ -664,12 +703,30 @@ static void *fifo_worker_func(struct w_list *w)
 {
 	int old;
 
+#define Libburn_protect_fifo_threaD 1
+
+#ifdef Libburn_protect_fifo_threaD
+	sigset_t sigset, oldset;
+
+	/* Protect fifo thread from being interrupted by external signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGILL);
+	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif /* Libburn_protect_fifo_threaD */
+
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &old);
 		/* Note: Only burn_fifo_abort() shall cancel the fifo thread */
 
 	burn_fifo_source_shoveller(w->u.fifo.source, w->u.fifo.flag);
 	remove_worker(pthread_self());
+
+#ifdef Libburn_protect_fifo_threaD
+	/* (just in case it would not end with all signals blocked) */
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif /* Libburn_protect_fifo_threaD */
+
 	return NULL;
 }
 
@@ -678,18 +735,6 @@ int burn_fifo_start(struct burn_source *source, int flag)
 {
 	struct fifo_opts o;
 	struct burn_source_fifo *fs = source->data;
-
-#define Libburn_protect_fifo_threaD 1
-
-#ifdef Libburn_protect_fifo_threaD
-	sigset_t sigset, oldset;
-
-	/* Protect write thread from being interrupted by external signals */
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGSEGV);
-	sigdelset(&sigset, SIGILL);
-	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
-#endif /* Libburn_protect_fifo_threaD */
 
 	fs->is_started = -1;
 
@@ -706,11 +751,6 @@ int burn_fifo_start(struct burn_source *source, int flag)
 	add_worker(Burnworker_type_fifO, NULL,
 			(WorkerFunc) fifo_worker_func, &o);
 	fs->is_started = 1;
-
-#ifdef Libburn_protect_fifo_threaD
-	/* (just in case it would not end with all signals blocked) */
-	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
-#endif /* Libburn_protect_fifo_threaD */
 
 	return 1;
 }
