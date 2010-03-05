@@ -353,8 +353,8 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 
 #define Libburn_new_thread_signal_handleR 1
 /*
-*/
 #define Libburn_signal_handler_verbouS 1
+*/
 
 	int ret;
 	struct burn_drive *d;
@@ -503,10 +503,6 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 		burn_builtin_triggered_action = 0;
 	if(burn_builtin_signal_action == 0)
 		burn_builtin_signal_action = 1;
-
-fprintf(stderr, "libburn_EXPERIMENTAL: mode = %d , burn_builtin_signal_action = %d\n",
-mode, burn_builtin_signal_action);
-
 	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler,
 				 (mode & 15) | 4);
 	burn_global_signal_handle = handle;
@@ -531,13 +527,7 @@ int burn_init_catch_on_abort(int flag)
 	if (abort_control_pid != getpid() ||
 		abort_control_thread != pthread_self())
 		return 1;
-
-#ifdef NIX
-	burn_abort_write(4440, burn_abort_pacifier, abort_message_prefix);
-#else
 	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
-#endif
-
 	fprintf(stderr,
 	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
 		abort_message_prefix);

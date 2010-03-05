@@ -1904,7 +1904,10 @@ int burn_abort_5(int patience,
 #endif
 
 
-fprintf(stderr, "libburn_EXPERIMENTAL: burn_abort_5(%d,%d)\n", patience, flag);
+/*
+ fprintf(stderr, 
+ "libburn_EXPERIMENTAL: burn_abort_5(%d,%d)\n", patience, flag);
+*/
 
 	current_time = start_time = pacifier_time = time(0);
 	start_time -= elapsed;
@@ -1985,66 +1988,6 @@ fprintf(stderr, "libburn_EXPERIMENTAL: burn_abort_5(%d,%d)\n", patience, flag);
 		burn_finish();
 	return(still_not_done == 0); 
 }
-
-
-#ifdef NIX
-
-/* <<< did not help. Is on its way out */
-/* ts B00226 */
-/* Wait for the most delicate drive states to end
-*/
-int burn_abort_write(int patience, 
-               int (*pacifier_func)(void *handle, int patience, int elapsed),
-               void *handle)
-{
-	int ret, i, still_not_done= 1, pacifier_off= 0;
-	unsigned long wait_grain= 100000;
-	time_t start_time, current_time, pacifier_time, end_time;
-	struct burn_drive *d;
-
-fprintf(stderr, "libburn_EXPERIMENTAL: burn_abort_write\n");
-
-	current_time = start_time = pacifier_time = time(0);
-	end_time = start_time + patience;
-
-	while(current_time < end_time || patience <= 0) {
-		still_not_done = 0;
-
-		for(i = 0; i < drivetop + 1; i++) {
-			d = &(drive_array[i]);
-			if(d->global_index < 0)
-		continue;
-			if(d->busy != BURN_DRIVE_WRITING &&
-			   d->busy != BURN_DRIVE_WRITING_LEADIN &&
-			   d->busy != BURN_DRIVE_WRITING_LEADOUT &&
-			   d->busy != BURN_DRIVE_WRITING_PREGAP &&
-			   d->busy != BURN_DRIVE_CLOSING_TRACK &&
-			   d->busy != BURN_DRIVE_CLOSING_SESSION)
-		continue;
-			still_not_done = 1;
-		}
-
-		if(still_not_done == 0 || patience <= 0)
-	break;
-		usleep(wait_grain);
-		current_time = time(0);
-		if(current_time>pacifier_time) {
-			if(pacifier_func != NULL && !pacifier_off) {
-				ret = (*pacifier_func)(handle, patience,
-						current_time - start_time);
-				pacifier_off = (ret <= 0);
-			}
-			pacifier_time = current_time;
-		}
-	}
-	if (current_time - start_time > patience - 3)
-		patience = current_time - start_time + 3;
-	ret = burn_abort_5(patience, pacifier_func, handle,
-				current_time - start_time, 0);
-	return ret; 
-}
-
-#endif /* NIX */
 
 
 /** Abort any running drive operation and finish libburn.

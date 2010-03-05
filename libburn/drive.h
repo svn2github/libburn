@@ -141,13 +141,6 @@ char *burn_drive_whitelist_item(int idx, int flag);
 /* ts A80801 */
 int burn_drive_is_listed(char *path, struct burn_drive **found, int flag);
 
-#ifdef NIX
-/* <<< did not help. Is on its way out */
-/* ts B00226 */
-int burn_abort_write(int patience,
-               int (*pacifier_func)(void *handle, int patience, int elapsed),
-               void *handle);
-#endif /* NIX */
 
 /* ts B00226 : Outsourced backend of burn_abort()
    @param elapsed  to be subtracted from start time
