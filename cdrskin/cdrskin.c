@@ -148,7 +148,8 @@ or
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* Do not stay in signal handler but only cancel and set Cdrskin_abort_leveL
+/* Do not stay in signal handler but only cancel and set Cdrskin_abort_leveL.
+   Make use of burn_is_aborting() to detect pending libburn aborts.
 */
 #define Cdrskin_signal_handler_return_2 1
 
@@ -372,6 +373,9 @@ or
 #define Cleanup_app_handler_T burn_abort_handler_t
 #else
 #include "cleanup.h"
+#ifdef Cdrskin_use_libburn_cleanuP
+#undef Cdrskin_use_libburn_cleanuP
+#endif
 #endif
 
 /*
@@ -387,9 +391,11 @@ or
 #ifdef Cdrskin_use_libburn_cleanuP
 #define Cleanup_handler_funC   NULL
 #define Cleanup_handler_handlE "cdrskin: "
+#define Cleanup_handler_flaG 48
 #else
 #define Cleanup_handler_funC   (Cleanup_app_handler_T) Cdrskin_abort_handler
 #define Cleanup_handler_handlE skin
+#define Cleanup_handler_flaG 4
 #endif /* ! Cdrskin_use_libburn_cleanuP */
 
 /* 0= no abort going on, -1= Cdrskin_abort_handler was called
@@ -4113,7 +4119,8 @@ ex:;
 #ifdef Cdrskin_grab_abort_brokeN
  if(restore_handler) {
    int Cdrskin_abort_handler(struct CdrskiN *, int, int);
-   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC, 4);
+   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
+                        Cleanup_handler_flaG);
  }
 #endif /* Cdrskin_grab_abort_brokeN */
 
@@ -4143,6 +4150,18 @@ int Cdrskin_release_drive(struct CdrskiN *skin, int flag)
  skin->drive_is_grabbed= 0;
  skin->grabbed_drive= NULL;
  return(1);
+}
+
+
+int Cdrskin__is_aborting(int flag)
+{
+ if(Cdrskin_abort_leveL)
+   return(-1);
+#ifdef Cdrskin_signal_handler_return_2
+  return(burn_is_aborting(0));
+#else
+  return 0;
+#endif
 }
 
 
@@ -6094,7 +6113,7 @@ ex:;
  skin->drive_is_busy= 0;
  if(skin->drive_is_grabbed)
    Cdrskin_release_drive(skin,0);
- if(Cdrskin_abort_leveL)
+ if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
  return(ret);
 }
@@ -6149,7 +6168,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  /* for debugging */
  static double last_fifo_in= 0.0,last_fifo_out= 0.0,curr_fifo_in,curr_fifo_out;
 
- if(Cdrskin_abort_leveL)
+ if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
 
  current_time= Sfile_microtime(0);
@@ -7360,7 +7379,8 @@ fifo_filling_failed:;
  skin->drive_is_busy= 1;
  burn_disc_write(o, disc);
  if(skin->preskin->abort_handler==-1)
-   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC, 4);
+   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
+                        Cleanup_handler_flaG);
  last_time= start_time= Sfile_microtime(0);
 
  burn_write_opts_free(o);
@@ -7379,7 +7399,7 @@ fifo_filling_failed:;
 
    /* >>> how do i learn about success or failure ? */
 
-   if(loop_counter>0 || Cdrskin_abort_leveL)
+   if(loop_counter>0 || Cdrskin__is_aborting(0))
      Cdrskin_burn_pacifier(skin,drive_status,&p,start_time,&last_time,
                            &total_count,&last_count,&min_buffer_fill,0);
 
@@ -7453,7 +7473,7 @@ fifo_filling_failed:;
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    printf("\n");
 
- if(Cdrskin_abort_leveL)
+ if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
 
 #ifdef Cdrskin_libburn_has_wrote_welL
@@ -8954,9 +8974,11 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  *o= skin;
  if(skin->preskin->abort_handler==1 || skin->preskin->abort_handler==3 || 
     skin->preskin->abort_handler==4)
-   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC, 4);
+   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
+                        Cleanup_handler_flaG);
  else if(skin->preskin->abort_handler==2)
-   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC, 2|8);
+   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
+                        2 | 8);
 
  printf("cdrskin: scanning for devices ...\n");
  fflush(stdout);
@@ -9032,7 +9054,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_devices) {
    if(skin->n_drives<=0 && skin->preskin->scan_demands_drive)
      {*exit_value= 4; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_scanbus(skin,1);
    if(ret<=0) {
@@ -9044,7 +9066,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_scanbus) {
    if(skin->n_drives<=0 && skin->preskin->scan_demands_drive)
      {*exit_value= 5; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_scanbus(skin,0);
    if(ret<=0)
@@ -9052,7 +9074,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    {*exit_value= 5*(ret<=0); goto ex;}
  }
  if(skin->do_load) {
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_grab_drive(skin,8);
    if(ret>0) {
@@ -9069,7 +9091,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    {*exit_value= 14*(ret<=0); goto ex;}
  }
  if(skin->do_checkdrive) {
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_checkdrive(skin,"",(skin->do_checkdrive==2)<<1);
    {*exit_value= 6*(ret<=0); goto ex;}
@@ -9077,7 +9099,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_msinfo) {
    if(skin->n_drives<=0)
      {*exit_value= 12; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_msinfo(skin,0);
    if(ret<=0)
@@ -9086,7 +9108,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_atip) {
    if(skin->n_drives<=0)
      {*exit_value= 7; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_atip(skin, skin->do_atip == 4 ? 4 :
                                 (skin->do_atip>1) | (2 * (skin->do_atip > 2)));
@@ -9096,7 +9118,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_list_formats) {
    if(skin->n_drives<=0)
      {*exit_value= 14; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_list_formats(skin, 0);
    if(ret<=0)
@@ -9105,7 +9127,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_blank) {
    if(skin->n_drives<=0)
      {*exit_value= 8; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_blank(skin,0);
    if(ret<=0)
@@ -9115,7 +9137,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
 #ifdef Cdrskin_libburn_has_random_access_rW
  if(skin->do_direct_write) {
    skin->do_burn= 0;
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_direct_write(skin,0);
    if(ret<=0)
@@ -9126,14 +9148,14 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  if(skin->do_burn || skin->tell_media_space) {
    if(skin->n_drives<=0)
      {*exit_value= 10; goto no_drive;}
-   if(Cdrskin_abort_leveL)
+   if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_burn(skin,0);
    if(ret<=0)
      {*exit_value= 10; goto ex;}
  }
 ex:;
- if(Cdrskin_abort_leveL)
+ if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
  return((*exit_value)==0);
 no_drive:;
@@ -9222,11 +9244,11 @@ int main(int argc, char **argv)
 #endif
  }
 
- if(!Cdrskin_abort_leveL)
+ if(!Cdrskin__is_aborting(0))
    Cdrskin_run(skin,&exit_value,0);
 
 ex:;
- if(Cdrskin_abort_leveL)
+ if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
 
  if(preskin!=NULL)
