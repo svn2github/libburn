@@ -26,7 +26,7 @@
   approaches are shown here in application functions:
      libburner_aquire_by_adr()     demonstrates usage as of cdrecord traditions
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
-  With that aquired drive you can blank a CD-RW
+  With that aquired drive you can blank a CD-RW or DVD-RW
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
   or an unused BD to default size with spare blocks
@@ -36,9 +36,15 @@
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
      burn_finish()
+
+  FreeBSD does not work well with the convenient synchronous signal handler. So
+  the waiting loops for blanking, formatting, and writing use the asynchronous
+  mode of the libburn signal handler. It will not shutdown the library and
+  abort the program, but rather tell the ongoing drive operation to stop as
+  soon as possible. After the loops and at the end of the program there is a
+  call to determine whether an abort happened:
+     burn_is_aborting()
   
-*/
-/*
   Applications must use 64 bit off_t. E.g. by defining
     #define _LARGEFILE_SOURCE
     #define _FILE_OFFSET_BITS 64
@@ -310,9 +316,12 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 			"FATAL : Media is not of erasable type\n");
 		return 0;
 	}
-	printf(
-	      "Beginning to %s-blank media.\n", (blank_fast?"fast":"full"));
+	/* Switch to asynchronous signal handling for the time of waiting */
+	burn_set_signal_handling("libburner : ", NULL, 48);
+
+	printf("Beginning to %s-blank media.\n", (blank_fast?"fast":"full"));
 	burn_disc_erase(drive, blank_fast);
+
 	sleep(1);
 	while (burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
 		if(p.sectors>0 && p.sector>=0) /* display 1 to 99 percent */
@@ -321,6 +330,10 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		printf("Blanking  ( %.1f%% done )\n", percent);
 		sleep(1);
 	}
+	if (burn_is_aborting(0) > 0)
+		return -1;
+	/* Back to synchronous handling */
+	burn_set_signal_handling("libburner : ", NULL, 0);
 	printf("Done\n");
 	return 1;
 }
@@ -373,6 +386,7 @@ int libburner_format(struct burn_drive *drive)
 		fprintf(stderr, "FATAL: Can only format DVD-RW or BD\n");
 		return 0;
 	}
+	burn_set_signal_handling("libburner : ", NULL, 48);
 
 	printf("Beginning to format media.\n");
 	burn_disc_format(drive, size, format_flag);
@@ -385,6 +399,9 @@ int libburner_format(struct burn_drive *drive)
 		printf("Formatting  ( %.1f%% done )\n", percent);
 		sleep(1);
 	}
+	if (burn_is_aborting(0) > 0)
+		return -1;
+	burn_set_signal_handling("libburner : ", NULL, 0);
 	burn_disc_get_profile(drive_list[0].drive, &current_profile,
 				 current_profile_name);
 	if (current_profile == 0x14 || current_profile == 0x13)
@@ -530,6 +547,7 @@ int libburner_payload(struct burn_drive *drive,
 		fprintf(stderr, "Reasons given:\n%s\n", reasons);
 		return 0;
 	}
+	burn_set_signal_handling("libburner : ", NULL, 48);
 
 	printf("Burning starts. With e.g. 4x media expect up to a minute of zero progress.\n");
 	start_time = time(0);
@@ -577,6 +595,8 @@ int libburner_payload(struct burn_drive *drive,
 	}
 	burn_session_free(session);
 	burn_disc_free(target_disc);
+	if (burn_is_aborting(0) > 0)
+		return -1;
 	if (multi && current_profile != 0x1a && current_profile != 0x13 &&
 		current_profile != 0x12 && current_profile != 0x43) 
 			/* not with DVD+RW, formatted DVD-RW, DVD-RAM, BD-RE */
@@ -728,7 +748,7 @@ int main(int argc, char **argv)
 	/* Print messages of severity SORRY or more directly to stderr */
 	burn_msgs_set_severities("NEVER", "SORRY", "libburner : ");
 
-	/* Activate the default signal handler which eventually will try to
+	/* Activate the synchronous signal handler which eventually will try to
 	   properly shutdown drive and library on aborting events. */
 	burn_set_signal_handling("libburner : ", NULL, 0);
 
@@ -762,10 +782,14 @@ release_drive:;
 		burn_drive_release(drive_list[driveno].drive, 0);
 
 finish_libburn:;
+	if (burn_is_aborting(0) > 0) {
+		burn_abort(4400, burn_abort_pacifier, "libburner : ");
+		fprintf(stderr,"\nlibburner run aborted\n");
+		exit(1);
+	} 
 	/* This app does not bother to know about exact scan state. 
 	   Better to accept a memory leak here. We are done anyway. */
 	/* burn_drive_info_free(drive_list); */
-
 	burn_finish();
 	exit(ret);
 }
