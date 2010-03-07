@@ -2809,7 +2809,7 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     But FreeBSD 8.0 sometimes pauses the other threads until the signal handler
     returns.
     The new actions try to avoid this deadlock. It is advised to use action 3
-      burn_set_signal_handling(text, NULL, 48);
+      burn_set_signal_handling(text, NULL, 0x30);
     and call burn_is_aborting(0) frequently. If it replies 1, then call
     burn_abort() and exit(1).
     @param handle Opaque handle eventually pointing to an application
@@ -3006,13 +3006,6 @@ BURN_END_DECLS
 
 */
 #define Libburn_dummy_probe_write_modeS 1
-
-
-/* ts B00225 */
-/* Leave abort handler quickly and catch control thread in
-   burn_drive_get_status().
-*/
-#define Libburn_signal_handler_return_2 1
 
 
 #endif /*LIBBURN_H*/

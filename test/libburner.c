@@ -317,7 +317,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 		return 0;
 	}
 	/* Switch to asynchronous signal handling for the time of waiting */
-	burn_set_signal_handling("libburner : ", NULL, 48);
+	burn_set_signal_handling("libburner : ", NULL, 0x30);
 
 	printf("Beginning to %s-blank media.\n", (blank_fast?"fast":"full"));
 	burn_disc_erase(drive, blank_fast);
@@ -386,7 +386,7 @@ int libburner_format(struct burn_drive *drive)
 		fprintf(stderr, "FATAL: Can only format DVD-RW or BD\n");
 		return 0;
 	}
-	burn_set_signal_handling("libburner : ", NULL, 48);
+	burn_set_signal_handling("libburner : ", NULL, 0x30);
 
 	printf("Beginning to format media.\n");
 	burn_disc_format(drive, size, format_flag);
@@ -547,7 +547,7 @@ int libburner_payload(struct burn_drive *drive,
 		fprintf(stderr, "Reasons given:\n%s\n", reasons);
 		return 0;
 	}
-	burn_set_signal_handling("libburner : ", NULL, 48);
+	burn_set_signal_handling("libburner : ", NULL, 0x30);
 
 	printf("Burning starts. With e.g. 4x media expect up to a minute of zero progress.\n");
 	start_time = time(0);
