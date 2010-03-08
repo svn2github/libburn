@@ -2802,8 +2802,10 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     Depending on mode it may cancel all drive operations, wait for all drives
     to become idle, exit(1). It may also prepare function
     burn_drive_get_status() for waiting and performing exit(1). 
-    If text is not NULL then it is used as prefix for pacifier messages of
-    burn_abort_pacifier().
+    If parameter handle may be NULL or a text that shall be used as prefix for
+    pacifier messages of burn_abort_pacifier(). Other than with an application
+    provided handler, the prefix char array does not have to be kept existing
+    until the eventual signal event.
     Before version 0.7.8 only action 0 was available. I.e. the built-in handler
     waited for the drives to become idle and then performed exit(1) directly.
     But FreeBSD 8.0 sometimes pauses the other threads until the signal handler

@@ -490,7 +490,8 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 
 	}
 	strcpy(abort_message_prefix, "libburn : ");
-	if(handle != NULL)
+	abort_message_prefix[0] = 0;
+	if(handle != NULL && handler == burn_builtin_abort_handler)
 		strncpy(abort_message_prefix, (char *) handle,
 			sizeof(abort_message_prefix)-1);
 	abort_message_prefix[sizeof(abort_message_prefix)-1] = 0;
