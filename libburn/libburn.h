@@ -2808,12 +2808,14 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     until the eventual signal event.
     Before version 0.7.8 only action 0 was available. I.e. the built-in handler
     waited for the drives to become idle and then performed exit(1) directly.
-    But FreeBSD 8.0 sometimes pauses the other threads until the signal handler
-    returns.
+    But during burn_disc_write() onto real CD or DVD, FreeBSD 8.0 pauses the
+    other threads until the signal handler returns.
     The new actions try to avoid this deadlock. It is advised to use action 3
+    at least during burn_disc_write(), burn_disc_rease(), burn_disc_format():
       burn_set_signal_handling(text, NULL, 0x30);
-    and call burn_is_aborting(0) frequently. If it replies 1, then call
-    burn_abort() and exit(1).
+    and to call burn_is_aborting(0) when the drive is BURN_DRIVE_IDLE.
+    If burn_is_aborting(0) returns 1, then call burn_abort() and exit(1).
+
     @param handle Opaque handle eventually pointing to an application
                   provided memory object
     @param handler A function to be called on signals. It will get handle as
