@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.7.6.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.7.8.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.7.6.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.7.8.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.7.6.pl00.tar.gz
-   cd libburn-0.7.6
+   tar xzf libburn-0.7.8.pl00.tar.gz
+   cd libburn-0.7.8
    ./configure --prefix=/usr
    make
 
@@ -495,6 +495,18 @@ Project history as far as known to me:
 - 22 Jan 2010 libburn-0.7.6 has an improved system adapter for FreeBSD,
   fixes bugs about the generic X/Open system adapter, and allows to use
   libcdio >= 0.83 as SCSI transport facility.
+
+- 10 Feb 2010 libisofs-0.6.28 fixes a regression about bootable images which
+  was introduced by version 0.6.22 in August 2009.
+
+- 23 Feb 2010 libisoburn-0.5.0 marks the transition of the xorriso standalone
+  version to an official GNU project. The name changed to "GNU xorriso" and its
+  license is now GPLv3+.
+  The licenses of libburnia libraries and applications are not affected by
+  this change. 
+
+- 10 Mar 2010 libburn-0.7.8 fixes bugs and improves the built-in abort handler
+  on FreeBSD.
 
 ------------------------------------------------------------------------------
 

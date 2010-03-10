@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.7.7"
+#define Cdrskin_prog_versioN "0.7.9"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 7
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -135,13 +135,13 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_7_6
-#define Cdrskin_libburn_versioN "0.7.6"
+#ifdef Cdrskin_libburn_0_7_8
+#define Cdrskin_libburn_versioN "0.7.8"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_7_6 */
+#endif /* Cdrskin_libburn_0_7_8 */
 
-#ifdef Cdrskin_libburn_0_7_7
-#define Cdrskin_libburn_versioN "0.7.7"
+#ifdef Cdrskin_libburn_0_7_9
+#define Cdrskin_libburn_versioN "0.7.9"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
@@ -151,32 +151,31 @@ or
 /* Do not stay in signal handler but only cancel and set Cdrskin_abort_leveL.
    Make use of burn_is_aborting() to detect pending libburn aborts.
 */
-#define Cdrskin_signal_handler_return_2 1
 
 
-#endif /* Cdrskin_libburn_0_7_7 */
+#endif /* Cdrskin_libburn_0_7_9 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_7_6
-#define Cdrskin_libburn_versioN "0.7.6"
+#define Cdrskin_libburn_0_7_8
+#define Cdrskin_libburn_versioN "0.7.8"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_7_6
+#ifdef Cdrskin_libburn_0_7_8
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
-#ifdef Cdrskin_libburn_0_7_7
+#ifdef Cdrskin_libburn_0_7_9
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
 #define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
@@ -4157,11 +4156,7 @@ int Cdrskin__is_aborting(int flag)
 {
  if(Cdrskin_abort_leveL)
    return(-1);
-#ifdef Cdrskin_signal_handler_return_2
-  return(burn_is_aborting(0));
-#else
-  return 0;
-#endif
+ return(burn_is_aborting(0));
 }
 
 
@@ -4192,11 +4187,7 @@ int Cdrskin_abort(struct CdrskiN *skin, int flag)
 int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
 {
 
-#ifdef Cdrskin_libburn_has_burn_aborT
-
- int ret;
-
-#else 
+#ifndef Cdrskin_libburn_has_burn_aborT
 
  int wait_grain= 100000,first_status= 1;
  double start_time,last_time,current_time;
@@ -4251,24 +4242,12 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(fprintf(stderr,"cdrskin_debug: ABORT : Calling burn_abort()\n"));
 
-#ifdef Cdrskin_signal_handler_return_2
-
  Cdrskin_abort_leveL= -1;
  if (!(flag & 1))
  burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
  fprintf(stderr,
         "cdrskin: ABORT : Urged drive worker threads to do emergency halt.\n");
  return -2;
-
-#endif /* Cdrskin_signal_handler_return_2 */
-
- ret= burn_abort(skin->abort_max_wait, burn_abort_pacifier, "cdrskin: ");
- if(ret<=0) {
-   fprintf(stderr,
-         "\ncdrskin: ABORT : Cannot cancel burn session and release drive.\n");
-   return(0);
- }
- fprintf(stderr,"\n");
 
 #else /* Cdrskin_libburn_has_burn_aborT */
 

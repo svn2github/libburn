@@ -62,7 +62,7 @@ via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.7.6</DT>
+<DT>libburn-0.7.8</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -194,7 +194,7 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.7.6.pl00.tar.gz">cdrskin-0.7.6.pl00.tar.gz</A>
+<DD><A HREF="cdrskin-0.7.8.pl00.tar.gz">cdrskin-0.7.8.pl00.tar.gz</A>
 (820 KB).
 </DD>
 <DD>
@@ -244,22 +244,26 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.7.4.pl00:
+Enhancements towards previous stable version cdrskin-0.7.6.pl00:
 <UL>
 <LI>
-Made FreeBSD system adapter safe from mutal burn spoiling and drive deadlock
+Abort handling is more suitable for FreeBSD now.
 </LI>
-<LI>Experimental system adapter via GNU libcdio on X/Open systems</LI>
-<LI>Experimentally using FreeBSD system adapter for Debian kfreebsd</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.7.4.pl00:
+Bug fixes towards cdrskin-0.7.6.pl00:
 <UL>
-<LI>none</LI>
+<LI>
+On FreeBSD: Piped input was falsely attributed a small fixed size
+</LI>
+<LI>
+cdrskin fs=0 led to SIGSEGV. Regression introduced by version 0.7.4.
+</LI>
 <!--
+<LI>none</LI>
 -->
 </UL>
 
@@ -267,8 +271,8 @@ Bug fixes towards cdrskin-0.7.4.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.7.7 :</H3></DT>
-<DD>Enhancements towards current stable version 0.7.6.pl00:
+<DT><H3>Development snapshot, version 0.7.9 :</H3></DT>
+<DD>Enhancements towards current stable version 0.7.8.pl00:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -286,10 +290,10 @@ Bug fixes towards cdrskin-0.7.4.pl00:
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.7.7</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.7 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.7 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.7)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.7.9</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.7.9 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.7.9 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.7.9)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -309,8 +313,8 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.7.7.tar.gz">cdrskin-0.7.7.tar.gz</A>
-(820 KB).
+<A HREF="cdrskin-0.7.9.tar.gz">cdrskin-0.7.9.tar.gz</A>
+(840 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008
