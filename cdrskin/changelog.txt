@@ -7552,7 +7552,6 @@ svn copy -m Branching for libburn release 0.7.4
 http://svn.libburnia-project.org/libburn/trunk
 http://svn.libburnia-project.org/libburn/branches/ZeroSevenFour
 
-
 2009.12.06.160001  [2938]
 Makefile.am
 configure.ac
@@ -7610,17 +7609,642 @@ Made number transition to 0.7.5
 + cdrskin/add_ts_changes_to_libburn_0_7_5
 Updated cdrskin tarball generator
 
-  []
-
+07 Dec 2009  [2943]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.7.5 - 
------------------------------------- cycle  - cdrskin-0.7.5 - 
+07 Dec 2009  [2946]
+svn move -m libburn release 0.7.4 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFour
+http://svn.libburnia-project.org/libburn/tags/ZeroSevenFour
+
+------------------------------------ cycle  - cdrskin-0.7.5 - 2009.12.07.083850
+
+
+16 Dec 2009  [2955] 
+doc/cookbook.txt
+Mentioned in cookbook the change about TAO close track
+
+2009.12.19.140015  [2957]
+libburn/spc.c
+Corrected CDB length of command 55h MODE SELECT from 12 to 10
+
+2009.12.19.142456  [2958]
+libburn/spc.h
+libburn/sg-linux.c
+Moved sg_log_cmd() to spc.c scsi_log_cmd()
+
+2009.12.19.142456  [2959]
+configure.ac
+Makefile.am
+libburn/os.h
+libburn/sg.c
+libburn/sg-freebsd-port.c
++ libburn/os-libcdio.h
++ libburn/sg-libcdio.c
+Experimental SCSI transport adapter via GNU libcdio
+
+2009.12.24.170601  [2960]
+configure.ac
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+libburn/sg-libcdio.c
+Making use of libcdio function mmc_get_cmd_scsi_sense()
+
+25 Dec 2009  [2961]
+cdrskin/compile_cdrskin.sh
+Option -use_libcdio for cdrskin development compile script
+
+2009.12.25.101433  [2962]
+libburn/libdax_msgs.h
+Commited file forgotten with rev 2960
+
+2009.12.25.143326  [2963]
+libburn/sg-libcdio.c
+Resolving symbolic links in libcdio drive list
+
+2009.12.25.144122  [2964]
+configure.ac
+Added PKG_CHECK_MODULES for libcdio-0.82 (must become 0.83 when released)
+
+2009.12.25.205704  [2965]
+configure.ac
+libburn/sg-libcdio.c
+Adapted to libcdio-0.83 and its runtime version telling
+
+2009.12.25.223915  [2966]
+libburn/init.c
+libburn/sg.h
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+New internal sg-API function sg_initialize()
+
+2009.12.26.080301  [2967]
+libburn/init.c
+libburn/sg-dummy.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+New API function burn_scsi_transport_id()
+
+26 Dec 2009  [2968]
+Makefile.am
+Added os-dummy.h and sg-dummy.h to libburn tarball
+
+26 Dec 2009  [2969]
+svn copy -m Branching for libburn bugfix release 0.7.4.pl01
+http://svn.libburnia-project.org/libburn/tags/ZeroSevenTwo
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwoPl01
+
+26 Dec 2009  [2970]
+svn mv -m Branching for libburn bugfix release 0.7.4.pl01
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenTwoPl01
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFourPl01
+
+26 Dec 2009  [2971]
+svn rm -m Branching for libburn bugfix release 0.7.4.pl01
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFourPl01
+
+26 Dec 2009  [2972]
+svn copy -m Branching for libburn bugfix release 0.7.4.pl01
+http://svn.libburnia-project.org/libburn/tags/ZeroSevenFour
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFourPl01
+
+2009.12.26.110001 [2973]
+README
+Makefile.am
+cdrskin/cdrskin_timestamp.h
+Bug fix: Added missing system adapter for generic X/Open to libburn release tarball
+
+26 Dec 2009  [2974]
+svn move -m libburn bugfix release 0.7.4.pl01 is ready 
+http://svn.libburnia-project.org/libburn/branches/ZeroSevenFourPl01 
+http://svn.libburnia-project.org/libburn/tags/ZeroSevenFourPl01
+
+2009.12.26.193707  [2975]
+cdrskin/cdrskin.c
+Reporting burn_scsi_transport_id() in cdrskin as debug message
+
+2009.12.26.222656  [2976]
+libburn/libburn.h
+doc/comments
+Reacted on some doxygen warnings of Debian hurd build
+
+2009.12.27.092057  [2979]
+libburn/os-libcdio.h
+libburn/sg-libcdio.c
+Showing libburn users drive name link targets, using in libcdio its own names
+
+2009.12.27.102342  [2981]
+libburn/sg-libcdio.c
+Shorter sg_initialize message with sg-libcdio
+
+2009.12.27.144620  [2982]
+libburn/init.c
+libburn/drive.c
+libburn/sg.h
+libburn/os-libcdio.h
+libburn/sg-dummy.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+Extended sg-API by sg_shutdown(), sg_dispose_drive(), sg_id_string()
+
+2009.12.27.144733  [2983]
+cdrskin/cdrskin.c
+Reporting system adapter id with cdrskin -version
+
+2009.12.29.115717  [2984]
+configure.ac
+Incremented middle .so number
+
+2009.12.29.115854  [2985]
+libburn/spc.c
+Corrected a mode page size computation error which for now had no bad effect
+
+2009.12.29.132537  [2986]
+acinclude.m4
+libburn/os.h
+libburn/sg.c
+Experimentally enabled FreeBSD system adapter for Debian kfreebsd
+
+------------------------------------ cycle  - cdrskin-0.7.5 - 2009.12.29.134637
+* Experimental SCSI transport adapter via GNU libcdio
+* Experimentally using FreeBSD system adapter for Debian kfreebsd
+* Bug fix: System adapter for generic X/Open was missing in libburn release tarball
+
+
+2009.12.29.224506  [2987]
+acinclude.m4
+Adaptions for Debian kfreebsd requested by Petr Salinger
+
+2009.12.30.154140  [2988]
+libburn/drive.c
+libburn/sg-libcdio.c
+Making use of new libcdio capability to obtain SCSI address tuple on Linux
+
+2009.12.30.201025  [2990]
+libburn/sg-libcdio.c
+Silenced libcdio warnings
+
+2010.01.01.124042  [2994]
+libburn/drive.c
+Bug fix: with non-Linux adapters there were 0 readable bytes on block devices 
+
+2010.01.01.124415  [2995]
+libburn/sg-libcdio.c
+Enabled block device size recognition with sg-libcdio on Linux
+
+------------------------------------ cycle  - cdrskin-0.7.5 - 2010.01.01.143104
+* Bug fix: with non-Linux adapters there were 0 readable bytes on block devices
+
+
+2010.01.04.134949  [3001]
+libburn/write.c
+libburn/libdax_msgs.h
+Avoiding stream recording on BD if not 64 kB buffer
+
+2010.01.04.135427  [3002]
+libburn/os-libcdio.h
+Enlarged buffer size of libcdio adapter on Linux to 64k
+
+2010.01.09.142027  [3004]
+libburn/sg-libcdio.c
+Forgot to forward sense reply to higher levels
+
+2010.01.09.142642  [3005]
+libburn/spc.c
+Better error message with unknown SCSI error codes
+
+2010.01.09.143428  [3006]
+libburn/spc.c
+libburn/sbc.c
+Revoked asynchronous eject, as we cannot distinguish out from unready
+
+2010.01.12.165214  [3009]
+libburn/sg-dummy.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+Corrected free capacity measurement of stdio: drives in regular files
+
+12 Jan 2010  [3010]
+doc/cookbook.txt
+Fixed typos in MMC cookbook
+
+2010.01.13.074028  [3011]
+libburn/drive.c
+Experimentally regard FreeBSD /dev/da[0-9] and /dev/cd[0-9] as block device
+
+2010.01.13.074640  [3012]
+libburn/sg-freebsd.c
+Adaptions after encounter with FreeBSD 8.0
+
+2010.01.13.171546  [3013]
+libburn/libburn.h
+Carified that apps must use 64 bit off_t or the lib must be tweaked.
+
+14 Jan 2010  [3014]
+14 Jan 2010  [3015]
+test/libburner.c
+Carified in libburner.c that apps must use 64 bit off_t.
+
+2010.01.14.160633  [3016]
+libburn/libburn.h
+libburn/drive.c
+Giving up drive probing by mode page sending
+
+2010.01.14.160748  [3017]
+libburn/sg-libcdio.c
+Provisory rejection of FreeBSD ATAPI drives in sg-libcdio
+
+2010.01.15.182615  [3018]
+libburn/os-freebsd.h
+libburn/sg-freebsd.c
+Implemented adivisory FreeBSD drive locking via flock(2)
+
+2010.01.16.125258  [3019]
+libburn/drive.c
+libburn/sg.h
+libburn/sg-dummy.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+New OS adapter burn_os_is_2k_seekrw() replaces S_ISBLK() with pseudo-drives
+
+2010.01.18.103410  [3023]
+libburn/sg-linux.c
+Changed a comment in sg-linux.c
+
+------------------------------------ cycle  - cdrskin-0.7.5 - 2010.01.18.104011
+* Made FreeBSD system adapter safe from mutal burn spoiling and drive deadlock
+
+
+21 Jan 2010  [3028]
+cdrskin/cdrskin.1
+Changed man page example from -toc to -minfo
+
+2010.01.21.104741  [3029]
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+Learned how to inquire size of disk-like FreeBSD devices
+
+22 Jan 2010  [3030]
+svn copy -m "Branching for libburn release 0.7.6" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenSix
+
+2010.01.22.130001  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.6
+
+22 Jan 2010  [3032]
+COPYRIGHT
+cdrskin/cdrskin.c
+doc/cookbook.txt
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+test/libburner.c
+test/telltoc.c
+Lifted ban to derive GPLv3, extended copyright range to 2010
+
+22 Jan 2009  [3033]
+- cdrskin/add_ts_changes_to_libburn_0_7_4
+- cdrskin/add_ts_changes_to_libburn_0_7_5
++ cdrskin/add_ts_changes_to_libburn_0_7_6
++ cdrskin/add_ts_changes_to_libburn_0_7_7
+Updated cdrskin tarball generator
+
+22 Jan 2009  [3034]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.7.6.pl00 - 2010.01.22.130001
+* Bug fix: System adapter for generic X/Open was missing in libburn release tarball
+* Bug fix: with non-Linux adapters there were 0 readable bytes on block devices
+* Made FreeBSD system adapter safe from mutal burn spoiling and drive deadlock
+* Enabled FreeBSD system adapter for Debian kfreebsd
+* Experimental SCSI transport adapter via GNU libcdio 0.83git
+
+
+2010.01.23.103338  [3035]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.7
+
+2010.01.23.104423  [3036]
+COPYRIGHT
+doc/cookbook.txt
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+test/libburner.c
+test/telltoc.c
+Lifted ban to derive GPLv3, extended copyright range to 2010
+
+23 Jan 2010  [3037]
+- cdrskin/add_ts_changes_to_libburn_0_7_4
+- cdrskin/add_ts_changes_to_libburn_0_7_5
++ cdrskin/add_ts_changes_to_libburn_0_7_6
++ cdrskin/add_ts_changes_to_libburn_0_7_7
+Updated cdrskin tarball generator
+
+------------------------------------ cycle  - cdrskin-0.7.7 - 2010.01.23.104423
+
+
+23 Jan 2010  [3038]
+svn move -m 'libburn release 0.7.6 is ready'
+     http://svn.libburnia-project.org/libburn/branches/ZeroSevenSix
+     http://svn.libburnia-project.org/libburn/tags/ZeroSevenSix
+
+2010.02.04.083315  [3054]
+acinclude.m4
+configure.ac
+Forcing use of /usr/local on FreeBSD by LDFLAGS and CPPFLAGS
+
+2010.02.12.173236  [3063]
+libburn/os-linux.h
+libburn/sg-linux.c
+Changed system adapter id and some remarks from "Linux" to "GNU/Linux"
+
+2010.02.12.212818  [3064]
+libburn/libburn.h
+libburn/sg.c
+libburn/mmc.c
+libburn/drive.c
+libburn/init.c
+libburn/cleanup.c
+libburn/os-linux.h
+libburn/sg-linux.c
+libburn/write.c
+libburn/read.c
+libburn/sg-libcdio.c
+libburn/os-libcdio.h
+libburn/os.h
+libburn/toc.c
+Changed docs and comments to "GNU/Linux" where appropriate
+
+2010.02.14.084452  [3066]
+libburn/sbc.c 
+libburn/file.h 
+libburn/os-libcdio.h 
+libburn/os-dummy.h 
+libburn/cleanup.h 
+libburn/sector.h 
+libburn/libiso_msgs.c 
+libburn/async.c 
+libburn/libdax_audioxtr.h 
+libburn/ecma130ab.c 
+libburn/back_hacks.h 
+libburn/libdax_msgs.h 
+libburn/drive.h 
+libburn/read.c 
+libburn/source.c 
+libburn/util.h 
+libburn/cleanup.c 
+libburn/sg.c 
+libburn/init.c 
+libburn/write.c 
+libburn/transport.h 
+libburn/write.h 
+libburn/libburn.h 
+libburn/options.c 
+libburn/mmc.h 
+libburn/sg.h 
+libburn/sbc.h 
+libburn/sg-dummy.c 
+libburn/ecma130ab.h 
+libburn/null.c 
+libburn/structure.c 
+libburn/mmc.c 
+libburn/spc.h 
+libburn/drive.c 
+libburn/sg-linux.c 
+libburn/options.h 
+libburn/os-linux.h 
+libburn/sg-libcdio.c 
+libburn/os-freebsd.h 
+libburn/sg-freebsd-port.c 
+libburn/sector.c 
+libburn/debug.c 
+libburn/util.c 
+libburn/toc.h 
+libburn/file.c 
+libburn/libdax_audioxtr.c 
+libburn/libdax_msgs.c 
+libburn/toc.c 
+libburn/sg-freebsd.c 
+libburn/spc.c 
+libburn/structure.h 
+Added or adjusted copyright and license statements in single files
+
+2010.02.14.171833  [3069]
+libburn/write.c
+libburn/read.c
+libburn/sector.c
+libburn/crc.h
+Created opportunity to omit source module libburn/crc.c
+
+2010.02.15.125922  [3071]
+libburn/crc.h
+Changed a comment in libburn/crc.h
+
+2010.02.16.194147  [3073]
+libburn/file.c
+Bug fix on FreeBSD: Piped input was falsely attributed a small fixed size
+
+2010.02.17.141409  [3075]
+libburn/async.c
+libburn/drive.c
+libburn/write.c
+Avoided random percentage display at start of blanking
+
+2010.02.22.134904  [3080]
+libburn/init.c
+Made burn_set_signal_handling() more suitable for cdrskin
+
+2010.02.25.070635  [3090]
+libburn/write.c
+Corrected optional speed curb for stdio: drives. Was damaged by revision 2903.
+
+2010.02.28.104003  [3091]
+cdrskin/cdrskin.c
+Added forgotten initialization of a variable
+
+2010.02.28.110749  [3092]
+cdrskin/cdrskin.c
+Bug fix: cdrskin fs=0 lead to SIGSEGV. Regression introduced by revision 2936.
+
+28 Feb 2010  [3093]
+cdrskin/cdrskin.1
+Corrected spelling errors in cdrskin man page
+
+2010.03.03.140639  [3096]
+libburn/drive.c
+Enabled patience 0 within burn_abort()
+
+2010.03.03.141407  [3097]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.c
+Adapted cdrskin abort handler to FreeBSD peculiarities
+
+3 Mar 2010  [3098] [3099]
+cdrskin/compile_cdrskin.sh
+Enabled static compile script compile_cdrskin.sh for FreeBSD
+
+2010.03.04.121441  [3100]
+libburn/sg-linux.c
+Showing more patience with temporarily busy drives on Linux
+
+2010.03.04.180102  [3101]
+cdrskin/cdrskin.c
+Changed burn_abort(0) to burn_abort(-1)
+
+2010.03.05.090948  [3102]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.h
+libburn/drive.c
+libburn/init.h
+libburn/init.c
+libburn/async.c
+libburn/write.c
+libburn/sector.c
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+Introduced alternative signal handling actions
+
+2010.03.05.091432  [3103]
+cdrskin/cdrskin.c
+Enabled optional use of new signal action 2 with libburn built-in handler
+
+2010.03.05.111712  [3104]
+libburn/init.c
+libburn/drive.h
+libburn/drive.c
+Removed some debugging printing
+
+------------------------------------ cycle  - cdrskin-0.7.7 - 2010.03.05.111954
+Bug fix on FreeBSD: Piped input was falsely attributed a small fixed size
+Bug fix: cdrskin fs=0 led to SIGSEGV. Regression introduced by revision 2936.
+
+
+2010.03.05.190110  [3105]
+libburn/async.c
+Protected blanker and formatter thread from signals
+
+06 Mar 2010  [3106]
+test/libburner.c
+Adapted libburner to new advise about signal handling
+
+07 Mar 2010  [3107]
+libburn/libburn.h
+test/libburner.c
+Changed examples burn_set_signal_handling(...,48) to (...,0x30)
+
+2010.03.08.092608  [3108]
+libburn/libburn.h
+libburn/init.c
+Prevented potential memory fault with burn_set_signal_handling()
+
+2010.03.09.140341  [3111]
+libburn/libburn.h
+Clarifications in API description of burn_set_signal_handling()
+
+10 Mar 2010  [3112]
+svn copy -m "Branching for libburn release 0.7.8" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenEight
+
+2010.03.10.120001  [3113]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.8
+
+10 Mar 2010  [3114]
+- cdrskin/add_ts_changes_to_libburn_0_7_6
+- cdrskin/add_ts_changes_to_libburn_0_7_7
++ cdrskin/add_ts_changes_to_libburn_0_7_8
++ cdrskin/add_ts_changes_to_libburn_0_7_9
+Updated cdrskin tarball generator
+
+10 Mar 2010  [3115]
+cdrskin/cdrskin.c
+Removed unused variable
+
+10 Mar 2010  [3116]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.7.8.pl00 - 2010.03.10.120001
+Bug fix on FreeBSD: Piped input was falsely attributed a small fixed size
+Bug fix: cdrskin fs=0 led to SIGSEGV. Regression introduced by version 0.7.4.
+
+
+2010.03.10.134802  [3117]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.7.9
+
+10 Mar 2010  [3118]
+- cdrskin/add_ts_changes_to_libburn_0_7_6
+- cdrskin/add_ts_changes_to_libburn_0_7_7
++ cdrskin/add_ts_changes_to_libburn_0_7_8
++ cdrskin/add_ts_changes_to_libburn_0_7_9
+Updated cdrskin tarball generator
+
+10 Mar 2010  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.7.9 - 2010.03.10.134802
+
+------------------------------------ cycle  - cdrskin-0.7.9 - 
+------------------------------------ cycle  - cdrskin-0.7.9 - 
+
 
 ===============================================================================
                                     TODO
 ===============================================================================
+
+
+- change all malloc() to calloc()
+
+- find out from where libburn/crc.c stems. What algorithm is crc_32() ?
 
 
 --------------------------------- bugs -------------------------------------
@@ -7648,8 +8272,7 @@ READ TRACK INFORMATION[#5]:
 
 ------------------------------ end of bugs ---------------------------------
 
-
-- Make Libburn_stdio_flush_limiT adjustable
+- xorriso -as tar  (Rocky wants me to begin with -x)
 
 Support for BD-R SRM+POW
 
