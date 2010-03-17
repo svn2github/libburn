@@ -5276,8 +5276,8 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
        /* If last two blocks not readable then assume TAO and subtract 2
           from lra and size.
        */;
-       ret= burn_read_data(drive, (off_t) lra * (off_t) 2048, buf, 2 * 2048,
-                           &buf_count, 2 | 4);
+       ret= burn_read_data(drive, (off_t) (lra - 1) * (off_t) 2048, buf,
+                           2 * 2048, &buf_count, 2 | 4);
        if(ret <= 0) {
          lra-= 2;
          size-= 2;
