@@ -776,6 +776,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		ccb->csio.ccb_h.flags |= CAM_DIR_NONE;
 		break;
 	}
+	/* B00325 : Advise by Alexander Motin */
+	ccb->ccb_h.flags|= CAM_PASS_ERR_RECOVER;
 
 	ccb->csio.cdb_len = c->oplen;
 	memcpy(&ccb->csio.cdb_io.cdb_bytes, &c->opcode, c->oplen);
@@ -827,8 +829,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		sense_len = ccb->csio.sense_len;
 		if (sense_len > sizeof(c->sense))
 			sense_len = sizeof(c->sense);
-		memcpy(c->sense, &ccb->csio.sense_data, ccb->csio.sense_len);
+		memcpy(c->sense, &ccb->csio.sense_data, sense_len);
+
+
+		/* <<< was:
 		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
+		*/
+		/* ts B00324 : Advise by Alexander Motin */
+		if (ccb->ccb_h.status & CAM_AUTOSNS_VALID) {
 			if (!c->retry) {
 				c->error = 1;
 				{ret = 1; goto ex;}

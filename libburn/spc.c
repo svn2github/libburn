@@ -961,13 +961,13 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	*key= *asc= *ascq= -1;
 
 	if (senselen<=0 || senselen>2)
-		*key = sense[2];
+		*key = sense[2] & 0x0f;
 	if (senselen<=0 || senselen>12)
 		*asc = sense[12];
 	if (senselen<=0 || senselen>13)
 		*ascq = sense[13];
 
-	sprintf(msg, "[%X %2.2X %2.2X] ", (*key) & 0xf, *asc, *ascq);
+	sprintf(msg, "[%X %2.2X %2.2X] ", *key, *asc, *ascq);
 	msg= msg + strlen(msg);
 
 	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
