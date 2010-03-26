@@ -729,7 +729,7 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len, ret;
+	int done = 0, err, sense_len = 0, ret;
 	union ccb *ccb;
 	char buf[161];
 	static FILE *fp = NULL;
@@ -776,8 +776,16 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		ccb->csio.ccb_h.flags |= CAM_DIR_NONE;
 		break;
 	}
-	/* B00325 : Advise by Alexander Motin */
+
+#ifdef Libburn_for_freebsd_ahcI
+	/* ts B00325 : Advise by Alexander Motin */
+        /* Runs well on 8-STABLE (23 Mar 2003)
+	   But on 8-RELEASE cam_send_ccb() returns non-zero with errno 6
+           on eject. Long lasting TEST UNIT READY cycles break with
+           errno 16.
+        */
 	ccb->ccb_h.flags|= CAM_PASS_ERR_RECOVER;
+#endif /* Libburn_for_freebsd_ahcI */
 
 	ccb->csio.cdb_len = c->oplen;
 	memcpy(&ccb->csio.cdb_io.cdb_bytes, &c->opcode, c->oplen);
@@ -809,6 +817,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	}
 
 	do {
+		memset(c->sense, 0, sizeof(c->sense));
 		err = cam_send_ccb(d->cam, ccb);
 		if (err == -1) {
 			libdax_msgs_submit(libdax_messenger,
@@ -824,19 +833,23 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 		/* XXX */
 
-		/* ts B00110 */
-		/* Better curb sense_len */
-		sense_len = ccb->csio.sense_len;
-		if (sense_len > sizeof(c->sense))
-			sense_len = sizeof(c->sense);
-		memcpy(c->sense, &ccb->csio.sense_data, sense_len);
-
-
-		/* <<< was:
-		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
-		*/
-		/* ts B00324 : Advise by Alexander Motin */
+		/* ts B00325 : Advise by Alexander Motin */
 		if (ccb->ccb_h.status & CAM_AUTOSNS_VALID) {
+			/* ts B00110 */
+			/* Better curb sense_len */
+			sense_len = ccb->csio.sense_len;
+			if (sense_len > sizeof(c->sense))
+				sense_len = sizeof(c->sense);
+			memcpy(c->sense, &ccb->csio.sense_data, sense_len);
+		}
+
+		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
+			if (sense_len < 14) {
+				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
+				c->sense[2] = 0x02;
+				c->sense[12] = 0x04;
+				c->sense[13] = 0x00;
+			}
 			if (!c->retry) {
 				c->error = 1;
 				{ret = 1; goto ex;}
