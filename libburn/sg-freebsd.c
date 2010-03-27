@@ -5,7 +5,6 @@
    Provided under GPL version 2 or later.
 */
 
-
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -28,6 +27,18 @@
 
 /* ts B00121 */
 #include <sys/disk.h> /* DIOCGMEDIASIZE */
+
+
+/* ts B00326 : For use of CAM_PASS_ERR_RECOVER with ahci */
+#define Libburn_for_freebsd_ahcI yes
+
+/* ts B00327 : for debugging of cam_send_cdb() failures
+ # define Libburn_ahci_verbouS yes
+*/
+
+/* ts B00327 : Apply CAM_PASS_ERR_RECOVER to drives even if not ahci
+ # define libburn_ahci_style_for_alL yes
+*/
 
 
 #include "transport.h"
@@ -435,6 +446,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 	out.cam = NULL;
 	out.lock_fd = -1;
+	out.is_ahci = 0;
 
 	out.start_lba= -2000000000;
 	out.end_lba= -2000000000;
@@ -527,6 +539,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	/* Adapter specific handles and data */
 	out.cam = NULL;
 	out.lock_fd = -1;
+	out.is_ahci = 0;
 
 	/* Adapter specific functions */
 	out.grab = sg_grab;
@@ -678,6 +691,7 @@ static int sg_lock(struct burn_drive *d, int flag)
 int sg_grab(struct burn_drive *d)
 {
 	struct cam_device *cam;
+	char path_string[80];
 
 	if (mmc_function_spy(d, "sg_grab") <= 0)
 		return 0;
@@ -700,6 +714,18 @@ int sg_grab(struct burn_drive *d)
 		if (sg_lock(d, 0) <= 0)
 			return 0;
 	fcntl(cam->fd, F_SETOWN, getpid());
+
+	cam_path_string(d->cam, path_string, sizeof(path_string));
+
+#ifdef Libburn_ahci_verbouS
+	fprintf(stderr, "libburn_EXPERIMENTAL: CAM path = %s\n", path_string);
+#endif
+
+	if (strstr(path_string, ":ahcich") != NULL)
+		d->is_ahci = 1;
+	else
+		d->is_ahci = -1;
+
 	d->released = 0;
 	return 1;
 }
@@ -729,7 +755,8 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len = 0, ret;
+	int done = 0, err, sense_len = 0, ret, ignore_error;
+	int cam_pass_err_recover = 0;
 	union ccb *ccb;
 	char buf[161];
 	static FILE *fp = NULL;
@@ -784,7 +811,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
            on eject. Long lasting TEST UNIT READY cycles break with
            errno 16.
         */
-	ccb->ccb_h.flags|= CAM_PASS_ERR_RECOVER;
+#ifdef Libburn_ahci_style_for_alL
+	{
+#else
+	if (d->is_ahci > 0) {
+#endif
+		ccb->ccb_h.flags |= CAM_PASS_ERR_RECOVER;
+		cam_pass_err_recover = 1;
+	}
 #endif /* Libburn_for_freebsd_ahcI */
 
 	ccb->csio.cdb_len = c->oplen;
@@ -819,7 +853,71 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	do {
 		memset(c->sense, 0, sizeof(c->sense));
 		err = cam_send_ccb(d->cam, ccb);
-		if (err == -1) {
+
+		ignore_error = sense_len = 0;
+		/* ts B00325 : CAM_AUTOSNS_VALID advised by Alexander Motin */
+		if (ccb->ccb_h.status & CAM_AUTOSNS_VALID) {
+			/* ts B00110 */
+			/* Better curb sense_len */
+			sense_len = ccb->csio.sense_len;
+			if (sense_len > sizeof(c->sense))
+				sense_len = sizeof(c->sense);
+			memcpy(c->sense, &ccb->csio.sense_data, sense_len);
+			if (sense_len >= 14 && cam_pass_err_recover &&
+			    (c->sense[2] & 0x0f))
+				ignore_error = 1;
+		}
+
+		if (err == -1 && cam_pass_err_recover && ! ignore_error) {
+
+#ifdef Libburn_ahci_verbouS
+			fprintf(stderr, "libburn_EXPERIMENTAL: errno = %d . cam_errbuf = '%s'\n", errno, cam_errbuf);
+#endif
+
+			if (errno == ENXIO) {
+				/* Operations on empty or ejected tray */
+				/* Inquiries while tray is being loaded */
+				/* MEDIUM NOT PRESENT */
+
+#ifdef Libburn_ahci_verbouS
+				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [2,3A,00] MEDIUM NOT PRESENT\n");
+#endif
+
+				c->sense[2] = 0x02;
+				c->sense[12] = 0x3A;
+				c->sense[13] = 0x00;
+				sense_len = 14;
+				ignore_error = 1;
+			} else if (c->opcode[0] == 0 && errno == EBUSY) {
+				/* Timeout of TEST UNIT READY loop */
+				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
+
+#ifdef Libburn_ahci_verbouS
+				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [2,04,00] LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE\n");
+#endif
+
+				c->sense[2] = 0x02;
+				c->sense[12] = 0x04;
+				c->sense[13] = 0x00;
+				sense_len = 14;
+				ignore_error = 1;
+			} else if (errno == EINVAL) {
+				/* Inappropriate MODE SENSE */
+				/* INVALID FIELD IN CDB */
+
+#ifdef Libburn_ahci_verbouS
+				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [5,24,00] INVALID FIELD IN CDB\n");
+#endif
+
+				c->sense[2] = 0x05;
+				c->sense[12] = 0x24;
+				c->sense[13] = 0x00;
+				sense_len = 14;
+				ignore_error = 1;
+			}
+		}
+
+		if (err == -1 && !ignore_error) {
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x0002010c,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
@@ -833,19 +931,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 		/* XXX */
 
-		/* ts B00325 : Advise by Alexander Motin */
-		if (ccb->ccb_h.status & CAM_AUTOSNS_VALID) {
-			/* ts B00110 */
-			/* Better curb sense_len */
-			sense_len = ccb->csio.sense_len;
-			if (sense_len > sizeof(c->sense))
-				sense_len = sizeof(c->sense);
-			memcpy(c->sense, &ccb->csio.sense_data, sense_len);
-		}
-
 		if ((ccb->ccb_h.status & CAM_STATUS_MASK) != CAM_REQ_CMP) {
 			if (sense_len < 14) {
 				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
+
+#ifdef Libburn_ahci_verbouS
+				fprintf(stderr, "libburn_EXPERIMENTAL: CAM_STATUS= %d .Emulating [2,04,00] LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE\n", (ccb->ccb_h.status & CAM_STATUS_MASK));
+#endif
+
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				c->sense[13] = 0x00;
