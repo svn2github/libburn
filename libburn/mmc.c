@@ -425,6 +425,10 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	if (mmc_function_spy(d, "mmc_get_nwa") <= 0)
 		return -1;
 
+	/* ts B00327 : Avoid to inquire unsuitable media states */
+	if (d->status != BURN_DISC_BLANK && d->status != BURN_DISC_APPENDABLE)
+		return 0;
+
 	ret = mmc_read_track_info(d, trackno, &buf, alloc_len);
 	if (ret <= 0)
 		return ret;
