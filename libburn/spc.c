@@ -113,7 +113,8 @@ int spc_test_unit_ready(struct burn_drive *d)
 int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
 {
-	int i, ret = 1, key = 0, asc = 0, ascq = 0;
+	int i, ret = 1, key = 0, asc = 0, ascq = 0, clueless_start = 0;
+	static int clueless_timeout = 5 * 10;
 	char msg[320];
 	unsigned char sense[14];
 	enum response resp;
@@ -143,6 +144,7 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				/* media change notice = try again */
 				goto slumber;
 
+handle_error:;
 			/* ts A90213 */
 			sprintf(msg,
 				"Asynchronous SCSI error on %s: ", cmd_text);
@@ -157,7 +159,23 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				msg, 0, 0);
 			d->cancel = 1;
 	break;
-		}
+		} else if (ascq == 0x00) { /* CAUSE NOT REPORTABLE */
+			/* Might be a clueless system adapter */
+			if (clueless_start == 0)
+				clueless_start = i;
+			if (i - clueless_start > clueless_timeout) {
+				libdax_msgs_submit(libdax_messenger,
+				  d->global_index,
+				  0x00000002,
+				  LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				  "Ended clueless NOT READY cycle",
+				  0, 0);
+				ret = 1; /* medium not present = ok */
+	break;
+			}
+		} else if (ascq == 0x02 || ascq == 0x03) 
+			goto handle_error;
+
 slumber:;
 		usleep(100000);
 	}
@@ -982,8 +1000,11 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		sprintf(msg, "Not ready");
 		return RETRY;
 	case 0x04:
-		sprintf(msg,
+		if (*ascq == 1)
+			sprintf(msg,
 			"Logical unit is in the process of becoming ready");
+		else
+			sprintf(msg, "Logical unit is not ready");
 		return RETRY;
 	case 0x08:
 		if (*key != 4)

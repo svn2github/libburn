@@ -553,7 +553,7 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int sense_valid = 0, i, usleep_time, timeout_ms;
+	int sense_valid = 0, i, usleep_time, timeout_ms, no_retry = 0;
 	time_t start_time;
         driver_return_code_t i_status;
 	unsigned int dxfer_len;
@@ -568,15 +568,15 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		return 0;
 	}
 	p_cdio = (CdIo_t *) d->p_cdio;
-        if (burn_sg_log_scsi & 1) {
-                if (fp == NULL) {
-                        fp= fopen("/tmp/libburn_sg_command_log", "a");
-                        fprintf(fp,
-                            "\n-----------------------------------------\n");
-                }
-        }
-        if (burn_sg_log_scsi & 3)
-                scsi_log_cmd(c,fp,0);
+	if (burn_sg_log_scsi & 1) {
+		if (fp == NULL) {
+			fp= fopen("/tmp/libburn_sg_command_log", "a");
+			fprintf(fp,
+			    "\n-----------------------------------------\n");
+		}
+	}
+	if (burn_sg_log_scsi & 3)
+		scsi_log_cmd(c,fp,0);
 
 	memcpy(cdb.field, c->opcode, c->oplen);
 	if (c->dir == TO_DRIVE) {
@@ -628,24 +628,35 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 */
 
-		if (!sense_valid) {
+		if ((!sense_valid) ||
+			 ((c->sense[2] & 0x0f) == 0 && c->sense[12] == 0 &&
+							 c->sense[13] == 0)) {
 			memset(c->sense, 0, sizeof(c->sense));
 			if (i_status != 0) { /* set dummy sense */
-				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
+				/*LOGICAL UNIT NOT READY,
+					CAUSE NOT REPORTABLE*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
+				no_retry = 1;
 			}
 		} else
 			c->sense[2] &= 15;
 	
 		if (i_status != 0 ||
 		    (c->sense[2] || c->sense[12] || c->sense[13])) {
-			if (!c->retry) {
+			if (no_retry || !c->retry) {
 				c->error = 1;
 				goto ex;
 			}
 			switch (scsi_error(d, c->sense, 18)) {
 			case RETRY:
+				if (burn_sg_log_scsi & 3) {
+					/* >>> Need own duration time
+					       measurement. Then remove bit1 */
+					scsi_log_err(c, fp, c->sense, 0,
+							(c->error != 0) | 2);
+					scsi_log_cmd(c,fp,0);
+				}
 				break;
 			case FAIL:
 				c->error = 1;

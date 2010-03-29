@@ -755,7 +755,7 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len = 0, ret, ignore_error;
+	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0;
 	int cam_pass_err_recover = 0;
 	union ccb *ccb;
 	char buf[161];
@@ -874,9 +874,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			fprintf(stderr, "libburn_EXPERIMENTAL: errno = %d . cam_errbuf = '%s'\n", errno, cam_errbuf);
 #endif
 
-			if (errno == ENXIO) {
+			if (errno == ENXIO && c->opcode[0] != 0) {
 				/* Operations on empty or ejected tray */
-				/* Inquiries while tray is being loaded */
 				/* MEDIUM NOT PRESENT */
 
 #ifdef Libburn_ahci_verbouS
@@ -888,8 +887,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[13] = 0x00;
 				sense_len = 14;
 				ignore_error = 1;
-			} else if (c->opcode[0] == 0 && errno == EBUSY) {
+			} else if (c->opcode[0] == 0 && 
+					(errno == EBUSY || errno == ENXIO)) {
 				/* Timeout of TEST UNIT READY loop */
+				/* Inquiries while tray is being loaded */
 				/*LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE*/
 
 #ifdef Libburn_ahci_verbouS
@@ -942,14 +943,22 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				c->sense[13] = 0x00;
+				no_retry = 1;
 			}
-			if (!c->retry) {
+			if (no_retry || ignore_error || !c->retry) {
 				c->error = 1;
 				{ret = 1; goto ex;}
 			}
 			switch (scsi_error(d, c->sense, 0)) {
 			case RETRY:
 				done = 0;
+				if (burn_sg_log_scsi & 3) {
+					/* >>> Need own duration time
+					       measurement. Then remove bit1 */
+					scsi_log_err(c, fp, c->sense, 0,
+							(c->error != 0) | 2);
+					scsi_log_cmd(c,fp,0);
+				}
 				break;
 			case FAIL:
 				done = 1;
