@@ -732,6 +732,13 @@ int main(int argc, char **argv)
 {
 	int ret;
 
+	/* A warning to programmers who start their own projekt from here. */
+	if (sizeof(off_t) != 8) {
+		 fprintf(stderr,
+	   "\nFATAL: Compile time misconfiguration. off_t is not 64 bit.\n\n");
+		 exit(39);
+	}
+
 	ret = libburner_setup(argc, argv);
 	if (ret)
 		exit(ret);
