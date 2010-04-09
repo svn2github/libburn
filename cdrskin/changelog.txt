@@ -8227,20 +8227,124 @@ Made number transition to 0.7.9
 + cdrskin/add_ts_changes_to_libburn_0_7_9
 Updated cdrskin tarball generator
 
-10 Mar 2010  []
+10 Mar 2010  [3119]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.7.9 - 2010.03.10.134802
+10 Mar 2010  [3120]
+svn move -m 'libburn release 0.7.8 is ready'
+    http://svn.libburnia-project.org/libburn/branches/ZeroSevenEight
+    http://svn.libburnia-project.org/libburn/tags/ZeroSevenEight
 
------------------------------------- cycle  - cdrskin-0.7.9 - 
------------------------------------- cycle  - cdrskin-0.7.9 - 
+------------------------------------ cycle  - cdrskin-0.7.9 - 2010.03.10.143607
+
+2010.03.17.185222  [3123]
+cdrskin/cdrskin.c
+Small bug fix about track size with cdrskin -minfo
+
+17 Mar 2010  [3124]
+configure.ac
+Corrected initialization of configure option --enable-dvd-obs-64k
+
+2010.03.25.113536  [3131]
+libburn/spc.c
+libburn/sg-freebsd.c
+Changed sg-freebsd.c to work with ahci, advise by Alexander Motin
+
+2010.03.26.083158  [3132]
+libburn/sg-freebsd.c
+Had to make ahci change conditional for now: -DLibburn_for_freebsd_ahcI
+
+2010.03.27.155659  [3133]
+libburn/mmc.c
+Avoiding to inquire NWA of unwritable media or states
+
+2010.03.27.172644  [3134]
+libburn/os-freebsd.h
+libburn/sg-freebsd.c
+Trying to detect FreeBSD ahci devices and to handle others the old way
+
+------------------------------------ cycle  - cdrskin-0.7.9 - 2010.03.27.184614
+* Now able to work with ahci driver of FreeBSD 8-STABLE
+
+
+2010.03.29.103141  [3135]
+libburn/spc.c
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+Adjusted libcdio system adapter to FreeBSD peculiarities
+
+2010.04.04.181237  [3146]
+test/libburner.c
+Let libburner warn programmers if they forget to set 64 bit off_t
+
+2010.04.09.090645  [3155]
+libburn/sg-linux.c
+Reporting eventual SCSI sense in sg-linux repeat loop
+
+9 Apr 2010  [3156]
+svn copy -m "Branching for libburn release 0.8.0" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroEightZero
+
+2010.04.09.100001  [3157]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.0
+
+09 Apr 2010  [3158]
+- cdrskin/add_ts_changes_to_libburn_0_7_8
+- cdrskin/add_ts_changes_to_libburn_0_7_9
++ cdrskin/add_ts_changes_to_libburn_0_8_0
++ cdrskin/add_ts_changes_to_libburn_0_8_1
+Updated cdrskin tarball generator
+
+09 Apr 2010  [3159]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.8.0.pl00 - 2010.04.09.100001
+* Now able to work with ahci driver of FreeBSD 8-STABLE
+
+
+2010.04.09.104907  [3160]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.1
+
+09 Apr 2010  [3161]
+- cdrskin/add_ts_changes_to_libburn_0_7_8
+- cdrskin/add_ts_changes_to_libburn_0_7_9
++ cdrskin/add_ts_changes_to_libburn_0_8_0
++ cdrskin/add_ts_changes_to_libburn_0_8_1
+Updated cdrskin tarball generator
+
+09 Apr 2010  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.8.1 - 2010.04.09.110341
+------------------------------------ cycle  - cdrskin-0.8.1 - 
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
-
 
 - change all malloc() to calloc()
 
@@ -8272,12 +8376,7 @@ READ TRACK INFORMATION[#5]:
 
 ------------------------------ end of bugs ---------------------------------
 
-- xorriso -as tar  (Rocky wants me to begin with -x)
-
 Support for BD-R SRM+POW
-
-? Provide an option to open track source file O_DIRECT ?
-  (needs read chunks much larger than 2 kB)
 
 ? Enable profile 0x42 BD-R random recording
 
