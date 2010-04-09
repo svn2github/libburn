@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.7.9"
+#define Cdrskin_prog_versioN "0.8.1"
 #endif
 
 /** The official libburn interface revision to use.
@@ -98,10 +98,10 @@ or
 #define Cdrskin_libburn_majoR 0
 #endif
 #ifndef Cdrskin_libburn_minoR
-#define Cdrskin_libburn_minoR 7
+#define Cdrskin_libburn_minoR 8
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 9
+#define Cdrskin_libburn_micrO 1
 #endif
 
 
@@ -135,13 +135,13 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_7_8
-#define Cdrskin_libburn_versioN "0.7.8"
+#ifdef Cdrskin_libburn_0_8_0
+#define Cdrskin_libburn_versioN "0.8.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_7_8 */
+#endif /* Cdrskin_libburn_0_8_0 */
 
-#ifdef Cdrskin_libburn_0_7_9
-#define Cdrskin_libburn_versioN "0.7.9"
+#ifdef Cdrskin_libburn_0_8_1
+#define Cdrskin_libburn_versioN "0.8.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
@@ -153,29 +153,29 @@ or
 */
 
 
-#endif /* Cdrskin_libburn_0_7_9 */
+#endif /* Cdrskin_libburn_0_8_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_7_8
-#define Cdrskin_libburn_versioN "0.7.8"
+#define Cdrskin_libburn_0_8_0
+#define Cdrskin_libburn_versioN "0.8.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_7_8
+#ifdef Cdrskin_libburn_0_8_0
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 8
+#define Cdrskin_libburn_minoR 8
+#define Cdrskin_libburn_micrO 0
 #endif
-#ifdef Cdrskin_libburn_0_7_9
+#ifdef Cdrskin_libburn_0_8_1
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 7
-#define Cdrskin_libburn_micrO 9
+#define Cdrskin_libburn_minoR 8
+#define Cdrskin_libburn_micrO 1
 #endif
 
 

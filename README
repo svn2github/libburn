@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.7.8.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.8.0.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.7.8.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.8.0.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.7.8.pl00.tar.gz
-   cd libburn-0.7.8
+   tar xzf libburn-0.8.0.pl00.tar.gz
+   cd libburn-0.8.0
    ./configure --prefix=/usr
    make
 
@@ -507,6 +507,12 @@ Project history as far as known to me:
 
 - 10 Mar 2010 libburn-0.7.8 fixes bugs and improves the built-in abort handler
   on FreeBSD.
+
+- 30 Mar 2010 Release 0.5.2 of libisoburn provides xorriso documentation in
+  GNU Texinfo format with embedded extra data to derive a full man page.
+
+- 09 Apr 2010 libburn-0.8.0 now works with ahci driver on FreeBSD 8-STABLE.
+
 
 ------------------------------------------------------------------------------
 
