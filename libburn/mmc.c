@@ -1400,6 +1400,11 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 		fprintf(stderr, "libburn_experimental: toc entry #%d : %d %d %d\n",i,tdata[8], tdata[9], tdata[10]); 
 */
 
+#ifdef Libburn_allow_first_hiddeN
+		/* ts B00430 : this causes problems because the track has
+		               no entry. One would have to coordinate this
+		               with other parts of libburn.
+		*/
 		if (tdata[3] == 1) {
 			if (burn_msf_to_lba(tdata[8], tdata[9], tdata[10])) {
 				d->disc->session[0]->hidefirst = 1;
@@ -1408,9 +1413,10 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 						       session[tdata[0] - 1],
 						       track, BURN_POS_END);
 				burn_track_free(track);
-
 			}
 		}
+#endif /* Libburn_allow_first_hiddeN */
+
 		if (tdata[0] <= 0 || tdata[0] > d->disc->sessions)
 			tdata[0] = d->disc->sessions;
 		if (tdata[3] < 100 && tdata[0] > 0) {
