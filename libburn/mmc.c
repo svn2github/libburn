@@ -1974,8 +1974,13 @@ void mmc_read_atip(struct burn_drive *d)
 
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
-	burn_print(1, "atip shit for you\n");
-
+	/* ts B00501 : now caring for error */
+	if (c.error) {
+		d->erasable= 0;
+		d->start_lba= 0;
+		d->end_lba= 0;
+		return;
+	}
 
 	/* ts A61021 */
 	data = c.page->data;

@@ -138,6 +138,10 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
 	char buf[1024];
 	char *result = NULL;
 
+	if (m_li == 0 && s_li == 2 && f_li == 0) {
+		result = strdup("(no manufacturer code)");
+		return result;
+	}
 	f_li_0 = f_li - (f_li % 10);
 	for (i = 0; mid_list[i].manufacturer[0]; i++) {
 		if (m_li == mid_list[i].m_li &&
