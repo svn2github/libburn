@@ -95,6 +95,10 @@ Send feedback to libburn-hackers@pykix.org .
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 
 /** PORTING : ------- OS dependent headers and definitions ------ */
 

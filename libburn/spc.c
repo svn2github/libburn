@@ -5,8 +5,11 @@
    Provided under GPL version 2 or later.
 */
 
-
 /* scsi primary commands */
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include <unistd.h>
 #include <stdio.h>

@@ -5,6 +5,10 @@
    Provided under GPL version 2 or later.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 
 /* ts A61009 */
 /* #include <a ssert.h> */

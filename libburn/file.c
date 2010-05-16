@@ -6,6 +6,10 @@
 */
 
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -399,9 +403,13 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		else
 			ret = fs->inp->read_xt( fs->inp,
 				 (unsigned char *) bufpt, fs->inp_read_size);
-		if (ret == 0)
+		if (ret == 0) {
+
+			/* >>> ??? ts B00326 */
+			/* >>> report EOF of fifo input and fs->in_counter */;
+
 	break; /* EOF */
-		else if (ret < 0) {
+		} else if (ret < 0) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020153,
 				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Read error on fifo input", errno, 0);

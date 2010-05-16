@@ -5,6 +5,10 @@
 */
 
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "null.h"
 #include "libburn.h"
 #include <stdlib.h>

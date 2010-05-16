@@ -1,5 +1,9 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "crc.h"
 
 static unsigned short ccitt_table[256] = {
@@ -104,6 +108,15 @@ unsigned long crc32_table[256] = {
 	0x71C0FC00L, 0xE151FD01L, 0xE0E1FE01L, 0x7070FF00L
 };
 
+
+/* Exploration ts B00214 :
+   ECMA-130, 22.3.6 "CRC field"
+   Generating polynomial: x^16 + x^12 + x^5 + 1
+   Also known as CRC-16-CCITT, CRC-CCITT 
+
+   Use in libburn for raw write modes in sector.c.
+   There is also disabled code in read.c which would use it.
+*/
 unsigned short crc_ccitt(unsigned char *q, int len)
 {
 	unsigned short crc = 0;
@@ -112,6 +125,20 @@ unsigned short crc_ccitt(unsigned char *q, int len)
 		crc = ccitt_table[(crc >> 8 ^ *q++) & 0xff] ^ (crc << 8);
 	return ~crc;
 }
+
+
+/* Exploration ts B00214 :
+   ECMA-130, 14.3 "EDC field"
+   "The EDC codeword must be divisible by the check polynomial:
+    P(x) = (x^16 + x^15 + x^2 + 1) . (x^16 + x^2 + x + 1)   
+   "
+
+   >>> Test whether this coincides with CRC-32 IEEE 802.3
+   x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10
+   + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
+
+   Used for raw writing in sector.c
+*/
 unsigned int crc_32(unsigned char *data, int len)
 {
 	unsigned int crc = 0;

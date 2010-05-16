@@ -104,6 +104,10 @@ Hint: You should also look into sg-freebsd-port.c, which is a younger and
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 
 /** PORTING : ------- OS dependent headers and definitions ------ */
 

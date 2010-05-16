@@ -1,6 +1,10 @@
 
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 /* ts A91016 : libburn/ecma130ab.c is the replacement for old libburn/lec.c
 
    Copyright 2009, Thomas Schmitt <scdbackup@gmx.net>, libburnia-project.org

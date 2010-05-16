@@ -23,6 +23,9 @@
 #define Libburn_detach_done_workeR 1
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include "libburn.h"
 #include "transport.h"

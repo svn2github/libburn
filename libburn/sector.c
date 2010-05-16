@@ -5,6 +5,9 @@
    Provided under GPL version 2 or later.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include <stdio.h>
 

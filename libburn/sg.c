@@ -4,6 +4,11 @@
    Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#undef HAVE_CONFIG_H
+#endif
+
 
 #ifdef Libburn_use_libcdiO
 

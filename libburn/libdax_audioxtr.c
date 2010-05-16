@@ -4,6 +4,10 @@
    Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
 */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
