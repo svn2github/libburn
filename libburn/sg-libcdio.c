@@ -229,8 +229,9 @@ static int sg_give_next_adr_raw(burn_drive_enumerator_t *idx,
 		}
 
 	} else if (initialize == -1) {
-		if (*(idx->ppsz_cd_drives) != NULL)
-			cdio_free_device_list(idx->ppsz_cd_drives);
+		if (idx->ppsz_cd_drives != NULL)
+			if (*(idx->ppsz_cd_drives) != NULL)
+				cdio_free_device_list(idx->ppsz_cd_drives);
 		idx->ppsz_cd_drives = NULL;
 	}
 
