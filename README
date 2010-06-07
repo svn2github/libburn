@@ -105,8 +105,9 @@ The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
 These are libraries, language bindings, and middleware binaries which emulate
 classical (and valuable) Linux tools.
-Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD versions 
-with ATAPI/CAM support enabled in the kernel, see atapicam(4).
+Currently it is supported on GNU/Linux with kernels >= 2.4,
+on FreeBSD with ATAPI/CAM enabled in the kernel (see man atapicam),
+and on OpenSolaris (tested with kernel 5.11).
 On other X/Open compliant systems there will only be pseudo drives, but no
 direct MMC operation on real CD/DVD/BD drives.
 

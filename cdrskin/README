@@ -13,7 +13,8 @@ Copyright (C) 2006-2010 Thomas Schmitt, provided under GPL version 2 or later.
 cdrskin is a limited cdrecord compatibility wrapper which allows to use
 most of the libburn features from the command line.
 
-Currently it is supported on Linux with kernels >= 2.4 and on FreeBSD.
+Currently it is supported on GNU/Linux with kernels >= 2.4,
+on FreeBSD and on OpenSolaris.
 IDE drives under Linux 2.4. need kernel module ide-scsi.
 ATA and SATA drives under FreeBSD need kernel module atapicam.
 On other X/Open compliant systems there will only be emulated drives, but no

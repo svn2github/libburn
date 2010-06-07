@@ -1,7 +1,8 @@
 
 /* sg.c
    Switcher for operating system dependent transport level modules of libburn.
-   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+   Copyright (C) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>, 
+   provided under GPLv2+
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,6 +11,11 @@
 #endif
 
 
+#ifdef Libburn_use_sg_dummY
+
+#include "sg-dummy.c"
+
+#else
 #ifdef Libburn_use_libcdiO
 
 #include "sg-libcdio.c"
@@ -28,6 +34,11 @@
 #ifdef __linux
 
 #include "sg-linux.c"
+
+#else
+#ifdef __sun
+
+#include "sg-solaris.c"
 
 #else
 
@@ -51,8 +62,10 @@ static int intentional_compiler_warning(void)
 
 #include "sg-dummy.c"
 
+#endif /* ! __sun */
 #endif /* ! __linux */
 #endif /* ! __FreeBSD_kernel__ */
 #endif /* ! __FreeBSD__ */
 #endif /* ! Libburn_use_libcdiO */
+#endif /* ! Libburn_use_sg_dummY */
 

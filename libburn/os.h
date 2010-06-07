@@ -14,6 +14,14 @@
 */
 
 
+#ifdef Libburn_use_sg_dummY
+
+
+/* --------- Any other system. With dummy MMC transport sg-dummy.c --------- */
+#include "os-dummy.h"
+
+
+#else
 #ifdef Libburn_use_libcdiO
 
 
@@ -46,16 +54,26 @@
 
 
 #else
+#ifdef __sun
+
+
+/* ------- Solaris (e.g. SunOS 5.11) with uscsi ------ */
+#include "os-solaris.h"
+
+
+#else
 
 
 /* --------- Any other system. With dummy MMC transport sg-dummy.c --------- */
 #include "os-dummy.h"
 
 
+#endif /* ! __sun*/
 #endif /* ! __linux */
 #endif /* ! __FreeBSD__kernel__ */
 #endif /* ! __FreeBSD__ */
 #endif /* ! Libburn_use_libcdiO */
+#endif /* ! Libburn_use_sg_dummY */
 
 
 #endif /* ! BURN_OS_H_INCLUDED */

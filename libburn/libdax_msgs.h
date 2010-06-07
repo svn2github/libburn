@@ -434,6 +434,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020009 (SORRY,HIGH)   = Neither stdio-path nor its directory exist
  0x0002000a (FAILURE,HIGH) = Cannot accept '...' as SG_IO CDROM drive
  0x0002000b (FAILURE,HIGH) = File object '...' not found
+ 0x0002000c (FAILURE,HIGH) = Cannot start device file enumeration
+ 0x0002000d (FAILURE,HIGH) = Cannot enumerate next device
            
  General library operations:
 
