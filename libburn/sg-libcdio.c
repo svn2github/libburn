@@ -135,6 +135,13 @@ Send feedback to libburn-hackers@pykix.org .
 
 #define Libburn_guess_freebsd_atapi_devicE 1
 
+#ifdef sun
+#define Libburn_is_on_solariS 1
+#endif
+#ifdef __sun
+#define Libburn_is_on_solariS 1
+#endif
+
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
 #include <cdio/mmc.h>
@@ -422,7 +429,7 @@ int sg_dispose_drive(struct burn_drive *d, int flag)
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int ret, recursion_count = 0;
+	int ret, recursion_count = 0, l;
 	char path[4096];
 
 	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
@@ -430,8 +437,19 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		return ret;
 	if (strlen(adr) >= sizeof(path))
 		return ret;
-	strcpy(path, adr);
-	ret = burn_drive_resolve_link(path, adr, &recursion_count, 2);
+
+#ifdef Libburn_is_on_solariS
+	/* >>> provisory : preserve Solaris /dev/rdsk/cXtYdZs2 addresses */
+	l = strlen(adr);
+	if (l >= 18)
+		if (strncmp(adr, "/dev/rdsk/c", 11) == 0 && adr[11] >= '0' &&
+		    adr[11] <= '9' && strcmp(adr + (l - 2), "s2") == 0)
+			return 1;
+#endif /* Libburn_is_on_solariS */
+
+	ret = burn_drive_resolve_link(adr, path, &recursion_count, 2);
+        if(ret > 0 && strlen(path) < adr_size)
+		strcpy(path, adr);
 	return (ret >= 0);
 }
 
@@ -442,7 +460,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 int scsi_enumerate_drives(void)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0;
+	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0, l;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char buf[4096], target[4096];
 
@@ -451,7 +469,22 @@ int scsi_enumerate_drives(void)
 		initialize = 0;
 		if (ret <= 0)
 	break;
-		ret = burn_drive_resolve_link(buf, target, &recursion_count,2);
+		ret = 1;
+
+#ifdef Libburn_is_on_solariS 
+		/* >>> provisory : preserve Solaris /dev/rdsk/cXtYdZs2 */
+		l = strlen(buf);
+		if (l >= 18)
+			if (strncmp(buf, "/dev/rdsk/c", 11) == 0 &&
+			    buf[11] >= '0' && buf[11] <= '9' &&
+			    strcmp(buf + (l - 2), "s2") == 0)
+				ret = 0;
+#endif /* Libburn_is_on_solariS */
+
+		if (ret == 1) {
+			ret = burn_drive_resolve_link(buf, target,
+							 &recursion_count,2);
+		}
 		if (ret <= 0)
 			strcpy(target, buf);
 		if (burn_drive_is_banned(target))
