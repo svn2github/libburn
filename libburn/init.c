@@ -342,7 +342,7 @@ char *burn_util_thread_id(pid_t pid, pthread_t tid, char text[80])
 {
 	int i, l;
 
-	sprintf(text, "[%d,", getpid());
+	sprintf(text, "[%lu,", (unsigned long int) getpid());
 	l= strlen(text);
 	for(i= 0; i < sizeof(pthread_t) && 2 * i < 80 - l - 3; i++)
 		sprintf(text + l + 2 * i,

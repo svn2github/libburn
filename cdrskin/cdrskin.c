@@ -4200,8 +4200,9 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  if(getpid()!=skin->control_pid) {
    if(skin->verbosity>=Cdrskin_verbose_debuG)   
      ClN(fprintf(stderr,
-          "\ncdrskin_debug: ABORT : [%d] Thread rejected: pid=%d, signum=%d\n",
-          skin->control_pid,getpid(),signum));
+        "\ncdrskin_debug: ABORT : [%lu] Thread rejected: pid=%lu, signum=%lu\n",
+        (unsigned long int) skin->control_pid, (unsigned long int) getpid(),
+        (unsigned long int) signum));
 
 #ifdef Not_yeT
    /* >>> find more abstract and system independent way to determine 
