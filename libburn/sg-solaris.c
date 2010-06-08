@@ -577,6 +577,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	int i, usleep_time, timeout_ms, no_retry = 0, ret;
 	time_t start_time;
 	struct uscsi_cmd cgc;
+	char msg[80];
         static FILE *fp = NULL;
 
 	c->error = 0;
@@ -632,13 +633,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		   0 = GOOD , 2 = CHECK CONDITION : Sense Data are delivered
 		   8 = BUSY
 		*/
-		if (ret != 0 &&
-		    cgc.uscsi_status != 2 && cgc.uscsi_status != 8) {
+		if (ret != 0 && cgc.uscsi_status != 2) {
+			sprintf(msg,
+		"Failed to transfer command to drive. (uscsi_status = 0x%X)",
+				(unsigned int) cgc.uscsi_status),
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x0002010c,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-				"Failed to transfer command to drive",
-				errno, 0);
+				msg, errno, 0);
 			sg_close_drive(d);
 			d->released = 1;
 			d->busy = BURN_DRIVE_IDLE;
@@ -647,10 +649,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 
 		c->sense[2] &= 15;
-
-		if (cgc.uscsi_status == 8) {
-			/* >>> fake BUSY sense */;
-		}
 
 		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
 
@@ -698,7 +696,6 @@ ex:;
 	return 1;
 }
 
-/* >>> */
 
 /** Tries to obtain SCSI address parameters.
     @return  1 is success , 0 is failure
