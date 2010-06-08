@@ -918,7 +918,24 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 			return -2;
 		*bytes = add_size;
 
-#endif/* Libburn_is_on_freebsD */
+#endif /* Libburn_is_on_freebsD */
+
+#ifdef Libburn_is_on_solariS
+
+	} else if(S_ISBLK(stbuf.st_mode)) {
+		int open_mode = O_RDONLY, fd;
+		
+		fd = open(path, open_mode);
+		if (fd == -1)
+			return -2;
+		*bytes = lseek(fd, 0, SEEK_END);
+		close(fd);
+		if (*bytes == -1) {
+			*bytes = 0;
+			return 0;
+		}
+		
+#endif /* Libburn_is_on_solariS */
 
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;

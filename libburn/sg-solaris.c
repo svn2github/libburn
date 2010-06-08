@@ -801,30 +801,18 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		if (stat(testpath, &stbuf) == -1)
 			return -1;
 
-#ifdef __linux
-
-	/* GNU/Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
-		int open_mode = O_RDONLY, fd, ret;
+		int open_mode = O_RDONLY, fd;
 
 		fd = open(path, open_mode);
 		if (fd == -1)
 			return -2;
-		ret = ioctl(fd, BLKGETSIZE, &blocks);
+		*bytes = lseek(fd, 0, SEEK_END);
 		close(fd);
-		if (ret == -1)
-			return -2;
-		*bytes = ((off_t) blocks) * (off_t) 512;
-
-#endif /* __linux */
-
-
-		/* >>> ioctl to determine capacity of block device
-			? DKIOCGEXTVTOC , man dkio ?
-			? DKIOCEXTPARTINFO ,
-			  struct extpart_info.p_length * 512, man dkio ?
-		*/;
-
+		if (*bytes == -1) {
+			*bytes = 0;
+			return 0;
+		}
 
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
