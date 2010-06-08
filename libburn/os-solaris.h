@@ -1,5 +1,5 @@
 
-/* os-libcdio.h
+/* os-solaris.h
    Operating system specific libburn definitions and declarations. Included
    by os.h in case of compilation for
            Solaris based systems, e.g. SunOS 5.11
