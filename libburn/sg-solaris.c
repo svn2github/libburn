@@ -121,15 +121,6 @@ Send feedback to libburn-hackers@pykix.org .
 
 #include <sys/scsi/impl/uscsi.h>
 
-/* >>> need a size determination call for random access devices.
-       e.g. USB sticks.
-*/
-#ifdef __linux
-/* for ioctl(BLKGETSIZE) */
-#include <sys/ioctl.h>
-#include <linux/fs.h>
-#endif
-
 
 /* The waiting time before eventually retrying a failed SCSI command.
    Before each retry wait Libburn_sg_linux_retry_incR longer than with
