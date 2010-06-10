@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Feb 29, 2010"
+.TH CDRSKIN 1 "Jun 10, 2010"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -271,19 +271,22 @@ the drive is somewhat higher but the overall system is much less at stake.
 Consider to restrict rw-access to a single group which bundles the users who
 are allowed to use the burner drive (like group "floppy").
 .br
+For drive permission examples on Linux, FreeBSD, and Solaris,
+see cdrskin/README.
+.br
 .PP
 If you only got one CD capable drive then you may leave out cdrskin option
 \fBdev=\fP. Else you should use this option to address the drive you want.
 .br
 cdrskin option dev= not only accepts the listed addresses but also
-traditional cdrecord SCSI addresses which on Linux consist of three
-numbers: Bus,Target,Lun. There is also a related address family "ATA" which
+traditional cdrecord SCSI addresses which consist of three numbers:
+Bus,Target,Lun. On Linux there is also a related address family "ATA" which
 accesses IDE drives not under control of Linux SCSI drivers:
 ATA:Bus,Target,Lun.
 .br
 See option -scanbus for getting a list of cdrecord style addresses.
 .br
-Further are accepted on Linux: links to libburn-suitable device files, 
+Further are accepted: links to libburn-suitable device files, 
 device files which have the same major and minor device number,
 and device files which have the same SCSI address parameters (e.g. /dev/sg0).
 .br

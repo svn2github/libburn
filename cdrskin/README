@@ -104,17 +104,25 @@ The output of  cdrskin --devices  might look like
     0  dev='/dev/sr0'  rwrwr- :  '_NEC'  'DVD_RW ND-4570A'
     1  dev='/dev/sr1'  rwrw-- :  'HL-DT-ST'  'DVDRAM GSA-4082B'
 
-So full and insecure enabling of both for everybody would look like
-
-    chmod a+rw /dev/sr0 /dev/sr1
-
+On Linux, full and insecure enabling of both for everybody would look like
+    chmod a+rw /dev/sr0 /dev/hda
 This is equivalent to the traditional setup chmod a+x,u+s cdrecord.
+
+On FreeBSD, device permissions are to be set in /etc/devfs.rules.
+On Solaris, pfexec privileges may be restricted to "base,sys_devices".
+See below "System Dependend Drive Permission Examples".
 
 I strongly discourage to run cdrskin with setuid root or via sudo !
 It is not checked for the necessary degree of hacker safety.
+Better consider to grant the necessary permissions to group "floppy"
+and to add users to it.
 
-Consider to put all authorized users into group "floppy", to chgrp the
-device file to that group and to disallow w-access to others.
+
+A behavioral conflict is known between any burn software and demons like hald
+which probe CD drives. This can spoil burn runs for CD-R or CD-RW.
+You may have to keep your hald away from the drive. See for example
+   http://www.freebsd.org/gnome/docs/halfaq.html
+
 
 Helpful with Linux kernel 2.4 is a special SCSI feature:
 It is possible to address a scsi(-emulated) drive via associated device files
@@ -122,11 +130,6 @@ which are not listed by option --devices but point to the same SCSI addresses
 as listed device files. This addressing via e.g. /dev/sr0 or /dev/scd1 is
 compatible with generic read programs like dd and with write program growisofs.
 For finding /dev/sg1 from /dev/sr0, the program needs rw-access to both files.
-
-A behavioral conflict is known between any burn software and demons like hald
-which probe CD drives. This can spoil burn runs for CD-R or CD-RW.
-You may have to keep your hald away from the drive. See for example
-   http://www.freebsd.org/gnome/docs/halfaq.html
 
 
                                 Usage examples 
@@ -433,6 +436,77 @@ An extra lean binary with reduced capabilities is created by
 It will not read startup files, will abort on option  dev_translation= ,
 will not have a fifo buffer, and will not be able to put out help texts or
 debugging messages.
+
+------------------------------------------------------------------------------
+
+                  System Dependend Drive Permission Examples
+
+Accessing the optical drives requires privileges which usually are granted
+only to the superuser. Linux, FreeBSD and Solaris offer quite different
+approaches for avoiding the need for unrestricted privileges.
+
+--------------------- 
+On all three systems:
+--------------------- 
+Add the authorized user of CD drives to group "floppy" in /etc/group.
+If missing: create this group.
+Changes to /etc/group often only affect new login sessions. So log out and in
+before making the first tests.
+
+---------
+On Linux:
+---------
+Allow rw-access to the drives
+  chgrp floppy /dev/sr0 /dev/sr1
+  chmod g+rw   /dev/sr0 /dev/sr1
+It might be necessary to perform chgrp and chmod after each reboot or to
+edit distro dependent device configuration files for permanent settings.
+
+-----------
+On FreeBSD:
+-----------
+On FreeBSD:
+Edit /etc/devfs.rules and make sure to have these lines
+  [localrules=10]
+  add path 'acd*' mode 0664 group floppy
+  add path 'cd*' mode 0664 group floppy
+  add path 'pass*' mode 0664 group floppy
+  add path 'xpt*' mode 0664 group floppy
+  [localrules=5]
+  add path 'pass*' mode 0664 group floppy
+  add path 'cd*' mode 0664 group floppy
+  add path 'xpt*' mode 0664 group floppy
+  add path 'acd*' mode 0664 group floppy
+
+Edit /etc/rc.conf and add the following line if missing
+  devfs_system_ruleset="localrules"
+
+This gets into effect by reboot or by command
+  /etc/rc.d/devfs start
+
+-----------
+On Solaris:
+-----------
+Run cdrskin by
+  pfexec cdrskin ...arguments...
+
+The following settings will make pfexec keep original UID and EUID and prevent
+most superuser powers. Be aware that you still can manipulate all device files
+if you have the file permissions for that.
+Full root privileges for cdrskin can then be aquired only by command su.
+
+Edit /etc/security/exec_attr and add this line to the other "Media Backup"
+lines:
+  Media Backup:solaris:cmd:::/usr/local/bin/cdrskin:privs=basic,sys_devices
+Edit /etc/user_attr and add profile "Media Backup" to the user's line:
+  thomas::::profiles=Media Backup,Primary Administrator;roles=root
+See also man privileges, man exec_attr, man user_attr.
+
+Then allow the group r-access to the drives
+  pfexec chgrp floppy /dev/rdsk/c3t0d0s2 /dev/rdsk/c4t0d0s2
+  pfexec chmod g+r    /dev/rdsk/c3t0d0s2 /dev/rdsk/c4t0d0s2
+The last two commands have to be executed after each boot. I do not know
+the relevant device configuration files yet.
 
 
 ------------------------------------------------------------------------------

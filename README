@@ -145,6 +145,8 @@ The project components (list subject to growth, hopefully):
            also allows to grow ISO-9660 filesystem images on multi-session
            media as well as on overwriteable media via the same API.
            All media peculiarities are handled automatically.
+           It also contains the methods of command oriented application
+           xorriso and offers them via a C language API.
 
 - cdrskin  is a limited cdrecord compatibility wrapper for libburn.
            cdrecord is a powerful GPL'ed burn program included in Joerg
@@ -164,6 +166,8 @@ The project components (list subject to growth, hopefully):
            changing, incremental backups, activating boot images, and
            extracting of files from ISO images to disk. An own ISO 9660
            extension stores ACLs, xattr, and MD5 of file content.
+           All features of xorriso are also available via a C language API
+           of libisoburn.
            See xorriso/README for more.
 
 - "test"   is a collection of application gestures and examples given by the
