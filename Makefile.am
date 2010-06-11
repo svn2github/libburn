@@ -110,9 +110,9 @@ test_structest_CPPFLAGS = -Ilibburn
 test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_structest_SOURCES = test/structest.c
 
-##  cdrskin construction site - ts A60816 - B00409
+##  cdrskin construction site - ts A60816 - B00611
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
-cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_8_1
+cdrskin_cdrskin_CFLAGS = -DCdrskin_libburn_0_8_3
 
 # cdrskin_cdrskin_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 # ts A80123, change proposed by Simon Huggins to cause dynamic libburn linking

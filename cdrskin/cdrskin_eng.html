@@ -38,8 +38,8 @@ About any CD, DVD, or BD recorder produced in the recent ten years.
 <BR>
 <A HREF="http://libburnia-project.org">libburn</A>
 supports recorders which are compliant to standards MMC-1 for CD and
-MMC-5 for DVD or BD. Linux and FreeBSD allow to access drives connected
-via SCSI, PATA (aka IDE, ATA), USB, or SATA.
+MMC-5 for DVD or BD. Linux, FreeBSD, and Solaris allow to access drives
+connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 <BR>
 </P>
 
@@ -52,6 +52,8 @@ via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 <DT>or FreeBSD (with libc, of course) :</DT>
 <DD>ATA and SATA drives need atapicam running.</DD>
 <DD>libcam has to be installed.</DD>
+<DT>or Solaris (with libc, of course) :</DT>
+<DD>Tested on kernel 5.11, hopefully suitable for older ones too.</DD>
 <DT>libpthread</DT>
 <DD>is supposed to be a standard system component.</DD>
 </DL>
@@ -62,7 +64,7 @@ via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-0.8.0</DT>
+<DT>libburn-0.8.2</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -72,8 +74,8 @@ Thomas Schmitt from team of libburnia-project.org)
 </P>
 
 <P>
-This program system has been tested on Intel/AMD Linux and FreeBSD systems
-only.<BR>
+This program system has been tested on Intel/AMD with Linux, FreeBSD,
+and OpenSolaris based operating systems.<BR>
 Ports to other usable systems are appreciated. Reports are welcome.
 </P>
 
@@ -105,8 +107,9 @@ BD-R. Write mode -tao works with anything but quickly blanked DVD-RW.
 <DD>#<KBD>&nbsp;cdrskin --devices</KBD></DD>
 <DT>Being superuser avoids permission problems with /dev/srN resp. /dev/hdX .
 </DT>
-<DT>Ordinary users should then get granted rw access to the /dev files
-as listed by option --devices.</DT>
+<DT>Ordinary users should then get granted access to the /dev files
+as listed by option --devices. Linux and FreeBSD demand rw-permission.
+On Solaris it is r-permission and privileges "basic,sys_devices".</DT>
 <DT>&nbsp;</DT>
 
 <DT>Get info about a particular drive or loaded media:</DT>
@@ -194,8 +197,8 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-0.8.0.pl00.tar.gz">cdrskin-0.8.0.pl00.tar.gz</A>
-(830 KB).
+<DD><A HREF="cdrskin-0.8.2.pl00.tar.gz">cdrskin-0.8.2.pl00.tar.gz</A>
+(845 KB).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -244,19 +247,25 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-0.7.8.pl00:
+Enhancements towards previous stable version cdrskin-0.8.0.pl00:
 <UL>
-<LI>
-Now able to work with ahci driver of FreeBSD 8-STABLE
-</LI>
+<LI>A new system adapter allows to burn CD, DVD and BD on OpenSolaris</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-0.7.8.pl00:
+Bug fixes towards cdrskin-0.8.0.pl00:
 <UL>
-<LI>none</LI>
+<LI>
+CD TOC was not read if the first track did not start at LBA 0
+</LI>
+<LI>
+CD-ROM media got attributed random lead-in and lead-out adresses
+</LI>
+<LI>
+SIGSEGV of experimental libcdio system adapter if drive list is empty
+</LI>
 <!--
 <LI>none</LI>
 -->
@@ -266,10 +275,10 @@ Bug fixes towards cdrskin-0.7.8.pl00:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 0.8.1 :</H3></DT>
-<DD>Enhancements towards current stable version 0.8.0.pl00:
+<DT><H3>Development snapshot, version 0.8.3 :</H3></DT>
+<DD>Enhancements towards current stable version 0.8.2.pl00:
 <UL>
-<LI>A new system adapter allows to burn CD, DVD and BD on OpenSolaris</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -277,14 +286,9 @@ Bug fixes towards cdrskin-0.7.8.pl00:
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-0.8.0.pl00:
+<DD>Bug fixes towards cdrskin-0.8.2.pl00:
 <UL>
-<LI>
-CD TOC was not read if the first track did not start at LBA 0
-</LI>
-<LI>
-CD-ROM media got attributed random lead-in and lead-out adresses
-</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -292,10 +296,10 @@ CD-ROM media got attributed random lead-in and lead-out adresses
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 0.8.1</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin_0.8.1 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin_0.8.1 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.8.1)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 0.8.3</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin_0.8.3 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin_0.8.3 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 0.8.3)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -315,8 +319,8 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-0.8.1.tar.gz">cdrskin-0.8.1.tar.gz</A>
-(840 KB).
+<A HREF="cdrskin-0.8.3.tar.gz">cdrskin-0.8.3.tar.gz</A>
+(845 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008

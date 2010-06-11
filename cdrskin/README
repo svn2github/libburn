@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-0.8.1.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-0.8.3.tar.gz
 
 Copyright (C) 2006-2010 Thomas Schmitt, provided under GPL version 2 or later.
 ------------------------------------------------------------------------------
@@ -26,10 +26,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-0.8.1.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-0.8.3.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-0.8.1.tar.gz
-    cd cdrskin-0.8.1
+    tar xzf cdrskin-0.8.3.tar.gz
+    cd cdrskin-0.8.3
 
 Within that directory execute:
 
@@ -109,7 +109,7 @@ On Linux, full and insecure enabling of both for everybody would look like
 This is equivalent to the traditional setup chmod a+x,u+s cdrecord.
 
 On FreeBSD, device permissions are to be set in /etc/devfs.rules.
-On Solaris, pfexec privileges may be restricted to "base,sys_devices".
+On Solaris, pfexec privileges may be restricted to "basic,sys_devices".
 See below "System Dependend Drive Permission Examples".
 
 I strongly discourage to run cdrskin with setuid root or via sudo !
@@ -445,10 +445,18 @@ Accessing the optical drives requires privileges which usually are granted
 only to the superuser. Linux, FreeBSD and Solaris offer quite different
 approaches for avoiding the need for unrestricted privileges.
 
+First check whether some friendly system setting already allows you to
+access the drives as normal user:
+  cdrskin --devices
+Those drives of which you see address and type strings are already usable.
+
+If there remain drives invisible which the superuser can see by the same
+command, then the following examples might help:
+
 --------------------- 
 On all three systems:
 --------------------- 
-Add the authorized user of CD drives to group "floppy" in /etc/group.
+Add the authorized users of CD drives to group "floppy" in /etc/group.
 If missing: create this group.
 Changes to /etc/group often only affect new login sessions. So log out and in
 before making the first tests.
@@ -465,7 +473,6 @@ edit distro dependent device configuration files for permanent settings.
 -----------
 On FreeBSD:
 -----------
-On FreeBSD:
 Edit /etc/devfs.rules and make sure to have these lines
   [localrules=10]
   add path 'acd*' mode 0664 group floppy

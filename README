@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.8.0.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-0.8.2.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.8.0.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-0.8.2.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.8.0.pl00.tar.gz
-   cd libburn-0.8.0
+   tar xzf libburn-0.8.2.pl00.tar.gz
+   cd libburn-0.8.2
    ./configure --prefix=/usr
    make
 
@@ -517,6 +517,15 @@ Project history as far as known to me:
   GNU Texinfo format with embedded extra data to derive a full man page.
 
 - 09 Apr 2010 libburn-0.8.0 now works with ahci driver on FreeBSD 8-STABLE.
+
+- 03 May 2010 Version 0.6.32 of libisofs is able to create ISO images with
+  multiple boot images. All boot catalog parameters described in El-Torito
+  specs can be set and inquired. This allows to use GRUB boot images for EFI. 
+
+- 04 May 2010 Release 0.5.6.pl00 of libisoburn makes use of the new libisofs
+  capabilities about boot images.
+
+- 11 Jun 2010 libburn-0.8.2 now works on Solaris. 
 
 
 ------------------------------------------------------------------------------
