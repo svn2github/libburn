@@ -717,6 +717,27 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 /** Tells wether a text is a persistent address as listed by the enumeration
     functions.
 */
+
+#ifndef NIX
+
+int sg_is_enumerable_adr(char* path)
+{
+	int ret;
+	int bus_no, target_no, lun_no;
+	struct stat stbuf;
+
+	if (strncmp("/dev/rdsk/", path, 10) != 0)
+		return 0;
+	ret = decode_btl_solaris(path + 10, &bus_no, &target_no, &lun_no, 0);
+	if (ret <= 0)
+		return 0;
+	if (stat(path, &stbuf) == -1)
+		return 0;
+	return 1;
+}
+
+#else /* ! NIX */
+
 int sg_is_enumerable_adr(char* adr)
 {
 	burn_drive_enumerator_t idx;
@@ -736,6 +757,8 @@ int sg_is_enumerable_adr(char* adr)
 	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
 	return (0);
 }
+#endif /* NIX */
+
 
 
 
