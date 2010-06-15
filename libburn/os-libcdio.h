@@ -29,12 +29,38 @@
 /* The number of above list items */
 #define BURN_OS_SIGNAL_COUNT 16
 
-/** To list all signals which shall surely not be caught */
+
+/** The list of all signals which shall surely not be caught.
+    It depends on the particular signal whether it can be ignored or whether
+    it will lead to sudden death of the process.
+    Some signals are not POSIX,
+    but nevertheless ought to be ignored if they are defined.
+*/
+
+#ifdef SIGWINCH
+#define BURN_OS_SIG_WINCH ,SIGWINCH
+#define BURN_OS_SIG_WINCH_CNT 1
+#else
+#define BURN_OS_SIG_WINCH 
+#define BURN_OS_SIG_WINCH_CNT 0
+#endif
+
+#ifdef SIGURG
+#define BURN_OS_SIG_URG ,SIGURG
+#define BURN_OS_SIG_URG_CNT 1
+#else
+#define BURN_OS_SIG_URG 
+#define BURN_OS_SIG_URG_CNT 0
+#endif
+
+/** The combined list of all signals which shall not be caught.
+ */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
-SIGKILL, SIGCHLD, SIGSTOP
+SIGKILL, SIGCHLD, SIGSTOP BURN_OS_SIG_WINCH BURN_OS_SIG_URG
 
 /* The number of above list items */
-#define BURN_OS_NON_SIGNAL_COUNT 3
+#define BURN_OS_NON_SIGNAL_COUNT \
+( 3 + BURN_OS_SIG_WINCH_CNT + BURN_OS_SIG_URG_CNT )
 
 
 /* The maximum size for a (SCSI) i/o transaction */
