@@ -429,8 +429,11 @@ int sg_dispose_drive(struct burn_drive *d, int flag)
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int ret, recursion_count = 0, l;
+	int ret, recursion_count = 0;
 	char path[4096];
+#ifdef Libburn_is_on_solariS
+	int l;
+#endif
 
 	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
 	if (ret <= 0)
@@ -460,9 +463,12 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 int scsi_enumerate_drives(void)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0, l;
+	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	char buf[4096], target[4096];
+#ifdef Libburn_is_on_solariS
+	int l;
+#endif
 
 	while(1) {
 		ret = sg_give_next_adr_raw(&idx, buf, sizeof(buf), initialize);
