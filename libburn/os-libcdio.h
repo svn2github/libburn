@@ -64,17 +64,14 @@ SIGKILL, SIGCHLD, SIGSTOP BURN_OS_SIG_WINCH BURN_OS_SIG_URG
 
 
 /* The maximum size for a (SCSI) i/o transaction */
-/* Important : MUST be at least 32768 ! */
 /* My Blu-ray burner LG GGW-H20 writes junk if stream recording is combined
    with buffer size 32 kB. So stream recording is allowed only with size 64k.
-   This makes it worth to have a special case for GNU/Linux buffer size here.
+   Older BSD info says that 32 kB is maximum. But 64 kB seems to work well
+   on 8-STABLE. It is by default only used with BD in streaming mode.
+   So older systems should still be quite safe with this buffer max size.
 */
-#ifdef __linux
+/* Important : MUST be at least 32768 ! */
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
-#else
-/* (It might be risky to use 64k. FreeBSD is said to can only 32k.) */
-#define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
-#endif
 
 
 /* To hold the position of the most recently delivered address from

@@ -4,7 +4,8 @@
    by os.h in case of compilation for
                                   FreeBSD with CAM
 
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+   Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>,
+   provided under GPLv2+
 */
 
 /** List of all signals which shall be caught by signal handlers and trigger
@@ -41,7 +42,11 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */
-#define BURN_OS_TRANSPORT_BUFFER_SIZE 32768
+/* Older BSD info says that 32 kB is maximum. But 64 kB seems to work well
+   on 8-STABLE. It is by default only used with BD in streaming mode.
+   So older systems should still be quite safe with this buffer max size.
+*/
+#define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
 
 
 /** To hold all state information of BSD device enumeration

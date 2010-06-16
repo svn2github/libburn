@@ -41,8 +41,6 @@ SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
 /* Important : MUST be at least 32768 ! */
 /* My Blu-ray burner LG GGW-H20 writes junk if stream recording is combined
    with buffer size 32 kB. So stream recording is allowed only with size 64k.
-
-   >>> ??? is 64 kB ok for Solaris uscsi ?
 */
 #define BURN_OS_TRANSPORT_BUFFER_SIZE 65536
 
