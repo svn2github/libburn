@@ -8495,25 +8495,107 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 0.8.3
 
-  []
-- cdrskin/add_ts_changes_to_libburn_0_7_8
-- cdrskin/add_ts_changes_to_libburn_0_7_9
-+ cdrskin/add_ts_changes_to_libburn_0_8_0
-+ cdrskin/add_ts_changes_to_libburn_0_8_1
+11 Jun 2010  [3255]
+- cdrskin/add_ts_changes_to_libburn_0_8_0
+- cdrskin/add_ts_changes_to_libburn_0_8_1
++ cdrskin/add_ts_changes_to_libburn_0_8_2
++ cdrskin/add_ts_changes_to_libburn_0_8_3
 Updated cdrskin tarball generator
 
-  []
+11 Jun 2010  [3256]
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
-  []
-svn move -m libburn release 0.8.0 is ready
-http://svn.libburnia-project.org/libburn/branches/ZeroEightZero
-http://svn.libburnia-project.org/libburn/tags/ZeroEightZero
+11 Jun 2010  [3257]
+svn move -m libburn release 0.8.2 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroEightTwo
+http://svn.libburnia-project.org/libburn/tags/ZeroEightTwo
+
+------------------------------------ cycle  - cdrskin-0.8.3 - 2010.06.11.104830
 
 
------------------------------------- cycle  - cdrskin-0.8.3 - 
------------------------------------- cycle  - cdrskin-0.8.3 - 
+2010.06.13.190707  [3267]
+libburn/sg-solaris.c
+New less obtrusive implementation of sg_is_enumerable_adr for Solaris
+
+2010.06.15.155423  [3272]
+libburn/sg-libcdio.c
+Avoided compiler warning about unused variable on non-Solaris systems
+
+2010.06.15.155625  [3273]
+libburn/os-dummy.h
+libburn/os-libcdio.h
+Let general POSIX system adapters ignore SIGWINCH and SIGURG if defined
+
+2010.06.15.155739  [3274]
+configure.ac
+Incremented LT_CURRENT and LT_AGE of libburn
+
+2010.06.16.082457  [3277]
+libburn/os-solaris.h
+libburn/os-libcdio.h
+libburn/os-freebsd.h
+Allowed 64 kB max output buffer size on all OSes
+
+30 Jun 2010  [3307]
+svn copy -m "Branching for libburn release 0.8.4" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/branches/ZeroEightFour
+
+2010.06.30.100001  [3308]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.4
+
+30 Jun 2010  [3309]
+- cdrskin/add_ts_changes_to_libburn_0_8_2
+- cdrskin/add_ts_changes_to_libburn_0_8_3
++ cdrskin/add_ts_changes_to_libburn_0_8_4
++ cdrskin/add_ts_changes_to_libburn_0_8_5
+Updated cdrskin tarball generator
+
+30 Jun 2010  [3310]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.8.4.pl00 - 2010.06.30.100001
+* Let general POSIX system adapters ignore SIGWINCH and SIGURG if defined
+* Allowed 64 kB max output buffer size on all OSes
+
+
+2010.06.30.112709  [3311]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c 
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.5
+
+30 Jun 2010  [3312]
+- cdrskin/add_ts_changes_to_libburn_0_8_2
+- cdrskin/add_ts_changes_to_libburn_0_8_3
++ cdrskin/add_ts_changes_to_libburn_0_8_4
++ cdrskin/add_ts_changes_to_libburn_0_8_5
+Updated cdrskin tarball generator
+
+30 Jun 2010  []
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-0.8.5 - 
+------------------------------------ cycle  - cdrskin-0.8.5 - 
 
 
 ===============================================================================
@@ -8524,6 +8606,8 @@ http://svn.libburnia-project.org/libburn/tags/ZeroEightZero
 -------------------------------- Solaris -----------------------------------
 
 Locking of device files.
+
+Unmounting.
 
 Could need ioctl to obtain SCSI bus,target,lun from fd rather than name
 
