@@ -2628,7 +2628,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  0
 #define burn_header_version_minor  8
-#define burn_header_version_micro  3
+#define burn_header_version_micro  5
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
