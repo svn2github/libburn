@@ -188,7 +188,7 @@ CFLAGS="$CFLAGS $STATVFS_DEF"
 
 dnl ts A91122
 AC_ARG_ENABLE(track-src-odirect,
-[  --enable-track-src-odirect   Enable use of O_DIRECT with track input, default=no],
+[  --enable-track-src-odirect Enable use of O_DIRECT with track input, default=no],
                , enable_track_src_odirect=no)
 if test x$enable_track_src_odirect = xyes; then
     LIBBURN_O_DIRECT_DEF="-DLibburn_read_o_direcT"
@@ -203,7 +203,7 @@ CFLAGS="$CFLAGS $LIBBURN_O_DIRECT_DEF"
 
 dnl ts A91116
 AC_ARG_ENABLE(dvd-obs-64k,
-[  --enable-dvd-obs-64k         64 KB default size for DVD/BD writing, default=no],
+[  --enable-dvd-obs-64k    64 KB default size for DVD/BD writing, default=no],
                , enable_dvd_obs_64k=no)
 if test x$enable_dvd_obs_64k = xyes; then
     LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
@@ -216,7 +216,7 @@ CFLAGS="$CFLAGS $LIBBURN_DVD_OBS_64K"
 
 dnl ts A91218
 AC_ARG_ENABLE(libcdio,
-[  --enable-libcdio         Enable EXPERIMENTAL use of libcdio as system adapter, default=no],
+[  --enable-libcdio        Enable EXPERIMENTAL use of libcdio as system adapter, default=no],
                , enable_libcdio=no)
 if test x$enable_libcdio = xyes; then
 dnl Check whether there is libcdio-devel and libcdio-runtime.
@@ -240,6 +240,26 @@ else
     LIBCDIO_REQUIRED=0.83
     PKG_CHECK_MODULES(LIBCDIO, libcdio >= $LIBCDIO_REQUIRED)
 
+fi
+
+dnl ts B00704
+# Library versioning normally serves a complex purpose.
+# Since libburn obeys strict ABI backward compatibility, it needs only the
+# simple feature to declare function names "global:" or "local:". Only the
+# global ones are visible to applications at library load time.
+dnl
+dnl >>> TODO:
+dnl >>> make an actual try whether -Wl,--version-script=libburn/libburn.ver
+dnl >>> is accepted by the compiler
+dnl
+AC_ARG_ENABLE(versioned-libs,
+[  --enable-versioned-libs Enable strict symbol encapsulation , default=yes],
+               , enable_versioned_libs=yes)
+if test x$enable_versioned_libs = xyes; then
+    LDFLAGS="$LDFLAGS -Wl,--version-script=libburn/libburn.ver"
+    echo "enabled  strict symbol encapsulation"
+else
+    echo "disabled strict symbol encapsulation"
 fi
 
 
