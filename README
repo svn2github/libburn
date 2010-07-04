@@ -76,6 +76,12 @@ Alternatively the transport of SCSI commands can be done via libcdio-0.83.
 You may install it and re-run libburn's ./configure with option
     --enable-libcdio
 
+By use of a version script, the libburn.so library exposes no other function
+names but those of the API definition in libburn/libburn.h.
+If -Wl,--version-script=... makes problems with the local compiler, then
+disable this encapsulation feature by
+    --disable-versioned-libs
+
 Make sure to re-compile all source files after running ./configure
    make clean ; make
    make install
@@ -534,8 +540,8 @@ Project history as far as known to me:
 - Tue Jun 29 2010 Version 0.6.34 of libisofs provides new features about
   hiding file names from directory trees.
 
-- Wed Jun 30 2010 libburn-0.8.4 provides small improvements with system
-  adapters for libcdio and generic POSIX systems.
+- Wed Jun 30 2010 libburn-0.8.4 removes some restrictions on operating
+  systems other than Linux and FreeBSD.
 
 
 ------------------------------------------------------------------------------
