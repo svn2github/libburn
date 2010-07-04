@@ -25,17 +25,18 @@
 #include "../libburn/libdax_msgs.h"
 struct libdax_msgs *libdax_messenger= NULL;
 
+/* The API for .wav extraction */
+#define LIBDAX_AUDIOXTR_H_PUBLIC 1
+#include "../libburn/libdax_audioxtr.h"
+
 #else /* Dewav_without_libburN */
 
-/* This build environment uses libdax_msgs via libburn */
+/* This build environment uses libdax_msgs and libdax_audioxtr via libburn */
 /* Thus the API header of libburn */
 #include "../libburn/libburn.h"
 
 #endif /* ! Dewav_without_libburN */
 
-
-/* The API for .wav extraction */
-#include "../libburn/libdax_audioxtr.h"
 
 
 int main(int argc, char **argv)

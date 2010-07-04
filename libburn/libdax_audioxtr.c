@@ -25,7 +25,8 @@ extern struct libdax_msgs *libdax_messenger;
 /* Only this single source module is entitled to do this */
 #define LIBDAX_AUDIOXTR_H_INTERNAL 1
 
-/* All clients of the extraction facility must do this */
+/* All clients of the extraction facility must do this or include libburn.h */
+#define LIBDAX_AUDIOXTR_H_PUBLIC 1
 #include "libdax_audioxtr.h"
 
 

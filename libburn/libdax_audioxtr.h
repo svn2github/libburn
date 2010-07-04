@@ -7,6 +7,12 @@
 #ifndef LIBDAX_AUDIOXTR_H_INCLUDED
 #define LIBDAX_AUDIOXTR_H_INCLUDED 1
 
+
+/* Normally this public API is defined in <libburn/libburn.h>
+   This macro enables the definition for programs which only include this file.
+*/
+#ifdef LIBDAX_AUDIOXTR_H_PUBLIC
+
                             /* Public Macros */
 
 /* Maximum size for address paths and fmt_info strings */
@@ -110,6 +116,7 @@ int libdax_audioxtr_detach_fd(struct libdax_audioxtr *o, int *fd, int flag);
 */
 int libdax_audioxtr_destroy(struct libdax_audioxtr **xtr, int flag);
 
+#endif /* LIBDAX_AUDIOXTR_H_PUBLIC */
 
 
 #ifdef LIDBAX_AUDIOXTR________________

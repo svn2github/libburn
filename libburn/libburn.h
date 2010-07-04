@@ -2716,7 +2716,7 @@ int burn_msgs_set_severities(char *queue_severity,
                       "DEBUG", "ALL".
                       To call with minimum_severity "NEVER" will discard the
                       whole queue.
-    @param error_code Will become a unique error code as liste in
+    @param error_code Will become a unique error code as listed in
                       libburn/libdax_msgs.h
     @param msg_text   Must provide at least BURN_MSGS_MESSAGE_LEN bytes.
     @param os_errno   Will become the eventual errno related to the message
@@ -2978,6 +2978,110 @@ int burn_drive_get_drive_role(struct burn_drive *d);
     @since 0.4.0
 */
 int burn_drive_equals_adr(struct burn_drive *d1, char *adr2, int drive_role2);
+
+
+
+/*
+  Audio track data extraction facility.
+*/
+
+/* Maximum size for address paths and fmt_info strings */
+#define LIBDAX_AUDIOXTR_STRLEN 4096
+
+
+/** Extractor object encapsulating intermediate states of extraction.
+    The clients of libdax_audioxtr shall only allocate pointers to this
+    struct and get a storage object via libdax_audioxtr_new().
+    Appropriate initial value for the pointer is NULL.
+*/
+struct libdax_audioxtr;
+
+
+/** Open an audio file, check wether suitable, create extractor object.
+    @param xtr Opaque handle to extractor. Gets attached extractor object.
+    @param path Address of the audio file to extract. "-" is stdin (but might
+                be not suitable for all futurely supported formats).
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return >0 success
+             0 unsuitable format
+            -1 severe error
+            -2 path not found
+    @since 0.2.4
+*/
+int libdax_audioxtr_new(struct libdax_audioxtr **xtr, char *path, int flag);
+
+
+/** Obtain identification parameters of opened audio source.
+    @param xtr Opaque handle to extractor
+    @param fmt Gets pointed to the audio file format id text: ".wav" , ".au"
+    @param fmt_info Gets pointed to a format info text telling parameters
+    @param num_channels     e.g. 1=mono, 2=stereo, etc
+    @param sample_rate      e.g. 11025, 44100
+    @param bits_per_sample  e.g. 8= 8 bits per sample, 16= 16 bits ...
+    @param msb_first Byte order of samples: 0=Intel 1=Motorola
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return >0 success, <=0 failure
+    @since 0.2.4
+*/
+int libdax_audioxtr_get_id(struct libdax_audioxtr *xtr,
+                           char **fmt, char **fmt_info,
+                           int *num_channels, int *sample_rate,
+                           int *bits_per_sample, int *msb_first, int flag);
+
+
+/** Obtain a prediction about the extracted size based on internal information
+    of the formatted file.
+    @param xtr Opaque handle to extractor
+    @param size Gets filled with the predicted size
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return 1 prediction was possible , 0 no prediction could be made
+    @since 0.2.4
+*/
+int libdax_audioxtr_get_size(struct libdax_audioxtr *o, off_t *size, int flag);
+
+
+/** Obtain next buffer full of extracted data in desired format (only raw audio
+    for now).
+    @param xtr Opaque handle to extractor
+    @param buffer Gets filled with extracted data
+    @param buffer_size Maximum number of bytes to be filled into buffer
+    @param flag Bitfield for control purposes
+                bit0= do not stop at predicted end of data
+    @return >0 number of valid buffer bytes,
+             0 End of file
+            -1 operating system reports error
+            -2 usage error by application
+    @since 0.2.4
+*/
+int libdax_audioxtr_read(struct libdax_audioxtr *xtr,
+                         char buffer[], int buffer_size, int flag);
+
+
+/** Try to obtain a file descriptor which will deliver extracted data
+    to normal calls of read(2). This may fail because the format is
+    unsuitable for that, but ".wav" is ok. If this call succeeds the xtr
+    object will have forgotten its file descriptor and libdax_audioxtr_read()
+    will return a usage error. One may use *fd after libdax_audioxtr_destroy()
+    and will have to close it via close(2) when done with it.
+    @param xtr Opaque handle to extractor
+    @param fd Eventually returns the file descriptor number
+    @param flag Bitfield for control purposes
+                bit0= do not dup(2) and close(2) but hand out original fd
+    @return 1 success, 0 cannot hand out fd , -1 severe error
+    @since 0.2.4
+*/
+int libdax_audioxtr_detach_fd(struct libdax_audioxtr *o, int *fd, int flag);
+
+
+/** Clean up after extraction and destroy extractor object.
+    @param xtr Opaque handle to extractor, *xtr is allowed to be NULL,
+               *xtr is set to NULL by this function
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return 1 = destroyed object, 0 = was already destroyed
+    @since 0.2.4
+*/
+int libdax_audioxtr_destroy(struct libdax_audioxtr **xtr, int flag);
+
 
 
 #ifndef DOXYGEN
