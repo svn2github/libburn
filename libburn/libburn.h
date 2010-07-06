@@ -7,6 +7,9 @@
    This is the official API definition of libburn.
 
 */
+/* Important: If you add a public API function then add its name to file
+                 libburn/libburn.ver
+*/
 
 
 #ifndef LIBBURN_H
