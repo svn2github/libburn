@@ -42,6 +42,21 @@ AC_DEFUN([TARGET_SHIZZLE],
 ])
 
 
+dnl LIBBURN_ASSERT_VERS_LIBS is by Thomas Schmitt, libburnia project
+dnl It tests whether -Wl,--version-script=... works with the compiler
+AC_DEFUN([LIBBURN_ASSERT_VERS_LIBS],
+[
+    libburnia_save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -Wl,--version-script=libburn/libburn.ver"
+    AC_TRY_LINK([#include <stdio.h>], [printf("Hello\n");],
+                [vers_libs_test="yes"], [vers_libs_test="no"])
+    if test x$vers_libs_test = xno
+    then
+        LDFLAGS="$libburnia_save_LDFLAGS"
+    fi
+])
+  
+
 dnl LIBBURNIA_SET_PKGCONFIG determines the install directory for the *.pc file.
 dnl Important: Must be performed _after_ TARGET_SHIZZLE
 dnl 

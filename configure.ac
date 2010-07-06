@@ -247,17 +247,18 @@ dnl ts B00704
 # Since libburn obeys strict ABI backward compatibility, it needs only the
 # simple feature to declare function names "global:" or "local:". Only the
 # global ones are visible to applications at library load time.
-dnl
-dnl >>> TODO:
-dnl >>> make an actual try whether -Wl,--version-script=libburn/libburn.ver
-dnl >>> is accepted by the compiler
-dnl
 AC_ARG_ENABLE(versioned-libs,
 [  --enable-versioned-libs Enable strict symbol encapsulation , default=yes],
                , enable_versioned_libs=yes)
 if test x$enable_versioned_libs = xyes; then
-    LDFLAGS="$LDFLAGS -Wl,--version-script=libburn/libburn.ver"
-    echo "enabled  strict symbol encapsulation"
+    vers_libs_test=no
+    LIBBURN_ASSERT_VERS_LIBS
+    if test x$vers_libs_test = xno
+    then 
+        echo "disabled strict symbol encapsulation (test failed)"
+    else
+        echo "enabled  strict symbol encapsulation"
+    fi
 else
     echo "disabled strict symbol encapsulation"
 fi
