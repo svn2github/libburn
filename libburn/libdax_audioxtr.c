@@ -35,7 +35,7 @@ int libdax_audioxtr_new(struct libdax_audioxtr **xtr, char *path, int flag)
  int ret= -1;
  struct libdax_audioxtr *o;
 
- o= *xtr= (struct libdax_audioxtr *) malloc(sizeof(struct libdax_audioxtr));
+ o= *xtr= (struct libdax_audioxtr *) calloc(1, sizeof(struct libdax_audioxtr));
  if(o==NULL)
    return(-1);
  strncpy(o->path,path,LIBDAX_AUDIOXTR_STRLEN-1);

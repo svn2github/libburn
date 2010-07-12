@@ -34,7 +34,7 @@ char *burn_strdup(char *s)
 		return NULL;
 
 	l = strlen(s) + 1;
-	ret = malloc(l);
+	ret = calloc(1, l);
 	memcpy(ret, s, l);
 
 	return ret;
@@ -52,7 +52,7 @@ char *burn_strndup(char *s, int n)
 		return NULL;
 
 	l = strlen(s);
-	ret = malloc(l < n ? l : n);
+	ret = calloc(1, l < n ? l : n);
 
 	memcpy(ret, s, l < n - 1 ? l : n - 1);
 	ret[n - 1] = '\0';

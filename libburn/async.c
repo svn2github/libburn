@@ -143,7 +143,7 @@ static void add_worker(int w_type, struct burn_drive *d,
 	pthread_attr_t attr;
 #endif
 
-	a = malloc(sizeof(struct w_list));
+	a = calloc(1, sizeof(struct w_list));
 	a->w_type = w_type;
 	a->drive = d;
 	a->u = *(union w_list_data *)data;

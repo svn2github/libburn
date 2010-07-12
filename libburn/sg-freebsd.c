@@ -160,15 +160,15 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx_)
 	struct burn_drive_enumeration_state *idx;
 	int bufsize;
 
-	idx = malloc(sizeof(*idx));
+	idx = calloc(1, sizeof(*idx));
 	if (idx == NULL) {
-		warnx("can't malloc memory for enumerator");
+		warnx("cannot allocate memory for enumerator");
 		return -1;
 	}
 	idx->skip_device = 0;
 
 	if ((idx->fd = open(XPT_DEVICE, O_RDWR)) == -1) {
-		warn("couldn't open %s", XPT_DEVICE);
+		warn("could not open %s", XPT_DEVICE);
 		free(idx);
 		idx = NULL;
 		return -1;
@@ -183,9 +183,9 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx_)
 	idx->ccb.ccb_h.func_code = XPT_DEV_MATCH;
 	bufsize = sizeof(struct dev_match_result) * 100;
 	idx->ccb.cdm.match_buf_len = bufsize;
-	idx->ccb.cdm.matches = (struct dev_match_result *)malloc(bufsize);
+	idx->ccb.cdm.matches = (struct dev_match_result *) calloc(1, bufsize);
 	if (idx->ccb.cdm.matches == NULL) {
-		warnx("can't malloc memory for matches");
+		warnx("cannot allocate memory for matches");
 		close(idx->fd);
 		free(idx);
 		return -1;
@@ -487,9 +487,9 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.close_session = mmc_close_session;
 	out.close_track_session = mmc_close;
 	out.read_buffer_capacity = mmc_read_buffer_capacity;
-	out.idata = malloc(sizeof(struct burn_scsi_inquiry_data));
+	out.idata = calloc(1, sizeof(struct burn_scsi_inquiry_data));
 	out.idata->valid = 0;
-	out.mdata = malloc(sizeof(struct scsi_mode_data));
+	out.mdata = calloc(1, sizeof(struct scsi_mode_data));
 	out.mdata->valid = 0;
 	if (out.idata == NULL || out.mdata == NULL) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020108,

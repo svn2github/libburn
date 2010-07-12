@@ -37,7 +37,7 @@ static int libdax_msgs_item_new(struct libdax_msgs_item **item,
  struct timezone tz;
 
  (*item)= o= 
-           (struct libdax_msgs_item *) malloc(sizeof(struct libdax_msgs_item));
+        (struct libdax_msgs_item *) calloc(1, sizeof(struct libdax_msgs_item));
  if(o==NULL)
    return(-1);
  o->timestamp= 0.0;
@@ -140,7 +140,7 @@ int libdax_msgs_new(struct libdax_msgs **m, int flag)
 {
  struct libdax_msgs *o;
 
- (*m)= o= (struct libdax_msgs *) malloc(sizeof(struct libdax_msgs));
+ (*m)= o= (struct libdax_msgs *) calloc(1, sizeof(struct libdax_msgs));
  if(o==NULL)
    return(-1);
  o->refcount= 1;
@@ -370,7 +370,7 @@ int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
  item->severity= severity;
  item->priority= priority;
  if(msg_text!=NULL) {
-   item->msg_text= malloc(strlen(msg_text)+1);
+   item->msg_text= calloc(1, strlen(msg_text)+1);
    if(item->msg_text==NULL)
      goto failed;
    strcpy(item->msg_text,msg_text);

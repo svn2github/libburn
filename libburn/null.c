@@ -24,7 +24,7 @@ struct burn_source *burn_null_source_new(void)
 {
 	struct burn_source *src;
 
-	src = malloc(sizeof(struct burn_source));
+	src = calloc(1, sizeof(struct burn_source));
 	src->refcount = 1;
 	src->read = null_read;
 	src->read_sub = NULL;

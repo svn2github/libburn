@@ -129,7 +129,7 @@ struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 			return NULL;
 		}
 	}
-	fs = malloc(sizeof(struct burn_source_file));
+	fs = calloc(1, sizeof(struct burn_source_file));
 
 	/* ts A70825 */
 	if (fs == NULL) {
@@ -175,7 +175,7 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 
 	if (datafd == -1)
 		return NULL;
-	fs = malloc(sizeof(struct burn_source_file));
+	fs = calloc(1, sizeof(struct burn_source_file));
 	if (fs == NULL) /* ts A70825 */
 		return NULL;
 	fs->datafd = datafd;
@@ -508,7 +508,7 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 				"Desired fifo buffer too small", 0, 0);
 		return NULL;
 	}
-	fs = malloc(sizeof(struct burn_source_fifo));
+	fs = calloc(1, sizeof(struct burn_source_fifo));
 	if (fs == NULL)
 		return NULL;
 	fs->is_started = 0;

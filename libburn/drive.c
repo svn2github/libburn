@@ -12,9 +12,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-/* #include <m alloc.h>  ts A61013 : not in GNU/Linux man 3 malloc */
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -1297,7 +1294,7 @@ int burn_drive_add_whitelist(char *device_address)
 	if(enumeration_whitelist_top+1 >= BURN_DRIVE_WHITELIST_LEN)
 		return 0;
 	enumeration_whitelist_top++;
-	new_item = malloc(strlen(device_address) + 1);
+	new_item = calloc(1, strlen(device_address) + 1);
 	if (new_item == NULL)
 		return -1;
 	strcpy(new_item, device_address);
@@ -2221,7 +2218,7 @@ int burn_speed_descriptor_new(struct burn_speed_descriptor **s,
 {
 	struct burn_speed_descriptor *o;
 
-	(*s) = o = malloc(sizeof(struct burn_speed_descriptor));
+	(*s) = o = calloc(1, sizeof(struct burn_speed_descriptor));
 	if (o == NULL)
 		return -1;
 	o->source = 0;
@@ -2392,7 +2389,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	if(s == BURN_DISC_UNGRABBED)
 		return -1;
 	*caps = o = (struct burn_multi_caps *)
-		malloc(sizeof(struct burn_multi_caps));
+		calloc(1, sizeof(struct burn_multi_caps));
 	if(*caps == NULL)
 		return -1;
 	/* Default says nothing is available */

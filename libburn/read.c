@@ -9,9 +9,6 @@
 #include "../config.h"
 #endif
 
-
-/* #include <m alloc.h>  ts A61013 : not in GNU/Linux man 3 malloc */
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>

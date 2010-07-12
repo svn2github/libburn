@@ -169,9 +169,10 @@ static int sg_init_enumerator(burn_drive_enumerator_t *idx)
 	idx->ccb.ccb_h.func_code = XPT_DEV_MATCH;
 	idx->bufsize = sizeof(struct dev_match_result) * 100;
 	idx->ccb.cdm.match_buf_len = idx->bufsize;
-	idx->ccb.cdm.matches = (struct dev_match_result *)malloc(idx->bufsize);
+	idx->ccb.cdm.matches = (struct dev_match_result *)
+						calloc(1, idx->bufsize);
 	if (idx->ccb.cdm.matches == NULL) {
-		warnx("can't malloc memory for matches");
+		warnx("cannot allocate memory for matches");
 		close(idx->fd);
 		return -1;
 	}

@@ -1165,7 +1165,7 @@ int mmc_fake_toc(struct burn_drive *d)
 	if (d->disc == NULL)
 		return -1;
 	d->toc_entries = d->last_track_no + d->complete_sessions;
-	d->toc_entry = malloc(d->toc_entries * sizeof(struct burn_toc_entry));
+	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
 	if (d->toc_entry == NULL)
 		return -1;
 	memset(d->toc_entry, 0,d->toc_entries * sizeof(struct burn_toc_entry));

@@ -27,7 +27,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 {
 	struct burn_write_opts *opts;
 
-	opts = malloc(sizeof(struct burn_write_opts));
+	opts = calloc(1, sizeof(struct burn_write_opts));
 	if (opts == NULL) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020111,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
@@ -68,7 +68,7 @@ struct burn_read_opts *burn_read_opts_new(struct burn_drive *drive)
 {
 	struct burn_read_opts *opts;
 
-	opts = malloc(sizeof(struct burn_read_opts));
+	opts = calloc(1, sizeof(struct burn_read_opts));
 	opts->drive = drive;
 	opts->refcount = 1;
 	opts->raw = 0;
@@ -125,7 +125,7 @@ void burn_write_opts_set_toc_entries(struct burn_write_opts *opts, int count,
 				     struct burn_toc_entry *toc_entries)
 {
 	opts->toc_entries = count;
-	opts->toc_entry = malloc(count * sizeof(struct burn_toc_entry));
+	opts->toc_entry = calloc(count, sizeof(struct burn_toc_entry));
 	memcpy(opts->toc_entry, &toc_entries,
 	       sizeof(struct burn_toc_entry) * count);
 }
