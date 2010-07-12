@@ -420,7 +420,7 @@ static int Cdrskin_abort_leveL= 0;
 /* Imported from scdbackup-0.8.5/src/cd_backup_planer.c */
 
 /** Macro for creation of arrays of objects (or single objects) */
-#define TSOB_FELD(typ,anz) (typ *) malloc((anz)*sizeof(typ));
+#define TSOB_FELD(typ,anz) (typ *) calloc(anz, sizeof(typ));
 
 
 /** Convert a text so that eventual characters special to the shell are
@@ -570,7 +570,7 @@ int Sfile_multi_read_argv(char *progname, char **filenames, int filename_count,
      if(pass==0)
        maxl= strlen(progname)+1;
      else {
-      (*argv)[0]= (char *) malloc(strlen(progname)+1);
+      (*argv)[0]= (char *) calloc(1, strlen(progname)+1);
       if((*argv)[0]==NULL)
          {ret= -1; goto ex;}
        strcpy((*argv)[0],progname);
@@ -601,7 +601,7 @@ int Sfile_multi_read_argv(char *progname, char **filenames, int filename_count,
        } else {
          if(argcount >= *argc)
      break;
-         (*argv)[argcount]= (char *) malloc(l+1);
+         (*argv)[argcount]= (char *) calloc(1, l+1);
          if((*argv)[argcount]==NULL)
            {ret= -1; goto ex;}
          strcpy((*argv)[argcount],buf);
@@ -615,9 +615,9 @@ int Sfile_multi_read_argv(char *progname, char **filenames, int filename_count,
    if(pass==0){
      *argc= argcount;
      if(argcount>0) {
-       *argv= (char **) malloc(argcount*sizeof(char *));
-       *argidx= (int *) malloc(argcount*sizeof(int));
-       *arglno= (int *) malloc(argcount*sizeof(int));
+       *argv= (char **) calloc(argcount, sizeof(char *));
+       *argidx= (int *) calloc(argcount, sizeof(int));
+       *arglno= (int *) calloc(argcount, sizeof(int));
        if(*argv==NULL || *argidx==NULL || *arglno==NULL)
          {ret= -1; goto ex;}
      }
@@ -817,8 +817,8 @@ int Cdradrtrn_add(struct CdradrtrN *trn, char *from, char *to, int flag)
  }
  if(strlen(from)>=Cdrskin_adrleN || strlen(to)>=Cdrskin_adrleN)
    return(0);
- trn->from_address[cnt]= malloc(strlen(from_pt)+1);
- trn->to_address[cnt]= malloc(strlen(to_pt)+1);
+ trn->from_address[cnt]= calloc(1, strlen(from_pt)+1);
+ trn->to_address[cnt]= calloc(1, strlen(to_pt)+1);
  if(trn->from_address[cnt]==NULL ||
     trn->to_address[cnt]==NULL)
    return(-2);
@@ -4741,8 +4741,8 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
  int *drives_busses= NULL;
  struct stat stbuf;
 
- drives_shown= malloc(skin->n_drives+1);
- drives_busses= malloc((skin->n_drives+1) * sizeof(int));
+ drives_shown= calloc(1, skin->n_drives+1);
+ drives_busses= calloc((skin->n_drives+1), sizeof(int));
  if(drives_shown == NULL || drives_busses == NULL)
    {ret= -1; goto ex;}
  for(i=0;i<skin->n_drives;i++)
@@ -6897,7 +6897,7 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
    if(ret<=0)
      goto ex;
  }
- buf= malloc(max_chunksize);
+ buf= calloc(1, max_chunksize);
  if(buf==NULL) {
    fprintf(stderr,
            "cdrskin: FATAL : Cannot allocate %d bytes of read buffer.\n",

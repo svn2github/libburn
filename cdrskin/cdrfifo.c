@@ -34,7 +34,7 @@
 
 
 /* Macro for creation of arrays of objects (or single objects) */
-#define TSOB_FELD(typ,anz) (typ *) malloc((anz)*sizeof(typ));
+#define TSOB_FELD(typ,anz) (typ *) calloc(anz, sizeof(typ));
 
 
 #define Cdrfifo_buffer_chunK 2048
