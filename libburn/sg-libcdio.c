@@ -598,6 +598,7 @@ int sg_release(struct burn_drive *d)
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
 	int sense_valid = 0, i, usleep_time, timeout_ms, no_retry = 0;
+	int key = 0, asc = 0, ascq = 0;
 	time_t start_time;
         driver_return_code_t i_status;
 	unsigned int dxfer_len;
@@ -647,10 +648,13 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		i_status = mmc_run_cmd(p_cdio, timeout_ms, &cdb, e_direction,
 				 	dxfer_len, c->page->data);
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
-		if (sense_valid >= 18)
+		if (sense_valid >= 18) {
 			memcpy(c->sense, sense_pt,
 				sense_valid >= sizeof(c->sense) ?
 				sizeof(c->sense) : sense_valid );
+			spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
+		} else
+			key = asc = ascq = 0;
 		if (sense_pt != NULL)
 			free(sense_pt);
 
@@ -672,22 +676,18 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
 */
 
-		if ((!sense_valid) ||
-			 ((c->sense[2] & 0x0f) == 0 && c->sense[12] == 0 &&
-							 c->sense[13] == 0)) {
+		if ((!sense_valid) || (key == 0 && asc == 0 && ascq == 0)) {
 			memset(c->sense, 0, sizeof(c->sense));
 			if (i_status != 0) { /* set dummy sense */
 				/*LOGICAL UNIT NOT READY,
 					CAUSE NOT REPORTABLE*/
+				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				no_retry = 1;
 			}
-		} else
-			c->sense[2] &= 15;
-	
-		if (i_status != 0 ||
-		    (c->sense[2] || c->sense[12] || c->sense[13])) {
+		} 
+		if (i_status != 0 || (key || asc || ascq)) {
 			if (no_retry || !c->retry) {
 				c->error = 1;
 				goto ex;

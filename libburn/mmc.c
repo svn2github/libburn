@@ -813,7 +813,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 {
 	int cancelled;
 	struct command c;
-	int len;
+	int len, key, asc, ascq;
 
 #ifdef Libburn_log_in_and_out_streaM
 	/* <<< ts A61031 */
@@ -892,33 +892,20 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	d->pbf_altered = 1;
 
 	/* ts A61112 : react on eventual error condition */ 
-	if (c.error && c.sense[2]!=0) {
+	spc_decode_sense(c.sense, 0, &key, &asc, &ascq);
+	if (c.error && key != 0) {
 
 		/* >>> make this scsi_notify_error() when liberated */
-		if (c.sense[2]!=0) {
+		char msg[256];
+		int key, asc, ascq;
 
-#ifdef NIX
-			char msg[160];
-			sprintf(msg,
-		"SCSI error on write(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
-				start, len,
-				c.sense[2],c.sense[12],c.sense[13]);
-#else /* NIX */
-			char msg[256];
-			int key, asc, ascq;
-
-			sprintf(msg, "SCSI error on write(%d,%d): ",
-					start, len);
-			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+		sprintf(msg, "SCSI error on write(%d,%d): ", start, len);
+		scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
-
-#endif /* !NIX */
-
-			libdax_msgs_submit(libdax_messenger, d->global_index,
+		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011d,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
-		}
 		d->cancel = 1;
 		return BE_CANCELLED;
 	} 
@@ -2334,7 +2321,8 @@ int mmc_set_streaming(struct burn_drive *d,
 	
 	d->issue_command(d, &c);
 	if (c.error) {
-		if (c.sense[2]!=0 && !d->silent_on_scsi_error) {
+		spc_decode_sense(c.sense, 0, &key, &asc, &ascq);
+		if (key != 0 && !d->silent_on_scsi_error) {
 			sprintf(msg,
 				"SCSI error on set_streaming(%d): ", w_speed);
 			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
@@ -2414,7 +2402,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer buf;
 	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
-	int old_alloc_len, only_current_profile = 0;
+	int old_alloc_len, only_current_profile = 0, key, asc, ascq;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command c;
 	int phys_if_std = 0;
@@ -2449,6 +2437,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 
 #ifdef Libisofs_simulate_old_mmc1_drivE
 	c.error = 1;
+	c.sense[0] = 0x70; /* Fixed format sense data */
 	c.sense[2] = 0x5;
 	c.sense[12] = 0x20;
 	c.sense[13] = 0x0;
@@ -2456,8 +2445,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 
 	if (c.error) {
 		/* ts A90603 : MMC-1 drive do not know 46h GET CONFIGURATION */
-		if (c.sense[2] == 0x5 && c.sense[12] == 0x20 &&
-		    c.sense[13] == 0x0) {
+		spc_decode_sense(c.sense, 0, &key, &asc, &ascq);
+		if (key == 0x5 && asc == 0x20 && ascq == 0x0) {
 			d->current_is_guessed_profile = 1;
 			/* Will yield a non-zero profile only after
 			   mmc_read_disc_info_al() was called */
@@ -3608,24 +3597,11 @@ unsuitable_media:;
 
 	d->issue_command(d, &c);
 	if (c.error && !tolerate_failure) {
-		if (c.sense[2]!=0) {
-
-#ifdef NIX
-			sprintf(msg,
-		"SCSI error on format_unit(%s): key=%X asc=%2.2Xh ascq=%2.2Xh",
-				descr,
-				c.sense[2],c.sense[12],c.sense[13]);
-			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020122,
-				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-#else /* NIX */
+		spc_decode_sense(c.sense, 0, &key, &asc, &ascq);
+		if (key != 0) {
 			sprintf(msg, "SCSI error on format_unit(%s): ", descr);
 			scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
-
-#endif /* !NIX */
-
 		}
 		return 0;
 	} else if ((!c.error) && (format_type == 0x13 || format_type == 0x15))
@@ -3695,6 +3671,7 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 
 #ifdef Libisofs_simulate_old_mmc1_drivE
 	c.error = 1;
+	c.sense[0] = 0x70; /* Fixed format sense data */
 	c.sense[2] = 0x5;
 	c.sense[12] = 0x20;
 	c.sense[13] = 0x0;
@@ -3926,11 +3903,13 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 {
 	struct command c;
+	char msg[256];
+	int key, asc, ascq;
 
 	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_read_10") <= 0)
 		return -1;
-;
+
 	if (amount > BUFFER_SIZE / 2048)
 		return -1;
 
@@ -3946,24 +3925,9 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 	c.dir = FROM_DRIVE;
 	d->issue_command(d, &c);
 	if (c.error) {
-
-#ifdef NIX
-		char msg[160];
-
-		sprintf(msg,
-		"SCSI error on read_10(%d,%d): key=%X asc=%2.2Xh ascq=%2.2Xh",
-			start, amount,
-			c.sense[2],c.sense[12],c.sense[13]);
-#else /* NIX */
-		char msg[256];
-		int key, asc, ascq;
-
 		sprintf(msg, "SCSI error on read_10(%d,%d): ", start, amount);
 		scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
 				&key, &asc, &ascq);
-
-#endif /* !NIX */
-
 		if(!d->silent_on_scsi_error)
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020144,

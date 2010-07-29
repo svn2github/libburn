@@ -80,5 +80,9 @@ int scsi_log_cmd(struct command *c, void *fp, int flag);
 int scsi_log_err(struct command *c, void *fp, unsigned char sense[18], 
                  int duration, int flag);
 
+/* ts B00728 */
+int spc_decode_sense(unsigned char *sense, int senselen,
+                     int *key, int *asc, int *ascq);
+
 
 #endif /*__SPC*/

@@ -760,7 +760,7 @@ int sg_release(struct burn_drive *d)
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
 	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0;
-	int cam_pass_err_recover = 0;
+	int cam_pass_err_recover = 0, key, asc, ascq;
 	union ccb *ccb;
 	char buf[161];
 	static FILE *fp = NULL;
@@ -867,8 +867,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			if (sense_len > sizeof(c->sense))
 				sense_len = sizeof(c->sense);
 			memcpy(c->sense, &ccb->csio.sense_data, sense_len);
-			if (sense_len >= 14 && cam_pass_err_recover &&
-			    (c->sense[2] & 0x0f))
+			spc_decode_sense(c->sense, sense_len,
+							&key, &asc, &ascq);
+			if (sense_len >= 14 && cam_pass_err_recover && key)
 				ignore_error = 1;
 		}
 
@@ -886,6 +887,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [2,3A,00] MEDIUM NOT PRESENT\n");
 #endif
 
+				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x3A;
 				c->sense[13] = 0x00;
@@ -901,6 +903,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [2,04,00] LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE\n");
 #endif
 
+				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				c->sense[13] = 0x00;
@@ -914,6 +917,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				fprintf(stderr, "libburn_EXPERIMENTAL: Emulating [5,24,00] INVALID FIELD IN CDB\n");
 #endif
 
+				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x05;
 				c->sense[12] = 0x24;
 				c->sense[13] = 0x00;
@@ -944,6 +948,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				fprintf(stderr, "libburn_EXPERIMENTAL: CAM_STATUS= %d .Emulating [2,04,00] LOGICAL UNIT NOT READY,CAUSE NOT REPORTABLE\n", (ccb->ccb_h.status & CAM_STATUS_MASK));
 #endif
 
+				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				c->sense[13] = 0x00;

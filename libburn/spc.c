@@ -75,6 +75,30 @@ int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
 }
 
 
+/* ts B00728 */
+int spc_decode_sense(unsigned char *sense, int senselen,
+                     int *key, int *asc, int *ascq)
+{
+	*key = *asc = *ascq = 0;
+	if ((sense[0] & 0x7f) == 0x72 || (sense[0] & 0x7f) == 0x73) {
+		if (senselen <= 0 || senselen > 1)
+			*key = sense[1] & 0x0f;
+		if (senselen <= 0 || senselen > 2)
+			*asc = sense[2];
+		if (senselen <= 0 || senselen > 3)
+			*ascq = sense[3];
+		return 1;
+	}
+	if (senselen <= 0 || senselen > 2)
+		*key = sense[2] & 0x0f;
+	if (senselen <= 0 || senselen > 12)
+		*asc = sense[12];
+	if (senselen <= 0 || senselen > 13)
+		*ascq = sense[13];
+	return 1;
+}
+
+
 int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 {
 	struct command c;
@@ -83,22 +107,22 @@ int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 		return 0;
 
 	scsi_init_command(&c, SPC_TEST_UNIT_READY,sizeof(SPC_TEST_UNIT_READY));
-/*
-	c.oplen = sizeof(SPC_TEST_UNIT_READY);
-	memcpy(c.opcode, SPC_TEST_UNIT_READY, sizeof(SPC_TEST_UNIT_READY));
-	c.page = NULL;
-*/
 	c.retry = 0;
 	c.dir = NO_TRANSFER;
 	d->issue_command(d, &c);
 	if (c.error) {
-		*key= c.sense[2];
-		*asc= c.sense[12];
-		*ascq= c.sense[13];
-		return (c.sense[2] & 0xF) == 0;
+
+/*
+fprintf(stderr, "sense[0 - 2] = %2.2X %2.2X %2.2X",
+c.sense[0], c.sense[1], c.sense[2]);
+*/
+
+		spc_decode_sense(c.sense, 0, key, asc, ascq);
+		return (key == 0);
 	}
 	return 1;
 }
+
 
 int spc_test_unit_ready(struct burn_drive *d)
 {
@@ -151,6 +175,7 @@ handle_error:;
 			/* ts A90213 */
 			sprintf(msg,
 				"Asynchronous SCSI error on %s: ", cmd_text);
+			sense[0] = 0x70; /* Fixed format sense data */
 			sense[2] = key;
 			sense[12] = asc;
 			sense[13] = ascq;
@@ -249,7 +274,7 @@ void spc_inquiry(struct burn_drive *d)
 	memcpy(c.opcode, SPC_INQUIRY, sizeof(SPC_INQUIRY));
 	c.oplen = sizeof(SPC_INQUIRY);
 */
-	c.dxfer_len= (c.opcode[3] << 8) | c.opcode[4];
+	c.dxfer_len = (c.opcode[3] << 8) | c.opcode[4];
 	c.retry = 1;
 	c.page = &buf;
 	c.page->bytes = 0;
@@ -803,9 +828,7 @@ void spc_probe_write_modes(struct burn_drive *d)
 		if (last_try)
 	break;
 
-		key = c.sense[2];
-		asc = c.sense[12];
-		ascq = c.sense[13];
+		spc_decode_sense(c.sense, 0, &key, &asc, &ascq);
 		if (key)
 			burn_print(7, "%d not supported\n", try_block_type);
 		else {
@@ -958,6 +981,7 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			     int senselen, char msg_data[161],
 			     int *key, int *asc, int *ascq)
 {
+	int ret;
 	char *msg;
 	static char key_def[16][40] = {
 		"(no specific error)",
@@ -981,12 +1005,9 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	msg= msg_data;
 	*key= *asc= *ascq= -1;
 
-	if (senselen<=0 || senselen>2)
-		*key = sense[2] & 0x0f;
-	if (senselen<=0 || senselen>12)
-		*asc = sense[12];
-	if (senselen<=0 || senselen>13)
-		*ascq = sense[13];
+	ret = spc_decode_sense(sense, senselen, key, asc, ascq);
+	if (ret <= 0)
+		*key= *asc= *ascq= -1;
 
 	sprintf(msg, "[%X %2.2X %2.2X] ", *key, *asc, *ascq);
 	msg= msg + strlen(msg);
@@ -1202,6 +1223,12 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			sprintf(msg, "Medium not present");
 		d->status = BURN_DISC_EMPTY;
+		return FAIL;
+	case 0x3E:
+		if (*ascq == 1)
+			sprintf(msg, "Logical unit failure");
+		else if (*ascq == 2)
+			sprintf(msg, "Timeout on logical unit");
 		return FAIL;
 	case 0x57:
 		if (*key != 3 || *ascq != 0)

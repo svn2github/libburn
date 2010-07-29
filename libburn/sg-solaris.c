@@ -565,7 +565,7 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int i, usleep_time, timeout_ms, no_retry = 0, ret;
+	int i, usleep_time, timeout_ms, no_retry = 0, ret, key, asc, ascq;
 	time_t start_time;
 	struct uscsi_cmd cgc;
 	char msg[80];
@@ -639,11 +639,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			return -1;
 		}
 
-		c->sense[2] &= 15;
-
 		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
 
-		if (c->sense[2] || c->sense[12] || c->sense[13]) {
+		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
+		if (key || asc || ascq) {
 			if (no_retry || !c->retry) {
 				c->error = 1;
 				goto ex;
