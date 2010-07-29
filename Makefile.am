@@ -143,7 +143,10 @@ doc/html: doc/doxygen.conf
 doc-upload: doc/html
 	scp -r $</* $(webhost):$(webpath)
 
-all: doc
+## ts B00729
+## Not by default any more.
+## It is unclear who is supposed to create file ./doc/doc.lock
+# all: doc
 
 install-data-local: 
 	if [ -f ./doc/doc.lock ]; then \
