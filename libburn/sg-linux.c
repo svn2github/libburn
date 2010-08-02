@@ -1892,6 +1892,24 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			return -1;
 		}
 
+#ifdef NIX
+/* <<< */
+if(0){
+ static int erst= 1;
+ static unsigned char b00_sense[22]= {
+    0x72, 0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E,
+    0x09, 0x0C, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+ if (erst > 0) {
+   s.sb_len_wr= 22;
+   memcpy(s.sbp, b00_sense, s.sb_len_wr);
+   erst--;
+ }
+}
+/* <<< */
+#endif /* NIX */
+
 		if (s.sb_len_wr) {
 			if (!c->retry) {
 				c->error = 1;
