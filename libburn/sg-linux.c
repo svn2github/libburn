@@ -1773,36 +1773,6 @@ int sg_release(struct burn_drive *d)
 }
 
 
-#ifdef NIX
-/* <<< now in spc.c as scsi_log_err */
-
-/** logs outcome of a sg command. flag&1 causes an error message */
-static int sg_log_err(struct command *c, FILE *fp, 
-		sg_io_hdr_t *s,
-		int flag)
-{
-      	if(fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
-		if(flag & 1) {
-  			fprintf(fp,
-			"+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh   (%6d ms)\n",
-				s->sbp[2], s->sbp[12], s->sbp[13],s->duration);
-		} else {
-			scsi_show_cmd_reply(c, fp, 0);
-			fprintf(fp,"%6d ms\n", s->duration);
-		}
-		if (burn_sg_log_scsi & 4)
-			fflush(fp);
-	}
-	if (fp == stderr || !(burn_sg_log_scsi & 2))
-		return 1;
-
-	sg_log_err(c, stderr, s, flag);
-	return 1;
-}
-
-#endif /* NIX */
-
-
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
     the command succeeded or shall be retried or finally failed.
     Returned SCSI errors shall not lead to a return value indicating failure.
@@ -1933,8 +1903,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			case RETRY:
 				done = 0;
 				if (burn_sg_log_scsi & 3) {
-					scsi_log_err(c, fp, s.sbp, s.duration,
-								c->error != 0);
+					scsi_log_err(c, fp, s.sbp, s.sb_len_wr,
+						s.duration, c->error != 0);
 					scsi_log_cmd(c,fp,0);
 				}
 				break;
@@ -1981,8 +1951,8 @@ ex:;
 				msg, 0, 0);
 	}
 	if (burn_sg_log_scsi & 3)
-		/* <<< sg_log_err(c, fp, &s, c->error != 0); */
-		scsi_log_err(c, fp, s.sbp, s.duration, c->error != 0);
+		scsi_log_err(c, fp, s.sbp, s.sb_len_wr,
+						 s.duration, c->error != 0);
 	return 1;
 }
 

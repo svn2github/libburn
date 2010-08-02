@@ -964,8 +964,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				if (burn_sg_log_scsi & 3) {
 					/* >>> Need own duration time
 					       measurement. Then remove bit1 */
-					scsi_log_err(c, fp, c->sense, 0,
-							(c->error != 0) | 2);
+					scsi_log_err(c, fp, c->sense,
+					    sense_len > 0 ? sense_len : 18,
+					    0, (c->error != 0) | 2);
 					scsi_log_cmd(c,fp,0);
 				}
 				break;
@@ -985,7 +986,8 @@ ex:;
 
 	if (burn_sg_log_scsi & 3)
 		/* >>> Need own duration time measurement. Then remove bit1 */
-		scsi_log_err(c, fp, c->sense, 0, (c->error != 0) | 2);
+		scsi_log_err(c, fp, c->sense, sense_len > 0 ? sense_len : 18,
+						0, (c->error != 0) | 2);
 
 	cam_freeccb(ccb);
 	return ret;

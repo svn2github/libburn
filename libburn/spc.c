@@ -1520,19 +1520,31 @@ int scsi_log_cmd(struct command *c, void *fp_in, int flag)
                  bit1 do not print duration
 */
 int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
-		 int duration, int flag)
+		 int sense_len, int duration, int flag)
 {
 	char durtxt[20];
 	FILE *fp = fp_in;
+	int key, asc, ascq, i, l;
 
-      	if(fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
-		if(flag & 1) {
+      	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		if (flag & 1) {
 			durtxt[0] = 0;
 			if (!(flag & 2))
-  				sprintf(durtxt, "   (%6d ms)\n",duration);
+  				sprintf(durtxt, "   (%6d ms)", duration);
+			spc_decode_sense(sense, 0, &key, &asc, &ascq);
   			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh%s\n",
-				sense[2], sense[12], sense[13], durtxt);
-
+				(unsigned int) key, (unsigned int) asc,
+				(unsigned int) ascq, durtxt);
+			l = 18;
+			if ((sense[0] & 0x7f) == 0x72 ||
+			    (sense[0] & 0x7f) == 0x73)
+				l = sense[7] + 7 + 1; /* SPC-5 4.5.2. */
+			if (l > sense_len)
+				l = sense_len;
+			fprintf(fp, "+++ sense data =");
+			for (i = 0 ; i < l; i++)
+				fprintf(fp, " %2.2X", sense[i]);
+			fprintf(fp, "\n");
 		} else {
 			scsi_show_cmd_reply(c, fp, 0);
 			if (!(flag & 2))
@@ -1543,7 +1555,7 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 	}
 	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
-	scsi_log_err(c, stderr, sense, duration, flag);
+	scsi_log_err(c, stderr, sense, sense_len, duration, flag);
 	return 1;
 }
 
