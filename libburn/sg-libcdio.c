@@ -698,7 +698,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 					/* >>> Need own duration time
 					       measurement. Then remove bit1 */
 					scsi_log_err(c, fp, c->sense, 18, 0,
-							(c->error != 0) | 2);
+							1 | 2);
 					scsi_log_cmd(c,fp,0);
 				}
 				break;

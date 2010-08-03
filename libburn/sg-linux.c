@@ -1922,7 +1922,7 @@ if(0){
 				done = 0;
 				if (burn_sg_log_scsi & 3) {
 					scsi_log_err(c, fp, s.sbp, s.sb_len_wr,
-						s.duration, c->error != 0);
+						s.duration, 1);
 					scsi_log_cmd(c,fp,0);
 				}
 				break;
