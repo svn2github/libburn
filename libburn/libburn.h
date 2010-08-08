@@ -2685,8 +2685,8 @@ These two advises are mutually exclusive.
 /** Obtain the id string of the SCSI transport interface.
     This interface may be a system specific adapter module of libburn or
     an adapter to a supporting library like libcdio.
-    @flag     Bitfield for control puposes, submit 0 for now
-    @return   A pointer to the id string. Do not alter the string content.
+    @param flag  Bitfield for control puposes, submit 0 for now
+    @return      A pointer to the id string. Do not alter the string content.
     @since 0.7.6
 */
 char *burn_scsi_transport_id(int flag);
