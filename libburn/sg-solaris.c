@@ -660,6 +660,13 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			case FAIL:
 				c->error = 1;
 				goto ex;
+			case GO_ON:
+				if (burn_sg_log_scsi & 3)
+					/* >>> Need own duration time
+					       measurement. Then remove bit1 */
+					scsi_log_err(c, fp, c->sense, 18, 0,
+							1 | 2);
+				goto ex;
 			}
 			/* 
 			   Calming down retries and breaking up endless cycle

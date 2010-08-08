@@ -974,6 +974,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				done = 1;
 				c->error = 1;
 				break;
+			case GO_ON:
+				if (burn_sg_log_scsi & 3)
+					/* >>> Need own duration time
+					       measurement. Then remove bit1 */
+					scsi_log_err(c, fp, c->sense,
+					    sense_len > 0 ? sense_len : 18,
+					    0, 1 | 2);
+				{ret = 1; goto ex;}
 			}
 		} else {
 			done = 1;
@@ -1003,6 +1011,10 @@ int burn_os_is_2k_seekrw(char *path, int flag)
         struct stat stbuf;
 	char *spt;
 	int i, e;
+#ifdef Libburn_DIOCGMEDIASIZE_ISBLK
+	int fd;
+	off_t add_size;
+#endif
 
         if (stat(path, &stbuf) == -1)
                 return 0;
@@ -1010,6 +1022,22 @@ int burn_os_is_2k_seekrw(char *path, int flag)
                 return 1;
 	if (!S_ISCHR(stbuf.st_mode))
 		return 0;
+
+#ifdef Libburn_DIOCGMEDIASIZE_ISBLK
+
+	/* If it throws no error with DIOCGMEDIASIZE then it is a
+	   'block device'
+	*/
+	fd = open(path, O_RDONLY);
+	if (fd == -1)
+		return 0;
+	ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
+	close(fd);
+
+	return 1;
+
+#else /* Libburn_DIOCGMEDIASIZE_ISBLK */
+
 	spt = strrchr(path, '/');
 	if (spt == NULL)
 	        spt = path;
@@ -1032,6 +1060,9 @@ int burn_os_is_2k_seekrw(char *path, int flag)
 	if (strncmp(spt, "fla", e) == 0) /* Flash drive */
 		return 1;
 	return 0;
+
+#endif /* ! Libburn_DIOCGMEDIASIZE_ISBLK */
+
 }
 
 

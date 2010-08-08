@@ -1017,8 +1017,10 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 
 	switch (*asc) {
 	case 0x00:
+		if (*key > 0 || *ascq > 0) 
+			break; /* Fall through to unknown error */
 		sprintf(msg, "(No error reported by SCSI transaction)");
-		return RETRY;
+		return GO_ON;
 
 	case 0x02:
 		sprintf(msg, "Not ready");

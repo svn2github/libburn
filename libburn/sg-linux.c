@@ -1930,6 +1930,11 @@ if(0){
 				done = 1;
 				c->error = 1;
 				break;
+			case GO_ON:
+				if (burn_sg_log_scsi & 3)
+					scsi_log_err(c, fp, s.sbp, s.sb_len_wr,
+						s.duration, 1);
+				goto ex;
 			}
 
 			/* ts A90921 :

@@ -49,7 +49,7 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 			int channel_no, int target_no, int lun_no, int flag);
 
 /* ts A61115 moved from sg-*.h */
-enum response { RETRY, FAIL };
+enum response { RETRY, FAIL, GO_ON };
 enum response scsi_error(struct burn_drive *, unsigned char *, int);
 
 /* ts A61122 */
