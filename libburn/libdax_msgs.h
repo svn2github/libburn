@@ -395,7 +395,7 @@ int libdax_msgs_item_get_rank(struct libdax_msgs_item *item,
                               int *severity, int *priority, int flag);
 
 
-#ifdef LIDBAX_MSGS_________________
+#ifdef LIBDAX_MSGS_________________
 
 
                       /* Registered Error Codes */
@@ -679,7 +679,7 @@ Range "libisoburn"          :  0x00060000 to 0x00006ffff
 
 ------------------------------------------------------------------------------
 
-#endif /* LIDBAX_MSGS_________________ */
+#endif /* LIBDAX_MSGS_________________ */
 
 
 

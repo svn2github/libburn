@@ -9,7 +9,8 @@
 
 
 /* Normally this public API is defined in <libburn/libburn.h>
-   This macro enables the definition for programs which only include this file.
+   Macro LIBDAX_AUDIOXTR_H_PUBLIC enables the definition for programs
+   which only include this file.
 */
 #ifdef LIBDAX_AUDIOXTR_H_PUBLIC
 
@@ -119,13 +120,13 @@ int libdax_audioxtr_destroy(struct libdax_audioxtr **xtr, int flag);
 #endif /* LIBDAX_AUDIOXTR_H_PUBLIC */
 
 
-#ifdef LIDBAX_AUDIOXTR________________
+#ifdef LIBDAX_AUDIOXTR________________
 
 
 -- place documentation text here ---
 
 
-#endif /* LIDBAX_AUDIOXTR_________________ */
+#endif /* LIBDAX_AUDIOXTR_________________ */
 
 
 
