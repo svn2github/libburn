@@ -828,7 +828,7 @@ void burn_preset_device_open(int exclusive, int blocking, int abort_on_busy);
 /* ts A70223 */
 /** Allows the use of media types which are implemented in libburn but not yet
     tested. The list of those untested profiles is subject to change.
-    Currently it contains: 0x15 "DVD-R/DL sequential recording",
+             - Currently no media types are under test reservation -
     If you really test such media, then please report the outcome on
     libburn-hackers@pykix.org
     If ever then this call should be done soon after burn_initialize() before
@@ -1296,16 +1296,20 @@ off_t burn_disc_available_space(struct burn_drive *d,
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
     grabbed in order to get a non-zero result.
     libburn currently writes only to profiles 
-      0x09 "CD-R",                          0x0a "CD-RW",
-      0x11 "DVD-R sequential recording",    0x12 "DVD-RAM",
-      0x13 "DVD-RW restricted overwrite",   0x14 "DVD-RW sequential recording",
-      0x1a "DVD+RW",                        0x1b "DVD+R",
+      0x09 "CD-R"
+      0x0a "CD-RW"
+      0x11 "DVD-R sequential recording"
+      0x12 "DVD-RAM"
+      0x13 "DVD-RW restricted overwrite"
+      0x14 "DVD-RW sequential recording",
+      0x15 "DVD-R/DL sequential recording",
+      0x1a "DVD+RW"
+      0x1b "DVD+R",
       0x2b "DVD+R/DL",
-      0x41 "BD-R sequential recording",     0x43 "BD-RE",
+      0x41 "BD-R sequential recording",
+      0x43 "BD-RE",
       0xffff "stdio file"
     Note: 0xffff is not a MMC profile but a libburn invention.
-    If enabled by burn_allow_untested_profiles() it also writes to profiles
-      0x15 "DVD-R/DL sequential recording",
     Read-only are the profiles
       0x08 "CD-ROM",                        0x10 "DVD-ROM",
       0x40 "BD-ROM",
@@ -2194,6 +2198,10 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned cha
 /* ts A61106 */
 /** Sets the multi flag which eventually marks the emerging session as not
     being the last one and thus creating a BURN_DISC_APPENDABLE media.
+    Note: DVD-R[W] in write mode BURN_WRITE_SAO are not capable of this.
+          DVD-R DL are not capable of this at all.
+          libburn will refuse to write if burn_write_opts_set_multi() is
+          enabled under such conditions.
     @param opts The option object to be manipulated
     @param multi 1=media will be appendable, 0=media will be closed (default) 
     @since 0.2.6

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jun 10, 2010"
+.TH CDRSKIN 1 "Aug 21, 2010"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -47,7 +47,7 @@ Multi session on CD (follow-up sessions in TAO only)
 .br
 or on DVD-R[W] (in Incremental mode) or DVD+R[/DL] or BD-R.
 .br
-Single session on DVD-RW or DVD-R (Disk-at-once).
+Single session Disk-at-once on DVD-RW, DVD-R, DVD-R DL.
 .br
 Single session or emulated ISO-9660 multi-session 
 .br
@@ -166,7 +166,7 @@ needed.
 .SS
 .B Sequentially Recordable DVD or BD Media:
 .br
-Currently DVD-RW, DVD-R , DVD+R[/DL], and BD-R can be used for the Sequential
+Currently DVD-RW, DVD-R[DL], DVD+R[DL], and BD-R can be used for the Sequential
 recording model. It resembles the model of CD media. Only DVD-RW can be
 blanked and re-used from scratch.
 .br
@@ -186,8 +186,8 @@ of recognizable size or the size has to be announced explicitly by options
 or
 .B tao_to_sao_tsize= .
 .br
-DAO is the only mode for media which do not offer feature 21h Incremental
-Streaming. DAO may also be selected explicitly by option
+DAO is the only mode for DVD-R media which do not offer feature 21h Incremental
+Streaming (e.g. DVD-R DL). DAO may also be selected explicitly by option
 .B -sao .
 Program growisofs uses DAO on sequential DVD-R[W] media for maximum
 DVD-ROM/-Video compatibility.
@@ -198,7 +198,7 @@ Incremental Streaming may be selected explicitly by option
 .B -tao
 as it resembles much CD TAO by allowing track sources of
 unpredicted length and to keep media appendable by option
-.B -multi .
+.B -multi . It does not work with DVD-R DL and minimally blanked DVD-RW.
 The only restriction towards CD-R[W] is the lack of support for -audio tracks.
 Multiple tracks per session are permissible.
 .br
@@ -659,7 +659,8 @@ Without it the disc gets closed and may not be written any more  - unless it
 is a -RW and gets blanked which causes loss of its content.
 .br
 The following sessions can only be written in -tao mode. -multi is prohibited
-with DVD-R[W] DAO write mode. Option --prodvd_cli_compatible eventually makes
+with DVD-R[W] DAO write mode and on DVD-R DL media.
+Option --prodvd_cli_compatible eventually makes
 -multi tolerable but cannot make it work.
 .br
 In order to have all filesystem content accessible, the eventual ISO-9660
@@ -753,6 +754,8 @@ Mode -tao can be used with track sources of unpredictable size, like standard
 input or named pipes. It is also the only mode that can be used for writing
 to appendable media which already hold data. With unformatted DVD-R[W] it is
 the only mode which allows -multi.
+.br
+Mode -tao is not usable for minimally blanked DVD-RW and for DVD-R DL.
 .TP
 .BI \-toc
 Print the table of content (TOC) which describes the tracks recorded on disc.
@@ -1090,12 +1093,11 @@ This option is only needed for revoking eventual --ignore_signals or
 .TP
 .BI \--allow_untested_media
 Enable the use of media profiles which have been implemented but not yet
-tested. Currently this applies to :
+tested. Currently this option is without effect because no media types are
+under test reservation.
 .br
-Profile 0015h , DVD-R/DL Sequential (will not allow -multi).
-.br
-If you really test such media, then please report the outcome on
-libburn-hackers@pykix.org 
+(If you really test experimental media, then please report the outcome on
+libburn-hackers@pykix.org)
 .TP
 .BI dev_translation= <sep><from><sep><to>
 Set drive address alias. This was necessary before cdrskin-0.2.4 to manually
@@ -1265,7 +1267,7 @@ cdrskin -v dev=/dev/hdc speed=12 fs=8m \\
 .br
 blank=as_needed -eject padsize=300k my_image.iso
 .SS
-.B Write compressed afio archive on-the-fly (not possible with minimally blanked DVD-RW):
+.B Write compressed afio archive on-the-fly (not possible with minimally blanked DVD-RW or DVD-R DL):
 .br
 find . | afio -oZ - | \\
 .br

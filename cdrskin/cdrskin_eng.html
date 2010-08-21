@@ -2,7 +2,7 @@
 
 <HEAD>
 <META NAME="description" CONTENT="cdrskin, a limited cdrecord compatibility wrapper for libburn">
-<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-RW, DVD+RW, DVD+R, DVD+R/DL, DVD-RAM, BD-RE, BD-R, cdrecord, compatible, scdbackup">
+<META NAME="keywords" CONTENT="cdrskin, libburn, libburnia, burn, CD, DVD, linux, recording, burning, CD-R, CD-RW, DVD-R, DVD-R DL, DVD-RW, DVD+RW, DVD+R, DVD+R DL, DVD-RAM, BD-RE, BD-R, cdrecord, compatible, scdbackup">
 <META NAME="robots" CONTENT="follow">
 <TITLE>cdrskin homepage english</TITLE>
 </HEAD>
@@ -24,7 +24,8 @@
 <P>
 <H2>Purpose:</H2>
 Burns preformatted data to CD, DVD, and BD media:<BR>
-CD-R, DVD-R, DVD+R, DVD+R/DL, BD-R, CD-RW, DVD-RW, DVD-RAM, DVD+RW, BD-RE
+CD-R, DVD-R, DVD-R DL, DVD+R, DVD+R DL, BD-R, CD-RW,
+DVD-RW, DVD-RAM, DVD+RW, BD-RE
 </P>
 <P>
 
@@ -95,10 +96,11 @@ Ports to other usable systems are appreciated. Reports are welcome.
 <DL>
 <DT>The most common options of cdrecord for data and audio on CD media
 are provided in a compatible way.<BR>
-On all DVD media except DVD-R DL, cdrskin is able to perform any recording job
+On all DVD media, cdrskin is able to perform any recording job
 which is possible with cdrecord.
 Other than with cdrecord, option -multi is supported with many DVD types and
-BD-R. Write mode -tao works with anything but quickly blanked DVD-RW.
+BD-R. Write mode -tao works with anything but quickly blanked DVD-RW and
+DVD-R DL, which both support no -multi.
 </DT>
 <BR><BR>
 <DT>Get an overview of drives and their addresses</DT>
@@ -131,7 +133,8 @@ On Solaris it is r-permission and privileges "basic,sys_devices".</DT>
 <DD>$<KBD>&nbsp;cdrskin -v dev=/dev/hdc speed=12 fs=8m \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;blank=as_needed -eject padsize=300k my_image.iso</KBD></DD>
 
-<DT>Write compressed afio archive on-the-fly:</DT>
+<DT>Write compressed afio archive on-the-fly
+(not DVD-R DL or minimally blanked DVD-RW):</DT>
 <DD>$<KBD>&nbsp;find . | afio -oZ - | \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;cdrskin -v dev=0,1,0 fs=32m speed=8 \</KBD></DD>
 <DD><KBD>&nbsp;&nbsp;blank=as_needed padsize=300k -</KBD></DD>
@@ -275,7 +278,9 @@ Bug fixes towards cdrskin-0.8.2.pl00:
 <DT><H3>Development snapshot, version 0.8.5 :</H3></DT>
 <DD>Enhancements towards current stable version 0.8.4.pl00:
 <UL>
-<LI>none yet</LI>
+<LI>
+Lifted test reservation on DVD-R DL media.
+</LI>
 <!--
 <LI>none yet</LI>
 -->

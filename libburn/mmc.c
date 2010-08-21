@@ -1744,12 +1744,6 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 		d->erasable = 0; /* never erasable */
 	}
 
-	/* ts A80207 : DVD - R DL can normally be read but not be written */
-	if(d->current_profile == 0x15 && !burn_support_untested_profiles) {
-		disc_status = 2; /* always full and finalized */
-		d->erasable = 0; /* never erasable */
-	}
-
 #ifdef Libburn_support_bd_r_readonlY
 	/* <<< For now: declaring BD-R read-only
 	*/
@@ -2517,8 +2511,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 #ifdef Libburn_support_dvd_r_seQ
 	if (cp == 0x11 || cp == 0x14) /* DVD-R, DVD-RW */
 		d->current_is_supported_profile = 1;
-	if (cp == 0x15) /* DVD-R/DL . */
-		 	/* Writeable only if burn_support_untested_profiles */
+	if (cp == 0x15) /* DVD-R/DL */
 		d->current_is_supported_profile = 1;
 #endif
 #ifdef Libburn_support_dvd_plus_R
