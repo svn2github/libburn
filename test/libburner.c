@@ -20,31 +20,37 @@
   Before you can do anything, you have to initialize libburn by
      burn_initialize()
   and provide some signal and abort handling, e.g. by the builtin handler, by
-     burn_set_signal_handling() 
-  as it is done in main() at the end of this file. Then you aquire a
-  drive in an appropriate way conforming to the API. The two main
-  approaches are shown here in application functions:
+     burn_set_signal_handling("libburner : ", NULL, 0x0) 
+  as it is done in main() at the end of this file.
+  Then you aquire a drive in an appropriate way conforming to the API. The twoi
+  main approaches are shown here in application functions:
      libburner_aquire_by_adr()     demonstrates usage as of cdrecord traditions
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
-  With that aquired drive you can blank a CD-RW or DVD-RW
+
+  With that aquired drive you can blank a CD-RW or DVD-RW as shown in
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
   or an unused BD to default size with spare blocks
      libburner_format()
-  With the aquired drive you can burn to CD, DVD, BD
+  With the aquired drive you can burn to CD, DVD, BD. See
      libburner_payload()
+
+  These three functions switch temporarily to a non-fatal signal handler
+  while they are waiting for the drive to become idle again:
+     burn_set_signal_handling("libburner : ", NULL, 0x30)
+  After the waiting loop ended, they check for eventual abort events by
+     burn_is_aborting(0)
+  The 0x30 handler will eventually execute
+     burn_abort()
+  but not wait for the drive to become idle and not call exit().
+  This is needed because the worker threads might block as long as the signal
+  handler has not returned. The 0x0 handler would wait for them to finish.
+  Take this into respect when implementing own signal handlers.
+
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
      burn_finish()
 
-  FreeBSD does not work well with the convenient synchronous signal handler. So
-  the waiting loops for blanking, formatting, and writing use the asynchronous
-  mode of the libburn signal handler. It will not shutdown the library and
-  abort the program, but rather tell the ongoing drive operation to stop as
-  soon as possible. After the loops and at the end of the program there is a
-  call to determine whether an abort happened:
-     burn_is_aborting()
-  
   Applications must use 64 bit off_t. E.g. by defining
     #define _LARGEFILE_SOURCE
     #define _FILE_OFFSET_BITS 64
@@ -60,7 +66,7 @@
 /*  This program insists in the own headerfile. */
 #include "../libburn/libburn.h"
 
-/* libburn is intended for Linux systems with kernel 2.4 or 2.6 for now */
+/* libburn works on Linux systems with kernel 2.4 or 2.6, FreeBSD, Solaris */
 #include <stdio.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -333,7 +339,7 @@ int libburner_blank_disc(struct burn_drive *drive, int blank_fast)
 	if (burn_is_aborting(0) > 0)
 		return -1;
 	/* Back to synchronous handling */
-	burn_set_signal_handling("libburner : ", NULL, 0);
+	burn_set_signal_handling("libburner : ", NULL, 0x0);
 	printf("Done\n");
 	return 1;
 }
@@ -401,7 +407,7 @@ int libburner_format(struct burn_drive *drive)
 	}
 	if (burn_is_aborting(0) > 0)
 		return -1;
-	burn_set_signal_handling("libburner : ", NULL, 0);
+	burn_set_signal_handling("libburner : ", NULL, 0x0);
 	burn_disc_get_profile(drive_list[0].drive, &current_profile,
 				 current_profile_name);
 	if (current_profile == 0x14 || current_profile == 0x13)
@@ -757,7 +763,7 @@ int main(int argc, char **argv)
 
 	/* Activate the synchronous signal handler which eventually will try to
 	   properly shutdown drive and library on aborting events. */
-	burn_set_signal_handling("libburner : ", NULL, 0);
+	burn_set_signal_handling("libburner : ", NULL, 0x0);
 
 	/** Note: driveno might change its value in this call */
 	ret = libburner_aquire_drive(drive_adr, &driveno);
