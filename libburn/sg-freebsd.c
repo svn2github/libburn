@@ -759,13 +759,17 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0;
-	int cam_pass_err_recover = 0, key, asc, ascq;
+	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0, i;
+	int cam_pass_err_recover = 0, key, asc, ascq, timeout_ms;
 	union ccb *ccb;
 	char buf[161];
 	static FILE *fp = NULL;
+	time_t start_time;
 
-	snprintf(buf, sizeof (buf), "sg_issue_command  d->cam=%p d->released=%d",
+#define Libburn_use_scsi_eval_cmd_outcomE yes
+
+	snprintf(buf, sizeof (buf),
+		"sg_issue_command  d->cam=%p d->released=%d",
 		(void*)d->cam, d->released);
 	mmc_function_spy(NULL, buf);
 
@@ -854,7 +858,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		ccb->csio.dxfer_len = 0;
 	}
 
-	do {
+	start_time = time(NULL);
+	timeout_ms = 200000;
+	for (i = 0; !done; i++) {
 		memset(c->sense, 0, sizeof(c->sense));
 		err = cam_send_ccb(d->cam, ccb);
 
@@ -954,6 +960,17 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[13] = 0x00;
 				no_retry = 1;
 			}
+
+
+#ifdef Libburn_use_scsi_eval_cmd_outcomE
+
+			done = scsi_eval_cmd_outcome(d, c, fp, c->sense,
+						sense_len, 0, start_time,
+						timeout_ms, i,
+						2 | !!ignore_error);
+
+#else /* Libburn_use_scsi_eval_cmd_outcomE */
+
 			if (no_retry || ignore_error || !c->retry) {
 				c->error = 1;
 				{ret = 1; goto ex;}
@@ -983,12 +1000,18 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 					    0, 1 | 2);
 				{ret = 1; goto ex;}
 			}
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 		} else {
 			done = 1;
 		}
 	} while (!done);
 	ret = 1;
 ex:;
+
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
+
 	if (c->error)
 		scsi_notify_error(d, c, c->sense, 18, 0);
 
@@ -996,6 +1019,8 @@ ex:;
 		/* >>> Need own duration time measurement. Then remove bit1 */
 		scsi_log_err(c, fp, c->sense, sense_len > 0 ? sense_len : 18,
 						0, (c->error != 0) | 2);
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
 
 	cam_freeccb(ccb);
 	return ret;

@@ -565,11 +565,16 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int i, usleep_time, timeout_ms, no_retry = 0, ret, key, asc, ascq;
+	int i, timeout_ms, ret, key, asc, ascq, done = 0;
 	time_t start_time;
 	struct uscsi_cmd cgc;
 	char msg[80];
         static FILE *fp = NULL;
+
+#define Libburn_use_scsi_eval_cmd_outcomE yes
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
+	int  usleep_time, no_retry = 0;
+#endif
 
 	c->error = 0;
 	memset(c->sense, 0, sizeof(c->sense));
@@ -616,7 +621,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	/* retry-loop */
 	start_time = time(NULL);
 	timeout_ms = 200000;
-	for(i = 0; ; i++) {
+	for(i = 0; !done; i++) {
 
 		ret = ioctl(d->fd, USCSICMD, &cgc);
 
@@ -638,6 +643,25 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			c->error = 1;
 			return -1;
 		}
+
+#ifdef Libburn_use_scsi_eval_cmd_outcomE
+
+
+		/* >>> Should replace "18" by realistic sense length.
+		       What's about following older remark ?
+		*/
+		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
+
+		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
+		if (key || asc || ascq) {
+			done = scsi_eval_cmd_outcome(d, c, fp, c->sense, 18, 0,
+						start_time, timeout_ms, i, 2);
+		} else
+			done = 1;
+					
+
+#else /* Libburn_use_scsi_eval_cmd_outcomE */
+
 
 		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
 
@@ -681,15 +705,24 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			usleep(usleep_time);
 		} else
 			break; /* retry-loop */
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 	} /* end of retry-loop */
 
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
+
 ex:;
+
 	if (c->error)
 		scsi_notify_error(d, c, c->sense, 18, 0);
 
 	if (burn_sg_log_scsi & 3) 
 		/* >>> Need own duration time measurement. Then remove bit1 */
 		scsi_log_err(c, fp, c->sense, 18, 0, (c->error != 0) | 2);
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 	return 1;
 }
 

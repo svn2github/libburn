@@ -84,5 +84,23 @@ int scsi_log_err(struct command *c, void *fp, unsigned char sense[18],
 int spc_decode_sense(unsigned char *sense, int senselen,
                      int *key, int *asc, int *ascq);
 
+/* ts B00808 */
+/** Evaluates outcome of a single SCSI command, eventually logs sense data,
+    and issues DEBUG error message in case the command is evaluated as done.
+    @param flag   bit1 = do not print duration
+    @return 0 = not yet done , 1 = done , -1 = error
+*/
+int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp_in,
+                        unsigned char *sense, int sense_len,
+                        int duration, time_t start_time, int timeout_ms,
+			int loop_count, int flag);
+
+/* The waiting time before eventually retrying a failed SCSI command.
+   Before each retry wait Libburn_scsi_retry_incR longer than with
+   the previous one.
+*/
+#define Libburn_scsi_retry_usleeP 100000
+#define Libburn_scsi_retry_incR   100000
+
 
 #endif /*__SPC*/

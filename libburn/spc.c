@@ -1408,27 +1408,9 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	sprintf(msg, "SCSI error condition on command %2.2Xh %s: ",
 		c->opcode[0],
 		scsi_command_name((unsigned int) c->opcode[0], 0));
-
-#ifdef NIX
-	if (key>=0)
-		sprintf(msg+strlen(msg), " key=%Xh", key);
-	if (asc>=0)
-		sprintf(msg+strlen(msg), " asc=%2.2Xh", asc);
-	if (ascq>=0)
-		sprintf(msg+strlen(msg), " ascq=%2.2Xh", ascq);
-	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
-	if (ret < 0)
-		return ret;
-	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-			scsi_msg,0,0);
-#else
 	strcat(msg, scsi_msg);
 	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
-
-#endif /* NIX */
 
 	return ret;
 }
@@ -1530,13 +1512,6 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 
       	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
 		if (flag & 1) {
-			durtxt[0] = 0;
-			if (!(flag & 2))
-  				sprintf(durtxt, "   (%6d ms)", duration);
-			spc_decode_sense(sense, 0, &key, &asc, &ascq);
-  			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh%s\n",
-				(unsigned int) key, (unsigned int) asc,
-				(unsigned int) ascq, durtxt);
 			l = 18;
 			if ((sense[0] & 0x7f) == 0x72 ||
 			    (sense[0] & 0x7f) == 0x73)
@@ -1547,6 +1522,13 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 			for (i = 0 ; i < l; i++)
 				fprintf(fp, " %2.2X", sense[i]);
 			fprintf(fp, "\n");
+			durtxt[0] = 0;
+			if (!(flag & 2))
+  				sprintf(durtxt, "   (%6d ms)", duration);
+			spc_decode_sense(sense, 0, &key, &asc, &ascq);
+  			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh%s\n",
+				(unsigned int) key, (unsigned int) asc,
+				(unsigned int) ascq, durtxt);
 		} else {
 			scsi_show_cmd_reply(c, fp, 0);
 			if (!(flag & 2))
@@ -1561,3 +1543,51 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 	return 1;
 }
 
+
+/* ts B00808 */
+/*
+    @param flag    bit0 = do not retry
+                   bit1 = do not print duration
+    @return 0 = not yet done , 1 = done , -1 = error
+*/
+int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
+			unsigned char *sense, int sense_len,
+			int duration, time_t start_time, int timeout_ms,
+			int loop_count, int flag)
+{
+	enum response outcome;
+	int done = -1, usleep_time;
+
+	if (sense_len <= 0)
+		return 1;
+		
+	if (burn_sg_log_scsi & 3)
+		scsi_log_err(c, fp, sense, sense_len, duration,
+				 1 | (flag & 2));
+	outcome = scsi_error(d, sense, sense_len);
+	if (outcome == RETRY && c->retry && !(flag & 1)) {
+		/* Calming down retries and breaking up endless cycle
+		*/
+		usleep_time = Libburn_scsi_retry_usleeP +
+				loop_count * Libburn_scsi_retry_incR;
+		if (time(NULL) + usleep_time / 1000000 - start_time >
+		    timeout_ms / 1000 + 1) {
+			done = 1;
+			goto ex;
+		}
+		usleep(usleep_time);
+		if (burn_sg_log_scsi & 3) 
+			scsi_log_cmd(c, fp, 0);
+		return 0;
+	} else if (outcome == RETRY) {
+		done = 1;
+	} else if (outcome == GO_ON) {
+		return 1;
+	} else if (outcome == FAIL) {
+		done = 1;
+	}
+ex:;
+	c->error = 1;
+	scsi_notify_error(d, c, sense, sense_len, 0);
+	return done;
+}

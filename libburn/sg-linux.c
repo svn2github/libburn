@@ -1782,12 +1782,18 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, no_c_page = 0, usleep_time, i;
+	int done = 0, no_c_page = 0, i;
 	int err;
 	time_t start_time;
 	sg_io_hdr_t s;
 	/* ts A61030 */
 	static FILE *fp= NULL;
+
+#define Libburn_use_scsi_eval_cmd_outcomE yes
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
+	int usleep_time;
+#endif
+
 
 	/* <<< ts A60821
 	   debug: for tracing calls which might use open drive fds */
@@ -1910,6 +1916,14 @@ if(0){
 /* <<< */
 #endif /* NIX */
 
+
+#ifdef Libburn_use_scsi_eval_cmd_outcomE
+
+                done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
+				s.duration, start_time, s.timeout, i, 0);
+
+#else /* Libburn_use_scsi_eval_cmd_outcomE */
+ 
 		if (s.sb_len_wr) {
 			if (!c->retry) {
 				c->error = 1;
@@ -1951,14 +1965,28 @@ if(0){
 		} else {
 			done = 1;
 		}
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 	}
 
 	/* ts A61106 */
+
+#ifdef Libburn_use_scsi_eval_cmd_outcomE
+
+	if (s.host_status != Libburn_sg_host_oK || 
+	    (s.driver_status != Libburn_sg_driver_oK && !c->error)) {
+
+#else /* Libburn_use_scsi_eval_cmd_outcomE */
+
 ex:;
 	if (c->error) {
 		scsi_notify_error(d, c, s.sbp, s.sb_len_wr, 0);
 	} else if (s.host_status != Libburn_sg_host_oK || 
 	    s.driver_status != Libburn_sg_driver_oK) {
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 		char msg[161];
 
 		sprintf(msg,
@@ -1973,9 +2001,13 @@ ex:;
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 	}
+
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
 	if (burn_sg_log_scsi & 3)
 		scsi_log_err(c, fp, s.sbp, s.sb_len_wr,
 						 s.duration, c->error != 0);
+#endif
+
 	return 1;
 }
 

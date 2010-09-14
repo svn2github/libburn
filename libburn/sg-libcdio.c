@@ -586,6 +586,9 @@ int sg_release(struct burn_drive *d)
 }
 
 
+#define Libburn_use_scsi_eval_cmd_outcomE yes
+
+
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
     the command succeeded or shall be retried or finally failed.
     Returned SCSI errors shall not lead to a return value indicating failure.
@@ -597,8 +600,8 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int sense_valid = 0, i, usleep_time, timeout_ms, no_retry = 0;
-	int key = 0, asc = 0, ascq = 0;
+	int sense_valid = 0, i, timeout_ms, no_retry = 0;
+	int key = 0, asc = 0, ascq = 0, done = 0;
 	time_t start_time;
         driver_return_code_t i_status;
 	unsigned int dxfer_len;
@@ -607,6 +610,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	cdio_mmc_direction_t e_direction;
 	CdIo_t *p_cdio;
 	unsigned char *sense_pt = NULL;
+
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
+	int usleep_time;
+#endif
 
 	c->error = 0;
 	if (d->p_cdio == NULL) {
@@ -643,7 +650,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	/* retry-loop */
 	start_time = time(NULL);
 	timeout_ms = 200000;
-	for(i = 0; ; i++) {
+	for(i = 0; !done; i++) {
 
 		i_status = mmc_run_cmd(p_cdio, timeout_ms, &cdb, e_direction,
 				 	dxfer_len, c->page->data);
@@ -688,6 +695,14 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			}
 		} 
 		if (i_status != 0 || (key || asc || ascq)) {
+
+#ifdef Libburn_use_scsi_eval_cmd_outcomE
+
+			done = scsi_eval_cmd_outcome(d, c, fp,  c->sense, 18,
+					0, start_time, timeout_ms, i, 2);
+
+#else /* Libburn_use_scsi_eval_cmd_outcomE */
+
 			if (no_retry || !c->retry) {
 				c->error = 1;
 				goto ex;
@@ -724,17 +739,24 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				goto ex;
 			}
 			usleep(usleep_time);
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 		} else
-			break; /* retry-loop */
+			done = 1;
+
 	} /* end of retry-loop */
+
+#ifndef Libburn_use_scsi_eval_cmd_outcomE
 
 ex:;
 	if (c->error)
 		scsi_notify_error(d, c, c->sense, 18, 0);
-
 	if (burn_sg_log_scsi & 3) 
 		/* >>> Need own duration time measurement. Then remove bit1 */
 		scsi_log_err(c, fp, c->sense, 18, 0, (c->error != 0) | 2);
+
+#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
+
 	return 1;
 }
 
