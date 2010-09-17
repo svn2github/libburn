@@ -8589,18 +8589,224 @@ Made number transition to 0.8.5
 + cdrskin/add_ts_changes_to_libburn_0_8_5
 Updated cdrskin tarball generator
 
-30 Jun 2010  []
+30 Jun 2010  [3313]
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+30 Jun 2010  [3314]
+svn move -m libburn release 0.8.4 is ready \
+http://svn.libburnia-project.org/libburn/branches/ZeroEightFour \
+http://svn.libburnia-project.org/libburn/tags/ZeroEightFour
+
+------------------------------------ cycle  - cdrskin-0.8.5 - 2010.06.30.112709
+
+
+2010.07.04.131219  [3323]
+libburn/libburn.h
+libburn/libdax_audioxtr.h
+libburn/libdax_audioxtr.c
+cdrskin/cdrskin.c
+test/dewav.c
+Moved public part of libdax_audioxtr.h to libburn.h
+
+2010.07.04.170035  [3325]
+configure.ac
+Makefile.am
++ libburn/libburn.ver
+Hiding all non-API symbols from the linker by use of --version-script
+
+04 Jul  [3326]
+README
+Mentioned new configure option --disable-versioned-libs
+
+2010.07.06.113304  [3329]
+configure.ac
+acinclude.m4
+Let configure perform linker test with --version-script if enabled
+
+2010.07.06.113356  [3330]
+libburn/libburn.h
+Mentioned that public API calls must be in libisofs/libisofs.ver
+
+2010.07.12.193201  [3334]
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.c
+Changed all malloc() to calloc()
+
+2010.07.12.193644  [3335]
+libburn/async.c
+libburn/drive.c
+libburn/file.c
+libburn/libdax_audioxtr.c
+libburn/libdax_msgs.c
+libburn/mmc.c
+libburn/null.c
+libburn/options.c
+libburn/read.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/util.c
+libburn/write.c
+Changed all malloc() to calloc()
+
+2010.07.29.083453  [3336]
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.c
+libburn/sg-freebsd.c
+libburn/sg-solaris.c
+libburn/sg-libcdio.c
+Recognizing sense data format 0x72 if given instead of 0x70
+
+2010.07.29.164100  [3337]
+Makefile.am
+Detached make target "doc" from target "all".
+
+30 Jul 2010  [3341]
+doc/doxygen.conf.in
+Removed problematic DETAILS_AT_TOP to silence warning of Debian buildd
+
+2010.08.02.100630  [3345]
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+Reporting sense data with burn_set_scsi_logging()
+
+2010.08.02.131946  [3346]
+libburn/sg-linux.c
+Added error simulation code to Linux system adapter
+
+2010.08.02.141233  [3347]
+libburn/sg-solaris.c
+Committed Solaris system adapter which was forgotten with rev 3345
+
+------------------------------------ cycle  - cdrskin-0.8.5 - 2010.08.02.141233
+* Hiding all non-API symbols from the linker by use of --version-script
+
+
+2010.08.03.191151  [3348]
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+libburn/sg-solaris.c
+Obeying burn_set_scsi_logging() with errors of class RETRY
+
+2010.08.08.091224  [3349]
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+libburn/sg-solaris.c
+New SCSI comand response "GO_ON"
+
+2010.08.08.091317  [3350]
+libburn/libburn.h
+Hopefully silenced a warning of doxygen on Debian buildd
+
+2010.08.13.114139  [3352]
+libburn/libdax_msgs.h
+libburn/libdax_audioxtr.h
+Corrected typo in macro names (which shall never be defined anyway)
+
+2010.08.21.095456  [3356]
+libburn/libburn.h
+libburn/mmc.c
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+Lifted test reservation on DVD-R DL media. Thanks to Kevin Kieffer for testing.
+
+28 Aug 2010  [3358]
+test/libburner.c
+Clarified the meaning of 0x0 and 0x30 signal handlers
+
+2010.09.14.124934  [3368]
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+libburn/sg-libcdio.c
+libburn/sg-freebsd.c
+libburn/sg-solaris.c
+Centralized interpretation of SCSI command outcome
+
+------------------------------------ cycle  - cdrskin-0.8.5 - 2010.09.14.135405
+* Lifted test reservation on DVD-R DL media.
+
+
+15 Sep 2010  [3369]
+ChangeLog
+Meaningful change log file derived by George Danchev from web site
+
+16 Sep 2010  [3373]
+svn copy -m Branching for libburn release 0.8.6
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/ZeroEightSix
+
+2010.09.16.113001  [3374]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.6
+
+16 Sep 2010  [3375]
+- cdrskin/add_ts_changes_to_libburn_0_8_4
+- cdrskin/add_ts_changes_to_libburn_0_8_5
++ cdrskin/add_ts_changes_to_libburn_0_8_6
++ cdrskin/add_ts_changes_to_libburn_0_8_7
+Updated cdrskin tarball generator
+
+16 Sep 2010  [3376]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.8.4.pl00 - 2010.06.30.100001
+* Lifted test reservation on DVD-R DL media.
+* Hiding all non-API symbols from the linker by use of --version-script
+
+
+2010.09.17.073827  [3377]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.7
+
+17 Sep 2010  [3378]
+- cdrskin/add_ts_changes_to_libburn_0_8_4
+- cdrskin/add_ts_changes_to_libburn_0_8_5
++ cdrskin/add_ts_changes_to_libburn_0_8_6
++ cdrskin/add_ts_changes_to_libburn_0_8_7
+Updated cdrskin tarball generator
+
+17 Sep 2010  []
+ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 
------------------------------------- cycle  - cdrskin-0.8.5 - 
------------------------------------- cycle  - cdrskin-0.8.5 - 
+------------------------------------ cycle  - cdrskin-0.8.7 - 
+------------------------------------ cycle  - cdrskin-0.8.7 - 
 
 
 ===============================================================================
                                     TODO
 ===============================================================================
+
+Better motivation of burn_set_signal_handling() in libburn.h.
 
 
 -------------------------------- Solaris -----------------------------------
@@ -8611,15 +8817,23 @@ Unmounting.
 
 Could need ioctl to obtain SCSI bus,target,lun from fd rather than name
 
+(
+Subject: Re: [osol-help] DHCP configuration with fixed addresses
+pntadm -A 10.0.0.24 -f MANUAL -i 010008544255E7 -m 10.0.0.0 -y 10.0.0.0
+)
+
 
 ----------------------------------------------------------------------------
-
-- change all malloc() to calloc()
 
 - find out from where libburn/crc.c stems. What algorithm is crc_32() ?
 
 
 --------------------------------- bugs -------------------------------------
+
+- recognise sense data format 0x72 rather than 0x70
+  Key=[1], ASC=[2], ASCQ=[3]
+  (check libcdio too)
+
 
 - handle HD DVD profiles 0x50 "HD DVD-ROM", 0x51 "HD DVD-R", 0x52 "HD DVD-RAM"
   as readable.

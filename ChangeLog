@@ -1,3 +1,9 @@
+libburn-0.8.6.pl00.tar.gz Fri Sep 17 2010
+===============================================================================
+* Lifted test reservation on DVD-R DL media.
+* Hiding all non-API symbols from the linker by use of --version-script
+* Now with history of release notes in ./ChangeLog file.
+
 libburn-0.8.4.pl00.tar.gz Wed Jun 30 2010
 ===============================================================================
 * General POSIX system adapters ignore SIGWINCH and SIGURG if defined
