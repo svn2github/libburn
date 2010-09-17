@@ -2639,7 +2639,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  0
 #define burn_header_version_minor  8
-#define burn_header_version_micro  5
+#define burn_header_version_micro  7
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
@@ -2822,7 +2822,7 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     But during burn_disc_write() onto real CD or DVD, FreeBSD 8.0 pauses the
     other threads until the signal handler returns.
     The new actions try to avoid this deadlock. It is advised to use action 3
-    at least during burn_disc_write(), burn_disc_rease(), burn_disc_format():
+    at least during burn_disc_write(), burn_disc_erase(), burn_disc_format():
       burn_set_signal_handling(text, NULL, 0x30);
     and to call burn_is_aborting(0) when the drive is BURN_DRIVE_IDLE.
     If burn_is_aborting(0) returns 1, then call burn_abort() and exit(1).
