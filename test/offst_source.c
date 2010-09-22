@@ -20,6 +20,7 @@
 
 static int create_original(struct burn_source **original, char *path, int flag)
 {
+	printf("create_original: path='%s'\n", path);
 	*original = burn_file_source_new(path, NULL);
 	if (*original == NULL)
 		return 0;
@@ -102,7 +103,7 @@ static int free_all_sources(struct burn_source *original,
 int main(int argc, char **argv)
 {
 	int ret;
-	char *path = "./README";
+	char *path = "./COPYRIGHT";
 	struct burn_source *original = NULL, *offsetters[4];
 
 	if (argc > 1)
