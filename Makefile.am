@@ -83,6 +83,7 @@ install-exec-hook:
 ## Build test applications
 noinst_PROGRAMS = \
 	test/libburner \
+	test/offst_source \
 	test/telltoc \
 	test/dewav \
 	test/fake_au \
@@ -97,6 +98,9 @@ LIBBURN_EXTRALIBS = $(LIBBURN_ARCH_LIBS) $(THREAD_LIBS)
 test_libburner_CPPFLAGS = -Ilibburn
 test_libburner_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_libburner_SOURCES = test/libburner.c
+test_offst_source_CPPFLAGS = -Ilibburn
+test_offst_source_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
+test_offst_source_SOURCES = test/offst_source.c
 test_telltoc_CPPFLAGS = -Ilibburn
 test_telltoc_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_telltoc_SOURCES = test/telltoc.c
