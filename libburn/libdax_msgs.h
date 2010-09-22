@@ -558,6 +558,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020176 (NOTE,HIGH)    = Stream recording disabled because of small OS buffer
  0x00020177 (ABORT,HIGH)   = Urged drive worker threads to do emergency halt
  0x00020178 (DEBUG,HIGH)   = Write thread ended
+ 0x00020179 (FAILURE,HIGH) = Offset source start address is before end of previous source
+ 0x0002017a (FAILURE,HIGH) = Expected offset source object as parameter
  
 
  libdax_audioxtr:

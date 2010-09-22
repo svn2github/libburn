@@ -63,3 +63,15 @@ int burn_source_cancel(struct burn_source *src)
 	return 1;
 }
 
+
+/* ts B00922 */
+int burn_source_read(struct burn_source *src, unsigned char *buffer, int size)
+{
+	int ret;
+
+	if (src->read != NULL)
+		 ret = src->read(src, buffer, size);
+	else
+		 ret = src->read_xt(src, buffer, size);
+	return ret;
+}

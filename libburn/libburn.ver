@@ -83,6 +83,7 @@ burn_msgs_obtain;
 burn_msgs_set_severities;
 burn_msgs_submit;
 burn_obtain_profile_name;
+burn_offst_source_new;
 burn_os_alloc_buffer;
 burn_os_free_buffer;
 burn_os_open_track_src;

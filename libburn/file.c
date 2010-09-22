@@ -481,10 +481,11 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 
 int burn_fifo_cancel(struct burn_source *source)
 {
+	int ret;
 	struct burn_source_fifo *fs = source->data;
 
-	burn_source_cancel(fs->inp);
-	return(1);
+	ret = burn_source_cancel(fs->inp);
+	return ret;
 }
 
 /*
@@ -745,5 +746,164 @@ int burn_fifo_fill(struct burn_source *source, int bufsize, int flag)
 {
 	return burn_fifo_fill_data(source, NULL, bufsize,
 					1 | ((flag & 1) << 1));
+}
+
+
+/* ----------------------------- Offset source ----------------------------- */
+/* ts B00922 */
+
+static void offst_free(struct burn_source *source);
+
+static struct burn_source_offst *offst_auth(struct burn_source *source)
+{
+	if (source->free_data != offst_free) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002017a,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+ 			"Expected offset source object as parameter",
+			0, 0);
+		return NULL;
+	}
+	return (struct burn_source_offst *) source->data;
+}
+
+static off_t offst_get_size(struct burn_source *source)
+{
+        struct burn_source_offst *fs;
+
+	if ((fs = offst_auth(source)) == NULL)
+		return (off_t) 0;
+        return fs->size;
+}
+
+static int offst_set_size(struct burn_source *source, off_t size)
+{
+	struct burn_source_offst *fs;
+
+	if ((fs = offst_auth(source)) == NULL)
+		return 0;
+	fs->size = size;
+	return 1;
+}
+
+static void offst_free(struct burn_source *source)
+{
+	struct burn_source_offst *fs;
+
+	if ((fs = offst_auth(source)) == NULL)
+		return;
+	if (fs->prev != NULL)
+		offst_auth(fs->prev)->next = fs->next;
+	if (fs->next != NULL)
+		offst_auth(fs->next)->prev = fs->prev;
+	if (fs->inp != NULL)
+		burn_source_free(fs->inp); /* i.e. decrement refcount */
+	free(source->data);
+}
+
+static int offst_read(struct burn_source *source, unsigned char *buffer,
+			int size)
+{
+	int ret, to_read, todo;
+	struct burn_source_offst *fs;
+
+	if ((fs = offst_auth(source)) == NULL)
+		return -1;
+
+	/* Eventually skip bytes up to start position */;
+	if (!fs->running) {
+		if (fs->prev != NULL)
+			fs->pos = offst_auth(fs->prev)->pos;
+		fs->running= 1;
+	}
+	if(fs->pos < fs->start) {
+		todo = fs->start - fs->pos;
+		while (todo > 0) {
+			to_read = todo;
+			if (to_read > size)
+				to_read = size;
+			ret = burn_source_read(fs->inp, buffer, to_read);
+			if (ret <= 0)
+				return ret;
+			todo -= ret;
+			fs->pos += ret;
+		}
+	}
+
+	/* Produce EOF if source size is exhausted.
+	   burn_source delivers no incomplete sector buffers.
+	*/
+	if (fs->pos + size > fs->start + fs->size)
+		return 0;
+
+	/* Read payload */
+	ret = burn_source_read(fs->inp, buffer, size);
+	if (ret > 0)
+		fs->pos += ret;
+	return ret;
+}
+
+static int offst_cancel(struct burn_source *source)
+{
+	int ret;
+	struct burn_source_offst *fs;
+
+	if ((fs = offst_auth(source)) == NULL)
+		return -1;
+	ret = burn_source_cancel(fs->inp);
+	return ret;
+}
+
+struct burn_source *burn_offst_source_new(
+		struct burn_source *inp, struct burn_source *prev,
+		off_t start, off_t size, int flag)
+{
+	struct burn_source *src;
+	struct burn_source_offst *fs, *prev_fs = NULL;
+
+	if (prev != NULL)
+		if ((prev_fs = offst_auth(prev)) == NULL)
+			return NULL; /* Not type burn_source_offst */
+
+	fs = calloc(1, sizeof(struct burn_source_offst));
+	if (fs == NULL)
+		return NULL;
+        src = burn_source_new();
+        if (src == NULL) {
+                free((char *) fs);
+                return NULL;
+        }
+        src->read = NULL;
+        src->read_sub = NULL;
+        src->get_size = offst_get_size;
+        src->set_size = offst_set_size;
+        src->free_data = offst_free;
+        src->data = fs;
+        src->version= 1;
+        src->read_xt = offst_read;
+        src->cancel= offst_cancel;
+        fs->inp = inp;
+	fs->prev = prev;
+	fs->next = NULL;
+	if (prev != NULL) {
+		if (prev_fs->next != NULL) {
+			offst_auth(prev_fs->next)->prev = src;
+			fs->next = prev_fs->next;
+		}
+		prev_fs->next = src;
+		if (prev_fs->start + prev_fs->size > start) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020179,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+ 		"Offset source start address is before end of previous source",
+			0, 0);
+			return NULL;
+		}
+	}
+	fs->start = start;
+	fs->size = size;
+	fs->running = 0;
+	fs->pos = 0;
+        inp->refcount++; /* make sure inp lives longer than src */
+
+        return src;
 }
 

@@ -74,4 +74,22 @@ struct burn_source_fifo {
 int burn_fifo_source_shoveller(struct burn_source *source, int flag);
 
 
+/* ts B00922 */
+struct burn_source_offst {
+
+	/* See burn_offst_source_new() */
+	struct burn_source *inp;
+	struct burn_source *prev;
+	off_t start;
+	off_t size;
+
+	/* To help offst_free() */
+	struct burn_source *next;
+
+	/* The current reading position */
+	int running;
+	off_t pos;
+
+};
+
 #endif /* LIBBURN__FILE_H */

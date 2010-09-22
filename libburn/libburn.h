@@ -1311,9 +1311,10 @@ off_t burn_disc_available_space(struct burn_drive *d,
       0xffff "stdio file"
     Note: 0xffff is not a MMC profile but a libburn invention.
     Read-only are the profiles
-      0x08 "CD-ROM",                        0x10 "DVD-ROM",
+      0x08 "CD-ROM",
+      0x10 "DVD-ROM",
       0x40 "BD-ROM",
-    For now read-only is BD-R profile (testers wanted)
+    Read-only for now is this BD-R profile (testers wanted)
       0x42 "BD-R random recording"
     @param d The drive where the media is inserted.
     @param pno Profile Number. See also mmc5r03c.pdf, table 89
@@ -1888,6 +1889,39 @@ int burn_os_free_buffer(void *buffer, size_t amount, int flag);
 */
 struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
 
+
+/* ts B00922 */
+/** Creates an offset source which shall provide a byte interval of a stream
+    to its consumer. It is supposed to be chain-linked with other offset
+    sources which serve neighboring consumers. The chronological sequence
+    of consumers and the sequence of offset sources must match. The intervals
+    of the sources must not overlap.
+
+    A chain of these burn_source objects may be used to feed multiple tracks
+    from one single stream of input bytes.
+    Each of the offset sources will skip the bytes up to its start address and
+    provide the prescribed number of bytes to the track. Skipping takes into
+    respect the bytes which have been processed by eventual predecessors in the
+    chain.
+    Important: It is not allowed to free an offset source before its successor
+               has ended its work. Best is to keep them all until all tracks
+               are done.
+
+    @param inp   The burn_source object from which to read stream data
+    @param prev  The eventual offset source object which shall read data from
+                 inp before the new offset source will begin its own work.
+                 This must either be a result of  burn_offst_source_new()  or
+                 it must be NULL.
+    @param start The byte address where to start reading bytes for the
+                 consumer. inp bytes may get skipped to reach this address.
+    @param size  The number of bytes to be delivered to the consumer.
+    @param flag  Bitfield for control purposes (unused yet, submit 0).
+    @return      Pointer to a burn_source object, NULL indicates failure
+    @since 0.8.8
+*/
+struct burn_source *burn_offst_source_new(
+                struct burn_source *inp, struct burn_source *prev,
+                off_t start, off_t size, int flag);
 
 /* ts A70930 */
 /** Creates a fifo which acts as proxy for an already existing data source.
