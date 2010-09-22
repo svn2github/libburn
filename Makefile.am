@@ -75,6 +75,9 @@ libburn_libburn_la_SOURCES = \
 libinclude_HEADERS = \
 	libburn/libburn.h 
 
+install-exec-hook:
+	$(LIBBURNIA_LDCONFIG_CMD) "$(DESTDIR)$(libdir)" || echo 'NOTE: Explicite dynamic library configuration failed. If needed, configure manually for:' "$(DESTDIR)$(libdir)"
+
 ## ========================================================================= ##
 
 ## Build test applications

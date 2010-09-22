@@ -16,11 +16,13 @@ AC_DEFUN([TARGET_SHIZZLE],
 
   AC_MSG_CHECKING([target operating system])
 
+  LIBBURNIA_LDCONFIG_CMD="echo 'No ldconfig run performed. If needed, configure manually for:'"
   
   case $target_os in
     linux*)
       ARCH=linux
       LIBBURN_ARCH_LIBS=
+      LIBBURNIA_LDCONFIG_CMD=ldconfig
       ;;
     freebsd*)
       ARCH=freebsd

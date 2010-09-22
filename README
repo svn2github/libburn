@@ -60,6 +60,11 @@ Warning: The trunk might contain experimental features which might not
 
                         Special ./configure options
 
+make install on GNU/Linux will try to run program ldconfig with the library
+installation directory as only argument. Failure to do so will not abort
+installation. One may disable ldconfig by ./configure option:
+   --disable-ldconfig-at-install
+
 In some situations Linux may deliver a better write performance to drives if
 the track input is read with O_DIRECT (see man 2 open). The API call
 burn_os_open_track_src() and the input readers of cdrskin and libburn fifo

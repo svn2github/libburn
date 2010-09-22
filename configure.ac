@@ -264,6 +264,17 @@ else
     echo "disabled strict symbol encapsulation"
 fi
 
+AC_ARG_ENABLE(ldconfig-at-install,
+[  --enable-ldconfig-at-install    On GNU/Linux run ldconfig, default=yes],
+               , ldconfig_at_install=yes)
+if test x$ldconfig_at_install = xyes; then 
+    dummy=dummy
+else
+    LIBBURNIA_LDCONFIG_CMD="echo 'NOTE: ldconfig is disabled. If needed, configure manually for:'"
+    echo "disabled run of ldconfig during installation on GNU/Linux"
+fi  
+AC_SUBST(LIBBURNIA_LDCONFIG_CMD)
+
 
 dnl Add compiler-specific flags
 
