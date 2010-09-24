@@ -11,6 +11,7 @@ burn_disc_erase;
 burn_disc_format;
 burn_disc_free;
 burn_disc_free_multi_caps;
+burn_disc_get_bd_spare_info;
 burn_disc_get_cd_info;
 burn_disc_get_format_descr;
 burn_disc_get_formats;
