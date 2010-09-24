@@ -5225,7 +5225,6 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  printf("number of sessions:       %d\n", nominal_sessions);
  printf("first track in last sess: %d\n", ftils);
  printf("last track in last sess:  %d\n", ltils);
- ret= burn_disc_get_bd_spare_info(drive, &alloc_blocks, &free_blocks, 0);
 
  burn_disc_get_cd_info(drive, disc_type, &disc_id, bar_code, &app_code,
                        &cd_info_valid);
@@ -5240,6 +5239,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    printf("Disk type: unrecognizable\n");
  if(cd_info_valid & 2)
    printf("Disk id: 0x%-X\n", disc_id);
+ ret= burn_disc_get_bd_spare_info(drive, &alloc_blocks, &free_blocks, 0);
  if(ret == 1) {
    printf("BD Spare Area consumed:   %d\n", alloc_blocks - free_blocks);
    printf("BD Spare Area available:  %d\n", free_blocks);
@@ -5644,7 +5644,7 @@ ex:;
 int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
 {
  struct burn_drive *drive;
- int ret, i, status, num_formats, profile_no, type;
+ int ret, i, status, num_formats, profile_no, type, alloc_blocks, free_blocks;
  off_t size;
  unsigned dummy;
  char status_text[80], profile_name[90];
@@ -5691,6 +5691,12 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  } else
    sprintf(status_text, "illegal status according to MMC-5");
  printf("Format status: %s\n", status_text);
+
+ ret= burn_disc_get_bd_spare_info(drive, &alloc_blocks, &free_blocks, 0);
+ if(ret == 1) {
+   printf("BD Spare Area consumed:   %d\n", alloc_blocks - free_blocks);
+   printf("BD Spare Area available:  %d\n", free_blocks);
+ }
 
  for (i = 0; i < num_formats; i++) {
    ret= burn_disc_get_format_descr(drive, i, &type, &size, &dummy);
