@@ -5691,12 +5691,10 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  } else
    sprintf(status_text, "illegal status according to MMC-5");
  printf("Format status: %s\n", status_text);
-
  ret= burn_disc_get_bd_spare_info(drive, &alloc_blocks, &free_blocks, 0);
- if(ret == 1) {
-   printf("BD Spare Area consumed:   %d\n", alloc_blocks - free_blocks);
-   printf("BD Spare Area available:  %d\n", free_blocks);
- }
+ if(ret == 1)
+   printf("BD Spare Area: %d blocks consumed, %d blocks available\n",
+          alloc_blocks - free_blocks, free_blocks);
 
  for (i = 0; i < num_formats; i++) {
    ret= burn_disc_get_format_descr(drive, i, &type, &size, &dummy);
