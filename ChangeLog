@@ -1,3 +1,9 @@
+SVN trunk (to become libburn-0.8.8.pl00.tar.gz) 
+===============================================================================
+* New API call burn_offst_source_new()
+* New API call burn_disc_get_bd_spare_info()
+
+
 libburn-0.8.6.pl00.tar.gz Fri Sep 17 2010
 ===============================================================================
 * Lifted test reservation on DVD-R DL media.

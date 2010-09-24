@@ -106,5 +106,8 @@ int mmc_function_spy(struct burn_drive *d, char * text);
 /* ts A91118 */
 int mmc_start_if_needed(struct burn_drive *d, int flag);
 
+/* ts B00924 */
+int mmc_get_bd_spare_info(struct burn_drive *d,
+                                int *alloc_blocks, int *free_blocks, int flag);
 
 #endif /*__MMC*/

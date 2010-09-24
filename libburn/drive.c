@@ -2836,3 +2836,18 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
 	*valid =  d->disc_info_valid;
 	return 1;
 }
+
+
+/* ts B00924 : API */
+int burn_disc_get_bd_spare_info(struct burn_drive *d,
+				int *alloc_blocks, int *free_blocks, int flag)
+{
+	int ret;
+
+	if (burn_drive_get_drive_role(d) != 1)
+		return 0;
+	*alloc_blocks = *free_blocks = 0;
+	ret = mmc_get_bd_spare_info(d, alloc_blocks, free_blocks, 0);
+	return ret;
+}
+

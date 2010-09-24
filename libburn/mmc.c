@@ -3876,6 +3876,11 @@ int mmc_compose_mode_page_5(struct burn_drive *d,
 
 		pd[4] = spc_block_type(o->block_type);
 
+/*
+fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
+                 o->block_type, (unsigned int) pd[4]);
+*/
+
 		/* ts A61104 */
 		if(!(o->control&4)) /* audio (MMC-1 table 61) */
 			if(o->write_type == BURN_WRITE_TAO)
@@ -4127,7 +4132,7 @@ static int mmc_set_product_id(char *reply,
 
 
 /* ts A90903 */
-/* MMC backend of API call burn_get_media_product_id()
+/* MMC backend of API call burn_disc_get_media_id()
    See also doc/mediainfo.txt
     @param flag        Bitfield for control purposes
                        bit0= do not escape " _/" (not suitable for
@@ -4310,6 +4315,29 @@ ex:;
 			free(*book_type);
 		*product_id = *media_code1 = *media_code2 = *book_type = NULL;
 	}
+	return ret;
+}
+
+
+/* ts B00924
+   MMC-5, 6.23.3.3.4 Format Code 0Ah: Spare Area Information
+*/
+int mmc_get_bd_spare_info(struct burn_drive *d,
+				int *alloc_blocks, int *free_blocks, int flag)
+{
+	int ret, reply_len;
+	char *reply = NULL;
+
+	ret = mmc_read_disc_structure(d, 1, 0, 0x0a, 12, &reply,
+							 &reply_len, 0);
+	if (ret <= 0)
+		goto ex;
+	*alloc_blocks = mmc_four_char_to_int((unsigned char *) reply + 8);
+	*free_blocks = mmc_four_char_to_int((unsigned char *) reply + 4);
+	ret = 1;
+ex:;
+	if (reply != NULL)
+		free(reply);
 	return ret;
 }
 

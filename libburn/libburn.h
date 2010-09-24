@@ -1237,12 +1237,29 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                      bit5= Disc is nominally erasable (Erasable bit)
                            This will be set with overwriteable media which
                            libburn normally considers to be unerasable blank.
+    @return          1 success, <= 0 an error occured
     @since 0.7.2
 */
 int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
                         unsigned int *disc_id, char bar_code[9], int *app_code,
 			int *valid);
 
+/* ts B00924 */
+/** Read the current usage of the eventual BD Spare Area. This area gets
+    reserved on BD media during formatting. During writing it is used to
+    host replacements of blocks which failed the checkread immediately after
+    writing.
+    This call applies only to recordable BD media. I.e. profiles 0x41 to 0x43.
+    @param d            The drive to query.
+    @param alloc_blocks Returns the number of blocks reserved as Spare Area
+    @param free_blocks  Returns the number of yet unused blocks in that area
+    @param flag         Bitfield for control purposes (unused yet, submit 0)
+    @return             1 = reply prarameters are valid,
+                        <=0 = reply is invalid (e.g. because no BD profile)
+    @since 0.8.8
+*/
+int burn_disc_get_bd_spare_info(struct burn_drive *d,
+                                int *alloc_blocks, int *free_blocks, int flag);
 
 /* ts A61110 */
 /** Read start lba and Next Writeable Address of a track from media.
@@ -1907,7 +1924,8 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
                has ended its work. Best is to keep them all until all tracks
                are done.
 
-    @param inp   The burn_source object from which to read stream data
+    @param inp   The burn_source object from which to read stream data.
+                 E.g. created by burn_file_source_new().
     @param prev  The eventual offset source object which shall read data from
                  inp before the new offset source will begin its own work.
                  This must either be a result of  burn_offst_source_new()  or
@@ -1916,7 +1934,8 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
                  consumer. inp bytes may get skipped to reach this address.
     @param size  The number of bytes to be delivered to the consumer.
     @param flag  Bitfield for control purposes (unused yet, submit 0).
-    @return      Pointer to a burn_source object, NULL indicates failure
+    @return      Pointer to a burn_source object, later to be freed by
+                 burn_source_free(). NULL indicates failure.
     @since 0.8.8
 */
 struct burn_source *burn_offst_source_new(
