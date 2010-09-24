@@ -5143,7 +5143,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 #endif
  char media_class[80];
  int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
- int app_code, cd_info_valid, lra;
+ int app_code, cd_info_valid, lra, alloc_blocks, free_blocks;
  off_t avail, buf_count;
  char disc_type[80], bar_code[9], buf[2 * 2048];
  unsigned int disc_id;
@@ -5225,6 +5225,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  printf("number of sessions:       %d\n", nominal_sessions);
  printf("first track in last sess: %d\n", ftils);
  printf("last track in last sess:  %d\n", ltils);
+ ret= burn_disc_get_bd_spare_info(drive, &alloc_blocks, &free_blocks, 0);
 
  burn_disc_get_cd_info(drive, disc_type, &disc_id, bar_code, &app_code,
                        &cd_info_valid);
@@ -5239,6 +5240,10 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    printf("Disk type: unrecognizable\n");
  if(cd_info_valid & 2)
    printf("Disk id: 0x%-X\n", disc_id);
+ if(ret == 1) {
+   printf("BD Spare Area consumed:   %d\n", alloc_blocks - free_blocks);
+   printf("BD Spare Area available:  %d\n", free_blocks);
+ }
 
  printf("\n");
  printf("Track  Sess Type   Start Addr End Addr   Size\n");
