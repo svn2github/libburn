@@ -4325,8 +4325,12 @@ ex:;
 int mmc_get_bd_spare_info(struct burn_drive *d,
 				int *alloc_blocks, int *free_blocks, int flag)
 {
-	int ret, reply_len;
+	int ret, reply_len, prf;
 	char *reply = NULL;
+
+	prf = d->current_profile;
+	if (!(prf == 0x41 || prf == 0x43 || prf == 0x42))
+		return 0; /* Not a BD loaded */
 
 	ret = mmc_read_disc_structure(d, 1, 0, 0x0a, 12, &reply,
 							 &reply_len, 0);
