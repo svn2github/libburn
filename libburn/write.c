@@ -385,9 +385,9 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
  		runtime = nwa-150;
 #endif
 
-	sheet = malloc(sizeof(struct cue_sheet));
+	sheet = calloc(1, sizeof(struct cue_sheet));
 
-	/* ts A61009 : react on failures of malloc(), add_cue_sheet()
+	/* ts A61009 : react on failures of calloc(), add_cue_sheet()
 	               type_to_form() */
 	if (sheet == NULL) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020111,
@@ -2006,7 +2006,13 @@ ex:;
 	burn_drive_mark_unready(d);
 	burn_drive_inquire_media(d);
 
-	/* <<< d->busy = BURN_DRIVE_IDLE; */
+	if (d->current_profile == 0x41 && d->complete_sessions >= 300) {
+		sprintf(msg, "Sequential BD-R media now contains %d sessions. It is likely to soon fail writing.", d->complete_sessions);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002017b, LIBDAX_MSGS_SEV_WARNING,
+				LIBDAX_MSGS_PRIO_ZERO, msg, 0, 0);
+	}
+
 	return ret;
 early_failure:;
 	return 0;
