@@ -644,8 +644,13 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	d->cancel = 1;
 
 	/* ts A70203 : people have been warned in API specs */
-	if (opts->write_type == BURN_WRITE_NONE)
+	if (opts->write_type == BURN_WRITE_NONE) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002017c,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"No valid write type selected", 0, 0);
 		return;
+	}
 
 	if (d->drive_role == 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,

@@ -2120,9 +2120,11 @@ int burn_stdio_mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	if (d->cancel)
 		return BE_CANCELLED;
 	if (d->stdio_fd < 0) {
-
-		/* >>> program error */;
-
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002017d,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Invalid file descriptor with stdio pseudo-drive",
+			0, 0);
 		d->cancel = 1;
 		return BE_CANCELLED;
 	}
@@ -2170,9 +2172,11 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
 	if (fd < 0) {
-
-		/* >>> program error */;
-
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002017d,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Invalid file descriptor with stdio pseudo-drive",
+			0, 0);
 		d->cancel = 1;
 		return 0;
 	}

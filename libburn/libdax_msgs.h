@@ -561,6 +561,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020179 (FAILURE,HIGH) = Offset source start address is before end of previous source
  0x0002017a (FAILURE,HIGH) = Expected offset source object as parameter
  0x0002017b (WARNING,HIGH) = Sequential BD-R media likely to soon fail writing
+ 0x0002017c (FAILURE,HIGH) = No valid write type selected
+ 0x0002017d (FATAL,HIGH)   = Invalid file descriptor with stdio pseudo-drive
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
