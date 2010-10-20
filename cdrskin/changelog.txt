@@ -8768,7 +8768,7 @@ ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------- release - cdrskin-0.8.4.pl00 - 2010.06.30.100001
+------------------------------ release - cdrskin-0.8.6.pl00 - 2010.09.16.113001
 * Lifted test reservation on DVD-R DL media.
 * Hiding all non-API symbols from the linker by use of --version-script
 
@@ -8792,19 +8792,162 @@ Made number transition to 0.8.7
 + cdrskin/add_ts_changes_to_libburn_0_8_7
 Updated cdrskin tarball generator
 
-17 Sep 2010  []
+17 Sep 2010  [3379]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+17 Sep 2010  [3381]
+svn move -m libburn release 0.8.6 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroEightSix
+http://svn.libburnia-project.org/libburn/tags/ZeroEightSix
+
+------------------------------------ cycle  - cdrskin-0.8.7 - 2010.09.17.082926
+
+2010.09.22.105426  [3395]
+acinclude.m4
+configure.ac
+Makefile.am
+README
+On Linux: Run ldconfig during make install,if not --disable-ldconfig-at-install
+
+2010.09.22.175054  [3397]
+libburn/libburn.h
+libburn/libburn.ver
+libburn/libdax_msgs.h
+libburn/file.h
+libburn/file.c
+libburn/source.h
+libburn/source.c
+New API call burn_offst_source_new()
+
+2010.09.22.180921  [3398]
+Makefile.am
++ test/offst_source.c
+Temporarily added test program for burn_offst_source_new()
+
+22 Sep 2010  [3399]
+test/offst_source.c
+Better default input file for test/offst_source.c
+
+2010.09.24.090631  [3401]
+libburn/libburn.h
+libburn/drive.c
+libburn/mmc.h
+libburn/mmc.c
+ChangeLog
+New API call burn_disc_get_bd_spare_info()
+
+2010.09.24.090731  [3402]
+cdrskin/cdrskin.c
+Displaying eventual BD spare area information with -minfo
+
+2010.09.24.091902  [3403]
+cdrskin/cdrskin.c
+Displaying eventual BD spare area information with --list_formats
+
+2010.09.24.092535  [3404]
+libburn/libburn.ver
+Making new API call available in dynamic library
+
+2010.09.24.100255  [3405]
+cdrskin/cdrskin.c
+Polished appearance of BD spare info with --list_formats
+
+------------------------------------ cycle  - cdrskin-0.8.7 - 2010.09.24.100255
+* New API call burn_offst_source_new()
+* New API call burn_disc_get_bd_spare_info()
+
+
+2010.09.28.101043  [3408]
+libburn/mmc.c
+Avoiding to inquire spare area of unsuitable media
+
+2010.10.15.191717  [3445]
+libburn/write.c
+libburn/libdax_msgs.h
+Issue warning after writing a BD-R with more than 300 sessions
+
+2010.10.19.165908  [3450]
+libburn/async.c
+libburn/write.c
+libburn/libdax_msgs.h
+Issueing messages with all cases of burn canceling
+
+20 Oct 2010  [3453]
+svn copy -m Branching for libburn release 0.8.8
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/ZeroEightEight
+
+2010.10.20.120001  [3454]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.8
+
+20 Oct 2010  [3455]
+- cdrskin/add_ts_changes_to_libburn_0_8_6
+- cdrskin/add_ts_changes_to_libburn_0_8_7
++ cdrskin/add_ts_changes_to_libburn_0_8_8
++ cdrskin/add_ts_changes_to_libburn_0_8_9
+Updated cdrskin tarball generator
+
+20 Oct 2010  [3456]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.8.8.pl00 - 2010.10.20.120001
+* New API call burn_offst_source_new()
+* New API call burn_disc_get_bd_spare_info()
+
+
+2010.10.20.125207  [3457]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.8.9
+
+20 Oct 2010  [3458]
+- cdrskin/add_ts_changes_to_libburn_0_8_6
+- cdrskin/add_ts_changes_to_libburn_0_8_7
++ cdrskin/add_ts_changes_to_libburn_0_8_8
++ cdrskin/add_ts_changes_to_libburn_0_8_9
+Updated cdrskin tarball generator
+
+20 Oct 2010  []
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 
------------------------------------- cycle  - cdrskin-0.8.7 - 
------------------------------------- cycle  - cdrskin-0.8.7 - 
+------------------------------------ cycle  - cdrskin-0.8.9 - 
+------------------------------------ cycle  - cdrskin-0.8.9 - 
 
+
+
+
+**********************************************************************
+Important: When adding a public API function then add its name to file
+           libburn/libburn.ver
+**********************************************************************
 
 ===============================================================================
                                     TODO
 ===============================================================================
+
 
 Better motivation of burn_set_signal_handling() in libburn.h.
 
