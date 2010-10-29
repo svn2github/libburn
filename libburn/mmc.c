@@ -521,6 +521,8 @@ void mmc_close_session(struct burn_write_opts *o)
 void mmc_close(struct burn_drive *d, int session, int track)
 {
 	struct command c;
+	char msg[256];
+	int key, asc, ascq;
 
 	if (mmc_function_spy(d, "mmc_close") <= 0)
 		return;
@@ -544,6 +546,16 @@ void mmc_close(struct burn_drive *d, int session, int track)
 
 	/* ts A70918 : Immed : wait for drive to complete command */
 	if (c.error) {
+		sprintf(msg, "Failed to close %s (%d)",
+		      session > 1 ? "disc" : session > 0 ? "session" : "track",
+		      ((session & 3) << 1) | !!track);
+		sprintf(msg + strlen(msg), ". SCSI error : ");
+		scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002017e,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 		d->cancel = 1;
 		return;
 	}
@@ -2898,6 +2910,8 @@ int mmc_read_format_capacities(struct burn_drive *d, int top_wanted)
 void mmc_sync_cache(struct burn_drive *d)
 {
 	struct command c;
+	char msg[256];
+	int key, asc, ascq;
 
 	if (mmc_function_spy(d, "mmc_sync_cache") <= 0)
 		return;
@@ -2933,6 +2947,14 @@ void mmc_sync_cache(struct burn_drive *d)
 
 	/* ts A70918 */
 	if (c.error) {
+		sprintf(msg, "Failed to synchronize drive cache");
+		sprintf(msg + strlen(msg), ". SCSI error : ");
+		scsi_error_msg(d, c.sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002017f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 		d->cancel = 1;
 		return;
 	}
