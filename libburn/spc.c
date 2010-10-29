@@ -1558,12 +1558,12 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 	enum response outcome;
 	int done = -1, usleep_time;
 
+	if (burn_sg_log_scsi & 3)
+		scsi_log_err(c, fp, sense, sense_len, duration,
+				 (sense_len > 0) | (flag & 2));
 	if (sense_len <= 0)
 		return 1;
 		
-	if (burn_sg_log_scsi & 3)
-		scsi_log_err(c, fp, sense, sense_len, duration,
-				 1 | (flag & 2));
 	outcome = scsi_error(d, sense, sense_len);
 	if (outcome == RETRY && c->retry && !(flag & 1)) {
 		/* Calming down retries and breaking up endless cycle
