@@ -766,8 +766,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	static FILE *fp = NULL;
 	time_t start_time;
 
-#define Libburn_use_scsi_eval_cmd_outcomE yes
-
 	snprintf(buf, sizeof (buf),
 		"sg_issue_command  d->cam=%p d->released=%d",
 		(void*)d->cam, d->released);
@@ -961,67 +959,19 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				no_retry = 1;
 			}
 
-
-#ifdef Libburn_use_scsi_eval_cmd_outcomE
-
+			/* >>> Need own duration time measurement.
+			       Then remove bit1 from flag.
+			*/
 			done = scsi_eval_cmd_outcome(d, c, fp, c->sense,
 						sense_len, 0, start_time,
 						timeout_ms, i,
 						2 | !!ignore_error);
-
-#else /* Libburn_use_scsi_eval_cmd_outcomE */
-
-			if (no_retry || ignore_error || !c->retry) {
-				c->error = 1;
-				{ret = 1; goto ex;}
-			}
-			switch (scsi_error(d, c->sense, 0)) {
-			case RETRY:
-				done = 0;
-				if (burn_sg_log_scsi & 3) {
-					/* >>> Need own duration time
-					       measurement. Then remove bit1 */
-					scsi_log_err(c, fp, c->sense,
-					    sense_len > 0 ? sense_len : 18,
-					    0, 1 | 2);
-					scsi_log_cmd(c,fp,0);
-				}
-				break;
-			case FAIL:
-				done = 1;
-				c->error = 1;
-				break;
-			case GO_ON:
-				if (burn_sg_log_scsi & 3)
-					/* >>> Need own duration time
-					       measurement. Then remove bit1 */
-					scsi_log_err(c, fp, c->sense,
-					    sense_len > 0 ? sense_len : 18,
-					    0, 1 | 2);
-				{ret = 1; goto ex;}
-			}
-
-#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
-
 		} else {
 			done = 1;
 		}
 	} while (!done);
 	ret = 1;
 ex:;
-
-#ifndef Libburn_use_scsi_eval_cmd_outcomE
-
-	if (c->error)
-		scsi_notify_error(d, c, c->sense, 18, 0);
-
-	if (burn_sg_log_scsi & 3)
-		/* >>> Need own duration time measurement. Then remove bit1 */
-		scsi_log_err(c, fp, c->sense, sense_len > 0 ? sense_len : 18,
-						0, (c->error != 0) | 2);
-
-#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
-
 	cam_freeccb(ccb);
 	return ret;
 }

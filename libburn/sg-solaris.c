@@ -571,11 +571,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	char msg[80];
         static FILE *fp = NULL;
 
-#define Libburn_use_scsi_eval_cmd_outcomE yes
-#ifndef Libburn_use_scsi_eval_cmd_outcomE
-	int  usleep_time, no_retry = 0;
-#endif
-
 	c->error = 0;
 	memset(c->sense, 0, sizeof(c->sense));
 	if (d->fd == -1)
@@ -644,8 +639,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			return -1;
 		}
 
-#ifdef Libburn_use_scsi_eval_cmd_outcomE
-
 
 		/* >>> Should replace "18" by realistic sense length.
 		       What's about following older remark ?
@@ -659,69 +652,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		} else
 			done = 1;
 					
-
-#else /* Libburn_use_scsi_eval_cmd_outcomE */
-
-
-		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
-
-		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
-		if (key || asc || ascq) {
-			if (no_retry || !c->retry) {
-				c->error = 1;
-				goto ex;
-			}
-			switch (scsi_error(d, c->sense, 18)) {
-			case RETRY:
-				if (burn_sg_log_scsi & 3) {
-					/* >>> Need own duration time
-					       measurement. Then remove bit1 */
-					scsi_log_err(c, fp, c->sense, 18, 0,
-							1 | 2);
-					scsi_log_cmd(c,fp,0);
-				}
-				break;
-			case FAIL:
-				c->error = 1;
-				goto ex;
-			case GO_ON:
-				if (burn_sg_log_scsi & 3)
-					/* >>> Need own duration time
-					       measurement. Then remove bit1 */
-					scsi_log_err(c, fp, c->sense, 18, 0,
-							1 | 2);
-				goto ex;
-			}
-			/* 
-			   Calming down retries and breaking up endless cycle
-			*/
-			usleep_time = Libburn_sg_solaris_retry_usleeP +
-					i * Libburn_sg_solaris_retry_incR;
-			if (time(NULL) + usleep_time / 1000000 - start_time >
-			    timeout_ms / 1000 + 1) {
-				c->error = 1;
-				goto ex;
-			}
-			usleep(usleep_time);
-		} else
-			break; /* retry-loop */
-
-#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
-
 	} /* end of retry-loop */
-
-#ifndef Libburn_use_scsi_eval_cmd_outcomE
-
-ex:;
-
-	if (c->error)
-		scsi_notify_error(d, c, c->sense, 18, 0);
-
-	if (burn_sg_log_scsi & 3) 
-		/* >>> Need own duration time measurement. Then remove bit1 */
-		scsi_log_err(c, fp, c->sense, 18, 0, (c->error != 0) | 2);
-
-#endif /* ! Libburn_use_scsi_eval_cmd_outcomE */
 
 	return 1;
 }
