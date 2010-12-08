@@ -8927,14 +8927,95 @@ Made number transition to 0.8.9
 + cdrskin/add_ts_changes_to_libburn_0_8_9
 Updated cdrskin tarball generator
 
-20 Oct 2010  []
+20 Oct 2010  [3459]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+20 Oct 2010
+svn move -m libburn release 0.8.8 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroEightEight
+http://svn.libburnia-project.org/libburn/tags/ZeroEightEight
 
------------------------------------- cycle  - cdrskin-0.8.9 - 
------------------------------------- cycle  - cdrskin-0.8.9 - 
+------------------------------------ cycle  - cdrskin-0.8.9 - 2010.10.20.134102
+
+
+2010.10.29.164059  [3474]
+libburn/mmc.c
+libburn/libdax_msgs.h
+Issueing error messages if cache syncing or closing fails
+
+2010.10.29.174455  [3476]
+libburn/spc.c
+Regression fix: SCSI reply data logging was disabled in rev 3368, 0.8.6
+
+2010.11.16.131221  [3483]
+libburn/sg-linux.c
+libburn/sg-freebsd.c
+libburn/sg-libcdio.c
+libburn/sg-solaris.c
+Removed outdated development macros
+
+08 Dec 2010  [3502]
+svn copy -m Branching for libburn release 0.9.0
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/ZeroNineZero
+
+2010.12.08.133001  [3503]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.9.0
+
+08 Dec 2010  [3504]
+- cdrskin/add_ts_changes_to_libburn_0_8_8
+- cdrskin/add_ts_changes_to_lisburn_0_8_9
++ cdrskin/add_ts_changes_to_libburn_0_9_0
++ cdrskin/add_ts_changes_to_libburn_0_9_1
+Updated cdrskin tarball generator
+
+08 Dec 2010  [3505]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-0.9.0.pl00 - 2010.12.08.133001
+Regression fix: SCSI reply data logging was disabled in release 0.8.6
+
+
+2010.12.08.131934  [3506]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 0.9.1
+
+08 Dec 2010  [3507]
+- cdrskin/add_ts_changes_to_libburn_0_8_8
+- cdrskin/add_ts_changes_to_lisburn_0_8_9
++ cdrskin/add_ts_changes_to_libburn_0_9_0
++ cdrskin/add_ts_changes_to_libburn_0_9_1
+Updated cdrskin tarball generator
+
+08 Dec 2010  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-0.9.1 - 
+------------------------------------ cycle  - cdrskin-0.9.1 - 
+------------------------------------ cycle  - cdrskin-0.9.1 - 
 
 
 
@@ -8947,6 +9028,14 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
+
+
+cdrskin -tao starts with known size that is larger than media capacity
+ Track 01: 4486 of 4488 MB written (fifo 100%) [buf  92%]   8.1x.
+ Track 01: 4487 of 4488 MB written (fifo 100%) [buf  92%]   8.1x.
+ cdrskin: FATAL : Exceeding range of permissible write addresses
+ (2297888 >= 2297888)
+ Track 01: 4488 of 4488 MB written (fifo 100%) [buf  92%]   7.4x.
 
 
 Better motivation of burn_set_signal_handling() in libburn.h.
