@@ -187,7 +187,7 @@ AC_CHECK_HEADER(sys/statvfs.h, X=, STATVFS_DEF=)
 AC_CHECK_FUNC([statvfs], X=, STATVFS_DEF=)
 dnl If this would be done more specifically in Makefile.am
 dnl via libburn_libburn_la_CFLAGS then undesired .o file names would emerge
-CFLAGS="$CFLAGS $STATVFS_DEF"
+CFLAGS="$STATVFS_DEF $CFLAGS"
 
 dnl ts A91122
 AC_ARG_ENABLE(track-src-odirect,
@@ -202,7 +202,7 @@ else
 fi
 dnl Avoid the need for libburn_libburn_la_CFLAGS in Makefile.am (ugly .o names)
 dnl ### AC_SUBST(LIBBURN_O_DIRECT_DEF)
-CFLAGS="$CFLAGS $LIBBURN_O_DIRECT_DEF"
+CFLAGS="$LIBBURN_O_DIRECT_DEF $CFLAGS"
 
 dnl ts A91116
 AC_ARG_ENABLE(dvd-obs-64k,
@@ -215,7 +215,7 @@ else
     LIBBURN_DVD_OBS_64K=
     echo "disabled write size default 64 KB on DVD and BD"
 fi
-CFLAGS="$CFLAGS $LIBBURN_DVD_OBS_64K"
+CFLAGS="$LIBBURN_DVD_OBS_64K $CFLAGS"
 
 dnl ts A91218
 AC_ARG_ENABLE(libcdio,
@@ -238,7 +238,7 @@ then
     fi
 else
     echo "enabled  EXPERIMENTAL use of libcdio as system adapter"
-    CFLAGS="$CFLAGS $LIBCDIO_DEF"
+    CFLAGS="$LIBCDIO_DEF $CFLAGS"
 
     LIBCDIO_REQUIRED=0.83
     PKG_CHECK_MODULES(LIBCDIO, libcdio >= $LIBCDIO_REQUIRED)
@@ -286,15 +286,15 @@ AC_ARG_ENABLE(debug,
               , enable_debug=yes)
 if test x$enable_debug != xyes; then
     if test x$GCC = xyes; then
-        CFLAGS="$CFLAGS -O3"
-        CFLAGS="$CFLAGS -fexpensive-optimizations"
+        CFLAGS="-O3 $CFLAGS"
+        CFLAGS="-fexpensive-optimizations $CFLAGS"
     fi
-    CFLAGS="$CFLAGS -DNDEBUG"
+    CFLAGS="-DNDEBUG $CFLAGS"
 else
     if test x$GCC = xyes; then
-        CFLAGS="$CFLAGS -g -pedantic -Wall"
+        CFLAGS="-g -pedantic -Wall $CFLAGS"
     fi
-    CFLAGS="$CFLAGS -DDEBUG"
+    CFLAGS="-DDEBUG $CFLAGS"
 fi
 
 dnl Determine target directory for libburn-*.pc
