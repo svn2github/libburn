@@ -2024,7 +2024,8 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 			 int sector_size, int flag)
 {
 
-/* <<< We need _LARGEFILE64_SOURCE defined by the build system.
+/* We normally need _LARGEFILE64_SOURCE defined by the build system.
+   Nevertheless the system might use large address integers by default.
 */
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0
@@ -2040,7 +2041,8 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	if (fd >= 0)
 		fd = dup(fd); /* check validity and make closeable */
 	else
-		fd = open(d->devname, mode, S_IRUSR | S_IWUSR);
+		fd = open(d->devname, mode,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (fd == -1) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020005,
