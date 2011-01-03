@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -179,10 +179,14 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 	if (!shortage)
 		goto ex;
 
-	/* ts A61031 */
+	/* ts A61031 - B10103 */
 	if (shortage >= count)
 		track->track_data_done = 1;
-	if (track->open_ended)
+	if (track->end_on_premature_eoi && !track->open_ended) {
+		/* Memorize that premature end of input happened */
+		track->end_on_premature_eoi = 2;
+	}
+	if (track->open_ended || track->end_on_premature_eoi)
 		goto ex;
 
 /* If we're still short, and there's a "next" pointer, we pull from that.
@@ -688,7 +692,7 @@ int sector_data(struct burn_write_opts *o, struct burn_track *t, int psub)
 		return 0;
 
 	/* ts A61031 */
-	if (t->open_ended && t->track_data_done) {
+	if ((t->open_ended || t->end_on_premature_eoi) && t->track_data_done) {
 		unget_sector(o, t->mode);
 		return 2;
 	}

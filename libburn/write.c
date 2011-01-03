@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -2257,6 +2257,8 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	burn_disc_init_track_status(o, s, tnum, sectors);
 	open_ended = burn_track_is_open_ended(t);
 
+	t->end_on_premature_eoi = (o->write_type == BURN_WRITE_TAO);
+
 	/* attach stdio emulators for mmc_*() functions */
 	if (o->simulate)
 		d->write = burn_stdio_mmc_dummy_write;
@@ -2269,8 +2271,9 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		/* transact a (CD sized) sector */
 		if (!sector_data(o, t, 0))
 			{ret= 0; goto ex;}
-		if (open_ended) {
+		if (open_ended)
 			d->progress.sectors = sectors = d->progress.sector;
+		if (open_ended || t->end_on_premature_eoi) {
 			if (burn_track_is_data_done(t))
 	break;
 		}
@@ -2297,6 +2300,8 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 ex:;
 	if (d->cancel)
 		burn_source_cancel(t->source);
+	if (t->end_on_premature_eoi == 2)
+		d->cancel = 1;
 	return ret;
 }
 

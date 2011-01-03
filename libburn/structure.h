@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -55,6 +55,14 @@ struct burn_track
 	int open_ended;
 	/** End of open ended track flag : offset+payload+tail are delivered */
 	int track_data_done;
+	/* ts B10103 */
+	/** End track writing on premature End-of-input if source is of
+	    defined length.
+	    0= normal operation in case of eoi
+	    1= be ready to end track writing on eoi
+	    2= eoi was encountered with previously set value of 1
+	*/
+	int end_on_premature_eoi;
 
 	/** The audio/data mode for the entry. Derived from control and
 	    possibly from reading the track's first sector. */
