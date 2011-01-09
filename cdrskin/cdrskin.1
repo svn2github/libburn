@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Aug 21, 2010"
+.TH CDRSKIN 1 "Jan 09, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -553,6 +553,9 @@ which appear to be in the desired blank or format state already.
 .br
 This option enables a burn run with option -dummy even if libburn believes
 that drive and media will not simulate the write mode but will write for real.
+.br
+It enables a burn run where cdrskin expects to exceed the available media
+capacity.
 .br
 .B Caution:
 Use this only when in urgent need.

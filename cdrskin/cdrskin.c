@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2010 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2011 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
@@ -7081,6 +7081,10 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  double put_counter, get_counter, empty_counter, full_counter;
  int total_min_fill, fifo_percent;
 #endif
+#ifdef Cdrskin_libburn_has_get_spacE
+ off_t free_space;
+ char msg[80];
+#endif
 
  if(skin->tell_media_space)
    doing= "estimating";
@@ -7324,17 +7328,12 @@ burn_failed:;
    /* write capacity estimation and return without actual burning */
 
 #ifdef Cdrskin_libburn_has_get_spacE
-   {
-     off_t free_space;
-     char msg[80];
-
-     free_space= burn_disc_available_space(drive,o);
-     sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
-     if(skin->preskin->result_fd>=0) {
-       write(skin->preskin->result_fd,msg,strlen(msg));
-     } else
-       printf("%s",msg);
-   }
+   free_space= burn_disc_available_space(drive,o);
+   sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
+   if(skin->preskin->result_fd>=0) {
+     write(skin->preskin->result_fd,msg,strlen(msg));
+   } else
+     printf("%s",msg);
 #endif /* Cdrskin_libburn_has_get_spacE */
 
    if(skin->track_counter>0)
@@ -7343,6 +7342,23 @@ burn_failed:;
        skin->preskin->write_mode_name);
    {ret= 1; goto ex;}
  }
+
+
+#ifdef Cdrskin_libburn_has_get_spacE
+ if(skin->fixed_size > 0 && !skin->force_is_set) {
+   free_space= burn_disc_available_space(drive,o);
+   if(skin->fixed_size > free_space && free_space > 0) {
+     fprintf(stderr,
+ "cdrskin: FATAL : predicted session size %lus does not fit on media (%lus)\n",
+             (unsigned long) ((skin->fixed_size + 2047.0) / 2048.0),
+             (unsigned long) ((free_space + 2047) / 2048));
+     ClN(fprintf(stderr,
+              "cdrskin: HINT : This test may be disabled by option -force\n");)
+     {ret= 0; goto ex;}
+   }
+ }
+#endif /* Cdrskin_libburn_has_get_spacE */
+
 
  Cdrskin_adjust_speed(skin,0);
 
