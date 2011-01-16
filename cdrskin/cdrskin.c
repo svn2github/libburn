@@ -88,17 +88,17 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "0.9.1"
+#define Cdrskin_prog_versioN "1.0.1"
 #endif
 
 /** The official libburn interface revision to use.
     (May get changed further below)
 */
 #ifndef Cdrskin_libburn_majoR
-#define Cdrskin_libburn_majoR 0
+#define Cdrskin_libburn_majoR 1
 #endif
 #ifndef Cdrskin_libburn_minoR
-#define Cdrskin_libburn_minoR 9
+#define Cdrskin_libburn_minoR 0
 #endif
 #ifndef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_micrO 1
@@ -135,13 +135,13 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_0_9_0
-#define Cdrskin_libburn_versioN "0.9.0"
+#ifdef Cdrskin_libburn_1_0_0
+#define Cdrskin_libburn_versioN "1.0.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_0_9_0 */
+#endif /* Cdrskin_libburn_1_0_0 */
 
-#ifdef Cdrskin_libburn_0_9_1
-#define Cdrskin_libburn_versioN "0.9.1"
+#ifdef Cdrskin_libburn_1_0_1
+#define Cdrskin_libburn_versioN "1.0.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
@@ -153,28 +153,28 @@ or
 */
 
 
-#endif /* Cdrskin_libburn_0_9_1 */
+#endif /* Cdrskin_libburn_1_0_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_0_9_0
-#define Cdrskin_libburn_versioN "0.9.0"
+#define Cdrskin_libburn_1_0_0
+#define Cdrskin_libburn_versioN "1.0.0"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_0_9_0
+#ifdef Cdrskin_libburn_1_0_0
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 9
+#define Cdrskin_libburn_majoR 1
+#define Cdrskin_libburn_minoR 0
 #define Cdrskin_libburn_micrO 0
 #endif
-#ifdef Cdrskin_libburn_0_9_1
+#ifdef Cdrskin_libburn_1_0_1
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_majoR 0
-#define Cdrskin_libburn_minoR 9
+#define Cdrskin_libburn_majoR 1
+#define Cdrskin_libburn_minoR 0
 #define Cdrskin_libburn_micrO 1
 #endif
 
@@ -3171,7 +3171,7 @@ set_severities:;
      int major, minor, micro;
 
      printf(
-"Cdrecord 2.01-Emulation Copyright (C) 2006-2010, see libburnia-project.org\n");
+"Cdrecord 2.01-Emulation Copyright (C) 2006-2011, see libburnia-project.org\n");
      if(o->fallback_program[0]) {
        char *hargv[2];
 

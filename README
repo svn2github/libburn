@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburn-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2010 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2011 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-0.9.0.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.0.0.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-0.9.0.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.0.0.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-0.9.0.pl00.tar.gz
-   cd libburn-0.9.0
+   tar xzf libburn-1.0.0.pl00.tar.gz
+   cd libburn-1.0.0
    ./configure --prefix=/usr
    make
 
@@ -573,7 +573,28 @@ Project history as far as known to me:
 - Tue Oct 26 2010 Release 0.6.4.pl00 of libisoburn and xorriso makes use of
   the new libisofs capabilities.
 
-- Wed Dec 08 libburn-0.9.0 fixes a regression with SCSI command logging.
+- Wed Dec 08 2010 libburn-0.9.0 fixes a regression with SCSI command logging.
+
+- Fri Dec 10 2010 Version 0.6.40 of libisofs makes the prediction of the
+  emerging image size less expensive and is able to make images bootable
+  for SUN SPARC systems.
+
+- Sun Dec 12 2010 Release 0.6.6.pl00 of libisoburn and xorriso can read ISO
+  images which were copied to a different start address than they were prepared
+  for.
+
+- Mon Jan 17 2011 we go for release 1.0.0. This does not indicate a
+  technological overhaul but shall emphasize the maturity of the software.
+  libisofs-1.0.0 fixes a bug about the length of ECMA-119 directory names and
+  is ready to allow untranslated ECMA-119 names (violating the specs).
+  libburn-1.0.0.pl00 allows umask to create stdio-drive files with
+  rw-permissions for all. cdrskin now refuses to burn if the foreseeable size
+  exceeds media capacity
+  libisoburn-1.0.0.pl00 allows to create an ISO 9660:1999 directory tree,
+  improved the emulation fidelity of command -as mkisofs, lowered the default
+  abort threshold for xorriso batch mode, and increased that threshold for
+  xorriso dialog mode.
+
 
 
 ------------------------------------------------------------------------------
