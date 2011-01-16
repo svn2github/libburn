@@ -9008,15 +9008,113 @@ Made number transition to 0.9.1
 + cdrskin/add_ts_changes_to_libburn_0_9_1
 Updated cdrskin tarball generator
 
-08 Dec 2010  []
+08 Dec 2010  [3508]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-0.9.1 - 
------------------------------------- cycle  - cdrskin-0.9.1 - 
------------------------------------- cycle  - cdrskin-0.9.1 - 
+08 Dec 2010  [3509]
+svn move -m libburn release 0.9.0 is ready
+http://svn.libburnia-project.org/libburn/branches/ZeroNineZero 
+http://svn.libburnia-project.org/libburn/tags/ZeroNineZero
 
+------------------------------------ cycle  - cdrskin-0.9.1 - 2010.12.08.154833
+
+2010.12.13.075956  [3522]
+configure.ac
+Prepending ./configure generated options to CFLAGS rather than appending them
+
+23 Dec 2010  [3528]
+doc/comments
+Updated API introduction
+
+2010.12.28.071904  [3537]
+libburn/write.c
+Allowed umask to create stdio-drive files with rw-permissions for all
+
+2011.01.03.195125  [3542]
+libburn/write.c
+libburn/sector.c
+libburn/structure.h
+libburn/structure.c
+Allowed stdio tracks of known size to end in TAO mode on premature EOF
+
+2011.01.09.135915  [3546]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Refusing to burn if foreseeable size exceeds media capacity
+
+------------------------------------ cycle  - cdrskin-0.9.1 - 2011.01.09.140240
+* Allowed umask to create stdio-drive files with rw-permissions for all
+* cdrskin now refuses to burn if the foreseeable size exceeds media capacity
+
+
+09 Jan 2011  [3547]
+cdrskin/cdrskin_eng.html
+ChangeLog
+Updated change log and web page
+
+16 Jan 2011 [3548]
+svn copy -m "Branching for libburn release 1.0.0" \
+    http://svn.libburnia-project.org/libburn/trunk \
+    http://svn.libburnia-project.org/libburn/1.0.0"
+
+2011.01.16.123001  [3549] [3550]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.0
+
+16 Jan 2011  [3551]
+- cdrskin/add_ts_changes_to_libburn_0_9_0
+- cdrskin/add_ts_changes_to_libburn_0_9_1
++ cdrskin/add_ts_changes_to_libburn_1_0_0
++ cdrskin/add_ts_changes_to_libburn_1_0_1
+Updated cdrskin tarball generator
+
+16 Jan 2011  [3552]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-1.0.0.pl00 - 2011.01.16.123001
+* Allowed umask to create stdio-drive files with rw-permissions for all
+* cdrskin now refuses to burn if the foreseeable size exceeds media capacity
+
+
+2011.01.16.140456  [3553]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.1
+
+16 Jan 2011  [3554]
+- cdrskin/add_ts_changes_to_libburn_0_9_0
+- cdrskin/add_ts_changes_to_libburn_0_9_1
++ cdrskin/add_ts_changes_to_libburn_1_0_0
++ cdrskin/add_ts_changes_to_libburn_1_0_1
+Updated cdrskin tarball generator
+
+16 Jan 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-1.0.1 - 
+------------------------------------ cycle  - cdrskin-1.0.1 - 
 
 
 
@@ -9030,16 +9128,7 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
 
 
-cdrskin -tao starts with known size that is larger than media capacity
- Track 01: 4486 of 4488 MB written (fifo 100%) [buf  92%]   8.1x.
- Track 01: 4487 of 4488 MB written (fifo 100%) [buf  92%]   8.1x.
- cdrskin: FATAL : Exceeding range of permissible write addresses
- (2297888 >= 2297888)
- Track 01: 4488 of 4488 MB written (fifo 100%) [buf  92%]   7.4x.
-
-
 Better motivation of burn_set_signal_handling() in libburn.h.
-
 
 -------------------------------- Solaris -----------------------------------
 
@@ -9061,11 +9150,6 @@ pntadm -A 10.0.0.24 -f MANUAL -i 010008544255E7 -m 10.0.0.0 -y 10.0.0.0
 
 
 --------------------------------- bugs -------------------------------------
-
-- recognise sense data format 0x72 rather than 0x70
-  Key=[1], ASC=[2], ASCQ=[3]
-  (check libcdio too)
-
 
 - handle HD DVD profiles 0x50 "HD DVD-ROM", 0x51 "HD DVD-R", 0x52 "HD DVD-RAM"
   as readable.
