@@ -211,9 +211,10 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 
 static int fifo_sleep(int flag)
 {
-	static struct timespec sleeptime = { 0, 50000000}; /* 50 ms */
+	static unsigned long sleeptime = 50000; /* 50 ms */
 
-	return nanosleep(&sleeptime, NULL);
+	usleep(sleeptime);
+	return 0;
 }
 
 
