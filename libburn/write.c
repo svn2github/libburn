@@ -2034,6 +2034,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	int fd = -1;
 	int mode = O_RDWR | O_CREAT | O_LARGEFILE;
 	char msg[160];
+	off_t lseek_res;
 
 	if (d->devname[0] == 0) /* null drives should not come here */
 		return -1;
@@ -2053,10 +2054,11 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	} 
 	if (start_byte < 0)
 		start_byte = 0;
-	if (d->drive_role == 2)
-		if (lseek(fd, start_byte, SEEK_SET)==-1) {
+	if (d->drive_role == 2) {
+		lseek_res = lseek(fd, start_byte, SEEK_SET);
+		if (lseek_res == -1) {
 			sprintf(msg, "Cannot address start byte %.f",
-			 	(double) start_byte);
+				(double) start_byte);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020147,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -2065,6 +2067,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 			d->cancel = 1;
 			fd = -1;
 		}
+	}
 	d->nwa = start_byte / sector_size;
 	return fd;
 }

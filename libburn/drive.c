@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "libburn.h"
 #include "init.h"
 #include "drive.h"
@@ -1355,11 +1356,50 @@ int burn_drive__fd_from_special_adr(char *adr)
 }
 
 
+static int burn_drive__is_rdwr(char *fname, int *stat_ret, 
+                               struct stat *stbuf_ret,
+                               off_t *read_size_ret, int flag)
+{
+	int fd, is_rdwr, ret, getfl_ret, st_ret;
+	struct stat stbuf;
+        off_t read_size;
+
+	memset(&stbuf, 0, sizeof(stbuf));
+	fd = burn_drive__fd_from_special_adr(fname);
+	if (fd >= 0)
+		st_ret = fstat(fd, &stbuf);
+	else
+		st_ret = stat(fname, &stbuf);
+	if (st_ret != -1) {
+		is_rdwr = burn_os_is_2k_seekrw(fname, 0);
+		if (S_ISREG(stbuf.st_mode))
+			read_size = stbuf.st_size;
+		else if (is_rdwr) {
+			ret = burn_os_stdio_capacity(fname, &read_size);
+			if (ret <= 0)
+				read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
+		}
+	}
+	if (is_rdwr && fd >= 0) {
+		getfl_ret = fcntl(fd, F_GETFL);
+		if (getfl_ret == -1 || (getfl_ret & O_RDWR) != O_RDWR)
+			is_rdwr = 0;
+	}
+	if (stat_ret != NULL)
+		*stat_ret = st_ret;
+	if (stbuf_ret != NULL)
+		memcpy(stbuf_ret, &stbuf, sizeof(stbuf));
+	if (read_size_ret != NULL)
+		*read_size_ret = read_size;
+	return is_rdwr;
+}
+
+
 /* ts A70903 : Implements adquiration of pseudo drives */
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
-	int ret = -1, fd = -1, role = 0;
-	int is_block_dev = 0;
+	int ret = -1, role = 0;
+	int is_rdwr = 0, stat_ret;
 	/* divided by 512 it needs to fit into a signed long integer */
 	off_t size = ((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	off_t read_size = -1;
@@ -1369,25 +1409,9 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	static int allow_role_3 = 1;
 
 	if (fname[0] != 0) {
-		memset(&stbuf, 0, sizeof(stbuf));
-		fd = burn_drive__fd_from_special_adr(fname);
-		if (fd >= 0)
-			ret = fstat(fd, &stbuf);
-		else
-			ret = stat(fname, &stbuf);
-		if (ret != -1) {
-			is_block_dev = burn_os_is_2k_seekrw(fname, 0);
-			if (S_ISREG(stbuf.st_mode))
-				read_size = stbuf.st_size;
-			else if (is_block_dev) {
-				ret = burn_os_stdio_capacity(fname,
-								&read_size);
-				if (ret <= 0)
-					read_size = (off_t) 0x7ffffff0 *
-								(off_t) 2048;  
-			}
-		}
-		if (ret == -1 || is_block_dev || S_ISREG(stbuf.st_mode)) {
+		is_rdwr = burn_drive__is_rdwr(fname, &stat_ret, &stbuf,
+						&read_size, 0);
+		if (stat_ret == -1 || is_rdwr) {
 			ret = burn_os_stdio_capacity(fname, &size);
 			if (ret == -1) {
 				libdax_msgs_submit(libdax_messenger, -1,
@@ -2643,26 +2667,49 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 	char adr1[BURN_DRIVE_ADR_LEN], *adr2 = adr2_in;
 	char conv_adr1[BURN_DRIVE_ADR_LEN], conv_adr2[BURN_DRIVE_ADR_LEN];
 	char *npt1, *dpt1, *npt2, *dpt2;
-	int role1, stat_ret1, stat_ret2, conv_ret2;
+	int role1, stat_ret1, stat_ret2, conv_ret2, exact_role_matters = 0, fd;
+	int ret;
 
 	role1 = burn_drive_get_drive_role(d1);
 	burn_drive_d_get_adr(d1, adr1);
 	stat_ret1 = stat(adr1, &stbuf1);
 
+	/* If one of the candidate paths depicts an open file descriptor then
+	   its read-write capability decides about its role and the difference
+	   between roles 2 and 3 does matter.
+	*/
+	fd = burn_drive__fd_from_special_adr(d1->devname);
+	if (fd != -1)
+		exact_role_matters = 1;
 	if (strncmp(adr2, "stdio:", 6) == 0) {
 		adr2+= 6;
-		role2 = (!!adr2[0]) * 2;
+		if (adr2[0] == 0) {
+			role2 = 0;
+		} else {
+			fd = burn_drive__fd_from_special_adr(adr2);
+			if (fd != -1)
+				exact_role_matters = 1;
+			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL, 0);
+			if (ret == 1)
+				role2 = 2;
+			else
+				role2 = 3;
+		}
 	}
+
 	if (strlen(adr2) >= BURN_DRIVE_ADR_LEN)
 		return -1;
 	stat_ret2 = stat(adr2, &stbuf2);
 	conv_ret2 = burn_drive_convert_fs_adr(adr2, conv_adr2);
 
-	/* roles 2 and 3 have the same name space and object interpretation */
-	if (role1 == 3)
-		role1 = 2;
-	if (role2 == 3)
-		role2 = 2;
+	if (!exact_role_matters) {
+		/* roles 2 and 3 have the same name space and object
+		   interpretation */
+		if (role1 == 3)
+			role1 = 2;
+		if (role2 == 3)
+			role2 = 2;
+	}
 
 	if (strcmp(adr1, adr2) == 0 && role1 == role2)
 		return(1);			/* equal role and address */
@@ -2680,6 +2727,8 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 	else if (role1 != 1 && role2 != 1) {
 					/* pseudo-drive meets file object */
 
+		if (role1 != role2)
+			return 0; 
 		if (stat_ret1 == -1 || stat_ret2 == -1) {
 			if (stat_ret1 != -1 || stat_ret2 != -1)
 				 return 0;  /* one adress existing, one not */
