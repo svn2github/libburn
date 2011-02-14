@@ -1360,9 +1360,9 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
                                struct stat *stbuf_ret,
                                off_t *read_size_ret, int flag)
 {
-	int fd, is_rdwr, ret, getfl_ret, st_ret;
+	int fd, is_rdwr = 1, ret, getfl_ret, st_ret;
 	struct stat stbuf;
-        off_t read_size;
+        off_t read_size = 0;
 
 	memset(&stbuf, 0, sizeof(stbuf));
 	fd = burn_drive__fd_from_special_adr(fname);
