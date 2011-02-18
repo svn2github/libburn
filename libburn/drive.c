@@ -870,6 +870,11 @@ void burn_drive_cancel(struct burn_drive *d)
 /* ts B00225 : these mutexes are unnecessary because "= 1" is atomar.
 	pthread_mutex_lock(&d->access_lock);
 */
+	if (!d->cancel) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				"burn_drive_cancel() was called", 0, 0);
+	}
 	d->cancel = 1;
 /*
 	pthread_mutex_unlock(&d->access_lock);
