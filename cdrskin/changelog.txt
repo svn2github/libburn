@@ -9107,14 +9107,102 @@ Made number transition to 1.0.1
 + cdrskin/add_ts_changes_to_libburn_1_0_1
 Updated cdrskin tarball generator
 
-16 Jan 2011  []
+16 Jan 2011  [3555]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
+16 Jan 2011  [3556]
+svn move -m "libburn release 1.0.0 is ready" \
+http://svn.libburnia-project.org/libburn/branches/1.0.0 \
+http://svn.libburnia-project.org/libburn/tags/1.0.0
 
------------------------------------- cycle  - cdrskin-1.0.1 - 
------------------------------------- cycle  - cdrskin-1.0.1 - 
+
+------------------------------------ cycle  - cdrskin-1.0.1 - 2011.01.16.152923
+
+
+2011.01.18.162859  [3570]
+libburn/file.c
+Using usleep() instead of nanosleep() which is not available on Solaris 9
+
+2011.02.09.114311  [3586]
+libburn/write.c
+libburn/drive.c
+Forced role 3 on drives which stem from open file descriptors without O_RDWR
+
+2011.02.14.085951  [3589]
+libburn/drive.c
+Reacted on compiler warnings about uninitialized variables
+
+2011.02.18.165542  [3592]
+libburn/drive.c
+libburn/sector.c
+DEBUG message with burn_drive_cancel, FAILURE with premature end-of-input
+
+23 Feb 2011  [3604]
+svn copy -m Branching for libburn release 1.0.2
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.0.2
+
+2011.02.23.130001  [3605]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.2
+
+23 Feb 2011  [3606]
+- cdrskin/add_ts_changes_to_libburn_1_0_0
+- cdrskin/add_ts_changes_to_libburn_1_0_1
++ cdrskin/add_ts_changes_to_libburn_1_0_2
++ cdrskin/add_ts_changes_to_libburn_1_0_3
+Updated cdrskin tarball generator
+
+23 Feb 2011  [3607]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-1.0.2.pl00 - 2011.02.23.130001
+* Removed compilation obstacles on Solaris 9.
+* Improved recognition of non-seekable stdio pseudo-drives.
+
+
+  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.3
+
+23 Feb 2011  []
+- cdrskin/add_ts_changes_to_libburn_1_0_0
+- cdrskin/add_ts_changes_to_libburn_1_0_1
++ cdrskin/add_ts_changes_to_libburn_1_0_2
++ cdrskin/add_ts_changes_to_libburn_1_0_3
+Updated cdrskin tarball generator
+
+23 Feb 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.0.3 - 
+
+
+
+------------------------------------ cycle  - cdrskin-1.0.3 - 
+------------------------------------ cycle  - cdrskin-1.0.3 - 
 
 
 
@@ -9126,6 +9214,12 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
+
+
+Let DVD-R DAO allocate exact track sizes (not divisible by 16 blocks)
+
+
+Expose BD type from bytes 8+4 to 10+4 out of READ BD STRUCTURE form 0.
 
 
 Better motivation of burn_set_signal_handling() in libburn.h.

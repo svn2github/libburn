@@ -1,6 +1,11 @@
-SVN trunk (to become libburn-1.0.2.pl00.tar.gz) 
+SVN trunk (to become libburn-1.0.4.pl00.tar.gz) 
 ===============================================================================
 - no novelties yet
+
+libburn-1.0.2.pl00.tar.gz Wed Feb 23 2011
+===============================================================================
+* Removed compilation obstacles on Solaris 9.
+* Improved recognition of non-seekable stdio pseudo-drives.
 
 libburn-1.0.0.pl00.tar.gz Sun Jan 16 2011
 ===============================================================================
