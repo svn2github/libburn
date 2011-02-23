@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.0.0.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.0.2.pl00.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.0.0.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.0.2.pl00.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.0.0.pl00.tar.gz
-   cd libburn-1.0.0
+   tar xzf libburn-1.0.2.pl00.tar.gz
+   cd libburn-1.0.2
    ./configure --prefix=/usr
    make
 
@@ -595,7 +595,13 @@ Project history as far as known to me:
   abort threshold for xorriso batch mode, and increased that threshold for
   xorriso dialog mode.
 
-
+- Wed 23 2011 release 1.0.2:
+  libisofs fixes several bugs and introduces the capability to copy files
+  inside the ISO filesystem.
+  libburn removed a compilation obstacle on Solaris 9 and improved recognition
+  of stdio pseudo-drives.
+  libisoburn and xorriso fix bugs and make use of the new libisofs capability.
+  xorriso improves its mkisofs emulation.
 
 ------------------------------------------------------------------------------
 
