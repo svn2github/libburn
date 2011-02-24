@@ -355,7 +355,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	/* a ssert(!find_worker(drive)); */
 
 	if((drive == NULL)) {
-		libdax_msgs_submit(libdax_messenger, drive->global_index,
+		libdax_msgs_submit(libdax_messenger, -1,
 			0x00020104,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"NULL pointer caught in burn_disc_erase", 0, 0);
