@@ -1360,12 +1360,13 @@ int burn_drive__fd_from_special_adr(char *adr)
 	return fd;
 }
 
-
+/* @param flag bit0= accept read-only files and return 2 in this case
+*/
 static int burn_drive__is_rdwr(char *fname, int *stat_ret, 
                                struct stat *stbuf_ret,
                                off_t *read_size_ret, int flag)
 {
-	int fd, is_rdwr = 1, ret, getfl_ret, st_ret;
+	int fd, is_rdwr = 1, ret, getfl_ret, st_ret, mask;
 	struct stat stbuf;
         off_t read_size = 0;
 
@@ -1387,8 +1388,18 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 	}
 	if (is_rdwr && fd >= 0) {
 		getfl_ret = fcntl(fd, F_GETFL);
-		if (getfl_ret == -1 || (getfl_ret & O_RDWR) != O_RDWR)
+
+/*
+fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = %lX , & = %lX , O_RDONLY = %lX\n", (unsigned long) getfl_ret, (unsigned long) O_RDWR, (unsigned long) (getfl_ret & O_RDWR), (unsigned long) O_RDONLY);
+*/
+
+		mask = O_RDWR | O_WRONLY | O_RDONLY;
+
+		if (getfl_ret == -1 || (getfl_ret & mask) != O_RDWR)
 			is_rdwr = 0;
+		if ((flag & 1) && getfl_ret != -1 &&
+		    (getfl_ret & mask) == O_RDONLY)
+			is_rdwr = 2;
 	}
 	if (stat_ret != NULL)
 		*stat_ret = st_ret;
@@ -1415,7 +1426,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 
 	if (fname[0] != 0) {
 		is_rdwr = burn_drive__is_rdwr(fname, &stat_ret, &stbuf,
-						&read_size, 0);
+						&read_size, 1);
 		if (stat_ret == -1 || is_rdwr) {
 			ret = burn_os_stdio_capacity(fname, &size);
 			if (ret == -1) {
@@ -1433,9 +1444,14 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				errno, 0);
 				return 0;
 			}
-			if (fname[0] != 0)
+			if (fname[0] != 0) {
+
+				/* >>> as soon as new role 4 is introduced:
+				  if (is_rdwr == 2)  role = 4; else
+				*/
+
 				role = 2;
-			else
+			} else
 				role = 0;
 		} else {
 			if(S_ISDIR(stbuf.st_mode) || !allow_role_3) {
@@ -2694,7 +2710,12 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 			fd = burn_drive__fd_from_special_adr(adr2);
 			if (fd != -1)
 				exact_role_matters = 1;
-			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL, 0);
+			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL, 1);
+
+			/* >>> as soon as new role 4 is introduced:
+			       if (ret == 2)  role2 = 4; else
+			*/
+
 			if (ret == 1)
 				role2 = 2;
 			else
@@ -2708,11 +2729,11 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 	conv_ret2 = burn_drive_convert_fs_adr(adr2, conv_adr2);
 
 	if (!exact_role_matters) {
-		/* roles 2 and 3 have the same name space and object
+		/* roles >= 2 have the same name space and object
 		   interpretation */
-		if (role1 == 3)
+		if (role1 >= 2)
 			role1 = 2;
-		if (role2 == 3)
+		if (role2 >= 2)
 			role2 = 2;
 	}
 
