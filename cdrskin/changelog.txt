@@ -9173,7 +9173,7 @@ Documented changes and release timestamp
 * Improved recognition of non-seekable stdio pseudo-drives.
 
 
-  []
+2011.02.23.193502  [3611]
 Makefile.am
 configure.ac
 README
@@ -9185,24 +9185,105 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 1.0.3
 
-23 Feb 2011  []
+23 Feb 2011  [3612]
 - cdrskin/add_ts_changes_to_libburn_1_0_0
 - cdrskin/add_ts_changes_to_libburn_1_0_1
 + cdrskin/add_ts_changes_to_libburn_1_0_2
 + cdrskin/add_ts_changes_to_libburn_1_0_3
 Updated cdrskin tarball generator
 
-23 Feb 2011  []
+23 Feb 2011  [3613]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-1.0.3 - 
+------------------------------------ cycle  - cdrskin-1.0.3 - 2011.02.23.193502
+
+
+23 Feb 2011  [3614]
+svn move -m libburn release 1.0.2 is ready
+http://svn.libburnia-project.org/libburn/branches/1.0.2
+http://svn.libburnia-project.org/libburn/tags/1.0.2
+
+2011.02.23.195650  [3615]
+libburn/libdax_msgs.h
+Registered new error code
+
+2011.02.24.191718  [3619]
+libburn/async.c
+Corrected a flaw found by George Danchev with cpp
+
+2011.03.01.144625  [3625]
+libburn/drive.c
+Bug fix: Read-only file descriptors were classified as write-only pseudo drives
+
+svn copy -m Branching for libburn release 1.0.4
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.0.4
+
+2011.03.10.080001  [3651]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.4
+
+10 Mar 2011  [3652]
+- cdrskin/add_ts_changes_to_libburn_1_0_2
+- cdrskin/add_ts_changes_to_libburn_1_0_3
++ cdrskin/add_ts_changes_to_libburn_1_0_4
++ cdrskin/add_ts_changes_to_libburn_1_0_5
+Updated cdrskin tarball generator
+
+10 Mar 2011  [3653]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-1.0.4.pl00 - 2011.03.10.080001
+* Bug fix: Read-only file descriptors were classified as write-only pseudo drives
+
+
+2011.03.10.132603  [3657]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.5
+
+10 Mar 2011  [3659]
+- cdrskin/add_ts_changes_to_libburn_1_0_2
+- cdrskin/add_ts_changes_to_libburn_1_0_3
++ cdrskin/add_ts_changes_to_libburn_1_0_4
++ cdrskin/add_ts_changes_to_libburn_1_0_5
+Updated cdrskin tarball generator
+
+10 Mar 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+10 Mar 2011  []
+svn move -m libburn release 1.0.4 is ready
+http://svn.libburnia-project.org/libburn/branches/1.0.4
+http://svn.libburnia-project.org/libburn/tags/1.0.4
+
+------------------------------------ cycle  - cdrskin-1.0.5 - 2011.03.10.132603
 
 
 
------------------------------------- cycle  - cdrskin-1.0.3 - 
------------------------------------- cycle  - cdrskin-1.0.3 - 
+------------------------------------ cycle  - cdrskin-1.0.5 - 
+------------------------------------ cycle  - cdrskin-1.0.5 - 
 
 
 
@@ -9214,6 +9295,8 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
+
+Introduce drive role 4= stdio-drive, random access, read-only
 
 
 Let DVD-R DAO allocate exact track sizes (not divisible by 16 blocks)
