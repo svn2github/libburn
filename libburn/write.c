@@ -1119,11 +1119,13 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 #endif
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
- 		/* Round track size up to write chunk size and reserve track */
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
 			* (off_t) 2048;
-		if (size % o->obs)
+
+ 		/* Eventually round track size up to write chunk */
+		if (o->obs_pad && (size % o->obs))
 			size += (off_t) (o->obs - (size % o->obs));
+
 		ret = d->reserve_track(d, size);
 		if (ret <= 0) {
 			sprintf(msg, "Cannot reserve track of %.f bytes",
@@ -1164,6 +1166,10 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
  		/* Round track size up to write chunk size and reserve track */
 		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
 			* (off_t) 2048;
+		/* o->obs should be 32k or 64k already. But 32k alignment
+		  was once performed in d->reserve_track() */
+		if (o->obs % 32768)
+			o->obs += 32768 - (o->obs % 32768);
 		if (size % o->obs)
 			size += (off_t) (o->obs - (size % o->obs));
 		ret = d->reserve_track(d, size);
@@ -1892,6 +1898,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				  msg, 0, 0);
 			burn_track_set_size(t, default_size);
 		}
+		/* Whether to fill-up last 32k buffer of track. */
+		o->obs_pad = (o->write_type != BURN_WRITE_SAO);
 		ret = burn_disc_setup_dvd_minus_r(o, disc);
 		if (ret <= 0) {
 			sprintf(msg,
@@ -1902,8 +1910,6 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				msg, 0, 0);
 			goto early_failure;
 		}
-		/* ??? padding needed ??? cowardly doing it for now */
-		o->obs_pad = 1; /* fill-up track's last 32k buffer */
 		
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b ||
 		   d->current_profile == 0x41) {

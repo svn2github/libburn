@@ -347,9 +347,10 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 	memcpy(c.opcode, MMC_RESERVE_TRACK, sizeof(MMC_RESERVE_TRACK));
 */
 	c.retry = 1;
-	/* Round to 32 KiB and divide by 2048
-	   (by nice binary rounding trick learned from dvd+rw-tools) */
-	lba = ((size + (off_t) 0x7fff) >> 11) & ~0xf;
+
+	lba = size / 2048;
+	if (size % 2048)
+		lba++;
 	mmc_int_to_four_char(c.opcode+5, lba);
 
 	sprintf(msg, "reserving track of %d blocks", lba);
