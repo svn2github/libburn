@@ -2221,6 +2221,7 @@ LIBBURN_MISCONFIGURATION_ = 0;
    return(-1);
  }
  Cdrpreskin_set_severities(preskin,NULL,NULL,0);
+ burn_allow_drive_role_4(1);
  return(1);
 }
 
@@ -4900,6 +4901,8 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
    printf("%s\n","Emulated (stdio-drive, 2k random read-write)");
  else if(ret==3)
    printf("%s\n","Emulated (stdio-drive, sequential write-only)");
+ else if(ret==4)
+   printf("%s\n","Emulated (stdio-drive, 2k random read-only)");
  else if(ret!=1)
    printf("%s\n","Emulated (stdio-drive)");
  else
