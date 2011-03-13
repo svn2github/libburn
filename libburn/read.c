@@ -373,7 +373,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	} else if (d->drive_role == 3) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020151,
-			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 			"Read attempt on write-only drive", 0, 0);
 		return 0;
 	}

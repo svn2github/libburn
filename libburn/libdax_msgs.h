@@ -519,7 +519,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002014d (SORRY,HIGH)   = Asynchromous SCSI error
  0x0002014f (SORRY,HIGH)   = Timeout with asynchromous SCSI command
  0x00020150 (DEBUG,LOW)    = Reporting asynchronous waiting time
- 0x00020151 (FATAL,HIGH)   = Read attempt on write-only drive
+ 0x00020151 (FAILURE,HIGH) = Read attempt on write-only drive
  0x00020152 (FATAL,HIGH)   = Cannot start fifo thread
  0x00020153 (SORRY,HIGH)   = Read error on fifo input
  0x00020154 (NOTE,HIGH)    = Forwarded input error ends output
