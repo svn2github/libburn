@@ -659,6 +659,14 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
 		return;
 	}
+	if (d->drive_role == 4) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020181,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"Pseudo-drive is a read-only file. Cannot write.",
+			0, 0);
+		return;
+	}
 
 	/* ts A61007 : obsolete Assert in spc_select_write_params() */
 	if (d->drive_role == 1 && d->mdata->valid <= 0) {

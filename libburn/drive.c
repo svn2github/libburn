@@ -60,6 +60,10 @@ static int drivetop = -1;
 /* ts A80410 : in init.c */
 extern int burn_support_untested_profiles;
 
+/* ts B10312 : in init.c */
+extern int burn_drive_role_4_allowed;
+
+
 /* ts A61021 : the unspecific part of sg.c:enumerate_common()
 */
 int burn_setup_drive(struct burn_drive *d, char *fname)
@@ -1386,6 +1390,7 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 				read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
 		}
 	}
+
 	if (is_rdwr && fd >= 0) {
 		getfl_ret = fcntl(fd, F_GETFL);
 
@@ -1411,6 +1416,37 @@ fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = 
 }
 
 
+static int burn_role_by_access(char *fname, int flag)
+{
+/* We normally need _LARGEFILE64_SOURCE defined by the build system.
+   Nevertheless the system might use large address integers by default.
+*/
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
+	int fd;
+        
+	fd = open(fname, O_RDWR | O_LARGEFILE);
+	if (fd != -1) {
+		close(fd);
+		return 2;
+	}
+	fd = open(fname, O_RDONLY | O_LARGEFILE);
+        if (fd != -1) {
+		close(fd);
+		return 4;
+	}
+	fd = open(fname, O_WRONLY | O_LARGEFILE);
+	if (fd != -1) {
+		close(fd);
+		return 3;
+	}
+	if (flag & 1)
+		return 0;
+	return 2;
+}
+
+
 /* ts A70903 : Implements adquiration of pseudo drives */
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
@@ -1421,8 +1457,6 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	off_t read_size = -1;
 	struct burn_drive *d= NULL, *regd_d;
 	struct stat stbuf;
-
-	static int allow_role_3 = 1;
 
 	if (fname[0] != 0) {
 		is_rdwr = burn_drive__is_rdwr(fname, &stat_ret, &stbuf,
@@ -1445,22 +1479,18 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				return 0;
 			}
 			if (fname[0] != 0) {
-
-				/* >>> as soon as new role 4 is introduced:
-				  if (is_rdwr == 2)  role = 4; else
-				*/
-
-				role = 2;
+				if (is_rdwr == 2 &&
+				    (burn_drive_role_4_allowed & 1))
+					role = 4;
+				else
+					role = 2;
+				if (stat_ret != -1 && is_rdwr == 1 &&
+				    (burn_drive_role_4_allowed & 3) == 3)
+					role = burn_role_by_access(fname,
+					    !!(burn_drive_role_4_allowed & 4));
 			} else
 				role = 0;
 		} else {
-			if(S_ISDIR(stbuf.st_mode) || !allow_role_3) {
-				libdax_msgs_submit(libdax_messenger, -1,
-				 0x00020149,
-				 LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				 "Unsuitable filetype for pseudo-drive", 0, 0);
-				return 0;
-			}
 			role = 3;
 		}
 	}
@@ -1481,22 +1511,28 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	}
 	free((char *) d); /* all sub pointers have been copied to *regd_d */
 	d = regd_d;
-	if (d->drive_role == 2 || d->drive_role == 3) {
-		d->status = BURN_DISC_BLANK;
-		d->current_profile = 0xffff; /* MMC for non-compliant drive */
+	if (d->drive_role == 2 || d->drive_role == 3 || d->drive_role == 4) {
+		if (d->drive_role == 4) {
+			d->status = BURN_DISC_FULL;
+			/* MMC for non-compliant drive */
+			d->current_profile = 0xffff;
+			d->block_types[BURN_WRITE_TAO] = 0;
+			d->block_types[BURN_WRITE_SAO] = 0;
+		} else {
+			d->status = BURN_DISC_BLANK;
+			/* MMC for non-compliant drive */
+			d->current_profile = 0xffff;
+			d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
+			d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
+		}
 		strcpy(d->current_profile_text,"stdio file");
 		d->current_is_cd_profile = 0;
 		d->current_is_supported_profile = 1;
-		d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
-		d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
 		if (read_size >= 0)
 			/* despite its name : last valid address, not size */
 			d->media_read_capacity =
 				read_size / 2048 - !(read_size % 2048);
 		burn_drive_set_media_capacity_remaining(d, size);
-
-		/* >>> ? open file for a test ? (>>> beware of "-" = stdin) */;
-
 	} else
 		d->current_profile = 0; /* Drives return this if empty */
 
@@ -1515,6 +1551,10 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
 		strcpy((*drive_infos)[0].product,"BLACKHOLE");
 		strcpy((*drive_infos)[0].revision,"FX02");
+	} else if (d->drive_role == 4) {
+		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
+		strcpy((*drive_infos)[0].product,"WARP DRIVE");
+		strcpy((*drive_infos)[0].revision,"FX03");
 	} else {
 		strcpy((*drive_infos)[0].vendor,"FERENGI");
 		strcpy((*drive_infos)[0].product,"VAPORWARE");
@@ -2448,7 +2488,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 	o->current_is_cd_profile = d->current_is_cd_profile;
         o->might_simulate = 0;
 	
-	if (d->drive_role == 0)
+	if (d->drive_role == 0 || d->drive_role == 4)
 		return 0;
 	if (d->drive_role == 2) {
 		/* stdio file drive : random access read-write */
@@ -2711,12 +2751,9 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 			if (fd != -1)
 				exact_role_matters = 1;
 			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL, 1);
-
-			/* >>> as soon as new role 4 is introduced:
-			       if (ret == 2)  role2 = 4; else
-			*/
-
-			if (ret == 1)
+			if (ret == 2 && burn_drive_role_4_allowed)
+				role2 = 4;
+			else if (ret > 0)
 				role2 = 2;
 			else
 				role2 = 3;

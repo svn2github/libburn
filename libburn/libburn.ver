@@ -2,6 +2,7 @@ LIBBURN4 {
 global:
 burn_abort;
 burn_abort_pacifier;
+burn_allow_drive_role_4;
 burn_allow_untested_profiles;
 burn_disc_add_session;
 burn_disc_available_space;

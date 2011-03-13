@@ -3004,7 +3004,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag);
 
 
-/* A70904 */
+/* ts A70904 */
 /** Inquire whether the drive object is a real MMC drive or a pseudo-drive
     created by a stdio: address.
     @param d      The drive to inquire
@@ -3012,9 +3012,39 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                   1= real MMC drive
                   2= stdio-drive, random access, read-write
                   3= stdio-drive, sequential, write-only
+                  4= stdio-drive, random access, read-only
+                     (only if enabled by burn_allow_drive_role_4())
     @since 0.4.0
 */
 int burn_drive_get_drive_role(struct burn_drive *d);
+
+
+/* ts B10312 */
+/** Allow drive role 4 "random access read-only" drive.
+    By default a random access file assumes drive role 2 "read-write"
+    regardless whether it is actually readable or writeable.
+    If enabled, random-access file objects which recognizably allow no
+    writing will be classified as role 4.
+    Candidates are drive addresses of the form stdio:/dev/fd/# , where # is
+    the integer number of an open file descriptor. If this descriptor was
+    opened read-only, then it gets role 4.
+    Other paths may get tested by an attempt to open them for read-write
+    (role 2) resp. read-only (role 4) resp. write-only (role 3). See bit1.
+    read-only
+    @param allowed      Bitfield for control purposes:
+                        bit0= Enable role 4 for drives which get aquired
+                              after this call
+                        bit1= with bit0:
+                              Test whether the file can be opened for
+                              read-write resp. read-only resp. write-only.
+                              Classify as roles 2 resp. 4 resp. 3.
+                        bit2= with bit0 and bit1:
+                              Classify files which cannot be opened at all
+                              as role 0 : useless dummy.
+                              Else classify as role 2.
+    @since 1.0.6
+*/
+void burn_allow_drive_role_4(int allowed);
 
 
 /* ts A70923 */

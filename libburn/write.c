@@ -1005,9 +1005,12 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	reason_pt= reasons;
 	reasons[0] = 0;
 
-	if (d->drive_role == 0) {
-		sprintf(reasons,
-			 "DRIVE: is a virtual placeholder (null-drive)");
+	if (d->drive_role == 0 || d->drive_role == 4) {
+		if (d->drive_role == 0)
+			sprintf(reasons,
+			       "DRIVE: is a virtual placeholder (null-drive)");
+		else
+			sprintf(reasons, "DRIVE: read-only pseudo drive");
 		no_media = 1;
 		goto ex;
 	}
@@ -2042,6 +2045,14 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	char msg[160];
 	off_t lseek_res;
 
+	if(d->drive_role == 4) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020181,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"Pseudo-drive is a read-only file. Cannot write.",
+			0, 0);
+		return 0;
+	}
 	if (d->devname[0] == 0) /* null drives should not come here */
 		return -1;
 	fd = burn_drive__fd_from_special_adr(d->devname);
@@ -2421,6 +2432,14 @@ calloc() seems not to have the desired effect. valgrind warns:
 	d->rlba = -150;
 	d->toc_temp = 9;
 
+	if(d->drive_role == 4) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020181,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"Pseudo-drive is a read-only file. Cannot write.",
+			0, 0);
+		goto fail_wo_sync;
+	}
 	/* ts A70904 */
 	if (d->drive_role != 1) {
 		ret = burn_stdio_write_sync(o, disc);
@@ -2642,6 +2661,14 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			0x00020146,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
+		return 0;
+	}
+	if(d->drive_role == 4) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020181,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"Pseudo-drive is a read-only file. Cannot write.",
+			0, 0);
 		return 0;
 	}
 

@@ -105,6 +105,14 @@ int burn_support_untested_profiles = 0;
 */
 int burn_sg_log_scsi = 0;
 
+
+/* ts B10312 :
+   Whether to map random-access readonly files to drive role 4.
+   Else it is role 2 overwriteable drive
+*/
+int burn_drive_role_4_allowed = 0;
+
+
 /* ts A60925 : ticket 74 */
 /** Create the messenger object for libburn. */
 int burn_msgs_initialize(void)
@@ -564,4 +572,11 @@ int burn_set_messenger(void *messenger)
 void burn_set_scsi_logging(int flag)
 {
 	burn_sg_log_scsi = flag & 7;
+}
+
+
+/* ts B10312 API */
+void burn_allow_drive_role_4(int allowed)
+{
+	burn_drive_role_4_allowed = (allowed & 7);
 }
