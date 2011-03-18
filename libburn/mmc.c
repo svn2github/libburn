@@ -3114,12 +3114,23 @@ selected_not_suitable:;
 				 c.page->data[9 + i] =
 					( d->format_descriptors[index].tdp >>
 					  (16 - 8 * i)) & 0xff;
-		if (format_type == 0x30 || format_type == 0x31 ||
-		    format_type == 0x32) {
-			if (flag & 64)
-				format_sub_type = 3; /* Quick certification */
+		if (format_type == 0x30 || format_type == 0x31) {
+			format_sub_type = 0;
+			if (flag & 64) {
+				if (d->current_feat23h_byte4 & 2)
+					/* Quick certification */
+					format_sub_type = 3;
+			} else {
+				if (d->current_feat23h_byte4 & 1)
+					/* Full certification */
+					format_sub_type = 2;
+			}
+		} else if (format_type == 0x32 ||
+		         (format_type == 0x00 && d->current_profile == 0x41)) {
+			if (flag & (1 << 16))
+				format_sub_type = 0; /* SRM + POW  */
 			else
-				format_sub_type = 2; /* Full certification */
+				format_sub_type = 1; /* SRM  (- POW) */
 		}
 		if (d->current_profile == 0x12 && format_type !=0x01 &&
 		    (flag & 64)) {
