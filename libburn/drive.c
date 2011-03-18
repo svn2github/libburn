@@ -78,6 +78,7 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->status = BURN_DISC_UNREADY;
 	d->do_stream_recording = 0;
         d->stream_recording_start= 0;
+	d->role_5_nwa = 0;
 	return 1;
 }
 
@@ -312,8 +313,9 @@ int burn_drive_inquire_media(struct burn_drive *d)
 int burn_drive_grab(struct burn_drive *d, int le)
 {
 	int errcode;
-	/* ts A61125 - A61202 */
-	int ret, sose;
+	/* ts A61125 - B10314 */
+	int ret, sose, stat_ret = -1;
+	struct stat stbuf;
 
 	if (!d->released) {
 		burn_print(1, "can't grab - already grabbed\n");
@@ -321,9 +323,24 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	}
 	if(d->drive_role != 1) {
 		d->released = 0;
+		d->current_profile = 0xffff;
+		if (d->devname[0])
+			stat_ret = stat(d->devname, &stbuf);
 		if(d->drive_role == 2 || d->drive_role == 3) {
 			d->status = BURN_DISC_BLANK;
-			d->current_profile = 0xffff;
+		} else if(d->drive_role == 4) {
+			if (d->media_read_capacity > 0)
+				d->status = BURN_DISC_FULL;
+			else
+				d->status = BURN_DISC_EMPTY;
+		} else if(d->drive_role == 5) {
+			if (stat_ret != -1 && S_ISREG(stbuf.st_mode) &&
+			    stbuf.st_size > 0) {
+				d->status = BURN_DISC_APPENDABLE;
+				d->role_5_nwa = stbuf.st_size / 2048 +
+						!!(stbuf.st_size % 2049);
+			} else
+				d->status = BURN_DISC_BLANK;
 		} else {
 			d->status = BURN_DISC_EMPTY;
 			d->current_profile = 0;
@@ -620,12 +637,28 @@ void burn_wait_all(void)
 
 void burn_disc_erase_sync(struct burn_drive *d, int fast)
 {
-/* ts A60924 : libburn/message.c gets obsoleted
-	burn_message_clear_queue();
-*/
+	int ret;
 
 	burn_print(1, "erasing drive %s %s\n", d->idata->vendor,
 		   d->idata->product);
+
+	if (d->drive_role == 5) { /* Random access write-only drive */
+		ret = truncate(d->devname, (off_t) 0);
+		if (ret == -1) {
+			libdax_msgs_submit(libdax_messenger, -1,
+			     0x00020182,
+			     LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			     "Cannot truncate disk file for pseudo blanking",
+			     0, 0);
+			return;
+		}
+		d->role_5_nwa = 0;
+		d->cancel = 0;
+		d->status = BURN_DISC_BLANK;
+		d->busy = BURN_DRIVE_IDLE;
+		d->progress.sector = 0x10000;
+		return;
+	}
 
 	d->cancel = 0;
 
@@ -1365,6 +1398,7 @@ int burn_drive__fd_from_special_adr(char *adr)
 }
 
 /* @param flag bit0= accept read-only files and return 2 in this case
+               bit1= accept write-only files and return 3 in this case
 */
 static int burn_drive__is_rdwr(char *fname, int *stat_ret, 
                                struct stat *stbuf_ret,
@@ -1405,6 +1439,9 @@ fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = 
 		if ((flag & 1) && getfl_ret != -1 &&
 		    (getfl_ret & mask) == O_RDONLY)
 			is_rdwr = 2;
+		if ((flag & 2) && getfl_ret != -1 &&
+		    (getfl_ret & mask) == O_WRONLY)
+			is_rdwr = 3;
 	}
 	if (stat_ret != NULL)
 		*stat_ret = st_ret;
@@ -1439,7 +1476,7 @@ static int burn_role_by_access(char *fname, int flag)
 	fd = open(fname, O_WRONLY | O_LARGEFILE);
 	if (fd != -1) {
 		close(fd);
-		return 3;
+		return 5;
 	}
 	if (flag & 1)
 		return 0;
@@ -1450,8 +1487,8 @@ static int burn_role_by_access(char *fname, int flag)
 /* ts A70903 : Implements adquiration of pseudo drives */
 int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 {
-	int ret = -1, role = 0;
-	int is_rdwr = 0, stat_ret;
+	int ret = -1, role = 0, fd;
+	int is_rdwr = 0, stat_ret = -1;
 	/* divided by 512 it needs to fit into a signed long integer */
 	off_t size = ((off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	off_t read_size = -1;
@@ -1459,8 +1496,9 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	struct stat stbuf;
 
 	if (fname[0] != 0) {
+		fd = burn_drive__fd_from_special_adr(fname);
 		is_rdwr = burn_drive__is_rdwr(fname, &stat_ret, &stbuf,
-						&read_size, 1);
+						&read_size, 1 | 2);
 		if (stat_ret == -1 || is_rdwr) {
 			ret = burn_os_stdio_capacity(fname, &size);
 			if (ret == -1) {
@@ -1482,9 +1520,12 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				if (is_rdwr == 2 &&
 				    (burn_drive_role_4_allowed & 1))
 					role = 4;
+				else if (is_rdwr == 3 &&
+				    (burn_drive_role_4_allowed & 1))
+					role = 5;
 				else
 					role = 2;
-				if (stat_ret != -1 && is_rdwr == 1 &&
+				if (stat_ret != -1 && role == 2 && fd == -1 &&
 				    (burn_drive_role_4_allowed & 3) == 3)
 					role = burn_role_by_access(fname,
 					    !!(burn_drive_role_4_allowed & 4));
@@ -1511,20 +1552,29 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 	}
 	free((char *) d); /* all sub pointers have been copied to *regd_d */
 	d = regd_d;
-	if (d->drive_role == 2 || d->drive_role == 3 || d->drive_role == 4) {
+	if (d->drive_role >= 2 && d->drive_role <= 5) {
 		if (d->drive_role == 4) {
-			d->status = BURN_DISC_FULL;
-			/* MMC for non-compliant drive */
-			d->current_profile = 0xffff;
+			if (read_size > 0)
+				d->status = BURN_DISC_FULL;
+			else
+				d->status = BURN_DISC_EMPTY;
 			d->block_types[BURN_WRITE_TAO] = 0;
 			d->block_types[BURN_WRITE_SAO] = 0;
 		} else {
-			d->status = BURN_DISC_BLANK;
-			/* MMC for non-compliant drive */
-			d->current_profile = 0xffff;
+			if (d->drive_role == 5 && stat_ret != -1 &&
+			    S_ISREG(stbuf.st_mode) && stbuf.st_size > 0) {
+				d->status = BURN_DISC_APPENDABLE;
+				d->block_types[BURN_WRITE_SAO] = 0;
+				d->role_5_nwa = stbuf.st_size / 2048 +
+						!!(stbuf.st_size % 2049);
+			} else {
+				d->status = BURN_DISC_BLANK;
+				d->block_types[BURN_WRITE_SAO] =
+								BURN_BLOCK_SAO;
+			}
 			d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
-			d->block_types[BURN_WRITE_SAO] = BURN_BLOCK_SAO;
 		}
+		d->current_profile = 0xffff; /* MMC for non-compliant drive */
 		strcpy(d->current_profile_text,"stdio file");
 		d->current_is_cd_profile = 0;
 		d->current_is_supported_profile = 1;
@@ -1555,6 +1605,10 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
 		strcpy((*drive_infos)[0].product,"WARP DRIVE");
 		strcpy((*drive_infos)[0].revision,"FX03");
+	} else if (d->drive_role == 5) {
+		strcpy((*drive_infos)[0].vendor,"YOYODYNE");
+		strcpy((*drive_infos)[0].product,"WARP DRIVE");
+		strcpy((*drive_infos)[0].revision,"FX04");
 	} else {
 		strcpy((*drive_infos)[0].vendor,"FERENGI");
 		strcpy((*drive_infos)[0].product,"VAPORWARE");
@@ -2186,6 +2240,11 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 		return -1;
 	}
 	*lba = *nwa = 0;
+	if (d->drive_role == 5 && trackno == 0 &&
+	    d->status == BURN_DISC_APPENDABLE) {
+		*lba = *nwa = d->role_5_nwa;
+		return 1;
+	}
 	if (d->drive_role != 1)
 		return 0;
 	if (o != NULL)
@@ -2496,9 +2555,36 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		size = d->media_capacity_remaining;
 		burn_os_stdio_capacity(d->devname, &size);
 		burn_drive_set_media_capacity_remaining(d, size);
+
+		/* >>> This looks wrong ! */
+		/* >>> should add file size */
 		o->start_range_high = size;
+
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		o->might_do_sao = 4;
+		o->might_do_tao = 2;
+		o->advised_write_mode = BURN_WRITE_TAO;
+        	o->might_simulate = 1;
+	} else if (d->drive_role == 5) {
+		/* stdio file drive : random access write-only */
+		o->start_adr = 1;
+		size = d->media_capacity_remaining;
+		burn_os_stdio_capacity(d->devname, &size);
+		burn_drive_set_media_capacity_remaining(d, size);
+
+		/* >>> start_range_low = file size rounded to 2048 */;
+
+		/* >>> This looks wrong ! */
+		/* >>> should add file size */
+		o->start_range_high = size;
+
+		o->start_alignment = 2048; /* imposting a drive, not a file */
+		if (s == BURN_DISC_APPENDABLE) {
+			if (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)
+				return 0;
+			o->might_do_sao = 0;
+		} else
+			o->might_do_sao = 4;
 		o->might_do_tao = 2;
 		o->advised_write_mode = BURN_WRITE_TAO;
         	o->might_simulate = 1;
@@ -2750,13 +2836,20 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 			fd = burn_drive__fd_from_special_adr(adr2);
 			if (fd != -1)
 				exact_role_matters = 1;
-			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL, 1);
-			if (ret == 2 && burn_drive_role_4_allowed)
+			ret = burn_drive__is_rdwr(adr2, NULL, NULL, NULL,
+									1 | 2);
+			if (ret == 2 && (burn_drive_role_4_allowed & 1))
 				role2 = 4;
+			else if (ret == 3 && (burn_drive_role_4_allowed & 1))
+				role2 = 5;
 			else if (ret > 0)
 				role2 = 2;
 			else
 				role2 = 3;
+			if (fd == -1 &&
+			    role2 == 2 && (burn_drive_role_4_allowed & 3) == 3)
+				role2 = burn_role_by_access(adr2,
+					    !!(burn_drive_role_4_allowed & 4));
 		}
 	}
 

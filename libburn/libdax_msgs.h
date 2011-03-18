@@ -567,6 +567,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002017f (FAILURE,HIGH) = Failed to synchronize drive cache
  0x00020180 (FAILURE,HIGH) = Premature end of input encountered
  0x00020181 (FAILURE,HIGH) = Pseudo-drive is a read-only file. Cannot write.
+ 0x00020182 (FAILURE,HIGH) = Cannot truncate disk file for pseudo blanking
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

@@ -392,7 +392,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	     drive->status != BURN_DISC_APPENDABLE &&
 	     drive->status != BURN_DISC_BLANK)
 	    ||
-	    (drive->drive_role != 1)
+	    (drive->drive_role != 1 && drive->drive_role != 5)
 	   ) {
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020130,

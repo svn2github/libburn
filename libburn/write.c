@@ -1027,7 +1027,7 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	reason_pt= reasons + strlen(reasons);
 	if (d->status == BURN_DISC_UNSUITABLE)
 		goto unsuitable_profile;
-	if (d->drive_role == 2 ||
+	if (d->drive_role == 2 || d->drive_role == 5 ||
 		d->current_profile == 0x1a || d->current_profile == 0x12 ||
 		d->current_profile == 0x43) { 
 		/* DVD+RW , DVD-RAM , BD-RE, emulated drive on stdio file */
@@ -2071,7 +2071,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	} 
 	if (start_byte < 0)
 		start_byte = 0;
-	if (d->drive_role == 2) {
+	if (d->drive_role == 2 || d->drive_role == 5) {
 		lseek_res = lseek(fd, start_byte, SEEK_SET);
 		if (lseek_res == -1) {
 			sprintf(msg, "Cannot address start byte %.f",
@@ -2672,7 +2672,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		return 0;
 	}
 
-	if(d->drive_role == 2)
+	if(d->drive_role == 2 || d->drive_role == 5)
 		alignment = 2 * 1024;
 	if (d->current_profile == 0x12) /* DVD-RAM */
 		alignment = 2 * 1024;

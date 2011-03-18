@@ -433,12 +433,15 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			ret = 0; goto ex;
 		}
 		if (lseek(fd, byte_address, SEEK_SET) == -1) {
-			if (!(flag & 2))
+			if (!(flag & 2)) {
+				sprintf(msg, "Cannot address start byte %.f",
+					(double) byte_address);
 				libdax_msgs_submit(libdax_messenger,
 				  d->global_index,
 				  0x00020147,
 				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				  "Cannot address start byte", errno, 0);
+				  msg, errno, 0);
+			}
 			ret = 0; goto ex;
 		}
 	}

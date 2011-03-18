@@ -134,6 +134,8 @@ struct burn_drive
 		1=MMC drive ,
 		2=stdio random read-write
 		3=stdio sequential write-only
+                4=stdio random read-only
+                5=stdio random write-only
 	*/
 	int drive_role;
 
@@ -284,6 +286,9 @@ struct burn_drive
 	/* ts A81210 : Upper limit of readable data size,
 	               0x7fffffff = unknown */
 	int media_read_capacity;
+
+	/* ts B10314 : Next Writeable Adress for drive_role == 5 */
+        int role_5_nwa;
 
 	int toc_temp;
 	struct burn_disc *disc;	/* disc structure */
