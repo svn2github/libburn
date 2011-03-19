@@ -182,7 +182,8 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 	/* ts A61031 - B10103 */
 	if (shortage >= count)
 		track->track_data_done = 1;
-	if (track->end_on_premature_eoi && !track->open_ended) {
+	if (track->end_on_premature_eoi && shortage >= count &&
+	    !track->open_ended) {
 		char msg[80];
 		/* Memorize that premature end of input happened */
 		sprintf(msg,
