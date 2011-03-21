@@ -383,7 +383,9 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	/* ts A70909 : the willingness to burn any BURN_DISC_FULL media is
 	               inappropriate. One would rather need a -force option
 	               Note: keep this in sync with mmc_read_disc_info() */
-	if ((drive->current_profile != 0x0a &&
+	/* ts B10321 : Allowed role 5 to be blanked */
+	if ((drive->drive_role == 1 &&
+	     drive->current_profile != 0x0a &&
 	     drive->current_profile != 0x13 &&
 	     drive->current_profile != 0x14 &&
 	     drive->status != BURN_DISC_FULL)
