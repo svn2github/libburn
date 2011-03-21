@@ -2053,6 +2053,8 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 			0, 0);
 		return 0;
 	}
+	if (d->drive_role == 5 || d->drive_role == 3)
+		mode = O_WRONLY | O_CREAT | O_LARGEFILE;
 	if (d->devname[0] == 0) /* null drives should not come here */
 		return -1;
 	fd = burn_drive__fd_from_special_adr(d->devname);
@@ -2350,6 +2352,9 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	/* open target file */
 	if (d->stdio_fd >= 0)
 		close(d->stdio_fd);
+	if (d->drive_role == 5 && d->status == BURN_DISC_APPENDABLE &&
+            o->start_byte < 0)
+		o->start_byte = d->role_5_nwa * 2048;
 	d->stdio_fd = burn_stdio_open_write(d, o->start_byte, 2048, 0);
 	if (d->stdio_fd == -1)
 		{ret = 0; goto ex;}
