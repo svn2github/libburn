@@ -338,7 +338,7 @@ int burn_drive_grab(struct burn_drive *d, int le)
 			    stbuf.st_size > 0) {
 				d->status = BURN_DISC_APPENDABLE;
 				d->role_5_nwa = stbuf.st_size / 2048 +
-						!!(stbuf.st_size % 2049);
+						!!(stbuf.st_size % 2048);
 			} else
 				d->status = BURN_DISC_BLANK;
 		} else {
@@ -1566,7 +1566,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				d->status = BURN_DISC_APPENDABLE;
 				d->block_types[BURN_WRITE_SAO] = 0;
 				d->role_5_nwa = stbuf.st_size / 2048 +
-						!!(stbuf.st_size % 2049);
+						!!(stbuf.st_size % 2048);
 			} else {
 				d->status = BURN_DISC_BLANK;
 				d->block_types[BURN_WRITE_SAO] =
