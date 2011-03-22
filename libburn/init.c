@@ -578,5 +578,5 @@ void burn_set_scsi_logging(int flag)
 /* ts B10312 API */
 void burn_allow_drive_role_4(int allowed)
 {
-	burn_drive_role_4_allowed = (allowed & 7);
+	burn_drive_role_4_allowed = (allowed & 0xf);
 }

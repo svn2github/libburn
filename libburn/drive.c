@@ -1562,7 +1562,8 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 			d->block_types[BURN_WRITE_SAO] = 0;
 		} else {
 			if (d->drive_role == 5 && stat_ret != -1 &&
-			    S_ISREG(stbuf.st_mode) && stbuf.st_size > 0) {
+			    S_ISREG(stbuf.st_mode) && stbuf.st_size > 0 &&
+			    (burn_drive_role_4_allowed & 8)) {
 				d->status = BURN_DISC_APPENDABLE;
 				d->block_types[BURN_WRITE_SAO] = 0;
 				d->role_5_nwa = stbuf.st_size / 2048 +
@@ -1571,6 +1572,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 				d->status = BURN_DISC_BLANK;
 				d->block_types[BURN_WRITE_SAO] =
 								BURN_BLOCK_SAO;
+				d->role_5_nwa = 0;
 			}
 			d->block_types[BURN_WRITE_TAO] = BURN_BLOCK_MODE1;
 		}

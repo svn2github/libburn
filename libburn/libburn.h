@@ -1448,6 +1448,8 @@ void burn_read_opts_free(struct burn_read_opts *opts);
     cancellable, as control of the operation is passed wholly to the drive and
     there is no way to interrupt it safely.
     @param drive The drive with which to erase a disc.
+                 Only drive roles 1 (MMC) and 5 (stdio random write-only)
+                 support erasing.
     @param fast Nonzero to do a fast erase, where only the disc's headers are
                 erased; zero to erase the entire disc.
                 With DVD-RW, fast blanking yields media capable only of DAO.
@@ -3020,28 +3022,34 @@ int burn_drive_get_drive_role(struct burn_drive *d);
 
 
 /* ts B10312 */
-/** Allow drive role 4 "random access read-only" drive.
+/** Allow drive role 4 "random access read-only"
+    and drive role 5 "random access write-only".
     By default a random access file assumes drive role 2 "read-write"
     regardless whether it is actually readable or writeable.
     If enabled, random-access file objects which recognizably allow no
-    writing will be classified as role 4.
+    writing will be classified as role 4 and those which allow no reading
+    will get role 5.
     Candidates are drive addresses of the form stdio:/dev/fd/# , where # is
     the integer number of an open file descriptor. If this descriptor was
-    opened read-only, then it gets role 4.
+    opened read-only resp. write-only, then it gets role 4 resp. role 5.
     Other paths may get tested by an attempt to open them for read-write
-    (role 2) resp. read-only (role 4) resp. write-only (role 3). See bit1.
-    read-only
+    (role 2) resp. read-only (role 4) resp. write-only (role 5). See bit1.
     @param allowed      Bitfield for control purposes:
-                        bit0= Enable role 4 for drives which get aquired
-                              after this call
+                        bit0= Enable roles 4 and 5 for drives which get
+                              aquired after this call
                         bit1= with bit0:
                               Test whether the file can be opened for
                               read-write resp. read-only resp. write-only.
-                              Classify as roles 2 resp. 4 resp. 3.
+                              Classify as roles 2 resp. 4 resp. 5.
                         bit2= with bit0 and bit1:
                               Classify files which cannot be opened at all
                               as role 0 : useless dummy.
                               Else classify as role 2.
+                        bit3= Classify non-empty role 5 drives as
+                              BURN_DISC_APPENDABLE with Next Writeable Address
+                              after the end of the file. It is nevertheless
+                              possible to change this address by call
+                              burn_write_opts_set_start_byte().
     @since 1.0.6
 */
 void burn_allow_drive_role_4(int allowed);
