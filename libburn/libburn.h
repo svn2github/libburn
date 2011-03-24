@@ -2998,8 +2998,13 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
                         bit0= - reserved -
                         bit1= do not submit error message if read error
                         bit2= on error do not try to read a second time
-                              with single block steps. @since 0.5.2 
+                              with single block steps.
+                              @since 0.5.2 
+                        bit3= return -2 on permission denied error rather than
+                              issueing a warning message.
+                              @since 1.0.6
     @return 1=sucessful , <=0 an error occured
+                          with bit3:  -2= permission denied error
     @since 0.4.0
 */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
