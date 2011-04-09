@@ -9268,12 +9268,12 @@ Made number transition to 1.0.5
 + cdrskin/add_ts_changes_to_libburn_1_0_5
 Updated cdrskin tarball generator
 
-10 Mar 2011  []
+10 Mar 2011  [3660]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
-10 Mar 2011  []
+10 Mar 2011  [3658]
 svn move -m libburn release 1.0.4 is ready
 http://svn.libburnia-project.org/libburn/branches/1.0.4
 http://svn.libburnia-project.org/libburn/tags/1.0.4
@@ -9281,9 +9281,116 @@ http://svn.libburnia-project.org/libburn/tags/1.0.4
 ------------------------------------ cycle  - cdrskin-1.0.5 - 2011.03.10.132603
 
 
+12 Mar 2011  [3664]
+COPYRIGHT
+Updated copyright year
 
------------------------------------- cycle  - cdrskin-1.0.5 - 
------------------------------------- cycle  - cdrskin-1.0.5 - 
+2011.03.12.093520  [3665]
+libburn/write.c
+libburn/mmc.c
+Burning DVD-R DAO with 2 kB size granularity rather than 32 kB
+
+2011.03.13.130746  [3666]
+libburn/libburn.h
+libburn/init.c
+libburn/drive.c
+libburn/async.c
+libburn/write.c
+libburn/libdax_msgs.h
+libburn/libburn.ver
+New API call burn_allow_drive_role_4()
+
+2011.03.13.130850  [3667]
+cdrskin/cdrskin.c
+Using burn_allow_drive_role_4() in cdrskin
+
+2011.03.13.192627  [3671]
+libburn/read.c
+libburn/libdax_msgs.h
+Changed severity of "Read attempt on write-only drive" from FATAL to FAILURE
+
+2011.03.18.093128  [3672]
+cdrskin/cdrskin.c
+Prepared cdrskin for drive role 5
+
+2011.03.18.093410  [3673]
+libburn/transport.h
+libburn/drive.c
+libburn/async.c
+libburn/write.c
+libburn/read.c
+libburn/libdax_msgs.h
+Provisory introduction of drive role 5, random access write-only
+
+2011.03.18.153326  [3674]
+libburn/async.c
+libburn/mmc.c
+Enabled BD formatting by index on Pioneer BDR-205 which offers no Cert or QCert
+
+2011.03.19.222152  [3675]
+libburn/sector.c
+Silenced an error message with input that is not aligned to 2 kB
+
+2011.03.21.090313  [3676]
+libburn/drive.c
+Corrected nwa computation for drive role 5
+
+2011.03.21.090430  [3677]
+libburn/write.c
+Adjustments for drive role 5, random access write-only
+
+2011.03.21.092220  [3678]
+libburn/async.c
+Enabled blanking of drive with role 5
+
+2011.03.22.085956  [3685]
+libburn/libburn.h
+libburn/init.c
+libburn/drive.c
+Avoiding appendable role 5 if not explicitely enabled
+
+2011.03.24.182148  [3687]
+libburn/libburn.h
+libburn/read.c
+libburn/libdax_msgs.h
+Better handling of read attempt on pseudo-drive without read-permission
+
+8 Apr 2011  [3712]
+svn copy -m Branching for libburn release 1.0.6
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.0.6
+
+2011.04.08.180001  [3713]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.6
+
+08 Apr 2011  [3714]
+- cdrskin/add_ts_changes_to_libburn_1_0_4
+- cdrskin/add_ts_changes_to_libburn_1_0_5
++ cdrskin/add_ts_changes_to_libburn_1_0_6
++ cdrskin/add_ts_changes_to_libburn_1_0_7
+Updated cdrskin tarball generator
+
+08 Apr 2011   [3715]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------ release - cdrskin-1.0.6.pl00 - 2011.04.08.180001
+* Burning DVD-R DAO with 2 kB size granularity rather than 32 kB
+* New API call burn_allow_drive_role_4()
+
+
+------------------------------------ cycle  - cdrskin-1.0.7 - 
+------------------------------------ cycle  - cdrskin-1.0.7 - 
 
 
 
@@ -9296,10 +9403,8 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
-Introduce drive role 4= stdio-drive, random access, read-only
 
-
-Let DVD-R DAO allocate exact track sizes (not divisible by 16 blocks)
+Throw out old burn_print() calls
 
 
 Expose BD type from bytes 8+4 to 10+4 out of READ BD STRUCTURE form 0.
