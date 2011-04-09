@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.0.5"
+#define Cdrskin_prog_versioN "1.0.7"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +101,7 @@ or
 #define Cdrskin_libburn_minoR 0
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -135,47 +135,43 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_1_0_4
-#define Cdrskin_libburn_versioN "1.0.4"
+#ifdef Cdrskin_libburn_1_0_6
+#define Cdrskin_libburn_versioN "1.0.6"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_1_0_4 */
+#endif /* Cdrskin_libburn_1_0_6 */
 
-#ifdef Cdrskin_libburn_1_0_5
-#define Cdrskin_libburn_versioN "1.0.5"
+#ifdef Cdrskin_libburn_1_0_7
+#define Cdrskin_libburn_versioN "1.0.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
    Move them down to Cdrskin_libburn_from_pykix_svN on version leap
 */
 
-/* Do not stay in signal handler but only cancel and set Cdrskin_abort_leveL.
-   Make use of burn_is_aborting() to detect pending libburn aborts.
-*/
 
-
-#endif /* Cdrskin_libburn_1_0_5 */
+#endif /* Cdrskin_libburn_1_0_7 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_0_5
-#define Cdrskin_libburn_versioN "1.0.5"
+#define Cdrskin_libburn_1_0_7
+#define Cdrskin_libburn_versioN "1.0.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_0_4
+#ifdef Cdrskin_libburn_1_0_6
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 0
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_1_0_5
+#ifdef Cdrskin_libburn_1_0_7
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 0
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
