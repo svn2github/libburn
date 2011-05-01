@@ -177,6 +177,8 @@ void burn_finish(void)
 
 	sg_shutdown(0);
 
+	burn_drive_clear_whitelist();
+
 	burn_running = 0;
 }
 
