@@ -67,7 +67,7 @@ int main()
 
 	newact.sa_handler = catch_int;
 	sigaction(SIGINT, &newact, &oldact);
-	for (i = 0; i < n_drives; i++) {
+	for (i = 0; i < (int) n_drives; i++) {
 	    NEXT=0;
 	    poll_drive(i);
 	}
