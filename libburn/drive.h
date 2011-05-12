@@ -12,6 +12,7 @@
 #include "libburn.h"
 #include "toc.h"
 #include "structure.h"
+#include <pthread.h>
 
 struct burn_drive;
 struct command;
