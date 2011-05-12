@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -354,7 +354,7 @@ char *burn_util_thread_id(pid_t pid, pthread_t tid, char text[80])
 
 	sprintf(text, "[%lu,", (unsigned long int) getpid());
 	l= strlen(text);
-	for(i= 0; i < sizeof(pthread_t) && 2 * i < 80 - l - 3; i++)
+	for(i= 0; i < ((int) sizeof(pthread_t)) && 2 * i < 80 - l - 3; i++)
 		sprintf(text + l + 2 * i,
 			 "%2.2X", ((unsigned char *) &tid)[i]);
 

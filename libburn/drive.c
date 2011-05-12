@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1092,7 +1092,7 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 	*n_drives = 0;
 
 	/* ts A70907 : wether to scan from scratch or to extend */
-	for (i = 0; i < sizeof(scanned); i++)
+	for (i = 0; i < (int) sizeof(scanned); i++)
 		scanned[i] = 0;
 	if (flag & 1) {
 		burn_drive_free_all();
@@ -1120,12 +1120,12 @@ int burn_drive_scan_sync(struct burn_drive_info *drives[],
 					"Out of virtual memory", 0, 0);
 			return -1;
 		} else
-			for (i = 0; i <= count; i++) /* invalidate */
+			for (i = 0; i <= (int) count; i++) /* invalidate */
 				(*drives)[i].drive = NULL;
 	} else
 		*drives = NULL;
 
-	for (i = 0; i < count; ++i) {
+	for (i = 0; i < (int) count; ++i) {
 		if (scanned[i / 8] & (1 << (i % 8)))
 	continue;		/* device already scanned by previous run */
 		if (drive_array[i].global_index < 0)
@@ -1773,7 +1773,7 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
 									path);
 		return 0;
 	}
-	if (ret >= sizeof(link_target) - 1) {
+	if (ret >= (int) sizeof(link_target) - 1) {
 		sprintf(msg,"readlink( %s ) returns %d (too much)", path, ret);
 		if (flag & 1)
 			burn_drive_adr_debug_msg(msg, NULL);

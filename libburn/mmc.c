@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -768,9 +768,9 @@ static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
 
 		/* >>> learn about buffer progress and adjust usec */
 
-		if (usec < d->wfb_min_usec)
+		if (usec < (int) d->wfb_min_usec)
 			usec = d->wfb_min_usec;
-		else if (usec > d->wfb_max_usec)
+		else if (usec > (int) d->wfb_max_usec)
 			usec = d->wfb_max_usec;
 		usleep(usec);
 		if (d->waited_usec < 0xf0000000)
@@ -3759,9 +3759,9 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 			sd->read_speed = read_speed;
 		}
 
-		if (end_lba > d->mdata->max_end_lba)
+		if ((int) end_lba > d->mdata->max_end_lba)
 			d->mdata->max_end_lba = end_lba;
-		if (end_lba < d->mdata->min_end_lba)
+		if ((int) end_lba < d->mdata->min_end_lba)
 			d->mdata->min_end_lba = end_lba;
 		if (write_speed < min_write_speed)
 			min_write_speed = write_speed;

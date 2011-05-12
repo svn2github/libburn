@@ -33,7 +33,7 @@ extern struct libdax_msgs *libdax_messenger;
 		return 0;\
 	if (pos == BURN_POS_END)\
 		pos = TO->NEW##s;\
-	if (pos > TO->NEW##s)\
+	if ((int) pos > TO->NEW##s)\
 		return 0;\
 \
 	tmp = realloc(TO->NEW, sizeof(struct NEW *) * (TO->NEW##s + 1));\

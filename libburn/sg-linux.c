@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1133,7 +1133,7 @@ static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 			if (*cpt == 0 || *cpt == '\n')
 		break;
 			sscanf(cpt, "%s", fname + 5);
-			if (strlen(fname) > maxl)
+			if ((int) strlen(fname) > maxl)
 				maxl = strlen(fname);
 			if (pass == 1)
 				strcpy((*list)[*count], fname);
@@ -1369,7 +1369,7 @@ next_proc_info:;
 		if ((idx->info_list)[i][0] == 0)
 	continue;
 		if (baseno == idx->pos) {
-			if (adr_size < strlen((idx->info_list)[i]) + 1)
+			if (adr_size < (int) strlen((idx->info_list)[i]) + 1)
 				return -1;
 			strcpy(adr, (idx->info_list)[i]);
 			return 1;
