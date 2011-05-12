@@ -1,6 +1,6 @@
 
 /*  test/telltoc.c , API illustration of obtaining media status info */
-/*  Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net> 
+/*  Copyright (C) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net> 
     Provided under GPL */
 
 /**                               Overview 
@@ -178,7 +178,7 @@ int telltoc_aquire_by_driveno(int *driveno, int silent_drive)
 	}
 	fprintf(stderr, "Done\n");
 
-	for (i = 0; i < drive_count; i++) {
+	for (i = 0; i < (int) drive_count; i++) {
 		if (*driveno >= 0 && (silent_drive || *driveno != i))
 	continue;
 		if (burn_drive_get_adr(&(drive_list[i]), adr) <=0)
@@ -197,7 +197,7 @@ int telltoc_aquire_by_driveno(int *driveno, int silent_drive)
 	/* We already made our choice via command line. (default is 0)
 	   So we just have to keep our desired drive and drop all others.
 	 */
-	if (drive_count <= *driveno) {
+	if ((int) drive_count <= *driveno) {
 		fprintf(stderr,
 			"Found only %d drives. Number %d not available.\n",
 			drive_count, *driveno);
@@ -205,7 +205,7 @@ int telltoc_aquire_by_driveno(int *driveno, int silent_drive)
 	}
 
 	/* Drop all drives which we do not want to use */
-	for (i = 0; i < drive_count; i++) {
+	for (i = 0; i < (int) drive_count; i++) {
 		if (i == *driveno) /* the one drive we want to keep */
 	continue;
 		ret = burn_drive_info_forget(&(drive_list[i]),0);
