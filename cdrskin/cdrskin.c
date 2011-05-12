@@ -648,7 +648,7 @@ int Sfile_home_adr_s(char *filename, char *fileadr, int fa_size, int flag)
  home= getenv("HOME");
  if(home==NULL)
    return(0);
- if(strlen(home)+strlen(filename)+1>=fa_size)
+ if((int) (strlen(home) + strlen(filename) + 1) >= fa_size)
    return(-1);
  strcpy(fileadr,home);
  if(filename[0]!=0){
@@ -3750,7 +3750,7 @@ int Cdrskin_get_device_adr(struct CdrskiN *skin,
 
 int Cdrskin_get_drive(struct CdrskiN *skin, struct burn_drive **drive,int flag)
 {
- if(skin->driveno<0 || skin->driveno >= skin->n_drives)
+ if(skin->driveno<0 || (unsigned int) skin->driveno >= skin->n_drives)
    return(0);
  *drive= skin->drives[skin->driveno].drive;
  return ((*drive) != NULL); 
@@ -4014,7 +4014,7 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
        ClN(fprintf(stderr,
          "cdrskin_debug: Cdrskin_grab_drive() dropping unwanted drives (%d)\n",
           skin->n_drives-1));
-     for(i=0;i<skin->n_drives;i++) {
+     for(i= 0; i < (int) skin->n_drives; i++) {
        if(i==skin->driveno)
      continue;
        if(skin->verbosity>=Cdrskin_verbose_debuG)   
@@ -4357,7 +4357,7 @@ int Cdrskin_driveno_of_location(struct CdrskiN *skin, char *devicename,
  int i,ret;
  char adr[Cdrskin_adrleN];
 
- for(i=0;i<skin->n_drives;i++) {
+ for(i= 0; i < (int) skin->n_drives; i++) {
 
 #ifdef Cdrskin_libburn_has_drive_get_adR
    ret= burn_drive_get_adr(&(skin->drives[i]), adr);
@@ -4447,7 +4447,7 @@ wrong_devno:;
      goto location_not_found;
    }
  }
- if((*driveno)>=skin->n_drives || (*driveno)<0) {
+ if((unsigned int) (*driveno) >= skin->n_drives || (*driveno) < 0) {
    ClN(fprintf(stderr,"cdrskin: obtained drive number  %d  from '%s'\n",
                *driveno,adr));
    goto wrong_devno;
@@ -4473,7 +4473,7 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
  int k,ret,still_untranslated= 1,hret,k_start;
  char *loc= NULL,buf[Cdrskin_adrleN],adr[Cdrskin_adrleN];
 
- if(driveno<0 || driveno>skin->n_drives)
+ if(driveno < 0 || driveno > (int) skin->n_drives)
    goto fallback;
 
 #ifdef Cdrskin_libburn_has_drive_get_adR
@@ -4742,13 +4742,13 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
  drives_busses= calloc((skin->n_drives+1), sizeof(int));
  if(drives_shown == NULL || drives_busses == NULL)
    {ret= -1; goto ex;}
- for(i=0;i<skin->n_drives;i++)
+ for(i= 0; i < (int) skin->n_drives; i++)
    drives_shown[i]= 0;
  if(flag&1) {
    printf("cdrskin: Overview of accessible drives (%d found) :\n",
           skin->n_drives);
    printf("-----------------------------------------------------------------------------\n");
-   for(i=0;i<skin->n_drives;i++) {
+   for(i= 0; i < (int) skin->n_drives; i++) {
 
 #ifdef Cdrskin_libburn_has_drive_get_adR
      ret= burn_drive_get_adr(&(skin->drives[i]), adr);
@@ -4798,7 +4798,7 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
    if(skin->preskin->old_pseudo_scsi_adr)
      printf("cdrskin: NOTE : The printed addresses are not cdrecord compatible !\n");
 
-   for(i=0;i<skin->n_drives;i++) {
+   for(i= 0; i < (int) skin->n_drives; i++) {
      drives_busses[i]= -1;
      ret= Cdrskin_driveno_to_btldev(skin,i,btldev,1);
      if(ret >= pseudo_transport_group &&
@@ -4808,8 +4808,8 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
          busmax= 1 + ret - pseudo_transport_group;
      }
    }
-   for(busidx= 0; busidx < skin->n_drives + 1; busidx++) {
-     if(busidx < skin->n_drives)
+   for(busidx= 0; busidx < (int) skin->n_drives + 1; busidx++) {
+     if(busidx < (int) skin->n_drives)
        busno= drives_busses[busidx];
      else
        busno= busmax;
@@ -4821,7 +4821,7 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
      if(i < busidx)
    continue;
      first_on_bus= 1;
-     for(i=0;i<skin->n_drives;i++) {
+     for(i= 0; i < (int) skin->n_drives; i++) {
        ret= Cdrskin_driveno_to_btldev(skin,i,btldev,1);
        if(busno==busmax && drives_shown[i]==0) {
          if(ret/1000000 != pseudo_transport_group) {
@@ -4880,7 +4880,7 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
    else
      ClN(printf("cdrskin: pseudo-checkdrive on drive %d\n",skin->driveno));
  }
- if(skin->driveno>=skin->n_drives || skin->driveno<0) {
+ if(skin->driveno >= (int) skin->n_drives || skin->driveno < 0) {
    fprintf(stderr,"cdrskin: FATAL : there is no drive #%d\n",skin->driveno);
    {ret= 0; goto ex;}  
  } 
@@ -7763,7 +7763,7 @@ int Cdrskin_eject(struct CdrskiN *skin, int flag)
  if(!skin->do_eject)
    return(1);
 
- if(skin->n_drives<=skin->driveno || skin->driveno < 0)
+ if((int) skin->n_drives <= skin->driveno || skin->driveno < 0)
    return(2);
 
  /* ??? A61012 : retry loop might now be obsolete 
