@@ -1,6 +1,6 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2010 Thomas Schmitt <scdbackup@gmx.net> */
+/* Copyright (C) 2005 - 2011 Thomas Schmitt <scdbackup@gmx.net> */
 /* Provided under GPL, see also "License and copyright aspects" at file end */
 
 
@@ -218,7 +218,7 @@ int libburner_aquire_by_driveno(int *driveno)
 	printf("\nOverview of accessible drives (%d found) :\n",
 		drive_count);
 	printf("-----------------------------------------------------------------------------\n");
-	for (i = 0; i < drive_count; i++) {
+	for (i = 0; i < (int) drive_count; i++) {
 		if (burn_drive_get_adr(&(drive_list[i]), adr) <=0)
 			strcpy(adr, "-get_adr_failed-");
 		printf("%d  --drive '%s'  :  '%s'  '%s'\n",
@@ -255,7 +255,7 @@ int libburner_aquire_by_driveno(int *driveno)
 		printf("Pseudo-drive \"-\" given : bus scanning done.\n");
 		return 2; /* the program will end after this */
 	}
-	if (drive_count <= *driveno) {
+	if ((int) drive_count <= *driveno) {
 		fprintf(stderr,
 			"Found only %d drives. Number %d not available.\n",
 			drive_count, *driveno);
@@ -263,7 +263,7 @@ int libburner_aquire_by_driveno(int *driveno)
 	}
 
 	/* Drop all drives which we do not want to use */
-	for (i = 0; i < drive_count; i++) {
+	for (i = 0; i < (int) drive_count; i++) {
 		if (i == *driveno) /* the one drive we want to keep */
 	continue;
 		ret = burn_drive_info_forget(&(drive_list[i]),0);
