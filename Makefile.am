@@ -196,6 +196,8 @@ EXTRA_DIST = \
 	version.h.in \
 	doc/comments \
 	doc/doxygen.conf.in \
+	doc/cookbook.txt \
+	doc/mediainfo.txt \
 	README \
 	AUTHORS \
 	CONTRIBUTORS \

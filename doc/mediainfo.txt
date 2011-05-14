@@ -1,4 +1,10 @@
 
+-------------------------------------------------------------------------------
+Note: This is about how libburn operates optical drives. Not about how to
+      operate libburn. The libburn API is described in libburn/libburn.h
+-------------------------------------------------------------------------------
+
+
         Overview of class specific or individual media information
              especially manufacturer and exact product type
 
@@ -172,6 +178,9 @@ BD-R and BD-RE:
    Table 288 says that Media Type Code (byte 1 of CDB) for BD media is 1.
    Table 446 says that Disc Information is preceeded by 4 bytes of header.
    Table 448 says that bytes 0   to   1 are Disc Information Identifier "DI".
+                  that bytes 8   to  10 are Disc Type Identifier
+                                            BDO for BD-ROM, BDW for BD-RE,
+                                            BDR for BD-R
                   that bytes 100 to 105 are Disc Manufactuer ID
                   that bytes 106 to 108 are Media Type ID
                   that byte  111        is Product Revision Number
@@ -1172,6 +1181,7 @@ TTH02               TDK  12X   [Hij]
 TYG01               TAIYO YUDEN  4X   [Hij]
 TYG02               TAIYO YUDEN  12X   [Hij]
 TYG03               TAIYO YUDEN  16X   [Hij]
+TYG11               TAIYO YUDEN  DVD-R DL 8x
 TYG-BD      Y01     TAIYO YUDEN Co., Ltd.  1-2X LTH   [Blu]
 TYG-BD      Y03     TAIYO YUDEN Co., Ltd.   1-4X LTH   [Blu]
 

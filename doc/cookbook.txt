@@ -1,3 +1,9 @@
+
+-------------------------------------------------------------------------------
+Note: This is about how libburn operates optical drives. Not about how to
+      operate libburn. The libburn API is described in libburn/libburn.h
+-------------------------------------------------------------------------------
+
 libburnia-project.org Optical Media Rotisserie Recipes as of January 2010
 
 Content:
