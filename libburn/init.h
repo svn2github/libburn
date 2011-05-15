@@ -34,7 +34,7 @@ int burn_init_catch_on_abort(int flag);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000003, \
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH, \
 			"Out of virtual memory", 0, 0); \
-		goto ex; \
+		ret= -1; goto ex; \
 	} }
 
 #define BURN_FREE_MEM(pt) { \

@@ -585,6 +585,7 @@ static void *write_disc_worker_func(struct w_list *w)
 
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
+	int ret;
 	struct write_opts o;
 	char *reasons= NULL;
 	struct burn_drive *d;
