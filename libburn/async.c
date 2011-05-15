@@ -445,7 +445,7 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 {
 	struct format_opts o;
 	int ok = 0, ret;
-	char msg[160];
+	char msg[40];
 
 	reset_progress(drive, 1, 1, 1, 0x10000, 0);
 
@@ -586,7 +586,7 @@ static void *write_disc_worker_func(struct w_list *w)
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
 	struct write_opts o;
-	char reasons[BURN_REASONS_LEN+80];
+	char *reasons= NULL;
 	struct burn_drive *d;
 
 	d = opts->drive;
@@ -646,6 +646,8 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	/* ts A70219 : intended to replace all further tests here and many
 	               tests in burn_*_write_sync()
 	*/
+
+        BURN_ALLOC_MEM(reasons, char, BURN_REASONS_LEN + 80);
 	strcpy(reasons, "Write job parameters are unsuitable:\n");
 	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
 	     <= 0) {
@@ -653,8 +655,9 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 				d->global_index, 0x00020139,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				reasons, 0, 0);
-		return;
+		goto ex;
 	}
+        BURN_FREE_MEM(reasons); reasons= NULL;
 
 	/* ts A90106 : early catching of unformatted BD-RE */
 	if (d->current_profile == 0x43) 
@@ -678,6 +681,9 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 	add_worker(Burnworker_type_writE, d,
 			(WorkerFunc) write_disc_worker_func, &o);
+
+ex:;
+	BURN_FREE_MEM(reasons);
 }
 
 
