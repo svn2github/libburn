@@ -28,8 +28,8 @@ extern volatile int burn_builtin_triggered_action;    /*  burn_is_aborting() */
 int burn_init_catch_on_abort(int flag);
 
 
-#define BURN_ALLOC_MEM(pt, typ, anz) { \
-	pt= (typ *) calloc(1, (anz)*sizeof(typ)); \
+#define BURN_ALLOC_MEM(pt, typ, count) { \
+	pt= (typ *) calloc(1, (count)*sizeof(typ)); \
 	if(pt == NULL) { \
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000003, \
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH, \
@@ -39,7 +39,7 @@ int burn_init_catch_on_abort(int flag);
 
 #define BURN_FREE_MEM(pt) { \
 	if(pt != NULL) \
-		free(pt); \
+		free((char *) pt); \
 	}
 
 
