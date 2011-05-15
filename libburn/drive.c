@@ -218,7 +218,10 @@ unsigned int burn_drive_count(void)
 int burn_drive_is_listed(char *path, struct burn_drive **found, int flag)
 {
 	int i, ret;
-	char drive_adr[BURN_DRIVE_ADR_LEN], off_adr[BURN_DRIVE_ADR_LEN];
+	char *drive_adr = NULL, *off_adr = NULL;
+
+	BURN_ALLOC_MEM(drive_adr, char, BURN_DRIVE_ADR_LEN);
+	BURN_ALLOC_MEM(off_adr, char, BURN_DRIVE_ADR_LEN);
 
 	ret = burn_drive_convert_fs_adr(path, off_adr);
 	if (ret <= 0)
@@ -232,10 +235,14 @@ int burn_drive_is_listed(char *path, struct burn_drive **found, int flag)
 		if(strcmp(off_adr, drive_adr) == 0) {
 			if (found != NULL)
 				*found= &(drive_array[i]);
-			return 1;
+			{ret= 1; goto ex;}
 		}
 	}
-	return 0;
+	ret= 0;
+ex:;
+	BURN_FREE_MEM(drive_adr);
+	BURN_FREE_MEM(off_adr);
+	return ret;
 }
 
 
@@ -451,9 +458,11 @@ int burn_drive_unregister(struct burn_drive *d)
 */
 struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 {
-	struct burn_drive *t;
-	char msg[BURN_DRIVE_ADR_LEN + 160];
+	struct burn_drive *t = NULL;
+	char *msg = NULL;
 	int ret;
+
+	BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 160);
 
 	d->drive_role = 1; /* MMC drive */
 
@@ -483,6 +492,8 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	/* ts A60821 */
 	mmc_function_spy(NULL, "enumerate_common : ----- would release ");
 
+ex:
+	BURN_FREE_MEM(msg);
 	return t;
 }
 
@@ -703,7 +714,9 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	int ret, buf_secs, err, i, stages = 1, pbase, pfill, pseudo_sector;
 	off_t num_bufs;
 	char msg[80];
-	struct buffer buf, *buf_mem = d->buffer;
+	struct buffer *buf = NULL, *buf_mem = d->buffer;
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
 
 #ifdef Libburn_reset_progress_asynC
 	/* <<< This is now done in async.c */
@@ -762,7 +775,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg, 0, 0);
 
-		d->buffer = &buf;
+		d->buffer = buf;
 		memset(d->buffer, 0, sizeof(struct buffer));
 		d->buffer->bytes = buf_secs * 2048;
 		d->buffer->sectors = buf_secs;
@@ -790,6 +803,7 @@ ex:;
 	d->progress.sector = 0x10000;
 	d->busy = BURN_DRIVE_IDLE;
 	d->buffer = buf_mem;
+	BURN_FREE_MEM(buf);
 }
 
 
@@ -1408,7 +1422,7 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 	struct stat stbuf;
         off_t read_size = 0;
 
-	memset(&stbuf, 0, sizeof(stbuf));
+	memset(&stbuf, 0, sizeof(struct stat));
 	fd = burn_drive__fd_from_special_adr(fname);
 	if (fd >= 0)
 		st_ret = fstat(fd, &stbuf);
@@ -1446,7 +1460,7 @@ fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = 
 	if (stat_ret != NULL)
 		*stat_ret = st_ret;
 	if (stbuf_ret != NULL)
-		memcpy(stbuf_ret, &stbuf, sizeof(stbuf));
+		memcpy(stbuf_ret, &stbuf, sizeof(struct stat));
 	if (read_size_ret != NULL)
 		*read_size_ret = read_size;
 	return is_rdwr;
@@ -1691,18 +1705,21 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 int burn_drive_adr_debug_msg(char *fmt, char *arg)
 {
 	int ret;
-	char msg[4096], *msgpt;
+	char *msg = NULL, *msgpt;
 
-        msgpt= msg;
+	BURN_ALLOC_MEM(msg, char, 4096);
+	msgpt = msg;
 	if(arg != NULL)
 		sprintf(msg, fmt, arg);
 	else
-		msgpt= fmt;
+		msgpt = fmt;
 	if(libdax_messenger == NULL)
 		return 0;
 	ret = libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msgpt, 0, 0);
+ex:;
+	BURN_FREE_MEM(msg);
 	return ret;
 }
 
@@ -1751,9 +1768,13 @@ int burn_drive_is_enumerable_adr(char *adr)
 int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
 				int flag)
 {
-	int ret;
-	char link_target[4096], msg[4096+100], link_adr[4096], *adrpt;
+	int ret, link_target_size = 4096;
+	char *link_target = NULL, *msg = NULL, *link_adr = NULL, *adrpt;
 	struct stat stbuf;
+
+	BURN_ALLOC_MEM(link_target, char, link_target_size);
+	BURN_ALLOC_MEM(msg, char, link_target_size + 100);
+	BURN_ALLOC_MEM(link_adr, char, link_target_size);
 
 	if (flag & 1)
 		burn_drive_adr_debug_msg("burn_drive_resolve_link( %s )",
@@ -1763,24 +1784,24 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
 			burn_drive_adr_debug_msg(
 			"burn_drive_resolve_link aborts because link too deep",
 			NULL);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	(*recursion_count)++;
-	ret = readlink(path, link_target, sizeof(link_target));
+	ret = readlink(path, link_target, link_target_size);
 	if (ret == -1) {
 		if (flag & 1)
 			burn_drive_adr_debug_msg("readlink( %s ) returns -1",
 									path);
-		return 0;
+		{ret = 0; goto ex;}
 	}
-	if (ret >= (int) sizeof(link_target) - 1) {
+	if (ret >= link_target_size - 1) {
 		sprintf(msg,"readlink( %s ) returns %d (too much)", path, ret);
 		if (flag & 1)
 			burn_drive_adr_debug_msg(msg, NULL);
-		return -1;
+		{ret = -1; goto ex;}
 	}
 	link_target[ret] = 0;
-	adrpt= link_target;
+	adrpt = link_target;
 	if (link_target[0] != '/') {
 		strcpy(link_adr, path);
 		if ((adrpt = strrchr(link_adr, '/')) != NULL) {
@@ -1808,6 +1829,10 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
 	}
 	if (flag & 1)
 		burn_drive_adr_debug_msg(msg, NULL);
+ex:;
+	BURN_FREE_MEM(link_target);
+	BURN_FREE_MEM(msg);
+	BURN_FREE_MEM(link_adr);
 	return ret;
 }
 
@@ -1815,13 +1840,16 @@ int burn_drive_resolve_link(char *path, char adr[], int *recursion_count,
 /* Try to find an enumerated address with the given stat.st_rdev number */
 int burn_drive_find_devno(dev_t devno, char adr[])
 {
-	char fname[4096], msg[4096+100];
-	int ret = 0, first = 1;
+	char *fname = NULL, *msg = NULL;
+	int ret = 0, first = 1, fname_size = 4096;
 	struct stat stbuf;
 	burn_drive_enumerator_t enm;
 
+	BURN_ALLOC_MEM(fname, char, fname_size);
+	BURN_ALLOC_MEM(msg, char, fname_size + 100);
+
 	while (1) {
-		ret = sg_give_next_adr(&enm, fname, sizeof(fname), first);
+		ret = sg_give_next_adr(&enm, fname, fname_size, first);
 		if(ret <= 0)
 	break;
 		first = 0;
@@ -1831,7 +1859,7 @@ int burn_drive_find_devno(dev_t devno, char adr[])
 		if(devno != stbuf.st_rdev)
 	continue;
 		if(strlen(fname) >= BURN_DRIVE_ADR_LEN)
-			return -1;
+			{ret= -1; goto ex;}
 
 		sprintf(msg, "burn_drive_find_devno( 0x%lX ) found %s",
 			 (long) devno, fname);
@@ -1842,7 +1870,9 @@ int burn_drive_find_devno(dev_t devno, char adr[])
 	ret = 0;
 ex:;
 	if (first == 0)
-		sg_give_next_adr(&enm, fname, sizeof(fname), -1);
+		sg_give_next_adr(&enm, fname, fname_size, -1);
+	BURN_FREE_MEM(fname);
+	BURN_FREE_MEM(msg);
 	return ret;
 }
 
@@ -1855,7 +1885,9 @@ int burn_drive_obtain_scsi_adr(char *path,
 			       int *target_no, int *lun_no)
 {
 	int ret, i;
-	char adr[BURN_DRIVE_ADR_LEN];
+	char *adr = NULL;
+
+	BURN_ALLOC_MEM(adr, char, BURN_DRIVE_ADR_LEN);
 
 	/* open drives cannot be inquired by sg_obtain_scsi_adr() */
 	for (i = 0; i < drivetop + 1; i++) {
@@ -1863,7 +1895,7 @@ int burn_drive_obtain_scsi_adr(char *path,
 	continue;
 		ret = burn_drive_d_get_adr(&(drive_array[i]),adr);
 		if (ret < 0)
-			return -1;
+			{ret = 1; goto ex;}
 		if (ret == 0)
 	continue;
 		if (strcmp(adr, path) == 0) {
@@ -1874,13 +1906,15 @@ int burn_drive_obtain_scsi_adr(char *path,
 			*bus_no = drive_array[i].bus_no;
 			if (*host_no < 0 || *channel_no < 0 ||
 			    *target_no < 0 || *lun_no < 0)
-				return 0;
-			return 1;
+				{ret = 0; goto ex;}
+			{ret = 1; goto ex;}
 		}
 	}
 
 	ret = sg_obtain_scsi_adr(path, bus_no, host_no, channel_no,
 				 target_no, lun_no);
+ex:;
+	BURN_FREE_MEM(adr);
 	return ret;
 }
 
@@ -1888,17 +1922,20 @@ int burn_drive_obtain_scsi_adr(char *path,
 int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 				int target_no, int lun_no, char adr[])
 {
-	char fname[4096],msg[4096+100];
-	int ret = 0, first = 1, i_bus_no = -1;
+	char *fname = NULL, *msg = NULL;
+	int ret = 0, first = 1, i_bus_no = -1, fname_size = 4096;
 	int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
 	burn_drive_enumerator_t enm;
+
+	BURN_ALLOC_MEM(fname, char, fname_size);
+	BURN_ALLOC_MEM(msg, char, fname_size + 100);
 
 	sprintf(msg,"burn_drive_convert_scsi_adr( %d,%d,%d,%d,%d )",
 		bus_no, host_no, channel_no, target_no, lun_no);
 	burn_drive_adr_debug_msg(msg, NULL);
 
 	while (1) {
-		ret= sg_give_next_adr(&enm, fname, sizeof(fname), first);
+		ret= sg_give_next_adr(&enm, fname, fname_size, first);
 		if(ret <= 0)
 	break;
 		first = 0;
@@ -1927,6 +1964,8 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 ex:;
 	if (first == 0)
 		sg_give_next_adr(&enm, fname, sizeof(fname), -1);
+	BURN_FREE_MEM(fname);
+	BURN_FREE_MEM(msg);
 	return ret;
 }
 
@@ -2813,11 +2852,15 @@ static int burn__split_path(char *adr, char **dpt, char **npt)
 int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 {
 	struct stat stbuf1, stbuf2;
-	char adr1[BURN_DRIVE_ADR_LEN], *adr2 = adr2_in;
-	char conv_adr1[BURN_DRIVE_ADR_LEN], conv_adr2[BURN_DRIVE_ADR_LEN];
+	char *adr1 = NULL, *adr2 = adr2_in;
+	char *conv_adr1 = NULL, *conv_adr2 = NULL;
 	char *npt1, *dpt1, *npt2, *dpt2;
 	int role1, stat_ret1, stat_ret2, conv_ret2, exact_role_matters = 0, fd;
 	int ret;
+
+	BURN_ALLOC_MEM(adr1, char, BURN_DRIVE_ADR_LEN);
+	BURN_ALLOC_MEM(conv_adr1, char, BURN_DRIVE_ADR_LEN);
+	BURN_ALLOC_MEM(conv_adr2, char, BURN_DRIVE_ADR_LEN);
 
 	role1 = burn_drive_get_drive_role(d1);
 	burn_drive_d_get_adr(d1, adr1);
@@ -2856,7 +2899,7 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 	}
 
 	if (strlen(adr2) >= BURN_DRIVE_ADR_LEN)
-		return -1;
+		{ret = -1; goto ex;}
 	stat_ret2 = stat(adr2, &stbuf2);
 	conv_ret2 = burn_drive_convert_fs_adr(adr2, conv_adr2);
 
@@ -2870,26 +2913,27 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 	}
 
 	if (strcmp(adr1, adr2) == 0 && role1 == role2)
-		return(1);			/* equal role and address */
+		{ret = 1; goto ex;}		/* equal role and address */
 	if (role1 == 1 && role2 == 1) {
 					/* MMC drive meets wannabe MMC drive */
 		if (conv_ret2 <= 0)
-			return 0;		/* no MMC drive at adr2 */
+			{ret = 0; goto ex;}	/* no MMC drive at adr2 */
 		if (strcmp(adr1, conv_adr2) == 0)
-			return 1;		/* equal real MMC drives */
-		return 0;
+			{ret = 1; goto ex;}	/* equal real MMC drives */
+		{ret = 0; goto ex;}
 
 	} else if (role1 == 0 || role2 == 0)
-		return 0;			/* one null-drive, one not */
+		{ret = 0; goto ex;}		/* one null-drive, one not */
 
 	else if (role1 != 1 && role2 != 1) {
 					/* pseudo-drive meets file object */
 
 		if (role1 != role2)
-			return 0; 
+			{ret = 0; goto ex;}
 		if (stat_ret1 == -1 || stat_ret2 == -1) {
 			if (stat_ret1 != -1 || stat_ret2 != -1)
-				 return 0;  /* one adress existing, one not */
+				 {ret = 0; goto ex;}
+					/* one adress existing, one not */
 
 			/* Two non-existing file objects */
 
@@ -2898,11 +2942,12 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 			strcpy(conv_adr2, adr2);
 			burn__split_path(conv_adr2, &dpt2, &npt2);
 			if (strcmp(npt1, npt2))
-				return 0;		/* basenames differ */
+				{ret = 0; goto ex;}	/* basenames differ */
 			stat_ret1= stat(adr1, &stbuf1);
 			stat_ret2= stat(adr2, &stbuf2);
 			if (stat_ret1 != stat_ret2)
-				 return 0;  /* one dir existing, one not */
+				 {ret = 0; goto ex;}
+						/* one dir existing, one not */
 
 			/* Both directories exist. The basenames are equal.
 			   So the adresses are equal if the directories are
@@ -2910,47 +2955,52 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 		}
 		if (stbuf1.st_ino == stbuf2.st_ino &&
 	 		stbuf1.st_dev == stbuf2.st_dev)
-			return 1;		/* same filesystem object */
+			{ret = 1; goto ex;}	/* same filesystem object */
 
 		if (S_ISBLK(stbuf1.st_mode) && S_ISBLK(stbuf2.st_mode) &&
 			 stbuf1.st_rdev == stbuf2.st_rdev)
-			return 1;	/* same major,minor device number */
+			{ret = 1; goto ex;}/* same major,minor device number */
 		if (S_ISCHR(stbuf1.st_mode) && S_ISCHR(stbuf2.st_mode) &&
 			 stbuf1.st_rdev == stbuf2.st_rdev)
-			return 1;	/* same major,minor device number */
+			{ret = 1; goto ex;}/* same major,minor device number */
 
 		/* Are both filesystem objects related to the same MMC drive */
 		if (conv_ret2 <= 0)
-			return 0;		/* no MMC drive at adr2 */
+			{ret = 0; goto ex;}	/* no MMC drive at adr2 */
 		if (burn_drive_convert_fs_adr(adr1, conv_adr1) <= 0)
-			return 0;		/* no MMC drive at adr1 */
+			{ret = 0; goto ex;}	/* no MMC drive at adr1 */
 		if (strcmp(conv_adr1, conv_adr2) == 0)
-			return 1;		/* same MMC drive */
+			{ret = 1; goto ex;}	/* same MMC drive */
 
-		return 0;	/* all filesystem disguises are checked */
+		{ret = 0; goto ex;}  /* all filesystem disguises are checked */
 
 	} else if (role1 == 1 && role2 != 1) {
 	                          /* MMC drive meets file object */
 
 		if (conv_ret2 <= 0)
-			return 0;		/* no MMC drive at adr2 */
+			{ret = 0; goto ex;}	/* no MMC drive at adr2 */
 		if (strcmp(adr1, conv_adr2) == 0)
-			return 1;		/* same MMC drive */
-		return 0;
+			{ret = 1; goto ex;}	/* same MMC drive */
+		{ret = 0; goto ex;}
 
 	} else if (role1 != 1 && role2 == 1) {
 	                          /* stdio-drive meets wannabe MMC drive */
 
 		if (conv_ret2 <= 0)
-			return 0;		/* no MMC drive at adr2 */
+			{ret = 0; goto ex;}  /* no MMC drive at adr2 */
 		if (burn_drive_convert_fs_adr(adr1, conv_adr1) <= 0)
-			return 0;		/* no MMC drive at adr1 */
+			{ret = 0; goto ex;}  /* no MMC drive at adr1 */
 		if (strcmp(conv_adr1, conv_adr2) == 0)
-			return 1;		/* same MMC drive */
-		return 0;
+			{ret = 1; goto ex;}  /* same MMC drive */
+		{ret = 0; goto ex;}
 
 	}
-	return 0;		/* now i believe they are really not equal */
+	ret = 0;
+ex:;
+	BURN_FREE_MEM(adr1);
+	BURN_FREE_MEM(conv_adr1);
+	BURN_FREE_MEM(conv_adr2);
+	return ret;
 }
 
 
