@@ -942,6 +942,7 @@ CMCMAG      CN2     CMC Magnetics Corporation 1-2X HTL 25GB(12cm)  [Blu]
 DAXON 016           DAXON  8X   [Hij]
 DAXON       AZ3     DAXON  16X   [Hij]
 DAXON       CY3     DAXON  12X   [Hij]
+DAXON       D42/52  (user reported DVD+RW)
 Daxon       R2X     Daxon Technology Inc.  1-2X HTL 25GB(12cm)  [Blu]
 Daxon       R4X     Daxon Technology Inc.  1-4X HTL 25GB(12cm)  [Blu]
 
