@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -54,7 +54,7 @@ void burn_disc_read(struct burn_drive *d, const struct burn_read_opts *o)
 	int drive_lba;
 	unsigned short crc;
 	unsigned char fakesub[96];
-	struct buffer page;
+	struct buffer page;  <- needs to become dynamic memory
 	int speed;
 
 	/* ts A61007 : if this function gets revived, then these
@@ -286,8 +286,12 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 /*  so yeah, when you uncomment these, make them write zeros insted of crap
 static void write_empty_sector(int fd)
 {
-	char sec[2352];
+	static char sec[2352], initialized = 0;
 
+	if (!initialized) {
+		memset(sec, 0, 2352);
+		initialized = 1;
+	}
 	burn_print(1, "writing an 'empty' sector\n");
 	write(fd, sec, 2352);
 }
@@ -339,7 +343,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
 	int sose_mem = 0, fd = -1, ret;
 	char msg[81], *wpt;
-	struct buffer buf, *buffer_mem = d->buffer;
+	struct buffer *buf = NULL, *buffer_mem = d->buffer;
 
 /*
 #define Libburn_read_data_adr_logginG 1
@@ -353,7 +357,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 		fprintf(log_fp, "%d\n", (int) (byte_address / 2048));
 #endif /* Libburn_read_data_logginG */
 
-
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	*data_count = 0;
 	sose_mem = d->silent_on_scsi_error;
 
@@ -362,20 +366,20 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			d->global_index, 0x00020142,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is not grabbed on random access read", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if (d->drive_role == 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020146,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	} else if (d->drive_role == 3) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020151,
 			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 			"Read attempt on write-only drive", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if ((byte_address % alignment) != 0) {
 		sprintf(msg,
@@ -385,7 +389,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			0x00020143,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if (d->media_read_capacity != 0x7fffffff && byte_address >=
 		((off_t) d->media_read_capacity + (off_t) 1) * (off_t) 2048) {
@@ -399,7 +403,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 		}
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	if (d->busy != BURN_DRIVE_IDLE) {
@@ -407,7 +411,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			d->global_index, 0x00020145,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is busy on attempt to read data", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	if (d->drive_role != 1) {
@@ -457,7 +461,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	}
 
 	d->busy = BURN_DRIVE_READING_SYNC;
-	d->buffer = &buf;
+	d->buffer = buf;
 
 	start = byte_address / 2048;
 	upto = start + data_size / 2048;
@@ -524,10 +528,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 
 	ret = 1;
 ex:;
-/* <<< let it open until drive is given up or writing shall happen
-	if (fd != -1)
-		close(fd);
-*/
+	BURN_FREE_MEM(buf);
 	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
