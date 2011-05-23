@@ -251,9 +251,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	struct statvfs vfsbuf;
 #endif
 
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
 	off_t add_size = 0;
+	int ret;
+
+	BURN_ALLOC_MEM(testpath, char, 4096);
 
 	testpath[0] = 0;
 	blocks = *bytes / 512;
@@ -267,18 +270,18 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 
 #ifdef Libburn_if_this_was_linuX
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
 #endif /* Libburn_if_this_was_linuX */
@@ -287,25 +290,28 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 
 #ifdef Libburn_os_has_statvfS
 
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 
 #else /* Libburn_os_has_statvfS */
 
-		return 0;
+		{ret = 0; goto ex;}
 
 #endif /* ! Libburn_os_has_stavtfS */
 
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
