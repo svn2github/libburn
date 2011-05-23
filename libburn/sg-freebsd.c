@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* 
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -54,6 +54,7 @@
 #include "debug.h"
 #include "toc.h"
 #include "util.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -673,8 +674,9 @@ static int freebsd_dev_lock(int dev_fd, char *devname,
 static int sg_lock(struct burn_drive *d, int flag)
 {
 	int ret, os_errno, pass_dev_no = -1, flock_fd = -1;
-	char msg[4096];
+	char *msg = NULL;
 
+	BURN_ALLOC_MEM(msg, char, 4096);
 	ret = freebsd_dev_lock(d->cam->fd, d->devname,
 				&os_errno, &pass_dev_no, &flock_fd, msg, 0);
 	if (ret <= 0) {
@@ -683,12 +685,15 @@ static int sg_lock(struct burn_drive *d, int flag)
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, os_errno, 0);
 		sg_close_drive(d);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if (d->lock_fd > 0)
 		close(d->lock_fd);
 	d->lock_fd = flock_fd;
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -762,14 +767,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0, i;
 	int cam_pass_err_recover = 0, key, asc, ascq, timeout_ms;
 	union ccb *ccb;
-	char buf[161];
 	static FILE *fp = NULL;
 	time_t start_time;
 
-	snprintf(buf, sizeof (buf),
-		"sg_issue_command  d->cam=%p d->released=%d",
-		(void*)d->cam, d->released);
-	mmc_function_spy(NULL, buf);
+	mmc_function_spy(NULL, "sg_issue_command");
 
 	if (d->cam == NULL) {
 		c->error = 0;
@@ -868,7 +869,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			/* ts B00110 */
 			/* Better curb sense_len */
 			sense_len = ccb->csio.sense_len;
-			if (sense_len > sizeof(c->sense))
+			if (sense_len > (int) sizeof(c->sense))
 				sense_len = sizeof(c->sense);
 			memcpy(c->sense, &ccb->csio.sense_data, sense_len);
 			spc_decode_sense(c->sense, sense_len,
@@ -1055,11 +1056,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 {
 	struct stat stbuf;
 	struct statvfs vfsbuf;
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
 	off_t add_size = 0;
 	int fd, ret;
 
+	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
 	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
@@ -1072,7 +1074,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 
 #ifdef Libburn_if_this_was_linuX
 
@@ -1083,11 +1085,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 			open_mode |= O_EXCL;
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
 #endif /* Libburn_if_this_was_linuX */
@@ -1096,25 +1098,28 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	} else if(S_ISCHR(stbuf.st_mode)) {
 		fd = open(path, O_RDONLY);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size;
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
-	return 1;
+	ret = 1;
+ex:
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
