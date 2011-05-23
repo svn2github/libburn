@@ -720,11 +720,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 {
 	struct stat stbuf;
 	struct statvfs vfsbuf;
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
-	int open_mode = O_RDWR, fd, ret;
 	off_t add_size = 0;
+	int fd, ret;
 
+	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
 	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
@@ -737,38 +738,52 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 
 #ifdef Libburn_if_this_was_linuX
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
+		int open_mode = O_RDWR, fd, ret;
+
 		if(burn_sg_open_o_excl)
 			open_mode |= O_EXCL;
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
 #endif /* Libburn_if_this_was_linuX */
 
 
+	} else if(S_ISCHR(stbuf.st_mode)) {
+		fd = open(path, O_RDONLY);
+		if (fd == -1)
+			{ret = -2; goto ex;}
+		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
+		close(fd);
+		if (ret == -1)
+			{ret = -2; goto ex;}
+		*bytes = add_size;
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
-	return 1;
+	ret = 1;
+ex:
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
