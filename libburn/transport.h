@@ -208,6 +208,11 @@ struct burn_drive
 	*/
 	int current_feat2fh_byte4;
 
+	/* ts B10524 : whether the damage bit was set for the future track.
+	               bit0= damage bit , bit1= nwa valid bit
+	*/
+	int next_track_damaged;
+
 	/* ts A70114 : whether a DVD-RW media holds an incomplete session
 	               (which could need closing after write) */
 	int needs_close_session;

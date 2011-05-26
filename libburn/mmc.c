@@ -423,9 +423,12 @@ int mmc_read_track_info(struct burn_drive *d, int trackno, struct buffer *buf,
 int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 {
 	struct buffer *buf = NULL;
-	int ret, num, alloc_len = 20;
+	int ret, num, alloc_len = 20, err;
 	unsigned char *data;
+	char *msg = NULL;
 
+	if (trackno <= 0)
+		d->next_track_damaged = 0;
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_nwa") <= 0)
 		{ret = -1; goto ex;}
@@ -447,16 +450,53 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	/* >>> memorize track mode : data[6] & 0xf */;
 #endif
 
+{ static int fake_damage = 0; /* bit0= damage on , bit1= NWA_V off */
+
+	if (fake_damage & 1)
+		data[5] |= 32; /* Damage bit */
+	if (fake_damage & 2)
+		data[7] &= ~1;
+
+}
+
+	BURN_ALLOC_MEM(msg, char, 160);
+	if (trackno > 0)
+		sprintf(msg, "Track number %d: ", trackno);
+	else
+		sprintf(msg, "Upcomming track: ");
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
 	    d->current_profile == 0x12 || d->current_profile == 0x43) {
 		 /* overwriteable */
 		*lba = *nwa = num = 0;
-	} else if (!(data[7]&1)) {
-		/* ts A61106 :  MMC-1 Table 142 : NWA_V = NWA Valid Flag */
-		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			   "mmc_get_nwa: Track Info Block: NWA_V == 0", 0, 0);
+
+	} else if (data[5] & 32) { /* ts B10534 : MMC-5 6.27.3.7 Damage Bit */
+		if (!(data[7] & 1)) { /* NWA_V is set to zero */
+			/* "not closed due to an incomplete write" */
+			strcat(msg, "Damaged, not closed and not writable");
+			err= 0x00020185;
+		} else {
+			/* "may be recorded further in an incremental manner"*/
+			strcat(msg, "Damaged and not closed");
+			err= 0x00020186;
+		}
+		libdax_msgs_submit(libdax_messenger, d->global_index, err,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		if (trackno <= 0)
+			d->next_track_damaged |= ((!(data[7] & 1)) << 1) | 1;
 		{ret = 0; goto ex;}
+
+	} else if (!(data[7] & 1)) {
+		/* ts A61106 :  MMC-1 Table 142 : NWA_V = NWA Valid Flag */
+		strcat(msg, "No Next-Writable-Address");
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020184,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		if (trackno <= 0)
+			d->next_track_damaged |= 2;
+		{ret = 0; goto ex;}
+
 	}
 	if (num > 0) {
 		burn_drive_set_media_capacity_remaining(d,
@@ -473,6 +513,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	ret = 1;
 ex:
 	BURN_FREE_MEM(buf);
+	BURN_FREE_MEM(msg);
 	return ret;
 }
 
@@ -4485,6 +4526,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->current_feat23h_byte4 = 0;
 	d->current_feat23h_byte8 = 0;
 	d->current_feat2fh_byte4 = -1;
+	d->next_track_damaged = 0;
 	d->needs_close_session = 0;
 	d->needs_sync_cache = 0;
 	d->bg_format_status = -1;

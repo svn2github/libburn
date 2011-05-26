@@ -569,6 +569,9 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020181 (FAILURE,HIGH) = Pseudo-drive is a read-only file. Cannot write.
  0x00020182 (FAILURE,HIGH) = Cannot truncate disk file for pseudo blanking
  0x00020183 (WARNING,HIGH) = Failed to open device (a pseudo-drive) for reading
+ 0x00020184 (WARNING,HIGH) = No Next-Writable-Address
+ 0x00020185 (WARNING,HIGH) = Track damaged, not closed and not writable
+ 0x00020186 (WARNING,HIGH) = Track damaged and not closed
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
