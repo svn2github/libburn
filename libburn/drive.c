@@ -3108,3 +3108,11 @@ int burn_disc_get_bd_spare_info(struct burn_drive *d,
 	return ret;
 }
 
+
+/* ts B10525 : API */
+int burn_disc_next_track_is_damaged(struct burn_drive *d, int flag)
+{
+	return d->next_track_damaged;
+}
+
+

@@ -23,6 +23,7 @@ burn_disc_get_profile;
 burn_disc_get_sectors;
 burn_disc_get_sessions;
 burn_disc_get_status;
+burn_disc_next_track_is_damaged;
 burn_disc_pretend_blank;
 burn_disc_pretend_full;
 burn_disc_read;

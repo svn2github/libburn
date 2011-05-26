@@ -1279,6 +1279,21 @@ int burn_disc_get_bd_spare_info(struct burn_drive *d,
 int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 				int trackno, int *lba, int *nwa);
 
+/* ts B10525 */
+/** Tells whether a previous attempt to determine the Next Writeable Address
+    of the upcomming track reveiled that the READ TRACK INFORMATION Damage Bit
+    is set for this track, resp. that no valid writable address is available. 
+    See MMC-5 6.27.3.7 Damage Bit, 6.27.3.11 NWA_V (NWA valid)
+    @param d     The drive to query.
+    @param flag  Bitfield for control purposes (unused yet, submit 0)
+    @return      0= Looks ok: Damage Bit is not set, NWA_V is set
+                 1= Damaged and theoretically writable (NWA_V is set)
+                 2= Not writable: NWA_V is not set
+                 3= Damaged and not writable (NWA_V is not set),
+    @since 1.1.0
+*/
+int burn_disc_next_track_is_damaged(struct burn_drive *d, int flag);
+
 /* ts A70131 */
 /** Read start lba of the first track in the last complete session.
     This is the first parameter of mkisofs option -C. The second parameter
@@ -1307,7 +1322,6 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
 */
 off_t burn_disc_available_space(struct burn_drive *d,
                                 struct burn_write_opts *o);
-
 
 /* ts A61202 */
 /** Tells the MMC Profile identifier of the loaded media. The drive must be
