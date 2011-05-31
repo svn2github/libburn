@@ -6,6 +6,7 @@ burn_allow_drive_role_4;
 burn_allow_untested_profiles;
 burn_disc_add_session;
 burn_disc_available_space;
+burn_disc_close_damaged;
 burn_disc_create;
 burn_disc_erasable;
 burn_disc_erase;

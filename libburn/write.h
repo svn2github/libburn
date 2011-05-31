@@ -37,7 +37,7 @@ int burn_write_flush(struct burn_write_opts *o, struct burn_track *track);
 /* ts A61030 : necessary for TAO */
 int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
                            int tnum);
-int burn_write_close_session(struct burn_write_opts *o,struct burn_session *s);
+int burn_write_close_session(struct burn_write_opts *o);
 
 
 

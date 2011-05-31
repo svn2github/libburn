@@ -276,7 +276,7 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 
 
 /* ts A61030 */
-int burn_write_close_session(struct burn_write_opts *o, struct burn_session *s)
+int burn_write_close_session(struct burn_write_opts *o)
 {
 
 	/* ts A61106 */
@@ -687,7 +687,7 @@ int burn_write_session(struct burn_write_opts *o, struct burn_session *s)
 	ret = 1;
 ex:;
 	if (o->write_type == BURN_WRITE_TAO)
-		burn_write_close_session(o, s);
+		burn_write_close_session(o);
 	return ret;
 }
 
@@ -1191,8 +1191,7 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 
 
 /* ts A70129 */
-int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o,
-					struct burn_session *s, int tnum)
+int burn_disc_close_track_dvd_minus_r(struct burn_write_opts *o, int tnum)
 {
 	struct burn_drive *d = o->drive;
 	char msg[80];
@@ -1249,7 +1248,7 @@ int burn_disc_finalize_dvd_plus_r(struct burn_write_opts *o)
 
 /* ts A70226 */
 int burn_disc_close_track_dvd_plus_r(struct burn_write_opts *o,
-			struct burn_session *s, int tnum, int is_last_track)
+			int tnum, int is_last_track)
 {
 	struct burn_drive *d = o->drive;
 	char msg[80];
@@ -1514,18 +1513,18 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
 	    d->current_profile == 0x15) {
 		/* DVD-R, DVD-RW Sequential, DVD-R/DL Sequential */
-		ret = burn_disc_close_track_dvd_minus_r(o, s, tnum);
+		ret = burn_disc_close_track_dvd_minus_r(o, tnum);
 		if (ret <= 0)
 			goto ex;
 	} else if (d->current_profile == 0x1b || d->current_profile == 0x2b) {
 		/* DVD+R , DVD+R/DL */
-		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum,
+		ret = burn_disc_close_track_dvd_plus_r(o, tnum,
 							 is_last_track);
 		if (ret <= 0)
 			goto ex;
 	} else if (d->current_profile == 0x41) {
 		/* BD-R SRM */
-		ret = burn_disc_close_track_dvd_plus_r(o, s, tnum,
+		ret = burn_disc_close_track_dvd_plus_r(o, tnum,
 							 is_last_track);
 		if (ret <= 0)
 			goto ex;
@@ -1580,8 +1579,7 @@ int burn_disc_close_session_dvd_minus_rw(struct burn_write_opts *o,
 
 
 /* ts A70129 : for profile 0x11 DVD-R, 0x14 DVD-RW Seq, 0x15 DVD-R/DL Seq */
-int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o,
-					struct burn_session *s)
+int burn_disc_close_session_dvd_minus_r(struct burn_write_opts *o)
 {
 	struct burn_drive *d = o->drive;
 
@@ -1686,7 +1684,7 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		multi_mem = o->multi;
 		if (!is_last_session)
 			o->multi = 1;
-		ret = burn_disc_close_session_dvd_minus_r(o, s);
+		ret = burn_disc_close_session_dvd_minus_r(o);
 		o->multi = multi_mem;
 		if (ret <= 0)
 			return 0;
@@ -2775,4 +2773,90 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 	d->busy = BURN_DRIVE_IDLE;
 	return 1;
 }
+
+
+/* ts B10527 */
+/* @param bit0= force close, even if no damage was seen
+*/
+int burn_disc_close_damaged(struct burn_write_opts *o, int flag)
+{
+	struct burn_drive *d;
+	int ret;
+	enum burn_drive_status busy;
+
+	d = o->drive;
+	busy = d->busy;
+
+	if (busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020106,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is busy on attempt to close damaged session",
+			0, 0);
+		{ret = 0; goto ex;}
+	}
+	if (!((d->next_track_damaged & 1) || (flag & 1))) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020187,
+			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+			"Track not marked as damaged. No action taken.",
+			0, 0);
+		{ret = 0; goto ex;}
+	}
+	d->busy = BURN_DRIVE_WRITING;
+
+	if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
+		/* Close CD track and session */
+		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
+
+		/* Send mode page 5 */;
+		d->send_write_parameters(d, o);
+
+		ret = burn_write_close_session(o);
+		if (ret <= 0)
+			goto ex;
+
+	} else if(d->current_profile == 0x11 || d->current_profile == 0x14) {
+		/* Close DVD-R[W] track and session */
+		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
+
+		/* Send mode page 5 */;
+		d->send_write_parameters(d, o);
+
+		ret = burn_disc_close_track_dvd_minus_r(o, 0);
+		if (ret <= 0)
+			goto ex;
+		ret = burn_disc_close_session_dvd_minus_r(o);
+		if (ret <= 0)
+			goto ex;
+
+	} else if(d->current_profile == 0x1b || d->current_profile == 0x2b) {
+		/* Close DVD+R track and session */
+		ret = burn_disc_close_track_dvd_plus_r(o, d->last_track_no, 1);
+		if (ret <= 0)
+			goto ex;
+
+	} else if(d->current_profile == 0x41) {
+		/* Close BD-R track and session */
+		ret = burn_disc_close_track_dvd_plus_r(o, d->last_track_no, 1);
+		if (ret <= 0)
+			goto ex;
+
+	} else {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020188,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"Cannot close damaged track on given media type",
+			0, 0);
+		{ret = 0; goto ex;}
+
+	}
+	ret = 1;
+ex:;
+	d->busy = busy;
+	/* Record with drive that repair was attempted */
+	d->next_track_damaged &= ~1;
+	return ret;
+}
+
 
