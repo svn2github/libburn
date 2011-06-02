@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2009 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -168,6 +168,7 @@ Send feedback to libburn-hackers@pykix.org .
 #include "debug.h"
 #include "toc.h"
 #include "util.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -429,17 +430,18 @@ int sg_dispose_drive(struct burn_drive *d, int flag)
 int sg_give_next_adr(burn_drive_enumerator_t *idx,
 		     char adr[], int adr_size, int initialize)
 {
-	int ret, recursion_count = 0;
-	char path[4096];
+	int ret, recursion_count = 0, path_size = 4096;
+	char *path = NULL;
 #ifdef Libburn_is_on_solariS
 	int l;
 #endif
+	BURN_ALLOC_MEM(path, char, path_size);
 
 	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
 	if (ret <= 0)
-		return ret;
-	if (strlen(adr) >= sizeof(path))
-		return ret;
+		goto ex;
+	if (strlen(adr) >= path_size)
+		goto ex;
 
 #ifdef Libburn_is_on_solariS
 	/* >>> provisory : preserve Solaris /dev/rdsk/cXtYdZs2 addresses */
@@ -447,13 +449,16 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	if (l >= 18)
 		if (strncmp(adr, "/dev/rdsk/c", 11) == 0 && adr[11] >= '0' &&
 		    adr[11] <= '9' && strcmp(adr + (l - 2), "s2") == 0)
-			return 1;
+			{ret = 1; goto ex;}
 #endif /* Libburn_is_on_solariS */
 
 	ret = burn_drive_resolve_link(adr, path, &recursion_count, 2);
         if(ret > 0 && strlen(path) < adr_size)
 		strcpy(path, adr);
-	return (ret >= 0);
+	ret = (ret >= 0);
+ex:
+	BURN_FREE_MEM(path);
+	return ret;
 }
 
 
@@ -465,13 +470,17 @@ int scsi_enumerate_drives(void)
 	burn_drive_enumerator_t idx;
 	int initialize = 1, ret, i_bus_no = -1, recursion_count = 0;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
-	char buf[4096], target[4096];
+	int buf_size = 4096;
+	char *buf = NULL, *target = NULL;
 #ifdef Libburn_is_on_solariS
 	int l;
 #endif
 
+	BURN_ALLOC_MEM(buf, char, buf_size);
+	BURN_ALLOC_MEM(target, char, buf_size);
+
 	while(1) {
-		ret = sg_give_next_adr_raw(&idx, buf, sizeof(buf), initialize);
+		ret = sg_give_next_adr_raw(&idx, buf, buf_size, initialize);
 		initialize = 0;
 		if (ret <= 0)
 	break;
@@ -501,8 +510,12 @@ int scsi_enumerate_drives(void)
 				i_bus_no, i_host_no, i_channel_no,
 				i_target_no, i_lun_no);
 	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
-	return 1;
+	sg_give_next_adr(&idx, buf, buf_size, -1);
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(buf);
+	BURN_FREE_MEM(target);
+	return ret;
 }
 
 
@@ -526,12 +539,12 @@ int sg_drive_is_open(struct burn_drive * d)
 int sg_grab(struct burn_drive *d)
 {
 	CdIo_t *p_cdio;
-	char *am_eff, msg[4096], *am_wanted;
-	int os_errno, second_try = 0;
+	char *am_eff, *msg = NULL, *am_wanted;
+	int os_errno, second_try = 0, ret;
 
 	if (d->p_cdio != NULL) {
 		d->released = 0;
-		return 1;
+		{ret = 1; goto ex;}
 	}
 	if (d->libcdio_name[0] == 0) /* just to be sure it is initialized */
 		strcpy(d->libcdio_name, d->devname);
@@ -539,13 +552,14 @@ int sg_grab(struct burn_drive *d)
 try_to_open:;
 	p_cdio = cdio_open_am(d->libcdio_name, DRIVER_DEVICE, am_wanted);
 	if (p_cdio == NULL) {
+		BURN_ALLOC_MEM(msg, char, 4096);
 		os_errno = errno;
 		sprintf(msg, "Could not grab drive '%s'", d->devname);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, os_errno, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	am_eff = (char *) cdio_get_arg(p_cdio, "access-mode");
         if (strncmp(am_eff, "MMC_RDWR", 8) != 0) {
@@ -560,12 +574,15 @@ try_to_open:;
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"libcdio provides no MMC_RDWR access mode", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
         }
 
 	d->p_cdio = p_cdio;
 	d->released = 0;
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -842,10 +859,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	struct statvfs vfsbuf;
 #endif
 
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
 	off_t add_size = 0;
+	int ret;
 
+	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
 	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
@@ -858,7 +877,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 
 #ifdef __linux
 
@@ -868,11 +887,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 
 #endif /* __linux */
@@ -884,11 +903,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 		fd = open(path, O_RDONLY);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size;
 
 #endif /* Libburn_is_on_freebsD */
@@ -900,12 +919,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = lseek(fd, 0, SEEK_END);
 		close(fd);
 		if (*bytes == -1) {
 			*bytes = 0;
-			return 0;
+			{ret = 0; goto ex;}
 		}
 		
 #endif /* Libburn_is_on_solariS */
@@ -914,25 +933,28 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 
 #ifdef Libburn_os_has_statvfS
 
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 
 #else /* Libburn_os_has_statvfS */
 
-		return 0;
+		{ret = 0; goto ex;}
 
 #endif /* ! Libburn_os_has_stavtfS */
 
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
