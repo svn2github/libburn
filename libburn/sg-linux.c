@@ -237,6 +237,7 @@ static int linux_ata_enumerate_verbous = 0;
 #include "debug.h"
 #include "toc.h"
 #include "util.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -343,7 +344,7 @@ static void sg_select_device_family(void)
 static int sg_exchange_scd_for_sr(char *fname, int flag)
 {
 	struct stat stbuf;
-	char scd[17], msg[160];
+	char scd[17], *msg = NULL;
 
 	if (burn_sg_use_family != 0 || strncmp(fname, "/dev/sr", 7)!=0 ||
 	    strlen(fname)>9 || strlen(fname)<8)
@@ -358,9 +359,14 @@ static int sg_exchange_scd_for_sr(char *fname, int flag)
 	strcpy(scd + 8, fname + 7);
 	if (stat(scd, &stbuf) == -1)
 		return 2;
-	sprintf(msg, "%s substitutes for non-existent %s", scd, fname);
-	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-		LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
+	msg = calloc(strlen(scd) + strlen(fname) + 80, 1);
+	if (msg != NULL) {
+		sprintf(msg, "%s substitutes for non-existent %s", scd, fname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		free(msg);
+	}
 	strcpy(fname, scd);
 	return 1;
 }
@@ -384,9 +390,11 @@ static int sgio_test(int fd)
 /* ts A60924 */
 static int sg_handle_busy_device(char *fname, int os_errno)
 {
-	char msg[4096];
+	char *msg = NULL;
 	struct stat stbuf;
 	int looks_like_hd= 0, fd, ret;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
 
 	/* ts A80713 :
 	   check existence of /dev/hdX1 as hint for hard disk rather than CD
@@ -445,7 +453,10 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_LOW,
 				msg, os_errno, 0);
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -453,10 +464,11 @@ static int sg_handle_busy_device(char *fname, int os_errno)
 static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 {
 	int ret, os_errno, sevno= LIBDAX_MSGS_SEV_DEBUG;
-	char msg[4096+100];
+	char *msg = NULL;
 
 	if(*fd < 0)
-		return(0);
+		{ret = 0; goto ex;}
+	BURN_ALLOC_MEM(msg, char, 4096 + 100);
 
 #ifdef CDROM_MEDIA_CHANGED_disabled_because_not_helpful
 #ifdef CDSL_CURRENT
@@ -484,7 +496,7 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 	if(ret != -1) {
 		/* ts A70409 : DDLP-B */
 		/* >>> release single lock on fname */
-		return 1;
+		{ret = 1; goto ex;}
 	}
 	os_errno= errno;
 
@@ -493,7 +505,10 @@ static int sg_close_drive_fd(char *fname, int driveno, int *fd, int sorry)
 		sevno = LIBDAX_MSGS_SEV_SORRY;
 	libdax_msgs_submit(libdax_messenger, driveno, 0x00020002,
 			sevno, LIBDAX_MSGS_PRIO_HIGH, msg, os_errno, 0);
-	return 0;	
+	ret = 0;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;	
 }
 
 
@@ -658,23 +673,28 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 {
 	int tld, i, ret, fd, i_bus_no = -1;
 	int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
-	char msg[161], fname[81];
+	char *msg = NULL, fname[40];
 	struct stat stbuf;
 	dev_t last_rdev = 0, path_rdev;
 
-	static char tldev[][81]= {"/dev/sr%d", "/dev/scd%d", "/dev/sg%d", ""};
+	static char tldev[][20]= {"/dev/sr%d", "/dev/scd%d", "/dev/sg%d", ""};
 					/* ts A70609: removed "/dev/st%d" */
 
+	if (strlen(path) > BURN_MSGS_MESSAGE_LEN - 160)
+		{ret = 0; goto ex;}
+
+	BURN_ALLOC_MEM(msg, char, BURN_MSGS_MESSAGE_LEN);
+
 	if(stat(path, &stbuf) == -1)
-		return 0;
+		{ret = 0; goto ex;}
 	path_rdev = stbuf.st_rdev;
 
         sg_select_device_family();
 	if (linux_sg_device_family[0] == 0)
-		return 1;
+		{ret = 1; goto ex;}
 
 	if(host_no < 0 || id_no < 0 || channel_no < 0 || lun_no < 0)
-		return(2);
+		{ret = 2; goto ex;}
 	if(*sibling_count > 0)
 		sg_release_siblings(sibling_fds, sibling_fnames,
 					sibling_count);
@@ -724,10 +744,14 @@ static int sg_open_scsi_siblings(char *path, int driveno,
 			last_rdev= stbuf.st_rdev;
 		}
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 failed:;
 	sg_release_siblings(sibling_fds, sibling_fnames, sibling_count);
-	return 0;
+	ret = 0;
+	goto ex;
 }
 
 
@@ -782,15 +806,20 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 {
 	int fd, sid_ret = 0, ret;
 	struct sg_scsi_id sid;
-	int sibling_fds[BURN_OS_SG_MAX_SIBLINGS], sibling_count= 0;
-	char sibling_fnames[BURN_OS_SG_MAX_SIBLINGS][BURN_OS_SG_MAX_NAMELEN];
+	int *sibling_fds = NULL, sibling_count= 0;
+	typedef char burn_sg_sibling_fname[BURN_OS_SG_MAX_NAMELEN];
+	burn_sg_sibling_fname *sibling_fnames = NULL;
+
+	BURN_ALLOC_MEM(sibling_fds, int, BURN_OS_SG_MAX_SIBLINGS);
+	BURN_ALLOC_MEM(sibling_fnames, burn_sg_sibling_fname,
+			BURN_OS_SG_MAX_SIBLINGS);
 
 	fd = sg_open_drive_fd(fname, 1);
 	if (fd == -1) {
 		if (linux_sg_enumerate_debug)
 			fprintf(stderr, "open failed, errno=%d  '%s'\n",
 				errno, strerror(errno));
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	sid_ret = ioctl(fd, SG_GET_SCSI_ID, &sid);
@@ -808,7 +837,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 				errno, strerror(errno));
 
 			sg_close_drive_fd(fname, -1, &fd, 0);
-			return 0;
+			{ret = 0; goto ex;}
 		}
 
 #ifdef CDROM_DRIVE_STATUS
@@ -839,14 +868,14 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 			fprintf(stderr,
 				"cannot close properly, errno=%d  '%s'\n",
 				errno, strerror(errno)); 
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if ( (sid_ret == -1 || sid.scsi_type != TYPE_ROM)
 	     && !linux_sg_accept_any_type) {
 		if (linux_sg_enumerate_debug)
 			fprintf(stderr, "sid.scsi_type = %d (!= TYPE_ROM)\n",
 				sid.scsi_type); 
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	if (sid_ret == -1 || sid.scsi_id < 0) {
@@ -862,7 +891,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 			if (linux_sg_enumerate_debug)
 				fprintf(stderr,
 					"sg_obtain_scsi_adr() failed\n");
-			return 0;
+			{ret = 0; goto ex;}
 		}
 	}
 
@@ -877,7 +906,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 			if (linux_sg_enumerate_debug)
 				fprintf(stderr, "cannot lock siblings\n"); 
 			sg_handle_busy_device(fname, 0);
-			return 0;
+			{ret = 0; goto ex;}
 		}
 		/* the final occupation will be done in sg_grab() */
 		sg_release_siblings(sibling_fds, sibling_fnames,
@@ -893,7 +922,11 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 	*channel_no= sid.channel;
 	*target_no= sid.scsi_id;
 	*lun_no= sid.lun;
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(sibling_fds);
+	BURN_FREE_MEM(sibling_fnames);
+	return ret;
 }	
 
 
@@ -1025,33 +1058,35 @@ static int fname_drive_is_listed(char *fname, int flag)
 */
 static int fname_enumerate(char *fname, int flag)
 {
-	int is_ata= 0, is_scsi= 0;
+	int is_ata= 0, is_scsi= 0, ret;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
-	char msg[BURN_DRIVE_ADR_LEN + 80];
+	char *msg = NULL;
 	struct stat stbuf;
+
+	BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 80);
 
 	if (!(flag & 2))
 		if (fname_drive_is_listed(fname, 0))
-			return 2;
+			{ret = 2; goto ex;}
 	if (stat(fname, &stbuf) == -1) {
 		sprintf(msg, "File object '%s' not found", fname);
 		if (!(flag & 1))
 			libdax_msgs_submit(libdax_messenger, -1, 0x0002000b,
 			  LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 			  msg, 0, 0);
-		return -1;
+		{ret = -1; goto ex;}
 	}
 	
 	is_ata = is_ata_drive(fname);
 	if (is_ata < 0)
-		return -1;
+		{ret = -1; goto ex;}
 	if (!is_ata)
 		is_scsi = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
 					&target_no, &lun_no);
 	if (is_scsi < 0)
-		return -1;
+		{ret = -1; goto ex;}
 	if (is_ata == 0 && is_scsi == 0)
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (linux_sg_enumerate_debug)
 		  fprintf(stderr,
@@ -1059,7 +1094,10 @@ static int fname_enumerate(char *fname, int flag)
 			host_no, channel_no, target_no, lun_no, bus_no);
 	enumerate_common(fname, bus_no, host_no, channel_no, 
 				target_no, lun_no);
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -1067,22 +1105,25 @@ static int fname_enumerate(char *fname, int flag)
 static int single_enumerate(int flag)
 {
 	int ret, wl_count;
-	char *fname, msg[BURN_DRIVE_ADR_LEN + 80];
+	char *fname, *msg = NULL;
 
         wl_count= burn_drive_whitelist_count();
 	if (wl_count != 1)
-		return 0;
+		{ret = 0; goto ex;}
 	fname= burn_drive_whitelist_item(0, 0);
 	if (fname == NULL)
-		return 0;
+		{ret = 0; goto ex;}
 	ret = fname_enumerate(fname, 2);
 	if (ret <= 0) {
+		BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 80);
 		sprintf(msg, "Cannot access '%s' as SG_IO CDROM drive", fname);
 		libdax_msgs_submit(libdax_messenger, -1, 0x0002000a,
 			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
 		ret = -1;
 	}
+ex:;
+	BURN_FREE_MEM(msg);
 	return ret;
 }
 
@@ -1094,8 +1135,11 @@ static int single_enumerate(int flag)
 static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 {
 	FILE *fp;
-	char line[1024], fname[1024 + 5], *cpt, *retpt, *list_data;
-	int maxl= 0, pass, i;
+	char *line = NULL, *fname = NULL, *cpt, *retpt, *list_data;
+	int maxl= 0, pass, i, line_size = 1024, ret;
+
+	BURN_ALLOC_MEM(line, char, line_size);
+	BURN_ALLOC_MEM(fname, char, line_size + 5);
 
 	if (*list != NULL) {
 		if ((*list)[0] != NULL)
@@ -1105,17 +1149,17 @@ static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 		*count = 0;
 	}
 	if (flag & 1) 
-		return 1;
+		{ret = 1; goto ex;}
 
 	*count = 0;
 	sg_evaluate_kernel();
 	if (sg_kernel_age < 2) /* addresses are not suitable for kernel 2.4 */
-		return 1;
+		{ret = 1; goto ex;}
 	fp = fopen("/proc/sys/dev/cdrom/info", "r");
 	if (fp == NULL)
-		return 0;
+		{ret = 0; goto ex;}
 	while (1) {
-		retpt = fgets(line, sizeof(line), fp);
+		retpt = fgets(line, line_size, fp);
 		if (retpt == NULL)
 	break;
 		if(strncmp(line, "drive name:", 11) == 0)
@@ -1123,7 +1167,7 @@ static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 	}
 	fclose(fp);
 	if (retpt == NULL)
-		return 0;
+		{ret = 0; goto ex;}
 	strcpy(fname, "/dev/");
 	for(pass = 0; pass < 2; pass++) {
 		*count = 0;
@@ -1153,13 +1197,17 @@ static int proc_sys_dev_cdrom_info(char ***list, int *count, int flag)
 					free(list_data);
 				if (*list != NULL)
 					free((char *) *list);
-				return -1;
+				{ret = -1; goto ex;}
 			}
 			for (i = 0; i <= *count; i++)
 				(*list)[i] = list_data + i * (maxl + 1);
 		}
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(line);
+	BURN_FREE_MEM(fname);
+	return ret;
 }
 
 
@@ -1576,20 +1624,21 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, no_c_page = 0, i;
+	int done = 0, no_c_page = 0, i, ret;
 	int err;
 	time_t start_time;
 	sg_io_hdr_t s;
 	/* ts A61030 */
 	static FILE *fp= NULL;
+	char *msg = NULL;
 
+	BURN_ALLOC_MEM(msg, char, 161);
 
 	/* <<< ts A60821
 	   debug: for tracing calls which might use open drive fds */
-	char buf[161];
-	sprintf(buf,"sg_issue_command   d->fd= %d  d->released= %d\n",
-		d->fd,d->released);
-	mmc_function_spy(NULL, buf);
+	sprintf(msg, "sg_issue_command   d->fd= %d  d->released= %d\n",
+		d->fd, d->released);
+	mmc_function_spy(NULL, msg);
 
 	/* ts A61030 */
 	if (burn_sg_log_scsi & 1) {
@@ -1605,7 +1654,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	/* ts A61010 : with no fd there is no chance to send an ioctl */
 	if (d->fd < 0) {
 		c->error = 1;
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	c->error = 0;
@@ -1657,7 +1706,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			/* a ssert(c->page->bytes > 0); */
 			if (c->page->bytes <= 0) {
 				c->error = 1;
-				return 0;
+				{ret = 0; goto ex;}
 			}
 
 			s.dxfer_len = c->page->bytes;
@@ -1684,7 +1733,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			d->released = 1;
 			d->busy = BURN_DRIVE_IDLE;
 			c->error = 1;
-			return -1;
+			{ret = -1; goto ex;}
 		}
                 done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
 				s.duration, start_time, s.timeout, i, 0);
@@ -1692,8 +1741,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 	if (s.host_status != Libburn_sg_host_oK || 
 	    (s.driver_status != Libburn_sg_driver_oK && !c->error)) {
-		char msg[161];
-
 		sprintf(msg,
 			"SCSI command %2.2Xh indicates host or driver error:",
 			(unsigned int) c->opcode[0]);
@@ -1706,7 +1753,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -1781,23 +1831,27 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 */
 int sg_is_enumerable_adr(char *adr)
 {
-	char fname[4096];
-	int ret = 0, first = 1;
+	char *fname = NULL;
+	int ret = 0, first = 1, fname_size = 4096;
 	burn_drive_enumerator_t idx;
 
+	BURN_ALLOC_MEM(fname, char, fname_size);
 	while (1) {
-		ret= sg_give_next_adr(&idx, fname, sizeof(fname), first);
+		ret= sg_give_next_adr(&idx, fname, fname_size, first);
 		if(ret <= 0)
 	break;
 		first = 0;
 		if (strcmp(adr, fname) == 0) {
-			sg_give_next_adr(&idx, fname, sizeof(fname), -1);
-			return 1;
+			sg_give_next_adr(&idx, fname, fname_size, -1);
+			{ret = 1; goto ex;}
 		}
 	}
+	ret = 0;
+ex:;
 	if (first == 0)
-		sg_give_next_adr(&idx, fname, sizeof(fname), -1);
-	return(0);
+		sg_give_next_adr(&idx, fname, fname_size, -1);
+	BURN_FREE_MEM(fname);
+	return ret;
 }
 
 
@@ -1834,11 +1888,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 {
 	struct stat stbuf;
 	struct statvfs vfsbuf;
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
 	int open_mode = O_RDONLY, fd, ret;
 	off_t add_size = 0;
 
+	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
 	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
@@ -1851,29 +1906,32 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
 		close(fd);
 		if (ret == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
