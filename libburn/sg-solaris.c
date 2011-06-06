@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2010 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -140,6 +140,7 @@ Send feedback to libburn-hackers@pykix.org .
 #include "debug.h"
 #include "toc.h"
 #include "util.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -249,11 +250,13 @@ static int start_enum_cXtYdZs2(burn_drive_enumerator_t *idx, int flag)
 static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 				char adr[], int adr_size, int flag)
 { 
-	int busno, tgtno, lunno, ret, fd = -1;
-	char volpath[160];
+	int busno, tgtno, lunno, ret, fd = -1, volpath_size = 160;
+	char *volpath = NULL;
 	struct dirent *entry;
 	struct dk_cinfo cinfo;
 	DIR *dir;
+
+	BURN_ALLOC_MEM(volpath, char, volpath_size);
 
 	dir = idx->dir;
 	while (1) {
@@ -266,11 +269,11 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 	"Cannot enumerate next device. readdir() from \"/dev/rdsk\" failed.",
 						errno, 0);
-				return -1;
+				{ret = -1; goto ex;}
 			}
 	break;
 		}
-		if (strlen(entry->d_name) > sizeof(volpath) - 11)
+		if (strlen(entry->d_name) > volpath_size - 11)
 	continue;
 		ret = decode_btl_solaris(entry->d_name,
 					&busno, &tgtno, &lunno, 0);
@@ -292,11 +295,14 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 		if (cinfo.dki_ctype != DKC_CDROM)
 	continue;
 		if (adr_size <= strlen(volpath))
-			return -1;
+			{ret = -1; goto ex;}
 		strcpy(adr, volpath);
-		return 1;
+		{ret = 1; goto ex;}
 	}
-	return 0;
+	ret = 0;
+ex:;
+	BURN_FREE_MEM(volpath);
+	return ret;
 }
 
 
@@ -457,12 +463,14 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 int scsi_enumerate_drives(void)
 {
 	burn_drive_enumerator_t idx;
-	int initialize = 1, ret, i_bus_no = -1;
+	int initialize = 1, ret, i_bus_no = -1, buf_size = 4096;
         int i_host_no = -1, i_channel_no = -1, i_target_no = -1, i_lun_no = -1;
-	char buf[4096];
+	char *buf = NULL;
+
+	BURN_ALLOC_MEM(buf, char, buf_size);
 
 	while(1) {
-		ret = sg_give_next_adr(&idx, buf, sizeof(buf), initialize);
+		ret = sg_give_next_adr(&idx, buf, buf_size, initialize);
 		initialize = 0;
 		if (ret <= 0)
 	break;
@@ -474,8 +482,11 @@ int scsi_enumerate_drives(void)
 				i_bus_no, i_host_no, i_channel_no,
 				i_target_no, i_lun_no);
 	}
-	sg_give_next_adr(&idx, buf, sizeof(buf), -1);
-	return 1;
+	sg_give_next_adr(&idx, buf, buf_size, -1);
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(buf);
+	return ret;
 }
 
 
@@ -498,13 +509,15 @@ int sg_drive_is_open(struct burn_drive * d)
 */  
 int sg_grab(struct burn_drive *d)
 {
-	char msg[4096];
+	char *msg = NULL;
 	int os_errno, ret;
 	struct dk_cinfo cinfo;
 
+	BURN_ALLOC_MEM(msg, char, 4096);
+
 	if (d->fd != -1) {
 		d->released = 0;
-		return 1;
+		{ret = 1; goto ex;}
 	}
 	d->fd = open(d->devname, O_RDONLY | O_NDELAY);
 	if (d->fd == -1) {
@@ -514,7 +527,7 @@ int sg_grab(struct burn_drive *d)
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, os_errno, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	ret = ioctl(d->fd, DKIOCINFO, &cinfo);
 	if (ret < 0)
@@ -525,7 +538,7 @@ int sg_grab(struct burn_drive *d)
 	/* >>> obtain eventual locks */;
 
 	d->released = 0;
-	return 1;
+	{ret = 1; goto ex;}
 revoke:;
 	sprintf(msg, "Could not grab drive '%s'. Not a CDROM device.",
 		 d->devname);
@@ -533,7 +546,10 @@ revoke:;
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
-	return 0;
+	ret = 0;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -762,14 +778,17 @@ int burn_os_is_2k_seekrw(char *path, int flag)
 int burn_os_stdio_capacity(char *path, off_t *bytes)
 {
 	struct stat stbuf;
+	int ret;
 
 #ifdef Libburn_os_has_statvfS
 	struct statvfs vfsbuf;
 #endif
 
-	char testpath[4096], *cpt;
+	char *testpath = NULL, *cpt;
 	long blocks;
 	off_t add_size = 0;
+
+	BURN_ALLOC_MEM(testpath, char, 4096);
 
 	testpath[0] = 0;
 	blocks = *bytes / 512;
@@ -783,44 +802,47 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		else
 			*cpt = 0;
 		if (stat(testpath, &stbuf) == -1)
-			return -1;
+			{ret = -1; goto ex;}
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		int open_mode = O_RDONLY, fd;
 
 		fd = open(path, open_mode);
 		if (fd == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = lseek(fd, 0, SEEK_END);
 		close(fd);
 		if (*bytes == -1) {
 			*bytes = 0;
-			return 0;
+			{ret = 0; goto ex;}
 		}
 
 	} else if(S_ISREG(stbuf.st_mode)) {
 		add_size = stbuf.st_blocks * (off_t) 512;
 		strcpy(testpath, path);
 	} else
-		return 0;
+		{ret = 0; goto ex;}
 
 	if (testpath[0]) {	
 
 #ifdef Libburn_os_has_statvfS
 
 		if (statvfs(testpath, &vfsbuf) == -1)
-			return -2;
+			{ret = -2; goto ex;}
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 
 #else /* Libburn_os_has_statvfS */
 
-		return 0;
+		{ret = 0; goto ex;}
 
 #endif /* ! Libburn_os_has_stavtfS */
 
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(testpath);
+	return ret;
 }
 
 
