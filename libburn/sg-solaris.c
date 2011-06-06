@@ -273,7 +273,7 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 			}
 	break;
 		}
-		if (strlen(entry->d_name) > volpath_size - 11)
+		if (strlen(entry->d_name) > (size_t) (volpath_size - 11))
 	continue;
 		ret = decode_btl_solaris(entry->d_name,
 					&busno, &tgtno, &lunno, 0);
@@ -294,7 +294,7 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 	continue;
 		if (cinfo.dki_ctype != DKC_CDROM)
 	continue;
-		if (adr_size <= strlen(volpath))
+		if (adr_size <= (int) strlen(volpath))
 			{ret = -1; goto ex;}
 		strcpy(adr, volpath);
 		{ret = 1; goto ex;}
