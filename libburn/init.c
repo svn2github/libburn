@@ -582,3 +582,18 @@ void burn_allow_drive_role_4(int allowed)
 {
 	burn_drive_role_4_allowed = (allowed & 0xf);
 }
+
+
+/* ts B10606 */
+void *burn_alloc_mem(size_t size, size_t count, int flag)
+{
+	void *pt;
+
+	pt = calloc(size, count);
+	if(pt == NULL)
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Out of virtual memory", 0, 0);
+	return pt;
+}
+

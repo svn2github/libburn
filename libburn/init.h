@@ -27,13 +27,12 @@ extern volatile int burn_builtin_triggered_action;    /*  burn_is_aborting() */
 */
 int burn_init_catch_on_abort(int flag);
 
+/* ts B10606 */
+void *burn_alloc_mem(size_t size, size_t count, int flag);
 
 #define BURN_ALLOC_MEM(pt, typ, count) { \
-	pt= (typ *) calloc(1, (count)*sizeof(typ)); \
+	pt= (typ *) burn_alloc_mem(sizeof(typ), (size_t) (count), 0); \
 	if(pt == NULL) { \
-		libdax_msgs_submit(libdax_messenger, -1, 0x00000003, \
-			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH, \
-			"Out of virtual memory", 0, 0); \
 		ret= -1; goto ex; \
 	} }
 
