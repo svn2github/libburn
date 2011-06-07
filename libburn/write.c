@@ -2529,6 +2529,8 @@ return crap.  so we send the command, then ignore the result.
 /*		print_cue(sheet);*/
 		if (o->write_type == BURN_WRITE_SAO)
 			d->send_cue_sheet(d, sheet);
+		if (sheet->data != NULL)
+			free(sheet->data);
 		free(sheet);
 
 		if (o->write_type == BURN_WRITE_RAW) {
