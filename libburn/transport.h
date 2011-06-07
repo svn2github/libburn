@@ -301,6 +301,16 @@ struct burn_drive
 	struct buffer *buffer;
 	struct burn_progress progress;
 
+	/* To be used by mmc.c, sbc.c, spc.c for SCSI commands where the struct
+	   content surely does not have to persist while another command gets
+	   composed and executed.
+	   (Inherently, sending SCSI commands to the same drive cannot be
+	    thread-safe. But there are functions which send SCSI commands
+	    and also call other such functions. These shall use own allocated
+	    command structs and not this struct here.)
+	*/
+	struct command casual_command;
+
 	/* ts A70711 : keeping an eye on the drive buffer */
 	off_t pessimistic_buffer_free;
 	int pbf_altered;

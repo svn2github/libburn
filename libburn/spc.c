@@ -64,6 +64,7 @@ int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
 {
 	if (oplen > 16)
 		return 0;
+	memset(c, 0, sizeof(struct command));
 	memcpy(c->opcode, opcode, oplen);
 	c->oplen = oplen;
 	c->dir = NO_TRANSFER;
@@ -102,25 +103,21 @@ int spc_decode_sense(unsigned char *sense, int senselen,
 
 int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 {
-	struct command *c = NULL;
-	int ret;
+	struct command *c;
 
+ 	c = &(d->casual_command);
 	if (mmc_function_spy(d, "test_unit_ready") <= 0)
-		{ret = 0; goto ex;}
+		return 0;
 
-	BURN_ALLOC_MEM(c, struct command, 1);
 	scsi_init_command(c, SPC_TEST_UNIT_READY,sizeof(SPC_TEST_UNIT_READY));
 	c->retry = 0;
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
 	if (c->error) {
 		spc_decode_sense(c->sense, 0, key, asc, ascq);
-		{ret = (key == 0); goto ex;}
+		return (key == 0);
 	}
-	ret = 1;
-ex:;
-	BURN_FREE_MEM(c);
-	return ret;
+	return 1;
 }
 
 
@@ -233,13 +230,12 @@ ex:;
 
 void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 {
-	struct command *c = NULL;
-	int ret;
+	struct command *c;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "request_sense") <= 0)
-		goto ex;
+		return;
 
-	BURN_ALLOC_MEM(c, struct command, 1);
 	scsi_init_command(c, SPC_REQUEST_SENSE, sizeof(SPC_REQUEST_SENSE));
 	c->retry = 0;
 	c->dxfer_len= c->opcode[4];
@@ -249,8 +245,6 @@ void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 	c->page->bytes = 0;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
-ex:;
-	BURN_FREE_MEM(c);
 }
 
 int spc_get_erase_progress(struct burn_drive *d)
@@ -309,42 +303,35 @@ ex:;
 
 void spc_prevent(struct burn_drive *d)
 {
-	struct command *c = NULL;
-	int ret;
+	struct command *c;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "prevent") <= 0)
 		return;
-	BURN_ALLOC_MEM(c, struct command, 1);
 
 	scsi_init_command(c, SPC_PREVENT, sizeof(SPC_PREVENT));
 	c->retry = 1;
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
 	
-
 #ifdef Libburn_pioneer_dvr_216d_get_evenT
         mmc_get_event(d);
 #endif
 
-ex:;
-	BURN_FREE_MEM(c);
 }
 
 void spc_allow(struct burn_drive *d)
 {
-	struct command *c = NULL;
-	int ret;
+	struct command *c;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "allow") <= 0)
-		goto ex;
+		return;
 
-	BURN_ALLOC_MEM(c, struct command, 1);
 	scsi_init_command(c, SPC_ALLOW, sizeof(SPC_ALLOW));
 	c->retry = 1;
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
-ex:;
-	BURN_FREE_MEM(c);
 }
 
 /*

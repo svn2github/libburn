@@ -54,20 +54,21 @@ static unsigned char SBC_STOP_UNIT[] = { 0x1b, 0, 0, 0, 0, 0 };
 
 void sbc_load(struct burn_drive *d)
 {
-	struct command c;
+	struct command *c;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "load") <= 0)
 		return;
 
-	scsi_init_command(&c, SBC_LOAD, sizeof(SBC_LOAD));
-	c.retry = 1;
+	scsi_init_command(c, SBC_LOAD, sizeof(SBC_LOAD));
+	c->retry = 1;
 
 	/* ts A70921 : Had to revoke Immed because of LG GSA-4082B */
-	/* c.opcode[1] |= 1; / * ts A70918 : Immed */
+	/* c->opcode[1] |= 1; / * ts A70918 : Immed */
 
-	c.dir = NO_TRANSFER;
-	d->issue_command(d, &c);
-	if (c.error)
+	c->dir = NO_TRANSFER;
+	d->issue_command(d, c);
+	if (c->error)
 		return;
 	/* ts A70923 : Needed regardless of Immed bit. Was once 1 minute, now
            5 minutes for loading. If this does not suffice then other commands
@@ -77,20 +78,21 @@ void sbc_load(struct burn_drive *d)
 
 void sbc_eject(struct burn_drive *d)
 {
-	struct command c;
+	struct command *c;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "eject") <= 0)
 		return;
 
-	scsi_init_command(&c, SBC_UNLOAD, sizeof(SBC_UNLOAD));
-	/* c.opcode[1] |= 1; / * ts A70918 : Immed , ts B00109 : revoked */
-	c.page = NULL;
-	c.dir = NO_TRANSFER;
-	d->issue_command(d, &c);
+	scsi_init_command(c, SBC_UNLOAD, sizeof(SBC_UNLOAD));
+	/* c->opcode[1] |= 1; / * ts A70918 : Immed , ts B00109 : revoked */
+	c->page = NULL;
+	c->dir = NO_TRANSFER;
+	d->issue_command(d, c);
 	/* ts A70918 : Wait long. A late eject could surprise or hurt user.
 	   ts B00109 : Asynchronous eject revoked, as one cannot reliably
 	               distinguish out from unready.
-	if (c.error)
+	if (c->error)
 		return;
 	spc_wait_unit_attention(d, 1800, "STOP UNIT (+ EJECT)", 0);
 	*/
@@ -102,18 +104,19 @@ void sbc_eject(struct burn_drive *d)
 */
 int sbc_start_unit_flag(struct burn_drive *d, int flag)
 {
-	struct command c;
+	struct command *c;
 	int ret;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "start_unit") <= 0)
 		return 0;
 
-	scsi_init_command(&c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
-	c.retry = 1;
-	c.opcode[1] |= (flag & 1); /* ts A70918 : Immed */
-	c.dir = NO_TRANSFER;
-	d->issue_command(d, &c);
-	if (c.error)
+	scsi_init_command(c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
+	c->retry = 1;
+	c->opcode[1] |= (flag & 1); /* ts A70918 : Immed */
+	c->dir = NO_TRANSFER;
+	d->issue_command(d, c);
+	if (c->error)
 		return 0;
 	if (!(flag & 1))
 		return 1;
@@ -144,18 +147,19 @@ int sbc_start_unit(struct burn_drive *d)
 /* ts A90824 : Trying to reduce drive noise */
 int sbc_stop_unit(struct burn_drive *d)
 {
-	struct command c;
+	struct command *c;
 	int ret;
 
+	c = &(d->casual_command);
 	if (mmc_function_spy(d, "stop_unit") <= 0)
 		return 0;
 
-	scsi_init_command(&c, SBC_STOP_UNIT, sizeof(SBC_STOP_UNIT));
-	c.retry = 0;
-	c.opcode[1] |= 1; /* Immed */
-	c.dir = NO_TRANSFER;
-	d->issue_command(d, &c);
-	if (c.error)
+	scsi_init_command(c, SBC_STOP_UNIT, sizeof(SBC_STOP_UNIT));
+	c->retry = 0;
+	c->opcode[1] |= 1; /* Immed */
+	c->dir = NO_TRANSFER;
+	d->issue_command(d, c);
+	if (c->error)
 		return 0;
 	ret = spc_wait_unit_attention(d, 1800, "STOP UNIT", 0);
 	d->is_stopped = 1;
