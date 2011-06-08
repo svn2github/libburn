@@ -1,6 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
+   Copyright (c) 2011 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -20,6 +21,7 @@
 #include "libburn.h"
 #include "sector.h"
 #include "options.h"
+#include "init.h"
 
 #if 0
 static void write_clonecd2(volatile struct toc *toc, int f);
@@ -105,15 +107,14 @@ void toc_find_modes(struct burn_drive *d)
 {
 	struct burn_read_opts o;
 	int lba;
-	int i, j;
-	struct buffer mem;
+	int i, j, ret;
+	struct buffer *mem = NULL;
 	struct burn_toc_entry *e;
 
-	/* ts A61008 : to be prevented on the higher levels */
-	/* a ssert(d->busy); */
+	BURN_ALLOC_MEM(mem, struct buffer, 1);
 
-	mem.bytes = 0;
-	mem.sectors = 1;
+	mem->bytes = 0;
+	mem->sectors = 1;
 	o.raw = 1;
 	o.c2errors = 0;
 	o.subcodes_audio = 1;
@@ -141,10 +142,13 @@ void toc_find_modes(struct burn_drive *d)
 				t->mode = BURN_MODE1;
 /* ts A70519 : this does not work with GNU/Linux 2.4 USB because one cannot
                predict the exact dxfer_size without knowing the sector type.
-				mem.sectors = 1;
-				d->read_sectors(d, lba, mem.sectors, &o, &mem);
-				t->mode = sector_identify(mem.data);
+				mem->sectors = 1;
+				d->read_sectors(d, lba, mem.sectors, &o, mem);
+				t->mode = sector_identify(mem->data);
 */
 			}
 		}
+
+ex:
+	BURN_FREE_MEM(mem);
 }
