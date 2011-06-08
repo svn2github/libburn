@@ -999,7 +999,7 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 {
 	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;
-	char msg[160], *reason_pt;
+	char *msg = NULL, *reason_pt;
 	int no_media = 0;
 
 	reason_pt= reasons;
@@ -1056,13 +1056,18 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 			strcat(reasons, "write start address not supported, ");
 	} else {
 unsuitable_profile:;
-		sprintf(msg, "Unsuitable media detected. Profile %4.4Xh  %s",
-			d->current_profile, d->current_profile_text);
-		if (!silent)
+		msg = calloc(1, 160);
+		if (msg != NULL && !silent) {
+			sprintf(msg,
+			    "Unsuitable media detected. Profile %4.4Xh  %s",
+			    d->current_profile, d->current_profile_text);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011e,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
+		}
+		if (msg != NULL)
+			free(msg);
 		strcat(reasons, "no suitable media profile detected, ");
 		return 0;
 	}
@@ -1092,10 +1097,11 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 					struct burn_session *s, int tnum)
 {
 	struct burn_drive *d = o->drive;
-	char msg[160];
+	char *msg = NULL;
 	int ret, lba, nwa;
 	off_t size;
 
+	BURN_ALLOC_MEM(msg, char, 160);
 	d->send_write_parameters(d, o);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
@@ -1137,10 +1143,13 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 				0x00020138,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
-			return 0;
+			{ret = 0; goto ex;}
 		}
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -1149,10 +1158,11 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 					struct burn_session *s, int tnum)
 {
 	struct burn_drive *d = o->drive;
-	char msg[160];
+	char *msg;
 	int ret, lba, nwa;
 	off_t size;
 
+	BURN_ALLOC_MEM(msg, char, 160);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
 		"DVD+R pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
@@ -1183,10 +1193,13 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 				0x00020138,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
-			return 0;
+			{ret = 0; goto ex;}
 		}
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -1440,20 +1453,6 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
-	/* <<< */
-	{
-		char msg[160];
-
-		sprintf(msg,
-		 "DVD pre-track %2.2d : demand=%.f%s, cap=%.f\n",
-			tnum+1, (double) sectors * 2048.0,
-			(open_ended ? " (open ended)" : ""),
-			(double) d->media_capacity_remaining);
-		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
-				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-				msg, 0, 0);
-	}
-
 
 	/* (offset padding is done within sector_data()) */
 
@@ -1744,7 +1743,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 				struct burn_disc *disc)
 {
 	struct burn_drive *d = o->drive;
-	char msg[160];
+	char msg[60];
 	int ret;
 
 	d->nwa = 0;
@@ -1827,8 +1826,9 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 	off_t default_size = 0;
 	struct burn_drive *d = o->drive;
 	struct burn_track *t;
-	char msg[160];
+	char *msg = NULL;
 
+	BURN_ALLOC_MEM(msg, char, 160);
 	d->needs_close_session = 0;
 
 	/* buffer flush trigger for sector.c:get_sector() */
@@ -2019,9 +2019,10 @@ ex:;
 				0x0002017b, LIBDAX_MSGS_SEV_WARNING,
 				LIBDAX_MSGS_PRIO_ZERO, msg, 0, 0);
 	}
-
+	BURN_FREE_MEM(msg);
 	return ret;
 early_failure:;
+	BURN_FREE_MEM(msg);
 	return 0;
 }
 
@@ -2040,7 +2041,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 
 	int fd = -1;
 	int mode = O_RDWR | O_CREAT | O_LARGEFILE;
-	char msg[160];
+	char msg[60];
 	off_t lseek_res;
 
 	if(d->drive_role == 4) {
@@ -2262,15 +2263,15 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 				int tnum, int flag)
 {
-	int open_ended, bufsize, ret, sectors, fd;
+	int open_ended, bufsize = 16 * 2048, ret, sectors, fd;
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
-	char buf[16*2048];
+	char *buf = NULL;
 	int i, prev_sync_sector = 0;
 	struct buffer *out = d->buffer;
 	struct timeval prev_time;
 
-	bufsize = sizeof(buf);
+	BURN_ALLOC_MEM(buf, char, bufsize);
 	fd = d->stdio_fd;
 
 	sectors = burn_track_get_sectors(t);
@@ -2322,6 +2323,7 @@ ex:;
 		burn_source_cancel(t->source);
 	if (t->end_on_premature_eoi == 2)
 		d->cancel = 1;
+	BURN_FREE_MEM(buf);
 	return ret;
 }
 
@@ -2652,21 +2654,22 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 {
 	int alignment = 0, start, upto, chunksize, err, fd = -1, ret;
 	char msg[81], *rpt;
-	struct buffer buf, *buffer_mem = d->buffer;
+	struct buffer *buf = NULL, *buffer_mem = d->buffer;
 
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	if (d->released) {
 		libdax_msgs_submit(libdax_messenger,
 			d->global_index, 0x00020142,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is not grabbed on random access write", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if(d->drive_role == 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020146,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is a virtual placeholder (null-drive)", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if(d->drive_role == 4) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -2674,7 +2677,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 			"Pseudo-drive is a read-only file. Cannot write.",
 			0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	if(d->drive_role == 2 || d->drive_role == 5)
@@ -2693,7 +2696,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			0x00020125,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Write start address not supported", 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if ((byte_address % alignment) != 0) {
 		sprintf(msg,
@@ -2703,7 +2706,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			0x00020126,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if ((data_count % alignment) != 0) {
 		sprintf(msg,
@@ -2713,22 +2716,22 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			0x00020141,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if (d->busy != BURN_DRIVE_IDLE) {
 		libdax_msgs_submit(libdax_messenger,
 			d->global_index, 0x00020140,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Drive is busy on attempt to write random access",0,0);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	if(d->drive_role != 1) {
 		fd = burn_stdio_open_write(d, byte_address, 2048, 0);
 		if (fd == -1)
-			return 0;
+			{ret = 0; goto ex;}
 	}
 	d->busy = BURN_DRIVE_WRITING_SYNC;
-	d->buffer = &buf;
+	d->buffer = buf;
 
 	start = byte_address / 2048;
 	upto = start + data_count / 2048;
@@ -2755,7 +2758,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			d->busy = BURN_DRIVE_IDLE;
 			if(fd >= 0)
 				close(fd);
-			return (-(start * 2048 - byte_address));
+			{ret = -(start * 2048 - byte_address); goto ex;}
 		}
 	}
 
@@ -2773,7 +2776,10 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		close(fd);
 	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
-	return 1;
+	ret = 1;
+ex:
+	BURN_FREE_MEM(buf);
+	return ret;
 }
 
 
