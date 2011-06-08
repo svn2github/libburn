@@ -3298,7 +3298,6 @@ no_suitable_formatting_type:;
 			{ret = 0; goto ex;}
 		}
 		format_type = d->best_format_type;
-		c->page->data[11] = 16;              /* block size * 2k */
 		sprintf(descr, "DVD-RW %s",
 			format_type == 0x15 ? "quick" : "full");
 		return_immediately = 1; /* caller must do the waiting */
@@ -3639,6 +3638,20 @@ unsuitable_media:;
 		{ret = 0; goto ex;}
 	}
 	c->page->data[8] = (format_type << 2) | (format_sub_type & 3);
+
+	/* MMC-5 Table 253 , column Type Dependent Parameter */
+	if (format_type == 0x00 || format_type == 0x01 ||
+	    format_type == 0x31) {
+		/* Block Length 0x0800 = 2k */
+		c->page->data[ 9] = 0x00;
+		c->page->data[10] = 0x08;
+		c->page->data[11] = 0x00;
+	} else if (format_type >= 0x10 && format_type <= 0x15) {
+          	/* ECC block size = 16 * 2k */
+		c->page->data[ 9] =  0;
+		c->page->data[10] =  0;
+		c->page->data[11] = 16;
+	}
 
 	sprintf(msg, "Format type %2.2Xh \"%s\", blocks = %.f",
 		format_type, descr, (double) num_of_blocks);
