@@ -8,6 +8,7 @@ AC_CANONICAL_TARGET
 LIBBURNIA_SET_FLAGS
 
 AM_INIT_AUTOMAKE([subdir-objects])
+AC_CONFIG_MACRO_DIR([./])
 
 dnl Notes by ts A71207 - B10409 :
 dnl

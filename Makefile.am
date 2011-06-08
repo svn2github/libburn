@@ -6,6 +6,7 @@ pkgconfigdir=$(LIBBURNIA_PKGCONFDIR)
 libincludedir=$(includedir)/libburn
 
 lib_LTLIBRARIES = libburn/libburn.la 
+ACLOCAL_AMFLAGS = -I ./
 
 ## ========================================================================= ##
 
