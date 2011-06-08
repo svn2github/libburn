@@ -18,6 +18,7 @@
 #include "structure.h"
 #include "write.h"
 #include "debug.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -269,13 +270,14 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
 	int burn_sector_length(int tracktype);
 	unsigned char ctladr;
 	int form = -1; /* unchanged form will be considered an error too */
+	char msg[80];
 
 	type_to_form(mode, &ctladr, &form);
 	if (form == -1 || burn_sector_length(mode) <= 0) {
-		char msg[160];
 
-		sprintf(msg, "Attempt to set track mode to unusable value %d",
-			mode);
+		sprintf(msg,
+			"Attempt to set track mode to unusable value 0x%X",
+			(unsigned int) mode);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020115,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, 0, 0);
@@ -446,14 +448,16 @@ int burn_track_set_fillup(struct burn_track *t, int fill_up_media)
 int burn_track_apply_fillup(struct burn_track *t, off_t max_size, int flag)
 {
 	int max_sectors, ret = 2;
-	char msg[160];
+	char msg[80];
 
 	if (t->fill_up_media <= 0)
 		return 2;
 	max_sectors = max_size / 2048;
 	if (burn_track_get_sectors(t) < max_sectors || (flag & 1)) {
 		sprintf(msg, "Setting total track size to %ds (payload %ds)\n",
-		    max_sectors, (int) (t->source->get_size(t->source)/2048));
+			max_sectors & 0x7fffffff,
+			(int) ((t->source->get_size(t->source) / 2048)
+				& 0x7fffffff));
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			msg, 0, 0);
@@ -579,11 +583,12 @@ int burn_session_get_hidefirst(struct burn_session *session)
 /* ts A80808 : Enhance CD toc to DVD toc */
 int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 {
-	int sidx= 0, tidx= 0;
+	int sidx= 0, tidx= 0, ret;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
 	/* ts A81126 : ticket 146 : There was a SIGSEGV in here */
-	char msg_data[321], *msg;
+	char *msg_data = NULL, *msg;
 
+	BURN_ALLOC_MEM(msg_data, char, 321);
 	strcpy(msg_data,
 		"Damaged CD table-of-content detected and truncated.");
 	strcat(msg_data, " In burn_disc_cd_toc_extensions: ");
@@ -646,12 +651,15 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 			prev_entry = entry;
 		}
 	}
-	return 1;
+	{ret = 1; goto ex;}
 failure:
 	libdax_msgs_submit(libdax_messenger, -1, 0x0002015f,
 		LIBDAX_MSGS_SEV_MISHAP, LIBDAX_MSGS_PRIO_HIGH, msg_data, 0, 0);
 	d->sessions= sidx;
-	return 0;
+	ret = 0;
+ex:;
+	BURN_FREE_MEM(msg_data);
+	return ret;
 }
 
 
