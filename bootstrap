@@ -1,6 +1,6 @@
 #!/bin/sh -x
 
-aclocal
+aclocal -I .
 libtoolize --copy --force
 autoconf
 
