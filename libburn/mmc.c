@@ -359,6 +359,10 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
+	if (c->error) {
+		d->cancel = 1;
+		scsi_notify_error(d, c, c->sense, 18, 2);
+	}
 	return !c->error;
 }
 

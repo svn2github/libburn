@@ -1413,7 +1413,9 @@ static char *scsi_command_name(unsigned int c, int flag)
 
 
 /* ts A61030 - A61115 */
-/* @param flag bit0=do report conditions which are considered not an error */
+/* @param flag bit0= do report conditions which are considered not an error
+               bit1= report with severity FAILURE rather than DEBUG
+ */
 int scsi_notify_error(struct burn_drive *d, struct command *c,
                       unsigned char *sense, int senselen, int flag)
 {
@@ -1436,6 +1438,8 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 			if (key == 0x2 && asc == 0x3A &&
 			    ascq>=0 && ascq <= 0x02) /* MEDIUM NOT PRESENT */
 				{ret = 1; goto ex;}
+		if (key == 0 && asc == 0 && ascq == 0)
+			{ret = 1; goto ex;}
 	}
 
 	sprintf(msg, "SCSI error condition on command %2.2Xh %s: ",
@@ -1443,7 +1447,8 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 		scsi_command_name((unsigned int) c->opcode[0], 0));
 	strcat(msg, scsi_msg);
 	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
+		flag & 2 ? LIBDAX_MSGS_SEV_FAILURE : LIBDAX_MSGS_SEV_DEBUG,
+		LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
 ex:;
 	BURN_FREE_MEM(msg);
 	BURN_FREE_MEM(scsi_msg);
