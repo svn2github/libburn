@@ -1294,6 +1294,30 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 */
 int burn_disc_next_track_is_damaged(struct burn_drive *d, int flag);
 
+/* ts B10527 */
+/** Try to close the last track and session of media which have bit0 set in
+    the return value of call burn_disc_next_track_is_damaged().
+    Whether it helps depends much on the reason why the media is reported
+    as damaged by the drive.
+    This call works only for profiles 0x09 CD-R, 0x0a CD-RW, 0x11 DVD-R,
+    0x14 DVD-RW sequential, 0x1b DVD+R, 0x2b DVD+R DL, 0x41 BD-R sequential.
+    Note: After writing it is advised to give up the drive and to grab it again
+          in order to learn about its view on the new media state.
+    @param o     Write options created by burn_write_opts_new() and
+                 manipulated by burn_write_opts_set_multi().
+                 burn_write_opts_set_write_type() should be set to
+                 BURN_WRITE_TAO, burn_write_opts_set_simulate() should be
+                 set to 0.
+    @param flag  Bitfield for control purposes
+                 bit0= force close, even if no damage was seen
+    @return      <=0 media not marked as damaged, or media type not suitable,
+                     or closing attempted but failed
+                 1= attempt finished without error indication
+    @since 1.1.0
+*/
+int burn_disc_close_damaged(struct burn_write_opts *o, int flag);
+
+
 /* ts A70131 */
 /** Read start lba of the first track in the last complete session.
     This is the first parameter of mkisofs option -C. The second parameter
@@ -1608,8 +1632,13 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
     of data and audio tracks. You must use BURN_WRITE_TAO for such sessions.
     To be set by burn_write_opts_set_write_type(). 
     Note: This function is not suitable for overwriting data in the middle of
-    a valid data area because it is allowed to append trailing data.
-    For exact random access overwriting use burn_random_access_write().
+          a valid data area because it is allowed to append trailing data.
+          For exact random access overwriting use burn_random_access_write().
+    Note: After writing it is advised to give up the drive and to grab it again
+          in order to learn about its view on the new media state.
+    Note: Before mounting the written media it might be necessary to eject
+          and reload in order to allow the operating system to notice the new
+          media state.
     @param o The options for the writing operation.
     @param disc The struct burn_disc * that described the disc to be created
 */
@@ -2230,7 +2259,7 @@ void burn_write_opts_set_format(struct burn_write_opts *opts, int format);
     This corresponds to the Test Write bit in MMC mode page 05h. Several media
     types do not support this. See struct burn_multi_caps.might_simulate for
     actual availability of this feature. 
-    If the media is suitable, the drive will perform burn_write_disc() as a
+    If the media is suitable, the drive will perform burn_disc_write() as a
     simulation instead of effective write operations. This means that the
     media content and burn_disc_get_status() stay unchanged.
     Note: With stdio-drives, the target file gets eventually created, opened,
@@ -2707,8 +2736,8 @@ void burn_version(int *major, int *minor, int *micro);
 
 */
 #define burn_header_version_major  1
-#define burn_header_version_minor  0
-#define burn_header_version_micro  7
+#define burn_header_version_minor  1
+#define burn_header_version_micro  1
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.

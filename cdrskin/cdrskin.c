@@ -88,7 +88,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.0.7"
+#define Cdrskin_prog_versioN "1.1.1"
 #endif
 
 /** The official libburn interface revision to use.
@@ -98,10 +98,10 @@ or
 #define Cdrskin_libburn_majoR 1
 #endif
 #ifndef Cdrskin_libburn_minoR
-#define Cdrskin_libburn_minoR 0
+#define Cdrskin_libburn_minoR 1
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 1
 #endif
 
 
@@ -135,13 +135,13 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_1_0_6
-#define Cdrskin_libburn_versioN "1.0.6"
+#ifdef Cdrskin_libburn_1_1_0
+#define Cdrskin_libburn_versioN "1.1.0"
 #define Cdrskin_libburn_from_pykix_svN 1
-#endif /* Cdrskin_libburn_1_0_6 */
+#endif
 
-#ifdef Cdrskin_libburn_1_0_7
-#define Cdrskin_libburn_versioN "1.0.7"
+#ifdef Cdrskin_libburn_1_1_1
+#define Cdrskin_libburn_versioN "1.1.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 
 /* Place novelty switch macros here. 
@@ -149,29 +149,29 @@ or
 */
 
 
-#endif /* Cdrskin_libburn_1_0_7 */
+#endif /* Cdrskin_libburn_1_1_1 */
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_0_7
-#define Cdrskin_libburn_versioN "1.0.7"
+#define Cdrskin_libburn_1_1_1
+#define Cdrskin_libburn_versioN "1.1.1"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_0_6
+#ifdef Cdrskin_libburn_1_1_0
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
-#define Cdrskin_libburn_minoR 0
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_minoR 1
+#define Cdrskin_libburn_micrO 0
 #endif
-#ifdef Cdrskin_libburn_1_0_7
+#ifdef Cdrskin_libburn_1_1_1
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
-#define Cdrskin_libburn_minoR 0
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_minoR 1
+#define Cdrskin_libburn_micrO 1
 #endif
 
 

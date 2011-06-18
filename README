@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.0.6.pl00.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.1.0.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.0.6.pl00.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.1.0.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.0.6.pl00.tar.gz
-   cd libburn-1.0.6
+   tar xzf libburn-1.1.0.tar.gz
+   cd libburn-1.1.0
    ./configure --prefix=/usr
    make
 
@@ -613,6 +613,18 @@ Project history as far as known to me:
   up to 103 characters. xorriso fixes two bugs and makes use of the library
   improvements.
 
+- Thu Apr 14 2011 release libisoburn-1.0.8:
+  A bug in the mkisofs emulation of xorriso could cause options to be ignored.
+  The problem was freshly introduced with libisoburn-1.0.6. 
+
+- Fri May 13 2011 release libisofs-1.0.8:
+  Fixes a few rarely occurring bugs that have been found during the last month.
+
+- Sat Jun 18 2011 release 1.1.0:
+  The consumption of stack memory was reduced. Statical program analysis found
+  some rarely occuring memory leaks. Several small bugs were fixed.
+  The suffix .plXY was dropped from tarball names of libburn and libisoburn.
+  
 
 ------------------------------------------------------------------------------
 
