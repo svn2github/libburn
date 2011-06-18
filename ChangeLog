@@ -1,6 +1,12 @@
-SVN trunk (to become libburn-1.0.8.pl00.tar.gz)
+
+libburn-1.1.0.tar.gz Sat Jun 18 2011
 ===============================================================================
-- no novelties yet
+* Bug fix: burn_disc_format() on DVD-RW issued wrong block size with type 00h
+* New API call burn_disc_next_track_is_damaged()
+* New API call burn_disc_close_damaged()
+* Dropped suffix .plXY from tarball name
+
+Release 1.0.8 was skipped to get back in sync with libisofs and libisoburn.
 
 libburn-1.0.6.pl00.tar.gz Sat Apr 9 2011
 ===============================================================================

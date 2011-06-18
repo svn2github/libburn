@@ -9389,8 +9389,291 @@ Documented changes and release timestamp
 * New API call burn_allow_drive_role_4()
 
 
------------------------------------- cycle  - cdrskin-1.0.7 - 
------------------------------------- cycle  - cdrskin-1.0.7 - 
+2011.04.09.090001  [3719]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.0.7
+
+09 Apr 2011  [3720]
+- cdrskin/add_ts_changes_to_libburn_1_0_4
+- cdrskin/add_ts_changes_to_libburn_1_0_5
++ cdrskin/add_ts_changes_to_libburn_1_0_6
++ cdrskin/add_ts_changes_to_libburn_1_0_7
+Updated cdrskin tarball generator
+
+09 Apr 2011   [3721]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+09 Apr 2011  [3722]
+svn move -m libburn release 1.0.6 is ready
+http://svn.libburnia-project.org/libburn/branches/1.0.6
+http://svn.libburnia-project.org/libburn/tags/1.0.6
+
+------------------------------------ cycle  - cdrskin-1.0.7 - 2011.04.09.090001
+
+
+15 Apr 2011  [3735]
+doc/doxygen.conf.in
+Disabled HAVE_DOT in doxygen.conf
+
+2011.05.01.144546  [3743]
+libburn/init.c
+Closed tiny memory leak found by valgrind
+
+2011.05.12.120503  [3791]
+libburn/drive.h
+Including header pthread.h on request of Mats Andersson for OpenBSD
+
+2011.05.12.134723  [3792]
+libburn/init.c
+libburn/drive.c
+libburn/structure.c
+libburn/mmc.c
+libburn/sg-linux.c
+Reacted on -Wsign-compare warnings of gcc
+
+2011.05.12.135008  [3793]
+cdrskin/cdrskin.c
+Reacted on -Wsign-compare warnings of gcc
+
+2011.05.12.135116  [3794]
+test/libburner.c
+Reacted on -Wsign-compare warnings of gcc
+
+2011.05.12.135217  [3795]
+test/telltoc.
+Reacted on -Wsign-compare warnings of gcc
+
+12 May 2011  [3796]
+test/poll.c
+Reacted on -Wsign-compare warnings of gcc
+
+14 May 2011  [3803]
+Makefile.am
+doc/cookbook.txt
+doc/mediainfo.txt
+Added cookbook.txt and mediainfo.txt to tarball on request of George Danchev
+
+2011.05.15.104727  [3804]
+libburn/init.h
+Macros BURN_ALLOC_MEM, BURN_FREE_MEM for replaceing local variables
+
+2011.05.15.104926  [3805]
+libburn/async.c
+Replaced some large local variables by other means in libburn/async.c
+
+2011.05.15.181724  [3806]
+libburn/init.h
+Polished macro BURN_ALLOC_MEM
+
+2011.05.15.191420  [3807]
+libburn/drive.c
+Replaced some large local variables by other means in libburn/drive.c
+
+2011.05.15.203140  [3808]
+libburn/init.h
+libburn/async.c
+Added forgotten return value to BURN_ALLOC_MEM
+
+22 May 2011 [3830]
+doc/mediainfo.txt
+Added a DVD+RW product id to the list
+
+22 May 2011  [3831]
+configure.ac
+Added options -Wextra -Wno-unused-parameter for gcc
+
+2011.05.23.154011  [3834]
+libburn/mmc.c
+Replaced some large local variables by other means in libburn/mmc.c
+
+2011.05.23.155217  [3835]
+libburn/read.c
+Replaced some large local variables by other means in libburn/read.c
+
+2011.05.23.163506  [3836]
+libburn/sg-dummy.c
+Replaced some large local variables by other means in libburn/sg-dummy.c
+
+2011.05.23.174016  [3837]
+libburn/sg-freebsd.c
+Replaced some large local variables by other means in libburn/sg-freebsd.c
+
+2011.05.23.182627  [3838]
+libburn/sg-freebsd-port.c
+Replaced some large local variables by other means in libburn/sg-freebsd-port.c
+
+2011.05.26.145626  [3839]
+libburn/transport.h
+libburn/libdax_msgs.h
+libburn/mmc.c
+Improved reaction on Damage Bit and missing NWA_V of READ TRACK INFORMATION
+
+2011.05.26.150020  [3840]
+libburn/libburn.h
+libburn/drive.c
+libburn/libburn.ver
+New API call burn_disc_next_track_is_damaged()
+
+2011.05.31.103124  [3846]
+libburn/write.h
+libburn/write.c
+libburn/libdax_msgs.h
+libburn/libburn.ver
+New API call burn_disc_close_damaged()
+
+2011.06.02.083808  [3848]
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+Gave up use of bzero() in FreeBSD system adapters
+
+2011.06.02.132554  [3849]
+libburn/sg-libcdio.c
+Replaced some large local variables by other means in libburn/sg-libcdio.c
+
+2011.06.05.170431  [3850]
+libburn/sg-linux.c
+Replaced some large local variables by other means in libburn/sg-linux.c
+
+2011.06.06.104404  [3851]
+libburn/sg-solaris.c
+Replaced some large local variables by other means in libburn/sg-solaris.c
+
+2011.06.06.105052  [3852]
+libburn/sg-solaris.c
+Reacted on warnings of gcc about mixed sign comparison
+
+2011.06.06.173021  [3853]
+libburn/spc.c
+Replaced some large local variables by other means in libburn/spc.c
+
+2011.06.06.173611  [3854]
+libburn/init.h
+libburn/init.c
+Leaner implementation of macro BURN_ALLOC_MEM
+
+2011.06.07.084343  [3855]
+libburn/write.c
+Closed a small memory leak with CD SAO found by valgrind
+
+2011.06.07.143930  [3856]
+libburn/transport.h
+libburn/spc.c
+libburn/sbc.c
+libburn/mmc.c
+Consolidated several local struct command to a new member of struct burn_drive
+
+2011.06.08.081338  [3858]
+libburn/structure.c
+Replaced some large local variables by other means in libburn/structure.c
+
+2011.06.08.082201  [3859]
+libburn/toc.c
+Replaced some large local variables by other means in libburn/toc.c
+
+2011.06.08.181204  [3860]
+libburn/mmc.c
+Bug fix: burn_disc_format() on DVD-RW issued wrong block size with type 00h
+
+8 Jun 2011  [3861]
+configure.ac
+Makefile.am
+Introduced AC_CONFIG_MACRO_DIR() and ACLOCAL_AMFLAGS on advise of George Danchev
+
+2011.06.08.200329  [3863]
+libburn/write.c
+Replaced some large local variables by other means in libburn/write.c
+
+9 Jun 2011  [3864]
+bootstrap
+Added option -I . to aclocal in bootstrap script on advise of George Danchev
+
+2011.06.14.152832  [3866]
+libburn/spc.c
+libburn/mmc.c
+Reporting SCSI error if command RESERVE TRACK fails
+
+
+Release 1.0.8 was skipped to get back in sync with libisofs and libisoburn.
+
+
+18 Jun 2011 [3868]
+svn copy -m Branching for libburn release 1.1.0
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.1.1
+
+2011.06.18.100001  [3869]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.0
+
+18 Jun 2011  [3870]
+- cdrskin/add_ts_changes_to_libburn_1_0_6
+- cdrskin/add_ts_changes_to_libburn_1_0_7
++ cdrskin/add_ts_changes_to_libburn_1_1_0
++ cdrskin/add_ts_changes_to_libburn_1_1_1
+Updated cdrskin tarball generator
+
+18 Jun 2011  [3871]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------------- release - cdrskin-1.1.0 - 2011.06.18.100001
+* New API call burn_disc_next_track_is_damaged()
+* New API call burn_disc_close_damaged()
+* Bug fix: burn_disc_format() on DVD-RW issued wrong block size with type 00h
+
+
+2011.06.18.154942  [3875]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.1
+
+18 Jun 2011  [3876]
+- cdrskin/add_ts_changes_to_libburn_1_0_6
+- cdrskin/add_ts_changes_to_libburn_1_0_7
++ cdrskin/add_ts_changes_to_libburn_1_1_0
++ cdrskin/add_ts_changes_to_libburn_1_1_1
+Updated cdrskin tarball generator
+
+18 Jun 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+  []
+svn move -m libburn release 1.1.1 is ready
+http://svn.libburnia-project.org/libburn/branches/1.1.1
+http://svn.libburnia-project.org/libburn/tags/1.1.1
+
+------------------------------------ cycle  - cdrskin-1.1.1 - 2011.06.18.154942
+
+------------------------------------ cycle  - cdrskin-1.1.1 - 
+------------------------------------ cycle  - cdrskin-1.1.1 - 
 
 
 
@@ -9437,7 +9720,7 @@ pntadm -A 10.0.0.24 -f MANUAL -i 010008544255E7 -m 10.0.0.0 -y 10.0.0.0
   as readable.
 
 - Do something about drive->buffer asynchronous race conditions
-  and dangerous use of local heap memory.
+  and dangerous use of temporary dynamic memory.
   (The various asynchronous operations use the same buffer
    pointer in struct burn_drive and let it point to
    their private memory.
