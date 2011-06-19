@@ -44,6 +44,7 @@ Present implementation: default dummy which enables libburn only to work
 #include "debug.h"
 #include "toc.h"
 #include "util.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
