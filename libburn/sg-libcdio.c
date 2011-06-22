@@ -259,7 +259,7 @@ try_next:;
 	}
 #endif
 
-	if (strlen(*(idx->pos)) >= adr_size)
+	if ((ssize_t) strlen(*(idx->pos)) >= adr_size)
 		return -1;
 	strcpy(adr, *(idx->pos));
 	(idx->pos)++;
@@ -440,7 +440,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 	ret = sg_give_next_adr_raw(idx, adr, adr_size, initialize);
 	if (ret <= 0)
 		goto ex;
-	if (strlen(adr) >= path_size)
+	if ((ssize_t) strlen(adr) >= path_size)
 		goto ex;
 
 #ifdef Libburn_is_on_solariS
@@ -453,7 +453,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 #endif /* Libburn_is_on_solariS */
 
 	ret = burn_drive_resolve_link(adr, path, &recursion_count, 2);
-        if(ret > 0 && strlen(path) < adr_size)
+        if(ret > 0 && (ssize_t) strlen(path) < adr_size)
 		strcpy(path, adr);
 	ret = (ret >= 0);
 ex:
@@ -667,8 +667,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
 		if (sense_valid >= 18) {
 			memcpy(c->sense, sense_pt,
-				sense_valid >= sizeof(c->sense) ?
-				sizeof(c->sense) : sense_valid );
+				(size_t) sense_valid >= sizeof(c->sense) ?
+				sizeof(c->sense) : (size_t) sense_valid );
 			spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
 		} else
 			key = asc = ascq = 0;
