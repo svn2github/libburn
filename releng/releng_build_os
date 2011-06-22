@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+cd ..
+
+if [ ! -x configure ]; then
+ printf "\n*** please run ./bootstrap first.\n"
+ exit 1
+fi
+
+build()
+{
+ for F in ${1}
+ do
+  make clean
+  clear
+  printf "\n *** building with: %s\n" CPPFLAGS=-D${F}
+  sleep 1
+  # libcdio is not autodetected by default; should be available everywhere
+  CPPFLAGS=-D${F} ./configure --enable-libcdio; make
+ done
+}
+
+OS=`uname -o`
+
+case ${OS} in
+GNU/Linux)
+ printf "OS: %s\n" ${OS}
+ sleep 1
+ build  "__linux Libburn_use_sg_dummY Libburn_use_libcdiO"
+;;
+*)
+ printf "Unknown OS: %s\n" ${OS}
+ exit 1
+;;
+esac
+
+# just in case
+unset CPPFLAGS
