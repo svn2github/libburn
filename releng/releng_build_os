@@ -18,7 +18,8 @@ build()
   printf "\n *** building with: %s\n" CPPFLAGS=-D${F}
   sleep 1
   # libcdio is not autodetected by default; should be available everywhere
-  CPPFLAGS=-D${F} ./configure --enable-libcdio; make
+  CPPFLAGS=-D${F} ./configure --enable-libcdio; make 2> releng/libburn.${F}.log
+  make clean
  done
 }
 
