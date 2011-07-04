@@ -625,7 +625,9 @@ void burn_fifo_next_interval(struct burn_source *source,
 
 	*interval_min_fill = fs->interval_min_fill;
 	ret = burn_fifo_inquire_status(source,
-					 &size, &free_bytes, &status_text);	
+					 &size, &free_bytes, &status_text);
+	if (ret < 0)
+		return;
 	fs->interval_min_fill = size - free_bytes - 1;
 }
 
