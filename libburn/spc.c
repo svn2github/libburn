@@ -781,6 +781,7 @@ void spc_getcaps(struct burn_drive *d)
 	if (mmc_function_spy(d, "getcaps") <= 0)
 		return;
 
+	burn_speed_descriptor_destroy(&(d->mdata->speed_descriptors), 1);
 	spc_inquiry(d);
 	spc_sense_caps(d);
 	spc_sense_error_params(d);
