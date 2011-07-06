@@ -305,13 +305,12 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 {
 	struct buffer *buf = NULL;
 	struct command *c;
-	int ret = 1;
 
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_send_cue_sheet") <= 0)
 		return;
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
 	scsi_init_command(c, MMC_SEND_CUE_SHEET, sizeof(MMC_SEND_CUE_SHEET));
 	c->retry = 1;
 	c->page = buf;
@@ -611,10 +610,9 @@ void mmc_get_event(struct burn_drive *d)
 	struct command *c;
 	int alloc_len = 8, len, evt_code, loops = 0;
 	unsigned char *evt;
-	int ret;
 
 	c = &(d->casual_command);
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
 	if (mmc_function_spy(d, "mmc_get_event") <= 0)
 		goto ex;
 
@@ -1587,6 +1585,8 @@ void mmc_read_toc(struct burn_drive *d)
 */
 	if (alloc_len >= 15)
 		ret = mmc_read_toc_al(d, &alloc_len);
+	if (ret <= 0)
+		return;
 }
 
 
@@ -2012,6 +2012,9 @@ void mmc_read_disc_info(struct burn_drive *d)
 	fprintf(stderr,"LIBBURN_DEBUG: 51h alloc_len = %d , ret = %d\n",
 			alloc_len, ret);
 */
+	if (ret <= 0)
+		return;
+
 	/* for now there is no need to inquire the variable lenght part */
 }
 
@@ -2020,7 +2023,7 @@ void mmc_read_atip(struct burn_drive *d)
 {
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
-	int alloc_len = 28, ret = 0;
+	int alloc_len = 28;
 
 	/* ts A61021 */
 	unsigned char *data;
@@ -2035,8 +2038,8 @@ void mmc_read_atip(struct burn_drive *d)
 	                   4234, 5646, 7056, 8468, -12, -13, -14, -15};
 	               /*    24,   32,   40,   48,   -,   -,   -,   - */
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_atip") <= 0)
 		goto ex;
@@ -2378,14 +2381,14 @@ int mmc_set_streaming(struct burn_drive *d,
 		eff_end_lba = end_lba;
 
 	sprintf(msg, "mmc_set_streaming: end_lba=%d ,  r=%d ,  w=%d",
-		end_lba, r_speed, w_speed);
+		eff_end_lba, r_speed, w_speed);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   msg, 0, 0);
 
 	/* start_lba is 0 , 1000 = 1 second as base time for data rate */
 	for (b = 0; b < 4 ; b++) {
-		pd[8+b] = (end_lba >> (24 - 8 * b)) & 0xff;
+		pd[8+b] = (eff_end_lba >> (24 - 8 * b)) & 0xff;
 		pd[12+b] = (r_speed >> (24 - 8 * b)) & 0xff;
 		pd[16+b] = (1000 >> (24 - 8 * b)) & 0xff;
 		pd[20+b] = (w_speed >> (24 - 8 * b)) & 0xff;
@@ -2483,12 +2486,15 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer *buf = NULL;
-	int len, cp, descr_len = 0, feature_code, prf_number, only_current = 1;
+	int len, cp, descr_len = 0, feature_code, only_current = 1;
 	int old_alloc_len, only_current_profile = 0, key, asc, ascq, ret;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command *c = NULL;
 	int phys_if_std = 0;
 	char *phys_name = "";
+#ifdef Libburn_print_feature_descriptorS
+	int prf_number;
+#endif
 
 	if (*alloc_len < 8)
 		{ret = 0; goto ex;}
@@ -2655,9 +2661,9 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 			for (prf = descr + 4; prf + 2 < prf_end; prf += 4) {
 				if (only_current_profile && !(prf[2] & 1))
 			continue;
-				prf_number =  (prf[0] << 8) | prf[1];
 
 #ifdef Libburn_print_feature_descriptorS
+				prf_number =  (prf[0] << 8) | prf[1];
 				fprintf(stderr,
 			"LIBBURN_EXPERIMENTAL :   %s profile %4.4Xh  \"%s\"\n",
 					prf[2] & 1 ? "+" : "-",
@@ -2961,13 +2967,13 @@ void mmc_sync_cache(struct burn_drive *d)
 {
 	struct command *c = NULL;
 	char *msg = NULL;
-	int key, asc, ascq, ret;
+	int key, asc, ascq;
 
 	if (mmc_function_spy(d, "mmc_sync_cache") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(c, struct command, 1);
-	BURN_ALLOC_MEM(msg, char, 256);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(msg, char, 256);
 
 	scsi_init_command(c, MMC_SYNC_CACHE, sizeof(MMC_SYNC_CACHE));
 	c->retry = 1;
@@ -3724,10 +3730,16 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	struct buffer *buf = NULL;
 	int len, i, b, num_descr, ret, old_alloc_len;
 	int exact_bit, read_speed, write_speed;
+
+	/* >>> ts B10702: This rule seems questionable:
+	       TSST SH-203 delivers here for CD only 7040k
+	       whereas mode page 2Ah gives 1412k to 7056k
+	*/
 	/* if this call delivers usable data then they should override
 	   previously recorded min/max speed and not compete with them */
 	int min_write_speed = 0x7fffffff, max_write_speed = 0;
 	int min_read_speed = 0x7fffffff, max_read_speed = 0;
+
 	struct command *c = NULL;
 	unsigned long end_lba;
 	unsigned char *pd;
@@ -3788,6 +3800,10 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 		{ret = 1; goto ex;}
 	if (len < 12)
 		{ret = 0; goto ex;}
+
+	/* ts B10702 : overriding the questionable override rule */
+	min_write_speed = d->mdata->min_write_speed;
+	max_write_speed = d->mdata->max_write_speed;
 
 	pd = c->page->data;
 	if (num_descr > *max_descr)
