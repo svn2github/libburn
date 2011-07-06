@@ -105,16 +105,14 @@ static void write_clonecd2(volatile struct toc *toc, int f)
 
 void toc_find_modes(struct burn_drive *d)
 {
-	struct burn_read_opts o;
-	int lba;
-	int i, j, ret;
+	int i, j;
 	struct buffer *mem = NULL;
 	struct burn_toc_entry *e;
 
-	BURN_ALLOC_MEM(mem, struct buffer, 1);
+/* ts A70519 : the code which needs this does not work with GNU/Linux 2.4 USB
+	int lba;
+	struct burn_read_opts o;
 
-	mem->bytes = 0;
-	mem->sectors = 1;
 	o.raw = 1;
 	o.c2errors = 0;
 	o.subcodes_audio = 1;
@@ -123,17 +121,18 @@ void toc_find_modes(struct burn_drive *d)
 	o.report_recovered_errors = 0;
 	o.transfer_damaged_blocks = 1;
 	o.hardware_error_retries = 1;
+*/
+
+	BURN_ALLOC_MEM_VOID(mem, struct buffer, 1);
+
+	mem->bytes = 0;
+	mem->sectors = 1;
 
 	for (i = 0; i < d->disc->sessions; i++)
 		for (j = 0; j < d->disc->session[i]->tracks; j++) {
 			struct burn_track *t = d->disc->session[i]->track[j];
 
 			e = t->entry;
-			if (!e)
-				lba = 0;
-			else
-				lba = burn_msf_to_lba(e->pmin, e->psec,
-						      e->pframe);
 /* XXX | in the subcodes if appropriate! */
 			if (e && !(e->control & 4)) {
 				t->mode = BURN_AUDIO;
@@ -142,6 +141,11 @@ void toc_find_modes(struct burn_drive *d)
 				t->mode = BURN_MODE1;
 /* ts A70519 : this does not work with GNU/Linux 2.4 USB because one cannot
                predict the exact dxfer_size without knowing the sector type.
+				if (!e)
+					lba = 0;
+				else
+					lba = burn_msf_to_lba(e->pmin, e->psec,
+							      e->pframe);
 				mem->sectors = 1;
 				d->read_sectors(d, lba, mem.sectors, &o, mem);
 				t->mode = sector_identify(mem->data);
