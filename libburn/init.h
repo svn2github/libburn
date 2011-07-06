@@ -36,6 +36,12 @@ void *burn_alloc_mem(size_t size, size_t count, int flag);
 		ret= -1; goto ex; \
 	} }
 
+#define BURN_ALLOC_MEM_VOID(pt, typ, count) { \
+	pt= (typ *) burn_alloc_mem(sizeof(typ), (size_t) (count), 0); \
+	if(pt == NULL) { \
+		goto ex; \
+	} }
+
 #define BURN_FREE_MEM(pt) { \
 	if(pt != NULL) \
 		free((char *) pt); \

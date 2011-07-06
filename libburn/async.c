@@ -585,7 +585,6 @@ static void *write_disc_worker_func(struct w_list *w)
 
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
-	int ret;
 	struct write_opts o;
 	char *reasons= NULL;
 	struct burn_drive *d;
@@ -648,7 +647,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	               tests in burn_*_write_sync()
 	*/
 
-        BURN_ALLOC_MEM(reasons, char, BURN_REASONS_LEN + 80);
+        BURN_ALLOC_MEM_VOID(reasons, char, BURN_REASONS_LEN + 80);
 	strcpy(reasons, "Write job parameters are unsuitable:\n");
 	if (burn_precheck_write(opts, disc, reasons + strlen(reasons), 1)
 	     <= 0) {
