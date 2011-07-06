@@ -244,7 +244,6 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 {
 	char msg[81];
 	struct burn_drive *d;
-	struct burn_track *t;
 
 	/* ts A61106 */
 #ifdef Libburn_experimental_no_close_tracK
@@ -252,7 +251,6 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 #endif
 
 	d = o->drive;
-	t = s->track[tnum];
 
 	d->busy = BURN_DRIVE_CLOSING_TRACK;
 
@@ -666,19 +664,11 @@ int burn_write_leadout(struct burn_write_opts *o,
 int burn_write_session(struct burn_write_opts *o, struct burn_session *s)
 {
 	struct burn_drive *d = o->drive;
-	struct burn_track *prev = NULL, *next = NULL;
 	int i, ret;
 
 	d->rlba = 0;
 	burn_print(1, "    writing a session\n");
 	for (i = 0; i < s->tracks; i++) {
-		if (i > 0)
-			prev = s->track[i - 1];
-		if (i + 1 < s->tracks)
-			next = s->track[i + 1];
-		else
-			next = NULL;
-
 		if (!burn_write_track(o, s, i))
 			{ ret = 0; goto ex; }
 	}
@@ -1158,7 +1148,7 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 					struct burn_session *s, int tnum)
 {
 	struct burn_drive *d = o->drive;
-	char *msg;
+	char *msg = NULL;
 	int ret, lba, nwa;
 	off_t size;
 
@@ -2263,7 +2253,7 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 				int tnum, int flag)
 {
-	int open_ended, bufsize = 16 * 2048, ret, sectors, fd;
+	int open_ended, bufsize = 16 * 2048, ret, sectors;
 	struct burn_track *t = s->track[tnum];
 	struct burn_drive *d = o->drive;
 	char *buf = NULL;
@@ -2272,7 +2262,6 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	struct timeval prev_time;
 
 	BURN_ALLOC_MEM(buf, char, bufsize);
-	fd = d->stdio_fd;
 
 	sectors = burn_track_get_sectors(t);
 	burn_disc_init_track_status(o, s, tnum, sectors);
