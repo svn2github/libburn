@@ -634,7 +634,7 @@ return: <0 = error , 0 = idle , 1 = did some work
 */
 {
  double buffer_space;
- int can_read,can_write= 0,ret,did_work= 0,idx,sod,eop_is_near,eop_idx;
+ int can_read,can_write= 0,ret,did_work= 0,idx,sod, eop_idx;
 
  buffer_space= Cdrfifo_tell_buffer_space(o,0);
  if(o->dest_fd>=0) if(FD_ISSET((o->dest_fd),wts)) {
@@ -644,7 +644,7 @@ return: <0 = error , 0 = idle , 1 = did some work
    if(o->read_idx+can_write > o->buffer_size)
      can_write= o->buffer_size - o->read_idx;
    if(o->follow_up_fd_idx>=0) {
-     eop_is_near= Cdrfifo_eop_adjust(o,&can_write,&eop_idx,0);
+     Cdrfifo_eop_adjust(o,&can_write,&eop_idx,0);
      if(can_write<=0)
        goto after_write;
    }
