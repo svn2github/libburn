@@ -141,7 +141,6 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 	static int clueless_timeout = 5 * 10;
 	char *msg = NULL;
 	unsigned char sense[14];
-	enum response resp;
 
 	BURN_ALLOC_MEM(msg, char, 320);
 	if (!(flag & 1))
@@ -177,7 +176,7 @@ handle_error:;
 			sense[2] = key;
 			sense[12] = asc;
 			sense[13] = ascq;
-			resp = scsi_error_msg(d, sense, 14, msg + strlen(msg),
+			scsi_error_msg(d, sense, 14, msg + strlen(msg),
 						 &key, &asc, &ascq);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002014d,
@@ -268,13 +267,12 @@ void spc_inquiry(struct burn_drive *d)
 	struct buffer *buf = NULL;
 	struct burn_scsi_inquiry_data *id;
 	struct command *c = NULL;
-	int ret;
 
 	if (mmc_function_spy(d, "inquiry") <= 0)
 		return;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 	scsi_init_command(c, SPC_INQUIRY, sizeof(SPC_INQUIRY));
 	c->dxfer_len = (c->opcode[3] << 8) | c->opcode[4];
 	c->retry = 1;
@@ -342,7 +340,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 {
 	struct buffer *buf = NULL;
 	struct scsi_mode_data *m;
-	int size, page_length, num_write_speeds = 0, i, speed, ret;
+	int page_length, num_write_speeds = 0, i, speed, ret;
 	int old_alloc_len, was_error = 0;
 	unsigned char *page;
 	struct command *c = NULL;
@@ -386,7 +384,6 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		was_error = 1;
 	}
 
-	size = c->page->data[0] * 256 + c->page->data[1] + 2;
 	page = c->page->data + 8;
 
 	/* ts A61225 :
@@ -561,17 +558,16 @@ void spc_sense_error_params(struct burn_drive *d)
 {
 	struct buffer *buf = NULL;
 	struct scsi_mode_data *m;
-	int size, alloc_len = 12 ;
+	int alloc_len = 12 ;
 	unsigned char *page;
 	struct command *c = NULL;
-	int ret;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_error_params") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 
 	scsi_init_command(c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
 	c->dxfer_len = alloc_len;
@@ -585,7 +581,6 @@ void spc_sense_error_params(struct burn_drive *d)
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
 
-	size = c->page->data[0] * 256 + c->page->data[1] + 2;
 	m = d->mdata;
 	page = c->page->data + 8;
 	d->params.retries = page[3];
@@ -601,14 +596,13 @@ void spc_select_error_params(struct burn_drive *d,
 {
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
-	int ret;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "select_error_params") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 	
 	scsi_init_command(c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
 	c->retry = 1;
@@ -640,7 +634,7 @@ void spc_sense_write_params(struct burn_drive *d)
 {
 	struct buffer *buf = NULL;
 	struct scsi_mode_data *m;
-	int size, dummy, alloc_len = 10, ret;
+	int dummy, alloc_len = 10;
 	unsigned char *page;
 	struct command *c = NULL;
 
@@ -648,8 +642,8 @@ void spc_sense_write_params(struct burn_drive *d)
 	if (mmc_function_spy(d, "sense_write_params") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 
 	/* ts A61007 : Done in soft at only caller burn_drive_grab() */
 	/* a ssert(d->mdata->cdr_write || d->mdata->cdrw_write ||
@@ -670,7 +664,6 @@ void spc_sense_write_params(struct burn_drive *d)
 	/* ts A71128 : do not interpret reply if error */
 	m = d->mdata;
 	if (!c->error) {
-		size = c->page->data[0] * 256 + c->page->data[1] + 2;
 		page = c->page->data + 8;
 		burn_print(1, "write page length 0x%x\n", page[1]);
 		m->write_page_length = page[1];
@@ -710,14 +703,14 @@ void spc_select_write_params(struct burn_drive *d,
 {
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
-	int alloc_len, ret;
+	int alloc_len;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "select_write_params") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 
 	/* ts A61007 : All current callers are safe. */
 	/* a ssert(o->drive == d); */
@@ -798,15 +791,15 @@ void spc_probe_write_modes(struct burn_drive *d)
 	int try_write_type = 1;
 	int try_block_type = 0;
 	int key, asc, ascq, useable_write_type = -1, useable_block_type = -1;
-	int last_try = 0, ret;
+	int last_try = 0;
 	struct command *c = NULL;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "spc_probe_write_modes") <= 0)
 		goto ex;
 
-	BURN_ALLOC_MEM(buf, struct buffer, 1);
-	BURN_ALLOC_MEM(c, struct command, 1);
+	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
+	BURN_ALLOC_MEM_VOID(c, struct command, 1);
 
 	/* ts A70213 : added pseudo try_write_type 4 to set a suitable mode */
 	while (try_write_type != 5) {
