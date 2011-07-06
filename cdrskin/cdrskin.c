@@ -6481,7 +6481,7 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin,
                                 struct burn_disc *disc,
                                 int flag)
 {
- int profile_number= -1, current_is_cd= 1, ret, was_still_default= 0;
+ int profile_number= -1, ret, was_still_default= 0;
  char profile_name[80], reasons[BURN_REASONS_LEN];
  enum burn_disc_status s= BURN_DISC_UNGRABBED;
  enum burn_write_types wt;
@@ -6491,8 +6491,6 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin,
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
    s= burn_disc_get_status(skin->grabbed_drive);
  }
- if(profile_number!=0x09 && profile_number!=0x0a)
-   current_is_cd= 0;
  if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
    was_still_default= 1;
    wt= burn_write_opts_auto_write_type(opts, disc, reasons, 0);
@@ -6988,7 +6986,8 @@ ex:;
 int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
 {
  int ret, i, went_well= 1;
- char *track_descr,*td,*md;
+ char *track_descr, *md;
+ unsigned char *td; /* Because the representation of 255 in char is ambigous */
  double track_size, media_size;
 
  ret= Cdrtrack_get_iso_fs_descr(skin->tracklist[0],&track_descr,&track_size,0);
@@ -7023,12 +7022,12 @@ int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
  /* Copy type 255 CD001 descriptors from track to media descriptor buffer
     and adjust their size entries */
  for(i=1; i<16; i++) {
-   td= track_descr+i*2048;
+   td= (unsigned char *) (track_descr + i * 2048);
    md= skin->overwriteable_iso_head+(16+i)*2048;
-   if(td[0] != -1)
+   if(td[0] != 255)
  break;
    /* demand media descrN[0] == track descrN[0] */
-   if(td[0] != md[0]) {
+   if(((char *) td)[0] != md[0]) {
      fprintf(stderr,
    "cdrskin: SORRY : Type mismatch of ISO volume descriptor #%d (%u <-> %u)\n",
              i, ((unsigned int) td[0]) & 0xff, ((unsigned int) md[0])&0xff);
@@ -7857,7 +7856,7 @@ sorry_failed_to_eject:;
 */
 int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
- int i,k,l,ret,source_has_size=0, idx= -1;
+ int i,k,l,ret, idx= -1;
  double value,grab_and_wait_value= -1.0, num;
  char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
@@ -8383,10 +8382,8 @@ gracetime_equals:;
      skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"--list_ignored_options")==0) {
-     char line[80];
      /* is also handled in Cdrpreskin_setup() */;
 
-     line[0]= 0;
      printf("cdrskin: List of all ignored options:\n");
      for(k=0;ignored_partial_options[k][0]!=0;k++)
        printf("%s\n",ignored_partial_options[k]);
@@ -8766,7 +8763,6 @@ track_too_large:;
                (int) sizeof(skin->source_path)-1,(int) strlen(argv[i]));
        return(0);
      }
-     source_has_size= 0;
      strcpy(skin->source_path,argv[i]);
      if(strcmp(skin->source_path,"-")==0) {
        if(skin->stdin_source_used) {
@@ -8789,7 +8785,7 @@ track_too_large:;
      } else {
        if(stat(skin->source_path,&stbuf)!=-1) {
          if((stbuf.st_mode&S_IFMT)==S_IFREG)
-           source_has_size= 1;
+           ;
          else if((stbuf.st_mode&S_IFMT)==S_IFDIR) {
            fprintf(stderr,
                    "cdrskin: FATAL : Source address is a directory: '%s'\n",
