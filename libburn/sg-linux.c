@@ -1775,7 +1775,8 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
  	struct my_scsi_idlun idlun;
 
 	/* valgrind called idlun unitialized because it is blind for ioctl */
-	memset(&idlun, 0, sizeof(struct my_scsi_idlun));
+	idlun.x = 0;
+	idlun.host_unique_id = 0;
 
 	l = strlen(linux_ata_device_family) - 2;
 	if (l > 0 && strncmp(path, linux_ata_device_family, l) == 0 
