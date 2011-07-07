@@ -2090,7 +2090,7 @@ void mmc_read_atip(struct burn_drive *d)
 	fprintf(stderr,"libburn_experimental: Returned ATIP Data\n");
 	for(i= 0; i<28; i++)
 		fprintf(stderr,"%3.3d (0x%2.2x)%s",
-			data[i],data[i],((i+1)%5 ? "  ":"\n"));
+			data[i],data[i],(((i + 1) % 5) ? "  " : "\n"));
 	fprintf(stderr,"\n");
 
 	fprintf(stderr,
