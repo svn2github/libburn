@@ -23,12 +23,20 @@
 #else
 #ifdef __FreeBSD__
 
+#ifdef Libburn_use_sg_freebsd_porT
+#include "sg-freebsd-port.c"
+#else
 #include "sg-freebsd.c"
+#endif
 
 #else
 #ifdef __FreeBSD_kernel__
 
+#ifdef Libburn_use_sg_freebsd_porT
+#include "sg-freebsd-port.c"
+#else
 #include "sg-freebsd.c"
+#endif
 
 #else
 #ifdef __linux
