@@ -1,5 +1,5 @@
 /*
- cleanup.c , Copyright 2006 Thomas Schmitt <scdbackup@gmx.net>
+ cleanup.c , Copyright 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
 
  A signal handler which cleans up an application and exits.
 
@@ -205,9 +205,10 @@ main()
  Cleanup_set_handlers(&demoapp,(Cleanup_app_handler_T) Demo_app_handler,0);
 
  if(1) { /* change to 0 in order to wait for external signals */
-   char *cpt= NULL,c;
+   char *cpt= NULL, c= ' ';
    printf("Intentionally provoking SIGSEGV ...\n");
    c= *cpt;
+   printf("Strange: The system ignored a SIGSEGV: c= %u\n", (unsigned int) c);
  } else {
    printf("killme: %d\n",getpid());
    sleep(3600);
