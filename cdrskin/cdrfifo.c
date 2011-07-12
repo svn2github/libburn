@@ -1039,9 +1039,9 @@ int Test_mixed_bs(char **paths, int path_count,
  bit0= debugging verbousity
 */
 {
- int fd_in[100],fd_out[100],ret,pipe_fds[100][2],real_out[100];
+ int fd_in[100],fd_out[100],ret,pipe_fds[100][2];
  int i,iv,stall_counter= 0,cycle_counter= 0.0;
- char buf[10240], target_path[80];
+ char target_path[80];
  double in_counter, out_counter, prev_in= -1.0, prev_out= -1.0;
  struct CdrfifO *ff_in= NULL, *ff_out= NULL;
 
@@ -1109,9 +1109,8 @@ int Test_multi(int fs_size, double speed_limit, double interval, int flag)
  bit0= debugging verbousity
 */
 {
- int fd_in[4],fd_out[4],ret,pipe_fds[4][2],real_out[4],pipe_idx;
+ int fd_in[4],fd_out[4],ret,pipe_fds[4][2];
  int i,iv;
- char buf[10240];
  struct CdrfifO *ff1= NULL,*ff2= NULL;
 
  /* open four pairs of fds */
