@@ -5402,16 +5402,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  drive= skin->drives[skin->driveno].drive;
  s= burn_disc_get_status(drive);
  Cdrskin_report_disc_status(skin,s,1|2);
- if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable) {
+ if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable)
    is_not_really_erasable= 1;
- } else if(s==BURN_DISC_EMPTY) {
-   if(skin->verbosity>=Cdrskin_verbose_progresS) {
-     printf("Current: none\n");
-     Cdrskin_print_all_profiles(skin, drive, 0);
-   }
-   ret= 0; goto ex;
- }
-
 
 #ifdef Cdrskin_atip_speed_brokeN
 
@@ -5508,13 +5500,17 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  }
 #endif /* Cdrskin_libburn_has_burn_disc_unsuitablE */
 
- ret= burn_drive_get_write_speed(drive);
- x_speed_max= ((double) ret)/Cdrskin_libburn_speed_factoR;
- if(x_speed_min<0)
-   x_speed_min= x_speed_max;
+ if(burn_disc_get_status(drive) != BURN_DISC_EMPTY) {
+   ret= burn_drive_get_write_speed(drive);
+   x_speed_max= ((double) ret)/Cdrskin_libburn_speed_factoR;
+   if(x_speed_min<0)
+     x_speed_min= x_speed_max;
+ }
  printf("cdrskin: burn_drive_get_write_speed = %d  (%.1fx)\n",ret,x_speed_max);
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
-   if(profile_name[0])
+   if(burn_disc_get_status(drive) == BURN_DISC_EMPTY)
+     printf("Current: none\n");
+   else if(profile_name[0])
      printf("Current: %s\n",profile_name);
    else if(burn_disc_erasable(drive))
      printf("Current: CD-RW\n");
@@ -5522,6 +5518,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      printf("Current: CD-R\n");
    Cdrskin_print_all_profiles(skin, drive, 0);
  }
+
+ if(burn_disc_get_status(drive) == BURN_DISC_EMPTY)
+   {ret= 0; goto ex;}
 
  if(strstr(profile_name,"DVD")==profile_name) {
    /* These are dummy messages for project scdbackup, so its media recognition
