@@ -310,8 +310,9 @@ int burn_drive_inquire_media(struct burn_drive *d)
 		if (d->current_profile == -1 || d->current_is_cd_profile)
 			d->read_toc(d);
 
-		/* ts A70314 */
-		d->status = BURN_DISC_UNSUITABLE;
+		/* ts A70314 , B10712 */
+		if (d->status != BURN_DISC_EMPTY)
+			d->status = BURN_DISC_UNSUITABLE;
 	}
 	return 1;
 }
