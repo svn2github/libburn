@@ -1201,7 +1201,9 @@ int burn_drive_info_forget(struct burn_drive_info *info, int force)
 
 void burn_drive_info_free(struct burn_drive_info drive_infos[])
 {
+#ifndef Libburn_free_all_drives_on_infO
 	int i;
+#endif
 
 /* ts A60904 : ticket 62, contribution by elmom */
 /* clarifying the meaning and the identity of the victim */
