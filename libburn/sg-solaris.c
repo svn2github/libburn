@@ -785,13 +785,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #endif
 
 	char *testpath = NULL, *cpt;
-	long blocks;
 	off_t add_size = 0;
 
 	BURN_ALLOC_MEM(testpath, char, 4096);
 
 	testpath[0] = 0;
-	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
 		strcpy(testpath, path);
 		cpt = strrchr(testpath, '/');
