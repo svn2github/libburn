@@ -205,9 +205,11 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 			 const struct burn_read_opts *o)
 {
 	unsigned char sub[96];
-	unsigned short crc;
 	int ptr = 2352, i, j, code, fb;
 	int audio = 1;
+#ifndef Libburn_no_crc_C
+	unsigned short crc;
+#endif
 
 	if (o->c2errors) {
 		fb = bitcount(data + ptr, 294);
@@ -253,9 +255,9 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 				}
 			}
 		}
-		crc = (*(sub + 22) << 8) + *(sub + 23);
 
 #ifndef Libburn_no_crc_C
+		crc = (*(sub + 22) << 8) + *(sub + 23);
 		if (crc != crc_ccitt(sub + 12, 10)) {
 			burn_print(1, "sending error on %s %s\n",
 				   d->idata->vendor, d->idata->product);
