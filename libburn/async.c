@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -183,11 +183,6 @@ static void remove_worker(pthread_t th)
 {
 	struct w_list *a, *l = NULL;
 
-#ifdef Libburn_detach_done_workeR
-	int ret;
-	char msg[80];
-#endif
-
 	for (a = workers; a; l = a, a = a->next)
 		if (a->thread == th) {
 			if (l)
@@ -200,8 +195,12 @@ static void remove_worker(pthread_t th)
 			/* Alternative : threads get detached and thus should
 					dispose themselves.
 			*/
-			ret = pthread_detach(th);
+			pthread_detach(th);
 /*
+			int ret;
+			char msg[80];
+
+			ret = pthread_detach(th);
 			sprintf(msg,
 			 "remove_workers(): pid= %lu  pthread_detach(%lu)= %d",
 			 (unsigned long) getpid(), (unsigned long) th, ret);
