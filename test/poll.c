@@ -20,8 +20,6 @@ static void catch_int ()
 
 static void poll_drive(int d)
 {
-	enum burn_disc_status s;
-
 	fprintf(stderr, "polling disc in %s - %s:\n",
 		drives[d].vendor, drives[d].product);
 
@@ -33,8 +31,7 @@ static void poll_drive(int d)
 	while (burn_drive_get_status(drives[d].drive, NULL))
 		usleep(1000);
 
-	while ((s = burn_disc_get_status(drives[d].drive))
-	       == BURN_DISC_UNREADY)
+	while (burn_disc_get_status(drives[d].drive) == BURN_DISC_UNREADY)
 		usleep(1000);
 	
 	while (NEXT == 0) {
