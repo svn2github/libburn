@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* 
-   Copyright (c) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2009 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -253,14 +253,12 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #endif
 
 	char *testpath = NULL, *cpt;
-	long blocks;
 	off_t add_size = 0;
 	int ret;
 
 	BURN_ALLOC_MEM(testpath, char, 4096);
 
 	testpath[0] = 0;
-	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
 		strcpy(testpath, path);
 		cpt = strrchr(testpath, '/');
@@ -276,6 +274,9 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #ifdef Libburn_if_this_was_linuX
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
+		long blocks;
+
+		blocks = *bytes / 512;
 		fd = open(path, open_mode);
 		if (fd == -1)
 			{ret = -2; goto ex;}
