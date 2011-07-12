@@ -1,9 +1,12 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
+
+
+                  /* THIS CODE IS NOT FUNCTIONAL YET !!! */
 
 
 /*
@@ -721,13 +724,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	struct stat stbuf;
 	struct statvfs vfsbuf;
 	char *testpath = NULL, *cpt;
-	long blocks;
 	off_t add_size = 0;
 	int fd, ret;
 
 	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
-	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
 		strcpy(testpath, path);
 		cpt = strrchr(testpath, '/');
@@ -744,7 +745,9 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		int open_mode = O_RDWR, fd, ret;
+		long blocks;
 
+		blocks = *bytes / 512;
 		if(burn_sg_open_o_excl)
 			open_mode |= O_EXCL;
 		fd = open(path, open_mode);
