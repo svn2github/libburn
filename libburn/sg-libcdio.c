@@ -614,7 +614,7 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int sense_valid = 0, i, timeout_ms, no_retry = 0;
+	int sense_valid = 0, i, timeout_ms;
 	int key = 0, asc = 0, ascq = 0, done = 0;
 	time_t start_time;
         driver_return_code_t i_status;
@@ -701,7 +701,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[0] = 0x70; /*Fixed format sense data*/
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
-				no_retry = 1;
+				done = 1;
 			}
 		} 
 		if (i_status != 0 || (key || asc || ascq)) {
@@ -860,13 +860,11 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #endif
 
 	char *testpath = NULL, *cpt;
-	long blocks;
 	off_t add_size = 0;
 	int ret;
 
 	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
-	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
 		strcpy(testpath, path);
 		cpt = strrchr(testpath, '/');
@@ -884,7 +882,9 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 	/* GNU/Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
 		int open_mode = O_RDONLY, fd, ret;
+		long blocks;
 
+		blocks = *bytes / 512;
 		fd = open(path, open_mode);
 		if (fd == -1)
 			{ret = -2; goto ex;}
