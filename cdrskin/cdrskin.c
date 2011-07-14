@@ -5388,7 +5388,7 @@ int Cdrskin_print_all_profiles(struct CdrskiN *skin, struct burn_drive *drive,
 int Cdrskin_atip(struct CdrskiN *skin, int flag)
 {
  int ret,is_not_really_erasable= 0, current_is_cd= 1;
- double x_speed_max, x_speed_min= -1.0;
+ double x_speed_max= -1.0, x_speed_min= -1.0;
  enum burn_disc_status s;
  struct burn_drive *drive;
  int profile_number= 0;
