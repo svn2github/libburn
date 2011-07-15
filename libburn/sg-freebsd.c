@@ -2,7 +2,8 @@
 
 /* 
    Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
-   Provided under GPL version 2 or later.
+   Provided under GPL version 2 or later
+        and under FreeBSD license revised, i.e. without advertising clause.
 */
 
 #ifdef HAVE_CONFIG_H
@@ -764,7 +765,7 @@ int sg_release(struct burn_drive *d)
 
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int done = 0, err, sense_len = 0, ret, ignore_error, no_retry = 0, i;
+	int done = 0, err, sense_len = 0, ret, ignore_error, i;
 	int cam_pass_err_recover = 0, key, asc, ascq, timeout_ms;
 	union ccb *ccb;
 	static FILE *fp = NULL;
@@ -957,7 +958,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[2] = 0x02;
 				c->sense[12] = 0x04;
 				c->sense[13] = 0x00;
-				no_retry = 1;
+				done = 1;
 			}
 
 			/* >>> Need own duration time measurement.
@@ -1011,7 +1012,7 @@ int burn_os_is_2k_seekrw(char *path, int flag)
 	ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
 	close(fd);
 
-	return 1;
+	return (ret != -1);
 
 #else /* Libburn_DIOCGMEDIASIZE_ISBLK */
 
