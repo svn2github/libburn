@@ -1059,6 +1059,39 @@ int burn_drive_convert_fs_adr(char *path, char adr[]);
 int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 				 int target_no, int lun_no, char adr[]);
 
+/* ts B10728 */
+/** Try to convert a given persistent drive address into the address of a
+    symbolic link that points to this drive address.
+    Modern GNU/Linux systems may shuffle drive addresses from boot to boot.
+    The udev daemon is supposed to create links which always point to the
+    same drive, regardless of its system address.
+    This call tries to find such links.
+    @param dev_adr     Should contain a drive address as returned by
+                       burn_drive_scan().
+    @param link_adr    An application provided array of at least
+                       BURN_DRIVE_ADR_LEN characters size. The found link
+                       address gets copied to it.
+    @param dir_adr     The address of the directory where to look for links.
+                       Normally: "/dev"
+    @param templ       An array of pointers to name templates, which
+                       links have to match. A symbolic link in dir_adr matches
+                       a name template if it begins by that text. E.g.
+                       link address "/dev/dvdrw1" matches template "dvdrw".
+                       If templ is NULL, then the default array gets used:
+                        {"dvdrw", "cdrw", "dvd", "cdrom", "cd"}
+                       If several links would match, then a link will win,
+                       which matches the template with the lowest array index.
+                       Among these candidates, the one with the lowest strcmp()
+                       rank will be chosen as link_adr.
+    @param num_templ   Number of array elements in templ.
+    @param flag        Bitfield for control purposes. Unused yet. Submit 0.
+    @return            <0 severe error, 0 failed to search, 2 nothing found
+                       1 success, link_adr is valid
+    @since 1.1.2
+*/
+int burn_lookup_device_link(char *dev_adr, char link_adr[],
+                         char *dir_adr, char **templ, int num_templ, int flag);
+
 /* ts A60923 - A61005 */
 /** Try to obtain bus,host,channel,target,lun from path. If there is an SCSI
     address at all, then this call should succeed with a persistent
@@ -3063,6 +3096,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                   2= stdio-drive, random access, read-write
                   3= stdio-drive, sequential, write-only
                   4= stdio-drive, random access, read-only
+                     (only if enabled by burn_allow_drive_role_4())
+                  5= stdio-drive, random access, write-only
                      (only if enabled by burn_allow_drive_role_4())
     @since 0.4.0
 */

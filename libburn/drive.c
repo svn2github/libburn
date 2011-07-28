@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <dirent.h>
 
 /* ts A61007 */
 /* #include <a ssert.h> */
@@ -2045,6 +2046,7 @@ int burn_drive_convert_fs_adr_sub(char *path, char adr[], int *rec_count)
 	return 0;
 }
 
+/* API */
 /** Try to convert a given existing filesystem address into a persistent drive
     address.  */
 int burn_drive_convert_fs_adr(char *path, char adr[])
@@ -2053,6 +2055,88 @@ int burn_drive_convert_fs_adr(char *path, char adr[])
 
 	ret = burn_drive_convert_fs_adr_sub(path, adr, &rec_count);
 	return ret;
+}
+
+
+/* API */
+int burn_lookup_device_link(char *dev_adr, char link_adr[],
+			char *dir_adr, char **ranks, int rank_count, int flag)
+{
+	DIR *dirpt= NULL;
+	struct dirent *entry;
+	struct stat link_stbuf;
+	char *adr= NULL, *namept, *sys_adr= NULL;
+	int ret, name_rank, found_rank= 0x7fffffff, dirlen, i, rec_count = 0;
+	static char default_ranks_data[][8] =
+		{"dvdrw", "cdrw", "dvd", "cdrom", "cd"};
+	char *default_ranks[5];
+
+	link_adr[0] = 0;
+	if (ranks == NULL) {
+		for (i = 0; i < 5; i++)
+			default_ranks[i] = default_ranks_data[i]; 
+		ranks = default_ranks;
+		rank_count= 5;
+        }
+	dirlen= strlen(dir_adr) + 1;
+	if (strlen(dir_adr) + 1 >= BURN_DRIVE_ADR_LEN) {
+
+		/* >>> Issue warning about oversized directory address */;
+
+		{ret = 0; goto ex;}
+	}
+	BURN_ALLOC_MEM(adr, char, BURN_DRIVE_ADR_LEN);
+        BURN_ALLOC_MEM(sys_adr, char, BURN_DRIVE_ADR_LEN);
+
+	dirpt = opendir(dir_adr);
+	if (dirpt == NULL)
+		{ret = 0; goto ex;}
+	strcpy(adr, dir_adr);
+        strcat(adr, "/");
+	namept = adr + strlen(dir_adr) + 1;
+	while(1) {
+		entry = readdir(dirpt);
+		if(entry == NULL)
+	break;
+		if (strlen(entry->d_name) + dirlen >= BURN_DRIVE_ADR_LEN)
+	continue;
+	  	strcpy(namept, entry->d_name);
+		if(lstat(adr, &link_stbuf) == -1)
+	continue;
+		if((link_stbuf.st_mode & S_IFMT) != S_IFLNK)
+	continue;
+		/* Determine rank and omit uninteresting ones */
+		for(name_rank= 0; name_rank < rank_count; name_rank++)
+			if(strncmp(namept, ranks[name_rank],
+					 strlen(ranks[name_rank])) == 0)
+		break;
+		/* we look for lowest rank */
+		if(name_rank >= rank_count ||
+		   name_rank > found_rank ||
+		   (name_rank == found_rank &&
+		    strcmp(namept, link_adr + dirlen) >= 0))
+	continue; 
+
+		/* Does name point to the same device as dev_adr ? */
+		ret= burn_drive_resolve_link(adr, sys_adr, &rec_count, 2);
+		if(ret < 0)
+			goto ex;
+		if(ret == 0)
+	continue;
+		if(strcmp(dev_adr, sys_adr) == 0) {
+			strcpy(link_adr, adr); 
+			found_rank= name_rank;
+		}
+	}
+	ret= 2;
+	if(found_rank < 0x7fffffff)
+		ret= 1;
+ex:;
+	if(dirpt != NULL)
+		closedir(dirpt);
+	BURN_FREE_MEM(adr);
+	BURN_FREE_MEM(sys_adr);
+	return(ret);
 }
 
 

@@ -81,6 +81,7 @@ burn_guess_manufacturer;
 burn_initialize;
 burn_is_aborting;
 burn_lba_to_msf;
+burn_lookup_device_link;
 burn_msf_to_lba;
 burn_msf_to_sectors;
 burn_msgs_obtain;
