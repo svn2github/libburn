@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 09, 2011"
+.TH CDRSKIN 1 "Jul 28, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -256,7 +256,7 @@ that it has to be formatted again. If in doubt, just give it a try.
 .br
 The drives, CD, DVD, or BD burners, are accessed via addresses which
 are specific to libburn and the operating system. Those addresses get listed
-by a run of \fBcdrskin --devices\fP.
+by a run of \fBcdrskin --devices\fP or \fBcdrskin --device_links\fP.
 .br
 On Linux, they are device files which traditionally do not offer
 w-permissions for normal users. Because libburn needs rw-permission,
@@ -512,7 +512,7 @@ cdrskin will not write CD-ROM XA but rather strip the header bytes and write as
 .TP
 .BI dev= target
 Set the address of the drive to use. Valid are at least the
-addresses listed with option --devices, 
+addresses listed with options --devices or --device_links,
 X,Y,Z addresses listed with option -scanbus,
 ATA:X,Y,Z addresses listed with options dev=ATA -scanbus,
 and volatile libburn drive numbers (numbering starts at "0").
@@ -881,6 +881,17 @@ Number dev='Devicefile' rw-Permissions : 'Vendor' 'Model'
 Number and Devicefile can both be used with option dev=, but number is
 volatile (numbering changes if drives become busy).
 .TP
+.BI \--device_links
+Like --devices, but presenting the drives with addresses of symbolic links
+which point to the actual device files.
+.br
+Modern GNU/Linux systems may shuffle drive addresses from boot to boot.
+The udev daemon is supposed to create links which always point to the
+same drive, regardless of its system address.
+Option --device_links shows the addresses of such links if they begin
+by "/dev/dvd" or "/dev/cd".
+Precedence is: "dvdrw", "cdrw", "dvd", "cdrom", "cd".
+.TP
 .BI direct_write_amount= size
 Do not write a session with tracks but rather make an appropriate number of
 direct write operations with no preparations. Flushing the drive buffer will
@@ -1136,7 +1147,7 @@ Wether this leads to senseful behavior depends on operating system and kernel.
 .TP
 .BI drive_scsi_dev_family= sr | scd | sg
 Linux specific: Select a SCSI device file family to be scanned for by
-options --devices and -scanbus.
+options --devices, --device_links and -scanbus.
 Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
 on kernels >= 2.6 . This option allows to explicitly override that default
 in order to meet other programs at a common device file for each drive.
@@ -1242,7 +1253,7 @@ cdrskin -scanbus
 .br
 cdrskin dev=ATA -scanbus
 .br
-cdrskin --devices
+cdrskin --device_links
 .SS
 .B Get info about a particular drive or loaded media:
 .br

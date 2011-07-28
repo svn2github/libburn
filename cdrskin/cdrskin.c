@@ -2684,7 +2684,8 @@ return:
      o->scan_demands_drive= 1;
      o->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i],"--devices")==0) {
+   } else if(strcmp(argv[i],"--devices") == 0 ||
+             strcmp(argv[i],"--device_links") == 0) {
 #ifndef Cdrskin_extra_leaN
      printf("Note: If this hangs for a while then there is a drive with\n");
      printf("      unexpected problems (e.g. ill DMA).\n");
@@ -2879,6 +2880,7 @@ set_dev:;
     " direct_write_amount=<size>  write random access to media like DVD+RW\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
      printf(" --devices          list accessible devices (tells /dev/...)\n");
+     printf(" --device_links     list accessible devices by (udev) links\n");
      printf(
           " dev_translation=<sep><from><sep><to>   set input address alias\n");
      printf("                    e.g.: dev_translation=+ATA:1,0,0+/dev/sg1\n");
@@ -3400,7 +3402,7 @@ struct CdrskiN {
  int single_track;
  int prodvd_cli_compatible;
 
- int do_devices;
+ int do_devices;              /* 1= --devices , 2= --device_links */
 
  int do_scanbus;
 
@@ -4727,14 +4729,16 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
 /** Perform operations -scanbus or --devices 
     @param flag Bitfield for control purposes: 
                 bit0= perform --devices rather than -scanbus
+                bit1= with bit0: perform --device_links
     @return <=0 error, 1 success
 */
 int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
 {
  int ret,i,busno,first_on_bus,pseudo_transport_group= 0,skipped_devices= 0;
- int busmax= 16, busidx;
+ int busmax= 16, busidx, max_dev_len, pad, j;
  char shellsafe[5*Cdrskin_strleN+2],perms[40],btldev[Cdrskin_adrleN];
  char adr[Cdrskin_adrleN],*raw_dev,*drives_shown= NULL;
+ char link_adr[BURN_DRIVE_ADR_LEN];
  int *drives_busses= NULL;
  struct stat stbuf;
 
@@ -4742,9 +4746,26 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
  drives_busses= calloc((skin->n_drives+1), sizeof(int));
  if(drives_shown == NULL || drives_busses == NULL)
    {ret= -1; goto ex;}
- for(i= 0; i < (int) skin->n_drives; i++)
-   drives_shown[i]= 0;
+
  if(flag&1) {
+   max_dev_len= 0;
+   for(i= 0; i < (int) skin->n_drives; i++) {
+     drives_shown[i]= 0;
+     ret= burn_drive_get_adr(&(skin->drives[i]), adr);
+     if(ret<=0)
+   continue;
+     if(flag & 2) {
+       ret= burn_lookup_device_link(adr, link_adr, "/dev", NULL, 0, 0);
+       if(ret == 1)
+         strcpy(adr, link_adr);
+     }
+     if(strlen(adr)>=Cdrskin_strleN)
+       Text_shellsafe("failure:oversized string", shellsafe, 0);
+     else
+       Text_shellsafe(adr, shellsafe,0);
+     if((int) strlen(shellsafe) > max_dev_len)
+       max_dev_len= strlen(shellsafe);
+   }
    printf("cdrskin: Overview of accessible drives (%d found) :\n",
           skin->n_drives);
    printf("-----------------------------------------------------------------------------\n");
@@ -4771,12 +4792,22 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
        if(stbuf.st_mode&S_IROTH) perms[4]= 'r';
        if(stbuf.st_mode&S_IWOTH) perms[5]= 'w';
      }
+     if(flag & 2) {
+       ret= burn_lookup_device_link(adr, link_adr, "/dev", NULL, 0, 0);
+       if(ret == 1)
+         strcpy(adr, link_adr);
+     }
      if(strlen(adr)>=Cdrskin_strleN)
        Text_shellsafe("failure:oversized string",shellsafe,0);
      else
        Text_shellsafe(adr,shellsafe,0);
-     printf("%d  dev=%s  %s :  '%-8.8s'  '%s'\n",
-            i,shellsafe,perms,skin->drives[i].vendor,skin->drives[i].product);
+     printf("%d  dev=%s", i, shellsafe);
+     pad= max_dev_len - strlen(shellsafe);
+     if(pad > 0)
+       for(j= 0; j < pad; j++)
+         printf(" ");
+     printf("  %s :  '%-8.8s'  '%s'\n",
+            perms, skin->drives[i].vendor, skin->drives[i].product);
    }
    printf("-----------------------------------------------------------------------------\n");
  } else {
@@ -8123,6 +8154,9 @@ option_data:;
    } else if(strcmp(argv[i],"--devices")==0) {
      skin->do_devices= 1;
 
+   } else if(strcmp(argv[i],"--device_links")==0) {
+     skin->do_devices= 2;
+
 #ifndef Cdrskin_extra_leaN
 
    } else if(strncmp(argv[i],"dev_translation=",16)==0) {
@@ -9054,7 +9088,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
      {*exit_value= 4; goto no_drive;}
    if(Cdrskin__is_aborting(0))
      goto ex;
-   ret= Cdrskin_scanbus(skin,1);
+   ret= Cdrskin_scanbus(skin, 1 | (2 * (skin->do_devices == 2)));
    if(ret<=0) {
      fprintf(stderr,"cdrskin: FATAL : --devices failed.\n");
      {*exit_value= 4; goto ex;}
