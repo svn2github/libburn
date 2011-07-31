@@ -444,6 +444,11 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	*nwa = mmc_four_char_to_int(data + 12);
 	num = mmc_four_char_to_int(data + 16);
 
+	/* Pioneer BD-RW BDR-205 and LITE-ON LTR-48125S return -150 as *nwa
+	   of blank media */
+	if (*nwa < *lba && d->status == BURN_DISC_BLANK)
+		*nwa = *lba;
+
 #ifdef Libburn_pioneer_dvr_216d_load_mode5
 	/* >>> memorize track mode : data[6] & 0xf */;
 #endif

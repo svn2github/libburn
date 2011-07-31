@@ -634,7 +634,7 @@ void spc_sense_write_params(struct burn_drive *d)
 {
 	struct buffer *buf = NULL;
 	struct scsi_mode_data *m;
-	int dummy, alloc_len = 10;
+	int dummy1, dummy2, alloc_len = 10;
 	unsigned char *page;
 	struct command *c = NULL;
 
@@ -679,7 +679,7 @@ void spc_sense_write_params(struct burn_drive *d)
 	else if (d->status == BURN_DISC_BLANK ||
 	     (d->current_is_cd_profile && d->status == BURN_DISC_APPENDABLE)) {
 		burn_drive_send_default_page_05(d, 0);
-		d->get_nwa(d, -1, &dummy, &dummy);
+		d->get_nwa(d, -1, &dummy1, &dummy2);
 	}
 	/* others are hopefully up to date from mmc_read_disc_info() */
 
