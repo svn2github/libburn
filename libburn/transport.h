@@ -279,6 +279,10 @@ struct burn_drive
 	/* ts A70129 :
 	   from 51h READ DISC INFORMATION Last Track Number in Last Session */
 	int last_track_no;
+
+	/* ts B10730 : whether a default mode page 05 was already sent.
+	*/
+	int sent_default_page_05;
 	/* ts A70212 : from various sources : free space on media (in bytes)
 	               With CD this might change after particular write
 	               parameters have been set and nwa has been inquired.

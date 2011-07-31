@@ -1759,6 +1759,8 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	d->erasable = 0;
 	d->last_track_no = 1;
 
+	/* ts B10730 */
+	d->sent_default_page_05 = 0;
 	/* ts A70212 - A70215 */
 	d->media_capacity_remaining = 0;
 	d->media_lba_limit = 0;

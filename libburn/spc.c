@@ -678,6 +678,7 @@ void spc_sense_write_params(struct burn_drive *d)
 		d->read_format_capacities(d, -1);
 	else if (d->status == BURN_DISC_BLANK ||
 	     (d->current_is_cd_profile && d->status == BURN_DISC_APPENDABLE)) {
+		burn_drive_send_default_page_05(d, 0);
 		d->get_nwa(d, -1, &dummy, &dummy);
 	}
 	/* others are hopefully up to date from mmc_read_disc_info() */

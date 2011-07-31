@@ -151,4 +151,8 @@ int burn_abort_5(int patience,
                int (*pacifier_func)(void *handle, int patience, int elapsed),
                void *handle, int elapsed, int flag);
 
+/* ts B10730 */
+/* Send a default mode page 05 to CD and DVD-R-oids */
+int burn_drive_send_default_page_05(struct burn_drive *d, int flag);
+
 #endif /* __DRIVE */

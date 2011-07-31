@@ -318,6 +318,34 @@ int burn_drive_inquire_media(struct burn_drive *d)
 	return 1;
 }
 
+/* ts B10730 */
+/* Send a default mode page 05 to CD and DVD-R-oids */
+int burn_drive_send_default_page_05(struct burn_drive *d, int flag)
+{
+	struct burn_write_opts *opts;
+
+	if (d->sent_default_page_05)
+		return 0;
+	if (!((d->status == BURN_DISC_APPENDABLE ||
+               d->status == BURN_DISC_BLANK) &&
+              (d->current_is_cd_profile || d->current_profile == 0x11 ||
+	       d->current_profile == 0x14 || d->current_profile == 0x15)))
+		return 0;
+	opts = burn_write_opts_new(d);
+	if (opts == NULL)
+		return -1;
+	if (d->status == BURN_DISC_APPENDABLE)
+		burn_write_opts_set_write_type(opts,
+			BURN_WRITE_TAO, BURN_BLOCK_MODE1);
+	else
+		burn_write_opts_set_write_type(opts,
+			BURN_WRITE_SAO, BURN_BLOCK_SAO);
+	d->send_write_parameters(d, opts);
+	burn_write_opts_free(opts);
+	d->sent_default_page_05 = 1;
+	return 1;
+}
+
 
 int burn_drive_grab(struct burn_drive *d, int le)
 {
@@ -381,6 +409,8 @@ int burn_drive_grab(struct burn_drive *d, int le)
 		d->silent_on_scsi_error = 1;
 	/* ts A61125 : outsourced media state inquiry aspects */
 	ret = burn_drive_inquire_media(d);
+
+	burn_drive_send_default_page_05(d, 0);
 	d->silent_on_scsi_error = sose;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
