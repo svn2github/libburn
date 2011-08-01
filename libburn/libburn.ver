@@ -20,6 +20,7 @@ burn_disc_get_formats;
 burn_disc_get_media_id;
 burn_disc_get_msc1;
 burn_disc_get_multi_caps;
+burn_disc_get_phys_format_info;
 burn_disc_get_profile;
 burn_disc_get_sectors;
 burn_disc_get_sessions;

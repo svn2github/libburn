@@ -1294,6 +1294,27 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
 int burn_disc_get_bd_spare_info(struct burn_drive *d,
                                 int *alloc_blocks, int *free_blocks, int flag);
 
+/* ts B10801 */
+/** Retrieve some media information which is mainly specific to media of
+    the DVD-R family: DVD-R , DVD-RW , DVD-R DL , HD DVD-R
+    Currently the information cannot be retrieved from other media types.
+    @param d              The drive to query.
+    @param disk_category  returns DVD Book to which the media complies
+    @param book_name      returns a pointer to the book name of disk_category.
+                          This memory is static. Do not alter or free it !
+    @param part_version   returns the Media Version in the DVD Book
+    @param num_layers     returns the number of media layers
+    @param num_blocks     returns the number of blocks between pysical start
+                          and physical end of the media
+    @param flag           Bitfield for control purposes (unused yet, submit 0)
+    @return               1 = reply prarameters are valid,
+                          <=0 = reply is invalid (e.g. because no DVD-R)
+    @since 1.1.2
+*/
+int burn_disc_get_phys_format_info(struct burn_drive *d, int *disk_category,
+                        char **book_name, int *part_version, int *num_layers,
+                        int *num_blocks, int flag);
+
 /* ts A61110 */
 /** Read start lba and Next Writeable Address of a track from media.
     Usually a track lba is obtained from the result of burn_track_get_entry().

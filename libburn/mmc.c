@@ -4494,6 +4494,55 @@ ex:;
 }
 
 
+/* ts B10801
+   MMC-5, 6.23.3.2.1 Format Code 00h: Physical Format Information
+          6.23.3.2.16 Format Code 10h: Format Information of
+                                       Control Data Zone in the Lead-in
+   disk_category
+*/
+int mmc_get_phys_format_info(struct burn_drive *d, int *disk_category,
+			char **book_name, int *part_version, int *num_layers,
+			int *num_blocks, int flag)
+{
+	int ret, reply_len, prf;
+	char *reply = NULL;
+	static char book_names[][16] = {
+		"DVD-ROM", "DVD-RAM", "DVD-R", "DVD-RW",
+		"HD DVD-ROM", "HD DVD-RAM", "HD DVD-R", "unknown",
+		"unknown", "DVD+RW", "DVD+R", "unknown", "unknown",
+		"unknown", "DVD+RW DL", "DVD+R DL", "unknown"
+	};
+
+	prf = d->current_profile;
+	if (!(prf == 0x11 || prf == 0x13 || prf == 0x14 || prf == 0x15 ||
+	      prf == 0x51))
+		return 0; /* Not a [HD] DVD-R[W] loaded */
+	ret = mmc_read_disc_structure(d, 0, 0, 0x10, 12, &reply,
+							 &reply_len, 0);
+	if (ret <= 0)
+		goto ex;
+	if(reply_len < 12) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			"READ DISC STRUCTURE format 10h: Less than 12 bytes",
+			0, 0);
+		{ret = 0; goto ex;}
+	}
+	*disk_category = (reply[0] >> 4) & 0xf;
+	*book_name = book_names[*disk_category];
+	*part_version = reply[0] & 0xf;
+	*num_layers = ((reply[2] >> 5) & 0x3) + 1;
+	*num_blocks = ((reply[9] << 16) | (reply[10] << 8) | reply[11]) -
+	              ((reply[5] << 16) | (reply[6] << 8) | reply[7]) + 1;
+	ret = 1;
+ex:;
+	if (reply != NULL)
+		free(reply);
+	return ret;
+}
+
+
+
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()
 */
 int mmc_setup_drive(struct burn_drive *d)

@@ -3226,6 +3226,23 @@ int burn_disc_get_bd_spare_info(struct burn_drive *d,
 }
 
 
+/* ts B10801 : API */
+int burn_disc_get_phys_format_info(struct burn_drive *d, int *disk_category,
+                        char **book_name, int *part_version, int *num_layers,
+                        int *num_blocks, int flag)
+{
+	int ret;
+
+	if (burn_drive_get_drive_role(d) != 1)
+		return 0;
+	*disk_category = *part_version = *num_layers = *num_blocks = 0;
+	ret = mmc_get_phys_format_info(d, disk_category, book_name,
+				part_version, num_layers, num_blocks, 0);
+	return ret;
+}
+
+
+
 /* ts B10525 : API */
 int burn_disc_next_track_is_damaged(struct burn_drive *d, int flag)
 {
