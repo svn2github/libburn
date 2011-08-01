@@ -110,4 +110,9 @@ int mmc_start_if_needed(struct burn_drive *d, int flag);
 int mmc_get_bd_spare_info(struct burn_drive *d,
                                 int *alloc_blocks, int *free_blocks, int flag);
 
+/* ts B10801 */
+int mmc_get_phys_format_info(struct burn_drive *d, int *disk_category,
+                        char **book_name, int *part_version, int *num_layers,
+                        int *num_blocks, int flag);
+
 #endif /*__MMC*/
