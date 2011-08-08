@@ -1,3 +1,24 @@
+SVN trunk (to become libburn-1.1.6.tar.gz or higher)
+===============================================================================
+- no novelties yet
+
+
+libburn-1.1.4.tar.gz Sun Aug 07 2011
+===============================================================================
+* Bug fix: Some drives return -150 as NWA of blank CD, rather than 0.
+           libburn forwarded this misleading information to the application.
+* Bug fix: Some drives returned wrong CD sizes after having burned DVD-R
+* Bug fix: Empty ROM drive was mistaken to hold an unsuitable disc
+* Bug fix: Avoiding to load speed descriptor list twice
+* New API call burn_lookup_device_link()
+* New API call burn_disc_get_phys_format_info()
+* New cdrskin option --device_links
+
+Release 1.1.2 was skipped to get back in sync with libisoburn.
+
+libburn-1.1.0.pl01.tar.gz Mon Jun 20 2011
+===============================================================================
+* Bug fix: libburn-1.1.0 compiled only on Linux, FreeBSD, and Solaris
 
 libburn-1.1.0.tar.gz Sat Jun 18 2011
 ===============================================================================

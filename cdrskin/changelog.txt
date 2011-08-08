@@ -9584,7 +9584,7 @@ Replaced some large local variables by other means in libburn/toc.c
 libburn/mmc.c
 Bug fix: burn_disc_format() on DVD-RW issued wrong block size with type 00h
 
-8 Jun 2011  [3861]
+08 Jun 2011  [3861]
 configure.ac
 Makefile.am
 Introduced AC_CONFIG_MACRO_DIR() and ACLOCAL_AMFLAGS on advise of George Danchev
@@ -9593,7 +9593,7 @@ Introduced AC_CONFIG_MACRO_DIR() and ACLOCAL_AMFLAGS on advise of George Danchev
 libburn/write.c
 Replaced some large local variables by other means in libburn/write.c
 
-9 Jun 2011  [3864]
+09 Jun 2011  [3864]
 bootstrap
 Added option -I . to aclocal in bootstrap script on advise of George Danchev
 
@@ -9660,20 +9660,296 @@ Made number transition to 1.1.1
 + cdrskin/add_ts_changes_to_libburn_1_1_1
 Updated cdrskin tarball generator
 
-18 Jun 2011  []
+18 Jun 2011  [3877]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
-  []
-svn move -m libburn release 1.1.1 is ready
-http://svn.libburnia-project.org/libburn/branches/1.1.1
-http://svn.libburnia-project.org/libburn/tags/1.1.1
+18 Jun 2011  [3878]
+svn move -m libburn release 1.1.0 is ready
+http://svn.libburnia-project.org/libburn/branches/1.1.0
+http://svn.libburnia-project.org/libburn/tags/1.1.0
 
 ------------------------------------ cycle  - cdrskin-1.1.1 - 2011.06.18.154942
 
------------------------------------- cycle  - cdrskin-1.1.1 - 
------------------------------------- cycle  - cdrskin-1.1.1 - 
+2011.06.19.203515  [3882]
+libburn/sg-dummy.c
+Bug fix: libburn-1.1.0 did only compile on Linux, FreeBSD, and Solaris
+
+20 Jun 2011  [3883]
+svn copy -m Branching for libburn release 1.1.0.pl01
+http://svn.libburnia-project.org/libburn/tags/1.1.0
+http://svn.libburnia-project.org/libburn/branches/1.1.0.pl01
+
+2011.06.20.110001  [3884] [3885] (branch 1.0.0.pl01)
+libburn/sg-dummy.c
+ChangeLog
+cdrskin/cdrskin_timestamp.h
+Bug fix: libburn-1.1.0 did only compile on Linux, FreeBSD, and Solaris
+
+20 Jun 2011  [3886]
+svn move -m "libburn bugfix release 1.0.0.pl01  is ready"
+http://svn.libburnia-project.org/libburn/branches/1.1.0.pl01
+http://svn.libburnia-project.org/libburn/tags/1.1.0.pl01
+
+------------------------------ release - libburn-1.1.0.pl01 - 2011.06.20.110001
+* Bug fix: libburn-1.1.0 compiled only on Linux, FreeBSD, and Solaris
+
+
+2011.06.22.093127  [3888]
+libburn/sg-libcdio.c
+Silenced compiler warnings about signedness
+
+22 Jun 2011  [3889]
+releng/releng_build_os
+Beginning to create a test suite for libburn and cdrskin
+
+2011.07.04.143922  [4041]
+libburn/spc.c
+Avoiding to load speed descriptor list twice
+
+2011.07.04.171649  [4047]
+libburn/file.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.142532  [4071]
+libburn/init.h
+libburn/async.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.143104  [4072]
+libburn/mmc.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.143313  [4073]
+libburn/spc.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.143441  [4074]
+libburn/toc.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.143536  [4075]
+libburn/write.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.06.143724  [4076]
+cdrskin/cdrskin.c
+Reacted on warnings of -Wtype-limits and -Wunused-but-set-variable
+
+2011.07.06.143904  [4077]
+cdrskin/cdrfifo.c
+Reacted on warnings of -Wunused-but-set-variable
+
+2011.07.07.114911  [4083]
+libburn/mmc.c
+Silenced warning of cppcheck
+
+2011.07.07.115006  [4084]
+libburn/sg-linux.c
+Silenced warning of cppcheck
+
+2011.07.07.120719  [4085]
+libburn/util.c
+Reacted on warning of cppcheck
+
+2011.07.11.143934  [4133]
+libburn/sg.c
+Implemented macro Libburn_use_sg_freebsd_porT
+
+2011.07.12.095936  [4138]
+cdrskin/cdrfifo.c
+Reacted on warning of cppcheck about cdrskin/cdrfifo.c
+
+2011.07.12.105955  [4139]
+cdrskin/cleanup.c
+Reacted on warning of cppcheck about cdrskin/cleanup.c
+
+2011.07.12.110131  [4140]
+libburn/async.c
+Reacted on warning of cppcheck about libburn/async.c
+
+2011.07.12.110223  [4142]
+libburn/cleanup.c
+Reacted on warning of cppcheck about libburn/cleanup.c
+
+2011.07.12.110306  [4143]
+libburn/drive.c
+Reacted on warning of cppcheck about libburn/drive.c
+
+2011.07.12.110405  [4144]
+libburn/read.c
+Reacted on warning of cppcheck about libburn/read.c
+
+2011.07.12.110453  [4145]
+test/poll.c
+Reacted on warning of cppcheck about test/poll.c
+
+2011.07.12.141659  [4147]
+libburn/sg.c
+Improved intentional compiler warning about lack of suitable system adapter 
+
+2011.07.12.141838  [4148]
+libburn/sg-dummy.c
+Reacted on warning of cppcheck about libburn/sg-dummy.c
+
+2011.07.12.141932  [4149]
+libburn/sg-freebsd-port.c
+Reacted on warning of cppcheck about libburn/sg-freebsd-port.c
+
+2011.07.12.142018  [4150]
+libburn/sg-freebsd.c
+Reacted on warning of cppcheck about libburn/sg-freebsd.c
+
+2011.07.12.142141  [4151]
+libburn/sg-libcdio.c
+Reacted on warning of cppcheck about libburn/sg-libcdio.c
+
+2011.07.12.155335  [4152]
+cdrskin/cdrskin.c
+Improved -atip and -minfo with empty drive
+
+2011.07.12.155417  [4153]
+libburn/drive.c
+Bug fix: Empty ROM drive was mistaken to hold an unsuitable disc
+
+2011.07.12.173727  [4154]
+libburn/sg-solaris.c
+Reacted on warning of cppcheck about libburn/sg-solaris.c
+
+2011.07.14.162150  [4164]
+cdrskin/cdrskin.c
+Fixed possible uninitialized variable use introduced by rev 4152
+
+2011.07.15.081325  [4170]
+libburn/sg-freebsd.c
+Reacted on warning of cppcheck about libburn/sg-freebsd.c
+
+2011.07.28.191202  [4222]
+libburn/libburn.h
+libburn/drive.c
+libburn/libburn.ver
+New API call burn_lookup_device_link()
+
+2011.07.28.191536  [4223]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --device_links
+
+2011.07.31.080152  [4227]
+libburn/transport.h
+libburn/drive.h
+libburn/drive.c
+libburn/spc.c
+libburn/mmc.c
+Bug fix: Some drives returned wrong CD sizes after having burnt DVD-R
+
+2011.07.31.083046  [4228]
+libburn/spc.c
+libburn/mmc.c
+Bug fix: Some drives return -150 as NWA of blank CD, rather than 0
+
+2011.08.01.125405  [4232]
+libburn/libburn.h
+libburn/drive.c
+libburn/mmc.c
+libburn/libburn.ver
+New API call burn_disc_get_phys_format_info()
+
+2011.08.01.153305  [4237]
+libburn/mmc.h
+Forgot to upload the header which defines mmc_get_phys_format_info
+
+
+Release 1.1.2 was skipped to get back in sync with libisoburn.
+
+
+07 Aug 2011  [4247]
+copy -m Branching for libburn release 1.1.4
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.1.4
+
+2011.08.07.100001  [4249]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.4
+
+07 Aug 2011  [4250]
+- cdrskin/add_ts_changes_to_libburn_1_1_0
+- cdrskin/add_ts_changes_to_libburn_1_1_1
++ cdrskin/add_ts_changes_to_libburn_1_1_4
++ cdrskin/add_ts_changes_to_libburn_1_1_5
+Updated cdrskin tarball generator
+
+07 Aug 2011  [4251]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+07 Aug 2011  [4255]
+cdrskin/cdrskin_eng.html
+ChangeLog
+cdrskin/changelog.txt
+Forgot to mention cdrskin option --device_links
+
+------------------------------------ cycle  - cdrskin-1.1.4 - 2011.08.07.100001
+* Bug fix: Some drives return -150 as NWA of blank CD, rather than 0.
+           libburn forwarded this misleading information to the application.
+* Bug fix: Some drives returned wrong CD sizes after having burned DVD-R
+* Bug fix: Empty ROM drive was mistaken to hold an unsuitable disc
+* Bug fix: Avoiding to load speed descriptor list twice
+* New API call burn_lookup_device_link()
+* New API call burn_disc_get_phys_format_info()
+* New cdrskin option --device_links
+
+
+2011.08.08.121355  [4259]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.5
+
+08 Aug 2011  [4260]
+- cdrskin/add_ts_changes_to_libburn_1_1_0
+- cdrskin/add_ts_changes_to_libburn_1_1_1
++ cdrskin/add_ts_changes_to_libburn_1_1_4
++ cdrskin/add_ts_changes_to_libburn_1_1_5
+Updated cdrskin tarball generator
+
+08 Aug 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.1.5 - 2011.08.08.121355
+
+
+  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.1.5 - 
+
+  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.1.5 - 
 
 
 
@@ -9686,14 +9962,25 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
+- libburn.h talks of "persistent drive address" which on modern Linux
+  is far from being persistent. Change to "system drive address" (or so).
+
+- cdrskin/cdrskin.c has too many macro cases which cause cppcheck warnings
+  and make the code hard to understand
+
+
+----------------------------------------------------------------------
+
+Get sg-freebsd-port.c functional.
 
 Throw out old burn_print() calls
 
-
 Expose BD type from bytes 8+4 to 10+4 out of READ BD STRUCTURE form 0.
 
-
 Better motivation of burn_set_signal_handling() in libburn.h.
+
+Explore MMC command GET EVENT STATUS NOTIFICATION
+
 
 -------------------------------- Solaris -----------------------------------
 
