@@ -12,8 +12,7 @@ See also :  http://scdbackup.sourceforge.net/cdrskin_eng.html
 
 Interested users of cdrecord are encouraged to contribute further option
 implementations as they need them. Contributions will get published under GPL
-but it is essential that the authors allow a future release under LGPL and/or
-BSD license.
+but it is essential that the authors allow a future release under LGPL.
 
 There is a script test/cdrecord_spy.sh which may be installed between
 the cdrecord command and real cdrecord in order to learn about the options
@@ -88,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.1.1"
+#define Cdrskin_prog_versioN "1.1.5"
 #endif
 
 /** The official libburn interface revision to use.
@@ -101,7 +100,7 @@ or
 #define Cdrskin_libburn_minoR 1
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 1
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -135,43 +134,37 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_1_1_0
-#define Cdrskin_libburn_versioN "1.1.0"
+#ifdef Cdrskin_libburn_1_1_4
+#define Cdrskin_libburn_versioN "1.1.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_1_1
-#define Cdrskin_libburn_versioN "1.1.1"
+#ifdef Cdrskin_libburn_1_1_5
+#define Cdrskin_libburn_versioN "1.1.5"
 #define Cdrskin_libburn_from_pykix_svN 1
-
-/* Place novelty switch macros here. 
-   Move them down to Cdrskin_libburn_from_pykix_svN on version leap
-*/
-
-
-#endif /* Cdrskin_libburn_1_1_1 */
+#endif
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_1_1
-#define Cdrskin_libburn_versioN "1.1.1"
+#define Cdrskin_libburn_1_1_4
+#define Cdrskin_libburn_versioN "1.1.4"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_1_0
+#ifdef Cdrskin_libburn_1_1_4
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 1
-#define Cdrskin_libburn_micrO 0
+#define Cdrskin_libburn_micrO 4
 #endif
-#ifdef Cdrskin_libburn_1_1_1
+#ifdef Cdrskin_libburn_1_1_5
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 1
-#define Cdrskin_libburn_micrO 1
+#define Cdrskin_libburn_micrO 5
 #endif
 
 

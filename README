@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.1.0.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.1.4.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.1.0.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.1.4.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.1.0.tar.gz
-   cd libburn-1.1.0
+   tar xzf libburn-1.1.4.tar.gz
+   cd libburn-1.1.4
    ./configure --prefix=/usr
    make
 
@@ -110,7 +110,7 @@ See README files there.
 
 libburnia-project.org is an open-source software project for reading, mastering
 and writing optical discs.
-For now this means CD media, all DVD media except DVD-R DL, all BD media.
+For now this means CD media, all DVD media, all BD media.
 
 The project comprises of several more or less interdependent parts which
 together strive to be a usable foundation for application development.
@@ -180,7 +180,8 @@ The project components (list subject to growth, hopefully):
            sparse emulation of cdrecord and a more laborate one of mkisofs.
            All features of xorriso are also available via a C language API
            of libisoburn.
-           See xorriso/README for more.
+           A static compilation of xorriso and the libraries is dedicated
+           to the GNU Operating System. See xorriso/README_gnu_xorriso .
 
 - "test"   is a collection of application gestures and examples given by the
            authors of the library features. The burn API example of libburn
@@ -624,7 +625,22 @@ Project history as far as known to me:
   The consumption of stack memory was reduced. Statical program analysis found
   some rarely occuring memory leaks. Several small bugs were fixed.
   The suffix .plXY was dropped from tarball names of libburn and libisoburn.
+
+- Mon Jun 20 2011 patch release libburn-1.1.0.pl01:
+  libburn-1.1.0 compiled only on Linux, FreeBSD, and Solaris, but not on
+  other X/Open compliant systems.
+
+- Fri Jul 08 2011 release libisofs-1.1.2 and libisoburn-1.1.2:
+  A severe regression was fixed in libisoburn and xorriso, which was introduced
+  with version 1.0.6. It caused ISO 9660 images to be unreadable if they were
+  written to a write-only random-access file. E.g. by: xorrisofs ... >image.iso
   
+- Mon Aug 08 2011 release 1.1.4:
+  Several bugs were fixed in libburn. The most severe of them prevented xorriso
+  on some drives from burning mountable ISO 9660 images to CD media.
+  New means to list drives by their udev symbolic links help to deal with
+  the non-persistent drive addresses on modern GNU/Linux.
+
 
 ------------------------------------------------------------------------------
 

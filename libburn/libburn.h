@@ -1087,7 +1087,7 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
     @param flag        Bitfield for control purposes. Unused yet. Submit 0.
     @return            <0 severe error, 0 failed to search, 2 nothing found
                        1 success, link_adr is valid
-    @since 1.1.2
+    @since 1.1.4
 */
 int burn_lookup_device_link(char *dev_adr, char link_adr[],
                          char *dir_adr, char **templ, int num_templ, int flag);
@@ -1309,7 +1309,7 @@ int burn_disc_get_bd_spare_info(struct burn_drive *d,
     @param flag           Bitfield for control purposes (unused yet, submit 0)
     @return               1 = reply prarameters are valid,
                           <=0 = reply is invalid (e.g. because no DVD-R)
-    @since 1.1.2
+    @since 1.1.4
 */
 int burn_disc_get_phys_format_info(struct burn_drive *d, int *disk_category,
                         char **book_name, int *part_version, int *num_layers,
@@ -2791,7 +2791,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  1
-#define burn_header_version_micro  1
+#define burn_header_version_micro  5
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.

@@ -65,7 +65,7 @@ connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-1.1.0</DT>
+<DT>libburn-1.1.4</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -200,8 +200,15 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.1.0.tar.gz">cdrskin-1.1.0.tar.gz</A>
+<DD><A HREF="cdrskin-1.1.4.tar.gz">cdrskin-1.1.4.tar.gz</A>
 (870 KB).
+</DD>
+<DD><A HREF="cdrskin-1.1.4.tar.gz.sig">cdrskin-1.1.4.tar.gz.sig</A></DD>
+<DD>
+(detached GPG signature for verification by
+<KBD>gpg --verify cdrskin-1.1.4.tar.gz.sig cdrskin-1.1.4.tar.gz</KBD>
+<BR>
+after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
 <DD>
 The cdrskin tarballs are source code identical with libburn releases
@@ -250,20 +257,24 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-1.0.6.pl00:
+Enhancements towards previous stable version cdrskin-1.1.0.pl01:
 <UL>
-<LI>none</LI>
+<LI>
+New option --device_links for GNU/Linux with unpredictable
+device numbers and udev
 </LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-1.0.6.pl00:
+Bug fixes towards cdrskin-1.1.0.pl01:
 <UL>
 <LI>
-Option -format as_needed issued a wrong block size.
-A Pioneer BDR-205 drive refused on that command.
+Some drives returned wrong CD sizes after having burned DVD-R
+</LI>
+<LI>
+Empty ROM drive was mistaken to hold an unsuitable disc
 </LI>
 <!--
 <LI>none</LI>
@@ -274,8 +285,8 @@ A Pioneer BDR-205 drive refused on that command.
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 1.1.1 :</H3></DT>
-<DD>Enhancements towards current stable version 1.0.0:
+<DT><H3>Development snapshot, version 1.1.5 :</H3></DT>
+<DD>Enhancements towards current stable version 1.0.4:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -285,7 +296,7 @@ A Pioneer BDR-205 drive refused on that command.
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-1.1.0:
+<DD>Bug fixes towards cdrskin-1.1.4:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -295,10 +306,10 @@ A Pioneer BDR-205 drive refused on that command.
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 1.1.1</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin-1.1.1 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin-1.1.1 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.1.1)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 1.1.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin-1.1.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin-1.1.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.1.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -318,7 +329,7 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-1.1.1.tar.gz">cdrskin-1.1.1.tar.gz</A>
+<A HREF="cdrskin-1.1.5.tar.gz">cdrskin-1.1.5.tar.gz</A>
 (870 KB).
 </DD>
 
@@ -468,10 +479,11 @@ First of all: this relationship is single sided, as cdrskin has to be aware of
 cdrecord but not vice versa.
 <BR>
 <BR>
-I am a long time user of cdrecord and it works fine for me. 
+I was a long time user of cdrecord and it worked fine for me. 
 Especially i do appreciate its write mode -tao which allows to pipe arbitrary
 data on CD and CD-RW via stdin. cdrecord is reliable, versatile and well
-maintained. So for me - there would be no problem with it.
+maintained. So for me - there would be no problem with using it for
+burning CDs.
 <BR>
 But the author of cdrecord and the Linux kernel people foster a very hostile 
 relationship. Ok, that's their business, not mine (or ours if you are with me).
