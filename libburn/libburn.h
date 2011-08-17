@@ -1393,6 +1393,9 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
     An eventual start address from burn_write_opts_set_start_byte() will be
     subtracted from the obtained capacity estimation. Negative results get
     defaulted to 0.
+    If the drive is actually a file in a large filesystem or a large block
+    device, then the capacity is curbed to a maximum of 0x7ffffff0 blocks
+    = 4 TB - 32 KB.
     @param d The drive to query.
     @param o If not NULL: write parameters to be set on drive before query
     @return number of most probably available free bytes
@@ -3067,6 +3070,8 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     can be read via burn_read_data() although some of them may never have been
     recorded. If tracks are recognizable then it is better to only read
     LBAs which are part of some track.
+    If the drive is actually a large file or block device, then the capacity
+    is curbed to a maximum of 0x7ffffff0 blocks = 4 TB - 32 KB.
     @param d            The drive from which to read
     @param capacity     Will return the result if valid
     @param flag         Bitfield for control purposes: Unused yet, submit 0.

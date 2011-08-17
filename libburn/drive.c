@@ -374,8 +374,13 @@ int burn_drive_grab(struct burn_drive *d, int le)
 			if (stat_ret != -1 && S_ISREG(stbuf.st_mode) &&
 			    stbuf.st_size > 0) {
 				d->status = BURN_DISC_APPENDABLE;
-				d->role_5_nwa = stbuf.st_size / 2048 +
-						!!(stbuf.st_size % 2048);
+				if (stbuf.st_size / (off_t) 2048
+				    >= 0x7ffffff0) {
+					d->status = BURN_DISC_FULL;
+					d->role_5_nwa = 0x7ffffff0;
+				} else 
+					d->role_5_nwa = stbuf.st_size / 2048 +
+					              !!(stbuf.st_size % 2048);
 			} else
 				d->status = BURN_DISC_BLANK;
 		} else {
@@ -1464,13 +1469,14 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 		st_ret = stat(fname, &stbuf);
 	if (st_ret != -1) {
 		is_rdwr = burn_os_is_2k_seekrw(fname, 0);
-		if (S_ISREG(stbuf.st_mode))
+		if (S_ISREG(stbuf.st_mode)) {
 			read_size = stbuf.st_size;
-		else if (is_rdwr) {
+			ret = 1;
+		} else if (is_rdwr)
 			ret = burn_os_stdio_capacity(fname, &read_size);
-			if (ret <= 0)
-				read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
-		}
+		if (ret <= 0 ||
+		    read_size / (off_t) 2048 >= (off_t) 0x7ffffff0) 
+			read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
 	}
 
 	if (is_rdwr && fd >= 0) {
@@ -1614,8 +1620,13 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 			    (burn_drive_role_4_allowed & 8)) {
 				d->status = BURN_DISC_APPENDABLE;
 				d->block_types[BURN_WRITE_SAO] = 0;
-				d->role_5_nwa = stbuf.st_size / 2048 +
-						!!(stbuf.st_size % 2048);
+				if (stbuf.st_size / (off_t) 2048
+				    >= 0x7ffffff0) {
+					d->status = BURN_DISC_FULL;
+					d->role_5_nwa = 0x7ffffff0;
+				} else 
+					d->role_5_nwa = stbuf.st_size / 2048 +
+					              !!(stbuf.st_size % 2048);
 			} else {
 				d->status = BURN_DISC_BLANK;
 				d->block_types[BURN_WRITE_SAO] =
@@ -2713,11 +2724,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		size = d->media_capacity_remaining;
 		burn_os_stdio_capacity(d->devname, &size);
 		burn_drive_set_media_capacity_remaining(d, size);
-
-		/* >>> This looks wrong ! */
-		/* >>> should add file size */
-		o->start_range_high = size;
-
+		o->start_range_high = d->media_capacity_remaining;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
@@ -2732,10 +2739,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 
 		/* >>> start_range_low = file size rounded to 2048 */;
 
-		/* >>> This looks wrong ! */
-		/* >>> should add file size */
-		o->start_range_high = size;
-
+		o->start_range_high = d->media_capacity_remaining;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		if (s == BURN_DISC_APPENDABLE) {
 			if (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)
@@ -3148,9 +3152,12 @@ int burn_drive_find_by_thread_pid(struct burn_drive **d, pid_t pid,
 */
 int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value)
 {
+	if (value / (off_t) 2048 > (off_t) 0x7ffffff0)
+		value = ((off_t) 0x7ffffff0) * (off_t) 2048;
 	d->media_capacity_remaining = value;
 	return 1;
 }
+
 
 /* ts A81215 : API */
 int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag)

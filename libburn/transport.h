@@ -293,7 +293,9 @@ struct burn_drive
 	int media_lba_limit;
 
 	/* ts A81210 : Upper limit of readable data size,
-	               0x7fffffff = unknown */
+	               0x7fffffff = unknown
+	               0x7ffffff0 = 32 bit overflow, or unknown stdio size
+	 */
 	int media_read_capacity;
 
 	/* ts B10314 : Next Writeable Adress for drive_role == 5 */
