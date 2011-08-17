@@ -1469,10 +1469,10 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 		st_ret = stat(fname, &stbuf);
 	if (st_ret != -1) {
 		is_rdwr = burn_os_is_2k_seekrw(fname, 0);
-		if (S_ISREG(stbuf.st_mode)) {
+		ret = 1;
+		if (S_ISREG(stbuf.st_mode))
 			read_size = stbuf.st_size;
-			ret = 1;
-		} else if (is_rdwr)
+		else if (is_rdwr)
 			ret = burn_os_stdio_capacity(fname, &read_size);
 		if (ret <= 0 ||
 		    read_size / (off_t) 2048 >= (off_t) 0x7ffffff0) 
