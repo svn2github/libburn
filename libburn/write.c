@@ -2184,6 +2184,8 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 */
 int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
+	int ret;
+
 	if (fd < 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x0002017d,
@@ -2198,9 +2200,8 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 			   "syncing cache (stdio fsync)", 0, 0);
-	if (fsync(fd) != 0) {
-		if (errno == EINVAL) /* E.g. /dev/null cannot fsync */
-			return 1;
+	ret = fsync(fd);
+	if (ret != 0 && errno == EIO) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
