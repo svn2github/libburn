@@ -576,6 +576,7 @@ static int sg_open_drive_fd(char *fname, int scan_mode)
 	   O_NONBLOCK was already hardcoded in ata_ but not in sg_.
 	   There must be some reason for this. So O_NONBLOCK is
 	   default mode for both now. Disable on own risk.
+           ts B10904: O_NONBLOCK is prescribed by <linux/cdrom.h>
 	   ts A70411
            Switched to O_NDELAY for LKML statement 2007/4/11/141 by Alan Cox:
 	   "open() has side effects. The CD layer allows you to open
@@ -1929,6 +1930,19 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 		*bytes = add_size + ((off_t) vfsbuf.f_frsize) *
 						(off_t) vfsbuf.f_bavail;
 	}
+
+#ifdef NIX
+/* <<< */
+	fprintf(stderr, "libburn_DEBUG: Faking 4.5 TB of disk space\n");
+	*bytes = ((off_t) 2415919104) * (off_t) 2048;
+	if (*bytes / (off_t) 2048 > (off_t) 0x7ffffff0) {
+		*bytes = ((off_t) 0x7ffffff0) * (off_t) 2048;
+		fprintf(stderr, "libburn_DEBUG: Reducing disk space to 4 TB - 2 kB\n");
+	}
+/* <<< */
+#endif
+
+
 	ret = 1;
 ex:;
 	BURN_FREE_MEM(testpath);
