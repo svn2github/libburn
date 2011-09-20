@@ -1554,6 +1554,21 @@ try_open:;
 		fd = open(d->devname, open_mode);
 		os_errno = errno;
 		if (fd >= 0) {
+			/* ts B10920 : workaround for udev which might get
+					a kernel event from open() and might
+					remove links if it cannot inspect the
+					drive.
+			*/
+			libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			"Waiting 2 seconds to avoid collision with udev",
+				 0, 0);
+			close(fd);
+			usleep(2000000);
+			fd = open(d->devname, open_mode);
+			os_errno = errno;
+		}
+		if (fd >= 0) {
 			sg_fcntl_lock(&fd, d->devname, F_WRLCK, 1);
 			if (fd < 0)
 				goto drive_is_in_use;
