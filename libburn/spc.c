@@ -113,6 +113,7 @@ int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 	c->retry = 0;
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
+	*key = *asc = *ascq = 0;
 	if (c->error) {
 		spc_decode_sense(c->sense, 0, key, asc, ascq);
 		return (key == 0);
@@ -138,14 +139,20 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 				int flag)
 {
 	int i, ret = 1, key = 0, asc = 0, ascq = 0, clueless_start = 0;
-	static int clueless_timeout = 5 * 10;
+	static double tests_per_second = 2.0;
+	int sleep_usecs, loop_limit, clueless_timeout;
 	char *msg = NULL;
 	unsigned char sense[14];
 
 	BURN_ALLOC_MEM(msg, char, 320);
+	clueless_timeout = 5 * tests_per_second + 1;
+	loop_limit = max_sec * tests_per_second + 1;
+	sleep_usecs = 1000000 / tests_per_second;
+
 	if (!(flag & 1))
-		usleep(100000);
-	for(i = !(flag & 1); i < max_sec * 10; i++) {
+		usleep(sleep_usecs);
+
+	for(i = !(flag & 1); i < loop_limit; i++) {
 		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
 		if (ret > 0) /* ready */
 	break;
@@ -202,7 +209,7 @@ handle_error:;
 			goto handle_error;
 
 slumber:;
-		usleep(100000);
+		usleep(sleep_usecs);
 	}
 	if (ret <= 0 || !(flag & 2)) {
 		sprintf(msg, "Async %s %s after %d.%d seconds",
