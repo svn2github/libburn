@@ -101,11 +101,11 @@ The waiting time can be set at ./configure time with microsecond granularity.
 E.g. 2 seconds:
   CFLAGS="$CFLAGS -DLibburn_udev_wait_useC=2000000"
   ./configure ...options...
-Closing and re-opening can be disabled by zero waiting time:
+Waiting can be disabled by zero waiting time:
   CFLAGS="$CFLAGS -DLibburn_udev_wait_useC=0"
 Alternatively, libburn can try to be nice by opening the device file,
 closing it immediately, waiting, and only then opening it for real:
-  CFLAGS="$CFLAGS -DLibburn_udev_extra_open_cyclE"
+  CFLAGS="$CFLAGS -DLibburn_udev_extra_open_cyclE -DLibburn_udev_wait_useC=500000"
 
 ------------------------------------------------------------------------------
 
