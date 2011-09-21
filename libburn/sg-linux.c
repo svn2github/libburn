@@ -1531,6 +1531,33 @@ int sg_grab(struct burn_drive *d)
 	   relase of drive. Unclear why not the official error return
 	   value -1 of open(2) war used. */
 	if(! burn_drive_is_open(d)) {
+		char msg[120];
+
+#ifndef Libburn_udev_wait_useC
+#define Libburn_udev_wait_useC 100000
+#endif
+
+#ifndef Libburn_udev_extra_open_cyclE
+
+	if (Libburn_udev_wait_useC > 0) {
+		/* ts B10921 : workaround for udev which might get
+				a kernel event from open() and might
+				remove links if it cannot inspect the
+				drive. This waiting period shall allow udev
+				to act after it was woken up by the drive scan
+				activities.
+		*/
+		sprintf(msg,
+	    "To avoid collision with udev: Waiting %lu usec before grabbing",
+				(unsigned long) Libburn_udev_wait_useC);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		usleep(Libburn_udev_wait_useC);
+	}
+
+#endif /* Libburn_udev_extra_open_cyclE */
+
 
 try_open:;
 		/* ts A60821
@@ -1553,21 +1580,34 @@ try_open:;
 
 		fd = open(d->devname, open_mode);
 		os_errno = errno;
-		if (fd >= 0) {
-			/* ts B10920 : workaround for udev which might get
-					a kernel event from open() and might
-					remove links if it cannot inspect the
-					drive.
-			*/
+
+#ifdef Libburn_udev_extra_open_cyclE
+
+		/* ts B10920 : workaround for udev which might get
+				a kernel event from open() and might
+				remove links if it cannot inspect the
+				drive.
+		   ts B10921 : this is more obtrusive than above waiting
+				before open(). The drive scan already has
+				opened and closed the drive several times.
+				So it seems to be merely about giving an
+				opportunity to udev, before long term grabbing
+				happens.
+		*/
+		if (fd >= 0 && Libburn_udev_wait_useC > 0) {
+			close(fd);
+			sprintf(msg,
+	    "To avoid collision with udev: Waiting %lu usec before re-opening",
+				(unsigned long) Libburn_udev_wait_useC);
 			libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-			"Waiting 2 seconds to avoid collision with udev",
-				 0, 0);
-			close(fd);
-			usleep(2000000);
+				msg, 0, 0);
+			usleep(Libburn_udev_wait_useC);
 			fd = open(d->devname, open_mode);
 			os_errno = errno;
 		}
+#endif /* Libburn_udev_extra_open_cyclE */
+
 		if (fd >= 0) {
 			sg_fcntl_lock(&fd, d->devname, F_WRLCK, 1);
 			if (fd < 0)
@@ -1591,6 +1631,10 @@ try_open:;
 drive_is_in_use:;
 	tries++;
 	if (tries < max_tries) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is in use. Waiting 2 seconds before re-try", 
+				0, 0);
 		usleep(2000000);
 		goto try_open;
 	}

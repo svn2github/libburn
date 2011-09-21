@@ -438,6 +438,22 @@ It will not read startup files, will abort on option  dev_translation= ,
 will not have a fifo buffer, and will not be able to put out help texts or
 debugging messages.
 
+
+Linux only:
+
+libburn tries to avoid a collision with udev's drive examination by waiting
+0.1 seconds before opening the device file for a longer time, after udev
+might have been alarmed by drive scanning activities.
+The waiting time can be set at ./configure time with microsecond granularity.
+E.g. 2 seconds:
+  CFLAGS="$CFLAGS -DLibburn_udev_wait_useC=2000000"
+  ./configure ...options...
+Closing and re-opening can be disabled by zero waiting time:
+  CFLAGS="$CFLAGS -DLibburn_udev_wait_useC=0"
+Alternatively, libburn can try to be nice by opening the device file,
+closing it immediately, waiting, and only then opening it for real:
+  CFLAGS="$CFLAGS -DLibburn_udev_extra_open_cyclE"
+
 ------------------------------------------------------------------------------
 
                   System Dependend Drive Permission Examples
