@@ -87,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.1.5"
+#define Cdrskin_prog_versioN "1.1.7"
 #endif
 
 /** The official libburn interface revision to use.
@@ -100,7 +100,7 @@ or
 #define Cdrskin_libburn_minoR 1
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
@@ -134,37 +134,37 @@ or
 #endif /* Cdrskin_libburn_cvs_A60220_tS */
 
 
-#ifdef Cdrskin_libburn_1_1_4
-#define Cdrskin_libburn_versioN "1.1.4"
+#ifdef Cdrskin_libburn_1_1_6
+#define Cdrskin_libburn_versioN "1.1.6"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_1_5
-#define Cdrskin_libburn_versioN "1.1.5"
+#ifdef Cdrskin_libburn_1_1_7
+#define Cdrskin_libburn_versioN "1.1.7"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_1_4
-#define Cdrskin_libburn_versioN "1.1.4"
+#define Cdrskin_libburn_1_1_6
+#define Cdrskin_libburn_versioN "1.1.6"
 #define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
-#ifdef Cdrskin_libburn_1_1_4
+#ifdef Cdrskin_libburn_1_1_6
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 1
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_1_1_5
+#ifdef Cdrskin_libburn_1_1_7
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 1
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
