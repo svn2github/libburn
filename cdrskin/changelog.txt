@@ -9899,7 +9899,7 @@ ChangeLog
 cdrskin/changelog.txt
 Forgot to mention cdrskin option --device_links
 
------------------------------------- cycle  - cdrskin-1.1.4 - 2011.08.07.100001
+----------------------------------- release - cdrskin-1.1.4 - 2011.08.07.100001
 * Bug fix: Some drives return -150 as NWA of blank CD, rather than 0.
            libburn forwarded this misleading information to the application.
 * Bug fix: Some drives returned wrong CD sizes after having burned DVD-R
@@ -9929,7 +9929,7 @@ Made number transition to 1.1.5
 + cdrskin/add_ts_changes_to_libburn_1_1_5
 Updated cdrskin tarball generator
 
-08 Aug 2011  []
+08 Aug 2011  [4261]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
@@ -9937,19 +9937,121 @@ Documented changes and release timestamp
 ------------------------------------ cycle  - cdrskin-1.1.5 - 2011.08.08.121355
 
 
+08 Aug 2011  [4262]
+svn move -m libburn release 1.1.4 is ready
+http://svn.libburnia-project.org/libburn/branches/1.1.4
+http://svn.libburnia-project.org/libburn/tags/1.1.4
+
+2011.08.17.160854  [4280]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+Bug fix: stdio sizes > 4 TB - 32 kB caused integer rollover
+
+2011.08.17.162201  [4281]
+libburn/drive.c
+Reacted on compiler warning about previous revision
+
+2011.08.29.213339  [4302]
+libburn/write.c
+More generous ignoring of failure of fsync() on inappropriate fd
+
+2011.09.20.131602  [4306]
+libburn/sg-linux.c
+Simulation of large disks
+
+2011.09.20.131843  [4307]
+libburn/sg-linux.c
+Working around collision with udev by closing and re-opening device file
+
+2011.09.20.132438  [4308]
+libburn/spc.c
+Slowing down test cycle while waiting for drive to become ready
+
+2011.09.21.133344  [4310]
+README
+cdrskin/README
+libburn/sg-linux.c
+Improved and documented workaround for udev
+
+21 Sep 2011  [4311]
+README
+cdrskin/README
+Corrected outdated sentence in documented workaround for udev
+
+26 Sep 2011  [4321]
+svn copy -m Branching for libburn release 1.1.6
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.1.6
+
+2011.09.27.060001  [4322]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.6
+
+27 Sep 2011  [4323]
+- cdrskin/add_ts_changes_to_libburn_1_1_4
+- cdrskin/add_ts_changes_to_libburn_1_1_5
++ cdrskin/add_ts_changes_to_libburn_1_1_6
++ cdrskin/add_ts_changes_to_libburn_1_1_7
+Updated cdrskin tarball generator
+
+27 Sep 2011  [4324]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.1.6 - 2011.09.27.060001
+* Bug fix: stdio sizes > 4 TB - 32 kB caused integer rollover
+* Worked around a collision with Linux udev which lets links vanish
+
+
+2011.09.27.124555  [4329]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.7
+
+27 Sep 2011  [4330]
+- cdrskin/add_ts_changes_to_libburn_1_1_4
+- cdrskin/add_ts_changes_to_libburn_1_1_5
++ cdrskin/add_ts_changes_to_libburn_1_1_6
++ cdrskin/add_ts_changes_to_libburn_1_1_7
+Updated cdrskin tarball generator
+
+27 Sep 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.1.7 - 
+
   []
 ChangeLog
 cdrskin/changelog.txt
-Documented changes and release timestamp
+Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.5 - 
+------------------------------------ cycle  - cdrskin-1.1.7 - 
 
   []
 ChangeLog
 cdrskin/changelog.txt
-Documented changes and release timestamp
+Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.5 - 
+------------------------------------ cycle  - cdrskin-1.1.7 - 
 
 
 
@@ -9961,6 +10063,18 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
+
+- Strive for a single open-close cycle inside burn_drive_scan_and_grab()
+  and in burn_drive_grab() at least on Linux.
+  - if re-opening is necessary then use device file, not link
+
++ Handle stdio sizes of > 4 TB - 32 kB
+  + become internally aware that the following functions can tell >= 4- TB
+    + burn_os_stdio_capacity
+    + stat, lstat
+  + burn_drive_set_media_capacity_remaining() shall curb
+    media_capacity_remaining to <= 0x7ffffff0
+  - change media default size fom 1024g to 4t-32k
 
 - libburn.h talks of "persistent drive address" which on modern Linux
   is far from being persistent. Change to "system drive address" (or so).

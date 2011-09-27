@@ -1,7 +1,12 @@
-SVN trunk (to become libburn-1.1.6.tar.gz or higher)
+SVN trunk (to become libburn-1.1.8.tar.gz or higher)
 ===============================================================================
 - no novelties yet
 
+
+libburn-1.1.6.tar.gz Tue Sep 27 2011
+===============================================================================
+* Bug fix: stdio sizes > 4 TB - 32 kB caused integer rollover
+* Worked around a collision with Linux udev which lets links vanish
 
 libburn-1.1.4.tar.gz Sun Aug 07 2011
 ===============================================================================
