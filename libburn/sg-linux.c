@@ -252,8 +252,12 @@ int burn_drive_is_banned(char *device_address);
 /* ------------------------------------------------------------------------ */
 
 
-static void enumerate_common(char *fname, int bus_no, int host_no,
+static void enumerate_common(char *fname, int fd_in, int bus_no, int host_no,
 			     int channel_no, int target_no, int lun_no);
+
+static int sg_obtain_scsi_adr_fd(char *path, int fd_in,
+				 int *bus_no, int *host_no, int *channel_no,
+				 int *target_no, int *lun_no);
 
 
 /* ts A60813 : storage objects are in libburn/init.c
@@ -757,12 +761,15 @@ failed:;
 
 
 /* ts A80731 */
-static int is_ata_drive(char *fname)
+static int is_ata_drive(char *fname, int fd_in)
 {
 	int fd;
 	struct hd_driveid tm;
 
-	fd = sg_open_drive_fd(fname, 1);
+	if (fd_in >= 0)
+		fd = fd_in;
+	else
+		fd = sg_open_drive_fd(fname, 1);
 	if (fd == -1) {
 		if (linux_ata_enumerate_verbous)
 			fprintf(stderr,"open failed, errno=%d  '%s'\n",
@@ -777,7 +784,8 @@ static int is_ata_drive(char *fname)
 	if (!(tm.config & 0x8000) || (tm.config & 0x4000)) {
 		if (linux_ata_enumerate_verbous)
 			fprintf(stderr, "not marked as ATAPI\n");
-		sg_close_drive_fd(fname, -1, &fd, 0);
+		if (fd_in < 0)
+			sg_close_drive_fd(fname, -1, &fd, 0);
 		return 0;
 	}
 
@@ -788,9 +796,12 @@ static int is_ata_drive(char *fname)
 		  fprintf(stderr,
 			 "FATAL: sgio_test() failed: errno=%d  '%s'\n",
 			 errno, strerror(errno));
-		sg_close_drive_fd(fname, -1, &fd, 0);
+		if (fd_in < 0)
+			sg_close_drive_fd(fname, -1, &fd, 0);
 		return 0;
 	}
+	if (fd_in >= 0)
+		return 1;
 	if (sg_close_drive_fd(fname, -1, &fd, 1) <= 0) {
 		if (linux_ata_enumerate_verbous)
 			fprintf(stderr,
@@ -802,7 +813,7 @@ static int is_ata_drive(char *fname)
 }
 
 
-static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
+static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 			 int *channel_no, int *target_no, int *lun_no)
 {
 	int fd, sid_ret = 0, ret;
@@ -815,7 +826,10 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 	BURN_ALLOC_MEM(sibling_fnames, burn_sg_sibling_fname,
 			BURN_OS_SG_MAX_SIBLINGS);
 
-	fd = sg_open_drive_fd(fname, 1);
+	if (fd_in >= 0)
+		fd = fd_in;
+	else
+		fd = sg_open_drive_fd(fname, 1);
 	if (fd == -1) {
 		if (linux_sg_enumerate_debug)
 			fprintf(stderr, "open failed, errno=%d  '%s'\n",
@@ -837,7 +851,8 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 				 "FATAL: sgio_test() failed: errno=%d  '%s'",
 				errno, strerror(errno));
 
-			sg_close_drive_fd(fname, -1, &fd, 0);
+			if (fd_in < 0)
+				sg_close_drive_fd(fname, -1, &fd, 0);
 			{ret = 0; goto ex;}
 		}
 
@@ -863,14 +878,19 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 		*bus_no = -1;
 #endif
 
-	if (sg_close_drive_fd(fname, -1, &fd, 
+	/* >>> SINGLE_OPEN : close in label ex.
+			     after re-using fd with sg_obtain_scsi_adr_fd()  */
+	if (fd_in < 0) {
+		if (sg_close_drive_fd(fname, -1, &fd, 
 					sid.scsi_type == TYPE_ROM ) <= 0) {
-		if (linux_sg_enumerate_debug)
-			fprintf(stderr,
+			if (linux_sg_enumerate_debug)
+				fprintf(stderr,
 				"cannot close properly, errno=%d  '%s'\n",
 				errno, strerror(errno)); 
-		{ret = 0; goto ex;}
+			{ret = 0; goto ex;}
+		}
 	}
+
 	if ( (sid_ret == -1 || sid.scsi_type != TYPE_ROM)
 	     && !linux_sg_accept_any_type) {
 		if (linux_sg_enumerate_debug)
@@ -881,7 +901,8 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 
 	if (sid_ret == -1 || sid.scsi_id < 0) {
 		/* ts A61211 : employ a more general ioctl */
-		ret = sg_obtain_scsi_adr(fname, bus_no, host_no,
+		/* ts B11001 : re-use fd if still open */
+		ret = sg_obtain_scsi_adr_fd(fname, fd, bus_no, host_no,
 					   channel_no, target_no, lun_no);
 		if (ret>0) {
 			sid.host_no = *host_no;
@@ -891,7 +912,7 @@ static int is_scsi_drive(char *fname, int *bus_no, int *host_no,
 		} else {
 			if (linux_sg_enumerate_debug)
 				fprintf(stderr,
-					"sg_obtain_scsi_adr() failed\n");
+					"sg_obtain_scsi_adr_fd() failed\n");
 			{ret = 0; goto ex;}
 		}
 	}
@@ -931,12 +952,26 @@ ex:;
 }	
 
 
+static int sg_open_for_enumeration(char *fname, int flag)
+{
+	int fd;
+
+	fd = sg_open_drive_fd(fname, 1);
+	if (fd < 0) {
+		if (linux_sg_enumerate_debug || linux_ata_enumerate_verbous)
+			fprintf(stderr, "open failed, errno=%d  '%s'\n",
+				errno, strerror(errno));
+		return -1;
+	}
+	return fd;
+}
+
+
 /** Speciality of GNU/Linux: detect non-SCSI ATAPI (EIDE) which will from
    then on used used via generic SCSI as is done with (emulated) SCSI drives */ 
 static void ata_enumerate(void)
 {
-	int ret;
-	int i;
+	int ret, i, fd = -1;
 	char fname[10];
 
 	if (linux_ata_enumerate_verbous)
@@ -957,14 +992,17 @@ static void ata_enumerate(void)
 				fprintf(stderr, "not in whitelist\n");
 	continue;
 		}
-		ret = is_ata_drive(fname);
+		fd = sg_open_for_enumeration(fname, 0);
+		if (fd < 0)
+	continue;
+		ret = is_ata_drive(fname, fd);
 		if (ret < 0)
 	break;
 		if (ret == 0)
 	continue;
 		if (linux_ata_enumerate_verbous)
 		  fprintf(stderr, "accepting as drive without SCSI address\n");
-		enumerate_common(fname, -1, -1, -1, -1, -1);
+		enumerate_common(fname, fd, -1, -1, -1, -1, -1);
 	}
 }
 
@@ -972,7 +1010,7 @@ static void ata_enumerate(void)
 /** Detects (probably emulated) SCSI drives */
 static void sg_enumerate(void)
 {
-	int i, ret;
+	int i, ret, fd = -1;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char fname[17];
 
@@ -1000,8 +1038,11 @@ static void sg_enumerate(void)
 			  fprintf(stderr, "not in whitelist\n"); 
 	continue;
 		}
+		fd = sg_open_for_enumeration(fname, 0);
+		if (fd < 0)
+	continue;
 
-		ret = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
+		ret = is_scsi_drive(fname, fd, &bus_no, &host_no, &channel_no,
 							&target_no, &lun_no);
 		if (ret < 0)
 	break;
@@ -1010,7 +1051,7 @@ static void sg_enumerate(void)
 		if (linux_sg_enumerate_debug)
 		  fprintf(stderr, "accepting as SCSI %d,%d,%d,%d bus=%d\n",
 			  host_no, channel_no, target_no, lun_no, bus_no);
-		enumerate_common(fname, bus_no, host_no, channel_no, 
+		enumerate_common(fname, fd, bus_no, host_no, channel_no, 
 				target_no, lun_no);
 
 	}
@@ -1059,7 +1100,7 @@ static int fname_drive_is_listed(char *fname, int flag)
 */
 static int fname_enumerate(char *fname, int flag)
 {
-	int is_ata= 0, is_scsi= 0, ret;
+	int is_ata= 0, is_scsi= 0, ret, fd = -1;
 	int bus_no= -1, host_no= -1, channel_no= -1, target_no= -1, lun_no= -1;
 	char *msg = NULL;
 	struct stat stbuf;
@@ -1077,13 +1118,16 @@ static int fname_enumerate(char *fname, int flag)
 			  msg, 0, 0);
 		{ret = -1; goto ex;}
 	}
-	
-	is_ata = is_ata_drive(fname);
+
+	fd = sg_open_for_enumeration(fname, 0);
+	if (fd < 0)
+		{ret = 0; goto ex;}
+	is_ata = is_ata_drive(fname, fd);
 	if (is_ata < 0)
 		{ret = -1; goto ex;}
 	if (!is_ata)
-		is_scsi = is_scsi_drive(fname, &bus_no, &host_no, &channel_no,
-					&target_no, &lun_no);
+		is_scsi = is_scsi_drive(fname, fd, &bus_no, &host_no,
+					&channel_no, &target_no, &lun_no);
 	if (is_scsi < 0)
 		{ret = -1; goto ex;}
 	if (is_ata == 0 && is_scsi == 0)
@@ -1093,7 +1137,8 @@ static int fname_enumerate(char *fname, int flag)
 		  fprintf(stderr,
 			"(single) accepting as SCSI %d,%d,%d,%d bus=%d\n",
 			host_no, channel_no, target_no, lun_no, bus_no);
-	enumerate_common(fname, bus_no, host_no, channel_no, 
+
+	enumerate_common(fname, fd, bus_no, host_no, channel_no, 
 				target_no, lun_no);
 	ret = 1;
 ex:;
@@ -1246,7 +1291,7 @@ static int add_proc_info_drives(int flag)
 */
 /* ts A60923 - A61005 : introduced new SCSI parameters */
 /* ts A61021 : moved non os-specific code to spc,sbc,mmc,drive */
-static void enumerate_common(char *fname, int bus_no, int host_no,
+static void enumerate_common(char *fname, int fd_in, int bus_no, int host_no,
 			     int channel_no, int target_no, int lun_no)
 {
 	int ret, i;
@@ -1278,8 +1323,12 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.release = sg_release;
 	out.drive_is_open= sg_drive_is_open;
 	out.issue_command = sg_issue_command;
+	if (fd_in >= 0)
+		out.fd = fd_in;
 
-	/* Finally register drive and inquire drive information */
+	/* Finally register drive and inquire drive information.
+	   out is an invalid copy afterwards. Do not use it for anything.
+	 */
 	burn_drive_finish_enum(&out);
 }
 
@@ -1533,6 +1582,12 @@ int sg_grab(struct burn_drive *d)
 	if(! burn_drive_is_open(d)) {
 		char msg[120];
 
+/* >>> SINGLE_OPEN : This case should be impossible now, since enumeration
+                     transfers the fd from scanning to drive.
+                     So if close-wait-open is desired, then it has to
+                     be done unconditionally.
+*/
+
 #ifndef Libburn_udev_wait_useC
 #define Libburn_udev_wait_useC 100000
 #endif
@@ -1577,7 +1632,6 @@ try_open:;
 			if(ret <= 0)
 				goto drive_is_in_use;
 		}
-
 		fd = open(d->devname, open_mode);
 		os_errno = errno;
 
@@ -1820,12 +1874,13 @@ ex:;
 }
 
 
-/* ts A60922 */
+/* ts B11001 : outsourced from non-static sg_obtain_scsi_adr() */
 /** Tries to obtain SCSI address parameters.
     @return  1 is success , 0 is failure
 */
-int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
-                       int *target_no, int *lun_no)
+static int sg_obtain_scsi_adr_fd(char *path, int fd_in,
+				 int *bus_no, int *host_no, int *channel_no,
+				 int *target_no, int *lun_no)
 {
 	int fd, ret, l, open_mode = O_RDONLY;
 	struct my_scsi_idlun {
@@ -1853,7 +1908,10 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 		   SuSE 9.0 (kernel 2.4) and SuSE 9.3 (kernel 2.6) */
 		/* so skip it for now */;
 	}
-	fd = open(path, open_mode);
+	if (fd_in >= 0)
+		fd = fd_in;
+	else
+		fd = open(path, open_mode);
 	if(fd < 0)
 		return 0;
 	sg_fcntl_lock(&fd, path, F_RDLCK, 0);
@@ -1869,7 +1927,8 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	/* http://www.tldp.org/HOWTO/SCSI-Generic-HOWTO/scsi_g_idlun.html */
 	ret = ioctl(fd, SCSI_IOCTL_GET_IDLUN, &idlun);
 
-	sg_close_drive_fd(path, -1, &fd, 0);
+	if (fd_in < 0)
+		sg_close_drive_fd(path, -1, &fd, 0);
 	if (ret == -1)
 		return(0);
 	*host_no= (idlun.x>>24)&255;
@@ -1883,6 +1942,18 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	*bus_no= *host_no;
 #endif
 	return 1;
+}
+
+
+/* ts A60922 */
+/** Tries to obtain SCSI address parameters.
+    @return  1 is success , 0 is failure
+*/
+int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
+                       int *target_no, int *lun_no)
+{
+	return sg_obtain_scsi_adr_fd(path, -1, bus_no, host_no, channel_no,
+					 target_no, lun_no);
 }
 
 
