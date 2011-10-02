@@ -816,7 +816,7 @@ static int is_ata_drive(char *fname, int fd_in)
 static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 			 int *channel_no, int *target_no, int *lun_no)
 {
-	int fd, sid_ret = 0, ret;
+	int fd = -1, sid_ret = 0, ret, fail_sev_sorry = 0;
 	struct sg_scsi_id sid;
 	int *sibling_fds = NULL, sibling_count= 0;
 	typedef char burn_sg_sibling_fname[BURN_OS_SG_MAX_NAMELEN];
@@ -836,7 +836,6 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 				errno, strerror(errno));
 		{ret = 0; goto ex;}
 	}
-
 	sid_ret = ioctl(fd, SG_GET_SCSI_ID, &sid);
 	if (sid_ret == -1) {
 		sid.scsi_id = -1; /* mark SCSI address as invalid */
@@ -851,8 +850,6 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 				 "FATAL: sgio_test() failed: errno=%d  '%s'",
 				errno, strerror(errno));
 
-			if (fd_in < 0)
-				sg_close_drive_fd(fname, -1, &fd, 0);
 			{ret = 0; goto ex;}
 		}
 
@@ -878,19 +875,7 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 		*bus_no = -1;
 #endif
 
-	/* >>> SINGLE_OPEN : close in label ex.
-			     after re-using fd with sg_obtain_scsi_adr_fd()  */
-	if (fd_in < 0) {
-		if (sg_close_drive_fd(fname, -1, &fd, 
-					sid.scsi_type == TYPE_ROM ) <= 0) {
-			if (linux_sg_enumerate_debug)
-				fprintf(stderr,
-				"cannot close properly, errno=%d  '%s'\n",
-				errno, strerror(errno)); 
-			{ret = 0; goto ex;}
-		}
-	}
-
+	fail_sev_sorry = (sid.scsi_type == TYPE_ROM);
 	if ( (sid_ret == -1 || sid.scsi_type != TYPE_ROM)
 	     && !linux_sg_accept_any_type) {
 		if (linux_sg_enumerate_debug)
@@ -901,7 +886,7 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 
 	if (sid_ret == -1 || sid.scsi_id < 0) {
 		/* ts A61211 : employ a more general ioctl */
-		/* ts B11001 : re-use fd if still open */
+		/* ts B11001 : re-use fd */
 		ret = sg_obtain_scsi_adr_fd(fname, fd, bus_no, host_no,
 					   channel_no, target_no, lun_no);
 		if (ret>0) {
@@ -946,6 +931,16 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 	*lun_no= sid.lun;
 	ret = 1;
 ex:;
+	if (fd_in < 0 && fd >= 0) {
+		if (sg_close_drive_fd(fname, -1, &fd, fail_sev_sorry) <= 0) {
+			if (linux_sg_enumerate_debug)
+				fprintf(stderr,
+				"cannot close properly, errno=%d  '%s'\n",
+				errno, strerror(errno)); 
+			if (ret > 0)
+				ret = 0;
+		}
+	}
 	BURN_FREE_MEM(sibling_fds);
 	BURN_FREE_MEM(sibling_fnames);
 	return ret;
