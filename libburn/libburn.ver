@@ -59,6 +59,7 @@ burn_drive_is_enumerable_adr;
 burn_drive_leave_locked;
 burn_drive_obtain_scsi_adr;
 burn_drive_probe_cd_write_modes;
+burn_drive_re_assess;
 burn_drive_release;
 burn_drive_scan;
 burn_drive_scan_and_grab;

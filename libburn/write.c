@@ -2000,7 +2000,7 @@ ex:;
 	/* >>> eventual emergency finalization measures */
 
 	/* update media state records */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, 0);
 	burn_drive_inquire_media(d);
 
 	if (d->current_profile == 0x41 && d->complete_sessions >= 300) {
@@ -2339,6 +2339,9 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	d->progress.tracks = 1;
 
 	/* >>> adjust sector size (2048) to eventual audio or even raw */
+
+	/* >>> ??? ts B11004 : Why this eagerness to close and open ? */
+
 	/* open target file */
 	if (d->stdio_fd >= 0)
 		close(d->stdio_fd);
@@ -2359,12 +2362,15 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	d->progress.sectors = 0;
 	ret = 1;
 ex:;
+
+	/* >>> ??? ts B11004 : Why this eagerness to close ? */
+
 	if (d->stdio_fd >= 0)
 		close(d->stdio_fd);
 	d->stdio_fd = -1;
 
 	/* update media state records */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, 8);
 
 	/* <<< d->busy = BURN_DRIVE_IDLE; */
 	return ret;
@@ -2609,7 +2615,7 @@ return crap.  so we send the command, then ignore the result.
 	sleep(1);
 
 	/* ts A61125 : update media state records */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, 0);
 	burn_drive_inquire_media(d);
 
 	burn_print(1, "done\n");

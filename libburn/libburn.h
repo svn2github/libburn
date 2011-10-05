@@ -1144,6 +1144,17 @@ int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info);
 int burn_drive_snooze(struct burn_drive *d, int flag);
 
 
+/** Re-assess drive and media status. This should be done after a drive
+    underwent a status change and shall be further used without intermediate
+    burn_drive_release(), burn_drive_grab(). E.g. after blanking or burning.
+    @param drive  The already grabbed drive to re-assess.
+    @param flag   Unused yet. Submit 0.
+    @return       1 success , <= 0 could not determine drive and media state
+    @since 1.1.8
+*/
+int burn_drive_re_assess(struct burn_drive *d, int flag);
+
+
 /** Release a drive. This should not be done until the drive is no longer
     busy (see burn_drive_get_status).
 	@param drive The drive to release.

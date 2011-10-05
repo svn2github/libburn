@@ -85,7 +85,7 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d);
 int burn_drive_inquire_media(struct burn_drive *d);
 
 /* ts A61125 : model aspects of burn_drive_release */
-int burn_drive_mark_unready(struct burn_drive *d);
+int burn_drive_mark_unready(struct burn_drive *d, int flag);
 
 
 /* ts A61226 */

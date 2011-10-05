@@ -347,48 +347,152 @@ int burn_drive_send_default_page_05(struct burn_drive *d, int flag)
 }
 
 
+/* ts A70924 */
+int burn_drive__fd_from_special_adr(char *adr)
+{
+	int fd = -1, i;
+
+	if (strcmp(adr, "-") == 0)
+		fd = 1;
+	if(strncmp(adr, "/dev/fd/", 8) == 0) {
+		for (i = 8; adr[i]; i++)
+			if (!isdigit(adr[i]))
+		break;
+		if (i> 8 && adr[i] == 0)
+			fd = atoi(adr + 8);
+	}
+	return fd;
+}
+
+/* @param flag bit0= accept read-only files and return 2 in this case
+               bit1= accept write-only files and return 3 in this case
+*/
+static int burn_drive__is_rdwr(char *fname, int *stat_ret, 
+                               struct stat *stbuf_ret,
+                               off_t *read_size_ret, int flag)
+{
+	int fd, is_rdwr = 1, ret, getfl_ret, st_ret, mask;
+	struct stat stbuf;
+        off_t read_size = 0;
+
+	memset(&stbuf, 0, sizeof(struct stat));
+	fd = burn_drive__fd_from_special_adr(fname);
+	if (fd >= 0)
+		st_ret = fstat(fd, &stbuf);
+	else
+		st_ret = stat(fname, &stbuf);
+	if (st_ret != -1) {
+		is_rdwr = burn_os_is_2k_seekrw(fname, 0);
+		ret = 1;
+		if (S_ISREG(stbuf.st_mode))
+			read_size = stbuf.st_size;
+		else if (is_rdwr)
+			ret = burn_os_stdio_capacity(fname, &read_size);
+		if (ret <= 0 ||
+		    read_size / (off_t) 2048 >= (off_t) 0x7ffffff0) 
+			read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
+	}
+
+	if (is_rdwr && fd >= 0) {
+		getfl_ret = fcntl(fd, F_GETFL);
+
+/*
+fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = %lX , & = %lX , O_RDONLY = %lX\n", (unsigned long) getfl_ret, (unsigned long) O_RDWR, (unsigned long) (getfl_ret & O_RDWR), (unsigned long) O_RDONLY);
+*/
+
+		mask = O_RDWR | O_WRONLY | O_RDONLY;
+
+		if (getfl_ret == -1 || (getfl_ret & mask) != O_RDWR)
+			is_rdwr = 0;
+		if ((flag & 1) && getfl_ret != -1 &&
+		    (getfl_ret & mask) == O_RDONLY)
+			is_rdwr = 2;
+		if ((flag & 2) && getfl_ret != -1 &&
+		    (getfl_ret & mask) == O_WRONLY)
+			is_rdwr = 3;
+	}
+	if (stat_ret != NULL)
+		*stat_ret = st_ret;
+	if (stbuf_ret != NULL)
+		memcpy(stbuf_ret, &stbuf, sizeof(struct stat));
+	if (read_size_ret != NULL)
+		*read_size_ret = read_size;
+	return is_rdwr;
+}
+
+
+int burn_drive_grab_stdio(struct burn_drive *d, int flag)
+{
+	int stat_ret = -1, is_rdwr, ret;
+	struct stat stbuf;
+	off_t read_size= 0, size= 0;
+	char fd_name[40], *name_pt = NULL;
+
+	if(d->stdio_fd >= 0) {
+		sprintf(fd_name, "/dev/fd/%d", d->stdio_fd);
+		name_pt = fd_name;
+	} else if (d->devname[0]) {
+		name_pt = d->devname;
+	}
+	if (name_pt != NULL) {
+		/* re-assess d->media_read_capacity and free space */
+		is_rdwr = burn_drive__is_rdwr(name_pt, &stat_ret, &stbuf,
+							 &read_size, 1 | 2);
+		/* despite its name : last valid address, not size */
+		d->media_read_capacity =
+					read_size / 2048 - !(read_size % 2048);
+		if ((stat_ret == -1 || is_rdwr) && d->devname[0]) { 
+		       	ret = burn_os_stdio_capacity(d->devname, &size);
+			if (ret > 0)
+				burn_drive_set_media_capacity_remaining(d,
+									size);
+		}
+	}
+
+	d->released = 0;
+	d->current_profile = 0xffff;
+	if(d->drive_role == 2 || d->drive_role == 3) {
+		d->status = BURN_DISC_BLANK;
+	} else if(d->drive_role == 4) {
+		if (d->media_read_capacity > 0)
+			d->status = BURN_DISC_FULL;
+		else
+			d->status = BURN_DISC_EMPTY;
+	} else if(d->drive_role == 5) {
+		if (stat_ret != -1 && S_ISREG(stbuf.st_mode) &&
+		    stbuf.st_size > 0) {
+			d->status = BURN_DISC_APPENDABLE;
+			if (stbuf.st_size / (off_t) 2048
+			    >= 0x7ffffff0) {
+				d->status = BURN_DISC_FULL;
+				d->role_5_nwa = 0x7ffffff0;
+			} else 
+				d->role_5_nwa = stbuf.st_size / 2048 +
+				              !!(stbuf.st_size % 2048);
+		} else
+			d->status = BURN_DISC_BLANK;
+	} else {
+		d->status = BURN_DISC_EMPTY;
+		d->current_profile = 0;
+	}
+	d->busy = BURN_DRIVE_IDLE;
+	return 1;
+}
+
+
 int burn_drive_grab(struct burn_drive *d, int le)
 {
 	int errcode;
 	/* ts A61125 - B10314 */
-	int ret, sose, stat_ret = -1;
-	struct stat stbuf;
+	int ret, sose;
 
 	if (!d->released) {
 		burn_print(1, "can't grab - already grabbed\n");
 		return 0;
 	}
 	if(d->drive_role != 1) {
-		d->released = 0;
-		d->current_profile = 0xffff;
-		if (d->devname[0])
-			stat_ret = stat(d->devname, &stbuf);
-		if(d->drive_role == 2 || d->drive_role == 3) {
-			d->status = BURN_DISC_BLANK;
-		} else if(d->drive_role == 4) {
-			if (d->media_read_capacity > 0)
-				d->status = BURN_DISC_FULL;
-			else
-				d->status = BURN_DISC_EMPTY;
-		} else if(d->drive_role == 5) {
-			if (stat_ret != -1 && S_ISREG(stbuf.st_mode) &&
-			    stbuf.st_size > 0) {
-				d->status = BURN_DISC_APPENDABLE;
-				if (stbuf.st_size / (off_t) 2048
-				    >= 0x7ffffff0) {
-					d->status = BURN_DISC_FULL;
-					d->role_5_nwa = 0x7ffffff0;
-				} else 
-					d->role_5_nwa = stbuf.st_size / 2048 +
-					              !!(stbuf.st_size % 2048);
-			} else
-				d->status = BURN_DISC_BLANK;
-		} else {
-			d->status = BURN_DISC_EMPTY;
-			d->current_profile = 0;
-		}
-		d->busy = BURN_DRIVE_IDLE;
-		return 1;
+		ret = burn_drive_grab_stdio(d, 0);
+		return ret;
 	}
 
 	d->status = BURN_DISC_UNREADY;
@@ -536,7 +640,9 @@ ex:
 
 
 /* ts A61125 : model aspects of burn_drive_release */
-int burn_drive_mark_unready(struct burn_drive *d)
+/* @param flag bit3= do not close d->stdio_fd
+*/
+int burn_drive_mark_unready(struct burn_drive *d, int flag)
 {
 	/* ts A61020 : mark media info as invalid */
 	d->start_lba= -2000000000;
@@ -556,15 +662,18 @@ int burn_drive_mark_unready(struct burn_drive *d)
 		burn_disc_free(d->disc);
 		d->disc = NULL;
 	}
-	if (d->stdio_fd >= 0)
-		close (d->stdio_fd);
-	d->stdio_fd = -1;
+	if (!(flag & 8)) {
+		if (d->stdio_fd >= 0)
+			close (d->stdio_fd);
+		d->stdio_fd = -1;
+	}
 	return 1;
 }
 
 
 /* ts A70918 : outsourced from burn_drive_release() and enhanced */
 /** @param flag bit0-2 = mode : 0=unlock , 1=unlock+eject , 2=leave locked
+                bit3= do not call d->release()
 */
 int burn_drive_release_fl(struct burn_drive *d, int flag)
 {
@@ -596,15 +705,17 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 			d->unlock(d);
 		if ((flag & 7) == 1)
 			d->eject(d);
-		burn_drive_snooze(d, 0);
-		d->release(d);
+		if (!(flag & 8)) {
+			burn_drive_snooze(d, 0);
+			d->release(d);
+		}
 	}
 
 	d->needs_sync_cache = 0; /* just to be sure */
 	d->released = 1;
 
 	/* ts A61125 : outsourced model aspects */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, flag & 8);
 	return 1;
 }
 
@@ -629,6 +740,36 @@ int burn_drive_snooze(struct burn_drive *d, int flag)
 void burn_drive_release(struct burn_drive *d, int le)
 {
 	burn_drive_release_fl(d, !!le);
+}
+
+
+/* ts B11002 */
+/* API */
+int burn_drive_re_assess(struct burn_drive *d, int flag)
+{
+	int ret;
+
+	if (d->released) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			     0x00020108,
+			     LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			     "Drive is not grabbed on burn_drive_re_assess()",
+			     0, 0);
+		return 0;
+	}
+	burn_drive_release_fl(d, 2 | 8);
+
+	if(d->drive_role != 1) {
+		ret = burn_drive_grab_stdio(d, 0);
+		return ret;
+	}
+
+	d->busy = BURN_DRIVE_GRABBING;
+	ret = burn_drive_inquire_media(d);
+	burn_drive_send_default_page_05(d, 0);
+	d->busy = BURN_DRIVE_IDLE;
+	d->released = 0;
+	return ret;
 }
 
 
@@ -736,7 +877,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	d->progress.sector = 0x10000;
 
 	/* ts A61125 : update media state records */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, 0);
 	if (d->drive_role == 1)
 		burn_drive_inquire_media(d);
 	d->busy = BURN_DRIVE_IDLE;
@@ -790,7 +931,7 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 		goto ex;
 
 	/* update media state records */
-	burn_drive_mark_unready(d);
+	burn_drive_mark_unready(d, 0);
 	burn_drive_inquire_media(d);
 	if (flag & 1) {
 		/* write size in zeros */;
@@ -1430,80 +1571,6 @@ char *burn_drive_whitelist_item(int idx, int flag)
 	if (idx < 0 || idx > enumeration_whitelist_top)
 		return NULL;
 	return enumeration_whitelist[idx];
-}
-
-
-/* ts A70924 */
-int burn_drive__fd_from_special_adr(char *adr)
-{
-	int fd = -1, i;
-
-	if (strcmp(adr, "-") == 0)
-		fd = 1;
-	if(strncmp(adr, "/dev/fd/", 8) == 0) {
-		for (i = 8; adr[i]; i++)
-			if (!isdigit(adr[i]))
-		break;
-		if (i> 8 && adr[i] == 0)
-			fd = atoi(adr + 8);
-	}
-	return fd;
-}
-
-/* @param flag bit0= accept read-only files and return 2 in this case
-               bit1= accept write-only files and return 3 in this case
-*/
-static int burn_drive__is_rdwr(char *fname, int *stat_ret, 
-                               struct stat *stbuf_ret,
-                               off_t *read_size_ret, int flag)
-{
-	int fd, is_rdwr = 1, ret, getfl_ret, st_ret, mask;
-	struct stat stbuf;
-        off_t read_size = 0;
-
-	memset(&stbuf, 0, sizeof(struct stat));
-	fd = burn_drive__fd_from_special_adr(fname);
-	if (fd >= 0)
-		st_ret = fstat(fd, &stbuf);
-	else
-		st_ret = stat(fname, &stbuf);
-	if (st_ret != -1) {
-		is_rdwr = burn_os_is_2k_seekrw(fname, 0);
-		ret = 1;
-		if (S_ISREG(stbuf.st_mode))
-			read_size = stbuf.st_size;
-		else if (is_rdwr)
-			ret = burn_os_stdio_capacity(fname, &read_size);
-		if (ret <= 0 ||
-		    read_size / (off_t) 2048 >= (off_t) 0x7ffffff0) 
-			read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
-	}
-
-	if (is_rdwr && fd >= 0) {
-		getfl_ret = fcntl(fd, F_GETFL);
-
-/*
-fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = %lX , & = %lX , O_RDONLY = %lX\n", (unsigned long) getfl_ret, (unsigned long) O_RDWR, (unsigned long) (getfl_ret & O_RDWR), (unsigned long) O_RDONLY);
-*/
-
-		mask = O_RDWR | O_WRONLY | O_RDONLY;
-
-		if (getfl_ret == -1 || (getfl_ret & mask) != O_RDWR)
-			is_rdwr = 0;
-		if ((flag & 1) && getfl_ret != -1 &&
-		    (getfl_ret & mask) == O_RDONLY)
-			is_rdwr = 2;
-		if ((flag & 2) && getfl_ret != -1 &&
-		    (getfl_ret & mask) == O_WRONLY)
-			is_rdwr = 3;
-	}
-	if (stat_ret != NULL)
-		*stat_ret = st_ret;
-	if (stbuf_ret != NULL)
-		memcpy(stbuf_ret, &stbuf, sizeof(struct stat));
-	if (read_size_ret != NULL)
-		*read_size_ret = read_size;
-	return is_rdwr;
 }
 
 
