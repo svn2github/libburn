@@ -269,12 +269,6 @@ or
 #endif /* Cdrskin_libburn_from_pykix_svN */
 
 
-/** http://libburnia-project.org/ticket/41 reports of big trouble without 
-    padding any track to a full sector
-*/
-#define Cdrskin_all_tracks_with_sector_paD 1
-
-
 /** ts A90901
     The raw write modes of libburn depend in part on code borrowed from cdrdao.
     Since this code is not understood by the current developers and since CDs
@@ -972,7 +966,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->tao_to_sao_tsize= 0.0;
  o->padding= 0.0;
  o->set_by_padsize= 0;
- o->sector_pad_up= Cdrskin_all_tracks_with_sector_paD;
+ o->sector_pad_up= 1;
  o->track_type= BURN_MODE1;
  o->sector_size= 2048.0;
  o->track_type_by_default= 1;
