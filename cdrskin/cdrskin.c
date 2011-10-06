@@ -195,7 +195,7 @@ or
 
 /* 0.2.6 */
 #define Cdrskin_libburn_has_pretend_fulL 1
-#define Cdrskin_libburn_has_multI 1
+/* Cdrskin_libburn_has_multI */
 /* Cdrskin_libburn_has_buffer_min_filL */
 
 /* 0.3.0 */
@@ -2984,20 +2984,16 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\t-dummy\t\tdo everything with laser turned off\n");
      fprintf(stderr,"\t-minfo\t\tretrieve and print media information/status\n");
      fprintf(stderr,"\t-media-info\tretrieve and print media information/status\n");
-#ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-msinfo\t\tretrieve multi-session info for mkisofs >= 1.10\n");
      fprintf(stderr,"\tmsifile=path\trun -msinfo and copy output to file\n");
-#endif
      fprintf(stderr,"\t-toc\t\tretrieve and print TOC/PMA data\n");
      fprintf(stderr,
              "\t-atip\t\tretrieve media state, print \"Is *erasable\"\n");
      fprintf(stderr,
              "\tminbuf=percent\tset lower limit for drive buffer modesty\n");
-#ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-multi\t\tgenerate a TOC that allows multi session\n");
-#endif
      fprintf(stderr,
            "\t-waiti\t\twait until input is available before opening SCSI\n");
      fprintf(stderr,
@@ -4901,12 +4897,7 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
    burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
    burn_write_opts_set_underrun_proof(o,skin->burnfree);
  }
-#ifdef Cdrskin_libburn_has_multI
  ret= burn_disc_track_lba_nwa(drive,o,0,&lba,nwa);
-#else
- ret= 0;
- lba= 0;/* silence gcc warning */
-#endif
  if(o!=NULL)
    burn_write_opts_free(o);
  return(ret);
@@ -6781,7 +6772,6 @@ burn_failed:;
 
  burn_write_opts_set_start_byte(o, skin->write_start_address);
 
-#ifdef Cdrskin_libburn_has_multI
  if(skin->media_is_overwriteable && skin->multi) {
    if(skin->grow_overwriteable_iso<=0) {
      fprintf(stderr, "cdrskin: FATAL : -multi cannot leave a recognizable end mark on this media.\n");
@@ -6798,7 +6788,6 @@ burn_failed:;
    }
  }
  burn_write_opts_set_multi(o,skin->multi);
-#endif
  burn_write_opts_set_fillup(o, skin->fill_up_media);
 
  burn_write_opts_set_force(o, !!skin->force_is_set);
@@ -7960,11 +7949,7 @@ minbuf_equals:;
      skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"-multi")==0) {
-#ifdef Cdrskin_libburn_has_multI
      skin->multi= 1;
-#else
-     fprintf(stderr,"cdrskin: SORRY : Option -multi is not available yet.\n");
-#endif
 
    } else if(strncmp(argv[i],"-msifile=",9)==0) {
      value_pt= argv[i]+9;
@@ -7972,7 +7957,6 @@ minbuf_equals:;
    } else if(strncmp(argv[i],"msifile=",8)==0) {
      value_pt= argv[i]+8;
 msifile_equals:;
-#ifdef Cdrskin_libburn_has_multI
      if(strlen(value_pt)>=sizeof(skin->msifile)) {
        fprintf(stderr,
           "cdrskin: FATAL : msifile=... too long. (max: %d, given: %d)\n",
@@ -7981,19 +7965,9 @@ msifile_equals:;
      }
      strcpy(skin->msifile, value_pt);
      skin->do_msinfo= 1;
-#else
-     fprintf(stderr,
-             "cdrskin: SORRY : Option msifile= is not available.\n");
-     return(0);
-#endif
 
    } else if(strcmp(argv[i],"-msinfo")==0) {
-#ifdef Cdrskin_libburn_has_multI
      skin->do_msinfo= 1;
-#else
-     fprintf(stderr,"cdrskin: SORRY : Option -msinfo is not available.\n");
-     return(0);
-#endif
 
    } else if(strcmp(argv[i],"--no_abort_handler")==0) {
      /* is handled in Cdrpreskin_setup() */;
