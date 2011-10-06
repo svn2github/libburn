@@ -238,7 +238,7 @@ or
 /* novel libburn features are transparent to cdrskin */
 
 /* 0.4.6 */
-#define Cdrskin_libburn_has_stream_recordinG 1
+/* Cdrskin_libburn_has_stream_recordinG */
 
 /* 0.4.8 */
 /* Bug fix release for  write_start_address=... on DVD-RAM and BD-RE */
@@ -2935,8 +2935,6 @@ set_dev:;
      printf("                    cdrecord-ProDVD with blank= and -multi\n");
      printf(
           " --single_track     accept only last argument as source_address\n");
-
-#ifdef Cdrskin_libburn_has_stream_recordinG
      printf(" stream_recording=\"on\"|\"off\"|number\n");
      printf(
          "                    \"on\" requests to prefer speed over write\n");
@@ -2944,7 +2942,6 @@ set_dev:;
          "                    error management. A number prevents this with\n");
      printf(
          "                    byte addresses below that number.\n");
-#endif
      printf(" stdio_sync=\"default\"|\"off\"|number\n");
      printf(
      "                    set number of bytes after which to force output\n");
@@ -7304,9 +7301,9 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_set_forcE
  burn_write_opts_set_force(o, !!skin->force_is_set);
 #endif
-#ifdef Cdrskin_libburn_has_stream_recordinG
+
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
-#endif
+
 #ifdef Cdrskin_dvd_obs_default_64K
  if(skin->dvd_obs == 0)
    burn_write_opts_set_dvd_obs(o, 64 * 1024);
