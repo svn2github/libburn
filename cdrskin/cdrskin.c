@@ -175,7 +175,7 @@ or
 /* 0.2.2 */
 #define Cdrskin_libburn_does_ejecT 1
 #define Cdrskin_libburn_has_drive_get_adR 1
-#define Cdrskin_progress_track_does_worK 1
+/* Cdrskin_progress_track_does_worK */
 /* Cdrskin_is_erasable_on_load_does_worK */
 /* Cdrskin_grab_abort_does_worK */
 
@@ -277,12 +277,6 @@ or
     /dev/hdc (kernel 2.6) get ejected by icculus.org/burn */
 #ifndef Cdrskin_libburn_does_ejecT
 #define Cdrskin_burn_drive_eject_brokeN 1
-#endif
-
-/** Work around the fact that burn_drive_get_status() always reports to do
-    track 0 in icculus.org/burn */
-#ifndef Cdrskin_progress_track_does_worK
-#define Cdrskin_progress_track_brokeN 1
 #endif
 
 /** http://libburnia-project.org/ticket/41 reports of big trouble without 
@@ -5762,18 +5756,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
    goto thank_you_for_patience;
 
  old_track_idx= skin->supposed_track_idx;
-#ifdef Cdrskin_progress_track_brokeN
- /* with libburn.0.2 there is always reported 0 as p->track */
- if(written_bytes<0) { /* track hop ? */
-   if(skin->supposed_track_idx+1<skin->track_counter)
-     skin->supposed_track_idx++;
- }
- /* >>> ask eventual fifo about writing fd */;
- if(p->track>0)
-   skin->supposed_track_idx= p->track;
-#else /* Cdrskin_progress_track_brokeN */
  skin->supposed_track_idx= p->track;
-#endif /* ! Cdrskin_progress_track_brokeN */
 
  if(old_track_idx>=0 && old_track_idx<skin->supposed_track_idx) {
    Cdrtrack_get_size(skin->tracklist[old_track_idx],&fixed_size,&padding,
