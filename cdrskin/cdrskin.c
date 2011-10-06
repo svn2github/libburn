@@ -188,7 +188,7 @@ or
 #define Cdrskin_libburn_has_burn_aborT 1
 #define Cdrskin_libburn_has_cleanup_handleR 1
 #define Cdrskin_libburn_has_audioxtR 1
-#define Cdrskin_libburn_has_get_start_end_lbA 1
+/* Cdrskin_libburn_has_get_start_end_lbA */
 /* Cdrskin_libburn_has_burn_disc_unsuitablE */
 /* Cdrskin_libburn_has_read_atiP */
 /* Cdrskin_libburn_has_buffer_progresS */
@@ -5372,8 +5372,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    } else {
      printf("  Is not erasable\n");
    }
-
-#ifdef Cdrskin_libburn_has_get_start_end_lbA
    { int start_lba,end_lba,min,sec,fr;
      int m_lo, s_lo, f_lo;
 
@@ -5389,8 +5387,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
          manuf= burn_guess_cd_manufacturer(min, sec, fr, m_lo, s_lo, f_lo, 0);
      }
    }
-#endif /* Cdrskin_libburn_has_get_start_end_lbA */
-
    printf("  1T speed low:  %.f 1T speed high: %.f\n",x_speed_min,x_speed_max);
  }
 
