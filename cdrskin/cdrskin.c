@@ -229,7 +229,7 @@ or
 /* 0.4.0 */
 #define Cdrskin_libburn_has_random_access_rW 1
 #define Cdrskin_libburn_has_get_drive_rolE 1
-#define Cdrskin_libburn_has_drive_equals_adR 1
+/* Cdrskin_libburn_has_drive_equals_adR */
 
 /* 0.4.2 */
 /* no novel libburn features but rather organizational changes */
@@ -1398,11 +1398,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
            char **device_adr, char **raw_adr, int *no_convert_fs_adr,int flag);
  int Cdrskin_get_drive(struct CdrskiN *skin, struct burn_drive **drive,
            int flag);
-#ifdef Cdrskin_libburn_has_drive_equals_adR
  struct burn_drive *drive;
-#else
- char adr[BURN_DRIVE_ADR_LEN];
-#endif
 #endif /* Cdrskin_libburn_has_convert_fs_adR */
 
  if(track->source_path[0]=='-' && track->source_path[1]==0)
@@ -1427,8 +1423,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
        ClN(fprintf(stderr,
           "cdrskin_debug: checking track source for identity with drive\n"));
 
-#ifdef Cdrskin_libburn_has_drive_equals_adR
-
      ret= Cdrskin_get_drive(track->boss,&drive,0);
      if(ret<=0) {
        fprintf(stderr,
@@ -1436,28 +1430,12 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
        return(0);
      }
      if(burn_drive_equals_adr(drive,track->source_path,2)>0) {
-
-       {
-
-#else /* Cdrskin_libburn_has_drive_equals_adR */
-
-     if(burn_drive_convert_fs_adr(track->source_path,adr)>0) {
-
-/*     
-       fprintf(stderr,"cdrskin: DEBUG : track source '%s' -> adr='%s'\n",
-               track->source_path,adr);
-*/
-       if(strcmp(device_adr,adr)==0) {
-
-#endif /* ! Cdrskin_libburn_has_drive_equals_adR */
-
-         fprintf(stderr,
+       fprintf(stderr,
               "cdrskin: FATAL : track source address leads to burner drive\n");
-         fprintf(stderr,
+       fprintf(stderr,
               "cdrskin:       : dev='%s' -> '%s' <- track source '%s'\n",
               raw_adr, device_adr, track->source_path);
-         return(0);
-       }
+       return(0);
      }
    }
 /*
