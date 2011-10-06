@@ -174,7 +174,7 @@ or
 
 /* 0.2.2 */
 #define Cdrskin_libburn_does_ejecT 1
-#define Cdrskin_libburn_has_drive_get_adR 1
+/* Cdrskin_libburn_has_drive_get_adR */
 /* Cdrskin_progress_track_does_worK */
 /* Cdrskin_is_erasable_on_load_does_worK */
 /* Cdrskin_grab_abort_does_worK */
@@ -4035,16 +4035,9 @@ int Cdrskin_driveno_of_location(struct CdrskiN *skin, char *devicename,
  char adr[Cdrskin_adrleN];
 
  for(i= 0; i < (int) skin->n_drives; i++) {
-
-#ifdef Cdrskin_libburn_has_drive_get_adR
    ret= burn_drive_get_adr(&(skin->drives[i]), adr);
    if(ret<=0)
  continue;
-#else 
-   ret= 1; /* to please gcc -Wall */
-   strcpy(adr,skin->drives[i].location);
-#endif
-
    if(strcmp(adr,devicename)==0) {
      *driveno= i;
      return(1);
@@ -4153,18 +4146,10 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
  if(driveno < 0 || driveno > (int) skin->n_drives)
    goto fallback;
 
-#ifdef Cdrskin_libburn_has_drive_get_adR
  ret= burn_drive_get_adr(&(skin->drives[driveno]), adr);
  if(ret<=0)
    goto fallback;
  loc= adr;
-#else 
- adr[0]= 0; /* to please gcc -Wall */
- loc= skin->drives[driveno].location;
- if(loc==NULL)
-   goto fallback;
-#endif
-
  ret= burn_drive_get_drive_role(skin->drives[driveno].drive);
  if(ret!=1) {
    sprintf(btldev,"stdio:%s",adr);
@@ -4428,17 +4413,11 @@ int Cdrskin_scanbus(struct CdrskiN *skin, int flag)
           skin->n_drives);
    printf("-----------------------------------------------------------------------------\n");
    for(i= 0; i < (int) skin->n_drives; i++) {
-
-#ifdef Cdrskin_libburn_has_drive_get_adR
      ret= burn_drive_get_adr(&(skin->drives[i]), adr);
      if(ret<=0) {
        /* >>> one should massively complain */;
    continue;
      }
-#else
-     strcpy(adr,skin->drives[i].location);
-#endif
-
      if(stat(adr,&stbuf)==-1) {
        sprintf(perms,"errno=%d",errno);
      } else {
@@ -7004,15 +6983,9 @@ sorry_failed_to_eject:;
    Cdrpreskin_consider_normal_user(0);
    return(0);
  }
-
-#ifdef Cdrskin_libburn_has_drive_get_adR
  ret= burn_drive_get_adr(&(skin->drives[skin->driveno]), adr);
  if(ret<=0)
    adr[0]= 0;
-#else
- strcpy(adr,skin->drives[skin->driveno].location);
-#endif
-
  if(strlen(skin->eject_device)>0)
    sprintf(cmd,"eject %s",Text_shellsafe(skin->eject_device,shellsafe,0));
  else if(strcmp(adr,"/dev/sg0")==0)
@@ -8002,15 +7975,9 @@ ignore_unknown:;
      if(ret<=0)
        return(ret);
      if(skin->verbosity>=Cdrskin_verbose_cmD) {
-
-#ifdef Cdrskin_libburn_has_drive_get_adR
        ret= burn_drive_get_adr(&(skin->drives[skin->driveno]), adr);
        if(ret<=0)
          adr[0]= 0;
-#else
-       strcpy(adr,skin->drives[skin->driveno].location);
-#endif
-
        printf("cdrskin: active drive number : %d  '%s'\n",
               skin->driveno,adr);
      }
