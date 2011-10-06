@@ -186,7 +186,7 @@ or
 #define Cdrskin_libburn_has_convert_scsi_adR 1
 #define Cdrskin_libburn_has_burn_msgS 1
 #define Cdrskin_libburn_has_burn_aborT 1
-#define Cdrskin_libburn_has_cleanup_handleR 1
+/* Cdrskin_libburn_has_cleanup_handleR */
 /* Cdrskin_libburn_has_audioxtR */
 /* Cdrskin_libburn_has_get_start_end_lbA */
 /* Cdrskin_libburn_has_burn_disc_unsuitablE */
@@ -352,15 +352,8 @@ or
 #include "../libburn/libburn.h"
 
 
-#ifdef Cdrskin_libburn_has_cleanup_handleR
 #define Cleanup_set_handlers burn_set_signal_handling
 #define Cleanup_app_handler_T burn_abort_handler_t
-#else
-#include "cleanup.h"
-#ifdef Cdrskin_use_libburn_cleanuP
-#undef Cdrskin_use_libburn_cleanuP
-#endif
-#endif
 
 /*
  # define Cdrskin_use_libburn_cleanuP 1
