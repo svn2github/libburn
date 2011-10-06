@@ -209,7 +209,7 @@ or
 /* 0.3.2 */
 #define Cdrskin_libburn_has_get_msc1 1
 #define Cdrskin_libburn_has_toc_entry_extensionS 1
-#define Cdrskin_libburn_has_get_multi_capS 1
+/* Cdrskin_libburn_has_get_multi_capS */
 
 /* 0.3.4 */
 /* Cdrskin_libburn_has_set_filluP */
@@ -3845,7 +3845,6 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
 
 int Cdrskin_determine_media_caps(struct CdrskiN *skin, int flag)
 {
-#ifdef Cdrskin_libburn_has_get_multi_capS
  int ret;
  struct burn_multi_caps *caps = NULL;
  
@@ -3860,9 +3859,6 @@ ex:;
  if(caps != NULL)
    burn_disc_free_multi_caps(&caps);
  return(ret);
-#else /* Cdrskin_libburn_has_get_multi_capS */
- return(-1);
-#endif
 }
 
 
@@ -7950,13 +7946,10 @@ fs_equals:;
 gracetime_equals:;
      sscanf(value_pt,"%d",&(skin->gracetime));
 
-#ifdef Cdrskin_libburn_has_get_multi_capS
    } else if(strncmp(argv[i],"--grow_overwriteable_iso",24)==0) {
      skin->grow_overwriteable_iso= 1;
      skin->use_data_image_size= 1;
      skin->preskin->demands_cdrskin_caps= 1;
-#endif /* Cdrskin_libburn_has_get_multi_capS */
-     
 
 #else /* ! Cdrskin_extra_leaN */
 
