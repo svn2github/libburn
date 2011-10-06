@@ -41,12 +41,6 @@ do
   elif test "$i" = "-compile_dewav"
   then
     compile_dewav=1
-  elif test "$i" = "-cvs_A60220"
-  then
-    libvers="-DCdrskin_libburn_cvs_A60220_tS"
-    libdax_audioxtr_o=
-    libdax_msgs_o="$burn"message.o
-    cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-libburn_1_1_6"
   then
     libvers="-DCdrskin_libburn_1_1_6"
@@ -62,10 +56,6 @@ do
   elif test "$i" = "-newapi" -o "$i" = "-experimental"
   then
     def_opts="$def_opts -DCdrskin_new_api_tesT"
-  elif test "$i" = "-oldfashioned"
-  then
-    def_opts="$def_opts -DCdrskin_oldfashioned_api_usE"
-    cleanup_src_or_obj="-DCleanup_has_no_libburn_os_H cdrskin/cleanup.c"
   elif test "$i" = "-no_largefile"
   then
     largefile_opts=	
@@ -117,7 +107,6 @@ do
     echo "  -use_no_libburn_fifo  use cdrfifo even for single track non-CD"
     echo "  -use_no_cdrfifo   always use fifo of libburn and never cdrfifo"
     echo "  -experimental     use newly introduced libburn features."
-    echo "  -oldfashioned     use pre-0.2.2 libburn features only."
     echo "  -do_diet          produce capability reduced lean version."
     echo "  -do_strip         apply program strip to compiled programs."
     echo "  -g                produce debuggable programm."

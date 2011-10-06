@@ -120,20 +120,6 @@ or
 #undef Cdrskin_libburn_versioN 
 #endif
 
-/** use this to accomodate to the CVS version as of Feb 20, 2006
-#define Cdrskin_libburn_cvs_A60220_tS 1
-*/
-#ifdef Cdrskin_libburn_cvs_A60220_tS
-
-#define Cdrskin_libburn_versioN "0.2.tsA60220"
-#define Cdrskin_libburn_no_burn_preset_device_opeN 1
-#ifndef Cdrskin_oldfashioned_api_usE
-#define Cdrskin_oldfashioned_api_usE 1
-#endif
-
-#endif /* Cdrskin_libburn_cvs_A60220_tS */
-
-
 #ifdef Cdrskin_libburn_1_1_6
 #define Cdrskin_libburn_versioN "1.1.6"
 #define Cdrskin_libburn_from_pykix_svN 1
@@ -170,7 +156,6 @@ or
 
 
 #ifdef Cdrskin_libburn_from_pykix_svN
-#ifndef Cdrskin_oldfashioned_api_usE
 
 /* 0.2.2 */
 /* Cdrskin_libburn_does_ejecT */
@@ -265,7 +250,6 @@ or
 #endif /* Cdrskin_new_api_tesT */
 
 
-#endif /* ! Cdrskin_oldfashioned_api_usE */
 #endif /* Cdrskin_libburn_from_pykix_svN */
 
 
@@ -350,11 +334,7 @@ static int Cdrskin_abort_leveL= 0;
 #define Cdrskin_strleN 4096
 
 /** The maximum length +1 of a drive address */
-#ifndef Cdrskin_oldfashioned_api_usE
 #define Cdrskin_adrleN BURN_DRIVE_ADR_LEN
-#else
-#define Cdrskin_adrleN 80
-#endif
 
 
 /** If tsize= sets a value smaller than media capacity divided by this
@@ -3062,14 +3042,11 @@ final_checks:;
              "cdrskin: NOTE : stdin produces exception rather than data\n");
    fprintf(stderr,"cdrskin: Option -waiti pausing is done.\n");
  }
-
-#ifndef Cdrskin_libburn_no_burn_preset_device_opeN
  burn_preset_device_open(o->drive_exclusive
                          | (o->drive_scsi_dev_family<<2)
                          | ((!!o->drive_fcntl_f_setlk)<<5),
                          o->drive_blocking,
                          o->abort_on_busy_drive);
-#endif /* ! Cdrskin_libburn_no_burn_preset_device_opeN */
 
  if(strlen(o->raw_device_adr)>0 && !o->no_whitelist) {
    int driveno,hret;
@@ -3790,9 +3767,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    skin->grabbed_drive= drive;
  }
 
-#ifndef Cdrskin_oldfashioned_api_usE
-
-
  if(flag&1) {
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,
                                  !(flag&2));
@@ -3807,7 +3781,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    skin->grabbed_drive= drive;
  } else {
    if(strlen(skin->preskin->device_adr)<=0) {
-
      if(skin->verbosity>=Cdrskin_verbose_debuG)   
        ClN(fprintf(stderr,
          "cdrskin_debug: Cdrskin_grab_drive() dropping unwanted drives (%d)\n",
@@ -3826,14 +3799,7 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
        fprintf(stderr,
            "cdrskin:        burn_drive_info_forget() returns %d\n",ret);
      }
-
    }
-
-#else
-
- {
-
-#endif /* Cdrskin_oldfashioned_api_usE */
 
    ret= burn_drive_grab(drive,!(flag&2));
    if(ret==0) {
@@ -6895,8 +6861,6 @@ ex:;
 */
 int Cdrskin_eject(struct CdrskiN *skin, int flag)
 {
-
-#ifndef Cdrskin_oldfashioned_api_usE
  int i,ret,max_try= 5;
 
  if(!skin->do_eject)
@@ -6930,21 +6894,6 @@ sorry_failed_to_eject:;
    return(0);
  }
  return(1);
-
-#else 
-
- if(!skin->do_eject)
-   return(1);
- if(Cdrskin_grab_drive(skin,2|16)>0) {
-    Cdrskin_release_drive(skin,1);
- } else {
-   fprintf(stderr,"cdrskin: SORRY : Failed to finally eject tray.\n");
-   return(0);
- }
- return(1);
-
-#endif
-
 }
 
 
@@ -8020,7 +7969,6 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
     It is done here only for testing it from time to time */
  Cdrpreskin_queue_msgs(skin->preskin,1);
 
-#ifndef Cdrskin_oldfashioned_api_usE
  if(stdio_drive) {
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,0);
    if(ret<=0) {
@@ -8030,10 +7978,6 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
    skin->n_drives= 1;
    burn_drive_release(skin->drives[0].drive, 0);
  } else {
-#else
- {
-#endif /* Cdrskin_oldfashioned_api_usE */
-
    while (!burn_drive_scan(&(skin->drives), &(skin->n_drives))) {
      usleep(20000);
      /* >>> ??? set a timeout ? */
@@ -8258,9 +8202,6 @@ int main(int argc, char **argv)
    ClN(printf("cdrskin: called as :  %s\n",argv[0]));
 
  if(skin->verbosity>=Cdrskin_verbose_debuG) {
-#ifdef Cdrskin_oldfashioned_api_usE
-   ClN(fprintf(stderr,"cdrskin_debug: Compiled with option -oldfashioned\n"));
-#endif
 #ifdef Cdrskin_new_api_tesT
    ClN(fprintf(stderr,"cdrskin_debug: Compiled with option -experimental\n"));
 #endif
