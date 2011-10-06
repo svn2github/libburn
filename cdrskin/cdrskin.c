@@ -202,7 +202,7 @@ or
 #define Cdrskin_atip_speed_is_oK 1
 #define Cdrskin_libburn_has_get_profilE 1
 #define Cdrskin_libburn_has_set_start_bytE 1
-#define Cdrskin_libburn_has_wrote_welL 1
+/* Cdrskin_libburn_has_wrote_welL */
 /* Cdrskin_libburn_has_bd_formattinG */
 /* Cdrskin_libburn_has_burn_disc_formaT */
 
@@ -5978,9 +5978,7 @@ unsupported_format_type:;
    loop_counter++;
  }
 blanking_done:;
-#ifdef Cdrskin_libburn_has_wrote_welL
  wrote_well = burn_drive_wrote_well(drive);
-#endif
  if(wrote_well && skin->verbosity>=Cdrskin_verbose_progresS) {
    fprintf(stderr,
            "\rcdrskin: %s done                                        \n",
@@ -7066,10 +7064,7 @@ fifo_filling_failed:;
  if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
 
-#ifdef Cdrskin_libburn_has_wrote_welL
  wrote_well = burn_drive_wrote_well(drive);
-#endif
-
  if(skin->media_is_overwriteable && skin->grow_overwriteable_iso>0 &&
     wrote_well) {
    /* growisofs final stunt : update volume descriptors at start of media */
