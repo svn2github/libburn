@@ -207,7 +207,7 @@ or
 #define Cdrskin_libburn_has_burn_disc_formaT 1
 
 /* 0.3.2 */
-#define Cdrskin_libburn_has_get_msc1 1
+/* Cdrskin_libburn_has_get_msc1 */
 /* Cdrskin_libburn_has_toc_entry_extensionS */
 /* Cdrskin_libburn_has_get_multi_capS */
 
@@ -7254,14 +7254,10 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  }
  disc= burn_drive_get_disc(drive);
  if(disc==NULL) {
-
-#ifdef Cdrskin_libburn_has_get_msc1
    /* No TOC available. Try to inquire directly. */
    ret= burn_disc_get_msc1(drive,&lba);
    if(ret>0)
      goto obtain_nwa;
-#endif /* Cdrskin_libburn_has_get_msc1 */
-
    fprintf(stderr,"cdrskin: FATAL : Cannot obtain info about CD content\n");
    {ret= 0; goto ex;}
  }
