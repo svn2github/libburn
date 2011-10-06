@@ -185,7 +185,7 @@ or
 #define Cdrskin_libburn_has_convert_fs_adR 1
 #define Cdrskin_libburn_has_convert_scsi_adR 1
 #define Cdrskin_libburn_has_burn_msgS 1
-#define Cdrskin_libburn_has_burn_aborT 1
+/* Cdrskin_libburn_has_burn_aborT */
 /* Cdrskin_libburn_has_cleanup_handleR */
 /* Cdrskin_libburn_has_audioxtR */
 /* Cdrskin_libburn_has_get_start_end_lbA */
@@ -4076,14 +4076,6 @@ int Cdrskin_abort(struct CdrskiN *skin, int flag)
 */
 int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
 {
-
-#ifndef Cdrskin_libburn_has_burn_aborT
-
- int wait_grain= 100000,first_status= 1;
- double start_time,last_time,current_time;
-
-#endif /* ! Cdrskin_libburn_has_burn_aborT */
-
  struct burn_progress p;
  enum burn_drive_status drive_status= BURN_DRIVE_GRABBING;
 
@@ -4120,8 +4112,6 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
    Cdrfifo_close_all(skin->fifo,0);
 #endif
 
-#ifdef Cdrskin_libburn_has_burn_aborT
-
  /* Only for user info */
  if(skin->grabbed_drive!=NULL)
    drive_status= burn_drive_get_status(skin->grabbed_drive,&p);
@@ -4138,109 +4128,7 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
  fprintf(stderr,
         "cdrskin: ABORT : Urged drive worker threads to do emergency halt.\n");
- return -2;
-
-#else /* Cdrskin_libburn_has_burn_aborT */
-
- if(skin->grabbed_drive!=NULL) {
-   drive_status= burn_drive_get_status(skin->grabbed_drive,&p);
-   if(drive_status!=BURN_DRIVE_IDLE && !skin->drive_is_grabbed)
-     skin->drive_is_grabbed= 2;
-   if(drive_status!=BURN_DRIVE_IDLE && !skin->drive_is_busy)
-     skin->drive_is_busy= 2;
-   if(skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(fprintf(stderr,"cdrskin_debug: ABORT : Drive status: %d\n",
-                 (int) drive_status));
- }
- if(skin->verbosity>=Cdrskin_verbose_debuG)
-   ClN(fprintf(stderr,
-        "cdrskin_debug: ABORT : drive_is_grabbed=%d , drive_is_busy=%d (%X)\n",
-        skin->drive_is_grabbed,skin->drive_is_busy,
-        (unsigned int) skin->grabbed_drive));
-
- if(skin->drive_is_grabbed) {
-   if(skin->drive_is_busy && skin->grabbed_drive!=NULL) {
-     if(drive_status==BURN_DRIVE_WRITING || drive_status==BURN_DRIVE_READING) {
-       fprintf(stderr,"cdrskin: ABORT : Trying to cancel drive operation.\n");
-       burn_drive_cancel(skin->grabbed_drive);
-     } else if(drive_status==BURN_DRIVE_GRABBING) {
-
-#ifndef Cdrskin_oldfashioned_api_usE
-       int ret;
-
-       fprintf(stderr,
-            "cdrskin: ABORT : Trying to close drive in process of grabbing\n");
-
-       /* >>> ??? rather inquire driveno from 
-                  skin->grabbed_drive->global_index ? */;
-
-       ret= burn_drive_info_forget(&(skin->drives[skin->driveno]),1);
-       if(ret<=0)
-         fprintf(stderr,
-             "cdrskin: ABORT : Attempt to close drive failed (ret= %d)\n",ret);
-       else {
-         skin->drive_is_grabbed= 0;
-         skin->grabbed_drive= NULL;
-         goto try_to_finish_lib;
-       }
-
-#else
-       /* >>> what to do in this state ? */;
-#endif /* Cdrskin_oldfashioned_api_usE */
-
-     } else if(drive_status!=BURN_DRIVE_IDLE) {
-       fprintf(stderr,
-               "cdrskin: ABORT : Will wait for current operation to end\n");
-     }
-     if(drive_status!=BURN_DRIVE_IDLE) {
-       fprintf(stderr,"cdrskin: ABORT : Abort processing depends on speed and buffer size\n");
-       fprintf(stderr,"cdrskin: ABORT : Usually it is done with 4x speed after about a MINUTE\n");
-       fprintf(stderr,"cdrskin: URGE  : But wait at least the normal burning time before any kill -9\n");
-     }
-     last_time= start_time= Sfile_microtime(0);
-     while(1) {
-       drive_status= burn_drive_get_status(skin->grabbed_drive,&p);
-       if(drive_status==BURN_DRIVE_IDLE)
-     break;
-       usleep(wait_grain);
-       current_time= Sfile_microtime(0);
-       if(current_time-last_time>=1.0) {
-         if(first_status)
-           fprintf(stderr,"\n");
-         first_status= 0;
-         fprintf(stderr,"\rcdrskin: ABORT : Status %d. Waiting for status %d since %d seconds (%d max)",
-                (int) drive_status, (int) BURN_DRIVE_IDLE,
-                (int) (current_time-start_time),skin->abort_max_wait);
-         last_time= current_time;
-       }
-       if(current_time-start_time>=skin->abort_max_wait) {
-         fprintf(stderr,
-         "\ncdrskin: ABORT : Cannot cancel burn session and release drive.\n");
-         return(0);
-       }
-     }
-     fprintf(stderr,"\ncdrskin: ABORT : Status %d.\n",(int) drive_status);
-   }
-   fprintf(stderr,"cdrskin: ABORT : Trying to release drive.\n");
-   Cdrskin_release_drive(skin,0);
- }
-
-#ifndef Cdrskin_oldfashioned_api_usE
-try_to_finish_lib:;
-#endif
-
- if(skin->lib_is_initialized) {
-   fprintf(stderr,"cdrskin: ABORT : Trying to finish libburn.\n");
-   burn_finish();
- }
-
-#endif /* ! Cdrskin_libburn_has_burn_aborT */
-
- fprintf(stderr,
-    "cdrskin: ABORT : Drive is released and library is shut down now.\n");
- fprintf(stderr,
-    "cdrskin: ABORT : Program done. Even if you do not see a shell prompt.\n");
- return(1);
+ return(-2);
 }
 
 
