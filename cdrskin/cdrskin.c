@@ -227,7 +227,7 @@ or
 #define Cdrskin_libburn_has_get_best_speeD 1
 
 /* 0.4.0 */
-#define Cdrskin_libburn_has_random_access_rW 1
+/* Cdrskin_libburn_has_random_access_rW */
 /* Cdrskin_libburn_has_get_drive_rolE */
 /* Cdrskin_libburn_has_drive_equals_adR */
 
@@ -4546,7 +4546,6 @@ adr_translation:;
 */
 int Cdrskin_overwriteable_iso_size(struct CdrskiN *skin, int *size, int flag)
 {
-#ifdef Cdrskin_libburn_has_random_access_rW
  int ret;
  off_t data_count= 0;
  double size_in_bytes;
@@ -4583,10 +4582,6 @@ int Cdrskin_overwriteable_iso_size(struct CdrskiN *skin, int *size, int flag)
  ret= 1;
 ex:;
  return(ret);
-
-#else /* Cdrskin_libburn_has_random_access_rW */
- return(-1);
-#endif
 }     
 
 
@@ -6853,8 +6848,6 @@ int Cdrskin_announce_tracks(struct CdrskiN *skin, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
-#ifdef Cdrskin_libburn_has_random_access_rW
-
 int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
 {
  off_t byte_address, data_count, chunksize, i, alignment, fill;
@@ -7042,9 +7035,6 @@ int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
 
  return(went_well);
 }
-
-
-#endif /* Cdrskin_libburn_has_random_access_rW */
 
 
 /** Burn data via libburn according to the parameters set in skin.
@@ -7473,7 +7463,6 @@ fifo_filling_failed:;
  wrote_well = burn_drive_wrote_well(drive);
 #endif
 
-#ifdef Cdrskin_libburn_has_random_access_rW
  if(skin->media_is_overwriteable && skin->grow_overwriteable_iso>0 &&
     wrote_well) {
    /* growisofs final stunt : update volume descriptors at start of media */
@@ -7481,8 +7470,6 @@ fifo_filling_failed:;
    if(ret<=0)
      wrote_well= 0;
  }
-#endif /* Cdrskin_libburn_has_random_access_rW */
-
  if(max_track<0) {
    printf("Track 01: Total bytes read/written: %.f/%.f (%.f sectors).\n",
           total_count,total_count,total_count/sector_size);
@@ -8321,12 +8308,10 @@ gracetime_equals:;
      sscanf(value_pt,"%d",&(skin->gracetime));
 
 #ifdef Cdrskin_libburn_has_get_multi_capS
-#ifdef Cdrskin_libburn_has_random_access_rW
    } else if(strncmp(argv[i],"--grow_overwriteable_iso",24)==0) {
      skin->grow_overwriteable_iso= 1;
      skin->use_data_image_size= 1;
      skin->preskin->demands_cdrskin_caps= 1;
-#endif /* Cdrskin_libburn_has_random_access_rW */
 #endif /* Cdrskin_libburn_has_get_multi_capS */
      
 
@@ -9126,8 +9111,6 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 8; goto ex;}
  }
-
-#ifdef Cdrskin_libburn_has_random_access_rW
  if(skin->do_direct_write) {
    skin->do_burn= 0;
    if(Cdrskin__is_aborting(0))
@@ -9136,8 +9119,6 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 13; goto ex;}
  }
-#endif /* Cdrskin_libburn_has_random_access_rW */
-
  if(skin->do_burn || skin->tell_media_space) {
    if(skin->n_drives<=0)
      {*exit_value= 10; goto no_drive;}
