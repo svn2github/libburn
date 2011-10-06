@@ -183,7 +183,7 @@ or
 #define Cdrskin_allow_libburn_taO 1
 #define Cdrskin_libburn_has_is_enumerablE 1
 #define Cdrskin_libburn_has_convert_fs_adR 1
-#define Cdrskin_libburn_has_convert_scsi_adR 1
+/* Cdrskin_libburn_has_convert_scsi_adR */
 /* Cdrskin_libburn_has_burn_msgS */
 /* Cdrskin_libburn_has_burn_aborT */
 /* Cdrskin_libburn_has_cleanup_handleR */
@@ -2023,11 +2023,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->allow_emulated_drives= 0;
  o->no_whitelist= 0;
  o->no_convert_fs_adr= 0;
-#ifdef Cdrskin_libburn_has_convert_scsi_adR
  o->old_pseudo_scsi_adr= 0;
-#else
- o->old_pseudo_scsi_adr= 1;
-#endif
  o->scan_demands_drive= 0;
  o->abort_on_busy_drive= 0;
  o->drive_exclusive= 1;
@@ -2427,7 +2423,6 @@ ata_bus:;
          }
          sprintf(device_adr,"/dev/hd%c",'a'+(2*busno)+(*driveno));
 
-#ifdef Cdrskin_libburn_has_convert_scsi_adR
        } else {
          int ret;
 
@@ -2443,8 +2438,6 @@ ata_bus:;
          } else if(ret<0)
            return(-1);
          return(1);
-
-#endif /* Cdrskin_libburn_has_convert_scsi_adR */
        }
      }
    } 
@@ -4274,7 +4267,6 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
    {ret= 2; goto adr_translation;}
  }
 
-#ifdef Cdrskin_libburn_has_convert_scsi_adR
  if(!skin->preskin->old_pseudo_scsi_adr) {
    int host_no= -1,channel_no= -1,target_no= -1,lun_no= -1, bus_no= -1;
 
@@ -4295,7 +4287,6 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
      goto adr_translation;
    }
  }
-#endif
 
  k_start= 0;
  if(strncmp(loc,"/dev/sg",7)==0 || strncmp(loc,"/dev/sr",7)==0)
