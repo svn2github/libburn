@@ -173,7 +173,7 @@ or
 #ifndef Cdrskin_oldfashioned_api_usE
 
 /* 0.2.2 */
-#define Cdrskin_libburn_does_ejecT 1
+/* Cdrskin_libburn_does_ejecT */
 /* Cdrskin_libburn_has_drive_get_adR */
 /* Cdrskin_progress_track_does_worK */
 /* Cdrskin_is_erasable_on_load_does_worK */
@@ -268,16 +268,6 @@ or
 #endif /* ! Cdrskin_oldfashioned_api_usE */
 #endif /* Cdrskin_libburn_from_pykix_svN */
 
-
-/* These macros activate cdrskin workarounds for deficiencies resp.
-   problematic features of libburn which hopefully will change in
-   future. */
-
-/** Work around the fact that neither /dev/sg0 (kernel 2.4 + ide-scsi) nor 
-    /dev/hdc (kernel 2.6) get ejected by icculus.org/burn */
-#ifndef Cdrskin_libburn_does_ejecT
-#define Cdrskin_burn_drive_eject_brokeN 1
-#endif
 
 /** http://libburnia-project.org/ticket/41 reports of big trouble without 
     padding any track to a full sector
@@ -2785,10 +2775,6 @@ set_dev:;
      printf(" dvd_obs=\"default\"|number\n");
      printf(
      "                    set number of bytes per DVD/BD write: 32k or 64k\n");
-#ifdef Cdrskin_burn_drive_eject_brokeN
-     printf(
-          " eject_device=<path>  set the device address for command eject\n");
-#endif
      printf(
          " fallback_program=<cmd>  use external program for exotic CD jobs\n");
      printf(" --fifo_disable     disable fifo despite any fs=...\n");
@@ -6916,8 +6902,6 @@ ex:;
 int Cdrskin_eject(struct CdrskiN *skin, int flag)
 {
 
-#ifndef Cdrskin_burn_drive_eject_brokeN
-
 #ifndef Cdrskin_oldfashioned_api_usE
  int i,ret,max_try= 5;
 
@@ -6966,38 +6950,6 @@ sorry_failed_to_eject:;
  return(1);
 
 #endif
-
-#else /* Cdrskin_burn_drive_eject_brokeN */
-
- int ret;
- char adr[Cdrskin_adrleN];
- char cmd[5*Cdrskin_strleN+16],shellsafe[5*Cdrskin_strleN+2];
- 
- if(!skin->do_eject)
-   return(1);
- if(skin->verbosity>=Cdrskin_verbose_progresS) 
-   printf("cdrskin: trying to eject media\n");
- if(getuid()!=geteuid()) {
-   fprintf(stderr,
-     "cdrskin: SORRY : uid and euid differ. Will not start external eject.\n");
-   Cdrpreskin_consider_normal_user(0);
-   return(0);
- }
- ret= burn_drive_get_adr(&(skin->drives[skin->driveno]), adr);
- if(ret<=0)
-   adr[0]= 0;
- if(strlen(skin->eject_device)>0)
-   sprintf(cmd,"eject %s",Text_shellsafe(skin->eject_device,shellsafe,0));
- else if(strcmp(adr,"/dev/sg0")==0)
-   sprintf(cmd,"eject /dev/sr0");
- else
-   sprintf(cmd,"eject %s",Text_shellsafe(adr,shellsafe,0));
- ret= system(cmd);
- if(ret==0)
-   return(1);
- return(0);
-
-#endif /* Cdrskin_burn_drive_eject_brokeN */
 
 }
 
@@ -7398,13 +7350,8 @@ dvd_obs:;
      }
      strcpy(skin->eject_device,argv[i]+13);
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-#ifdef Cdrskin_burn_drive_eject_brokeN
-       ClN(printf("cdrskin: eject_device : %s\n",skin->eject_device));
-#else
        ClN(printf("cdrskin: ignoring obsolete  eject_device=%s\n",
               skin->eject_device));
-#endif
-
 
 #ifndef Cdrskin_extra_leaN
 
