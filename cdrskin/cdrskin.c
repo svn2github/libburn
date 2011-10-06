@@ -191,7 +191,7 @@ or
 #define Cdrskin_libburn_has_get_start_end_lbA 1
 #define Cdrskin_libburn_has_burn_disc_unsuitablE 1
 #define Cdrskin_libburn_has_read_atiP 1
-#define Cdrskin_libburn_has_buffer_progresS 1
+/* Cdrskin_libburn_has_buffer_progresS */
 
 /* 0.2.6 */
 /* Cdrskin_libburn_has_pretend_fulL */
@@ -6217,12 +6217,10 @@ thank_you_for_patience:;
      speed_factor= Cdrskin_speed_factoR*sector_size/2048;
 
      buffer_fill= 50;
-#ifdef Cdrskin_libburn_has_buffer_progresS
      if(p->buffer_capacity>0)
        buffer_fill= (double) (p->buffer_capacity - p->buffer_available)*100.0
                     / (double) p->buffer_capacity;
      
-#endif /* Cdrskin_libburn_has_buffer_progresS */
      if(buffer_fill<*min_buffer_fill)
        *min_buffer_fill= buffer_fill;
 
