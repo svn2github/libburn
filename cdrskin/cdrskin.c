@@ -201,7 +201,7 @@ or
 /* 0.3.0 */
 #define Cdrskin_atip_speed_is_oK 1
 #define Cdrskin_libburn_has_get_profilE 1
-#define Cdrskin_libburn_has_set_start_bytE 1
+/* Cdrskin_libburn_has_set_start_bytE */
 /* Cdrskin_libburn_has_wrote_welL */
 /* Cdrskin_libburn_has_bd_formattinG */
 /* Cdrskin_libburn_has_burn_disc_formaT */
@@ -6837,8 +6837,6 @@ burn_failed:;
  o= burn_write_opts_new(drive);
  burn_write_opts_set_perform_opc(o, 0);
 
-#ifdef Cdrskin_libburn_has_set_start_bytE
-
 /* growisofs stunt: assessment of media and start for next session */
  if((skin->grow_overwriteable_iso==1 || skin->grow_overwriteable_iso==2) &&
      skin->media_is_overwriteable) {
@@ -6857,8 +6855,6 @@ burn_failed:;
  } 
 
  burn_write_opts_set_start_byte(o, skin->write_start_address);
-
-#endif /* Cdrskin_libburn_has_set_start_bytE */
 
 #ifdef Cdrskin_libburn_has_multI
  if(skin->media_is_overwriteable && skin->multi) {
