@@ -122,18 +122,15 @@ or
 
 #ifdef Cdrskin_libburn_1_1_6
 #define Cdrskin_libburn_versioN "1.1.6"
-#define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
 #ifdef Cdrskin_libburn_1_1_7
 #define Cdrskin_libburn_versioN "1.1.7"
-#define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
 #ifndef Cdrskin_libburn_versioN
 #define Cdrskin_libburn_1_1_6
 #define Cdrskin_libburn_versioN "1.1.6"
-#define Cdrskin_libburn_from_pykix_svN 1
 #endif
 
 #ifdef Cdrskin_libburn_1_1_6
@@ -154,8 +151,10 @@ or
 #endif
 
 
-
-#ifdef Cdrskin_libburn_from_pykix_svN
+/* History of development macros.
+   As of version 1.1.8 they are now unconditional, thus removing the option
+   to compile a heavily restricted cdrskin for the old libburn at icculus.org.
+*/
 
 /* 0.2.2 */
 /* Cdrskin_libburn_does_ejecT */
@@ -248,9 +247,6 @@ or
 
 
 #endif /* Cdrskin_new_api_tesT */
-
-
-#endif /* Cdrskin_libburn_from_pykix_svN */
 
 
 /** ts A90901
