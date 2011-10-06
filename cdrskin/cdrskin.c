@@ -194,7 +194,7 @@ or
 #define Cdrskin_libburn_has_buffer_progresS 1
 
 /* 0.2.6 */
-#define Cdrskin_libburn_has_pretend_fulL 1
+/* Cdrskin_libburn_has_pretend_fulL */
 /* Cdrskin_libburn_has_multI */
 /* Cdrskin_libburn_has_buffer_min_filL */
 
@@ -5670,8 +5670,6 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  if(ret==2)
    s= BURN_DISC_APPENDABLE;
  do_format= skin->blank_format_type & 0xff;
-
-#ifdef Cdrskin_libburn_has_pretend_fulL
  if(s==BURN_DISC_UNSUITABLE) {
    if(skin->force_is_set) {
      ClN(fprintf(stderr,"cdrskin: NOTE : -force blank=... : Treating unsuitable media as burn_disc_full\n"));
@@ -5680,8 +5678,6 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    } else
      hint_force= 1;
  }
-#endif /* Cdrskin_libburn_has_pretend_fulL */
-
  if(do_format)
    if(do_format>=0 && do_format<=fmtp_max)
      fmt_text= fmtp[do_format];
