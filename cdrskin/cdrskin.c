@@ -7635,11 +7635,6 @@ set_padsize:;
    } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
      skin->prodvd_cli_compatible= 1;
 
-#ifdef NIX
-   } else if(strcmp(argv[i],"-raw96r")==0) {
-     /* is handled in Cdrpreskin_setup() */;
-#endif
-
    } else if(strcmp(argv[i],"-sao")==0 || strcmp(argv[i],"-dao")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
