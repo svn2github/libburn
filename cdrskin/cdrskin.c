@@ -189,7 +189,7 @@ or
 #define Cdrskin_libburn_has_cleanup_handleR 1
 #define Cdrskin_libburn_has_audioxtR 1
 #define Cdrskin_libburn_has_get_start_end_lbA 1
-#define Cdrskin_libburn_has_burn_disc_unsuitablE 1
+/* Cdrskin_libburn_has_burn_disc_unsuitablE */
 /* Cdrskin_libburn_has_read_atiP */
 /* Cdrskin_libburn_has_buffer_progresS */
 
@@ -4590,16 +4590,10 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
    printf("BURN_DISC_EMPTY \"There is no disc at all in the drive\"\n");
  } else if(s==BURN_DISC_UNREADY) {
    printf("BURN_DISC_UNREADY \"The current status is not yet known\"\n");
-
-#ifdef Cdrskin_libburn_has_burn_disc_unsuitablE
-
  } else if(s==BURN_DISC_UNGRABBED) {
    printf("BURN_DISC_UNGRABBED \"API usage error: drive not grabbed\"\n");
  } else if(s==BURN_DISC_UNSUITABLE) {
    printf("BURN_DISC_UNSUITABLE \"Media is not suitable\"\n");
-
-#endif /* Cdrskin_libburn_has_burn_disc_unsuitablE */
-
  } else 
    printf("-unknown status code-\n");
 
@@ -5324,8 +5318,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      x_speed_min= ((double) ret)/Cdrskin_libburn_speed_factoR;
    }
  }
-
-#ifdef Cdrskin_libburn_has_burn_disc_unsuitablE
  if(burn_disc_get_status(drive) == BURN_DISC_UNSUITABLE) {
    if(skin->verbosity>=Cdrskin_verbose_progresS) {
      if(profile_name[0])
@@ -5335,8 +5327,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    }
    {ret= 0; goto ex;}
  }
-#endif /* Cdrskin_libburn_has_burn_disc_unsuitablE */
-
  if(burn_disc_get_status(drive) != BURN_DISC_EMPTY) {
    ret= burn_drive_get_write_speed(drive);
    x_speed_max= ((double) ret)/Cdrskin_libburn_speed_factoR;
