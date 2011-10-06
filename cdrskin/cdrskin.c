@@ -190,7 +190,7 @@ or
 #define Cdrskin_libburn_has_audioxtR 1
 #define Cdrskin_libburn_has_get_start_end_lbA 1
 #define Cdrskin_libburn_has_burn_disc_unsuitablE 1
-#define Cdrskin_libburn_has_read_atiP 1
+/* Cdrskin_libburn_has_read_atiP */
 /* Cdrskin_libburn_has_buffer_progresS */
 
 /* 0.2.6 */
@@ -5317,7 +5317,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  if(ret<=0)
    return(ret);
 
-#ifdef Cdrskin_libburn_has_read_atiP
  if(burn_disc_get_status(drive) != BURN_DISC_UNSUITABLE) {
    ret= burn_disc_read_atip(drive);
    if(ret>0) {
@@ -5325,7 +5324,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      x_speed_min= ((double) ret)/Cdrskin_libburn_speed_factoR;
    }
  }
-#endif
 
 #ifdef Cdrskin_libburn_has_burn_disc_unsuitablE
  if(burn_disc_get_status(drive) == BURN_DISC_UNSUITABLE) {
