@@ -220,7 +220,7 @@ or
 
 /* 0.3.6 */
 #define Cdrskin_libburn_preset_device_familY 1
-#define Cdrskin_libburn_has_track_set_sizE 1
+/* Cdrskin_libburn_has_track_set_sizE */
 
 /* 0.3.8 */
 /* Cdrskin_libburn_has_set_waitinG */
@@ -1306,15 +1306,8 @@ int Cdrtrack_activate_image_size(struct CdrtracK *track, double *size_used,
    return(0);
  track->fixed_size= *size_used;
  track->use_data_image_size= 2;
- if(track->libburn_track!=NULL) {
-#ifdef Cdrskin_libburn_has_track_set_sizE
+ if(track->libburn_track!=NULL)
    burn_track_set_size(track->libburn_track, (off_t) *size_used);
-#else
-   fprintf(stderr,
-           "cdrskin: SORRY : libburn version is too old for -isosize\n");
-   return(0);
-#endif
- }
  /* man cdrecord prescribes automatic -pad with -isosize. 
     cdrskin obeys only if the current padding is less than that. */
  if(track->padding<15*2048) {
