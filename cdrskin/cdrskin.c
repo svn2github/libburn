@@ -214,7 +214,7 @@ or
 /* 0.3.4 */
 #define Cdrskin_libburn_has_set_filluP 1
 #define Cdrskin_libburn_has_get_spacE 1
-#define Cdrskin_libburn_write_mode_ruleS 1
+/* Cdrskin_libburn_write_mode_ruleS */
 /* Cdrskin_libburn_has_allow_untested_profileS */
 /* Cdrskin_libburn_has_set_forcE */
 
@@ -1858,18 +1858,6 @@ flag:
  track->sector_pad_up= 1;
  return(1);
 }
-
-
-#ifndef Cdrskin_libburn_write_mode_ruleS
-
-int Cdrtrack_activate_tao_tsize(struct CdrtracK *track, int flag)
-{
- if(track->fixed_size<=0.0)
-   track->fixed_size= track->tao_to_sao_tsize;
- return(track->fixed_size>0.0);
-}
-
-#endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
 
 int Cdrtrack_get_sectors(struct CdrtracK *track, int flag)
@@ -6427,8 +6415,6 @@ ex:;
 }
 
 
-#ifdef Cdrskin_libburn_write_mode_ruleS
-
 /** After everything else about burn_write_opts and burn_disc is set up, this
     call determines the effective write mode and checks whether the drive
     promises to support it.
@@ -6509,252 +6495,6 @@ report_failure:;
    printf("cdrskin: Write type : %s\n", skin->preskin->write_mode_name);
  return(1);
 }
-
-#else /* Cdrskin_libburn_write_mode_ruleS */
-
-/** Determines the effective write mode and checks whether the drive promises
-    to support it.
-    @param s state of target media, obtained from burn_disc_get_status(), 
-             submit BURN_DISC_BLANK if no real state is available
-*/
-int Cdrskin_activate_write_mode(struct CdrskiN *skin, enum burn_disc_status s,
-                                int flag)
-{
- int ok, was_still_default= 0, block_type_demand,track_type,sector_size, i;
- int profile_number= -1, track_type_1= 0, mixed_mode= 0, unpredicted_size= 0;
- int might_do_tao= 0, might_do_sao= 1, allows_multi= 1, ret, current_is_cd= 1;
- int use_data_image_size, current_is_overwriteable= 0;
- struct burn_drive_info *drive_info = NULL;
- char profile_name[80];
- double fixed_size= 0.0, tao_to_sao_tsize= 0.0, dummy;
-#ifdef Cdrskin_libburn_has_get_multi_capS
- struct burn_multi_caps *caps = NULL;
-#endif
- 
- profile_name[0]= 0;
-#ifdef Cdrskin_libburn_has_get_profilE
- if(skin->grabbed_drive)
-   burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
- if(profile_number!=0x09 && profile_number!=0x0a)
-   current_is_cd= 0;
-#endif
-
-#ifdef Cdrskin_allow_libburn_taO
- might_do_tao= 1;
-#endif
-#ifdef Cdrskin_libburn_has_get_multi_capS
- ret = burn_disc_get_multi_caps(skin->grabbed_drive,BURN_WRITE_NONE,&caps,0);
- if (ret<0) {
-   fprintf(stderr,
-          "cdrskin: FATAL : Cannot obtain write mode capabilities of drive\n");
-   return(0);
- } else if(ret==0) {
-   fprintf(stderr,
-      "cdrskin: SORRY : Cannot find any suitable write mode for this media\n");
-   burn_disc_free_multi_caps(&caps);
-   return(0);
- }
- might_do_tao= caps->might_do_tao;
- might_do_sao= caps->might_do_sao;
- burn_disc_free_multi_caps(&caps);
-#endif
-
- for(i=0;i<skin->track_counter;i++) {
-   Cdrtrack_get_track_type(skin->tracklist[i],&track_type,&sector_size,0);
-   if(i==0)
-     track_type_1= track_type;
-   else if(track_type_1!=track_type)
-     mixed_mode= 1;
-   Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
-                     &tao_to_sao_tsize,&dummy,&use_data_image_size,2);
-
-   /* <<< until CD-SAO does fill-up: filluped last CD track length undefined */
-   if(fixed_size<=0 &&
-      !(current_is_cd==0 && skin->fill_up_media && i==skin->track_counter-1))
-     unpredicted_size= 1+(tao_to_sao_tsize<=0);
- }
-
- if(strcmp(skin->preskin->write_mode_name,"DEFAULT")==0) {
-   was_still_default= 1;
-
-   if((s==BURN_DISC_APPENDABLE || mixed_mode ||
-       (current_is_cd && skin->fill_up_media)  ) && might_do_tao) {
-     strcpy(skin->preskin->write_mode_name,"TAO");
-     was_still_default= 2; /* prevents trying of SAO if drive dislikes TAO*/
-   } else if(unpredicted_size && might_do_tao) {
-     strcpy(skin->preskin->write_mode_name,"TAO");
-     if(unpredicted_size>1)
-       was_still_default= 2; /* prevents trying of SAO */
-   } else if(s==BURN_DISC_BLANK && skin->track_counter==1 &&
-             skin->fill_up_media && might_do_sao && !current_is_cd) {
-     /* to avoid problems on my NEC with blank DVD-RW and TAO fill_up_media */
-     strcpy(skin->preskin->write_mode_name,"SAO");
-   } else if((profile_number==0x1a || profile_number==0x13 ||
-              profile_number==0x12 ||
-              profile_number==0x11 || profile_number==0x14 ||
-              profile_number==0x15 ||
-              profile_number==0x1b || profile_number==0x2b ||
-              profile_number==0x41 || profile_number==0x43)
-             && might_do_tao) {
-     /* DVD+RW, DVD-RW Restricted Overwrite, DVD-RAM,
-        DVD-R[W][/DL] Sequential Recording, DVD+R[/DL],
-        BD-R SRM , BD-RE */
-     strcpy(skin->preskin->write_mode_name,"TAO");
-   } else {
-     strcpy(skin->preskin->write_mode_name,"SAO");
-   }
- }
-
-#ifndef Cdrskin_disable_raw96R
- if(strcmp(skin->preskin->write_mode_name,"RAW/RAW96R")==0) {
-   skin->write_type= BURN_WRITE_RAW;
-   skin->block_type= BURN_BLOCK_RAW96R;
-#endif /* ! Cdrskin_disable_raw96R */
-
-#ifdef Cdrskin_allow_libburn_taO
- } else if(strcmp(skin->preskin->write_mode_name,"TAO")==0) {
-   skin->write_type= BURN_WRITE_TAO;
-   skin->block_type= BURN_BLOCK_MODE1;
-#endif /* Cdrskin_allow_libburn_taO */
-
- } else {
-   strcpy(skin->preskin->write_mode_name,"SAO");
-   skin->write_type= BURN_WRITE_SAO;
-   skin->block_type= BURN_BLOCK_SAO;
- }
-
- /* check whether desired type combination is available with drive */
- if(skin->driveno<0 || skin->driveno>skin->n_drives) {
-   if(skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(printf("cdrskin_debug: WARNING : No drive selected with Cdrskin_activate_write_mode\n"));
-   goto it_is_done;
- }
- drive_info= skin->drives+skin->driveno;
-
- /* <<< this should become a libburn API function.The knowledge about TAO audio
-        track block type is quite inappropriate here. It refers to a habit of
-        spc_select_write_params() (and MMC-1 table 61). But the knowledge about
-        the tracklist is rather cdrskin realm. (ponder ...)
- */
-check_with_drive:;
- ok= 0;
- if(strstr(profile_name,"DVD")==profile_name) {
-
-   /* >>> drive_info does not reflect DVD capabilities yet */
-
-   ok= 0;
-   if(skin->write_type==BURN_WRITE_SAO && might_do_sao)
-     ok= 1;
-   if(skin->write_type==BURN_WRITE_TAO && might_do_tao)
-     ok= 1;
-
-#ifndef Cdrskin_disable_raw96R
- } else if(skin->write_type==BURN_WRITE_RAW) {
-   ok= !!(drive_info->raw_block_types & BURN_BLOCK_RAW96R);
-#endif
-
- } else if(skin->write_type==BURN_WRITE_SAO && !mixed_mode)
-   ok= !!(drive_info->sao_block_types & BURN_BLOCK_SAO);
- else if(skin->write_type==BURN_WRITE_TAO) {
-   block_type_demand= 0;
-   for(i=0;i<skin->track_counter;i++) {
-     Cdrtrack_get_track_type(skin->tracklist[i],&track_type,&sector_size,0);
-     if(track_type==BURN_AUDIO)
-       block_type_demand|= BURN_BLOCK_RAW0;
-     else
-       block_type_demand|= BURN_BLOCK_MODE1;
-   }
-   ok= ((drive_info->tao_block_types & block_type_demand)==block_type_demand);
- }
-
- if(skin->write_type==BURN_WRITE_SAO && mixed_mode) {
-   fprintf(stderr,
-          "cdrskin: FATAL : Cannot write mix of data and audio in SAO mode\n");
-   if(might_do_tao)
-     fprintf(stderr,
-             "cdrskin: HINT  : Try with option -tao resp. without -sao\n");
-   return(0);
- }
- if(skin->write_type==BURN_WRITE_SAO && unpredicted_size>1) {
-   fprintf(stderr,
-           "cdrskin: FATAL : At least one track has no predictable size.\n");
-   fprintf(stderr,
-           "cdrskin: HINT  : Use tsize= or tao_to_sao_tsize= to announce the track size\n");
-   if(might_do_tao)
-     fprintf(stderr,
-             "cdrskin: HINT  : or try with option -tao resp. without -sao\n");
-   return(0);
- }
- if(!ok) {
-   fprintf(stderr,
-           "cdrskin: %s : Drive indicated refusal for write mode %s.\n",
-           (skin->force_is_set || was_still_default==1?"WARNING":"FATAL"),
-           skin->preskin->write_mode_name);
-   if(! skin->force_is_set) {
-     if(was_still_default==1) {
-       was_still_default= 2; /* do not try more than once */
-       if((skin->write_type==BURN_WRITE_RAW ||
-           skin->write_type==BURN_WRITE_SAO) && might_do_tao) {
-         skin->write_type= BURN_WRITE_TAO;
-         skin->block_type= BURN_BLOCK_MODE1;
-         strcpy(skin->preskin->write_mode_name,"TAO");
-         goto check_with_drive;
-       } else if (might_do_sao) {
-         skin->write_type= BURN_WRITE_SAO;
-         skin->block_type= BURN_BLOCK_SAO;
-         strcpy(skin->preskin->write_mode_name,"SAO");
-         goto check_with_drive;
-       }
-     }
-     fprintf(stderr,"cdrskin: HINT : If you are certain that the drive will do, try option -force\n");
-     return(0);
-   }
- }
-
-#ifdef Cdrskin_libburn_has_get_multi_capS
- ret = burn_disc_get_multi_caps(skin->grabbed_drive,skin->write_type,&caps,0);
- if (ret>0) {
-   current_is_overwriteable= caps->start_adr;
-   allows_multi= caps->multi_session || current_is_overwriteable;
- }
- burn_disc_free_multi_caps(&caps);
-#endif
- if(skin->multi) {
-   if(!allows_multi) {
-     if(skin->prodvd_cli_compatible) {
-       skin->multi= 0;
-       if(skin->verbosity>=Cdrskin_verbose_progresS)
-         fprintf(stderr, "cdrskin: NOTE : Ignored option -multi.\n");
-     } else {
-       fprintf(stderr,
- "cdrskin: SORRY : Cannot keep this media appendable after write by -multi\n");
-       return(0);
-   } else if(current_is_overwriteable) {
-       skin->multi= 0;
-       if(!skin->use_data_image_size)
-         if(skin->verbosity>=Cdrskin_verbose_progresS)
-           fprintf(stderr, "cdrskin: NOTE : -multi cannot leave a recognizable end mark on this media.\n");
-   }
- }
-
-it_is_done:;
- if(skin->write_type==BURN_WRITE_SAO && unpredicted_size==1)
-   for(i= 0; i<skin->track_counter; i++) {
-     Cdrtrack_get_size(skin->tracklist[i],&fixed_size,
-                        &tao_to_sao_tsize,&dummy,2);
-     if(fixed_size<=0.0 && tao_to_sao_tsize>0.0) {
-       printf(
-        "cdrskin: NOTE : augmenting non-tao write mode by tao_to_sao_tsize\n");
-       printf("cdrskin: NOTE : fixed size : %.f\n",tao_to_sao_tsize);
-       Cdrtrack_activate_tao_tsize(skin->tracklist[i],0);
-     }
-   }
- if(skin->verbosity>=Cdrskin_verbose_cmD)
-   printf("cdrskin: write type : %s\n", skin->preskin->write_mode_name);
- return(1);
-}
-
-#endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
 
 #ifndef Cdrskin_extra_leaN
@@ -7057,29 +6797,6 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    Cdrskin_report_disc_status(skin,s,1);
 
-
-#ifndef Cdrskin_libburn_write_mode_ruleS
-
-#ifdef Cdrskin_allow_libburn_taO
- if (s!=BURN_DISC_APPENDABLE && s!=BURN_DISC_BLANK) {
-#else
- if (s!=BURN_DISC_BLANK) {
-#endif
-   Cdrskin_release_drive(skin,0);
-   fprintf(stderr,"cdrskin: FATAL : No writeable media detected.\n");
-   goto burn_failed;
- }
-
- ret= Cdrskin_activate_write_mode(skin,s,0);
- if(ret<=0) {
-   fprintf(stderr,
-           "cdrskin: FATAL : Cannot activate the desired write mode\n");
-   goto burn_failed;
- }
-
-#endif /* ! Cdrskin_libburn_write_mode_ruleS */
-
-
  disc= burn_disc_create();
  session= burn_session_create();
  ret= burn_disc_add_session(disc,session,BURN_POS_END);
@@ -7115,20 +6832,6 @@ burn_failed:;
    else
      skin->has_open_ended_track= 1;
  }
-
-#ifndef Cdrskin_libburn_write_mode_ruleS
- if (s==BURN_DISC_APPENDABLE) {
-#ifdef Cdrskin_allow_sao_for_appendablE
-   ;
-#else
-   if(skin->write_type!=BURN_WRITE_TAO) {
-     Cdrskin_release_drive(skin,0);
-     fprintf(stderr,"cdrskin: FATAL : For now only write mode -tao can be used with appendable disks\n");
-     goto burn_failed;
-   }
-#endif /* ! Cdrskin_allow_sao_for_appendablE */
- }
-#endif /* ! Cdrskin_libburn_write_mode_ruleS */
 
 #ifndef Cdrskin_extra_leaN
  /* Final decision on track size has to be made after eventual -isosize
@@ -7248,15 +6951,9 @@ burn_failed:;
    burn_write_opts_set_simulate(o, 1);
  }
  burn_write_opts_set_underrun_proof(o,skin->burnfree);
-
-#ifdef Cdrskin_libburn_write_mode_ruleS
  ret= Cdrskin_activate_write_mode(skin,o,disc,0);
  if(ret<=0)
    goto burn_failed;
-#else /* Cdrskin_libburn_write_mode_ruleS */
- burn_write_opts_set_write_type(o,skin->write_type,skin->block_type);
-#endif
-
  ret= Cdrskin_obtain_nwa(skin, &nwa,0);
  if(ret<=0)
    nwa= -1;
