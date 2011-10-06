@@ -203,7 +203,7 @@ or
 #define Cdrskin_libburn_has_get_profilE 1
 #define Cdrskin_libburn_has_set_start_bytE 1
 #define Cdrskin_libburn_has_wrote_welL 1
-#define Cdrskin_libburn_has_bd_formattinG 1
+/* Cdrskin_libburn_has_bd_formattinG */
 /* Cdrskin_libburn_has_burn_disc_formaT */
 
 /* 0.3.2 */
@@ -6064,12 +6064,9 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  time_to_tell= (elapsed_time>=1.0)&&(elapsed_total_time>=1.0);
  written_total_bytes= *last_count; /* to be overwritten by p.sector */
 
-#ifdef Cdrskin_libburn_has_bd_formattinG
- if(drive_status==BURN_DRIVE_FORMATTING)
+ if(drive_status==BURN_DRIVE_FORMATTING) {
    formatting= 1;
-#endif
-
- if(drive_status==BURN_DRIVE_WRITING) {
+ } else if(drive_status==BURN_DRIVE_WRITING) {
    ;
  } else if(drive_status==BURN_DRIVE_WRITING_LEADIN
 
