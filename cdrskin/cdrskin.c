@@ -219,7 +219,7 @@ or
 #define Cdrskin_libburn_has_set_forcE 1
 
 /* 0.3.6 */
-#define Cdrskin_libburn_preset_device_familY 1
+/* Cdrskin_libburn_preset_device_familY */
 /* Cdrskin_libburn_has_track_set_sizE */
 
 /* 0.3.8 */
@@ -3188,11 +3188,8 @@ final_checks:;
 
 #ifndef Cdrskin_libburn_no_burn_preset_device_opeN
  burn_preset_device_open(o->drive_exclusive
-#ifdef Cdrskin_libburn_preset_device_familY
                          | (o->drive_scsi_dev_family<<2)
-                         | ((!!o->drive_fcntl_f_setlk)<<5)
-#endif
-                         ,
+                         | ((!!o->drive_fcntl_f_setlk)<<5),
                          o->drive_blocking,
                          o->abort_on_busy_drive);
 #endif /* ! Cdrskin_libburn_no_burn_preset_device_opeN */
