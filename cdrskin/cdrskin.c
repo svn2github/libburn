@@ -181,7 +181,7 @@ or
 
 /* 0.2.4 */
 #define Cdrskin_allow_libburn_taO 1
-#define Cdrskin_libburn_has_is_enumerablE 1
+/* Cdrskin_libburn_has_is_enumerablE */
 /* Cdrskin_libburn_has_convert_fs_adR */
 /* Cdrskin_libburn_has_convert_scsi_adR */
 /* Cdrskin_libburn_has_burn_msgS */
