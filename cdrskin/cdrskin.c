@@ -215,7 +215,7 @@ or
 #define Cdrskin_libburn_has_set_filluP 1
 #define Cdrskin_libburn_has_get_spacE 1
 #define Cdrskin_libburn_write_mode_ruleS 1
-#define Cdrskin_libburn_has_allow_untested_profileS 1
+/* Cdrskin_libburn_has_allow_untested_profileS */
 /* Cdrskin_libburn_has_set_forcE */
 
 /* 0.3.6 */
@@ -3261,9 +3261,7 @@ dev_too_long:;
 
  }
 
-#ifdef Cdrskin_libburn_has_allow_untested_profileS
  burn_allow_untested_profiles(!!o->allow_untested_media);
-#endif
 
  /* A60927 : note to myself : no "ret= 1;" here. It breaks --help , -version */
 
@@ -5393,9 +5391,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
    {ret= 0; goto ex;}
  }
-#ifdef Cdrskin_libburn_has_allow_untested_profileS
  burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
-#endif
  ret= Cdrskin_grab_drive(skin,1); /* uses burn_drive_scan_and_grab() */
  if(ret<=0)
    return(ret);
@@ -5410,9 +5406,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
    {ret= 0; goto ex;}
  } 
-#ifdef Cdrskin_libburn_has_allow_untested_profileS
  burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
-#endif
  if(strlen(skin->preskin->device_adr)>0)
    burn_drive_add_whitelist(skin->preskin->device_adr);
  while(!burn_drive_scan(&(skin->drives),&(skin->n_drives)))
