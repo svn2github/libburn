@@ -182,7 +182,7 @@ or
 /* 0.2.4 */
 #define Cdrskin_allow_libburn_taO 1
 #define Cdrskin_libburn_has_is_enumerablE 1
-#define Cdrskin_libburn_has_convert_fs_adR 1
+/* Cdrskin_libburn_has_convert_fs_adR */
 /* Cdrskin_libburn_has_convert_scsi_adR */
 /* Cdrskin_libburn_has_burn_msgS */
 /* Cdrskin_libburn_has_burn_aborT */
@@ -1366,7 +1366,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
  int is_wav= 0, size_from_file= 0, ret;
  off_t xtr_size= 0;
  struct stat stbuf;
-#ifdef Cdrskin_libburn_has_convert_fs_adR
  char *device_adr,*raw_adr;
  int no_convert_fs_adr;
  int Cdrskin_get_device_adr(struct CdrskiN *skin,
@@ -1374,7 +1373,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
  int Cdrskin_get_drive(struct CdrskiN *skin, struct burn_drive **drive,
            int flag);
  struct burn_drive *drive;
-#endif /* Cdrskin_libburn_has_convert_fs_adR */
 
  if(track->source_path[0]=='-' && track->source_path[1]==0)
    *fd= 0;
@@ -1383,8 +1381,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    *fd= atoi(track->source_path+1);
  else {
    *fd= -1;
-
-#ifdef Cdrskin_libburn_has_convert_fs_adR
 
    Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
                           &no_convert_fs_adr,0);
@@ -1417,8 +1413,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    fprintf(stderr,"cdrskin: EXPERIMENTAL : Deliberate abort\n");
    return(0);
 */
-
-#endif /* Cdrskin_libburn_has_convert_fs_adR */
 
    if(!(flag&2))
      is_wav= Cdrtrack_extract_audio(track,fd,&xtr_size,0);
@@ -3187,8 +3181,6 @@ dev_too_long:;
      }
    }
 
-#ifdef Cdrskin_libburn_has_convert_fs_adR
-
    if(strlen(o->device_adr)>0 && !o->no_convert_fs_adr) {
      int lret;
      char link_adr[Cdrskin_strleN+1];
@@ -3202,8 +3194,6 @@ dev_too_long:;
 	   "cdrskin:        burn_drive_convert_fs_adr() returned %d\n",lret);
      }
    }
-
-#endif /* Cdrskin_libburn_has_convert_fs_adR */
 
  }
 
