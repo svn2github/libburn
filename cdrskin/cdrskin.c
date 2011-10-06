@@ -213,7 +213,7 @@ or
 
 /* 0.3.4 */
 #define Cdrskin_libburn_has_set_filluP 1
-#define Cdrskin_libburn_has_get_spacE 1
+/* Cdrskin_libburn_has_get_spacE */
 /* Cdrskin_libburn_write_mode_ruleS */
 /* Cdrskin_libburn_has_allow_untested_profileS */
 /* Cdrskin_libburn_has_set_forcE */
@@ -2921,11 +2921,8 @@ set_dev:;
      printf("                    (set tao_to_sao_tsize=0 to disable it)\n");
 #endif
 
-#ifdef Cdrskin_libburn_has_get_spacE
      printf(
  " --tell_media_space  prints maximum number of writeable data blocks\n");
-#endif
-
      printf(
          " write_start_address=<num>  write to given byte address (DVD+RW)\n");
      printf(
@@ -5681,7 +5678,6 @@ int Cdrskin_warn_of_mini_tsize(struct CdrskiN *skin, int flag)
  if(ret != 1)
    return(1);
 
-#ifdef Cdrskin_libburn_has_get_spacE
  if(skin->multi || skin->has_open_ended_track || skin->smallest_tsize<0)
    return(1);
  drive= skin->drives[skin->driveno].drive;
@@ -5706,8 +5702,6 @@ int Cdrskin_warn_of_mini_tsize(struct CdrskiN *skin, int flag)
  fprintf(stderr,"\n");
  if(skin->gracetime<15)
    skin->gracetime= 15;
-   
-#endif /* Cdrskin_libburn_has_get_spacE */
  return(1);
 }
 
@@ -6773,10 +6767,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  double put_counter, get_counter, empty_counter, full_counter;
  int total_min_fill, fifo_percent;
 #endif
-#ifdef Cdrskin_libburn_has_get_spacE
  off_t free_space;
  char msg[80];
-#endif
 
  if(skin->tell_media_space)
    doing= "estimating";
@@ -6974,15 +6966,12 @@ burn_failed:;
  if(skin->tell_media_space || skin->track_counter<=0) {
    /* write capacity estimation and return without actual burning */
 
-#ifdef Cdrskin_libburn_has_get_spacE
    free_space= burn_disc_available_space(drive,o);
    sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
    if(skin->preskin->result_fd>=0) {
      write(skin->preskin->result_fd,msg,strlen(msg));
    } else
      printf("%s",msg);
-#endif /* Cdrskin_libburn_has_get_spacE */
-
    if(skin->track_counter>0)
      fprintf(stderr,
        "cdrskin: NOTE : %s burn run suppressed by option --tell_media_space\n",
@@ -6990,8 +6979,6 @@ burn_failed:;
    {ret= 1; goto ex;}
  }
 
-
-#ifdef Cdrskin_libburn_has_get_spacE
  if(skin->fixed_size > 0 && !skin->force_is_set) {
    free_space= burn_disc_available_space(drive,o);
    if(skin->fixed_size > free_space && free_space > 0) {
@@ -7004,8 +6991,6 @@ burn_failed:;
      {ret= 0; goto ex;}
    }
  }
-#endif /* Cdrskin_libburn_has_get_spacE */
-
 
  Cdrskin_adjust_speed(skin,0);
 
@@ -8313,11 +8298,9 @@ set_stream_recording:;
               skin->tao_to_sao_tsize);
 #endif /* ! Cdrskin_extra_leaN */
 
-#ifdef Cdrskin_libburn_has_get_spacE
    } else if(strcmp(argv[i],"--tell_media_space")==0) {
      skin->tell_media_space= 1;
      skin->preskin->demands_cdrskin_caps= 1;
-#endif
 
    } else if(strcmp(argv[i],"-toc")==0) {
      skin->do_atip= 2;
