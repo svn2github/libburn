@@ -204,7 +204,7 @@ or
 #define Cdrskin_libburn_has_set_start_bytE 1
 #define Cdrskin_libburn_has_wrote_welL 1
 #define Cdrskin_libburn_has_bd_formattinG 1
-#define Cdrskin_libburn_has_burn_disc_formaT 1
+/* Cdrskin_libburn_has_burn_disc_formaT */
 
 /* 0.3.2 */
 /* Cdrskin_libburn_has_get_msc1 */
@@ -5570,8 +5570,6 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  unsigned dummy;
  char status_text[80], profile_name[90];
 
-#ifdef Cdrskin_libburn_has_burn_disc_formaT
-
  ret= Cdrskin_grab_drive(skin,0);
  if(ret<=0)
    return(ret);
@@ -5628,14 +5626,6 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
 ex:;
  Cdrskin_release_drive(skin,0);
  return(ret);
-
-#else /* Cdrskin_libburn_has_burn_disc_formaT */
-
- fprintf(stderr,
-         "cdrskin: SORRY: libburn is too old to obtain format list info\n");
- return(0);
-
-#endif /* Cdrskin_libburn_has_burn_disc_formaT */
 }
 
 
@@ -5796,14 +5786,12 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
              profile_number == 0x43 ||
             (profile_number == 0x41 && do_format==6)) {
                                                /* DVD-RAM , BD-RE , BD-R SRM */
-#ifdef Cdrskin_libburn_has_burn_disc_formaT
      ret= burn_disc_get_formats(drive, &status, &size, &dummy, &num_formats);
      if((ret>0 && status!=BURN_FORMAT_IS_FORMATTED)) {
        do_format= 4;
        skin->blank_format_type= 4|(3<<9);  /* default payload size */
        skin->blank_format_size= 0;
      }
-#endif
    } else if(do_format==7) { /* try to blank what is not blank yet */
      if(s!=BURN_DISC_BLANK) {
        do_format= 0;
@@ -5957,7 +5945,6 @@ unsupported_format_type:;
  if(do_format==0 || do_format==2) {
    burn_disc_erase(drive,skin->blank_fast);
 
-#ifdef Cdrskin_libburn_has_burn_disc_formaT
  } else if(do_format==1 || do_format==3 || do_format==4) {
    format_flag= (skin->blank_format_type>>8)&(1|2|4|32|128);
    if(skin->force_is_set)
@@ -5967,7 +5954,6 @@ unsupported_format_type:;
    if(skin->blank_format_no_certify)
      format_flag|= 64;
    burn_disc_format(drive,(off_t) skin->blank_format_size,format_flag);
-#endif
 
  } else {
    fprintf(stderr,"cdrskin: SORRY : Format type %d not implemented yet.\n",
