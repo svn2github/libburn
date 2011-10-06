@@ -199,7 +199,7 @@ or
 #define Cdrskin_libburn_has_buffer_min_filL 1
 
 /* 0.3.0 */
-#define Cdrskin_atip_speed_is_oK 1
+/* Cdrskin_atip_speed_is_oK */
 /* Cdrskin_libburn_has_get_profilE */
 /* Cdrskin_libburn_has_set_start_bytE */
 /* Cdrskin_libburn_has_wrote_welL */
@@ -277,11 +277,6 @@ or
     /dev/hdc (kernel 2.6) get ejected by icculus.org/burn */
 #ifndef Cdrskin_libburn_does_ejecT
 #define Cdrskin_burn_drive_eject_brokeN 1
-#endif
-
-/** Work around the fact that after loading media speed report is wrong */
-#ifndef Cdrskin_atip_speed_is_oK
-#define Cdrskin_atip_speed_brokeN 1
 #endif
 
 /** Work around the fact that burn_drive_get_status() always reports to do
@@ -5317,56 +5312,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  Cdrskin_report_disc_status(skin,s,1|2);
  if(s==BURN_DISC_APPENDABLE && skin->no_blank_appendable)
    is_not_really_erasable= 1;
-
-#ifdef Cdrskin_atip_speed_brokeN
-
- /* <<< terrible stunt to get correct media speed info */
- if(skin->verbosity>=Cdrskin_verbose_debuG)   
-   ClN(fprintf(stderr,
-          "cdrskin_debug: redoing startup for speed inquiry stabilization\n"));
-
-
-#ifndef Cdrskin_oldfashioned_api_usE
-
- if(strlen(skin->preskin->device_adr)<=0)
-   burn_drive_get_adr(&(skin->drives[skin->driveno]),
-                      skin->preskin->device_adr);
-
- Cdrskin_release_drive(skin,0);
- burn_finish();
- if(!burn_initialize()) {
-   fflush(stdout);
-   fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
-   {ret= 0; goto ex;}
- }
- burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
- ret= Cdrskin_grab_drive(skin,1); /* uses burn_drive_scan_and_grab() */
- if(ret<=0)
-   return(ret);
- drive= skin->drives[skin->driveno].drive;
-
-#else /* ! Cdrskin_oldfashioned_api_usE */
-
- Cdrskin_release_drive(skin,0);
- burn_finish();
- if(!burn_initialize()) {
-   fflush(stdout);
-   fprintf(stderr,"cdrskin : FATAL : Re-initialization of libburn failed\n");
-   {ret= 0; goto ex;}
- } 
- burn_allow_untested_profiles(!!skin->preskin->allow_untested_media);
- if(strlen(skin->preskin->device_adr)>0)
-   burn_drive_add_whitelist(skin->preskin->device_adr);
- while(!burn_drive_scan(&(skin->drives),&(skin->n_drives)))
-   usleep(1002);
- ret= Cdrskin_grab_drive(skin,0);
- if(ret<=0)
-   return(ret);
- drive= skin->drives[skin->driveno].drive;
-
-#endif /* Cdrskin_oldfashioned_api_usE */
-
-#endif /* Cdrskin_atip_speed_brokeN */
 
  profile_name[0]= 0;
  ret= burn_disc_get_profile(drive,&profile_number,profile_name);
