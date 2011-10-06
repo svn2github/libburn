@@ -216,7 +216,7 @@ or
 #define Cdrskin_libburn_has_get_spacE 1
 #define Cdrskin_libburn_write_mode_ruleS 1
 #define Cdrskin_libburn_has_allow_untested_profileS 1
-#define Cdrskin_libburn_has_set_forcE 1
+/* Cdrskin_libburn_has_set_forcE */
 
 /* 0.3.6 */
 /* Cdrskin_libburn_preset_device_familY */
@@ -7236,10 +7236,8 @@ burn_failed:;
 #ifdef Cdrskin_libburn_has_set_filluP
  burn_write_opts_set_fillup(o, skin->fill_up_media);
 #endif
-#ifdef Cdrskin_libburn_has_set_forcE
- burn_write_opts_set_force(o, !!skin->force_is_set);
-#endif
 
+ burn_write_opts_set_force(o, !!skin->force_is_set);
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
 
 #ifdef Cdrskin_dvd_obs_default_64K
