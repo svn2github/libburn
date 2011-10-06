@@ -187,7 +187,7 @@ or
 #define Cdrskin_libburn_has_burn_msgS 1
 #define Cdrskin_libburn_has_burn_aborT 1
 #define Cdrskin_libburn_has_cleanup_handleR 1
-#define Cdrskin_libburn_has_audioxtR 1
+/* Cdrskin_libburn_has_audioxtR */
 /* Cdrskin_libburn_has_get_start_end_lbA */
 /* Cdrskin_libburn_has_burn_disc_unsuitablE */
 /* Cdrskin_libburn_has_read_atiP */
@@ -1223,11 +1223,9 @@ int Cdrtrack_extract_audio(struct CdrtracK *track, int *fd, off_t *xtr_size,
                            int flag)
 {
  int l, ok= 0;
-#ifdef Cdrskin_libburn_has_audioxtR
  struct libdax_audioxtr *xtr= NULL;
  char *fmt,*fmt_info;
  int num_channels,sample_rate,bits_per_sample,msb_first,ret;
-#endif 
 
  *fd= -1;
 
@@ -1249,8 +1247,6 @@ int Cdrtrack_extract_audio(struct CdrtracK *track, int *fd, off_t *xtr_size,
    fprintf(stderr,"cdrskin: NOTE : Activated -audio for '%s'\n",
            track->source_path);
  }
-
-#ifdef Cdrskin_libburn_has_audioxtR
 
  ret= libdax_audioxtr_new(&xtr,track->source_path,0);
  if(ret<=0)
@@ -1277,12 +1273,6 @@ int Cdrtrack_extract_audio(struct CdrtracK *track, int *fd, off_t *xtr_size,
 ex:
  libdax_audioxtr_destroy(&xtr,0);
  return(ret);
-
-#else /* Cdrskin_libburn_has_audioxtR */
-
- return(0);
-
-#endif 
 }
 
 
