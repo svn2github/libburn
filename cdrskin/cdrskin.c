@@ -184,7 +184,7 @@ or
 #define Cdrskin_libburn_has_is_enumerablE 1
 #define Cdrskin_libburn_has_convert_fs_adR 1
 #define Cdrskin_libburn_has_convert_scsi_adR 1
-#define Cdrskin_libburn_has_burn_msgS 1
+/* Cdrskin_libburn_has_burn_msgS */
 /* Cdrskin_libburn_has_burn_aborT */
 /* Cdrskin_libburn_has_cleanup_handleR */
 /* Cdrskin_libburn_has_audioxtR */
@@ -2086,10 +2086,8 @@ int Cdrpreskin_set_severities(struct CdrpreskiN *preskin, char *queue_severity,
    strcpy(preskin->queue_severity,queue_severity);
  if(print_severity!=NULL)
    strcpy(preskin->print_severity,print_severity);
-#ifdef Cdrskin_libburn_has_burn_msgS
  burn_msgs_set_severities(preskin->queue_severity, preskin->print_severity,
                           "cdrskin: ");
-#endif
  return(1);
 }
  
@@ -2162,7 +2160,6 @@ LIBBURN_MISCONFIGURATION_ = 0;
 */
 int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 {
-#ifdef Cdrskin_libburn_has_burn_msgS
 /* In cdrskin there is not much sense in queueing library messages.
 #ifndef Cdrskin_extra_leaN
 #define Cdrskin_debug_libdax_msgS 1
@@ -2221,7 +2218,6 @@ int Cdrpreskin_queue_msgs(struct CdrpreskiN *o, int flag)
 "cdrskin: ----------------------------------------------------------------\n");
 
 #endif /* Cdrskin_debug_libdax_msgS */
-#endif /* Cdrskin_libburn_has_burn_msgS */
 
  return(1);
 }
@@ -8263,10 +8259,8 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  printf("cdrskin: scanning for devices ...\n");
  fflush(stdout);
 
-#ifdef Cdrskin_libburn_has_burn_msgS
  if(skin->preskin->verbosity<Cdrskin_verbose_debuG)
    burn_msgs_set_severities("NEVER", "NOTE", "cdrskin: ");
-#endif
 
  /* In cdrskin there is not much sense in queueing library messages.
     It is done here only for testing it from time to time */
@@ -8292,10 +8286,8 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
    }
  }
 
-#ifdef Cdrskin_libburn_has_burn_msgS
  burn_msgs_set_severities(skin->preskin->queue_severity,
                           skin->preskin->print_severity, "cdrskin: ");
-#endif
 
  /* This prints the eventual queued messages */
  Cdrpreskin_queue_msgs(skin->preskin,0);
