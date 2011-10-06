@@ -177,7 +177,7 @@ or
 #define Cdrskin_libburn_has_drive_get_adR 1
 #define Cdrskin_progress_track_does_worK 1
 #define Cdrskin_is_erasable_on_load_does_worK 1
-#define Cdrskin_grab_abort_does_worK 1
+/* Cdrskin_grab_abort_does_worK */
 
 /* 0.2.4 */
 /* Cdrskin_allow_libburn_taO */
@@ -283,12 +283,6 @@ or
     track 0 in icculus.org/burn */
 #ifndef Cdrskin_progress_track_does_worK
 #define Cdrskin_progress_track_brokeN 1
-#endif
-
-/** Work around the fact that a drive interrupted at burn_drive_grab() never
-    leaves status BURN_DRIVE_GRABBING in icculus.org/burn */
-#ifndef Cdrskin_grab_abort_does_worK
-#define Cdrskin_grab_abort_brokeN 1
 #endif
 
 /** Work around the fact that a freshly loaded tray with media reports
@@ -3813,9 +3807,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  struct burn_drive *drive;
  char profile_name[80];
  enum burn_disc_status s;
-#ifdef Cdrskin_grab_abort_brokeN
- int restore_handler= 0;
-#endif
 
  i= 0;/* as long as its use is conditional, so gcc -Wall does not complain */
 
@@ -3830,19 +3821,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    drive= skin->drives[skin->driveno].drive;
    skin->grabbed_drive= drive;
  }
-
-#ifdef Cdrskin_grab_abort_brokeN
-
- /* There seems to be no way to get a drive out of status BURN_DRIVE_GRABBING 
-    So try to block out signals if there is a signal handler installed */
- if(skin->preskin->abort_handler==1 || 
-    skin->preskin->abort_handler==3 ||
-    skin->preskin->abort_handler==4) {
-   Cleanup_set_handlers(NULL,NULL,2);
-   restore_handler= 1;
- }
-
-#endif /* ! Cdrskin_grab_abort_brokeN */
 
 #ifndef Cdrskin_oldfashioned_api_usE
 
@@ -3958,15 +3936,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 
  ret= 1;
 ex:;
-
-#ifdef Cdrskin_grab_abort_brokeN
- if(restore_handler) {
-   int Cdrskin_abort_handler(struct CdrskiN *, int, int);
-   Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
-                        Cleanup_handler_flaG);
- }
-#endif /* Cdrskin_grab_abort_brokeN */
-
  if(ret<=0) {
    skin->drive_is_grabbed= 0;
    skin->grabbed_drive= NULL;
