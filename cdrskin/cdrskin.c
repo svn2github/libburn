@@ -196,7 +196,7 @@ or
 /* 0.2.6 */
 #define Cdrskin_libburn_has_pretend_fulL 1
 #define Cdrskin_libburn_has_multI 1
-#define Cdrskin_libburn_has_buffer_min_filL 1
+/* Cdrskin_libburn_has_buffer_min_filL */
 
 /* 0.3.0 */
 /* Cdrskin_atip_speed_is_oK */
@@ -7074,17 +7074,11 @@ fifo_full_at_end:;
 
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
    drive_status= burn_drive_get_status(drive, &p);
-
-#ifdef Cdrskin_libburn_has_buffer_min_filL
-   /* cdrskin recorded its own coarse min_buffer_fill.
-      libburn's is finer - if enough bytes were processed so it is available.*/
    if(p.buffer_min_fill<=p.buffer_capacity && p.buffer_capacity>0) {
      num= 100.0 * ((double) p.buffer_min_fill)/(double) p.buffer_capacity;
      if(num<min_buffer_fill)
        min_buffer_fill= num; 
    }
-#endif /* Cdrskin_libburn_has_buffer_min_filL */
-
    if(min_buffer_fill>100)
      min_buffer_fill= 50;
    printf("Min drive buffer fill was %d%%\n", min_buffer_fill);
