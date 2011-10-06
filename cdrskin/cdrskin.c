@@ -200,7 +200,7 @@ or
 
 /* 0.3.0 */
 #define Cdrskin_atip_speed_is_oK 1
-#define Cdrskin_libburn_has_get_profilE 1
+/* Cdrskin_libburn_has_get_profilE */
 /* Cdrskin_libburn_has_set_start_bytE */
 /* Cdrskin_libburn_has_wrote_welL */
 /* Cdrskin_libburn_has_bd_formattinG */
@@ -4003,7 +4003,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  Cdrskin_speed_factoR= Cdrskin_cd_speed_factoR;
  Cdrskin_libburn_speed_factoR= Cdrskin_libburn_cd_speed_factoR;
  Cdrskin_libburn_speed_addoN= Cdrskin_libburn_cd_speed_addoN;
-#ifdef Cdrskin_libburn_has_get_profilE
  ret= burn_disc_get_profile(drive,&profile_number,profile_name);
  if(ret>0) {
    if(strstr(profile_name,"DVD")==profile_name ||
@@ -4017,7 +4016,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
      Cdrskin_libburn_speed_addoN= Cdrskin_libburn_bd_speed_addoN;
    }
  }
-#endif /* Cdrskin_libburn_has_get_profilE */
  if(skin->preskin->fallback_program[0] && s==BURN_DISC_UNSUITABLE &&
     skin->preskin->demands_cdrskin_caps<=0 && !(flag&16)) {
    skin->preskin->demands_cdrecord_caps= 1;
@@ -4617,7 +4615,6 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
  if(flag&2)
    return(1+pseudo_appendable);
 
-#ifdef Cdrskin_libburn_has_get_profilE
  if((s==BURN_DISC_FULL || s==BURN_DISC_APPENDABLE || s==BURN_DISC_BLANK ||
      s==BURN_DISC_UNSUITABLE) && skin->driveno>=0) {
    char profile_name[80];
@@ -4635,7 +4632,6 @@ int Cdrskin_report_disc_status(struct CdrskiN *skin, enum burn_disc_status s,
  } else if(s==BURN_DISC_EMPTY) {
    printf("Current: none\n");
  }
-#endif
 
  return(1+pseudo_appendable);
 }
@@ -4937,10 +4933,8 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
  enum burn_disc_status s;
-#ifdef Cdrskin_libburn_has_get_profilE
  char profile_name[80];
  int profile_number;
-#endif
 
  drive= skin->drives[skin->driveno].drive;
 
@@ -5025,13 +5019,9 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  }
 
 summary:
-#ifdef Cdrskin_libburn_has_get_profilE
  ret= burn_disc_get_profile(drive, &profile_number, profile_name);
  if(ret <= 0)
    strcpy(profile_name, "media");
-#else
- strcpy(profile_name, "media");
-#endif
 
  printf("Media summary: %d sessions, %d tracks, %s %s\n",
         num_sessions, track_count, 
@@ -5069,10 +5059,8 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  struct burn_track **tracks;
  struct burn_toc_entry toc_entry;
  enum burn_disc_status s, show_status;
-#ifdef Cdrskin_libburn_has_get_profilE
  char profile_name[80];
  int pno;
-#endif
  char media_class[80];
  int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
  int app_code, cd_info_valid, lra, alloc_blocks, free_blocks;
@@ -5381,7 +5369,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 #endif /* Cdrskin_atip_speed_brokeN */
 
  profile_name[0]= 0;
-#ifdef Cdrskin_libburn_has_get_profilE
  ret= burn_disc_get_profile(drive,&profile_number,profile_name);
  if(ret<=0) {
    profile_number= 0;
@@ -5389,7 +5376,6 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  }
  if(profile_number != 0x08 && profile_number != 0x09 && profile_number != 0x0a)
    current_is_cd= 0;
-#endif /* Cdrskin_libburn_has_get_profilE */
 
  ret= Cdrskin_checkdrive(skin,profile_name,1);
  if(ret<=0)
@@ -5408,14 +5394,10 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 #ifdef Cdrskin_libburn_has_burn_disc_unsuitablE
  if(burn_disc_get_status(drive) == BURN_DISC_UNSUITABLE) {
    if(skin->verbosity>=Cdrskin_verbose_progresS) {
-#ifdef Cdrskin_libburn_has_get_profilE
      if(profile_name[0])
        printf("Current: %s\n",profile_name);
      else
        printf("Current: UNSUITABLE MEDIA (Profile %4.4Xh)\n",profile_number);
-#else
-     printf("Current: UNSUITABLE MEDIA\n");
-#endif
    }
    {ret= 0; goto ex;}
  }
@@ -5744,10 +5726,8 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  drive= skin->drives[skin->driveno].drive;
  s= burn_disc_get_status(drive);
  profile_name[0]= 0;
-#ifdef Cdrskin_libburn_has_get_profilE
  if(skin->grabbed_drive)
    burn_disc_get_profile(skin->grabbed_drive,&profile_number,profile_name);
-#endif
 
  ret= Cdrskin_report_disc_status(skin,s,
                            1|(4*!(skin->verbosity>=Cdrskin_verbose_progresS)));
