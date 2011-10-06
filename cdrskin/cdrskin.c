@@ -224,7 +224,7 @@ or
 
 /* 0.3.8 */
 #define Cdrskin_libburn_has_set_waitinG 1
-#define Cdrskin_libburn_has_get_best_speeD 1
+/* Cdrskin_libburn_has_get_best_speeD */
 
 /* 0.4.0 */
 /* Cdrskin_libburn_has_random_access_rW */
@@ -250,6 +250,10 @@ or
 /* Ended to mark novelties by macros.
    libburnia libburn and cdrskin are fixely in sync now.
    icculus libburn did not move for 30 months.
+*/
+
+/* 1.1.8 */
+/* The code which got enabled by novelty macros was made unconditional.
 */
 
 
@@ -2834,10 +2838,8 @@ set_dev:;
       "blanking and burning see output of option -help rather than --help.\n");
      printf("Non-cdrecord options:\n");
      printf(" --abort_handler    do not leave the drive in busy state\n");
-#ifdef Cdrskin_libburn_has_get_best_speeD
      printf(
      " --adjust_speed_to_drive  set only speeds offered by drive and media\n");
-#endif
      printf(" --allow_emulated_drives  dev=stdio:<path> on file objects\n");
      printf(
         " --allow_setuid     disable setuid warning (setuid is insecure !)\n");
@@ -3848,19 +3850,13 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
  if(skin->x_speed<0)
    k_speed= 0; /* libburn.h promises 0 to be max speed. */
  else if(skin->x_speed==0) { /* cdrecord specifies 0 as minimum speed. */
-#ifdef Cdrskin_libburn_has_get_best_speeD
    k_speed= -1;
-#else
-   k_speed= Cdrskin_libburn_speed_factoR+Cdrskin_libburn_speed_addoN;
-#endif
  } else
    k_speed= skin->x_speed*Cdrskin_libburn_speed_factoR +
             Cdrskin_libburn_speed_addoN;
-
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(fprintf(stderr,"cdrskin_debug: k_speed= %d\n",k_speed));
 
-#ifdef Cdrskin_libburn_has_get_best_speeD
  if(skin->adjust_speed_to_drive && !skin->force_is_set) {
    struct burn_speed_descriptor *best_descr;
    burn_drive_get_best_speed(skin->drives[skin->driveno].drive,k_speed,
@@ -3870,8 +3866,6 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
      skin->x_speed = ((double) k_speed) / Cdrskin_libburn_speed_factoR;
    }  
  }
-#endif /* Cdrskin_libburn_has_get_best_speeD */
-
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
 
 #ifdef Cdrskin_libburn_has_set_waitinG
@@ -7947,10 +7941,8 @@ set_abort_max_wait:;
             skin->abort_max_wait);
      }
 
-#ifdef Cdrskin_libburn_has_get_best_speeD
    } else if(strcmp(argv[i],"--adjust_speed_to_drive")==0) {
      skin->adjust_speed_to_drive= 1;
-#endif
 
    } else if(strcmp(argv[i],"--allow_emulated_drives")==0) {
      /* is handled in Cdrpreskin_setup() */;
