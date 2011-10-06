@@ -223,7 +223,7 @@ or
 #define Cdrskin_libburn_has_track_set_sizE 1
 
 /* 0.3.8 */
-#define Cdrskin_libburn_has_set_waitinG 1
+/* Cdrskin_libburn_has_set_waitinG */
 /* Cdrskin_libburn_has_get_best_speeD */
 
 /* 0.4.0 */
@@ -2901,9 +2901,7 @@ set_dev:;
      printf(" --list_formats     list format descriptors for loaded media.\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
      printf(" --long_toc         print overview of media content\n");
-#ifdef Cdrskin_libburn_has_set_waitinG
      printf(" modesty_on_drive=<options> no writing into full drive buffer\n");
-#endif
      printf(" --no_abort_handler  exit even if the drive is in busy state\n");
      printf(" --no_blank_appendable  refuse to blank appendable CD-RW\n");
      printf(" --no_convert_fs_adr  only literal translations of dev=\n");
@@ -3023,10 +3021,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\t-toc\t\tretrieve and print TOC/PMA data\n");
      fprintf(stderr,
              "\t-atip\t\tretrieve media state, print \"Is *erasable\"\n");
-#ifdef Cdrskin_libburn_has_set_waitinG
      fprintf(stderr,
              "\tminbuf=percent\tset lower limit for drive buffer modesty\n");
-#endif
 #ifdef Cdrskin_libburn_has_multI
      fprintf(stderr,
              "\t-multi\t\tgenerate a TOC that allows multi session\n");
@@ -3867,14 +3863,11 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
    }  
  }
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
-
-#ifdef Cdrskin_libburn_has_set_waitinG
  modesty= skin->modesty_on_drive;
  burn_drive_set_buffer_waiting(skin->drives[skin->driveno].drive,
                                modesty, -1, -1, -1,
                                skin->min_buffer_percent,
                                skin->max_buffer_percent);
-#endif
  return(1);
 }
 
@@ -8334,13 +8327,9 @@ gracetime_equals:;
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strcmp(argv[i],"-immed")==0) {
-#ifdef Cdrskin_libburn_has_set_waitinG
      skin->modesty_on_drive= 1;
      skin->min_buffer_percent= 75;
      skin->max_buffer_percent= 95;
-#else
-     ;
-#endif /* Cdrskin_libburn_has_set_waitinG */
 
    } else if(strcmp(argv[i],"-inq")==0) {
      skin->do_checkdrive= 2;
@@ -8382,7 +8371,6 @@ gracetime_equals:;
    } else if(strncmp(argv[i],"minbuf=",7)==0) {
      value_pt= argv[i]+7;
 minbuf_equals:;
-#ifdef Cdrskin_libburn_has_set_waitinG
      skin->modesty_on_drive= 1;
      sscanf(value_pt,"%lf",&value);
      if (value<25 || value>95) {
@@ -8394,11 +8382,6 @@ minbuf_equals:;
      skin->max_buffer_percent= 95;
      ClN(printf("cdrskin: minbuf=%d percent desired buffer fill\n",
                 skin->min_buffer_percent));
-#else
-     fprintf(stderr,
-          "cdrskin: SORRY : Option minbuf= is not available yet.\n");
-     return(0);
-#endif
 
    } else if(strcmp(argv[i],"-minfo") == 0 ||
              strcmp(argv[i],"-media-info") == 0) {
@@ -8410,7 +8393,6 @@ minbuf_equals:;
      goto option_data;
 
    } else if(strncmp(argv[i],"modesty_on_drive=",17)==0) {
-#ifdef Cdrskin_libburn_has_set_waitinG
      value_pt= argv[i]+17;
      if(*value_pt=='0') {
        skin->modesty_on_drive= 0;
@@ -8464,11 +8446,6 @@ minbuf_equals:;
        }
      }
      skin->preskin->demands_cdrskin_caps= 1;
-#else
-     fprintf(stderr,
-          "cdrskin: SORRY : Option modesty_on_drive= is not available yet.\n");
-     return(0);
-#endif
 
    } else if(strcmp(argv[i],"-multi")==0) {
 #ifdef Cdrskin_libburn_has_multI
