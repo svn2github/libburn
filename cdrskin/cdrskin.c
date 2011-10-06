@@ -176,7 +176,7 @@ or
 #define Cdrskin_libburn_does_ejecT 1
 #define Cdrskin_libburn_has_drive_get_adR 1
 #define Cdrskin_progress_track_does_worK 1
-#define Cdrskin_is_erasable_on_load_does_worK 1
+/* Cdrskin_is_erasable_on_load_does_worK */
 /* Cdrskin_grab_abort_does_worK */
 
 /* 0.2.4 */
@@ -283,12 +283,6 @@ or
     track 0 in icculus.org/burn */
 #ifndef Cdrskin_progress_track_does_worK
 #define Cdrskin_progress_track_brokeN 1
-#endif
-
-/** Work around the fact that a freshly loaded tray with media reports
-    arbitrary media erasability in icculuc.org/burn */
-#ifndef Cdrskin_is_erasable_on_load_does_worK
-#define Cdrskin_is_erasable_on_load_is_brokeN 1
 #endif
 
 /** http://libburnia-project.org/ticket/41 reports of big trouble without 
@@ -3874,24 +3868,6 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
                skin->driveno);
      goto ex;
    }
-
-#ifdef Cdrskin_is_erasable_on_load_is_brokeN
-   /* RIP-14.5 + LITE-ON 48125S produce a false status if tray was unloaded */
-   /* Therefore the first grab was just for loading */
-   skin->drive_is_grabbed= 1; /* message to eventual abort handler */
-   burn_drive_release(drive,0);
-   skin->drive_is_grabbed= 0;
-
-   /* now grab the drive for real */
-   ret= burn_drive_grab(drive,!(flag&2));
-   if(ret==0) {
-     if(!(flag&4))
-       fprintf(stderr,"cdrskin: FATAL : unable to open drive %d\n",
-               skin->driveno);
-     goto ex;
-   }
-#endif /* ! Cdrskin_is_erasable_on_load_is_brokeN */
-
  }
  skin->drive_is_grabbed= 1;
 
