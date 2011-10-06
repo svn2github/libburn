@@ -212,7 +212,7 @@ or
 #define Cdrskin_libburn_has_get_multi_capS 1
 
 /* 0.3.4 */
-#define Cdrskin_libburn_has_set_filluP 1
+/* Cdrskin_libburn_has_set_filluP */
 /* Cdrskin_libburn_has_get_spacE */
 /* Cdrskin_libburn_write_mode_ruleS */
 /* Cdrskin_libburn_has_allow_untested_profileS */
@@ -2868,9 +2868,7 @@ set_dev:;
       " fifo_start_at=<number> do not wait for full fifo but start burning\n");
      printf(
          "                    as soon as the given number of bytes is read\n");
-#ifdef Cdrskin_libburn_has_set_filluP
      printf(" --fill_up_media    cause the last track to have maximum size\n");
-#endif
      printf(
           " grab_drive_and_wait=<num>  grab drive, wait given number of\n");
      printf(
@@ -6922,9 +6920,7 @@ burn_failed:;
  }
  burn_write_opts_set_multi(o,skin->multi);
 #endif
-#ifdef Cdrskin_libburn_has_set_filluP
  burn_write_opts_set_fillup(o, skin->fill_up_media);
-#endif
 
  burn_write_opts_set_force(o, !!skin->force_is_set);
  burn_write_opts_set_stream_recording(o, skin->stream_recording_is_set);
@@ -7903,13 +7899,11 @@ dvd_obs:;
 
 #endif /* ! Cdrskin_extra_leaN */
 
-#ifdef Cdrskin_libburn_has_set_filluP
    } else if(strcmp(argv[i],"--fill_up_media")==0) {
      skin->fill_up_media= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf(
                "cdrskin: will fill up last track to full free media space\n"));
-#endif
 
    } else if(strcmp(argv[i],"-force")==0) {
      skin->force_is_set= 1;
