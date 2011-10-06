@@ -208,7 +208,7 @@ or
 
 /* 0.3.2 */
 #define Cdrskin_libburn_has_get_msc1 1
-#define Cdrskin_libburn_has_toc_entry_extensionS 1
+/* Cdrskin_libburn_has_toc_entry_extensionS */
 /* Cdrskin_libburn_has_get_multi_capS */
 
 /* 0.3.4 */
@@ -4982,22 +4982,15 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    for(track_no= 0; track_no<num_tracks; track_no++) {
      track_count++;
      burn_track_get_entry(tracks[track_no], &toc_entry);
-
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
      if(toc_entry.extensions_valid&1) { /* DVD extension valid */
        lba= toc_entry.start_lba;
        burn_lba_to_msf(lba, &pmin, &psec, &pframe);
      } else {
-#else
-     {
-#endif
-
        pmin= toc_entry.pmin;
        psec= toc_entry.psec;
        pframe= toc_entry.pframe;
        lba= burn_msf_to_lba(pmin,psec,pframe);
      }
-
      if(track_no==0 && burn_session_get_hidefirst(sessions[session_no]))
        printf("cdrskin: NOTE : first track is marked as \"hidden\".\n");
      printf("track:  %2d lba: %9d (%9d) %2.2d:%2.2d:%2.2d",track_count,
@@ -5016,16 +5009,10 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    if((flag&1) && session_no<num_sessions-1)
  continue;
    burn_session_get_leadout_entry(sessions[session_no],&toc_entry);
-
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
      lba= toc_entry.start_lba;
      burn_lba_to_msf(lba, &pmin, &psec, &pframe);
    } else {
-#else
-   {
-#endif
-
      pmin= toc_entry.pmin;
      psec= toc_entry.psec;
      pframe= toc_entry.pframe;
@@ -5200,14 +5187,10 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    for(track_no= 0; track_no<num_tracks; track_no++) {
      track_count++;
      burn_track_get_entry(tracks[track_no], &toc_entry);
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
      if(toc_entry.extensions_valid&1) { /* DVD extension valid */
        lba= toc_entry.start_lba;
        size= toc_entry.track_blocks;
      } else {
-#else
-     {
-#endif
        pmin= toc_entry.min;
        psec= toc_entry.sec;
        pframe= toc_entry.frame;
@@ -5235,14 +5218,12 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 #ifdef Cdrskin_with_last_recorded_addresS
 
      /* Interesting, but obviously not what cdrecord prints as "End Addr" */
- 
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
      if(toc_entry.extensions_valid & 2) { /* LRA extension valid */
        if(pno == 0x11 || pno == 0x13 || pno == 0x14 || pno == 0x15 ||
 	  pno == 0x41 || pno == 0x42 || pno == 0x51)
          lra= toc_entry.last_recorded_address;
      }
-#endif /* Cdrskin_libburn_has_toc_entry_extensionS */
+
 #endif /* Cdrskin_with_last_recorded_addresS */
 
      printf("%5d %5d %-6s %-10d %-10d %-10d\n",
@@ -7290,14 +7271,9 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
    if(tracks==NULL || num_tracks<=0)
  continue;
    burn_track_get_entry(tracks[0],&toc_entry);
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
      lba= toc_entry.start_lba;
    } else {
-#else
-   {
-#endif
-
      lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
    }
  }
@@ -7317,13 +7293,9 @@ obtain_nwa:;
    ClN(fprintf(stderr,
        "cdrskin: NOTE : Guessing next writeable address from leadout\n"));
    burn_session_get_leadout_entry(sessions[num_sessions-1],&toc_entry);
-#ifdef Cdrskin_libburn_has_toc_entry_extensionS
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
      aux_lba= toc_entry.start_lba;
    } else {
-#else
-   {
-#endif
      aux_lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
    }
    if(num_sessions>0)
