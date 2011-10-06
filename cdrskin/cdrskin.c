@@ -180,7 +180,7 @@ or
 #define Cdrskin_grab_abort_does_worK 1
 
 /* 0.2.4 */
-#define Cdrskin_allow_libburn_taO 1
+/* Cdrskin_allow_libburn_taO */
 /* Cdrskin_libburn_has_is_enumerablE */
 /* Cdrskin_libburn_has_convert_fs_adR */
 /* Cdrskin_libburn_has_convert_scsi_adR */
@@ -1103,21 +1103,17 @@ int Cdrtrack_get_track_type(struct CdrtracK *o, int *track_type,
 int Cdrtrack_get_size(struct CdrtracK *track, double *size, double *padding,
                       double *sector_size, int *use_data_image_size, int flag)
 {
+ off_t readcounter= 0,writecounter= 0;
 
  *size= track->fixed_size;
  *padding= track->padding;
  *use_data_image_size= track->use_data_image_size;
-#ifdef Cdrskin_allow_libburn_taO
  if((flag&1) && track->libburn_track!=NULL) {
-   off_t readcounter= 0,writecounter= 0;
-
    burn_track_get_counters(track->libburn_track,&readcounter,&writecounter);
    *size= readcounter;
    *padding= writecounter-readcounter;
  } else if(flag&2)
    *padding= track->tao_to_sao_tsize;
-
-#endif
  *sector_size= track->sector_size;
  return(1);
 }
@@ -1460,18 +1456,8 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    }
  }
 
-#ifdef Cdrskin_allow_libburn_taO
-
  if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size
     && (track->fixed_size>0 || size_from_file) && !(flag&2)) {
-
-#else
-
- if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size &&
-    !(flag&2)) {
-
-#endif
-
    if(track->track_type == BURN_AUDIO) {
      /* >>> cdrecord: We differ in automatic padding with audio:
        Audio tracks must be at least 705600 bytes and a multiple of 2352.
@@ -2865,21 +2851,12 @@ set_dev:;
      "                    set number of bytes after which to force output\n");
      printf(
      "                    to drives with prefix \"stdio:\".\n");
-
-#ifdef Cdrskin_allow_libburn_taO
      printf(
           " tao_to_sao_tsize=<num>  use num as fixed track size if in a\n");
      printf(
           "                    non-TAO mode track data are read from \"-\"\n");
      printf(
           "                    and no tsize= was specified.\n");
-#else
-     printf(
-          " tao_to_sao_tsize=<num>  substitute -tao by -sao and eventually\n");
-     printf("                    augment input from \"-\" by tsize=<num>\n");
-     printf("                    (set tao_to_sao_tsize=0 to disable it)\n");
-#endif
-
      printf(
  " --tell_media_space  prints maximum number of writeable data blocks\n");
      printf(
@@ -2966,9 +2943,7 @@ see_cdrskin_eng_html:;
            "\t-immed\t\tTry to use the SCSI IMMED flag with certain long lasting commands\n");
      fprintf(stderr,
            "\t-force\t\tforce to continue on some errors to allow blanking\n");
-#ifdef Cdrskin_allow_libburn_taO
      fprintf(stderr,"\t-tao\t\tWrite disk in TAO mode.\n");
-#endif
      fprintf(stderr,"\t-dao\t\tWrite disk in SAO mode.\n");
      fprintf(stderr,"\t-sao\t\tWrite disk in SAO mode.\n");
 
@@ -4687,8 +4662,6 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
    {ret= 1; goto ex;}
 
  printf("Driver flags   : %s\n","BURNFREE");
-#ifdef Cdrskin_allow_libburn_taO
-
  printf("Supported modes:");
  if((drive_info->tao_block_types & (BURN_BLOCK_MODE1))
     == (BURN_BLOCK_MODE1))
@@ -4704,10 +4677,6 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
 #endif /* ! Cdrskin_disable_raw96R */
 
  printf("\n");
-
-#else
- printf("Supported modes: %s\n","SAO RAW/R96R");
-#endif
  ret= 1;
 ex:;
  return(ret);
@@ -5811,10 +5780,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  } else if(drive_status==BURN_DRIVE_WRITING) {
    ;
  } else if(drive_status==BURN_DRIVE_WRITING_LEADIN
-
-#ifdef Cdrskin_allow_libburn_taO
            || drive_status==BURN_DRIVE_WRITING_PREGAP
-#endif
            || formatting) {
    if(time_to_tell || skin->is_writing) {
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
@@ -5829,20 +5795,12 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
    }
    {ret= 2; goto ex;}
  } else if(drive_status==BURN_DRIVE_WRITING_LEADOUT
-
-#ifdef Cdrskin_allow_libburn_taO
            || drive_status==BURN_DRIVE_CLOSING_TRACK
-           || drive_status==BURN_DRIVE_CLOSING_SESSION
-#endif
+           || drive_status==BURN_DRIVE_CLOSING_SESSION) {
 
-          ) {
-
-#ifdef Cdrskin_allow_libburn_taO
    if(drive_status==BURN_DRIVE_CLOSING_SESSION &&
       skin->previous_drive_status!=drive_status)
      {printf("\nFixating...\n"); fflush(stdout);}
-#endif
-
    if(time_to_tell || skin->is_writing) {
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
        if(skin->is_writing)
@@ -7916,19 +7874,7 @@ set_stream_recording:;
      skin->swap_audio_bytes= 0;
 
    } else if(strcmp(argv[i],"-tao")==0) {
-     /* is partly handled in Cdrpreskin_setup() */;
-
-#ifndef Cdrskin_allow_libburn_taO
-
-     if(skin->tao_to_sao_tsize<=0.0) {
-       fprintf(stderr,"cdrskin: FATAL : libburn does not support -tao yet.\n");
-       fprintf(stderr,"cdrskin: HINT : Try option  tao_to_sao_tsize=650m\n");
-       return(0);
-     }
-     ClN(printf("cdrskin: NOTE : substituting mode -tao by mode -sao\n"));
-     strcpy(skin->preskin->write_mode_name,"SAO");
-
-#endif /* ! Cdrskin_allow_libburn_taO */
+     /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"tao_to_sao_tsize=",17)==0) {
      skin->tao_to_sao_tsize= Scanf_io_size(argv[i]+17,0);
@@ -7938,11 +7884,7 @@ set_stream_recording:;
 
 #ifndef Cdrskin_extra_leaN
      if(skin->verbosity>=Cdrskin_verbose_cmD)
-#ifdef Cdrskin_allow_libburn_taO
        printf("cdrskin: size default for non-tao write modes: %.f\n",
-#else 
-       printf("cdrskin: replace -tao by -sao with fixed size : %.f\n",
-#endif
               skin->tao_to_sao_tsize);
 #endif /* ! Cdrskin_extra_leaN */
 
