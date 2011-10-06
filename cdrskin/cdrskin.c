@@ -228,7 +228,7 @@ or
 
 /* 0.4.0 */
 #define Cdrskin_libburn_has_random_access_rW 1
-#define Cdrskin_libburn_has_get_drive_rolE 1
+/* Cdrskin_libburn_has_get_drive_rolE */
 /* Cdrskin_libburn_has_drive_equals_adR */
 
 /* 0.4.2 */
@@ -4458,13 +4458,11 @@ int Cdrskin_driveno_to_btldev(struct CdrskiN *skin, int driveno,
    goto fallback;
 #endif
 
-#ifdef Cdrskin_libburn_has_get_drive_rolE
  ret= burn_drive_get_drive_role(skin->drives[driveno].drive);
  if(ret!=1) {
    sprintf(btldev,"stdio:%s",adr);
    {ret= 2; goto adr_translation;}
  }
-#endif
 
 #ifdef Cdrskin_libburn_has_convert_scsi_adR
  if(!skin->preskin->old_pseudo_scsi_adr) {
@@ -4888,7 +4886,6 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  if(ret>=0)
    fprintf(stderr,"scsidev: '%s'\n",btldev);
  printf("Device type    : ");
-#ifdef Cdrskin_libburn_has_get_drive_rolE
  ret= burn_drive_get_drive_role(drive_info->drive);
  if(ret==0)
    printf("%s\n","Emulated (null-drive)");
@@ -4903,7 +4900,6 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  else if(ret!=1)
    printf("%s\n","Emulated (stdio-drive)");
  else
-#endif
    printf("%s\n","Removable CD-ROM");
  printf("Vendor_info    : '%s'\n",drive_info->vendor);
  printf("Identifikation : '%s'\n",drive_info->product);
@@ -5725,14 +5721,11 @@ int Cdrskin_warn_of_mini_tsize(struct CdrskiN *skin, int flag)
  off_t media_space= 0;
  enum burn_disc_status s;
  struct burn_drive *drive;
-
-#ifdef Cdrskin_libburn_has_get_drive_rolE
  int ret;
 
  ret= burn_drive_get_drive_role(skin->drives[skin->driveno].drive);
  if(ret != 1)
    return(1);
-#endif /* Cdrskin_libburn_has_get_drive_rolE */
 
 #ifdef Cdrskin_libburn_has_get_spacE
  if(skin->multi || skin->has_open_ended_track || skin->smallest_tsize<0)
