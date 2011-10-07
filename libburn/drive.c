@@ -497,7 +497,6 @@ int burn_drive_grab(struct burn_drive *d, int le)
 
 	d->status = BURN_DISC_UNREADY;
 	errcode = d->grab(d);
-
 	if (errcode == 0) {
 		burn_print(1, "low level drive grab failed\n");
 		return 0;
@@ -1357,7 +1356,7 @@ int burn_drive_forget(struct burn_drive *d, int force)
 	if(occup > 0)
 		if(force < 1)
 			return 0; 
-	if(occup > 10)
+	if(occup >= 10)
 		return 0;
 
 	/* >>> do any drive calming here */;
@@ -2332,7 +2331,7 @@ int burn_abort_5(int patience,
 
 			}
 
-			if(occup <= 10) {
+			if(occup < 10) {
 				if (drive_array[i].drive_role != 1)
 		 			/* occup == -1 comes early */
 					usleep(1000000);
