@@ -59,6 +59,7 @@ then
   -e 's/<\/body>/<BR><HR><FONT SIZE=-1><CENTER>(HTML generated from '"$manpage"'.1 on '"$(date)"' by '$(basename "$0")' )<\/CENTER><\/FONT><\/body>/' \
   -e 's/See section FILES/See section <A HREF="#FILES">FILES<\/A>/' \
   -e 's/See section EXAMPLES/See section <A HREF="#EXAMPLES">EXAMPLES<\/A>/' \
+  -e 's/&minus;/-/g' \
   <"$2" >"$htmlpage"
 
   set +x
