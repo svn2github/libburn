@@ -1792,7 +1792,7 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 	if (ret < 0)
 		return -1;
 
-	if (n_drives <= 0)
+	if (n_drives == 0)
 		return 0;
 /*
 	fprintf(stderr, "libburn: experimental: n_drives %d , drivetop %d\n",
