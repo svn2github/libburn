@@ -3278,7 +3278,7 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
 	}
 	*disc_id = d->disc_id;
 	memcpy(bar_code, d->disc_bar_code, 8);
-	bar_code[9]= 0;
+	bar_code[8]= 0;
 	*app_code = d->disc_app_code;
 	*valid =  d->disc_info_valid;
 	return 1;
