@@ -2120,8 +2120,9 @@ int burn_drive_convert_fs_adr_sub(char *path, char adr[], int *rec_count)
 	    burn_drive_is_enumerable_adr(path)) {
 		if(strlen(path) >= BURN_DRIVE_ADR_LEN)
 			return -1;
-		burn_drive_adr_debug_msg(
-			"burn_drive_is_enumerable_adr( %s ) is true", path);
+		if (strncmp(path, "stdio:", 6) != 0)
+			burn_drive_adr_debug_msg(
+			   "burn_drive_is_enumerable_adr( %s ) is true", path);
 		strcpy(adr, path);
 		return 1;
 	}
