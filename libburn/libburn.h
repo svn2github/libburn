@@ -561,9 +561,9 @@ struct burn_drive_info
 	char revision[5];
 
 	/** Invalid: Was: "Location of the drive in the filesystem." */
-	/** This string has no meaning any more. Once it stored the persistent
-	    drive address. Now always use function  burn_drive_d_get_adr()  to
-	    inquire a persistent address.           ^^^^^^ ALWAYS ^^^^^^^^ */
+	/** This string has no meaning any more. Once it stored the drive
+            device file address. Now always use function burn_drive_d_get_adr()
+            to inquire a device file address.            ^^^^^ ALWAYS ^^^^^^^*/
 	char location[17];
 
 	/** Can the drive read DVD-RAM discs */
@@ -840,7 +840,7 @@ void burn_allow_untested_profiles(int yes);
 
 
 /* ts A60823 */
-/** Aquire a drive with known persistent address.
+/** Aquire a drive with known device file address.
 
     This is the sysadmin friendly way to open one drive and to leave all
     others untouched. It bundles the following API calls to form a
@@ -912,7 +912,7 @@ void burn_allow_untested_profiles(int yes);
                   when it is no longer needed.
                   This is a result from call burn_drive_scan(). See there.
                   Use with driveno 0 only.
-    @param adr    The persistent address of the desired drive. Either once
+    @param adr    The device file address of the desired drive. Either once
                   obtained by burn_drive_d_get_adr() or composed skillfully by
                   application resp. its user. E.g. "/dev/sr0".
                   Consider to preprocess it by burn_drive_convert_fs_adr().
@@ -994,25 +994,25 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[]);
 
 /* ts A60823 */
 /* @since 0.2.2 */
-/** Maximum length+1 to expect with a persistent drive address string */
+/** Maximum length+1 to expect with a drive device file address string */
 #define BURN_DRIVE_ADR_LEN 1024
 
 /* ts A70906 */
-/** Inquire the persistent address of the given drive.
+/** Inquire the device file address of the given drive.
     @param drive The drive to inquire.
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
-                 characters size. The persistent address gets copied to it.
+                 characters size. The device file address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
     @since 0.4.0
 */
 int burn_drive_d_get_adr(struct burn_drive *drive, char adr[]);
 
 /* A60823 */
-/** Inquire the persistent address of a drive via a given drive_info object.
+/** Inquire the device file address of a drive via a given drive_info object.
     (Note: This is a legacy call.)
     @param drive_info The drive to inquire.Usually some &(drive_infos[driveno])
     @param adr   An application provided array of at least BURN_DRIVE_ADR_LEN
-                 characters size. The persistent address gets copied to it.
+                 characters size. The device file address gets copied to it.
     @return >0 success , <=0 error (due to libburn internal problem)
     @since 0.2.6
 */
@@ -1020,21 +1020,23 @@ int burn_drive_get_adr(struct burn_drive_info *drive_info, char adr[]);
 
 
 /* ts A60922 ticket 33 */
-/** Evaluate whether the given address would be a possible persistent drive
-    address of libburn.
+/** Evaluate whether the given address would be a drive device file address
+    which could be listed by a run of burn_drive_scan(). No check is made
+    whether a device file with this address exists or whether it leads
+    to a usable MMC drive.
     @return 1 means yes, 0 means no
     @since 0.2.6
 */
 int burn_drive_is_enumerable_adr(char *adr);
 
 /* ts A60922 ticket 33 */
-/** Try to convert a given existing filesystem address into a persistent drive
+/** Try to convert a given existing filesystem address into a drive device file
     address. This succeeds with symbolic links or if a hint about the drive's
     system address can be read from the filesystem object and a matching drive
     is found.
     @param path The address of an existing file system object
     @param adr  An application provided array of at least BURN_DRIVE_ADR_LEN
-                characters size. The persistent address gets copied to it.
+                characters size. The device file address gets copied to it.
     @return     1 = success , 0 = failure , -1 = severe error
     @since 0.2.6
 */
@@ -1042,7 +1044,7 @@ int burn_drive_convert_fs_adr(char *path, char adr[]);
 
 /* ts A60923 */
 /** Try to convert a given SCSI address of bus,host,channel,target,lun into
-    a persistent drive address. If a SCSI address component parameter is < 0
+    a drive device file address. If a SCSI address component parameter is < 0
     then it is not decisive and the first enumerated address which matches
     the >= 0 parameters is taken as result.
     Note: bus and (host,channel) are supposed to be redundant.
@@ -1052,7 +1054,7 @@ int burn_drive_convert_fs_adr(char *path, char adr[]);
     @param target_no "Target Number" or "SCSI Id" (a device)
     @param lun_no "Logical Unit Number" (a sub device)
     @param adr  An application provided array of at least BURN_DRIVE_ADR_LEN
-                characters size. The persistent address gets copied to it.
+                characters size. The device file address gets copied to it.
     @return     1 = success , 0 = failure , -1 = severe error
     @since 0.2.6
 */
@@ -1060,7 +1062,7 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 				 int target_no, int lun_no, char adr[]);
 
 /* ts B10728 */
-/** Try to convert a given persistent drive address into the address of a
+/** Try to convert a given drive device file address into the address of a
     symbolic link that points to this drive address.
     Modern GNU/Linux systems may shuffle drive addresses from boot to boot.
     The udev daemon is supposed to create links which always point to the
@@ -1094,8 +1096,8 @@ int burn_lookup_device_link(char *dev_adr, char link_adr[],
 
 /* ts A60923 - A61005 */
 /** Try to obtain bus,host,channel,target,lun from path. If there is an SCSI
-    address at all, then this call should succeed with a persistent
-    drive address obtained via burn_drive_d_get_adr(). It is also supposed to
+    address at all, then this call should succeed with a drive device file
+    address obtained via burn_drive_d_get_adr(). It is also supposed to
     succeed with any device file of a (possibly emulated) SCSI device.
     @return     1 = success , 0 = failure , -1 = severe error
     @since 0.2.6
