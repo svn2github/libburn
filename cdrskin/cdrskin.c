@@ -3740,6 +3740,8 @@ ex:;
                 bit2= do not issue error message on failure
                 bit3= demand and evtl. report media, return 0 if none to see
                 bit4= grab drive with unsuitable media even if fallback program
+                bit5= do not re-assess the drive if it is already grabbed
+                      but rather perform a release-and-grab cycle
     @return <=0 error, 1 success
 */
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
@@ -3749,21 +3751,29 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  char profile_name[80];
  enum burn_disc_status s;
 
- i= 0;/* as long as its use is conditional, so gcc -Wall does not complain */
-
- if(skin->drive_is_grabbed)
+ if(skin->drive_is_grabbed && (flag & 32))
    Cdrskin_release_drive(skin,0);
 
- if(flag&1) {
-   skin->driveno= 0;
-   drive= NULL;
-   skin->grabbed_drive= drive;
- } else {
-   drive= skin->drives[skin->driveno].drive;
-   skin->grabbed_drive= drive;
+ if(!skin->drive_is_grabbed) {
+   if(flag&1) {
+     skin->driveno= 0;
+     drive= NULL;
+     skin->grabbed_drive= drive;
+   } else {
+     drive= skin->drives[skin->driveno].drive;
+     skin->grabbed_drive= drive;
+   }
  }
-
- if(flag&1) {
+ if(skin->drive_is_grabbed) {
+   drive= skin->grabbed_drive;
+   ret= burn_drive_re_assess(skin->grabbed_drive, 0);
+   if(ret <=0 ) {
+     if(!(flag&4))
+       fprintf(stderr,"cdrskin: FATAL : unable to re-assess drive '%s'\n",
+               skin->preskin->device_adr);
+     goto ex;
+   }
+ } else if(flag&1) {
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,
                                  !(flag&2));
    if(ret<=0) {
@@ -5126,12 +5136,6 @@ ex:;
    free(book_type);
  if(product_id != NULL)
    free(product_id);
- Cdrskin_release_drive(skin,0);
-
- /* A61227 :
-    A kindof race condition with -atip on filled CD-RW and following grabs
-    under SuSE 9.3. Waiting seems to help. I suspect the media demon. */
- usleep(200000);
 
  return(ret);
 }
@@ -5203,7 +5207,6 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  }
  ret= 1;
 ex:;
- Cdrskin_release_drive(skin,0);
  return(ret);
 }
 
@@ -5467,7 +5470,6 @@ pseudo_blank_ov:;
       (s!=BURN_DISC_APPENDABLE || skin->no_blank_appendable) &&
       (profile_number!=0x13 || !skin->prodvd_cli_compatible) &&
       (s!=BURN_DISC_BLANK || !skin->force_is_set)) {
-     Cdrskin_release_drive(skin,0);
      if(s==BURN_DISC_BLANK) {
        fprintf(stderr,
        "cdrskin: NOTE : blank=... : media was already blank (and still is)\n");
@@ -5569,8 +5571,6 @@ blanking_done:;
  ret= !!(wrote_well);
 ex:;
  skin->drive_is_busy= 0;
- if(skin->drive_is_grabbed)
-   Cdrskin_release_drive(skin,0);
  if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
  return(ret);
@@ -6165,8 +6165,6 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
 ex:;
  if(caps!=NULL)
    burn_disc_free_multi_caps(&caps);
- if(skin->drive_is_grabbed)
-   Cdrskin_release_drive(skin,0);
  if(buf!=NULL)
    free(buf);
  if(ret>0)
@@ -6723,7 +6721,6 @@ ex:;
  skin->drive_is_busy= 0;
  if(skin->verbosity>=Cdrskin_verbose_debuG)
    ClN(printf("cdrskin_debug: do_eject= %d\n",skin->do_eject));
- Cdrskin_release_drive(skin,0);
  for(i= 0;i<skin->track_counter;i++)
    Cdrtrack_cleanup(skin->tracklist[i],0);
  burn_session_free(session);
@@ -6838,7 +6835,6 @@ put_out:;
  }
  ret= 1;
 ex:;
- Cdrskin_release_drive(skin,0);
  return(ret);
 }
 
