@@ -6838,13 +6838,6 @@ put_out:;
  }
  ret= 1;
 ex:;
-
- /* must calm down my NEC ND-4570A afterwards */
- if(skin->verbosity>=Cdrskin_verbose_debuG)
-   ClN(fprintf(stderr,"cdrskin_debug: doing extra release-grab cycle\n"));
- Cdrskin_release_drive(skin,0);
- Cdrskin_grab_drive(skin,0);
-
  Cdrskin_release_drive(skin,0);
  return(ret);
 }
