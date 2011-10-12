@@ -12,6 +12,9 @@ int main(int argc, char **argv)
 	struct burn_session *session;
 	struct burn_source *src;
 
+	burn_initialize();
+	burn_msgs_set_severities("NEVER", "ALL", "structest: ");
+
 	disc = burn_disc_create();
 	session = burn_session_create();
 	burn_disc_add_session(disc, session, BURN_POS_END);
