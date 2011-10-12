@@ -574,6 +574,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020186 (WARNING,HIGH) = Track damaged and not closed
  0x00020187 (NOTE,HIGH)    = Track not marked as damaged. No action taken.
  0x00020188 (FAILURE,HIGH) = Cannot close damaged track on given media type
+ 0x00020189 (FATAL,HIGH)   = Drive is already grabbed by libburn
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

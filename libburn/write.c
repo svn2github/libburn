@@ -412,7 +412,6 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		goto failed;
 	runtime += 150;
 
-	burn_print(1, "toc for %d tracks:\n", ntr);
 	d->toc_entries = ntr + 3;
 
 	/* ts A61009 */
@@ -513,8 +512,6 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		e[3 + i].pframe = f;
 		e[3 + i].adr = 1;
 		e[3 + i].control = type_to_ctrl(tar[i]->mode);
-		burn_print(1, "track %d control %d\n", tar[i]->mode,
-			   e[3 + i].control);
 
 		ret = add_cue(sheet, ctladr | 1, i + 1, 1, form, 0, runtime);
 		if (ret <= 0)
@@ -566,11 +563,6 @@ XXX this is untested :)
 	e[2].pmin = m;
 	e[2].psec = s;
 	e[2].pframe = f;
-	burn_print(1, "run time is %d (%d:%d:%d)\n", runtime, m, s, f);
-	for (i = 0; i < d->toc_entries; i++)
-		burn_print(1, "point %d (%02d:%02d:%02d)\n",
-			   d->toc_entry[i].point, d->toc_entry[i].pmin,
-			   d->toc_entry[i].psec, d->toc_entry[i].pframe);
 	ret = add_cue(sheet, ctladr | 1, 0xAA, 1, 1, 0, runtime);
 	if (ret <= 0)
 		goto failed;
@@ -612,8 +604,6 @@ int burn_write_leadin(struct burn_write_opts *o,
 
 	d->busy = BURN_DRIVE_WRITING_LEADIN;
 
-	burn_print(5, first ? "    first leadin\n" : "    leadin\n");
-
 	if (first)
 		count = 0 - d->alba - 150;
 	else
@@ -642,7 +632,6 @@ int burn_write_leadout(struct burn_write_opts *o,
 	d->busy = BURN_DRIVE_WRITING_LEADOUT;
 
 	d->rlba = -150;
-	burn_print(5, first ? "    first leadout\n" : "    leadout\n");
 	if (first)
 		count = 6750;
 	else
@@ -667,7 +656,6 @@ int burn_write_session(struct burn_write_opts *o, struct burn_session *s)
 	int i, ret;
 
 	d->rlba = 0;
-	burn_print(1, "    writing a session\n");
 	for (i = 0; i < s->tracks; i++) {
 		if (!burn_write_track(o, s, i))
 			{ ret = 0; goto ex; }
@@ -798,8 +786,6 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 	burn_disc_init_track_status(o, s, tnum, sectors);
 
-        burn_print(12, "track %d is %d sectors long\n", tnum, sectors);
-
 	/* ts A61030 : this cannot happen. tnum is always < s->tracks */
 	if (tnum == s->tracks)
 		tmp = sectors > 150 ? 150 : sectors;
@@ -829,8 +815,6 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		/* ts A61030: program execution never gets to this point */
 		fprintf(stderr,"LIBBURN_DEBUG: TNUM=%d  TRACKS=%d  TMP=%d\n",
 			tnum, s->tracks, tmp);
-
-		burn_print(1, "last track, leadout prep\n");
 
 		/* ts A61023 */
 		if ((i%64)==0)
@@ -2484,8 +2468,6 @@ calloc() seems not to have the desired effect. valgrind warns:
 		}
 	}
 
-	burn_print(1, "sync write of %d CD sessions\n", disc->sessions);
-
 /* Apparently some drives require this command to be sent, and a few drives
 return crap.  so we send the command, then ignore the result.
 */
@@ -2618,9 +2600,6 @@ return crap.  so we send the command, then ignore the result.
 	burn_drive_mark_unready(d, 0);
 	burn_drive_inquire_media(d);
 
-	burn_print(1, "done\n");
-	/* <<< d->busy = BURN_DRIVE_IDLE; */
-
 	/* ts A61012 : This return was traditionally missing. I suspect this
 			to have caused Cdrskin_eject() failures */
 	goto ex;
@@ -2629,7 +2608,6 @@ fail:
 	d->sync_cache(d);
 fail_wo_sync:;
 	usleep(500001); /* ts A61222: to avoid a warning from remove_worker()*/
-	burn_print(1, "done - failed\n");
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010b,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Burn run failed", 0, 0);

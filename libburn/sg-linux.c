@@ -1710,10 +1710,8 @@ int sg_release(struct burn_drive *d)
 	if (mmc_function_spy(d, "sg_release") <= 0)
 		return 0;
 
-	if (d->fd < 1) {
-		burn_print(1, "release an ungrabbed drive.  die\n");
+	if (d->fd < 1)
 		return 0;
-	}
 
 	/* ts A60821
    	<<< debug: for tracing calls which might use open drive fds */

@@ -493,10 +493,8 @@ int sg_grab(struct burn_drive *d)
 */
 int sg_release(struct burn_drive *d)
 {
-	if (d->cam == NULL) {
-		burn_print(1, "release an ungrabbed drive.  die\n");
+	if (d->cam == NULL)
 		return 0;
-	}
 	sg_close_drive(d);
 	return 0;
 }

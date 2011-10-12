@@ -2272,7 +2272,11 @@ int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
                                 int min_percent, int max_percent);
 
 
-/* these are for my debugging, they will disappear */
+/* these are for my [Derek Foreman's ?] debugging, they will disappear */
+/* ts B11012 :
+   Of course, API symbols will not disappear. But these functions are of
+   few use, as they only print DEBUG messages.
+*/
 void burn_structure_print_disc(struct burn_disc *d);
 void burn_structure_print_session(struct burn_session *s);
 void burn_structure_print_track(struct burn_track *t);

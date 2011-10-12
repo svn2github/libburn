@@ -487,7 +487,10 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	int ret, sose;
 
 	if (!d->released) {
-		burn_print(1, "can't grab - already grabbed\n");
+                libdax_msgs_submit(libdax_messenger, d->global_index,
+                                0x00020189, LIBDAX_MSGS_SEV_FATAL,
+                                LIBDAX_MSGS_PRIO_LOW,
+				"Drive is already grabbed by libburn", 0, 0);
 		return 0;
 	}
 	if(d->drive_role != 1) {
@@ -497,10 +500,8 @@ int burn_drive_grab(struct burn_drive *d, int le)
 
 	d->status = BURN_DISC_UNREADY;
 	errcode = d->grab(d);
-	if (errcode == 0) {
-		burn_print(1, "low level drive grab failed\n");
+	if (errcode == 0)
 		return 0;
-	}
 	d->busy = BURN_DRIVE_GRABBING;
 
 	if (le)
@@ -614,7 +615,6 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	/* try to get the drive info */
 	ret = t->grab(t);
 	if (ret) {
-	        burn_print(2, "getting drive info\n");
 	        t->getcaps(t);
 	        t->unlock(t);
 	        t->released = 1;
@@ -678,7 +678,6 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 {
 	if (d->released) {
 		/* ts A61007 */
-		/* burn_print(1, "second release on drive!\n"); */
 		libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x00020105,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -826,9 +825,6 @@ void burn_wait_all(void)
 void burn_disc_erase_sync(struct burn_drive *d, int fast)
 {
 	int ret;
-
-	burn_print(1, "erasing drive %s %s\n", d->idata->vendor,
-		   d->idata->product);
 
 	if (d->drive_role == 5) { /* Random access write-only drive */
 		ret = truncate(d->devname, (off_t) 0);
@@ -1109,17 +1105,6 @@ void burn_drive_cancel(struct burn_drive *d)
 */
 }
 
-/* ts A61007 : defunct because unused */
-#if 0
-int burn_drive_get_block_types(struct burn_drive *d,
-			       enum burn_write_types write_type)
-{
-	burn_print(12, "write type: %d\n", write_type);
-	a ssert(			/* (write_type >= BURN_WRITE_PACKET) && */
-		      (write_type <= BURN_WRITE_RAW));
-	return d->block_types[write_type];
-}
-#endif
 
 static void strip_spaces(char *str)
 {

@@ -628,7 +628,6 @@ void spc_select_error_params(struct burn_drive *d,
 		c->page->data[10] |= 4;
 	if (!o->hardware_error_recovery)
 		c->page->data[10] |= 1;
-/*burn_print(1, "error parameter 0x%x\n", c->page->data[10]);*/
 	c->page->data[11] = d->params.retries;
 	c->dir = TO_DRIVE;
 	d->issue_command(d, c);
@@ -672,7 +671,6 @@ void spc_sense_write_params(struct burn_drive *d)
 	m = d->mdata;
 	if (!c->error) {
 		page = c->page->data + 8;
-		burn_print(1, "write page length 0x%x\n", page[1]);
 		m->write_page_length = page[1];
 		m->write_page_valid = 1;
 	} else
@@ -763,9 +761,6 @@ void spc_select_write_params(struct burn_drive *d,
 
 	c->page->bytes = alloc_len;
 
-	burn_print(12, "using write page length %d (valid %d)\n",
-		   d->mdata->write_page_length, d->mdata->write_page_valid);
-
 	/* ts A61229 */
 	if (mmc_compose_mode_page_5(d, o, c->page->data + 8) <= 0)
 		goto ex;
@@ -811,9 +806,6 @@ void spc_probe_write_modes(struct burn_drive *d)
 
 	/* ts A70213 : added pseudo try_write_type 4 to set a suitable mode */
 	while (try_write_type != 5) {
-		burn_print(9, "trying %d, %d\n", try_write_type,
-			   try_block_type);
-
 		/* ts A70213 */
 		if (try_write_type == 4) {
 			/* Pseudo write type NONE . Set a useable write mode */
@@ -852,10 +844,9 @@ void spc_probe_write_modes(struct burn_drive *d)
 
 		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
 		if (key)
-			burn_print(7, "%d not supported\n", try_block_type);
+			/* try_block_type not supported */;
 		else {
-			burn_print(7, "%d:%d SUPPORTED MODE!\n",
-				   try_write_type, try_block_type);
+			/* try_write_type, try_block_type is supported mode */
 			if (try_write_type == 2)	/* sao */
 				d->block_types[try_write_type] =
 					BURN_BLOCK_SAO;
@@ -1035,9 +1026,6 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 
 	sprintf(msg, "[%X %2.2X %2.2X] ", *key, *asc, *ascq);
 	msg= msg + strlen(msg);
-
-	burn_print(12, "CONDITION: 0x%x 0x%x 0x%x on %s %s\n",
-		   *key, *asc, *ascq, d->idata->vendor, d->idata->product);
 
 	switch (*asc) {
 	case 0x00:
@@ -1334,10 +1322,6 @@ enum response scsi_error(struct burn_drive *d, unsigned char *sense,
 
 	BURN_ALLOC_MEM(msg, char, 160);
 	resp = scsi_error_msg(d, sense, senselen, msg, &key, &asc, &ascq);
-	if (asc == 0 || asc == 0x3A)
-		burn_print(12, "%s\n", msg);
-	else
-		burn_print(1, "%s\n", msg);
 ex:;
 	if (ret == -1)
 		resp = FAIL;

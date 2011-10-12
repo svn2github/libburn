@@ -594,10 +594,8 @@ ex:;
 */
 int sg_release(struct burn_drive *d)
 {
-	if (d->p_cdio == NULL) {
-		burn_print(1, "release an ungrabbed drive.  die\n");
+	if (d->p_cdio == NULL)
 		return 0;
-	}
 	sg_close_drive(d);
 	return 0;
 }

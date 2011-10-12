@@ -508,12 +508,9 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 
 /* try to get the drive info */
 	if (t->grab(t)) {
-		burn_print(2, "getting drive info\n");
 		t->getcaps(t);
 		t->unlock(t);
 		t->released = 1;
-	} else {
-		burn_print(2, "unable to grab new located drive\n");
 	}
 
 /* ts A60821
@@ -751,10 +748,8 @@ int sg_release(struct burn_drive *d)
 	if (mmc_function_spy(d, "sg_release") <= 0)
 		return 0;
 
-	if (d->cam == NULL) {
-		burn_print(1, "release an ungrabbed drive.  die\n");
+	if (d->cam == NULL)
 		return 0;
-	}
 
 	mmc_function_spy(NULL, "sg_release ----------- closing.");
 

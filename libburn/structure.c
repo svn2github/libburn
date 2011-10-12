@@ -242,8 +242,12 @@ int burn_session_remove_track(struct burn_session *s, struct burn_track *t)
 void burn_structure_print_disc(struct burn_disc *d)
 {
 	int i;
+	char msg[40];
 
-	burn_print(12, "This disc has %d sessions\n", d->sessions);
+	sprintf(msg, "This disc has %d sessions", d->sessions);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
 	for (i = 0; i < d->sessions; i++) {
 		burn_structure_print_session(d->session[i]);
 	}
@@ -251,16 +255,25 @@ void burn_structure_print_disc(struct burn_disc *d)
 void burn_structure_print_session(struct burn_session *s)
 {
 	int i;
+	char msg[40];
 
-	burn_print(12, "    Session has %d tracks\n", s->tracks);
+	sprintf(msg, "    Session has %d tracks", s->tracks);
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
 	for (i = 0; i < s->tracks; i++) {
 		burn_structure_print_track(s->track[i]);
 	}
 }
 void burn_structure_print_track(struct burn_track *t)
 {
-	burn_print(12, "(%p)  track size %d sectors\n", t,
-		   burn_track_get_sectors(t));
+	char msg[80];
+
+	sprintf(msg, "        track size %d sectors",
+		burn_track_get_sectors(t));
+	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
 }
 
 void burn_track_define_data(struct burn_track *t, int offset, int tail,
@@ -398,7 +411,6 @@ int burn_track_get_sectors(struct burn_track *t)
 	sectors = size / seclen;
 	if (size % seclen)
 		sectors++;
-	burn_print(1, "%d sectors of %d length\n", sectors, seclen);
 	return sectors;
 }
 

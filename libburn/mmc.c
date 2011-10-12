@@ -849,8 +849,6 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 
 	len = buf->sectors;
 
-	burn_print(100, "trying to write %d at %d\n", len, start);
-
 	scsi_init_command(c, MMC_WRITE_12, sizeof(MMC_WRITE_12));
 	c->retry = 1;
 	mmc_int_to_four_char(c->opcode + 2, start);
@@ -912,8 +910,6 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 
 	/* ts A61009 : buffer fill problems are to be handled by caller */
 	/* a ssert(buf->bytes >= buf->sectors);*/	/* can be == at 0... */
-
-	burn_print(100, "trying to write %d at %d\n", len, start);
 
 	/* ts A70711 */
 	if(d->wait_for_buffer_free)
@@ -1343,7 +1339,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
 	int dlen;
-	int i, bpl= 12, old_alloc_len, t_idx, ret;
+	int i, old_alloc_len, t_idx, ret;
 	unsigned char *tdata;
 	char *msg = NULL;
 
@@ -1438,8 +1434,6 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 		{ret = 0; goto ex;}
 	tdata = c->page->data + 4;
 
-	burn_print(12, "TOC:\n");
-
 	d->disc = burn_disc_create();
 	if (d->disc == NULL) /* ts A70825 */
 		{ret = 0; goto ex;}
@@ -1453,19 +1447,8 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	}
 
 	/* ts A61022 */
-	burn_print(bpl, "-----------------------------------\n");
 
 	for (i = 0; i < d->toc_entries; i++, tdata += 11) {
-
-		/* ts A61022: was burn_print level 12 */
-		burn_print(bpl, "S %d, PT %2.2Xh, TNO %d :", tdata[0],tdata[3],
-			   tdata[2]);
-		burn_print(bpl, " MSF(%d:%d:%d)", tdata[4],tdata[5],tdata[6]);
-		burn_print(bpl, " PMSF(%d:%d:%d %d)",
-				tdata[8], tdata[9], tdata[10],
-				burn_msf_to_lba(tdata[8], tdata[9], tdata[10]));
-		burn_print(bpl, " - control %d, adr %d\n", tdata[1] & 0xF,
-			   tdata[1] >> 4);
 
 /*
 		fprintf(stderr, "libburn_experimental: toc entry #%d : %d %d %d\n",i,tdata[8], tdata[9], tdata[10]); 
@@ -1517,9 +1500,6 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 			d->disc->session[tdata[0] - 1]->leadout_entry =
 				&d->toc_entry[i];
 	}
-
-	/* ts A61022 */
-	burn_print(bpl, "-----------------------------------\n");
 
 	/* ts A70131 : was (d->status != BURN_DISC_BLANK) */
 	if (d->status == BURN_DISC_UNREADY)
@@ -2207,7 +2187,7 @@ void mmc_read_sectors(struct burn_drive *d,
 		      const struct burn_read_opts *o, struct buffer *buf)
 {
 	int temp;
-	int errorblock, req;
+	int req;
 	struct command *c;
 
 	c = &(d->casual_command);
@@ -2221,8 +2201,6 @@ void mmc_read_sectors(struct burn_drive *d,
 /* if the drive isn't busy, why the hell are we here? */ 
 	/* ts A61006 : i second that question */
 	/* a ssert(d->busy); */
-
-	burn_print(12, "reading %d from %d\n", len, start);
 
 	scsi_init_command(c, MMC_READ_CD, sizeof(MMC_READ_CD));
 	c->retry = 1;
@@ -2259,19 +2237,6 @@ void mmc_read_sectors(struct burn_drive *d,
 	c->page = buf;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
-
-	if (c->error) {
-		burn_print(12, "got an error over here\n");
-		burn_print(12, "%d, %d, %d, %d\n", c->sense[3], c->sense[4],
-			   c->sense[5], c->sense[6]);
-		errorblock =
-			(c->sense[3] << 24) + (c->sense[4] << 16) +
-			(c->sense[5] << 8) + c->sense[6];
-		c->page->sectors = errorblock - start + 1;
-		burn_print(1, "error on block %d\n", errorblock);
-		burn_print(12, "error on block %d\n", errorblock);
-		burn_print(12, "returning %d sectors\n", c->page->sectors);
-	}
 }
 
 void mmc_erase(struct burn_drive *d, int fast)

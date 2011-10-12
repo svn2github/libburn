@@ -115,7 +115,6 @@ drive, or only store a subset of the _opts structs in drives */
 	while (1) {
 		seclen = burn_sector_length_read(d, o);
 
-		burn_print(12, "received %d blocks\n", page.sectors);
 		for (i = 0; i < page.sectors; i++) {
 			burn_packet_process(d, page.data + seclen * i, o);
 			d->track_end--;
@@ -123,7 +122,6 @@ drive, or only store a subset of the _opts structs in drives */
 		}
 
 		if ((d->cancel) || (drive_lba == LAST_SESSION_END(d))) {
-			burn_print(1, "finished or cancelled\n");
 			d->busy = BURN_DRIVE_IDLE;
 			if (!d->cancel)
 				d->toc->complete = 1;
@@ -137,16 +135,14 @@ drive, or only store a subset of the _opts structs in drives */
 			if (d->currtrack >
 			    d->toc->session[d->currsession].lasttrack) {
 				d->currsession++;
-				burn_print(12, "session switch to %d\n",
-					   d->currsession);
-				burn_print(12, "skipping a lead out\n");
+				/* session switch to d->currsession */
+				/* skipping a lead out */
 				drive_lba = CURRENT_SESSION_START(d);
-				burn_print(12, "new lba %d\n", drive_lba);
 /* XXX more of the same
 				end = burn_track_end(d, d->currsession,
 							d->currtrack);
-*/ }
-			burn_print(12, "track switch to %d\n", d->currtrack);
+*/
+			}
 		}
 
 		page.sectors = 0;
@@ -201,6 +197,7 @@ static int bitcount(unsigned char *data, int n)
 	return count;
 }
 
+
 void burn_packet_process(struct burn_drive *d, unsigned char *data,
 			 const struct burn_read_opts *o)
 {
@@ -214,12 +211,7 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 	if (o->c2errors) {
 		fb = bitcount(data + ptr, 294);
 		if (fb) {
-			burn_print(1, "%d damaged bits\n",
-				   bitcount(data + ptr, 294));
-			burn_print(1, "sending error on %s %s\n",
-				   d->idata->vendor, d->idata->product);
-			/* XXX send a burn_message! burn_message_error(d,
-			   something); */
+			/* bitcount(data + ptr, 294) damaged bits */;
 		}
 		ptr += 294;
 	}
@@ -259,12 +251,13 @@ void burn_packet_process(struct burn_drive *d, unsigned char *data,
 #ifndef Libburn_no_crc_C
 		crc = (*(sub + 22) << 8) + *(sub + 23);
 		if (crc != crc_ccitt(sub + 12, 10)) {
+/*
 			burn_print(1, "sending error on %s %s\n",
 				   d->idata->vendor, d->idata->product);
-/*			e = burn_error();
+			e = burn_error();
 			e->drive = d;
-*/
 			burn_print(1, "crc mismatch in Q\n");
+*/;
 		}
 #endif
 
