@@ -579,7 +579,7 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int i, timeout_ms, ret, key, asc, ascq, done = 0;
+	int i, timeout_ms, ret, key, asc, ascq, done = 0, sense_len;
 	time_t start_time;
 	struct uscsi_cmd cgc;
 	char msg[80];
@@ -660,11 +660,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		/* >>> valid sense:  cgc.uscsi_rqlen - cgc.uscsi_rqresid */;
 
 		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
-		if (key || asc || ascq) {
-			done = scsi_eval_cmd_outcome(d, c, fp, c->sense, 18, 0,
+		if (key || asc || ascq)
+			sense_len = 18;
+		else
+			sense_len = 0;
+		done = scsi_eval_cmd_outcome(d, c, fp, c->sense, sense_len, 0,
 						start_time, timeout_ms, i, 2);
-		} else
-			done = 1;
 					
 	} /* end of retry-loop */
 
