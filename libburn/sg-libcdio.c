@@ -142,6 +142,9 @@ Send feedback to libburn-hackers@pykix.org .
 #define Libburn_is_on_solariS 1
 #endif
 
+/* Proposal by Rocky Bernstein to avoid macro clashes with cdio_config.h */
+#define __CDIO_CONFIG_H__ 1
+
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
 #include <cdio/mmc.h>
@@ -621,7 +624,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	mmc_cdb_t cdb = {{0, }};
 	cdio_mmc_direction_t e_direction;
 	CdIo_t *p_cdio;
-	unsigned char *sense_pt = NULL;
+	cdio_mmc_request_sense_t *sense_pt = NULL;
 
 	c->error = 0;
 	if (d->p_cdio == NULL) {
@@ -664,7 +667,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				 	dxfer_len, c->page->data);
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
 		if (sense_valid >= 18) {
-			memcpy(c->sense, sense_pt,
+			memcpy(c->sense, (unsigned char *) sense_pt,
 				(size_t) sense_valid >= sizeof(c->sense) ?
 				sizeof(c->sense) : (size_t) sense_valid );
 			spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
@@ -879,7 +882,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 
 	/* GNU/Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
-		int open_mode = O_RDONLY, fd, ret;
+		int open_mode = O_RDONLY, fd;
 		long blocks;
 
 		blocks = *bytes / 512;
@@ -897,7 +900,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #ifdef Libburn_is_on_freebsD
 
 	} else if(S_ISCHR(stbuf.st_mode)) {
-		int fd, ret;
+		int fd;
 
 		fd = open(path, O_RDONLY);
 		if (fd == -1)
