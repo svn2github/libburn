@@ -615,7 +615,7 @@ int sg_release(struct burn_drive *d)
 */
 int sg_issue_command(struct burn_drive *d, struct command *c)
 {
-	int sense_valid = 0, i, timeout_ms;
+	int sense_valid = 0, i, timeout_ms, sense_len;
 	int key = 0, asc = 0, ascq = 0, done = 0;
 	time_t start_time;
         driver_return_code_t i_status;
@@ -705,11 +705,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				done = 1;
 			}
 		} 
-		if (i_status != 0 || (key || asc || ascq)) {
-			done = scsi_eval_cmd_outcome(d, c, fp,  c->sense, 18,
+		if (key || asc || ascq)
+			sense_len = 18;
+		else
+			sense_len = 0;
+		done = scsi_eval_cmd_outcome(d, c, fp,  c->sense, sense_len,
 					0, start_time, timeout_ms, i, 2);
-		} else
-			done = 1;
 
 	} /* end of retry-loop */
 
