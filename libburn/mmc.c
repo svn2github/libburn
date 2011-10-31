@@ -1735,6 +1735,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	/* ts A70131 : had to move mmc_read_toc() to end of function */
 	int do_read_toc = 0, disc_status, len, old_alloc_len;
 	int ret, number_of_sessions = -1;
+	int key, asc, ascq;
 
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
@@ -1772,6 +1773,22 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 	d->issue_command(d, c);
 
 	if (c->error) {
+		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
+		if (key == 5 && asc == 0x20 && ascq == 0) {
+			/* ts B11031 : qemu -cdrom does not know
+			               051h  READ DISC INFORMATION
+			*/
+			ret = mmc_read_toc_fmt0(d);
+			if (ret > 0) {
+
+				/* >>> ??? anything more to be set ? */;
+
+				mmc_read_capacity(d);
+				*alloc_len = 0;
+				goto ex;
+			}
+		}
+
 		d->busy = BURN_DRIVE_IDLE;
 		{ret = 0; goto ex;}
 	}

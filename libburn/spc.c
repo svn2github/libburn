@@ -398,6 +398,8 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	   2Ah is part of MMC-1 to MMC-3. In MMC-1 5.2.3.4. it has 22 bytes,
 	   in MMC-3 6.3.11 there are at least 28 bytes plus a variable length
 	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
+	   ts B11031 : qemu emulates a pre-MMC-1 "DVD-ROM" (which makes not
+	               much sense as DVD appeared first in MMC-3)
 	*/
 	/* ts A90603 :
 	   SPC-1 8.3.3 enumerates mode page format bytes from 0 to n and
@@ -412,7 +414,8 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		page_length = old_alloc_len - 10;
 
 	/* ts A90602 : 20 asserts page[21]. (see SPC-1 8.3.3) */
-	if (page_length < 20) {
+	/* ts B11031 : qemu drive has a page_length of 18 */
+	if (page_length < 18) {
 		m->valid = -1;
 		sprintf(msg, "MODE SENSE page 2A too short: %s : %d",
 			d->devname, page_length);
@@ -441,8 +444,11 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	m->max_read_speed = page[8] * 256 + page[9];
 	m->cur_read_speed = page[14] * 256 + page[15];
 
-	m->max_write_speed = page[18] * 256 + page[19];
-	m->cur_write_speed = page[20] * 256 + page[21];
+	m->max_write_speed = m->cur_write_speed = 0;
+	if (page_length >= 20)
+		m->max_write_speed = page[18] * 256 + page[19];
+	if (page_length >= 22)
+		m->cur_write_speed = page[20] * 256 + page[21];
 
 	/* ts A61021 : New field to be set by atip (or following MMC-3 info) */
 	m->min_write_speed = m->max_write_speed;
@@ -542,7 +548,7 @@ ex:
 
 void spc_sense_caps(struct burn_drive *d)
 {
-	int alloc_len, start_len = 30, ret;
+	int alloc_len, start_len = 28, ret;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_caps") <= 0)
