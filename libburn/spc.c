@@ -445,9 +445,9 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	m->cur_read_speed = page[14] * 256 + page[15];
 
 	m->max_write_speed = m->cur_write_speed = 0;
-	if (page_length >= 20)
+	if (page_length >= 18) /* note: page length is page size - 2 */
 		m->max_write_speed = page[18] * 256 + page[19];
-	if (page_length >= 22)
+	if (page_length >= 20)
 		m->cur_write_speed = page[20] * 256 + page[21];
 
 	/* ts A61021 : New field to be set by atip (or following MMC-3 info) */
