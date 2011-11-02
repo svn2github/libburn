@@ -2705,7 +2705,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 			
 		} else if (feature_code == 0x01) {
 			phys_if_std = (descr[4] << 24) | (descr[5] << 16) |
-					(descr[6] << 8) | descr[9];
+					(descr[6] << 8) | descr[7];
 			if (phys_if_std == 1)
 				phys_name = "SCSI Family";
 			else if(phys_if_std == 2)
