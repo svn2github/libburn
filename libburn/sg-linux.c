@@ -1257,6 +1257,9 @@ static int add_proc_info_drives(int flag)
 	int ret, list_count, count = 0, i;
 	char **list= NULL;
 
+	if (burn_sg_use_family != 0)
+		return(1); /* Looking only for sr resp. scd resp. sg */
+
 	ret = proc_sys_dev_cdrom_info(&list, &list_count, 0);
 	if (ret <= 0)
 		return ret;
