@@ -348,7 +348,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	struct buffer *buf = NULL;
 	struct scsi_mode_data *m;
 	int page_length, num_write_speeds = 0, i, speed, ret;
-	int old_alloc_len, was_error = 0;
+	int old_alloc_len, was_error = 0, block_descr_len;
 	unsigned char *page;
 	struct command *c = NULL;
 	struct burn_speed_descriptor *sd;
@@ -371,10 +371,6 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 
 	memset(buf, 0, sizeof(struct buffer));
 	scsi_init_command(c, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
-/*
-	memcpy(c->opcode, SPC_MODE_SENSE, sizeof(SPC_MODE_SENSE));
-	c->oplen = sizeof(SPC_MODE_SENSE);
-*/
 	c->dxfer_len = *alloc_len;
 	c->opcode[7] = (c->dxfer_len >> 8) & 0xff;
 	c->opcode[8] = c->dxfer_len & 0xff;
@@ -391,15 +387,22 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		was_error = 1;
 	}
 
-	page = c->page->data + 8;
+	/* ts B11103 : qemu SCSI CD-ROM has Block Descriptor Length > 0.
+	               The descriptors come between header and page.
+	*/
+	block_descr_len = c->page->data[6] * 256 + c->page->data[7];
+
+	/* Skip over Mode Data Header and block descriptors */
+	page = c->page->data + 8 + block_descr_len;
 
 	/* ts A61225 :
 	   Although MODE SENSE indeed belongs to SPC, the returned code page
 	   2Ah is part of MMC-1 to MMC-3. In MMC-1 5.2.3.4. it has 22 bytes,
 	   in MMC-3 6.3.11 there are at least 28 bytes plus a variable length
 	   set of speed descriptors. In MMC-5 E.11 it is declared "legacy".
-	   ts B11031 : qemu emulates a pre-MMC-1 "DVD-ROM" (which makes not
-	               much sense as DVD appeared first in MMC-3)
+	   ts B11031 :
+	   qemu emulates an ATAPI DVD-ROM, which delivers only a page length
+	   of 18. This is now tolerated.
 	*/
 	/* ts A90603 :
 	   SPC-1 8.3.3 enumerates mode page format bytes from 0 to n and
@@ -413,7 +416,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	if (page_length + 10 > old_alloc_len)
 		page_length = old_alloc_len - 10;
 
-	/* ts A90602 : 20 asserts page[21]. (see SPC-1 8.3.3) */
+	/* ts A90602 : page_length N asserts page[N+1]. (see SPC-1 8.3.3) */
 	/* ts B11031 : qemu drive has a page_length of 18 */
 	if (page_length < 18) {
 		m->valid = -1;
@@ -548,7 +551,7 @@ ex:
 
 void spc_sense_caps(struct burn_drive *d)
 {
-	int alloc_len, start_len = 28, ret;
+	int alloc_len, start_len = 30, minimum_len = 28, ret;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "sense_caps") <= 0)
@@ -561,7 +564,12 @@ void spc_sense_caps(struct burn_drive *d)
 	fprintf(stderr,"LIBBURN_DEBUG: 5Ah alloc_len = %d , ret = %d\n",
 			alloc_len, ret);
 */
-	if (alloc_len >= start_len && ret > 0)
+	/* ts B11103:
+	   qemu ATAPI DVD-ROM delivers only 28.
+	   SanDisk Cruzer U3 memory stick throws error on alloc_len < 30.
+	   MMC-1 prescribes that 30 are available. qemu tolerates 30.
+	*/
+	if (alloc_len >= minimum_len && ret > 0)
 		/* second execution with announced length */
 		spc_sense_caps_al(d, &alloc_len, 0);
 }
