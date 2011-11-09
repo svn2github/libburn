@@ -391,6 +391,77 @@ static int sgio_test(int fd)
 }
 
 
+static int sgio_inquiry_cd_drive(int fd, char *fname)
+{
+	unsigned char test_ops[] = { 0x12, 0, 0, 0, 36, 0 };
+	sg_io_hdr_t s;
+	struct buffer *buf = NULL;
+	unsigned char *sense = NULL;
+	char *msg = NULL, *msg_pt;
+	int ret = 0, i;
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM(sense, unsigned char, 128);
+	BURN_ALLOC_MEM(msg, char, strlen(fname) + 1024);
+
+	memset(&s, 0, sizeof(sg_io_hdr_t));
+	s.interface_id = 'S';
+	s.dxfer_direction = SG_DXFER_FROM_DEV;
+	s.cmd_len = 6;
+	s.cmdp = test_ops;
+	s.mx_sb_len = 32;
+	s.sbp = sense;
+	s.timeout = 30000;
+	s.dxferp = buf;
+	s.dxfer_len = 36;
+	s.usr_ptr = NULL;
+
+	ret = ioctl(fd, SG_IO, &s);
+	if (ret == -1) {
+		sprintf(msg,
+			 "INQUIRY on '%s' : ioctl(SG_IO) failed , errno= %d",
+			 fname, errno);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		goto ex;
+	}
+	if (s.sb_len_wr > 0 || s.host_status != Libburn_sg_host_oK ||
+	    s.driver_status != Libburn_sg_driver_oK) {
+		sprintf(msg, "INQUIRY failed on '%s' : host_status= %hd , driver_status= %hd", fname, s.host_status, s.driver_status);
+		if (s.sb_len_wr > 0) {
+			sprintf(msg + strlen(msg), " , sense data=");
+			msg_pt = msg + strlen(msg);
+			for (i = 0 ; i < s.sb_len_wr; i++)
+				sprintf(msg_pt + i * 3, " %2.2X", s.sbp[i]);
+		}
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		ret = -1;
+		goto ex;
+	}
+	ret = 0;
+	if (buf->data[0] == 0x5) {
+		/* Peripheral qualifier 0, device type 0x5 = CD/DVD device.
+		   SPC-3 tables 82 and 83  */
+		ret = 1;
+	} else {
+		sprintf(msg, "INQUIRY on '%s' : byte 0 = 0x%2.2X",
+			 fname, buf->data[0]);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+	}
+
+ex:;
+	BURN_FREE_MEM(msg);
+	BURN_FREE_MEM(sense);
+	BURN_FREE_MEM(buf);
+	return ret;
+}
+
+
 /* ts A60924 */
 static int sg_handle_busy_device(char *fname, int os_errno)
 {
@@ -868,6 +939,15 @@ static int is_scsi_drive(char *fname, int fd_in, int *bus_no, int *host_no,
 #endif /* CDROM_DRIVE_STATUS */
 
 	}
+
+	if (sid_ret == -1) {
+		/* ts B11109 : Try device type from INQUIRY byte 0 */
+		if (sgio_inquiry_cd_drive(fd, fname) == 1) {
+			sid_ret = 0;
+			sid.scsi_type = TYPE_ROM;
+		}
+	}
+
 
 #ifdef SCSI_IOCTL_GET_BUS_NUMBER
 	/* Hearsay A61005 */
