@@ -782,7 +782,7 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed);
 void burn_set_verbosity(int level);
 
 /* ts A91111 */
-/** Enable resp. disable logging of SCSI commands (currently GNU/Linux only).
+/** Enable resp. disable logging of SCSI commands.
     This call can be made at any time - even before burn_initialize().
     It is in effect for all active drives and currently not very thread
     safe for multiple drives.
