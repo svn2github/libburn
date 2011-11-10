@@ -1408,7 +1408,7 @@ static char *scsi_command_name(unsigned int c, int flag)
         case 0xbe:
 		return "READ CD";
 	}
-	return "(NOT IN COMMAND LIST)";
+	return "(NOT IN LIBBURN COMMAND LIST)";
 }
 
 
@@ -1456,38 +1456,39 @@ ex:;
 }
 
 
-/* ts A91106 */
+/* ts B11110 */
 /* @param flag bit0= do not show eventual data payload sent to the drive
                      (never with WRITE commands)
-               bit1= show write length and target LBA in decimal
 */
-int scsi_show_cmd_text(struct command *c, void *fp_in, int flag)
+int scsi_show_command(unsigned char *opcode, int oplen, int dir,
+                      unsigned char *data, int bytes,
+                      void *fp_in, int flag)
 {
 	int i;
 	FILE *fp = fp_in;
 
 	fprintf(fp, "\n%s\n",
-		 scsi_command_name((unsigned int) c->opcode[0], 0));
-	for(i = 0; i < 16 && i < c->oplen; i++)
-		fprintf(fp, "%2.2x ", c->opcode[i]);
+		 scsi_command_name((unsigned int) opcode[0], 0));
+	for(i = 0; i < 16 && i < oplen; i++)
+		fprintf(fp, "%2.2x ", opcode[i]);
 	if (i > 0)
 		fprintf(fp, "\n");
 	if (flag & 1)
 		return 1;
-	if (c->opcode[0] == 0x2A) { /* WRITE 10 */
+	if (opcode[0] == 0x2A) { /* WRITE 10 */
 		if (flag & 2)
 			fprintf(fp, "%d -> %d\n",
-				(c->opcode[7] << 8) | c->opcode[8], 
-				mmc_four_char_to_int(c->opcode + 2));
-	} else if (c->opcode[0] == 0xAA) { /* WRITE 12 */
+				(opcode[7] << 8) | opcode[8], 
+				mmc_four_char_to_int(opcode + 2));
+	} else if (opcode[0] == 0xAA) { /* WRITE 12 */
 		if (flag & 2)
 			fprintf(fp, "%d -> %d\n",
-				mmc_four_char_to_int(c->opcode + 6),
-				mmc_four_char_to_int(c->opcode + 2));	
-	} else if (c->dir == TO_DRIVE) {
-		fprintf(fp, "To drive: %db\n", c->page->bytes);
-		for (i = 0; i < c->page->bytes; i++) 
-			fprintf(fp, "%2.2x%c", c->page->data[i],
+				mmc_four_char_to_int(opcode + 6),
+				mmc_four_char_to_int(opcode + 2));	
+	} else if (dir == TO_DRIVE && !(flag & 1)) {
+		fprintf(fp, "To drive: %db\n", bytes);
+		for (i = 0; i < bytes; i++) 
+			fprintf(fp, "%2.2x%c", data[i],
 				((i % 20) == 19 ? '\n' : ' '));
 		if (i % 20)
 			fprintf(fp, "\n");
@@ -1495,27 +1496,62 @@ int scsi_show_cmd_text(struct command *c, void *fp_in, int flag)
 	return 1;
 }
 
+
+
 /* ts A91106 */
-int scsi_show_cmd_reply(struct command *c, void *fp_in, int flag)
+/* @param flag bit0= do not show eventual data payload sent to the drive
+                     (never with WRITE commands)
+*/
+int scsi_show_cmd_text(struct command *c, void *fp_in, int flag)
+{
+	return scsi_show_command(c->opcode, c->oplen, c->dir, c->page->data,
+	                         c->page->bytes, fp_in, flag);
+}
+
+
+/* ts A91106 */ /* ts B11110 */
+int scsi_show_command_reply(unsigned char *opcode, int data_dir,
+                            unsigned char *data, int dxfer_len,
+                            void *fp_in, int flag)
 {
 	int i;
 	FILE *fp = fp_in;
 
-	if (c->dir != FROM_DRIVE)
+	if (data_dir != FROM_DRIVE)
 		return 2;
-	if (c->opcode[0] == 0x28 || c->opcode[0] == 0x3C ||
-	    c->opcode[0] == 0xA8 || c->opcode[0] == 0xBE) {
+	if (opcode[0] == 0x28 || opcode[0] == 0x3C ||
+	    opcode[0] == 0xA8 || opcode[0] == 0xBE) {
 							/* READ commands */
 		/* >>> report amount of data */;
 
 		return 2;
 	}
-	fprintf(fp, "From drive: %db\n", c->dxfer_len);
-	for (i = 0; i < c->dxfer_len; i++)
-		fprintf(fp, "%2.2x%c", c->page->data[i],
+	fprintf(fp, "From drive: %db\n", dxfer_len);
+	for (i = 0; i < dxfer_len; i++)
+		fprintf(fp, "%2.2x%c", data[i],
 			((i % 20) == 19 ? '\n' : ' '));
 	if (i % 20)
 		fprintf(fp, "\n");
+	return 1;
+}
+
+
+/* ts B11110 */ 
+/** Logs command (before execution) */
+int scsi_log_command(unsigned char *opcode, int oplen, int data_dir,
+                     unsigned char *data, int bytes,
+                     void *fp_in, int flag)
+{
+	FILE *fp = fp_in;
+
+	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		scsi_show_command(opcode, oplen, data_dir, data, bytes, fp, 0);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
+	}
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
+		return 1;
+	scsi_log_command(opcode, oplen, data_dir, data, bytes, stderr, 0);
 	return 1;
 }
 
@@ -1524,27 +1560,27 @@ int scsi_show_cmd_reply(struct command *c, void *fp_in, int flag)
 /** Logs command (before execution) */
 int scsi_log_cmd(struct command *c, void *fp_in, int flag)
 {
-	FILE *fp = fp_in;
+	int ret, bytes = 0;
+	unsigned char *data = NULL;
 
-	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
-		scsi_show_cmd_text(c, fp, 0);
-		if (burn_sg_log_scsi & 4)
-			fflush(fp);
+	if (c->page != NULL) {
+		data = c->page->data;
+		bytes = c->page->bytes;
 	}
-	if (fp == stderr || !(burn_sg_log_scsi & 2))
-		return 1;
-	scsi_log_cmd(c, stderr, flag);
-	return 1;
+	ret = scsi_log_command(c->opcode, c->oplen, c->dir, data, bytes,
+	                       fp_in, flag);
+	return ret;
 }
 
 
-/* ts A91221 (former sg_log_err ts A91108) */
+/* ts B11110 */
 /** Logs outcome of a sg command.
     @param flag  bit0 causes an error message
                  bit1 do not print duration
 */
-int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
-		 int sense_len, int duration, int flag)
+int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
+                   int dxfer_len, void *fp_in, unsigned char sense[18],
+		   int sense_len, int duration, int flag)
 {
 	char durtxt[20];
 	FILE *fp = fp_in;
@@ -1570,7 +1606,9 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 				(unsigned int) key, (unsigned int) asc,
 				(unsigned int) ascq, durtxt);
 		} else {
-			scsi_show_cmd_reply(c, fp, 0);
+			scsi_show_command_reply(opcode, data_dir, data,
+			                        dxfer_len, fp, 0);
+
 			if (!(flag & 2))
 				fprintf(fp,"%6d ms\n", duration);
 		}
@@ -1579,8 +1617,29 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 	}
 	if (fp == stderr || !(burn_sg_log_scsi & 2))
 		return 1;
-	scsi_log_err(c, stderr, sense, sense_len, duration, flag);
+	scsi_log_reply(opcode, data_dir, data, dxfer_len,
+	               stderr, sense, sense_len, duration, flag);
+
 	return 1;
+}
+
+
+/* ts A91221 (former sg_log_err ts A91108) */
+/** Legacy frontend to scsi_log_reply().
+    @param flag  bit0 causes an error message
+                 bit1 do not print duration
+*/
+int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
+		 int sense_len, int duration, int flag)
+{
+	int ret;
+	unsigned char *data = NULL;
+
+	if (c->page != NULL)
+		data = c->page->data;
+	ret= scsi_log_reply(c->opcode, c->dir, data, c->dxfer_len ,
+	                    fp_in, sense, sense_len, duration, flag);
+	return ret;
 }
 
 

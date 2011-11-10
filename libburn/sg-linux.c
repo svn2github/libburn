@@ -376,10 +376,48 @@ static int sg_exchange_scd_for_sr(char *fname, int flag)
 }
 
 
+/* ts B11110 */
+/* This is an early stage version of scsi_log_cmd.
+   >>> It will become obsolete when the /tmp file handler is moved into
+   >>> scsi_log_command().
+*/
+static int sgio_log_cmd(unsigned char *cmd, int cmd_len, FILE *fp_in, int flag)
+{
+	FILE *fp = fp_in;
+	int ret;
+
+	/* >>> ts B11110 : move this into scsi_log_command() */
+	if (fp == NULL && (burn_sg_log_scsi & 1)) {
+		fp= fopen("/tmp/libburn_sg_command_log", "a");
+		fprintf(fp, "\n=========================================\n");
+	}
+
+	ret = scsi_log_command(cmd, cmd_len, NO_TRANSFER, NULL, 0, fp, flag);
+	if (fp_in == NULL && fp != NULL)
+		fclose(fp);
+	return ret;
+}
+
+
+/* ts B11110 */
+static int sgio_log_reply(unsigned char *opcode, int data_dir,
+                          unsigned char *data, int dxfer_len,
+                          void *fp_in, unsigned char sense[18],
+                          int sense_len, int duration, int flag)
+{
+	int ret;
+
+	ret = scsi_log_reply(opcode, data_dir, data, dxfer_len, fp_in,
+	                     sense, sense_len, duration, flag);
+	return 1;
+}
+
+
 static int sgio_test(int fd)
 {
 	unsigned char test_ops[] = { 0, 0, 0, 0, 0, 0 };
 	sg_io_hdr_t s;
+	int ret;
 
 	memset(&s, 0, sizeof(sg_io_hdr_t));
 	s.interface_id = 'S';
@@ -387,7 +425,14 @@ static int sgio_test(int fd)
 	s.cmd_len = 6;
 	s.cmdp = test_ops;
 	s.timeout = 12345;
-	return ioctl(fd, SG_IO, &s);
+
+	sgio_log_cmd(s.cmdp, s.cmd_len, NULL, 0);
+
+	ret= ioctl(fd, SG_IO, &s);
+
+	sgio_log_reply(s.cmdp, NO_TRANSFER, NULL, 0,
+                       NULL, s.sbp, s.sb_len_wr, s.duration, 0);
+	return ret;
 }
 
 
@@ -416,6 +461,8 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 	s.dxfer_len = 36;
 	s.usr_ptr = NULL;
 
+	sgio_log_cmd(s.cmdp, s.cmd_len, NULL, 0);
+
 	ret = ioctl(fd, SG_IO, &s);
 	if (ret == -1) {
 		sprintf(msg,
@@ -426,6 +473,10 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 			msg, 0, 0);
 		goto ex;
 	}
+
+	sgio_log_reply(s.cmdp, FROM_DRIVE, buf->data, s.dxfer_len,
+                       NULL, s.sbp, s.sb_len_wr, s.duration, 0);
+
 	if (s.sb_len_wr > 0 || s.host_status != Libburn_sg_host_oK ||
 	    s.driver_status != Libburn_sg_driver_oK) {
 		sprintf(msg, "INQUIRY failed on '%s' : host_status= %hd , driver_status= %hd", fname, s.host_status, s.driver_status);
@@ -1830,6 +1881,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		d->fd, d->released);
 	mmc_function_spy(NULL, msg);
 
+	/* >>> ts B11110 : move this into scsi_log_cmd() together with the
+	                    static fp */
 	/* ts A61030 */
 	if (burn_sg_log_scsi & 1) {
 		if (fp == NULL) {

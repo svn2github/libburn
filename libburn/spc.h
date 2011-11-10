@@ -68,15 +68,30 @@ int scsi_init_command(struct command *c, unsigned char *opcode, int oplen);
 /* ts A91106 */
 int scsi_show_cmd_text(struct command *c, void *fp, int flag);
 
-/* ts A91106 */
-int scsi_show_cmd_reply(struct command *c, void *fp, int flag);
+/* ts B11110 */
+/** Logs command (before execution). */
+int scsi_log_command(unsigned char *opcode, int oplen, int data_dir,
+                     unsigned char *data, int bytes,
+                     void *fp_in, int flag);
 
 /* ts A91218 (former sg_log_cmd ts A70518) */
-/** Logs command (before execution) */
+/** Legacy frontend to scsi_log_command() */
 int scsi_log_cmd(struct command *c, void *fp, int flag);
 
+/* ts B11110 */
+/** Logs outcome of a sg command.
+    @param flag  bit0 causes an error message 
+                 bit1 do not print duration
+*/
+int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
+                   int dxfer_len, void *fp_in, unsigned char sense[18],
+                   int sense_len, int duration, int flag);
+
 /* ts A91221 (former sg_log_err ts A91108) */
-/** Logs outcome of a sg command. */
+/** Legacy frontend to scsi_log_reply().
+    @param flag  bit0 causes an error message
+                 bit1 do not print duration
+*/
 int scsi_log_err(struct command *c, void *fp, unsigned char sense[18], 
                  int sense_len, int duration, int flag);
 
