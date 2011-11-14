@@ -185,6 +185,8 @@ static int linux_sg_enumerate_debug = 0;
    E.g.: "/dev/sg%d"
    sr%d is supposed to map only CD-ROM style devices. Additionally a test
    with ioctl(CDROM_DRIVE_STATUS) is made to assert that it is such a drive,
+   If no such assertion is made, then this adapter performs INQUIRE and
+   looks for first reply byte 0x05.
 
    This initial setting may be overridden in sg_select_device_family() by 
    settings made via burn_preset_device_open().
