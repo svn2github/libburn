@@ -2089,6 +2089,9 @@ int burn_stdio_read_source(struct burn_source *source, char *buf, int bufsize,
 int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d, 
 			 int flag)
 {
+	int ret;
+	char *msg = NULL;
+
 	if (d->cancel)
 		return 0;
 /*
@@ -2096,15 +2099,23 @@ fprintf(stderr, "libburn_DEBUG: write(%d, %lX, %d)\n",
                 fd, (unsigned long) buf, count);
 */
 
-	if (write(fd, buf, count) != count) {
+	ret = write(fd, buf, count);
+	if (ret != count) {
+		BURN_ALLOC_MEM(msg, char, 160);
+
+		sprintf(msg,
+		  "Cannot write desired amount of data. write(2) returned %d.",
+		        ret);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Cannot write desired amount of data", errno, 0);
+			msg, errno, 0);
 		d->cancel = 1;
 		return 0;
 	}
-	return count;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
@@ -2169,6 +2180,7 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
 	int ret;
+	char *msg = NULL;
 
 	if (fd < 0) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -2186,14 +2198,22 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 			   "syncing cache (stdio fsync)", 0, 0);
 	ret = fsync(fd);
 	if (ret != 0 && errno == EIO) {
+		BURN_ALLOC_MEM(msg, char, 160);
+
+		sprintf(msg,
+		  "Cannot write desired amount of data. fsync(2) returned %d.",
+		  ret);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Cannot write desired amount of data", errno, 0);
+			msg, errno, 0);
 		d->cancel = 1;
 		return 0;
 	}
-	return 1;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
 }
 
 
