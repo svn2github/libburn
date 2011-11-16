@@ -1,6 +1,6 @@
 
 /* libdax_msgs
-   Message handling facility of libdax.
+   Message handling facility of libburn and libisofs.
    Copyright (C) 2006-2011 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPL version 2 or later.
 */
