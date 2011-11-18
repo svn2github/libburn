@@ -457,7 +457,7 @@ int sg_give_next_adr(burn_drive_enumerator_t *idx,
 
 	ret = burn_drive_resolve_link(adr, path, &recursion_count, 2);
         if(ret > 0 && (ssize_t) strlen(path) < adr_size)
-		strcpy(path, adr);
+		strcpy(adr, path);
 	ret = (ret >= 0);
 ex:
 	BURN_FREE_MEM(path);
