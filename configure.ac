@@ -1,4 +1,4 @@
-AC_INIT([libburn], [1.1.7], [http://libburnia-project.org])
+AC_INIT([libburn], [1.1.9], [http://libburnia-project.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -10,7 +10,7 @@ LIBBURNIA_SET_FLAGS
 AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_MACRO_DIR([./])
 
-dnl Notes by ts A71207 - B10409 :
+dnl Notes about version numbers and .so numbers:
 dnl
 dnl Regrettably the meaning of the various version types was misunderstood
 dnl before version 0.4.1.
@@ -94,6 +94,7 @@ dnl    1.0.6 = libburn.so.4.63.0
 dnl    1.1.0 = libburn.so.4.65.0
 dnl    1.1.4 = libburn.so.4.67.0
 dnl    1.1.6 = libburn.so.4.69.0
+dnl    1.1.8 = libburn.so.4.71.0
 dnl
 dnl So LT_CURRENT, LT_REVISION and LT_AGE get set directly here.
 dnl SONAME of the emerging library is  LT_CURRENT - LT_AGE.
@@ -119,7 +120,7 @@ dnl
 dnl As said: Only copies. Original in libburn/libburn.h : burn_header_version_*
 BURN_MAJOR_VERSION=1
 BURN_MINOR_VERSION=1
-BURN_MICRO_VERSION=7
+BURN_MICRO_VERSION=9
 BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
@@ -130,14 +131,14 @@ AC_SUBST(BURN_VERSION)
 dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
-dnl ### This is the release version libburn-1.1.6
+dnl ### This is the release version libburn-1.1.8
 dnl This is the development version after above release version
 dnl LT_CURRENT++, LT_AGE++ has not yet happened.
 dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl
-dnl SONAME = 73 - 69 = 4 . Linux library name = libburn.so.4.69.0
-LT_CURRENT=73
-LT_AGE=69
+dnl SONAME = 75 - 71 = 4 . Linux library name = libburn.so.4.71.0
+LT_CURRENT=75
+LT_AGE=71
 LT_REVISION=0
 LT_CURRENT_MINUS_AGE=`expr $LT_CURRENT - $LT_AGE`
 

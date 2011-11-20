@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.1.6.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.1.8.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.1.6.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.1.8.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.1.6.tar.gz
-   cd libburn-1.1.6
+   tar xzf libburn-1.1.8.tar.gz
+   cd libburn-1.1.8
    ./configure --prefix=/usr
    make
 
@@ -660,6 +660,11 @@ Project history as far as known to me:
   libisoburn now comes with a test suite. See releng/README. Bugs were fixed
   in several rarely used features. Processing of ACL and extattr was enabled
   on FreeBSD. Workarounds try to cope with vanishing udev links on GNU/Linux.
+
+- Mon Nov 21 2011 release libburn-1.1.8 and libisoburn-1.1.8:
+  libburn avoids to close and open drive device files while operating on them.
+  xorriso emulation mode xorrecord now has an own manual. libburn and xorriso
+  were prepared to operate on qemu virtio-blk-pci devices.
 
 
 ------------------------------------------------------------------------------
