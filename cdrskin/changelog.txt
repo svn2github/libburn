@@ -10032,26 +10032,418 @@ Made number transition to 1.1.7
 + cdrskin/add_ts_changes_to_libburn_1_1_7
 Updated cdrskin tarball generator
 
-27 Sep 2011  []
+27 Sep 2011  [4331]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.7 - 
+27 Sep 2011  [4332]
+svn move -m libburn release 1.1.6 is ready
+http://svn.libburnia-project.org/libburn/branches/1.1.6 
+http://svn.libburnia-project.org/libburn/tags/1.1.6
+
+------------------------------------ cycle  - cdrskin-1.1.7 - 2011.09.27.124555
+
+
+2011.10.02.134037  [4336]
+libburn/sg-linux.c
+Avoided open()-close() cycles during drive scan and grab on Linux
+
+2011.10.02.172004  [4337]
+libburn/sg-linux.c
+Avoided one more open()-close() cycles during drive scan and grab on Linux
+
+2011.10.05.075531  [4339]
+libburn/libburn.h
+libburn/drive.h
+libburn/drive.c
+libburn/write.c
+libburn/libburn.ver
+New API call burn_drive_re_assess()
+
+2011.10.06.082649  [4344]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_stream_recordinG
+
+2011.10.06.082934  [4345]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_drive_equals_adR
+
+2011.10.06.083228  [4346]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_drive_rolE
+
+2011.10.06.084026  [4347]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_random_access_rW
+
+2011.10.06.085426  [4348]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_best_speeD
+
+2011.10.06.085713  [4349]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_set_waitinG
+
+2011.10.06.085848  [4350]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_track_set_sizE
+
+2011.10.06.090207  [4351]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_preset_device_familY
+
+2011.10.06.090422  [4352]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_set_forcE
+
+2011.10.06.090557  [4353]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_allow_untested_profileS
+
+2011.10.06.091334  [4554]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_write_mode_ruleS
+
+2011.10.06.091641  [4355]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_spacE
+
+2011.10.06.091949  [4356] [4357]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_set_filluP
+
+2011.10.06.092242  [4358]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_multi_capS
+
+2011.10.06.095055  [4359]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_toc_entry_extensionS
+
+2011.10.06.095322  [4360]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_msc1
+
+2011.10.06.100025  [4361]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_burn_disc_formaT
+
+2011.10.06.101239  [4362]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_bd_formattinG
+
+2011.10.06.101442  [4363]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_wrote_welL
+
+2011.10.06.101918  [4364]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_set_start_bytE
+
+2011.10.06.102127  [4365]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_profilE
+
+2011.10.06.102557  [4366]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_atip_speed_is_oK
+
+2011.10.06.102816  [4367]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_buffer_min_filL
+
+2011.10.06.103102  [4368]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_multI
+
+2011.10.06.103325  [4369]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_pretend_fulL
+
+2011.10.06.103445  [4370]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_buffer_progresS
+
+2011.10.06.103619  [4371]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_read_atiP
+
+2011.10.06.103832  [4372]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_burn_disc_unsuitablE
+
+2011.10.06.104012  [4373]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_get_start_end_lbA
+
+2011.10.06.104233  [4374]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_audioxtR
+
+2011.10.06.104519  [4375]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_cleanup_handleR
+
+2011.10.06.104908  [4376]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_burn_aborT
+
+2011.10.06.105627  [4377]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_burn_msgS
+
+2011.10.06.105922  [4378]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_convert_scsi_adR
+
+2011.10.06.111115  [4379]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_convert_fs_adR
+
+2011.10.06.111245  [4380]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_is_enumerablE
+
+2011.10.06.111758  [4381]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_allow_libburn_taO
+
+2011.10.06.112031  [4382]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_grab_abort_does_worK
+
+2011.10.06.112239  [4383]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_is_erasable_on_load_does_worK
+
+2011.10.06.112456  [4384]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_progress_track_does_worK
+
+2011.10.06.112732  [4385]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_has_drive_get_adR
+
+2011.10.06.113103  [4386]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_does_ejecT
+
+2011.10.06.113315  [4387]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_all_tracks_with_sector_paD
+
+2011.10.06.114009  [4388]
+cdrskin/cdrskin.c
+Removed obsolete macro case
+
+2011.10.06.120014  [4389]
+cdrskin/cdrskin.c
+cdrskin/compile_cdrskin.sh
+Removed outdated code and Cdrskin_oldfashioned_api_usE
+
+2011.10.06.121140  [4390]
+cdrskin/cdrskin.c
+Now unconditional: Cdrskin_libburn_from_pykix_svN
+
+2011.10.07.075117  [4391]
+libburn/drive.h
+libburn/drive.c
+Avoided to release drive prematurely if interrupted while grabbing drive
+
+08 Oct 2011  [4392]
+cdrskin/convert_man_to_html.sh
+Replaced HTML minus by a flat ASCII minus in HTML man page generator
+
+2011.10.09.155415  [4394]
+libburn/drive.c
+Reacted on warning of cppcheck about burn_disc_get_cd_info()
+
+2011.10.09.162355  [4395]
+libburn/drive.c
+Reacted on nitpicking of cppcheck
+
+2011.10.10.125950  [4397]
+libburn/libburn.h
+Changed term "persistent address" to "device file address"
+
+2011.10.10.130029  [4398]
+libburn/drive.c
+Changed debug message which called "stdio:" addresses enumerable
+
+2011.10.11.141313  [4399] [4400]
+cdrskin/cdrskin.c
+Avoided release-grab cycle in cdrskin -msinfo
+
+2011.10.11.163842  [4401]
+cdrskin/cdrskin.c
+Avoided release-grab cycles between tasks of a cdrskin run
+
+2011.10.12.100050  [4402]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/drive.c
+libburn/write.c
+libburn/structure.c
+libburn/read.c
+libburn/debug.c
+libburn/mmc.c
+libburn/spc.c
+libburn/sg-solaris.c
+libburn/sg-linux.c
+libburn/sg-libcdio.c
+libburn/sg-freebsd-port.c
+libburn/sg-freebsd.c
+Gave up use of burn_print() in libburn
+
+2011.10.12.100155  [4403]
+test/structest.c
+Added madatory library initialization to test/structest.c
+
+2011.10.27.091014  [4413]
+libburn/sg-libcdio.c
+Silenced a warnings in libcdio adapter
+
+2011.10.27.094705  [4414]
+libburn/sg-libcdio.c
+Enabled optional reporting of drive replies in libcdio adapter
+
+2011.10.27.094705  [4415]
+libburn/sg-solaris.c
+Enabled optional reporting of drive replies in Solaris adapter
+
+2011.10.31.164236  [4416]
+libburn/spc.c
+libburn/mmc.c
+Enabled recognition of QEMU DVD-ROM 0.12 as ATAPI drive
+
+2011.11.01.221713  [4417]
+libburn/spc.c
+Small correction of rev 4416
+
+2011.11.02.074334  [4418]
+libburn/sg-linux.c
+Avoiding on Linux to list drives from /proc if device family is non-default
+
+2011.11.02.130735  [4419]
+libburn/mmc.c
+Corrected a bug with obtaining Physical Interface Standard information
+
+2011.11.03.130710  [4422]
+libburn/spc.c
+Bug fix: Misinterpreted mode page 2A if block descriptors are present
+
+2011.11.09.111408  [4424]
+libburn/sg-linux.c
+Enabled recognition of CD drive at /dev/vda of Linux guest on qemu virtio
+
+2011.11.10.134432  [4430]
+libburn/libburn.h
+Removed remark about SCSI logging being restricted to Linux system adapter
+
+2011.11.10.153659  [4431]
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+Logging of early SCSI commands of Linux system adapter to stderr
+
+2011.11.14.170612  [4435]
+libburn/sg-linux.c
+Clarified a remark in libburn/sg-linux.c
+
+2011.11.16.094244  [4336]
+libburn/libdax_msgs.h
+Clarified a remark in libburn/libdax_msgs.h
+
+2011.11.16.094436  [4437]
+libburn/write.c
+Distinguished failure messages about write(2) and fsync(2)
+
+2011.11.18.155410  [4440]
+libburn/sg-libcdio.c
+Bug fix: licdio adapter reacted inconsistently on symbolic links to drives
+
+20 Nov 2011  [4441]
+svn copy -m Branching for libburn release 1.1.8
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.1.8
+
+2011.11.20.100001  [4442]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.8
+
+20 Nov 2011  [4443]
+- cdrskin/add_ts_changes_to_libburn_1_1_6
+- cdrskin/add_ts_changes_to_libburn_1_1_7
++ cdrskin/add_ts_changes_to_libburn_1_1_8
++ cdrskin/add_ts_changes_to_libburn_1_1_9
+Updated cdrskin tarball generator
+
+20 Nov 2011  [4444]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.1.8 - 2011.11.20.100001
+* New API call burn_drive_re_assess()
+* Enabled recognition of QEMU DVD-ROM 0.12 as ATAPI drive
+* Bug fix: Misinterpreted mode page 2A if block descriptors are present
+
+
+2011.11.20.214751  [4448]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.1.9
+
+20 Nov 2011  [4449]
+- cdrskin/add_ts_changes_to_libburn_1_1_6
+- cdrskin/add_ts_changes_to_libburn_1_1_7
++ cdrskin/add_ts_changes_to_libburn_1_1_8
++ cdrskin/add_ts_changes_to_libburn_1_1_9
+Updated cdrskin tarball generator
+
+20 Nov 2011  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+  []
+svn move -m libburn release 1.1.8 is ready
+http://svn.libburnia-project.org/libburn/branches/1.1.8 
+http://svn.libburnia-project.org/libburn/tags/1.1.8
+
+
+------------------------------------ cycle  - cdrskin-1.1.9 - 2011.11.20.214751
+
 
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.7 - 
+------------------------------------ cycle  - cdrskin-1.1.9 - 
 
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.7 - 
+------------------------------------ cycle  - cdrskin-1.1.9 - 
 
 
 
@@ -10064,30 +10456,18 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
-- Strive for a single open-close cycle inside burn_drive_scan_and_grab()
-  and in burn_drive_grab() at least on Linux.
-  - if re-opening is necessary then use device file, not link
+- Linux: report failed attempts to open /dev/sr files
 
-+ Handle stdio sizes of > 4 TB - 32 kB
-  + become internally aware that the following functions can tell >= 4- TB
-    + burn_os_stdio_capacity
-    + stat, lstat
-  + burn_drive_set_media_capacity_remaining() shall curb
-    media_capacity_remaining to <= 0x7ffffff0
-  - change media default size fom 1024g to 4t-32k
+qemu:
 
-- libburn.h talks of "persistent drive address" which on modern Linux
-  is far from being persistent. Change to "system drive address" (or so).
+- Re-asses benefit of BLKFLSBUF as of dvd+rw-tools/transport.hxx
 
-- cdrskin/cdrskin.c has too many macro cases which cause cppcheck warnings
-  and make the code hard to understand
+- Centralize SCSI log /tmp file opening 
 
 
-----------------------------------------------------------------------
+
 
 Get sg-freebsd-port.c functional.
-
-Throw out old burn_print() calls
 
 Expose BD type from bytes 8+4 to 10+4 out of READ BD STRUCTURE form 0.
 
