@@ -411,7 +411,7 @@ static int sgio_log_reply(unsigned char *opcode, int data_dir,
 
 	ret = scsi_log_reply(opcode, data_dir, data, dxfer_len, fp_in,
 	                     sense, sense_len, duration, flag);
-	return 1;
+	return ret;
 }
 
 
