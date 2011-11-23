@@ -686,10 +686,15 @@ static int sg_fcntl_lock(int *fd, char *fd_name, int l_type, int verbous)
 
 
 /* ts A60926 */
+/* @param scan_mode  0= open for drivce aquiration
+                     1= open for scanning with guessed names
+                     2= open for scanning with /proc/sys/dev/cdrom/info names
+*/
 static int sg_open_drive_fd(char *fname, int scan_mode)
 {
-	int open_mode = O_RDWR, fd, tries= 0;
+	int open_mode = O_RDWR, fd, tries= 0, is_std_adr, report_as_note = 0;
 	char msg[81];
+	struct stat stbuf;
 
 	/* ts A70409 : DDLP-B */
 	/* >>> obtain single lock on fname */
@@ -746,12 +751,26 @@ try_open:;
 			return -1;
 			
 		}
-		if (scan_mode)
-			return -1;
 		sprintf(msg, "Failed to open device '%s'",fname);
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020005,
+		if (scan_mode) {
+			is_std_adr = (strncmp(fname, "/dev/sr", 7) == 0 ||
+			              strncmp(fname, "/dev/scd", 8) == 0);
+			if(scan_mode == 1 && is_std_adr &&
+			   stat(fname, &stbuf) != -1)
+				report_as_note = 1;
+			else if(scan_mode == 2 && (!is_std_adr) &&
+			        stat(fname, &stbuf) != -1)
+				report_as_note = 1;
+			if (report_as_note)
+				libdax_msgs_submit(libdax_messenger, -1,
+				   0x0002000e,
+				   LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
+				   msg, errno, 0);
+		} else {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020005,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, errno, 0);
+		}
 		return -1;
 	}
 	sg_fcntl_lock(&fd, fname, F_WRLCK, 1);
@@ -1080,11 +1099,12 @@ ex:;
 }	
 
 
+/* @param flag bit0= do not complain about failure to open /dev/sr /dev/scd */
 static int sg_open_for_enumeration(char *fname, int flag)
 {
 	int fd;
 
-	fd = sg_open_drive_fd(fname, 1);
+	fd = sg_open_drive_fd(fname, 1 + (flag & 1));
 	if (fd < 0) {
 		if (linux_sg_enumerate_debug || linux_ata_enumerate_verbous)
 			fprintf(stderr, "open failed, errno=%d  '%s'\n",
@@ -1225,6 +1245,7 @@ static int fname_drive_is_listed(char *fname, int flag)
 /* ts A80731 : Directly open the given address.
    @param flag bit0= do not complain about missing file
                bit1= do not check whether drive is already listed
+               bit2= do not complain about failure to open /dev/sr /dev/scd
 */
 static int fname_enumerate(char *fname, int flag)
 {
@@ -1247,7 +1268,7 @@ static int fname_enumerate(char *fname, int flag)
 		{ret = -1; goto ex;}
 	}
 
-	fd = sg_open_for_enumeration(fname, 0);
+	fd = sg_open_for_enumeration(fname, !!(flag & 4));
 	if (fd < 0)
 		{ret = 0; goto ex;}
 	is_ata = is_ata_drive(fname, fd);
@@ -1399,7 +1420,7 @@ static int add_proc_info_drives(int flag)
 	for (i = 0; i < list_count; i++) {
 		if (burn_drive_is_banned(list[i]))
 	continue;
-		ret = fname_enumerate(list[i], 1);
+		ret = fname_enumerate(list[i], 1 | 4);
 		if (ret == 1)
 			count++;
 	}

@@ -436,6 +436,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002000b (FAILURE,HIGH) = File object '...' not found
  0x0002000c (FAILURE,HIGH) = Cannot start device file enumeration
  0x0002000d (FAILURE,HIGH) = Cannot enumerate next device
+ 0x0002000e (NOTE,HIGH)    = Failed to open device during 
            
  General library operations:
 
