@@ -586,7 +586,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
         static FILE *fp = NULL;
 
 	c->error = 0;
-	memset(c->sense, 0, sizeof(c->sense));
 	if (d->fd == -1)
 		return 0;
 
@@ -632,6 +631,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	timeout_ms = 200000;
 	for(i = 0; !done; i++) {
 
+		memset(c->sense, 0, sizeof(c->sense));
 		ret = ioctl(d->fd, USCSICMD, &cgc);
 
 		/* For cgc.uscsi_status see SAM-3 5.3.1, Table 22
