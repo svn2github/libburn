@@ -118,4 +118,29 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp_in,
 #define Libburn_scsi_retry_incR   100000
 
 
+/* ts B11124 */
+/* Millisecond timeout for quickly responding SPC, SBC, and MMC commands */
+#define Libburn_scsi_default_timeouT          30000
+
+/* WRITE(10) and WRITE(12) */
+#define Libburn_scsi_write_timeouT           200000
+
+/* RESERVE TRACK */
+#define Libburn_mmc_reserve_timeouT          200000
+
+/* CLOSE TRACK/SESSION (with Immed bit) */
+#define Libburn_mmc_close_timeouT            200000
+
+/* BLANK , FORMAT UNIT (with Immed bit) */
+#define Libburn_mmc_blank_timeouT            200000
+
+/* SEND OPC INFORMATION */
+#define Libburn_mmc_opc_timeouT              200000
+
+/* MMC_SYNC_CACHE */
+#define Libburn_mmc_sync_timeouT             200000
+
+/* START STOP UNIT with Start bit and Load bit set */
+#define Libburn_mmc_load_timeouT             300000
+
 #endif /*__SPC*/

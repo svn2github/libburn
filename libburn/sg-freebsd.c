@@ -768,10 +768,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 	mmc_function_spy(NULL, "sg_issue_command");
 
-	if (d->cam == NULL) {
-		c->error = 0;
+	c->error = 0;
+	memset(c->sense, 0, sizeof(c->sense));
+
+	if (d->cam == NULL)
 		return 0;
-	}
 	if (burn_sg_log_scsi & 1) {
 		if (fp == NULL) {
 			fp= fopen("/tmp/libburn_sg_command_log", "a");
@@ -783,6 +784,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		scsi_log_cmd(c,fp,0);
 
 	c->error = 0;
+	if (c->timeout > 0)
+		timeout_ms = c->timeout;
+	else
+		timeout_ms = 200000;
 
 	ccb = cam_getccb(d->cam);
 	cam_fill_csio(&ccb->csio,
@@ -794,7 +799,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				  0,                              /* dxfer_len */
 				  sizeof (ccb->csio.sense_data),  /* sense_len */
 				  0,                              /* cdb_len */
-				  30*1000);                       /* timeout */
+				  timeout_ms);                    /* timeout */
 	switch (c->dir) {
 	case TO_DRIVE:
 		ccb->csio.ccb_h.flags |= CAM_DIR_OUT;
@@ -827,8 +832,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	ccb->csio.cdb_len = c->oplen;
 	memcpy(&ccb->csio.cdb_io.cdb_bytes, &c->opcode, c->oplen);
 	
-	memset(&ccb->csio.sense_data, 0, sizeof (ccb->csio.sense_data));
-
 	if (c->page) {
 		ccb->csio.data_ptr  = c->page->data;
 		if (c->dir == FROM_DRIVE) {
@@ -854,8 +857,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	}
 
 	start_time = time(NULL);
-	timeout_ms = 200000;
 	for (i = 0; !done; i++) {
+
+		memset(&ccb->csio.sense_data, 0, sizeof(ccb->csio.sense_data));
 		memset(c->sense, 0, sizeof(c->sense));
 		err = cam_send_ccb(d->cam, ccb);
 
@@ -963,6 +967,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 						sense_len, 0, start_time,
 						timeout_ms, i,
 						2 | !!ignore_error);
+			if (d->cancel)
+				done = 1;
 		} else {
 			done = 1;
 		}

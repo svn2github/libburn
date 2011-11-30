@@ -67,6 +67,7 @@ void sbc_load(struct burn_drive *d)
 	/* c->opcode[1] |= 1; / * ts A70918 : Immed */
 
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_load_timeouT;
 	d->issue_command(d, c);
 	if (c->error)
 		return;

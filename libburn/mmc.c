@@ -357,6 +357,7 @@ int mmc_reserve_track(struct burn_drive *d, off_t size)
 
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_reserve_timeouT;
 	d->issue_command(d, c);
 	if (c->error) {
 		d->cancel = 1;
@@ -588,6 +589,7 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	c->opcode[5] = track & 0xFF;
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_close_timeouT;
 	d->issue_command(d, c);
 
 	/* ts A70918 : Immed : wait for drive to complete command */
@@ -855,6 +857,7 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	mmc_int_to_four_char(c->opcode + 6, len);
 	c->page = buf;
 	c->dir = TO_DRIVE;
+	c->timeout = Libburn_scsi_write_timeouT;
 
 	d->issue_command(d, c);
 
@@ -862,6 +865,7 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 	d->pessimistic_buffer_free -= buf->bytes;
 	d->pbf_altered = 1;
 }
+
 
 int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 {
@@ -935,6 +939,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	c->retry = 1;
 	c->page = buf;
 	c->dir = TO_DRIVE;
+	c->timeout = Libburn_scsi_write_timeouT;
 
 #ifdef Libburn_log_in_and_out_streaM
 	/* <<< ts A61031 */
@@ -2271,6 +2276,7 @@ void mmc_erase(struct burn_drive *d, int fast)
 	c->retry = 1;
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_blank_timeouT;
 	d->issue_command(d, c);
 }
 
@@ -2313,6 +2319,7 @@ void mmc_perform_opc(struct burn_drive *d)
 	c->opcode[1] = 1;
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_opc_timeouT;
 	d->issue_command(d, c);
 }
 
@@ -2969,6 +2976,7 @@ void mmc_sync_cache(struct burn_drive *d)
 	c->opcode[1] |= 2; /* ts A70918 : Immed */
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
+	c->timeout = Libburn_mmc_sync_timeouT;
 
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -3113,6 +3121,7 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	c->page->bytes = 12;
 	c->page->sectors = 0;
 	c->dir = TO_DRIVE;
+	c->timeout = Libburn_mmc_blank_timeouT;
 	memset(c->page->data, 0, c->page->bytes);
 
 	descr[0] = 0;

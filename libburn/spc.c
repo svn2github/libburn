@@ -73,6 +73,7 @@ int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
 	c->error = 0;
 	c->retry = 0;
 	c->page = NULL;
+	c->timeout = Libburn_scsi_default_timeouT;
 	return 1;
 }
 
@@ -1655,13 +1656,14 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 			int loop_count, int flag)
 {
 	enum response outcome;
-	int done = -1, usleep_time;
+	int done = -1, usleep_time, ret;
+	char *msg = NULL;
 
 	if (burn_sg_log_scsi & 3)
 		scsi_log_err(c, fp, sense, sense_len, duration,
 				 (sense_len > 0) | (flag & 2));
 	if (sense_len <= 0)
-		return 1;
+		{done = 1; goto ex;}
 		
 	outcome = scsi_error(d, sense, sense_len);
 	if (outcome == RETRY && c->retry && !(flag & 1)) {
@@ -1671,22 +1673,36 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 				loop_count * Libburn_scsi_retry_incR;
 		if (time(NULL) + usleep_time / 1000000 - start_time >
 		    timeout_ms / 1000 + 1) {
+			BURN_ALLOC_MEM(msg, char, 320);
+			sprintf(msg,
+				"Timeout exceed (%d ms). Retry canceled.\n",
+				timeout_ms);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002018a,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 			done = 1;
-			goto ex;
+			goto err_ex;
 		}
+		if (d->cancel)
+			{done = 1; goto ex;}
 		usleep(usleep_time);
+		if (d->cancel)
+			{done = 1; goto ex;}
 		if (burn_sg_log_scsi & 3) 
 			scsi_log_cmd(c, fp, 0);
-		return 0;
+		{done = 0; goto ex;}
 	} else if (outcome == RETRY) {
 		done = 1;
 	} else if (outcome == GO_ON) {
-		return 1;
+		{done = 1; goto ex;}
 	} else if (outcome == FAIL) {
 		done = 1;
 	}
-ex:;
+err_ex:;
 	c->error = 1;
 	scsi_notify_error(d, c, sense, sense_len, 0);
+ex:;
+	BURN_FREE_MEM(msg);
 	return done;
 }

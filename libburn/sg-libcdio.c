@@ -627,6 +627,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	cdio_mmc_request_sense_t *sense_pt = NULL;
 
 	c->error = 0;
+	memset(c->sense, 0, sizeof(c->sense));
+
 	if (d->p_cdio == NULL) {
 		return 0;
 	}
@@ -660,11 +662,16 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		
 	/* retry-loop */
 	start_time = time(NULL);
-	timeout_ms = 200000;
+	if (c->timeout > 0)
+		timeout_ms = c->timeout;
+	else
+		timeout_ms = 200000;
 	for(i = 0; !done; i++) {
 
+		memset(c->sense, 0, sizeof(c->sense));
 		i_status = mmc_run_cmd(p_cdio, timeout_ms, &cdb, e_direction,
 				 	dxfer_len, c->page->data);
+
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
 		if (sense_valid >= 18) {
 			memcpy(c->sense, (unsigned char *) sense_pt,
@@ -711,6 +718,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			sense_len = 0;
 		done = scsi_eval_cmd_outcome(d, c, fp,  c->sense, sense_len,
 					0, start_time, timeout_ms, i, 2);
+		if (d->cancel)
+			done = 1;
 
 	} /* end of retry-loop */
 

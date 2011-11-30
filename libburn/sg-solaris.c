@@ -586,6 +586,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
         static FILE *fp = NULL;
 
 	c->error = 0;
+	memset(c->sense, 0, sizeof(c->sense));
+
 	if (d->fd == -1)
 		return 0;
 
@@ -599,13 +601,17 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	if (burn_sg_log_scsi & 3)
 		scsi_log_cmd(c,fp,0);
 
+	if (c->timeout > 0)
+		timeout_ms = c->timeout;
+	else
+		timeout_ms = 200000;
 	memset (&cgc, 0, sizeof (struct uscsi_cmd));
 	/* No error messages, no retries,
            do not execute with other commands, request sense data
 	*/
 	cgc.uscsi_flags = USCSI_SILENT | USCSI_DIAGNOSE | USCSI_ISOLATE
 				| USCSI_RQENABLE;
-	cgc.uscsi_timeout = 200;
+	cgc.uscsi_timeout = timeout_ms / 1000;
 	cgc.uscsi_cdb = (caddr_t) c->opcode;
 	cgc.uscsi_bufaddr = (caddr_t) c->page->data;
 	if (c->dir == TO_DRIVE) {
@@ -628,7 +634,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 	/* retry-loop */
 	start_time = time(NULL);
-	timeout_ms = 200000;
 	for(i = 0; !done; i++) {
 
 		memset(c->sense, 0, sizeof(c->sense));
@@ -666,6 +671,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			sense_len = 0;
 		done = scsi_eval_cmd_outcome(d, c, fp, c->sense, sense_len, 0,
 						start_time, timeout_ms, i, 2);
+		if (d->cancel)
+			done = 1;
 					
 	} /* end of retry-loop */
 

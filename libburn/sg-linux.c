@@ -1898,6 +1898,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 	BURN_ALLOC_MEM(msg, char, 161);
 
+	c->error = 0;
+	memset(c->sense, 0, sizeof(c->sense));
+
 	/* <<< ts A60821
 	   debug: for tracing calls which might use open drive fds */
 	sprintf(msg, "sg_issue_command   d->fd= %d  d->released= %d\n",
@@ -1950,8 +1953,10 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	s.cmdp = c->opcode;
 	s.mx_sb_len = 32;
 	s.sbp = c->sense;
-	memset(c->sense, 0, sizeof(c->sense));
-	s.timeout = 200000;
+	if (c->timeout > 0)
+		s.timeout = c->timeout;
+	else
+		s.timeout = Libburn_scsi_default_timeouT;
 	if (c->page && !no_c_page) {
 		s.dxferp = c->page->data;
 		if (c->dir == FROM_DRIVE) {
@@ -1985,6 +1990,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 	start_time = time(NULL);
 	for(i = 0; !done; i++) {
+
+		memset(c->sense, 0, sizeof(c->sense));
 		err = ioctl(d->fd, SG_IO, &s);
 
 		/* ts A61010 */
@@ -2003,6 +2010,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		}
                 done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
 				s.duration, start_time, s.timeout, i, 0);
+		if (d->cancel)
+			done = 1;
 	}
 
 	if (s.host_status != Libburn_sg_host_oK || 

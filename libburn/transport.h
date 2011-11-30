@@ -64,6 +64,7 @@ struct command
 	int error;
 	int retry;
 	struct buffer *page;
+	int timeout; /* milliseconds */
 };
 
 struct burn_scsi_inquiry_data

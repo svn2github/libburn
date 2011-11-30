@@ -518,7 +518,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002014b (SORRY,HIGH)   = Drive is already registered resp. scanned
  0x0002014c (FATAL,HIGH)   = Emulated drive caught in SCSI function
  0x0002014d (SORRY,HIGH)   = Asynchromous SCSI error
- 0x0002014f (SORRY,HIGH)   = Timeout with asynchromous SCSI command
+ 0x0002014f (SORRY,HIGH)   = Timeout with asynchronous SCSI command
  0x00020150 (DEBUG,LOW)    = Reporting asynchronous waiting time
  0x00020151 (FAILURE,HIGH) = Read attempt on write-only drive
  0x00020152 (FATAL,HIGH)   = Cannot start fifo thread
@@ -576,6 +576,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020187 (NOTE,HIGH)    = Track not marked as damaged. No action taken.
  0x00020188 (FAILURE,HIGH) = Cannot close damaged track on given media type
  0x00020189 (FATAL,HIGH)   = Drive is already grabbed by libburn
+ 0x0002018a (SORRY,HIGH)   = Timeout exceeded. Retry cancled.
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
