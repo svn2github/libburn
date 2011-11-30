@@ -2482,14 +2482,21 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer *buf = NULL;
-	int len, cp, descr_len = 0, feature_code, only_current = 1;
+	int len, cp, descr_len = 0, feature_code, only_current = 1, i;
 	int old_alloc_len, only_current_profile = 0, key, asc, ascq, ret;
+	int feature_is_current;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command *c = NULL;
 	int phys_if_std = 0;
 	char *phys_name = "";
+
+/* Enable this to get loud and repeated reports about the feature set :
+ # define Libburn_print_feature_descriptorS 1
+*/
 #ifdef Libburn_print_feature_descriptorS
 	int prf_number;
+
+	only_current = 0;
 #endif
 
 	if (*alloc_len < 8)
@@ -2615,9 +2622,6 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		d->current_is_supported_profile = 1;
 #endif
 
-/* Enable this to get loud and repeated reports about the feature set :
- #define Libburn_print_feature_descriptorS 1
-*/
 	/* ts A70127 : Interpret list of profile and feature descriptors.
  	see mmc5r03c.pdf 5.2
 	>>> Ouch: What to do if list is larger than buffer size.
@@ -2636,14 +2640,19 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	for (descr = c->page->data + 8; descr + 3 < up_to; descr += descr_len){
 		descr_len = 4 + descr[3];
 		feature_code = (descr[0] << 8) | descr[1];
-		if (only_current && !(descr[2] & 1))
+		feature_is_current = descr[2] & 1;
+		if (only_current && !feature_is_current)
 	continue;
 
 #ifdef Libburn_print_feature_descriptorS
 		fprintf(stderr,
-			"LIBBURN_EXPERIMENTAL : %s feature %4.4Xh\n",
-			descr[2] & 1 ? "+" : "-",
+			"LIBBURN_EXPERIMENTAL : %s feature %4.4Xh :",
+			(descr[2] & 1) ? "+" : "-",
 			feature_code);
+		if (feature_code != 0x00)
+			for (i = 2; i < descr_len; i++)
+				fprintf(stderr, " %2.2X", descr[i]);
+		fprintf(stderr, "\n");
 #endif /* Libburn_print_feature_descriptorS */
 
 		if (feature_code == 0x0) {
@@ -2670,9 +2679,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 			}
 
 		} else if (feature_code == 0x21) {
-			int i;
 
-			d->current_has_feat21h = (descr[2] & 1);
+			d->current_has_feat21h = feature_is_current;
 			for (i = 0; i < descr[7]; i++) {
 				if (i == 0 || descr[8 + i] == 16)
 					d->current_feat21h_link_size = 
@@ -2687,8 +2695,10 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 			}
 
 		} else if (feature_code == 0x23) {
-			d->current_feat23h_byte4 = descr[4];
-			d->current_feat23h_byte8 = descr[8];
+			if (feature_is_current) {
+				d->current_feat23h_byte4 = descr[4];
+				d->current_feat23h_byte8 = descr[8];
+			}
 #ifdef Libburn_print_feature_descriptorS
 			if (cp >= 0x41 && cp <= 0x43) 
 				fprintf(stderr,
@@ -2701,7 +2711,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 #endif /* Libburn_print_feature_descriptorS */
 
 		} else if (feature_code == 0x2F) {
-			if (descr[2] & 1)
+			if (feature_is_current)
 				d->current_feat2fh_byte4 = descr[4];
 
 #ifdef Libburn_print_feature_descriptorS
