@@ -210,6 +210,8 @@ handle_error:;
 			goto handle_error;
 
 slumber:;
+		if (d->cancel)
+	break;
 		usleep(sleep_usecs);
 	}
 	if (ret <= 0 || !(flag & 2)) {
