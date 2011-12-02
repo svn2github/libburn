@@ -4585,6 +4585,78 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 }
 
 
+/* @param flag bit0-3= source of text packs:
+                        0= CD Lead-in
+*/
+int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
+                             int num_packs, int flag)
+{
+ int i, j, from;
+ char *from_text= "";
+ unsigned char *pack;
+
+ from= flag & 15;
+ if(from == 0)
+   from_text= " from CD Lead-in";
+ printf("CD-TEXT data%s:\n", from_text);
+ for(i= 0; i < num_packs; i++) {
+   pack= text_packs + 18 * i;
+   printf("%3d :", i);
+   for(j= 0; j < 18; j++) {
+     if(j >= 4 && j <= 15 && pack[j] >= 32 && pack[j] <= 126 &&
+        pack[0] != 0x88 && pack[0] != 0x89 && pack[0] != 0x8f)
+       printf("  %c",  pack[j]);
+     else
+       printf(" %2.2x", pack[j]);
+   }
+   printf("\n");
+ }
+ return(1);
+}
+
+
+int Cdrskin_store_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
+                             int num_packs, int flag)
+{
+ int data_length, ret;
+ struct stat stbuf;
+ FILE *fp;
+ unsigned char fake_head[4];
+
+ if(stat("cdtext.dat", &stbuf) != -1) {
+   fprintf(stderr, "cdrskin: SORRY : Will not overwrite file 'cdtext.dat'\n");
+   return(0);
+ }
+ fp= fopen("cdtext.dat", "w");
+ if(fp == NULL) {
+   fprintf(stderr, "cdrskin: SORRY : Cannot open file 'cdtext.dat' for storing extracted CD-TEXT\n");
+   fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+   return(0);
+ }
+ data_length= num_packs * 18 + 2;
+ fake_head[0]= (data_length >> 8) & 0xff;
+ fake_head[1]= data_length & 0xff;
+ fake_head[2]= fake_head[3]= 0;
+ ret= fwrite(fake_head, 4, 1, fp);
+ if(ret != 1) {
+write_failure:;
+   fprintf(stderr,
+           "cdrskin: SORRY : Cannot write all data to file 'cdtext.dat'\n");
+   fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+   fclose(fp);
+   return(0);
+ }
+ ret= fwrite(text_packs, data_length - 2, 1, fp);
+ if(ret != 1)
+   goto write_failure;
+ fprintf(stderr,
+    "cdrskin: NOTE : Wrote header and %d CD-TEXT bytes to file 'cdtext.dat'\n",
+         data_length - 2);
+ fclose(fp);
+ return(1);
+}
+
+
 /** Perform -toc under control of Cdrskin_atip().
     @param flag Bitfield for control purposes:
                 bit0= do not list sessions separately (do it cdrecord style)
@@ -4593,7 +4665,7 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 int Cdrskin_toc(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
- int session_no, track_no, pmin, psec, pframe, ret;
+ int session_no, track_no, pmin, psec, pframe, ret, final_ret= 1;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions;
@@ -4602,6 +4674,8 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  char profile_name[80];
  int profile_number;
+ unsigned char *text_packs= NULL;
+ int num_packs= 0;
 
  drive= skin->drives[skin->driveno].drive;
 
@@ -4685,6 +4759,19 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    printf(" mode: -1\n");
  }
 
+ if(skin->verbosity >= Cdrskin_verbose_cmD) {
+   ret= burn_disc_get_leadin_text(drive, &text_packs, &num_packs, 0);
+   if(ret > 0 && num_packs > 0) {
+     if(skin->verbosity >= Cdrskin_verbose_debuG)
+       Cdrskin_print_text_packs(skin, text_packs, num_packs, 0);
+     ret= Cdrskin_store_text_packs(skin, text_packs, num_packs, 0);
+     free(text_packs);
+     if(ret <= 0 && ret < final_ret)
+       final_ret= ret;
+   }
+ }
+
+
 summary:
  ret= burn_disc_get_profile(drive, &profile_number, profile_name);
  if(ret <= 0)
@@ -4703,7 +4790,7 @@ summary:
    burn_disc_free(disc);
  if(s == BURN_DISC_EMPTY)
    return(0);
- return(1);
+ return(final_ret);
 cannot_read:;
  fprintf(stderr,"cdrecord_emulation: Cannot read TOC header\n");
  fprintf(stderr,"cdrecord_emulation: Cannot read TOC/PMA\n");
@@ -5120,10 +5207,10 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
 
  ret= 1;
  if(flag&1)
-   Cdrskin_toc(skin, !(flag & 2));
+   ret= Cdrskin_toc(skin, !(flag & 2));
                        /*cdrecord seems to ignore -toc errors if -atip is ok */
- if(flag & 4)
-   Cdrskin_minfo(skin, 0);
+ if(ret > 0 && (flag & 4))
+   ret= Cdrskin_minfo(skin, 0);
 
 ex:;
  if(manuf != NULL)

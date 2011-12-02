@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jul 28, 2011"
+.TH CDRSKIN 1 "Dec 02, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -766,6 +766,15 @@ The output contains all info from option -atip plus lines which begin with
 "track:", the track number, the word "lba:" and a number which gives the
 start address of the track. Addresses are counted in CD sectors which with
 SAO or TAO data tracks hold 2048 bytes each.
+.br
+If verbosity is set to level 2 (-v -v) then the CD-TEXT packs from the lead-in
+of an audio CD gets extracted and written into file 'cdtext.dat', if that file
+does not yet exist. Prepended is a 4 byte header, followed by one or more
+packs of 18 bytes each.
+.br
+Verbosity level 3 causes the CD-TEXT packs to be printed as hex numbers to
+standard output. Bytes 4 to 15 of certain pack types are printed as ASCII
+characters if they have values in the range of 32 to 126.
 .RS
 .TP
 Example. Retrieve an afio archive from track number 2:
@@ -798,7 +807,7 @@ then the track on media gets truncated to the predicted size and cdrskin exits
 with non-zero value.
 .TP
 .BI \-v
-Increment verbose level by one. Startlevel is 0 with only few messages.
+Increment verbosity level by one. Startlevel is 0 with only few messages.
 Level 1 prints progress report with long running operations and also causes
 some extra lines to be put out with info retrieval options. 
 Level 2 additionally reports about option settings derived from arguments or
