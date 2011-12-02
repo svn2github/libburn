@@ -1317,16 +1317,10 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
     It consists of three bit fields:
       bit7   = Double Bytes Character Code (0= single byte characters)
       bit4-6 = Block Number (groups text packs in language blocks)
-      bit0-3 = Character position 
-               (Still obscure. MMC-3 Appendix J says:
-                 "It is the number of character in the strings that belongs
-                  to the Text Data Field in the previous Pack. The Character
-                  Position starts from 0 to 15 and 15 indicates that the
-                  first character belongs to the one before the previous
-                  Pack. When the character code is double byte code, a set
-                  of 2 bytes in the Text Data Field is counted at one."
-               )
-    The CRC bytes are optional. Polynomial is x^16 + x^12 + x^5 + 1.
+      bit0-3 = Character position. Either the number of characters which
+               the current text inherited from the previous pack, or
+               15 if the current text started before the previous pack. 
+    The two CRC bytes are optional. Polynomial is x^16 + x^12 + x^5 + 1.
 
     @param d          The drive to query.
     @param text_packs  Will point to an allocated memory buffer with CD-TEXT.
