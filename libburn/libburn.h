@@ -1290,6 +1290,63 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
                         unsigned int *disc_id, char bar_code[9], int *app_code,
 			int *valid);
 
+/* ts B11201 */
+/** Read CD-TEXT packs from the Lead-in of an audio CD.
+    Each pack consists of 18 bytes, of which 4 are header. 12 bytes are pieces
+    of 0-terminated texts or binary data. 2 bytes hold a CRC.
+    See also MMC-3 Annex J.
+    The first byte of each pack tells the pack type (text meaning):
+      0x80 = Title
+      0x81 = Names of performers
+      0x82 = Songwriters
+      0x83 = Composers,
+      0x84 = Arrangers
+      0x85 = Messages
+      0x86 = text-and-binary: Disc Identification
+      0x87 = text-and-binary: Genre Identification
+      0x88 = binary: Table of Content information
+      0x89 = binary: Second Table of Content information
+      0x8e = UPC/EAN code of the album and ISRC code of each track
+      0x8f = binary: Size Information of the Block
+    The second byte tells the track number to which the first text piece in
+    a pack is associated. Number 0 means the whole album. Higher numbers are
+    valid for types 0x80 to 0x85, and 0x8e. There should be one text for each
+    track with these types.
+    The third byte is a sequential counter.
+    The fourth byte is the Block Number and Character Position Indicator.
+    It consists of three bit fields:
+      bit7   = Double Bytes Character Code (0= single byte characters)
+      bit4-6 = Block Number (groups text packs in language blocks)
+      bit0-3 = Character position 
+               (Still obscure. MMC-3 Appendix J says:
+                 "It is the number of character in the strings that belongs
+                  to the Text Data Field in the previous Pack. The Character
+                  Position starts from 0 to 15 and 15 indicates that the
+                  first character belongs to the one before the previous
+                  Pack. When the character code is double byte code, a set
+                  of 2 bytes in the Text Data Field is counted at one."
+               )
+    The CRC bytes are optional. Polynomial is x^16 + x^12 + x^5 + 1.
+
+    @param d          The drive to query.
+    @param text_packs  Will point to an allocated memory buffer with CD-TEXT.
+                      It will only contain text packs, and not be prepended
+                      by the TOC header of four bytes, which gets stored with
+                      file cdtext.dat by cdrecord -vv -toc. The first two of
+                      these bytes are supposed hold the number of CD-TEXT
+                      bytes + 2. The other two bytes are supposed to be 0.
+                      Dispose this buffer by free(), when no longer needed.
+    @param num_packs  Will tell the number of text packs, i.e. the number of
+                      bytes in text_packs divided by 18.
+    @param flag       Bitfield for control purposes,
+                      Unused yet. Submit 0.
+    @return           1 success, 0= no CD-TEXT found, < 0 an error occured
+    @since 1.2.0
+*/
+int burn_disc_get_leadin_text(struct burn_drive *d,
+                              unsigned char **text_packs, int *num_packs,
+                              int flag);
+
 /* ts B00924 */
 /** Read the current usage of the eventual BD Spare Area. This area gets
     reserved on BD media during formatting. During writing it is used to

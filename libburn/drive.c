@@ -3309,3 +3309,16 @@ int burn_disc_next_track_is_damaged(struct burn_drive *d, int flag)
 }
 
 
+/* ts B11201 : API */
+/* Read the CD-TEXT data from the Lead-in of an Audio CD
+*/
+int burn_disc_get_leadin_text(struct burn_drive *d,
+                              unsigned char **text_packs, int *num_packs,
+                              int flag)
+{
+	int ret;
+
+	ret = mmc_get_leadin_text(d, text_packs, num_packs, 0);
+	return ret;
+}
+

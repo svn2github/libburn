@@ -174,6 +174,7 @@ static unsigned char MMC_GET_MSINFO[] =
 static unsigned char MMC_GET_TOC[] = { 0x43, 2, 2, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_TOC_FMT0[] = { 0x43, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_GET_ATIP[] = { 0x43, 2, 4, 0, 0, 0, 0, 16, 0, 0 };
+static unsigned char MMC_GET_LEADTEXT[] = { 0x43, 2, 5, 0, 0, 0, 0, 4, 0, 0 };
 static unsigned char MMC_GET_DISC_INFO[] =
 	{ 0x51, 0, 0, 0, 0, 0, 0, 16, 0, 0 };
 static unsigned char MMC_READ_CD[] = { 0xBE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -2025,6 +2026,77 @@ void mmc_read_disc_info(struct burn_drive *d)
 		return;
 
 	/* for now there is no need to inquire the variable lenght part */
+}
+
+
+/* @param flag bit= do not allocate text_packs
+*/
+static int mmc_get_leadin_text_al(struct burn_drive *d,
+                                  unsigned char **text_packs, int *alloc_len,
+                                  int flag)
+{
+	struct buffer *buf = NULL;
+	struct command *c = NULL;
+	unsigned char *data;
+	int ret, data_length;
+
+	*text_packs = NULL;
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM(c, struct command, 1);
+
+	scsi_init_command(c, MMC_GET_LEADTEXT, sizeof(MMC_GET_LEADTEXT));
+	c->dxfer_len = *alloc_len;
+	c->opcode[7]= (c->dxfer_len >> 8) & 0xff;
+	c->opcode[8]= c->dxfer_len & 0xff;
+	c->retry = 1;
+	c->page = buf;
+	c->page->bytes = 0;
+	c->page->sectors = 0;
+
+	c->dir = FROM_DRIVE;
+	d->issue_command(d, c);
+	if (c->error)
+		{ret = 0; goto ex;}
+
+	data = c->page->data;	
+	data_length = (data[0] << 8) + data[1];
+	*alloc_len = data_length + 2;
+	if (*alloc_len >= 22 && !(flag & 1)) {
+		BURN_ALLOC_MEM(*text_packs, unsigned char, *alloc_len - 4);
+		memcpy(*text_packs, data + 4, *alloc_len - 4);
+	}
+	ret = 1;	
+ex:;
+	BURN_FREE_MEM(c);
+	BURN_FREE_MEM(buf);
+	return ret;
+}
+
+
+/* ts B11201 */
+/* Read the CD-TEXT data from the Lead-in of an Audio CD
+*/
+int mmc_get_leadin_text(struct burn_drive *d,
+                        unsigned char **text_packs, int *num_packs, int flag)
+{
+	int alloc_len = 4, ret;
+
+	*num_packs = 0;
+	if (mmc_function_spy(d, "mmc_get_leadin_text") <= 0)
+		return -1;
+	ret = mmc_get_leadin_text_al(d, text_packs, &alloc_len, 1);
+	if (ret <= 0 || alloc_len < 22)
+		return (ret > 0 ? 0 : ret);
+	ret = mmc_get_leadin_text_al(d, text_packs, &alloc_len, 0);
+	if (ret <= 0 || alloc_len < 22) {
+		if (*text_packs != NULL)
+			free(*text_packs);
+		*text_packs = NULL;
+		return (ret > 0 ? 0 : ret);
+	}
+	*num_packs = (alloc_len - 4) / 18;
+	return ret;
 }
 
 

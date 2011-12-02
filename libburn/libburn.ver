@@ -17,6 +17,7 @@ burn_disc_get_bd_spare_info;
 burn_disc_get_cd_info;
 burn_disc_get_format_descr;
 burn_disc_get_formats;
+burn_disc_get_leadin_text;
 burn_disc_get_media_id;
 burn_disc_get_msc1;
 burn_disc_get_multi_caps;

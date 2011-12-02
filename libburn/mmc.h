@@ -115,4 +115,9 @@ int mmc_get_phys_format_info(struct burn_drive *d, int *disk_category,
                         char **book_name, int *part_version, int *num_layers,
                         int *num_blocks, int flag);
 
+/* ts B11201 */
+int mmc_get_leadin_text(struct burn_drive *d,
+                        unsigned char **text_packs, int *num_packs, int flag);
+
+
 #endif /*__MMC*/
