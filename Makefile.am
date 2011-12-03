@@ -131,6 +131,11 @@ cdrskin_cdrskin_SOURCES = cdrskin/cdrskin.c cdrskin/cdrfifo.c cdrskin/cdrfifo.h 
 ## Open questions: how to compute $timestamp and express -DX="$timestamp"
 ##                 
 
+# "make clean" shall remove a few stubborn .libs directories
+# which George Danchev reported Dec 03 2011.
+# Learned from: http://www.gnu.org/software/automake/manual/automake.html#Clean
+clean-local:
+	-rm -rf cdrskin/.libs test/.libs
 
 
 ## ========================================================================= ##
