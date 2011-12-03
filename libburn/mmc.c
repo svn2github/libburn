@@ -2127,8 +2127,8 @@ void mmc_read_atip(struct burn_drive *d)
 
 	scsi_init_command(c, MMC_GET_ATIP, sizeof(MMC_GET_ATIP));
 	c->dxfer_len = alloc_len;
-	c->opcode[7]= (c->dxfer_len >> 8) & 0xff;
-	c->opcode[8]= c->dxfer_len & 0xff;
+	c->opcode[7] = (c->dxfer_len >> 8) & 0xff;
+	c->opcode[8] = c->dxfer_len & 0xff;
 	c->retry = 1;
 	c->page = buf;
 	c->page->bytes = 0;
@@ -2138,17 +2138,17 @@ void mmc_read_atip(struct burn_drive *d)
 	d->issue_command(d, c);
 	/* ts B00501 : now caring for error */
 	if (c->error) {
-		d->erasable= 0;
-		d->start_lba= 0;
-		d->end_lba= 0;
+		d->erasable = 0;
+		d->start_lba = 0;
+		d->end_lba = 0;
 		goto ex;
 	}
 
 	/* ts A61021 */
 	data = c->page->data;
-	d->erasable= !!(data[6]&64);
-	d->start_lba= burn_msf_to_lba(data[8],data[9],data[10]);
-	d->end_lba= burn_msf_to_lba(data[12],data[13],data[14]);
+	d->erasable = !!(data[6]&64);
+	d->start_lba = burn_msf_to_lba(data[8],data[9],data[10]);
+	d->end_lba = burn_msf_to_lba(data[12],data[13],data[14]);
 	if (data[6]&4) {
 		if (speed_value[(data[16]>>4)&7] > 0) {
 			d->mdata->min_write_speed = 
