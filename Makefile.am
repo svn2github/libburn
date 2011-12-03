@@ -198,6 +198,7 @@ nodist_pkgconfig_DATA = \
 man_MANS = cdrskin/cdrskin.1
 
 EXTRA_DIST = \
+	bootstrap \
 	libburn-1.pc.in \
 	version.h.in \
 	doc/comments \
