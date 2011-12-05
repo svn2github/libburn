@@ -1310,8 +1310,8 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
       0x8f = binary: Size Information of the Block
     The second byte tells the track number to which the first text piece in
     a pack is associated. Number 0 means the whole album. Higher numbers are
-    valid for types 0x80 to 0x85, and 0x8e. There should be one text for each
-    track with these types.
+    valid for types 0x80 to 0x85, and 0x8e. With these types, there should be
+    one text for the disc and one for each track.
     The third byte is a sequential counter.
     The fourth byte is the Block Number and Character Position Indicator.
     It consists of three bit fields:
@@ -1321,13 +1321,14 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
                the current text inherited from the previous pack, or
                15 if the current text started before the previous pack. 
     The two CRC bytes are optional. Polynomial is x^16 + x^12 + x^5 + 1.
+    "All bits shall be inverted."
 
     @param d          The drive to query.
     @param text_packs  Will point to an allocated memory buffer with CD-TEXT.
                       It will only contain text packs, and not be prepended
                       by the TOC header of four bytes, which gets stored with
                       file cdtext.dat by cdrecord -vv -toc. The first two of
-                      these bytes are supposed hold the number of CD-TEXT
+                      these bytes are supposed to hold the number of CD-TEXT
                       bytes + 2. The other two bytes are supposed to be 0.
                       Dispose this buffer by free(), when no longer needed.
     @param num_packs  Will tell the number of text packs, i.e. the number of
@@ -2431,6 +2432,23 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned cha
 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
 
+/* ts B11204 */
+/** Submit an array of CD-TEXT packs which shall be written to the Lead-in
+    of a SAO write run on CD.
+    @param opts        The option object to be manipulated
+    @param text_packs  Array of bytes which form CD-TEXT packs of 18 bytes
+                       each. See burn_disc_get_leadin_text() for a description
+                       of the text pack format.
+                       No header of 4 bytes must be prepended which would
+                       tell the number of pack bytes + 2.
+    @param num_packs   The number of 18 byte packs in text_packs.
+    @param flag        Bitfield for control purposes. Unused yet. Submit 0.
+    @return            1 on success, <= 0 on failure
+    @since 1.2.0
+*/
+int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
+                                    unsigned char *text_packs,
+                                    int num_packs, int flag);
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to

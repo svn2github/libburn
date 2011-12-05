@@ -945,7 +945,7 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 #ifdef Libburn_log_in_and_out_streaM
 	/* <<< ts A61031 */
 	if(tee_fd!=-1) {
-		write(tee_fd,c->page->data,len*2048);
+		write(tee_fd, c->page->data, c->page->bytes);
 	}
 #endif /* Libburn_log_in_and_out_streaM */
 

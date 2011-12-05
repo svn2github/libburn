@@ -20,6 +20,7 @@ Content:
 Guided by reading mmc-r10a.pdf , O.8 "Write a Track"
                                from http://www.t10.org/ftp/t10/drafts/mmc/
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+by reading        mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
 by reading        spc3r23.pdf  from http://www.t10.org/ftp/t10/drafts/spc3/
 by reading        libburn/*    from http://icculus.org/burn
 and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
@@ -193,7 +194,9 @@ If POINT is >= 1 and <= 99 (63h) then the descriptor is about the track of
 which POINT tells the number.
 The start address of this track can be read from PMIN, PSEC, PFRAME where
 it is encoded in MSF format:
-blocks = frames - 150, 75 frames = 1 sec , 60 sec = 1 min.
+If M is smaller than 90:  LBA = (M * 60 + S) * 75 + F - 150
+Else                   :  LBA = (M * 60 + S) * 75 + F - 450150
+
 The length of the track is given by MIN,SEC,FRAME in the same format.
 
 If POINT = A0h then the descriptor tells in PMIN the first track number of its
@@ -267,8 +270,8 @@ TNO is the track number (1 to 99).
 INDEX is a subaddress within tracks. This recipe uses only INDEX 01h within
 tracks.
 (mmc5r03c.pdf 4.2.3.5.2)
-DATA FORM is 00h for audio payload , 10h for data. (01h for audio pause is not
-used in libburn). 
+DATA FORM is 00h for audio payload, 01h for audio pause, 10h for data,
+41h for CD-TEXT in Lead-in. 
 (mmc5r03c.pdf 6.33.3.11 CD-DA Data Form, 6.33.3.12 CD-ROM mode 1 Form)
 SCMS is always 00h.
 MIN, SEC, FRAME give the MSF address where the described data entity starts.
@@ -277,8 +280,9 @@ This address must increase from entry to entry (or at least stay equal).
 
 
 The first entry describes the Lead-in. Its content is 
-(CTL|ADR ,00h,00h,01h,00h,00h,00h,00h)
+(CTL|ADR ,00h,00h, DATA FORM ,00h,00h,00h,00h)
 With the CTL|ADR for the first track: 41h for data, 01h for audio.
+DATA FORM is 41h if CD-TEXT shall be stored in Lean-in. Else it is 01h.
 
 The LBA for the first write is negative: -150. This corresponds to MSF address
 00h:00h:00h. All addresses are to be given in MSF format.
@@ -312,6 +316,12 @@ next lower possible value by the drive. So it is helpful to add a few
 kbytes/sec just in case the drive has rounding problems.
 (mmc5r03c.pdf 6.37)
 
+If CD-TEXT shall be written into Lead-in, then it is necessary to obtain the
+Start Time of Lead-in by 43h READ TOC/PMA/ATIP Format 0100b. It is an MFS
+address which varies from media manufacturer to media manufacturer.
+Minute will be >= 90. Therefore this conversion applies:
+  LBA = (M * 60 + S) * 75 + F - 450150
+
 A Write Parameters mode page 05h has to be composed and transmitted via
 55h MODE SELECT. This page describes the following parameters:
  BUFE             Buffer Underrun protection      0=off, 1=on
@@ -338,15 +348,31 @@ blocks written. I.e the Transfer Length of the previous 2Ah WRITE has to be
 added to the Logical Block Address for the next 2Ah WRITE. Only full blocks
 can be written.
 (mmc5r03c.pdf, 6.44)
-Writing begins at LBA -150 which is to be transmitted as 4-byte, Big-endian,
-two's-complement. E.g:  -150 = FFh FFh FFh 6Ah. This is the natural form found
-with about any 32-bit processor, so only the endianness has to be taken into
-respect when converting a 32-bit integer into a LBA for command 2Ah WRITE.
+Block addresses may be negative for areas before the normally readable
+data. Data representation of addresses is 4-byte, big-endian, two's-complement.
+E.g:  -150 = FFh FFh FFh 6Ah.
+This is the natural form found with about any 32-bit processor, so only
+the endianness has to be taken into respect when converting a 32-bit
+integer into a LBA for command 2Ah WRITE.
 
+If CD-TEXT shall be written into Lead-in, then writing begins at the start
+address of Lead-in, which was obtained above.
+The 18 bytes of each text pack have to be split up to 24 bytes with only the
+lowest six bits used in each byte. E.g. text pack
+   8F 00 2A     00 01 01     03 00 06     05 04 05     07 06 01     02 48 65
+becomes
+  23 30 00 2A  00 00 04 01  00 30 00 06  01 10 10 05  01 30 18 01  00 24 21 25
+4 of these 24 byte packs form a block of DATA FORM 41h. I.e. only 96 bytes
+payload per block. The whole range from Lead-in start to LBA -150 has to be
+filled with blocks of this form. Therefore it is necessary to write the
+list of given packs in repeated cycles.
+A typical Lead-in start address is -11635 = FFh FFh D2h 8Dh.
 
-At first the mandatory pause preceding the first track has to be written as
-150 blocks of the matching sector size: 2048 for data, 2352 for audio.
-By this, the LBA increases from -150 to 0.
+Writing without CD-TEXT begins at LBA -150 = FFh FFh FFh 6Ah.
+
+In both cases, the mandatory pause preceding the first track has to be
+written as 150 blocks of the matching sector size: 2048 for data,
+2352 for audio. By this, the LBA increases from -150 to 0.
 
 Next the tracks' payload is sent. For each track exactly the number of blocks
 has to be transmitted as is announced in the Cue Sheet by the difference
@@ -368,6 +394,58 @@ to media by 35h SYNCHRONIZE CACHE.
 (mmc5r03c.pdf, 6.41)
 
 No further finalization is necessary. (I.e. no 5Bh CLOSE TRACK SESSION.)
+
+
+-------------------------------------------------------------------------------
+Obtaining CD-TEXT from Lead-in :
+
+Audio CDs may contain CD-TEXT information in their Lead-in. It is gained by
+43h READ TOC/PMA/ATIP, Format 0101b. The reply consists of 4 bytes header,
+of which the first two bytes give the number of following bytes as big-endian
+16 bit number. The other two bytes are 0.
+Following are text packs of 18 bytes each.
+(mmc5r03c.pdf 6.26.3.7.1 table 495)
+
+The format of a text pack is explained in (mmc3r10g.pdf, appendix J).
+
+Each pack of a 4-bytes are header, 12 byte pieces of 0-terminated texts
+or binary data, and 2 bytes of CRC.
+
+The first byte of each pack tells the pack type (text meaning):
+  0x80 = Title
+  0x81 = Names of performers
+  0x82 = Songwriters 
+  0x83 = Composers,
+  0x84 = Arrangers 
+  0x85 = Messages
+  0x86 = text-and-binary: Disc Identification
+  0x87 = text-and-binary: Genre Identification
+  0x88 = binary: Table of Content information
+  0x89 = binary: Second Table of Content information
+  0x8e = UPC/EAN code of the album and ISRC code of each track
+  0x8f = binary: Size Information of the Block
+
+The second byte tells the track number to which the first text piece in
+a pack is associated. Number 0 means the whole album. Higher numbers are
+valid for types 0x80 to 0x85, and 0x8e. With these types, there should be
+one text for the disc and one for each track.
+
+The third byte is a sequential counter.
+
+The fourth byte is the Block Number and Character Position Indicator.
+It consists of three bit fields:
+  bit7   = Double Bytes Character Code (0= single byte characters)
+  bit4-6 = Block Number (groups text packs in language blocks)
+  bit0-3 = Character position. Either the number of characters which
+           the current text inherited from the previous pack, or
+           15 if the current text started before the previous pack.
+
+A text may span over several packs. Unused characters in a pack are used for
+the next text of the same pack type. If no text of the same type follows,
+then the remaining text bytes are set to 0.
+
+The CRC algorithm is known as CRC-16-CCITT with divisor 0x11021.
+MMC-3 says: "All bits shall be inverted."
 
 
 ----------------------------------------------------------------------------

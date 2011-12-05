@@ -368,6 +368,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
+	int leadin_form;
 	unsigned char ctladr;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
@@ -404,7 +405,11 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			"Track mode has unusable value", 0, 0);
 		goto failed;
 	}
-	ret = add_cue(sheet, ctladr | 1, 0, 0, 1, 0, runtime);
+	if (o->num_text_packs > 0)
+		leadin_form = 0x41;
+	else
+		leadin_form = 0x01;
+	ret = add_cue(sheet, ctladr | 1, 0, 0, leadin_form, 0, runtime);
 	if (ret <= 0)
 		goto failed;
 	ret = add_cue(sheet, ctladr | 1, 1, 0, form, 0, runtime);
@@ -650,11 +655,110 @@ int burn_write_leadout(struct burn_write_opts *o,
 	return 1;
 }
 
+
+int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
+		             int flag)
+{
+	int ret, i, j, si, lba, sub_cursor = 0, err, write_lba, sectors = 0;
+	unsigned char *subdata = NULL;
+	struct burn_drive *d = o->drive;
+	struct buffer *buf = NULL;
+	enum burn_drive_status was_busy;
+#ifdef Libburn_debug_cd_texT
+	unsigned char *packs;
+#endif
+
+	if (o->num_text_packs <= 0)
+		{ret = 1; goto ex;}
+
+	was_busy = d->busy;
+	d->busy = BURN_DRIVE_WRITING_LEADIN;
+
+#ifdef Libburn_debug_cd_texT
+	packs = o->text_packs;
+	fprintf(stderr,
+		"libburn_DEBUG: 8 bit CD-TEXT packs to be transmitted:\n"); 
+	for (i = 0; i < 18 * o->num_text_packs; i += 18) {
+		fprintf(stderr, "%4d :", i / 18);
+		for (j = 0; j < 18; j++) {
+			if (j >= 4 && j <= 15 && packs[i + j] >= 32 &&
+			    packs[i + j] <= 126 && packs[i] != 0x88 &&
+			    packs[i] != 0x89 && packs[i] != 0x8f)
+				fprintf(stderr, "  %c", packs[i + j]);
+			else
+				fprintf(stderr, " %2.2X", packs[i + j]);
+		}
+		fprintf(stderr, "\n");
+	}
+#endif /* Libburn_debug_cd_texT */
+
+	/* Chop from 8 bit text pack to 6 bit subchannel */
+	BURN_ALLOC_MEM(subdata, unsigned char, o->num_text_packs * 24);
+	for (i = 0; i < 18 * o->num_text_packs; i += 3) {
+		si = i / 3 * 4;
+		subdata[si + 0] =  (o->text_packs[i + 0] >> 2) & 0x3f;
+		subdata[si + 1] =  (o->text_packs[i + 0] << 4) & 0x30;
+		subdata[si + 1] |= (o->text_packs[i + 1] >> 4) & 0x0f;
+		subdata[si + 2] =  (o->text_packs[i + 1] << 2) & 0x3c;
+		subdata[si + 2] |= (o->text_packs[i + 2] >> 6) & 0x03;
+		subdata[si + 3] =  (o->text_packs[i + 2] >> 0) & 0x3f;
+	}
+
+	/* Start at Lead-in address of ATIP and write blocks up to -150 */
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	write_lba = d->start_lba;
+	for (lba = d->start_lba; lba < -150; lba++) {
+		/* Collect subdata in buf */
+		for (j = 0; j < 4; j++) {
+			memcpy(buf->data + buf->bytes,
+				subdata + sub_cursor * 24, 24);
+			sub_cursor = (sub_cursor + 1) % o->num_text_packs;
+			buf->bytes += 24;
+		}
+		buf->sectors++;
+		sectors++;
+
+		/* When full or last sector : perform WRITE */
+		if (buf->bytes + 96 >= 32768 || lba == -151) {
+
+#ifdef Libburn_debug_cd_texT
+			fprintf(stderr,
+			    "libburn_DEBUG: 6 bit data to be transmitted:\n"); 
+			for (i = 0; i < buf->bytes; i += 24) {
+				fprintf(stderr, "%4d :", i / 24);
+				for (j = 0; j < 24; j++)
+					fprintf(stderr, " %2.2X",
+						buf->data[i + j]);
+				fprintf(stderr, "\n");
+			}
+#endif /* Libburn_debug_cd_texT */
+	
+			err = d->write(d, write_lba, buf);
+			if (err == BE_CANCELLED)
+				{ ret = 0; goto ex; }
+			write_lba += sectors;
+			sectors = buf->sectors = buf->bytes = 0;
+		}
+	}
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(subdata);
+	BURN_FREE_MEM(buf);
+	d->busy = was_busy;
+	return ret;
+}
+
+
 int burn_write_session(struct burn_write_opts *o, struct burn_session *s)
 {
 	struct burn_drive *d = o->drive;
 	int i, ret;
 
+	if (o->write_type == BURN_WRITE_SAO) {
+		ret = burn_write_leadin_cdtext(o, s, 0);
+		if (ret <= 0)
+			goto ex;
+	}
 	d->rlba = 0;
 	for (i = 0; i < s->tracks; i++) {
 		if (!burn_write_track(o, s, i))
@@ -1001,6 +1105,10 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	reason_pt= reasons + strlen(reasons);
 	if (d->status == BURN_DISC_UNSUITABLE)
 		goto unsuitable_profile;
+	if (d->current_profile != 0x09 && d->current_profile != 0x0a)
+		if (o->num_text_packs > 0)
+			strcat(reasons,
+				"CD-TEXT supported only with write CD media, ");
 	if (d->drive_role == 2 || d->drive_role == 5 ||
 		d->current_profile == 0x1a || d->current_profile == 0x12 ||
 		d->current_profile == 0x43) { 
@@ -1014,6 +1122,14 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 			strcat(reasons, "unsuitable track mode found, ");
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
+		if (o->num_text_packs > 0) {
+			if (o->write_type != BURN_WRITE_SAO)
+				strcat(reasons,
+				"CD-TEXT supported only with write type SAO, ");
+			if (d->start_lba == -2000000000)
+				strcat(reasons,
+				"No Lead-in start address known with CD-TEXT, ");
+		}
 	} else if (d->current_profile == 0x13) {
 		/* DVD-RW Restricted Overwrite */
 		if (o->start_byte >= 0 && (o->start_byte % 32768))

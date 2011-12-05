@@ -69,6 +69,9 @@ struct burn_write_opts
 	   Values 0 or >= 32 counted in 2 KB blocks. */
 	int stdio_fsync_size;
 
+	/* ts B11203 : CD-TEXT */
+	unsigned char *text_packs;
+	int num_text_packs;
 
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;

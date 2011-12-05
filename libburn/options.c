@@ -12,6 +12,7 @@
 #include "options.h"
 #include "drive.h"
 #include "transport.h"
+#include "init.h"
 
 /* ts A61007 */
 /* #include <a ssert.h> */
@@ -51,6 +52,8 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->do_stream_recording = 0;
 	opts->dvd_obs_override = 0;
 	opts->stdio_fsync_size = Libburn_stdio_fsync_limiT;
+	opts->text_packs = NULL;
+	opts->num_text_packs = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -60,8 +63,11 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 
 void burn_write_opts_free(struct burn_write_opts *opts)
 {
-	if (--opts->refcount <= 0)
-		free(opts);
+	if (--opts->refcount > 0)
+		return;
+	if (opts->text_packs != NULL)
+		free(opts->text_packs);
+	free(opts);
 }
 
 struct burn_read_opts *burn_read_opts_new(struct burn_drive *drive)
@@ -189,6 +195,41 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi)
 }
 
 
+/* ts B11204 */
+int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
+                                    unsigned char *text_packs,
+                                    int num_packs, int flag)
+{
+	int ret;
+	unsigned char *pack_buffer = NULL;
+
+	if (num_packs > 3640) {
+		/* READ TOC/PMA/ATIP can at most return 3640.7 packs */
+		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
+				0x0002018b,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"Too many CD-TEXT packs (> 3640)", 0, 0);
+		ret= 0; goto ex;
+	}
+
+	if (num_packs > 0)
+		BURN_ALLOC_MEM(pack_buffer, unsigned char, num_packs * 18);
+	
+	if (opts->text_packs != NULL) {
+		free(opts->text_packs);
+		opts->text_packs = NULL;
+	}
+	if (num_packs > 0) {
+		memcpy(pack_buffer, text_packs, num_packs * 18);
+		opts->text_packs = pack_buffer;
+	}
+	opts->num_text_packs = num_packs;
+	ret = 1;
+ex:;
+	return ret;
+}
+
+
 /* ts A61222 */
 void burn_write_opts_set_start_byte(struct burn_write_opts *opts, off_t value)
 {
@@ -296,6 +337,10 @@ do_sao:;
 	{wt = BURN_WRITE_SAO; goto ex;}
 no_sao:;
 try_tao:;
+	if (opts->num_text_packs > 0) {
+		strcat(reasons, "CD-TEXT: write type SAO required, ");
+		{wt = BURN_WRITE_NONE; goto ex;}
+	}
 	if ((flag & 1) && opts->write_type != BURN_WRITE_TAO)
 		goto try_raw;
 	reason_pt = reasons + strlen(reasons);
