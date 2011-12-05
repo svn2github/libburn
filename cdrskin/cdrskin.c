@@ -2891,11 +2891,13 @@ see_cdrskin_eng_html:;
 
      fprintf(stderr,"\ttsize=#\t\tannounces exact size of source data\n");
      fprintf(stderr,"\tpadsize=#\tAmount of padding\n");
+     fprintf(stderr,
+             "\ttextfile=name\tSet the file with CD-Text data to 'name'\n");
      fprintf(stderr,"\t-audio\t\tSubsequent tracks are CD-DA audio tracks\n");
      fprintf(stderr,
             "\t-data\t\tSubsequent tracks are CD-ROM data mode 1 (default)\n");
      fprintf(stderr,
-            "\t-xa1\t\tSubsequent tracks are CD-ROM XA mode 2 form 1 - 2056 bytes\n");
+     "\t-xa1\t\tSubsequent tracks are CD-ROM XA mode 2 form 1 - 2056 bytes\n");
      fprintf(stderr,
            "\t-isosize\tUse iso9660 file system size for next data track\n");
      fprintf(stderr,"\t-pad\t\tpadsize=30k\n");
@@ -3310,6 +3312,10 @@ struct CdrskiN {
  int track_type_by_default; /* 0= explicit, 1=not set, 2=by file extension */
  int swap_audio_bytes;
 
+ /** CD-TEXT */
+ unsigned char *text_packs;
+ int num_text_packs;
+
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
  int track_counter;
@@ -3461,6 +3467,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->fill_up_media= 0;
  o->track_type= BURN_MODE1;
  o->swap_audio_bytes= 1;   /* cdrecord default is big-endian (msb_first) */
+ o->text_packs= NULL;
+ o->num_text_packs= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
    o->tracklist[i]= NULL;
@@ -3527,6 +3535,8 @@ int Cdrskin_destroy(struct CdrskiN **o, int flag)
  Cdradrtrn_destroy(&(skin->adr_trn),0);
 #endif /* ! Cdrskin_extra_leaN */
 
+ if(skin->text_packs != NULL)
+   free(skin->text_packs);
  Cdrpreskin_destroy(&(skin->preskin),0);
  if(skin->drives!=NULL)
    burn_drive_info_free(skin->drives);
@@ -4601,7 +4611,7 @@ int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
  printf("CD-TEXT data%s:\n", from_text);
  for(i= 0; i < num_packs; i++) {
    pack= text_packs + 18 * i;
-   printf("%3d :", i);
+   printf("%4d :", i);
    for(j= 0; j < 18; j++) {
      if(j >= 4 && j <= 15 && pack[j] >= 32 && pack[j] <= 126 &&
         pack[0] != 0x88 && pack[0] != 0x89 && pack[0] != 0x8f)
@@ -4768,6 +4778,10 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
      free(text_packs);
      if(ret <= 0 && ret < final_ret)
        final_ret= ret;
+     if(ret > 0)
+       printf("CD-Text len: %d\n", num_packs * 18 + 4);
+   } else {
+     fprintf(stderr, "cdrskin: No CD-Text or CD-Text unaware drive.\n");
    }
  }
 
@@ -5294,6 +5308,81 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  }
  ret= 1;
 ex:;
+ return(ret);
+}
+
+
+int Cdrskin_read_textfile(struct CdrskiN *skin, char *path, int flag)
+{
+ int ret= 0, num_packs= 0, residue= 0;
+ struct stat stbuf;
+ FILE *fp= NULL;
+ unsigned char *text_packs = NULL, head[4];
+
+ if(stat(path, &stbuf) == -1) {
+cannot_open:;
+   fprintf(stderr, "cdrskin: SORRY : Cannot open textfile='%s'\n", path);
+   fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+   ret= 0; goto ex;
+ }
+ if(!S_ISREG(stbuf.st_mode))
+   goto not_a_textfile;
+ residue= (stbuf.st_size % 18);
+ if(residue != 4 && residue != 0) {
+not_a_textfile:;
+   fprintf(stderr,
+     "cdrskin: SORRY : File is not of usable type or content: textfile='%s'\n",
+     path);
+   ret= 0; goto ex;
+ }
+ if(stbuf.st_size < 18)
+   goto not_a_textfile;
+
+ fp= fopen(path, "rb");
+ if(fp == NULL)
+   goto cannot_open;
+ if(residue == 4) {
+   ret= fread(head, 4, 1, fp);
+   if(ret != 1) {
+cannot_read:;
+     fprintf(stderr,
+          "cdrskin: SORRY : Cannot read all bytes from textfile='%s'\n", path);
+     fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     ret= 0; goto ex;
+   }
+   if(head[0] * 256 + head[1] != stbuf.st_size - 2)
+     goto not_a_textfile;
+ }
+ num_packs= (stbuf.st_size - residue) / 18;
+ if(num_packs > 3640) {
+   /* READ TOC/PMA/ATIP can at most return 65534 bytes = 3640.78 packs */
+   fprintf(stderr,
+     "cdrskin: SORRY : File too large (max. 65524 bytes): textfile='%s'\n",
+     path);
+     goto not_a_textfile;
+ }
+
+ text_packs= calloc(num_packs, 18);
+ if(text_packs == NULL) {
+   fprintf(stderr,
+     "cdrskin: FATAL : Cannot allocate %d bytes of memory for CD-TEXT\n",
+     num_packs * 18);
+   ret= -1; goto ex;
+ }
+ ret= fread(text_packs, num_packs * 18, 1, fp);
+ if(ret != 1)
+   goto cannot_read;
+
+ if(skin->text_packs != NULL)
+   free(skin->text_packs);
+ skin->text_packs= text_packs;
+ skin->num_text_packs= num_packs;
+ ret= 1;
+ex:;
+ if(ret <= 0 && text_packs != NULL)
+   free(text_packs);
+ if(fp != NULL)
+   fclose(fp);
  return(ret);
 }
 
@@ -6525,6 +6614,12 @@ burn_failed:;
    burn_write_opts_set_simulate(o, 1);
  }
  burn_write_opts_set_underrun_proof(o,skin->burnfree);
+ if(skin->num_text_packs > 0) {
+   ret= burn_write_opts_set_leadin_text(o, skin->text_packs,
+                                        skin->num_text_packs, 0);
+   if(ret <= 0)
+     goto burn_failed;
+ }
  ret= Cdrskin_activate_write_mode(skin,o,disc,0);
  if(ret<=0)
    goto burn_failed;
@@ -6987,7 +7082,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  /* cdrecord 2.01 options which are not scheduled for implementation, yet */
  static char ignored_partial_options[][41]= {
    "timeout=", "debug=", "kdebug=", "kd=", "driver=", "ts=",
-   "pregap=", "defpregap=", "mcn=", "isrc=", "index=", "textfile=",
+   "pregap=", "defpregap=", "mcn=", "isrc=", "index=",
    "pktsize=", "cuefile=",
    ""
  };
@@ -7749,6 +7844,16 @@ set_stream_recording:;
    } else if(strcmp(argv[i],"--tell_media_space")==0) {
      skin->tell_media_space= 1;
      skin->preskin->demands_cdrskin_caps= 1;
+
+   } else if(strncmp(argv[i],"-textfile=", 10)==0) {
+     value_pt= argv[i] + 10;
+     goto set_textfile;
+   } else if(strncmp(argv[i],"textfile=", 9)==0) {
+     value_pt= argv[i] + 9;
+set_textfile:;
+     ret= Cdrskin_read_textfile(skin, value_pt, 0);
+     if(ret <= 0)
+       return(ret);
 
    } else if(strcmp(argv[i],"-toc")==0) {
      skin->do_atip= 2;
