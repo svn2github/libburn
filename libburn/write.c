@@ -663,7 +663,7 @@ int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
 	unsigned char *subdata = NULL;
 	struct burn_drive *d = o->drive;
 	struct buffer *buf = NULL;
-	enum burn_drive_status was_busy;
+	enum burn_drive_status was_busy = o->drive->busy;
 #ifdef Libburn_debug_cd_texT
 	unsigned char *packs;
 #endif
@@ -671,7 +671,6 @@ int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
 	if (o->num_text_packs <= 0)
 		{ret = 1; goto ex;}
 
-	was_busy = d->busy;
 	d->busy = BURN_DRIVE_WRITING_LEADIN;
 
 #ifdef Libburn_debug_cd_texT
