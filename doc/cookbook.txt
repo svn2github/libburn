@@ -4,7 +4,7 @@ Note: This is about how libburn operates optical drives. Not about how to
       operate libburn. The libburn API is described in libburn/libburn.h
 -------------------------------------------------------------------------------
 
-libburnia-project.org Optical Media Rotisserie Recipes as of January 2010
+libburnia-project.org Optical Media Rotisserie Recipes as of December 2011
 
 Content:
 - TAO Multi-Session CD Cookbook (CD-R, CD-RW)
@@ -20,7 +20,6 @@ Content:
 Guided by reading mmc-r10a.pdf , O.8 "Write a Track"
                                from http://www.t10.org/ftp/t10/drafts/mmc/
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
-by reading        mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
 by reading        spc3r23.pdf  from http://www.t10.org/ftp/t10/drafts/spc3/
 by reading        libburn/*    from http://icculus.org/burn
 and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
@@ -225,7 +224,11 @@ sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
 -------------------------------------------------------------------------------
 Guided by reading libburn/*    from http://icculus.org/burn
 backed by reading mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
-and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S
+by reading        mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
+by reading source of libcdio   from http://www.gnu.org/s/libcdio
+by reading        tech3264.pdf from http://tech.ebu.ch/docs/tech/
+and by experiments with drives NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S,
+                               Optiarc BD RW BD-5300S,
 which used in part code from http://icculus.org/burn.
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
@@ -406,10 +409,12 @@ of which the first two bytes give the number of following bytes as big-endian
 Following are text packs of 18 bytes each.
 (mmc5r03c.pdf 6.26.3.7.1 table 495)
 
-The format of a text pack is explained in (mmc3r10g.pdf, appendix J).
+-------------------------------------------------------------------------------
+Format of CD-TEXT packs:
 
-Each pack of a 4-bytes are header, 12 byte pieces of 0-terminated texts
-or binary data, and 2 bytes of CRC.
+The format of a text pack is explained in (mmc3r10g.pdf, appendix J).
+Each pack consists of a 4-bytes are header, 12 byte of payload, and 2 bytes
+of CRC.
 
 The first byte of each pack tells the pack type (text meaning):
   0x80 = Title
@@ -422,6 +427,7 @@ The first byte of each pack tells the pack type (text meaning):
   0x87 = text-and-binary: Genre Identification
   0x88 = binary: Table of Content information
   0x89 = binary: Second Table of Content information
+  (0x8a to 0x8c are reserved. 0x8d is "Reserved for content provider only".)
   0x8e = UPC/EAN code of the album and ISRC code of each track
   0x8f = binary: Size Information of the Block
 
@@ -440,13 +446,171 @@ It consists of three bit fields:
            the current text inherited from the previous pack, or
            15 if the current text started before the previous pack.
 
+The 12 payload bytes contain pieces of 0-terminated texts or binary data.
 A text may span over several packs. Unused characters in a pack are used for
 the next text of the same pack type. If no text of the same type follows,
 then the remaining text bytes are set to 0.
 
-The CRC algorithm is known as CRC-16-CCITT with divisor 0x11021.
+The CRC algorithm uses divisor 0x11021 and is known as CRC-16-CCITT.
 MMC-3 says: "All bits shall be inverted."
 
+
+The known information about the meaning of the pack payload is incomplete.
+
+Pack types 0x80 to 0x85 and 0x8e contain 0-terminated cleartext.
+
+Type 0x87 seems to contain 2 binary bytes and 10 bytes of 0-terminated
+cleartext.
+
+Type 0x8f summarizes the whole list of text packs. (Learned from libcdio.)
+The payload bytes of three packs form a 36 byte record.
+    Byte :
+       0 : Character code:
+           0x00 = ISO-8859-1
+           0x01 = 7 bit ASCII
+           0x80 = Kanji (japanese)
+           0x81 = Korean
+           0x82 = Mandarin (chinese)
+           0xff = libcdio source states: "everything else"
+       1 : Number of first track
+       2 : Number of last track
+       3 : libcdio source states: "cd-text information copyright byte"
+  4 - 19 : Pack count of the various types 0x80 to 0x8f.
+           Byte number N tells the count of packs of type 0x80 + (N - 4).
+           I.e. the first byte in this field of 16 counts packs of type 0x80.
+ 20 - 27 : Highest sequence byte number of blocks 0 to 7.
+ 28 - 36 : Language code for blocks 0 to 7 (tech3264.pdf appendix 3)
+           0x00 = Unknown
+           0x01 = Albanian
+           0x02 = Breton
+           0x03 = Catalan
+           0x04 = Croatian
+           0x05 = Welsh
+           0x06 = Czech
+           0x07 = Danish
+           0x08 = German
+           0x09 = English
+           0x0a = Spanish
+           0x0b = Esperanto
+           0x0c = Estonian
+           0x0d = Basque
+           0x0e = Faroese
+           0x0f = French 
+           0x10 = Frisian
+           0x11 = Irish
+           0x12 = Gaelic
+           0x13 = Galician
+           0x14 = Icelandic
+           0x15 = Italian
+           0x16 = Lappish
+           0x17 = Latin
+           0x18 = Latvian
+           0x19 = Luxembourgian
+           0x1a = Lithuanian
+           0x1b = Hungarian
+           0x1c = Maltese        
+           0x1e = Norwegian
+           0x1d = Dutch
+           0x1f = Occitan
+           0x20 = Polish
+           0x21 = Portuguese
+           0x22 = Romanian
+           0x23 = Romansh
+           0x24 = Serbian
+           0x25 = Slovak
+           0x26 = Slovenian
+           0x27 = Finnish
+           0x28 = Swedish
+           0x29 = Turkish
+           0x2a = Flemish
+           0x2b = Wallon
+           0x45 = Zuku
+           0x46 = Vietnamese
+           0x47 = Uzbek
+           0x48 = Urdu
+           0x49 = Ukrainian
+           0x4a = Thai
+           0x4b = Telugu
+           0x4c = Tatar
+           0x4d = Tamil
+           0x4e = Tadzhik
+           0x4f = Swahili
+           0x50 = Sranan Tongo
+           0x51 = Somali
+           0x52 = Sinhalese
+           0x53 = Shona
+           0x54 = Serbo-croat
+           0x55 = Ruthenian
+           0x56 = Russian
+           0x57 = Quechua
+           0x58 = Pushtu
+           0x59 = Punjabi
+           0x5a = Persian
+           0x5b = Papamiento
+           0x5c = Oriya
+           0x5d = Nepali
+           0x5e = Ndebele
+           0x60 = Moldavian
+           0x61 = Malaysian
+           0x62 = Malagasay
+           0x63 = Macedonian
+           0x64 = Laotian
+           0x65 = Korean
+           0x66 = Khmer
+           0x67 = Kazakh
+           0x68 = Kannada
+           0x69 = Japanese
+           0x6a = Indonesian
+           0x6b = Hindi
+           0x6c = Hebrew
+           0x6d = Hausa
+           0x6e = Gurani
+           0x6f = Gujurati
+           0x70 = Greek
+           0x71 = Georgian
+           0x72 = Fulani
+           0x73 = Dari
+           0x74 = Churash
+           0x75 = Chines
+           0x76 = Burmese
+           0x77 = Bulgarian
+           0x78 = Bengali
+           0x79 = Bielorussian
+           0x7a = Bambora
+           0x7b = Azerbaijani
+           0x7c = Assamese
+           0x7d = Armenian
+           0x7e = Arabic
+           0x7e = Amharic
+
+E.g. these three packs
+  42 : 8f 00 2a 00 01 01 03 00 06 05 04 05 07 06 01 02 48 65
+  43 : 8f 01 2b 00 00 00 00 00 00 00 06 03 2c 00 00 00 c0 20
+  44 : 8f 02 2c 00 00 00 00 00 09 00 00 00 00 00 00 00 11 45
+decode to
+Byte :Value Meaning
+   0 : 01 = ASCII 7-bit
+   1 : 01 = first track is 1
+   2 : 03 = last track is 3
+   3 : 00 = copyright (>>> what does this mean ?)
+   4 : 06 = 6 packs of type 0x80
+   5 : 05 = 5 packs of type 0x81
+   6 : 04 = 4 packs of type 0x82
+   7 : 05 = 5 packs of type 0x83
+   8 : 07 = 7 packs of type 0x84
+   9 : 06 = 6 packs of type 0x85
+  10 : 01 = 1 pack  of type 0x86
+  11 : 02 = 2 packs of type 0x87
+  12 : 00 = 0 packs of type 0x88
+  13 : 00 = 0 packs of type 0x89
+  14 : 00 00 00 00 = 0 packs of types 0x8a to 0x8d
+  18 : 06 = 6 packs of type 0x8e
+  19 : 03 = 3 packs of type 0x8f
+  20 : 2c = last sequence for block 0
+            This matches the sequence number of the last text pack (0x2c = 44)
+  21 : 00 00 00 00 00 00 00 = last sequence for block 1..7 (none)
+  28 : 09 = language code for block 0: English
+  29 : 00 00 00 00 00 00 00 = language code for block 1..7 (none)
 
 ----------------------------------------------------------------------------
 What is known about mixed mode sessions :
