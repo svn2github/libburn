@@ -68,8 +68,7 @@ libburn_libburn_la_SOURCES = \
 	libburn/util.c \
 	libburn/util.h \
 	libburn/write.c \
-	libburn/write.h \
-	version.h
+	libburn/write.h
 
 ##	libburn/sg-@ARCH@.c \
 
