@@ -406,12 +406,12 @@ Following are text packs of 18 bytes each.
 (mmc5r03c.pdf 6.26.3.7.1 table 495)
 
 -------------------------------------------------------------------------------
-Guided by Leon Merten Lohse      via  libcdio-devel@gnu.org
-by reading          mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
-by reading          tech3264.pdf from http://tech.ebu.ch/docs/tech/
-by studying output of cdtext.zip from http://www.sonydadc.com/file/
-by reading source of     libcdio from http://www.gnu.org/s/libcdio
-which quotes source of  cdrecord from ftp://ftp.berlios.de/pub/cdrecord/alpha
+Guided by Leon Merten Lohse       via  libcdio-devel@gnu.org
+by reading           mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
+by reading           tech3264.pdf from http://tech.ebu.ch/docs/tech/
+by docs and results of cdtext.zip from http://www.sonydadc.com/file/
+by reading source of      libcdio from http://www.gnu.org/s/libcdio
+which quotes source of   cdrecord from ftp://ftp.berlios.de/pub/cdrecord/alpha
 
 Format of CD-TEXT packs:
 
@@ -431,6 +431,7 @@ The first byte of each pack tells the pack type (text meaning):
   0x88 = binary: Table of Content information
   0x89 = binary: Second Table of Content information
   (0x8a to 0x8c are reserved. 0x8d is "Reserved for content provider only".)
+  0x8d = Closed Information
   0x8e = UPC/EAN code of the album and ISRC code of each track
   0x8f = binary: Size Information of the Block
 
@@ -470,8 +471,12 @@ as it is limited to 64 kB - 2.)
 The known information about the meaning of the pack payload is incomplete.
 
 Pack types 0x80 to 0x85 and 0x8e contain 0-terminated cleartext.
+The meaning of 0x80 to 0x85 should be clear by above list.
+More info to 0x8e is given below.
 
-Unclear yet:   0x86 = Disc Identification
+Pack type 0x86 (Disc Identification) is documented by Sony as "Catalog Number:
+(use ASCII Code) Catalog Number of the album". So it is not really binary
+but might be non-printable.
 
 Type 0x87 seems to contain 2 binary bytes and 10 bytes of 0-terminated
 cleartext.
@@ -507,12 +512,19 @@ Specification page 21").
   0x0019 = "Sound Effects"
   0x001a = "Spoken Word"
   0x001b = "World Music"
-The meaning of the cleartext part is yet unclear. Probably it shall give
-a more specific description of the genre.
+Sony documents the cleatext part as "Genre information that would supplement
+the Genre Code, such as 'USA Rock music in the 60s'".
 
 Unclear yet:   0x88 = Table of Content information
 
 Unclear yet:   0x89 = Second Table of Content information 
+
+Type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
+Any information can be recorded on disc as memorandum. Information in this
+field will not be read by CD TEXT players available to the public."
+
+Type 0x8e is documented by Sony as "UPC/EAN Code (POS Code) of the album.
+This field typically consists of 13 characters."
 
 Type 0x8f summarizes the whole list of text packs of a block.
 So there is one group of three 0x8f packs per block.
