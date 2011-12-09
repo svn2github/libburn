@@ -5317,7 +5317,7 @@ int Cdrskin_read_textfile(struct CdrskiN *skin, char *path, int flag)
  int ret= 0, num_packs= 0, residue= 0;
  struct stat stbuf;
  FILE *fp= NULL;
- unsigned char *text_packs = NULL, head[4];
+ unsigned char *text_packs = NULL, head[4], tail[1];
 
  if(stat(path, &stbuf) == -1) {
 cannot_open:;
@@ -5328,7 +5328,7 @@ cannot_open:;
  if(!S_ISREG(stbuf.st_mode))
    goto not_a_textfile;
  residue= (stbuf.st_size % 18);
- if(residue != 4 && residue != 0) {
+ if(residue != 4 && residue != 0 && residue != 1) {
 not_a_textfile:;
    fprintf(stderr,
      "cdrskin: SORRY : File is not of usable type or content: textfile='%s'\n",
@@ -5341,7 +5341,7 @@ not_a_textfile:;
  fp= fopen(path, "rb");
  if(fp == NULL)
    goto cannot_open;
- if(residue == 4) {
+ if(residue == 4) { /* This is for files from cdrecord -vv -toc */
    ret= fread(head, 4, 1, fp);
    if(ret != 1) {
 cannot_read:;
@@ -5354,8 +5354,8 @@ cannot_read:;
      goto not_a_textfile;
  }
  num_packs= (stbuf.st_size - residue) / 18;
- if(num_packs > 3640) {
-   /* READ TOC/PMA/ATIP can at most return 65534 bytes = 3640.78 packs */
+ if(num_packs > 2048) {
+   /* Each block can have 256 text packs. There are 8 blocks at most. */
    fprintf(stderr,
      "cdrskin: SORRY : File too large (max. 65524 bytes): textfile='%s'\n",
      path);
@@ -5372,6 +5372,13 @@ cannot_read:;
  ret= fread(text_packs, num_packs * 18, 1, fp);
  if(ret != 1)
    goto cannot_read;
+ if(residue == 1) { /* This is for Sony CDTEXT files */
+   ret= fread(tail, 1, 1, fp);
+   if(ret != 1)
+     goto cannot_read;
+   if(tail[0] != 0)
+     goto not_a_textfile;
+ }
 
  if(skin->text_packs != NULL)
    free(skin->text_packs);
