@@ -416,8 +416,7 @@ which quotes source of   cdrecord from ftp://ftp.berlios.de/pub/cdrecord/alpha
 Format of CD-TEXT packs:
 
 The format of a text pack is explained in (mmc3r10g.pdf, Annex J).
-Each pack consists of a 4-bytes are header, 12 byte of payload, and 2 bytes
-of CRC.
+Each pack consists of a 4-bytes header, 12 byte of payload, and 2 bytes of CRC.
 
 The first byte of each pack tells the pack type (text meaning):
   0x80 = Title
@@ -474,12 +473,17 @@ The known information about the meaning of the pack payload is incomplete.
 Pack types 0x80 to 0x85 and 0x8e contain 0-terminated cleartext.
 The meaning of 0x80 to 0x85 should be clear by above list.
 More info to 0x8e is given below.
+If a text of a track repeats identically for the next track, then it
+may be represented by a TAB character (ASCII 9) for single byte texts,
+resp. two TAB characters for double byte texts.
+(This should be used because 256 * 12 bytes is few space for 99 tracks.)
 
 Pack type 0x86 (Disc Identification) is documented by Sony as "Catalog Number:
 (use ASCII Code) Catalog Number of the album". So it is not really binary
 but might be non-printable.
 
-Type 0x87 contains 2 binary bytes and 10 or 12 bytes of 0-terminated cleartext.
+Pack type 0x87 contains 2 binary bytes and 10 or 12 bytes of 0-terminated
+cleartext.
 The two binary bytes may or may not be repeated at the start of the follow-up
 packs of type 0x87. They form a big-endian index to the following list.
   0x0000 = "Not Used"
@@ -524,8 +528,8 @@ The first pack records in its payload bytes:
    4 : PSEC of POINT A2 = Start position of Lead-Out
    5 : PFRAME of POINT A2 = Start position of Lead-Out
    6 to 11 : unknown, 0 in Sony example
-The following packs record in groups of 3 bytes PMIN, PSEC, PFRAME of the POINT
-of the lowest track number to the POINT of the highest track number (max 63h).
+The following packs record PMIN, PSEC, PFRAME of the POINTs between the
+lowest track number (min 01h) and the highest track number (max 63h).
 The payload of the last pack is padded by 0s.
 The Sony .TOC example:
   A0 01
@@ -561,14 +565,14 @@ The track numbers are stored in the track number byte of the packs. The two
 time points are stored in byte 6 to 11 of the payload. Byte 0 of the payload
 seems to be a sequential counter. Byte 1 always 4 ? Byte 2 to 5 always 0 ?
 
-Type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
+Pack type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
 Any information can be recorded on disc as memorandum. Information in this
 field will not be read by CD TEXT players available to the public."
 
-Type 0x8e is documented by Sony as "UPC/EAN Code (POS Code) of the album.
+Pack type 0x8e is documented by Sony as "UPC/EAN Code (POS Code) of the album.
 This field typically consists of 13 characters."
 
-Type 0x8f summarizes the whole list of text packs of a block.
+Pack type 0x8f summarizes the whole list of text packs of a block.
 So there is one group of three 0x8f packs per block.
 Nevertheless each 0x8f group tells the highest sequence number and the
 language code of all blocks.
