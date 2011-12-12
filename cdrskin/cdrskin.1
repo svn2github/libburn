@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 05, 2011"
+.TH CDRSKIN 1 "Dec 12, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -773,34 +773,21 @@ and shown in human readable form by -vvv -toc.
 The header, if present, must tell the file size minus 2, encoded as big-endian
 16 bit word. The other two bytes must be 0.
 .br
+If there is no 4-byte header, then a trailing 0-byte, as of Sony specification,
+is tolerated and ignored.
+.br
 A text pack consists of a pack type byte, a track number byte, a counter byte,
 a Block Number and Character Indicator byte, 12 text characters or data bytes,
-two optional CRC bytes.
+two optional CRC bytes. For details see libburn documentation file
+doc/cdtext.txt.
 .br
-Pack types are: 0x80=Title, 0x81=Performers, 0x82=Songwriters,
-0x83=Composers, 0x84=Arranger, 0x85=Messages, 0x86=Disc Identification,
-0x87=Genre Identification, 0x88=Table of Content Information,
-0x89=Second Table of Content Information, 0x8e=UPC/EAN resp. ISRC,
-0x8f=Size Information of the Block.
-.br
-Track number 0 means the whole disc. Higher numbers are valid for types 0x80
-to 0x85, and 0x8e. With these types, there has to be one text for the disc
-and one for each track.
-.br
-Block Number and Character Position Indicator consists of three bit fields:
-Bit 7 indicates two-byte characters. Bit 4 to bit 6 record the block number,
-which groups texts into language blocks.
-Bit 0 to bit 3 is either the number of characters which the current text
-inherited from the previous pack, or 15 if the current text started before
-the previous pack.
-.br
-The texts are terminated by 0 bytes. A text may span over several packs.
-Unused characters in a pack are used for the next text of the same pack type.
-If no text of the same type follows, then the remaining text bytes are
-set to 0.
+By default, the input file is checked for correct CRC bytes. If all CRC bytes
+are 0, then the correct values get silently inserted. If there are non-zero
+CRC bytes, then a mismatch causes the abort of the burn run.
+This check can be disabled by option -force.
 .br
 The CRC algorithm is known as CRC-16-CCITT with divisor 0x11021.
-MMC-3 says: "All bits shall be inverted."
+The resulting bits have to be inverted.
 .TP
 .BI \-toc
 Print the table of content (TOC) which describes the tracks recorded on disc.
