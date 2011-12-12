@@ -405,10 +405,23 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			"Track mode has unusable value", 0, 0);
 		goto failed;
 	}
-	if (o->num_text_packs > 0)
+	if (o->num_text_packs > 0) {
 		leadin_form = 0x41;
-	else
+	} else {
 		leadin_form = 0x01;
+
+		/* Check for CD-TEXT in session. Not the final creation,
+		   because the cue sheet content might be needed for CD-TEXT
+		   pack type 0x88 "TOC".
+		 */
+		if (o->text_packs == NULL) {
+			ret = burn_cdtext_from_session(session, NULL, NULL, 1);
+			if (ret < 0)
+				goto failed;
+			else if (ret > 0)
+				leadin_form = 0x41;
+		}
+	}
 	ret = add_cue(sheet, ctladr | 1, 0, 0, leadin_form, 0, runtime);
 	if (ret <= 0)
 		goto failed;
@@ -656,10 +669,442 @@ int burn_write_leadout(struct burn_write_opts *o,
 }
 
 
-int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
-		             int flag)
+struct burn_pack_cursor {
+	unsigned char *packs;
+	int num_packs;
+	int td_used;
+	int hiseq[8];
+	int pack_count[16];
+};
+
+
+/* @param flag bit0= double_byte characters
+*/
+int burn_create_new_pack(int pack_type, int track_no, int double_byte,
+				int block, int char_pos,
+				struct burn_pack_cursor *crs, int flag)
+{
+	int idx;
+
+	if (crs->num_packs >= Libburn_leadin_cdtext_packs_maX) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018b,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"Too many CD-TEXT packs", 0, 0);
+		return 0;
+	}
+	if (crs->hiseq[block] >= 255) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018e,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"Too many CD-TEXT packs in block", 0, 0);
+		return 0;
+	}
+	if (char_pos > 15)
+		char_pos = 15;
+	else if (char_pos < 0)
+		char_pos = 0;
+	idx = crs->num_packs * 18;
+	crs->packs[idx++] = pack_type;
+	crs->packs[idx++] = track_no;
+	crs->packs[idx++] = crs->hiseq[block];
+	crs->packs[idx++] = ((flag & 1) << 7) | (block << 4) | char_pos;
+	crs->hiseq[block]++;
+	crs->td_used = 0;
+	crs->pack_count[pack_type - Libburn_pack_type_basE]++;
+	return 1;
+}
+
+
+/* Plain implementation of polynomial division on a Galois field, where
+   addition and subtraction both are binary exor. Euclidian algorithm.
+   Divisor is x^16 + x^12 + x^5 + 1 = 0x11021.
+*/
+static int crc_11021(unsigned char *data, int count, int flag)
+{
+	int acc = 0, i;
+
+	for (i = 0; i < count * 8 + 16; i++) {
+		acc = (acc << 1);
+		if (i < count * 8)
+			acc |= ((data[i / 8] >> (7 - (i % 8))) & 1);
+		if (acc & 0x10000)
+			acc ^= 0x11021;
+	}
+	return acc;
+}
+
+
+/* @param flag bit0= repair mismatching checksums
+               bit1= repair checksums if all pack CRCs are 0
+   @return 0= no mismatch , >0 number of unrepaired mismatches
+                            <0 number of repaired mismatches that were not 0
+*/
+int burn_cdtext_crc_mismatches(unsigned char *packs, int num_packs, int flag)
+{
+	int i, residue, count = 0, repair;
+	unsigned char crc[2];
+
+	repair = flag & 1;
+	if (flag & 2) {
+		for (i = 0; i < num_packs * 18; i += 18)
+			if (packs[i + 16] || packs[i + 17])
+		break;
+		if (i == num_packs * 18)
+			repair = 1;
+	}
+	for (i = 0; i < num_packs * 18; i += 18) {
+		residue = crc_11021(packs + i, 16, 0);
+		crc[0] = ((residue >> 8) & 0xff) ^ 0xff;
+		crc[1] = ((residue     ) & 0xff) ^ 0xff;
+		if(crc[0] != packs[i + 16] || crc[1] != packs[i + 17]) {
+			if (repair) {
+				if (packs[i + 16] || packs[i + 17])
+					count--;
+				packs[i + 16] = crc[0];
+				packs[i + 17] = crc[1];
+			} else
+				count++;
+		}
+		
+	}
+	return count;
+}
+
+
+static int burn_finalize_text_pack(struct burn_pack_cursor *crs, int flag)
+{
+	int residue = 0, i, idx;
+
+	idx = 18 * crs->num_packs;
+	for(i = 4 + crs->td_used; i < 16; i++)
+		crs->packs[idx + i] = 0;
+	crs->td_used = 12;
+
+	/* MMC-3 Annex J : CRC Field consists of 2 bytes.
+	   The polynomial is X16 + X12 + X5 + 1. All bits shall be inverted.
+	*/
+	residue = crc_11021(crs->packs + idx, 16, 0) ^ 0xffff;
+
+	crs->packs[idx + 16] = (residue >> 8) & 0xff;
+	crs->packs[idx + 17] = residue & 0xff;
+	crs->num_packs++;
+	crs->td_used = 0;
+	return 1;
+}
+
+
+/* @param flag bit0= double_byte characters
+*/
+static int burn_create_tybl_packs(unsigned char *payload, int length,
+				int track_no, int pack_type, int block,
+				struct burn_pack_cursor *crs, int flag)
+{
+	int i, ret, binary_part = 0, char_pos;
+
+	if (pack_type == 0x87)
+		binary_part = 2;
+	else if ((pack_type >= 0x88 && pack_type <= 0x8c) || pack_type == 0x8f)
+		binary_part = length;
+	for(i = 0; i < length; i++) {
+		if (crs->td_used == 0 || crs->td_used >= 12) {
+			if (crs->td_used > 0) {
+				ret = burn_finalize_text_pack(crs, 0);
+				if (ret <= 0)
+					return ret;
+			}
+			char_pos = (i - binary_part) / (1 + (flag & 1));
+			ret = burn_create_new_pack(pack_type, track_no,
+					(flag & 1), block, char_pos,
+					crs, flag & 1);
+			if (ret <= 0)
+				return ret;
+		}
+		crs->packs[crs->num_packs * 18 + 4 + crs->td_used] =
+								payload[i];
+		crs->td_used++;
+	}
+	return 1;
+}
+
+
+/* Finalize block by 0x8f. Set bytes 20 to 27 to 0 for now. */
+static int burn_create_bl_size_packs(int block, unsigned char *char_codes,
+					unsigned char *copyrights,
+					unsigned char *languages,
+					int num_tracks,
+					struct burn_pack_cursor *crs, int flag)
+{
+	int i, ret;
+	unsigned char payload[12];
+	/* Normal is track_offset = 0.
+	   But if the CUE sheet supports offset, then it is needed here too */
+	int track_offset = 0;
+
+	payload[0] = char_codes[block];
+	payload[1] = 1 + track_offset;
+	payload[2] = num_tracks + track_offset;
+	payload[3] = copyrights[block];
+	for (i = 0; i < 8; i++)
+		payload[i + 4] = crs->pack_count[i];
+	ret = burn_create_tybl_packs(payload, 12, 0, 0x8f, block, crs, 0);
+	if (ret <= 0)
+		return ret;
+
+	for (i = 0; i < 7; i++)
+		payload[i] = crs->pack_count[i + 8];
+	payload[7] = 3; /* always 3 packs of type 0x8f */
+	for (i = 0; i < 4; i++) {
+		/* Will be set when all blocks are done */
+		payload[i + 8] = 0;
+	}
+	ret = burn_create_tybl_packs(payload, 12, 1, 0x8f, block, crs, 0);
+	if (ret <= 0)
+		return ret;
+
+	for (i = 0; i < 4; i++) {
+		/* Will be set when all blocks are done */
+		payload[i] = 0;
+	}
+	for (i = 0; i < 8; i++) {
+		payload[i + 4] = languages[i];
+	}
+	ret = burn_create_tybl_packs(payload, 12, 2, 0x8f, block, crs, 0);
+	if (ret <= 0)
+		return ret;
+	ret = burn_finalize_text_pack(crs, 0);
+	if (ret <= 0)
+		return ret;
+
+	for (i = 0; i < 16; i++)
+		crs->pack_count[i] = 0;
+	return 1;
+}
+
+
+/* Text packs of track for type and block
+   @param flag bit0= write TAB, because content is identical to previous track
+*/
+static int burn_create_tybl_t_packs(struct burn_track *t, int track_no,
+					int pack_type, int block,
+					struct burn_pack_cursor *crs, int flag)
+{
+	int ret, length = 0, idx, double_byte, flags= 0;
+	unsigned char *payload = NULL, dummy[8];
+	struct burn_cdtext *cdt;
+
+	cdt = t->cdtext[block];
+	idx = pack_type - Libburn_pack_type_basE;
+	if (cdt != NULL) {
+		if (cdt->length[idx] > 0) {
+			payload = cdt->payload[idx];
+			length = cdt->length[idx];
+		}
+		flags = cdt->flags;
+	}
+	if (payload == NULL) {
+		sprintf((char *) dummy, "%d", track_no);
+		payload = dummy;
+		length = strlen((char *) dummy) + 1;
+	}
+	double_byte = !!(flags & (1 <<(pack_type - Libburn_pack_type_basE)));
+	if (flag & 1) {
+		length = 0;
+		dummy[length++] = 9;
+		if (double_byte)
+			dummy[length++] = 9;
+		dummy[length++] = 0;
+		if (double_byte)
+			dummy[length++] = 0;
+		payload = dummy;
+	}
+	ret = burn_create_tybl_packs(payload, length, track_no,
+					pack_type, block, crs, double_byte);
+	return ret;
+}
+
+
+/* Check whether the content is the same as in the previous pack. If so,
+   advise to use the TAB abbreviation.
+*/
+static int burn_decide_cdtext_tab(int block, int pack_type,
+				  struct burn_cdtext *cdt_curr,
+			          struct burn_cdtext *cdt_prev, int flag)
+{
+	int length, j, idx;
+
+	idx = pack_type - Libburn_pack_type_basE;
+	if (cdt_curr == NULL || cdt_prev == NULL)
+		return 0;
+	if (((cdt_curr->flags >> idx) & 1) != ((cdt_prev->flags >> idx) & 1))
+		return 0;
+	length = cdt_curr->length[idx];
+	if (length != cdt_prev->length[idx] || length == 0)
+		return 0;
+	for (j = 0; j < length; j++)
+		if (cdt_curr->payload[j] != cdt_prev->payload[j])
+	break;
+	if (j < length)
+		return 0;
+	return 1;
+}
+
+
+/* Text packs of session and of tracks (if applicable), for type and block
+*/
+static int burn_create_tybl_s_packs(struct burn_session *s,
+					int pack_type, int block,
+					struct burn_pack_cursor *crs, int flag)
+{
+	int i, ret, idx, double_byte, use_tab;
+	struct burn_cdtext *cdt;
+	/* Normal is track_offset = 0.
+	   But if the CUE sheet supports offset, then it is needed here too */
+	int track_offset = 0;
+
+	cdt = s->cdtext[block];
+	idx = pack_type - Libburn_pack_type_basE;
+	if (cdt->length[idx] == 0 || cdt->payload[idx] == NULL)
+		return 1;
+
+	double_byte = !!(cdt->flags &
+			 (1 <<(pack_type - Libburn_pack_type_basE)));
+	ret = burn_create_tybl_packs(cdt->payload[idx], cdt->length[idx], 0,
+					pack_type, block, crs, double_byte);
+	if (ret <= 0)
+		return ret;
+
+	if ((pack_type < 0x80 || pack_type > 0x85) && pack_type != 0x8e) {
+		ret = burn_finalize_text_pack(crs, 0);
+		return ret;
+	}
+
+	for (i = 0; i < s->tracks; i++) {
+		if (i > 0)
+			use_tab = burn_decide_cdtext_tab(block, pack_type,
+					  s->track[i]->cdtext[block],
+				          s->track[i - 1]->cdtext[block], 0);
+		else
+			use_tab = 0;
+		ret = burn_create_tybl_t_packs(s->track[i],
+					i + 1 + track_offset, pack_type,
+					block, crs, use_tab);
+		if (ret <= 0)
+			return ret;
+	}
+	/* Fill up last pack with 0s */
+	ret = burn_finalize_text_pack(crs, 0);
+	return ret;
+}
+
+
+/* ts B11210 : API */
+/* @param flag bit0= do not return CD-TEXT packs, but return number of packs
+*/
+int burn_cdtext_from_session(struct burn_session *s,
+				unsigned char **text_packs, int *num_packs,
+				int flag)
+{
+	int pack_type, block, ret, i, idx, j, residue;
+	struct burn_pack_cursor crs;
+
+	if (text_packs == NULL || num_packs == NULL) {
+		flag |= 1;
+	} else if (!(flag & 1)) {
+		*text_packs = NULL;
+		*num_packs = 0;
+	}
+	memset(&crs, 0, sizeof(struct burn_pack_cursor));
+	BURN_ALLOC_MEM(crs.packs, unsigned char,
+					Libburn_leadin_cdtext_packs_maX * 18);
+
+	for (block = 0; block < 8; block++)
+		if (s->cdtext[block] != NULL)
+	break;
+	if (block == 8)
+		{ret = 1; goto ex;}
+
+	for (block= 0; block < 8; block++) {
+		if (s->cdtext[block] == NULL)
+	continue;
+		for (pack_type = 0x80;
+		     pack_type < 0x80 + Libburn_pack_num_typeS; pack_type++) {
+			if (pack_type == 0x8f)
+		continue;
+			ret = burn_create_tybl_s_packs(s,
+						pack_type, block, &crs, 0);
+			if (ret <= 0)
+				goto ex;
+		}
+		ret = burn_create_bl_size_packs(block,
+				s->cdtext_char_code, s->cdtext_copyright,
+				s->cdtext_language, s->tracks, &crs, 0);
+		if (ret <= 0)
+			goto ex;
+	}
+
+	/* Insert the highest sequence numbers of each block into
+	   the 0x8f packs 2 and 3 (bytes 20 to 27)
+	*/
+	for (i = 0; i < crs.num_packs; i++) {
+		idx = i * 18;
+		if (crs.packs[idx] == 0x8f && crs.packs[idx + 1] == 1) {
+			for (j = 0; j < 4; j++)
+				if (crs.hiseq[j] > 0)
+					crs.packs[idx + 4 + 8 + j] =
+							crs.hiseq[j] - 1;
+				else
+					crs.packs[idx + 4 + 8 + j] = 0;
+		} else if (crs.packs[idx] == 0x8f && crs.packs[idx + 1] == 2) {
+			for (j = 0; j < 4; j++)
+				if (crs.hiseq[j + 4] > 0)
+					crs.packs[idx + 4 + j] =
+							crs.hiseq[j + 4] - 1;
+				else
+					crs.packs[idx + 4 + j] = 0;
+		} else
+	continue;
+		/* Re-compute checksum */
+		residue = crc_11021(crs.packs + idx, 16, 0) ^ 0xffff;
+		crs.packs[idx + 16] = (residue >> 8) & 0xff;
+		crs.packs[idx + 17] = residue & 0xff;
+	}
+
+	ret = 1;
+ex:;
+	if (ret <= 0 || (flag & 1)) {
+		if (ret > 0)
+			ret = crs.num_packs;
+		BURN_FREE_MEM(crs.packs);
+	} else if (crs.num_packs > 0) {
+		*text_packs = crs.packs;
+		*num_packs = crs.num_packs;
+	}
+	return(ret);
+}
+
+
+static int burn_create_text_packs(struct burn_write_opts *o,
+					struct burn_session *s,
+					int flag)
+{
+	int ret, num_packs = 0;
+	unsigned char *text_packs = NULL;
+
+	ret = burn_cdtext_from_session(s, &text_packs, &num_packs, 0);
+	if (ret > 0) {
+		if (o->text_packs != NULL)
+			free(o->text_packs);
+		o->text_packs = text_packs;
+		o->num_text_packs = num_packs;
+	}
+	return(ret);
+}
+
+
+static int burn_write_leadin_cdtext(struct burn_write_opts *o,
+					 struct burn_session *s, int flag)
 {
 	int ret, i, j, si, lba, sub_cursor = 0, err, write_lba, sectors = 0;
+	int self_made_text_packs = 0;
 	unsigned char *subdata = NULL;
 	struct burn_drive *d = o->drive;
 	struct buffer *buf = NULL;
@@ -668,8 +1113,29 @@ int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
 	unsigned char *packs;
 #endif
 
-	if (o->num_text_packs <= 0)
-		{ret = 1; goto ex;}
+	if (o->num_text_packs <= 0) {
+		if (o->text_packs != NULL)
+			{ret = 1; goto ex;}
+		/* Try to create CD-TEXT from .cdtext_* of session and track */
+		ret = burn_create_text_packs(o, s, 0);
+		if (ret <= 0)
+			goto ex;
+		self_made_text_packs = 1;
+		if (o->num_text_packs <= 0)
+			{ret = 1; goto ex;}
+	}
+
+	if (!o->no_text_pack_crc_check) {
+		ret = burn_cdtext_crc_mismatches(o->text_packs,
+				 o->num_text_packs, 0);
+		if (ret != 0) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002018f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"Program error: CD-TEXT pack CRC mismatch",
+				0, 0);
+			{ ret = 0; goto ex; }
+		}
+	}
 
 	d->busy = BURN_DRIVE_WRITING_LEADIN;
 
@@ -741,6 +1207,12 @@ int burn_write_leadin_cdtext(struct burn_write_opts *o, struct burn_session *s,
 	}
 	ret = 1;
 ex:;
+	if (self_made_text_packs) {
+		if (o->text_packs != NULL)
+			free(o->text_packs);
+		o->text_packs = NULL;
+		o->num_text_packs = 0;
+	}
 	BURN_FREE_MEM(subdata);
 	BURN_FREE_MEM(buf);
 	d->busy = was_busy;
@@ -864,7 +1336,8 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	"TAO pre-track %2.2d : get_nwa(%d)=%d, d=%d , demand=%.f , cap=%.f\n",
 	tnum+1, nwa, ret, d->nwa, (double) burn_track_get_sectors(t) * 2048.0,
 	(double) d->media_capacity_remaining);
-		libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg, 0, 0);
 
@@ -1196,7 +1669,7 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	sprintf(msg, 
 		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
 		tnum+1, nwa, ret, d->nwa);
-	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);
 	if (nwa > d->nwa)
 		d->nwa = nwa;
@@ -1256,7 +1729,7 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 	sprintf(msg, 
 		"DVD+R pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
 		tnum+1, nwa, ret, d->nwa);
-	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000002,
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO, msg,0,0);
 	if (nwa > d->nwa)
 		d->nwa = nwa;
@@ -2670,7 +3143,7 @@ return crap.  so we send the command, then ignore the result.
 						sprintf(msg, 
 				"SAO appendable d->nwa= %d\n", d->nwa);
 						libdax_msgs_submit(
-				libdax_messenger, d->global_index, 0x000002,
+				libdax_messenger, d->global_index, 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msg, 0, 0);
 

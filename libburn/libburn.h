@@ -1291,45 +1291,17 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
 			int *valid);
 
 /* ts B11201 */
-/** Read CD-TEXT packs from the Lead-in of an audio CD.
+/** Read the array of CD-TEXT packs from the Lead-in of an audio CD.
     Each pack consists of 18 bytes, of which 4 are header. 12 bytes are pieces
     of 0-terminated texts or binary data. 2 bytes hold a CRC.
-    See also MMC-3 Annex J.
-    The first byte of each pack tells the pack type (text meaning):
-      0x80 = Title
-      0x81 = Names of performers
-      0x82 = Songwriters
-      0x83 = Composers,
-      0x84 = Arrangers
-      0x85 = Messages
-      0x86 = text-and-binary: Disc Identification
-      0x87 = text-and-binary: Genre Identification
-      0x88 = binary: Table of Content information
-      0x89 = binary: Second Table of Content information
-      0x8e = UPC/EAN code of the album and ISRC code of each track
-      0x8f = binary: Size Information of the Block
-    The second byte tells the track number to which the first text piece in
-    a pack is associated. Number 0 means the whole album. Higher numbers are
-    valid for types 0x80 to 0x85, and 0x8e. With these types, there should be
-    one text for the disc and one for each track.
-    The third byte is a sequential counter.
-    The fourth byte is the Block Number and Character Position Indicator.
-    It consists of three bit fields:
-      bit7   = Double Bytes Character Code (0= single byte characters)
-      bit4-6 = Block Number (groups text packs in language blocks)
-      bit0-3 = Character position. Either the number of characters which
-               the current text inherited from the previous pack, or
-               15 if the current text started before the previous pack. 
-    The two CRC bytes are optional. Polynomial is x^16 + x^12 + x^5 + 1.
-    "All bits shall be inverted."
-
+    For a description of the format of the array, see file doc/cdtext.txt.
     @param d          The drive to query.
     @param text_packs  Will point to an allocated memory buffer with CD-TEXT.
                       It will only contain text packs, and not be prepended
                       by the TOC header of four bytes, which gets stored with
-                      file cdtext.dat by cdrecord -vv -toc. The first two of
+                      file cdtext.dat by cdrecord -vv -toc. (The first two of
                       these bytes are supposed to hold the number of CD-TEXT
-                      bytes + 2. The other two bytes are supposed to be 0.
+                      bytes + 2. The other two bytes are supposed to be 0.)
                       Dispose this buffer by free(), when no longer needed.
     @param num_packs  Will tell the number of text packs, i.e. the number of
                       bytes in text_packs divided by 18.
@@ -1903,6 +1875,172 @@ int burn_session_add_track(struct burn_session *s, struct burn_track *t,
 int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
 
 
+/* ts B11206 */
+/** Set the Character Codes, the Copyright bytes, and the Language Codes
+    for CD-TEXT blocks 0 to 7. They will be used in the block summaries
+    of text packs which get generated from text or binary data submitted
+    by burn_session_set_cdtext() and burn_track_set_cdtext().
+    Character Code value can be
+      0x00 = ISO-8859-1
+      0x01 = 7 bit ASCII
+      0x80 = MS-JIS (japanesei Kanji, double byte characters)
+    Copyright byte value can be
+      0x00 = not copyrighted
+      0x03 = copyrighted
+    Language Code value can be
+      0x00 = Unknown   0x04 = Croatian  0x08 = German   0x09 = English
+      0x0a = Spanish   0x0f = French    0x15 = Italian  0x27 = Finnish
+      0x29 = Turkish   0x69 = Japanese
+    or other latin alphabet codes from EBU Tech 3264, appendix 3, like
+      0x06 = Czech     0x07 = Danish    0x11 = Irish    0x17 = Latin
+      0x1b = Hungarian 0x1d = Dutch     0x20 = Polish   0x21 = Portuguese
+    as well as such where character representation is unclear
+      0x56 = Russian   0x6b = Hindi     0x6c = Hebrew   0x70 = Greek
+      0x75 = Chinese   0x77 = Bulgarian 0x7e = Arabic   0x7f = Amharic
+    Default is 0x09 = English for block 0 and 0x00 = Unknown for block 1 to 7.
+    Copyright and Character Code are 0x00 for all blocks by default.
+    For a detailed description of these parameters see file
+    doc/cdtext.txt, "Format of a CD-TEXT packs array", "Pack type 0x8f".
+
+    Parameter value -1 leaves the current setting of the session parameter
+    unchanged.
+    @param s            Session where to change settings
+    @param char_codes   Character Codes for block 0 to 7
+    @param copyrights   Copyright bytes for block 0 to 7
+    @param languages    Language Codes for block 0 to 7
+    @param flag         Bitfiled for control purposes. Unused yet. Submit 0.
+    @return             <=0 failure, > 0 success
+    @since 1.2.0
+*/
+int burn_session_set_cdtext_par(struct burn_session *s,
+                                int char_codes[8], int copyrights[8],
+                                int languages[8], int flag);
+
+/* ts B11206 */
+/** Obtain the current settings as of burn_session_set_cdtext_par() resp.
+    by default.
+    @param s            Session which to inquire
+    @param char_codes   Will return Character Codes for block 0 to 7
+    @param copyrights   Will return Copyright bytes for block 0 to 7
+    @param languages    Will return Language Codes for block 0 to 7
+    @param flag         Bitfiled for control purposes. Unused yet. Submit 0.
+    @return             <=0 failure, reply invalid, > 0 success, reply valid
+    @since 1.2.0
+*/
+int burn_session_get_cdtext_par(struct burn_session *s,
+                                int char_codes[8], int copyrights[8],
+                                int block_languages[8], int flag);
+
+
+/* ts B11206 */
+/** Attach text or binary data as CD-TEXT attributes to a session.
+    They can be used to generate CD-TEXT packs by burn_cdtext_from_session()
+    or to write CD-TEXT packs into the lead-in of a CD SAO session.
+    The latter happens only if no array of CD-TEXT packs is attached to
+    the write options by burn_write_opts_set_leadin_text().
+    For details of the CD-TEXT format and of the payload content, see file
+    doc/cdtext.txt .
+    @param s            Session where to attach CD-TEXT attribute
+    @param block        Number of the language block in which the attribute
+                        shall appear. Possible values: 0 to 7.
+    @param pack_type    Pack type number. 0x80 to 0x8e. Used if pack_type_name
+                        is NULL or empty text. Else submit 0 and a name.
+                        Pack type 0x8f is generated automatically and may not
+                        be set by applications.
+    @param pack_type_name  The pack type by name. Defined names are:
+                          0x80 = "TITLE"         0x81 = "PERFORMER"
+                          0x82 = "SONGWRITER"    0x83 = "COMPOSER"
+                          0x84 = "ARRANGER"      0x85 = "MESSAGE"
+                          0x86 = "DISCID"        0x87 = "GENRE"
+                          0x88 = "TOC"           0x89 = "TOC2"
+                          0x8d = "CLOSED"        0x8e = "UPC_ISRC"
+                        Names are recognized uppercase and lowercase.
+    @param payload      Text or binary bytes. The data will be copied to
+                        session-internal memory.
+                        Pack types 0x80 to 0x85 and 0x8e contain 0-terminated
+                        cleartext. If double byte characters are used, then
+                        two 0-bytes terminate the cleartext.
+                        Pack type 0x86 is 0-terminated ASCII cleartext.
+                        Pack type 0x87 consists of two byte big-endian
+                        Genre code, and 0-terminated genre cleartext.
+                        Pack type 0x88 mirrors the session table-of-content.
+                        Pack type 0x89 is not understood yet.
+                        Pack types 0x8a to 0x8c are reserved.
+                        Pack type 0x8e contains cleartext which is not to be
+                        shown by commercial audio CD players.
+    @pram length        Number of bytes in payload. Including terminating
+                        0-bytes.
+    @param flag         Bitfield for control purposes.
+                        bit0= payload contains double byte characters
+                              (with character code 0x80 MS-JIS japanese Kanji)
+    @return             > 0 indicates success , <= 0 is failure
+    @since 1.2.0
+*/
+int burn_session_set_cdtext(struct burn_session *s, int block,
+                            int pack_type, char *pack_type_name,
+                            unsigned char *payload, int length, int flag);
+
+/* ts B11206 */
+/** Obtain a CD-TEXT attribute that was set by burn_session_set_cdtext()
+    @param s            Session to inquire
+    @param block        Number of the language block to inquire.
+    @param pack_type    Pack type number to inquire. Used if pack_type_name
+                        is NULL or empty text. Else submit 0 and a name.
+                        Pack type 0x8f is generated automatically and may not
+                        be inquire in advance. Use burn_cdtext_from_session()
+                        to generate all packs including type 0x8f packs.
+    @param pack_type_name  The pack type by name.
+                        See above burn_session_set_cdtext().
+    @param payload      Will return a pointer to text or binary bytes.
+                        Not a copy of data. Do not free() this address.
+    @pram length        Will return the number of bytes pointed to by payload.
+                        Including terminating 0-bytes.
+    @param flag         Bitfield for control purposes. Unused yet. Submit 0.
+    @return             1 single byte char, 2 double byte char, <=0 error
+    @since 1.2.0
+*/
+int burn_session_get_cdtext(struct burn_session *s, int block,
+                            int pack_type, char *pack_type_name,
+                            unsigned char **payload, int *length, int flag);
+
+/* ts B11210 */
+/** Produce an array of CD-TEXT packs that could be submitted to
+    burn_write_opts_set_leadin_text() or stored as *.cdt file.
+    For a description of the format of the array, see file doc/cdtext.txt.
+    The input data stem from burn_session_set_cdtext_par(),
+    burn_session_set_cdtext(), and burn_track_set_cdtext().
+    @param s            Session from which to produce CD-TEXT packs.
+    @param text_packs   Will return the buffer with the CD-TEXT packs.
+                        Dispose by free() when no longer needed.
+    @param num_packs    Will return the number of 18 byte text packs.
+    @param flag         Bitfield for control purposes.
+                        bit0= do not produce CD-TEXT packs, but return number
+                              of packs. This happens also if
+                              (text_packs == NULL || num_packs == NULL).
+    @return             Without flag bit0: > 0 is success, <= 0 failure
+                        With flag bit0: > 0 is number of packs,
+                                          0 means no packs will be generated,
+                                        < 0 means failure  
+    @since 1.2.0
+*/
+int burn_cdtext_from_session(struct burn_session *s,
+                             unsigned char **text_packs, int *num_packs,
+                             int flag);
+
+
+/* ts B11206 */
+/** Remove all CD-TEXT attributes of the given block from the session.
+    They were attached by burn_session_set_cdtext().
+    @param s            Session where to remove the CD-TEXT attribute
+    @param block        Number of the language block in which the attribute
+                        shall appear. Possible values: 0 to 7.
+                        -1 causes text packs of all blocks to be removed.
+    @return             > 0 is success, <= 0 failure
+    @since 1.2.0
+*/
+int burn_session_dispose_cdtext(struct burn_session *s, int block);
+
+
 /** Define the data in a track
 	@param t the track to define
 	@param offset The lib will write this many 0s before start of data
@@ -1924,6 +2062,72 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
     @since 0.2.6
 */
 int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
+
+
+/* ts B11206 */
+/** Attach text or binary data as CD-TEXT attributes to a track.
+    The payload will be used to generate CD-TEXT packs by
+    burn_cdtext_from_session() or to write CD-TEXT packs into the lead-in
+    of a CD SAO session. This happens if the CD-TEXT attribute of the session
+    gets generated, which has the same block number and pack type. In this
+    case, each track should have such a CD-TEXT attribute, too.
+    See burn_session_set_cdtext().
+    @param t            Track where to attach CD-TEXT attribute.
+    @param block        Number of the language block in which the attribute
+                        shall appear. Possible values: 0 to 7.
+    @param pack_type    Pack type number. 0x80 to 0x85 or 0x8e. Used if
+                        pack_type_name is NULL or empty text. Else submit 0
+                        and a name.
+    @param pack_type_name  The pack type by name. Applicable names are:
+                          0x80 = "TITLE"         0x81 = "PERFORMER"
+                          0x82 = "SONGWRITER"    0x83 = "COMPOSER"
+                          0x84 = "ARRANGER"      0x85 = "MESSAGE"
+                          0x8e = "UPC_ISRC"
+    @param payload      0-terminated cleartext. If double byte characters
+                        are used, then two 0-bytes terminate the cleartext.
+    @pram length        Number of bytes in payload. Including terminating
+                        0-bytes.
+    @param flag         Bitfield for control purposes.
+                        bit0= payload contains double byte characters
+                              (with character code 0x80 MS-JIS japanese Kanji)
+    @return             > 0 indicates success , <= 0 is failure
+    @since 1.2.0
+*/
+int burn_track_set_cdtext(struct burn_track *t, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char *payload, int length, int flag);
+
+/* ts B11206 */
+/** Obtain a CD-TEXT attribute that was set by burn_track_set_cdtext().
+    @param t            Track to inquire
+    @param block        Number of the language block to inquire.
+    @param pack_type    Pack type number to inquire. Used if pack_type_name
+                        is NULL or empty text. Else submit 0 and a name.
+    @param pack_type_name  The pack type by name.
+                        See above burn_track_set_cdtext().
+    @param payload      Will return a pointer to text bytes.
+                        Not a copy of data. Do not free() this address.
+    @pram length        Will return the number of bytes pointed to by payload.
+                        Including terminating 0-bytes.
+    @param flag         Bitfield for control purposes. Unused yet. Submit 0.
+    @return             1=single byte char , 2= double byte char , <=0 error
+    @since 1.2.0
+*/
+int burn_track_get_cdtext(struct burn_track *t, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char **payload, int *length, int flag);
+
+/* ts B11206 */
+/** Remove all CD-TEXT attributes of the given block from the track.
+    They were attached by burn_track_set_cdtext().
+    @param t            Track where to remove the CD-TEXT attribute.
+    @param block        Number of the language block in which the attribute
+                        shall appear. Possible values: 0 to 7. 
+                        -1 causes text packs of all blocks to be removed.
+    @return             > 0 is success, <= 0 failure 
+    @since 1.2.0
+*/
+int burn_track_dispose_cdtext(struct burn_track *t, int block);
 
 
 /* ts A90910 */
@@ -2437,18 +2641,26 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
     of a SAO write run on CD.
     @param opts        The option object to be manipulated
     @param text_packs  Array of bytes which form CD-TEXT packs of 18 bytes
-                       each. See burn_disc_get_leadin_text() for a description
-                       of the text pack format.
+                       each. For a description of the format of the array,
+                       see file doc/cdtext.txt.
                        No header of 4 bytes must be prepended which would
                        tell the number of pack bytes + 2.
+                       This parameter may be NULL if the currently attached
+                       array of packs shall be removed.
     @param num_packs   The number of 18 byte packs in text_packs.
-    @param flag        Bitfield for control purposes. Unused yet. Submit 0.
+                       This parameter may be 0 if the currently attached
+                       array of packs shall be removed.
+    @param flag        Bitfield for control purposes.
+                       bit0= do not verify checksums
+                       bit1= repair mismatching checksums
+                       bit2= repair checksums if they are 00 00 with each pack
     @return            1 on success, <= 0 on failure
     @since 1.2.0
 */
 int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
                                     unsigned char *text_packs,
                                     int num_packs, int flag);
+
 
 /* ts A61222 */
 /** Sets a start address for writing to media and write modes which allow to

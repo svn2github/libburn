@@ -39,6 +39,13 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
                            int tnum);
 int burn_write_close_session(struct burn_write_opts *o);
 
+/* @param flag bit0= repair checksum   
+               bit1= repair checksum if all pack CRCs are 0
+   @return 0= no mismatch , >0 number of unrepaired mismatches
+                            <0 number of repaired mismatches
+*/
+int burn_cdtext_crc_mismatches(unsigned char *packs, int num_packs, int flag);
+
 
 
 /* mmc5r03c.pdf 6.3.3.3.3: DVD-R DL: Close Function 010b: Close Session

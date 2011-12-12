@@ -578,6 +578,11 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020189 (FATAL,HIGH)   = Drive is already grabbed by libburn
  0x0002018a (SORRY,HIGH)   = Timeout exceeded. Retry cancled.
  0x0002018b (FAILURE,HIGH) = Too many CD-TEXT packs
+ 0x0002018c (FAILURE,HIGH) = CD-TEXT pack type out of range
+ 0x0002018d (FAILURE,HIGH) = CD-TEXT block number out of range
+ 0x0002018e (FAILURE,HIGH) = Too many CD-TEXT packs in block
+ 0x0002018f (FAILURE,HIGH) = CD-TEXT pack CRC mismatch
+ 0x00020190 (WARNING,HIGH) = CD-TEXT pack CRC mismatch had to be corrected
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file

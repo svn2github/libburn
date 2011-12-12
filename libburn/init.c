@@ -589,7 +589,7 @@ void *burn_alloc_mem(size_t size, size_t count, int flag)
 {
 	void *pt;
 
-	pt = calloc(size, count);
+	pt = calloc(count, size);
 	if(pt == NULL)
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,

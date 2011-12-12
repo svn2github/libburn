@@ -16,6 +16,22 @@ struct isrc
 	unsigned int serial;	/* must be 0-99999 */
 };
 
+/* ts B11206 */
+#define Libburn_pack_type_basE  0x80
+#define Libburn_pack_num_typeS  0x10
+#define Libburn_pack_type_nameS \
+	"TITLE", "PERFORMER", "SONGWRITER", "COMPOSER", \
+	"ARRANGER", "MESSAGE", "DISCID", "GENRE", \
+	"TOC", "TOC2",  "", "", \
+	"", "CLOSED", "UPC_ISRC", "BLOCKSIZE"
+
+struct burn_cdtext
+{
+	unsigned char *(payload[Libburn_pack_num_typeS]);
+	int length[Libburn_pack_num_typeS];
+	int flags;                   /* bit0 - bit15= double byte characters */
+};
+
 struct burn_track
 {
 	int refcnt;
@@ -82,6 +98,9 @@ struct burn_track
 	/* ts A90910 : conversions from CD XA prepared input */
 	int cdxa_conversion; /* 0=none, 1=remove -xa1 headers (first 8 bytes)*/
 
+	/* ts B11206 */
+	struct burn_cdtext *cdtext[8];
+
 };
 
 struct burn_session
@@ -97,6 +116,13 @@ struct burn_session
 	int tracks;
 	struct burn_track **track;
 	int refcnt;
+
+	/* ts B11206 */
+	struct burn_cdtext *cdtext[8];
+	unsigned char cdtext_char_code[8];
+	unsigned char cdtext_copyright[8];
+	unsigned char cdtext_language[8];
+
 };
 
 struct burn_disc
@@ -129,6 +155,11 @@ off_t burn_track_get_default_size(struct burn_track *t);
 
 /* ts A80808 : Enhance CD toc to DVD toc */
 int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag);
+
+
+/* ts B11206 */
+struct burn_cdtext *burn_cdtext_create(void);
+void burn_cdtext_free(struct burn_cdtext **cdtext);
 
 
 #endif /* BURN__STRUCTURE_H */

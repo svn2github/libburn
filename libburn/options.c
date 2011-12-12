@@ -13,6 +13,7 @@
 #include "drive.h"
 #include "transport.h"
 #include "init.h"
+#include "write.h"
 
 /* ts A61007 */
 /* #include <a ssert.h> */
@@ -54,6 +55,7 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->stdio_fsync_size = Libburn_stdio_fsync_limiT;
 	opts->text_packs = NULL;
 	opts->num_text_packs = 0;
+	opts->no_text_pack_crc_check = 0;
 	opts->has_mediacatalog = 0;
 	opts->format = BURN_CDROM;
 	opts->multi = 0;
@@ -196,6 +198,10 @@ void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi)
 
 
 /* ts B11204 */
+/* @param flag bit0=do not verify checksums
+               bit1= repair mismatching checksums
+               bit2= repair checksums if they are 00 00 with each pack
+*/
 int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
                                     unsigned char *text_packs,
                                     int num_packs, int flag)
@@ -203,12 +209,11 @@ int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
 	int ret;
 	unsigned char *pack_buffer = NULL;
 
-	if (num_packs > 3640) {
-		/* READ TOC/PMA/ATIP can at most return 3640.7 packs */
+	if (num_packs > Libburn_leadin_cdtext_packs_maX ) {
 		libdax_msgs_submit(libdax_messenger, opts->drive->global_index,
 				0x0002018b,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				"Too many CD-TEXT packs (> 3640)", 0, 0);
+				"Too many CD-TEXT packs", 0, 0);
 		ret= 0; goto ex;
 	}
 
@@ -219,6 +224,26 @@ int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
 		free(opts->text_packs);
 		opts->text_packs = NULL;
 	}
+
+	if (flag & 1) {
+		opts->no_text_pack_crc_check = 1;
+	} else {
+		opts->no_text_pack_crc_check = 0;
+		ret = burn_cdtext_crc_mismatches(text_packs, num_packs,
+							(flag >> 1) & 3);
+		if (ret > 0) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002018f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"CD-TEXT pack CRC mismatch", 0, 0);
+			ret = 0; goto ex;
+		} else if (ret < 0) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020190,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+			    "CD-TEXT pack CRC mismatch had to be corrected",
+				0, 0);
+		}
+	}
+
 	if (num_packs > 0) {
 		memcpy(pack_buffer, text_packs, num_packs * 18);
 		opts->text_packs = pack_buffer;

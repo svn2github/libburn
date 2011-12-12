@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "libburn.h"
 #include "structure.h"
 #include "write.h"
@@ -75,6 +76,8 @@ void burn_disc_free(struct burn_disc *d)
 struct burn_session *burn_session_create(void)
 {
 	struct burn_session *s;
+	int i;
+
 	s = calloc(1, sizeof(struct burn_session));
 	if (s == NULL) /* ts A70825 */
 		return NULL;
@@ -82,6 +85,13 @@ struct burn_session *burn_session_create(void)
 	s->tracks = 0;
 	s->track = NULL;
 	s->hidefirst = 0;
+	for (i = 0; i < 8; i++) {
+		s->cdtext[i] = NULL;
+		s->cdtext_language[i] = 0x00;                     /* Unknown */
+		s->cdtext_char_code[i] = 0x00;                 /* ISO-8859-1 */
+		s->cdtext_copyright[i] = 0x00;
+	}
+	s->cdtext_language[0] = 0x09;     /* Single-block default is English */
 	return s;
 }
 
@@ -92,13 +102,15 @@ void burn_session_hide_first_track(struct burn_session *s, int onoff)
 
 void burn_session_free(struct burn_session *s)
 {
+	int i;
+
 	s->refcnt--;
 	if (s->refcnt == 0) {
 		/* dec refs on all elements */
-		int i;
-
 		for (i = 0; i < s->tracks; i++)
 			burn_track_free(s->track[i]);
+		for (i = 0; i < 8; i++)
+			burn_cdtext_free(&(s->cdtext[i]));
 		free(s->track);
 		free(s);
 	}
@@ -141,6 +153,8 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s)
 struct burn_track *burn_track_create(void)
 {
 	struct burn_track *t;
+	int i;
+
 	t = calloc(1, sizeof(struct burn_track));
 	if (t == NULL) /* ts A70825 */
 		return NULL;
@@ -180,16 +194,25 @@ struct burn_track *burn_track_create(void)
 
 	/* ts A61024 */
 	t->swap_source_bytes = 0;
+
+	/* ts B11206 */
+	for (i = 0; i < 8; i++)
+		t->cdtext[i] = NULL;
+
 	return t;
 }
 
 void burn_track_free(struct burn_track *t)
 {
+	int i;
+
 	t->refcnt--;
 	if (t->refcnt == 0) {
 		/* dec refs on all elements */
 		if (t->source)
 			burn_source_free(t->source);
+		for (i = 0; i < 8; i++)
+			burn_cdtext_free(&(t->cdtext[i]));
 		free(t);
 	}
 }
@@ -672,6 +695,270 @@ failure:
 ex:;
 	BURN_FREE_MEM(msg_data);
 	return ret;
+}
+
+
+struct burn_cdtext *burn_cdtext_create(void)
+{
+	struct burn_cdtext *t;
+	int i;
+
+	t = burn_alloc_mem(sizeof(struct burn_cdtext), 1, 0);
+	if (t == NULL)
+		return NULL;
+	for(i = 0; i < Libburn_pack_num_typeS; i ++) {
+		t->payload[i] = NULL;
+		t->length[i] = 0;
+	}
+	return t;
+}
+
+
+void burn_cdtext_free(struct burn_cdtext **cdtext)
+{
+	struct burn_cdtext *t;
+	int i;
+
+	t = *cdtext;
+	if (t == NULL)
+		return;
+	for (i = 0; i < Libburn_pack_num_typeS; i++)
+		if (t->payload[i] != NULL)
+			free(t->payload[i]);
+	free(t);
+}
+
+
+static int burn_cdtext_name_to_type(char *pack_type_name)
+{
+	int i, j;
+	static char *pack_type_names[] = {
+		Libburn_pack_type_nameS
+	};
+
+	for (i = 0; i < Libburn_pack_num_typeS; i++) {
+		if (pack_type_names[i][0] == 0)
+	continue;
+		for (j = 0; pack_type_names[i][j]; j++)
+			if (pack_type_names[i][j] != pack_type_name[j] &&
+			    tolower(pack_type_names[i][j]) !=
+							pack_type_name[j])
+		break;
+		if (pack_type_names[i][j] == 0)
+			return Libburn_pack_type_basE + i;
+	}
+	return -1;
+}
+
+
+/* @param flag bit0= double byte characters
+*/
+static int burn_cdtext_set(struct burn_cdtext **cdtext,
+				int pack_type, char *pack_type_name,
+                    unsigned char *payload, int length, int flag)
+{
+	int i;
+	struct burn_cdtext *t;
+
+	if (pack_type_name != NULL)
+		if (pack_type_name[0])
+			pack_type = burn_cdtext_name_to_type(pack_type_name);
+	if (pack_type < Libburn_pack_type_basE ||
+		pack_type >= Libburn_pack_type_basE + Libburn_pack_num_typeS) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018c,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"CD-TEXT pack type out of range", 0, 0);
+		return 0;
+	}
+	t = *cdtext;
+	if (t == NULL) {
+		*cdtext = t = burn_cdtext_create();
+		if (t == NULL)
+			return -1;
+	}
+	i = pack_type - Libburn_pack_type_basE;
+	if (t->payload[i] != NULL)
+		free(t->payload[i]);
+	t->payload[i] = burn_alloc_mem((size_t) length, 1, 0);
+	if (t->payload[i] == NULL)
+		return -1;
+	memcpy(t->payload[i], payload, length);
+	t->length[i] = length;
+	t->flags = (t->flags & ~(1 << i)) | (flag & (1 << i));
+	return 1;
+}
+
+
+/* @return 1=single byte char , 2= double byte char , <=0 error */
+static int burn_cdtext_get(struct burn_cdtext *t, int pack_type,
+				char *pack_type_name,
+				unsigned char **payload, int *length, int flag)
+{
+	if (pack_type_name != NULL)
+		if (pack_type_name[0])
+			pack_type = burn_cdtext_name_to_type(pack_type_name);
+	if (pack_type < Libburn_pack_type_basE ||
+		pack_type >= Libburn_pack_type_basE + Libburn_pack_num_typeS) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018c,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"CD-TEXT pack type out of range", 0, 0);
+		return 0;
+	}
+	*payload = t->payload[pack_type - Libburn_pack_type_basE];
+	*length = t->length[pack_type - Libburn_pack_type_basE];
+	return 1 + ((t->flags >> (pack_type - Libburn_pack_type_basE)) & 1);
+}
+
+
+static int burn_cdtext_check_blockno(int block)
+{
+	if (block < 0 || block > 7) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018d,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"CD-TEXT block number out of range", 0, 0);
+		return 0;
+	}
+	return 1;
+}
+
+
+/* ts B11206 API */
+/* @param flag bit0= double byte characters
+*/
+int burn_track_set_cdtext(struct burn_track *t, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char *payload, int length, int flag)
+{
+	int ret;
+
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	ret = burn_cdtext_set(&(t->cdtext[block]), pack_type, pack_type_name,
+				payload, length, flag & 1);
+	return ret;
+}
+
+
+/* ts B11206 API */
+/* @return 1=single byte char , 2= double byte char , <=0 error */
+int burn_track_get_cdtext(struct burn_track *t, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char **payload, int *length, int flag)
+{
+	int ret;
+
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	ret = burn_cdtext_get(t->cdtext[block], pack_type, pack_type_name,
+				payload, length, 0);
+	return ret;
+}
+
+
+/* ts B11206 API */
+int burn_track_dispose_cdtext(struct burn_track *t, int block) 
+{
+	int i;
+
+	if (block == -1) {
+		for (i= 0; i < 8; i++)
+			burn_cdtext_free(&(t->cdtext[i]));
+		return 1;
+	}
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	burn_cdtext_free(&(t->cdtext[0]));
+	return 1;
+}
+
+
+/* ts B11206 API */
+/* @param flag bit0= double byte characters
+*/
+int burn_session_set_cdtext(struct burn_session *s, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char *payload, int length, int flag)
+{
+	int ret;
+
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	ret = burn_cdtext_set(&(s->cdtext[block]), pack_type, pack_type_name,
+				payload, length, flag & 1);
+	return ret;
+}
+
+
+/* ts B11206 API */
+/* @return 1=single byte char , 2= double byte char , <=0 error */
+int burn_session_get_cdtext(struct burn_session *s, int block,
+                          int pack_type, char *pack_type_name,
+                          unsigned char **payload, int *length, int flag)
+{
+	int ret;
+
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	ret = burn_cdtext_get(s->cdtext[block], pack_type, pack_type_name,
+				payload, length, 0);
+	return ret;
+}
+
+
+/* ts B11206 API */
+int burn_session_set_cdtext_par(struct burn_session *s,
+				int char_codes[8], int copyrights[8],
+				int block_languages[8], int flag)
+{
+	int i;
+
+	for (i = 0; i < 8; i++) {
+		if (char_codes[i] >= 0 && char_codes[i] <= 255)
+			s->cdtext_char_code[i] = char_codes[i];
+		if (copyrights[i] >= 0 && copyrights[i] <= 255)
+	                s->cdtext_copyright[i] = copyrights[i];
+		if (block_languages[i] >= 0 && block_languages[i] <= 255)
+			s->cdtext_language[i] = block_languages[i];
+	}
+	return 1;
+}
+
+
+/* ts B11206 API */
+int burn_session_get_cdtext_par(struct burn_session *s,
+				int char_codes[8], int copyrights[8],
+				int block_languages[8], int flag)
+{
+	int i;
+
+	for (i = 0; i < 8; i++) {
+		char_codes[i] = s->cdtext_char_code[i];
+		copyrights[i] = s->cdtext_copyright[i];
+		block_languages[i]= s->cdtext_language[i];
+	}
+	return 1;
+}
+
+
+/* ts B11206 API */
+int burn_session_dispose_cdtext(struct burn_session *s, int block) 
+{
+	int i;
+
+	if (block == -1) {
+		for (i= 0; i < 8; i++) {
+			burn_session_dispose_cdtext(s, i);
+			s->cdtext_char_code[i] = 0x01;        /* 7 bit ASCII */
+			s->cdtext_copyright[i] = 0;
+			s->cdtext_language[i] = 0;
+		}
+		return 1;
+	}
+	if (burn_cdtext_check_blockno(block) <= 0)
+		return 0;
+	burn_cdtext_free(&(s->cdtext[block]));
+	s->cdtext_language[block] = 0x09;                   /* english */
+	return 1;
 }
 
 

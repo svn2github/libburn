@@ -72,6 +72,7 @@ struct burn_write_opts
 	/* ts B11203 : CD-TEXT */
 	unsigned char *text_packs;
 	int num_text_packs;
+	int no_text_pack_crc_check;
 
 	/** A disc can have a media catalog number */
 	int has_mediacatalog;
@@ -86,6 +87,13 @@ struct burn_write_opts
 /* Default value for burn_write_opts.stdio_flush_size
 */
 #define Libburn_stdio_fsync_limiT 8192
+
+/* Maximum number of Lead-in text packs.
+   READ TOC/PMA/ATIP can at most return 3640.7 packs.
+   The sequence counters of the packs have 8 bits. There are 8 blocks at most.
+   Thus max 2048 packs. 
+ */
+#define Libburn_leadin_cdtext_packs_maX 2048
 
 
 /** Options for disc reading operations. This should be created with
