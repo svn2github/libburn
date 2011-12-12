@@ -937,10 +937,11 @@ static int burn_decide_cdtext_tab(int block, int pack_type,
 	if (((cdt_curr->flags >> idx) & 1) != ((cdt_prev->flags >> idx) & 1))
 		return 0;
 	length = cdt_curr->length[idx];
-	if (length != cdt_prev->length[idx] || length == 0)
+	if (length != cdt_prev->length[idx] ||
+				length <= 1 + ((cdt_curr->flags >> idx) & 1))
 		return 0;
 	for (j = 0; j < length; j++)
-		if (cdt_curr->payload[j] != cdt_prev->payload[j])
+		if (cdt_curr->payload[idx][j] != cdt_prev->payload[idx][j])
 	break;
 	if (j < length)
 		return 0;
