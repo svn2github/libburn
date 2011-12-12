@@ -3,10 +3,13 @@
 
 Guided by Leon Merten Lohse       via  libcdio-devel@gnu.org
 by reading           mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
-by reading           tech3264.pdf from http://tech.ebu.ch/docs/tech/
 by docs and results of cdtext.zip from http://www.sonydadc.com/file/
 by reading source of      libcdio from http://www.gnu.org/s/libcdio
 which quotes source of   cdrecord from ftp://ftp.berlios.de/pub/cdrecord/alpha
+
+Language codes were learned from http://tech.ebu.ch/docs/tech/tech3264.pdf
+Genre codes were learned from libcdio and confirmed by
+http://helpdesk.audiofile-engineering.com/index.php?pg=kb.page&id=123
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
@@ -61,16 +64,19 @@ Content specification of particular pack types:
 
 Pack types 0x80 to 0x85 and 0x8e contain 0-terminated cleartext. If double byte
 characters are used, then two 0-bytes terminate the cleartext.
-The meaning of 0x80 to 0x85 should be clear by above list.
+The meaning of 0x80 to 0x85 should be clear by above list. They are encoded
+according to the Character Code of their block. Either as ISO-8859-1 single
+byte characters, or as 7-bit ASCII single byte characters, or as MS-JIS double
+byte characters.
 More info to 0x8e is given below.
 
 Pack type 0x86 (Disc Identification) is documented by Sony as "Catalog Number:
 (use ASCII Code) Catalog Number of the album". So it is not really binary
-but might be non-printable.
+but might be non-printable, and should contain only bytes with bit7 = 0.
 
 Pack type 0x87 contains 2 binary bytes, followed by 0-terminated cleartext.
 The two binary bytes form a big-endian index to the following list.
-  0x0000 = "Not Used"
+  0x0000 = "Not Used" (Sony prescribes to use this if no genre applies)
   0x0001 = "Not Defined"
   0x0002 = "Adult Contemporary"
   0x0003 = "Alternative Rock"
@@ -99,7 +105,7 @@ The two binary bytes form a big-endian index to the following list.
   0x001a = "Spoken Word"
   0x001b = "World Music"
 Sony documents the cleartext part as "Genre information that would supplement
-the Genre Code, such as 'USA Rock music in the 60s'".
+the Genre Code, such as 'USA Rock music in the 60s'". Always ASCII encoded.
 
 Pack type 0x88 records information from the CDs Table of Content, as of
 READ PMA/TOC/ATIP Format 0010b (mmc5r03c.pdf, table 490 TOC Track Descriptor
@@ -113,9 +119,10 @@ an example of this pack type.
 Pack type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
 Any information can be recorded on disc as memorandum. Information in this
 field will not be read by CD TEXT players available to the public."
+Always ISO-8859-1 encoded.
 
 Pack type 0x8e is documented by Sony as "UPC/EAN Code (POS Code) of the album.
-This field typically consists of 13 characters."
+This field typically consists of 13 characters." Always ASCII encoded.
 
 Pack type 0x8f summarizes the whole list of text packs of a block.
 See below, Format of CD-TEXT packs, for details.
@@ -229,10 +236,10 @@ language code of all blocks.
 The payload bytes of three 0x8f packs form a 36 byte record. The track number
 bytes of the three packs have the values 0, 1, 2.
     Byte :
-       0 : Character code:
+       0 : Character code for pack types 0x80 to 0x85:
            0x00 = ISO-8859-1
            0x01 = 7 bit ASCII
-           0x80 = Kanji (japanese)
+           0x80 = MS-JIS (japanese Kanji, double byte characters)
        1 : Number of first track
        2 : Number of last track
        3 : libcdio source states: "cd-text information copyright byte"
@@ -313,6 +320,7 @@ bytes of the three packs have the values 0, 1, 2.
            0x5c = Oriya
            0x5d = Nepali
            0x5e = Ndebele
+           0x5f = Marathi
            0x60 = Moldavian
            0x61 = Malaysian
            0x62 = Malagasay

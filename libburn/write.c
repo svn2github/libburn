@@ -1073,6 +1073,8 @@ ex:;
 	if (ret <= 0 || (flag & 1)) {
 		if (ret > 0)
 			ret = crs.num_packs;
+		else if (flag & 1)
+			ret = -1;
 		BURN_FREE_MEM(crs.packs);
 	} else if (crs.num_packs > 0) {
 		*text_packs = crs.packs;

@@ -1887,20 +1887,15 @@ int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
     Copyright byte value can be
       0x00 = not copyrighted
       0x03 = copyrighted
-    Language Code value can be
-      0x00 = Unknown   0x04 = Croatian  0x08 = German   0x09 = English
-      0x0a = Spanish   0x0f = French    0x15 = Italian  0x27 = Finnish
-      0x29 = Turkish   0x69 = Japanese
-    or other latin alphabet codes from EBU Tech 3264, appendix 3, like
-      0x06 = Czech     0x07 = Danish    0x11 = Irish    0x17 = Latin
-      0x1b = Hungarian 0x1d = Dutch     0x20 = Polish   0x21 = Portuguese
-    as well as such where character representation is unclear
-      0x56 = Russian   0x6b = Hindi     0x6c = Hebrew   0x70 = Greek
-      0x75 = Chinese   0x77 = Bulgarian 0x7e = Arabic   0x7f = Amharic
+    Language Code value will typically be 0x09 = English or 0x69 = Japanese.
+    See below macros BURN_CDTEXT_LANGUAGES_0X00 and BURN_CDTEXT_LANGUAGES_0X45,
+    but be aware that many of these codes have never been seen on CD, and that
+    many of them do not have a character representation among the above
+    Character Codes. 
     Default is 0x09 = English for block 0 and 0x00 = Unknown for block 1 to 7.
     Copyright and Character Code are 0x00 for all blocks by default.
-    For a detailed description of these parameters see file
-    doc/cdtext.txt, "Format of a CD-TEXT packs array", "Pack type 0x8f".
+    See also file doc/cdtext.txt, "Format of a CD-TEXT packs array",
+    "Pack type 0x8f".
 
     Parameter value -1 leaves the current setting of the session parameter
     unchanged.
@@ -1915,6 +1910,52 @@ int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
 int burn_session_set_cdtext_par(struct burn_session *s,
                                 int char_codes[8], int copyrights[8],
                                 int languages[8], int flag);
+
+/** This is the first list of languages sorted by their Language codes,
+    which start at 0x00.  They stem from from EBU Tech 3264, appendix 3.
+    E.g. language 0x00 is "Unknown", 0x08 is "German", 0x10 is "Frisian",
+    0x18 is "Latvian", 0x20 is "Polish", 0x28 is "Swedish", 0x2b is "Wallon".
+    See also file doc/cdtext.txt.
+    @since 1.2.0
+*/
+#define BURN_CDTEXT_LANGUAGES_0X00 \
+        "Unknown", "Albanian", "Breton", "Catalan", \
+        "Croatian", "Welsh", "Czech", "Danish", \
+        "German", "English", "Spanish", "Esperanto", \
+        "Estonian", "Basque", "Faroese", "French", \
+        "Frisian", "Irish", "Gaelic", "Galician", \
+        "Icelandic", "Italian", "Lappish", "Latin", \
+        "Latvian", "Luxembourgian", "Lithuanian", "Hungarian", \
+        "Maltese", "Dutch", "Norwegian", "Occitan", \
+        "Polish", "Portuguese", "Romanian", "Romansh", \
+        "Serbian", "Slovak", "Slovenian", "Finnish", \
+        "Swedish", "Turkish", "Flemish", "Wallon" 
+
+/** This is the second list of languages sorted by their Language codes,
+    which start at 0x45.  They stem from from EBU Tech 3264, appendix 3.
+    E.g. language 0x45 is "Zulu", 0x50 is "Sranan Tongo", 0x58 is "Pushtu",
+    0x60 is "Moldavian", 0x68 is "Kannada", 0x70 is "Greek", 0x78 is "Bengali",
+    0x7f is "Amharic".
+    See also file doc/cdtext.txt.
+    @since 1.2.0
+*/
+#define BURN_CDTEXT_LANGUAGES_0X45 \
+                 "Zulu", "Vietnamese", "Uzbek", \
+        "Urdu", "Ukrainian", "Thai", "Telugu", \
+        "Tatar", "Tamil", "Tadzhik", "Swahili", \
+        "Sranan Tongo", "Somali", "Sinhalese", "Shona", \
+        "Serbo-croat", "Ruthenian", "Russian", "Quechua", \
+        "Pushtu", "Punjabi", "Persian", "Papamiento", \
+        "Oriya", "Nepali", "Ndebele", "Marathi", \
+        "Moldavian", "Malaysian", "Malagasay", "Macedonian", \
+        "Laotian", "Korean", "Khmer", "Kazakh", \
+        "Kannada", "Japanese", "Indonesian", "Hindi", \
+        "Hebrew", "Hausa", "Gurani", "Gujurati", \
+        "Greek", "Georgian", "Fulani", "Dari", \
+        "Churash", "Chinese", "Burmese", "Bulgarian", \
+        "Bengali", "Bielorussian", "Bambora", "Azerbaijani", \
+        "Assamese", "Armenian", "Arabic", "Amharic"
+
 
 /* ts B11206 */
 /** Obtain the current settings as of burn_session_set_cdtext_par() resp.
@@ -1957,17 +1998,20 @@ int burn_session_get_cdtext_par(struct burn_session *s,
                         Names are recognized uppercase and lowercase.
     @param payload      Text or binary bytes. The data will be copied to
                         session-internal memory.
-                        Pack types 0x80 to 0x85 and 0x8e contain 0-terminated
-                        cleartext. If double byte characters are used, then
-                        two 0-bytes terminate the cleartext.
+                        Pack types 0x80 to 0x85 contain 0-terminated cleartext
+                        encoded according to the block's Character Code.
+                        If double byte characters are used, then two 0-bytes
+                        terminate the cleartext.
                         Pack type 0x86 is 0-terminated ASCII cleartext.
                         Pack type 0x87 consists of two byte big-endian
-                        Genre code, and 0-terminated genre cleartext.
+                        Genre code (see below BURN_CDTEXT_GENRE_LIST), and
+                        0-terminated ASCII cleartext of genre description.
                         Pack type 0x88 mirrors the session table-of-content.
                         Pack type 0x89 is not understood yet.
                         Pack types 0x8a to 0x8c are reserved.
-                        Pack type 0x8e contains cleartext which is not to be
-                        shown by commercial audio CD players.
+                        Pack type 0x8d contains ISO-8859-1 cleartext which is
+                        not to be shown by commercial audio CD players.
+                        Pack type 0x8e is ASCII cleartext with UPC/EAN code.
     @pram length        Number of bytes in payload. Including terminating
                         0-bytes.
     @param flag         Bitfield for control purposes.
@@ -1979,6 +2023,23 @@ int burn_session_get_cdtext_par(struct burn_session *s,
 int burn_session_set_cdtext(struct burn_session *s, int block,
                             int pack_type, char *pack_type_name,
                             unsigned char *payload, int length, int flag);
+
+
+/** This is the list of Genres sorted by their Genre codes.
+    E.g. genre code 0x0000 is "No Used", 0x0008 is "Dance, 0x0010 is "Musical",
+    0x0018 is "Rhythm & Blues", 0x001b is "World Music".
+    See also file doc/cdtext.txt.
+    @since 1.2.0
+*/
+#define BURN_CDTEXT_GENRE_LIST \
+        "Not Used", "Not Defined", "Adult Contemporary", "Alternative Rock", \
+        "Childrens Music", "Classical", "Contemporary Christian", "Country", \
+        "Dance", "Easy Listening", "Erotic", "Folk", \
+        "Gospel", "Hip Hop", "Jazz", "Latin", \
+        "Musical", "New Age", "Opera", "Operetta", \
+        "Pop Music", "Rap", "Reggae", "Rock Music", \
+        "Rhythm & Blues", "Sound Effects", "Spoken Word", "World Music"
+
 
 /* ts B11206 */
 /** Obtain a CD-TEXT attribute that was set by burn_session_set_cdtext()
@@ -2014,8 +2075,10 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
                         Dispose by free() when no longer needed.
     @param num_packs    Will return the number of 18 byte text packs.
     @param flag         Bitfield for control purposes.
-                        bit0= do not produce CD-TEXT packs, but return number
-                              of packs. This happens also if
+                        bit0= do not return generated CD-TEXT packs,
+                              but check whether production would work and
+                              indicate the number of packs by the call return
+                              value. This happens also if
                               (text_packs == NULL || num_packs == NULL).
     @return             Without flag bit0: > 0 is success, <= 0 failure
                         With flag bit0: > 0 is number of packs,
@@ -2072,6 +2135,9 @@ int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
     gets generated, which has the same block number and pack type. In this
     case, each track should have such a CD-TEXT attribute, too.
     See burn_session_set_cdtext().
+    Be cautious not to exceed the maximum number of 253 payload packs per
+    language block. Use burn_cdtext_from_session() to learn whether a valid
+    array of CD-TEXT packs can be generated from your attributes.
     @param t            Track where to attach CD-TEXT attribute.
     @param block        Number of the language block in which the attribute
                         shall appear. Possible values: 0 to 7.
