@@ -1956,6 +1956,23 @@ int burn_session_set_cdtext_par(struct burn_session *s,
         "Bengali", "Bielorussian", "Bambora", "Azerbaijani", \
         "Assamese", "Armenian", "Arabic", "Amharic"
 
+/* This is the list of empty languages names between 0x30 and 0x44.
+   Together the three macros fill an array of 128 char pointers.
+    static char *languages[] = {
+      BURN_CDTEXT_LANGUAGES_0X00,
+      BURN_CDTEXT_FILLER,
+      BURN_CDTEXT_LANGUAGES_0X45
+    };
+*/
+#define BURN_CDTEXT_FILLER \
+         "", "", "", "", \
+         "", "", "", "", \
+         "", "", "", "", \
+         "", "", "", "", \
+         "", "", "", "", \
+         ""
+
+
 
 /* ts B11206 */
 /** Obtain the current settings as of burn_session_set_cdtext_par() resp.
@@ -2039,6 +2056,10 @@ int burn_session_set_cdtext(struct burn_session *s, int block,
         "Musical", "New Age", "Opera", "Operetta", \
         "Pop Music", "Rap", "Reggae", "Rock Music", \
         "Rhythm & Blues", "Sound Effects", "Spoken Word", "World Music"
+
+/* The number of genre names in BURN_CDTEXT_GENRE_LIST.
+*/
+#define BURN_CDTEXT_NUM_GENRES 28
 
 
 /* ts B11206 */
