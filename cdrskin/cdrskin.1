@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 12, 2011"
+.TH CDRSKIN 1 "Dec 14, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -786,8 +786,7 @@ are 0, then the correct values get silently inserted. If there are non-zero
 CRC bytes, then a mismatch causes the abort of the burn run.
 This check can be disabled by option -force.
 .br
-The CRC algorithm is known as CRC-16-CCITT with divisor 0x11021.
-The resulting bits have to be inverted.
+Note that this option overrides option input_sheet_v07t= .
 .TP
 .BI \-toc
 Print the table of content (TOC) which describes the tracks recorded on disc.
@@ -1043,6 +1042,57 @@ An equivalent of growisofs -Z for overwriteable media is:
 With multi-session DVD, blank=fast will act like dvd+rw-format -blank=full .
 .br
 growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
+.TP
+.BI input_sheet_v07t= path
+Read CD-TEXT definitions from a Sony Input Sheet version 0.7T. Up to eight
+such sheets can be read by multiple input_sheet_v07t= options.
+Each will define a CD-TEXT language block.
+.br
+The information in such a sheet is given by text lines of the following form:
+  purpose specifier [whitespace] = [whitespace] content text
+[whitespace] is zero or more ASCII 32 (space) or ASCII 9 (tab) characters.
+The purpose specifier tells the meaning of the content text.
+Empty content text does not cause a CD-TEXT attribute to be attached.
+.br
+The following purpose specifiers apply to the session as a whole:
+  Purpose specifier   | Content example
+  -------------------------------------------------------------
+  Text Code           = 8859
+  Language Code       = English
+  Album Title         = Joyful Nights
+  Artist Name         = United Cat Orchestra
+  Songwriter          = Various Songwriters
+  Composer            = Various Composers
+  Arranger            = Tom Cat
+  Album Message       = For all our fans
+  Catalog Number      = 1234567890
+  Genre Code          = Classical
+  Genre Information   = Feline classic music
+  Closed Information  = This is not to be shown by CD players
+  UPC / EAN           = 1234567890123
+  Text Data Copy Protection = OFF
+  First Track Number  = 1
+  Last Track Number   = 3
+.br
+The following purpose specifiers apply to particular tracks:
+  Purpose specifier   | Content example
+  -------------------------------------------------------------
+  Track 01 Title      = Song of Joy
+  Track 01 Artist     = Felix and The Purrs
+  Track 01 Songwriter = Friedrich Schiller
+  Track 01 Composer   = Ludwig van Beethoven
+  Track 01 Arranger   = Tom Cat
+  Track 01 Message    = Fritz and Louie once were punks
+  ISRC 01             = XYCRR1101234
+.br
+Track numbers are decimal despite the leading 0. There should be as many track
+definitions as there are track source files given.
+.br
+See libburn's doc/cdtext.txt for a detailed definition of 0.7T and the
+possible values for Text Code, Language Code, Genre Code, Text Data Copy
+Protection.
+.br
+This option will get into effect only if no option textfile= is given.
 .TP
 .BI \--list_formats
 List the available format descriptors as reported by the drive for the

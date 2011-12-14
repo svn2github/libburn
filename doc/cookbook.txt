@@ -1446,5 +1446,11 @@ written as rLBA nor as vLBA yet. So one should begin the vLBA of new sessions
 at the NWA of a sufficiently sized track.
 (mmc5r03c.pdf 4.5.3.5.4.2 , 4.5.3.6.9)
 
+
+-------------------------------------------------------------------------------
+This text is copyright 2011 Thomas Schmitt <scdbackup@gmx.net>.
+Permission is granted to copy, modify, and distribute it, as long as the
+references to the original information sources are maintained.
+There is NO WARRANTY, to the extent permitted by law.
 -------------------------------------------------------------------------------
 

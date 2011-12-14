@@ -421,8 +421,6 @@ double Sfile_microtime(int flag)
 }
 
 
-#ifndef Cdrskin_extra_leaN
-
 /** Read a line from fp and strip LF or CRLF */
 char *Sfile_fgets(char *line, int maxl, FILE *fp)
 {
@@ -436,6 +434,8 @@ char *ret;
  if(l>0) if(line[l-1]=='\r') line[--l]= 0;
  return(ret);
 }
+
+#ifndef Cdrskin_extra_leaN
 
 
 /** Destroy a synthetic argument array */
@@ -2762,6 +2762,7 @@ set_dev:;
     " --grow_overwriteable_iso  emulate multi-session on media like DVD+RW\n");
      printf(
        " --ignore_signals   try to ignore any signals rather than to abort\n");
+     printf(" input_sheet_v07t=<path>  read a Sony CD-TEXT definition file\n");
      printf(" --list_formats     list format descriptors for loaded media.\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
      printf(" --long_toc         print overview of media content\n");
@@ -3316,6 +3317,11 @@ struct CdrskiN {
  unsigned char *text_packs;
  int num_text_packs;
 
+ int sheet_v07t_blocks;
+ char sheet_v07t_paths[8][Cdrskin_adrleN];
+
+ int cdtext_test;
+
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
  int track_counter;
@@ -3469,6 +3475,10 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->swap_audio_bytes= 1;   /* cdrecord default is big-endian (msb_first) */
  o->text_packs= NULL;
  o->num_text_packs= 0;
+ o->sheet_v07t_blocks= 0;
+ for(i= 0; i < 8; i++)
+   memset(o->sheet_v07t_paths, 0, Cdrskin_adrleN);
+ o->cdtext_test= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
    o->tracklist[i]= NULL;
@@ -4597,6 +4607,7 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 
 /* @param flag bit0-3= source of text packs:
                         0= CD Lead-in
+                        0= session and tracks
 */
 int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
                              int num_packs, int flag)
@@ -4608,6 +4619,8 @@ int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
  from= flag & 15;
  if(from == 0)
    from_text= " from CD Lead-in";
+ else if(from == 1)
+   from_text= " from session and tracks";
  printf("CD-TEXT data%s:\n", from_text);
  for(i= 0; i < num_packs; i++) {
    pack= text_packs + 18 * i;
@@ -6428,6 +6441,493 @@ int Cdrskin_grow_overwriteable_iso(struct CdrskiN *skin, int flag)
 }
 
 
+int Cdrskin_cdtext_test(struct CdrskiN *skin, struct burn_write_opts *o,
+                        struct burn_session *session, int flag)
+{
+ int ret, num_packs;
+ unsigned char *text_packs = NULL;
+
+ ret= burn_cdtext_from_session(session, &text_packs, &num_packs, 0);
+ if(ret < 0)
+   goto ex;
+ if(ret > 0) {
+   Cdrskin_print_text_packs(skin, text_packs, num_packs, 1);
+   ret= 1; goto ex;
+ }
+ ret= 1;
+ex:
+ if (text_packs != NULL)
+   free(text_packs);
+ return(ret);
+}
+
+
+/* @param flag bit0= allow two byte codes 0xNNNN or 0xNN 0xNN
+*/
+int Cdrskin__hexcode(char *payload, int flag)
+{
+ unsigned int x;
+ int lo, hi, l;
+ char buf[10], *cpt;
+
+ l= strlen(payload);
+ if(strncmp(payload, "0x", 2) != 0)
+   return(-1);
+ if((l == 6 || l == 9) && (flag & 1))
+   goto double_byte;
+ if(strlen(payload) != 4)
+   return(-1);
+ if(!(isxdigit(payload[2]) && isxdigit(payload[3])))
+   return(-1);
+ sscanf(payload + 2, "%x", &x);
+ return(x);
+
+double_byte:;
+ strcpy(buf, payload);
+ buf[4]= 0;
+ hi= Cdrskin__hexcode(buf, 0);
+ if(strlen(payload) == 6) {
+   buf[4]= payload[4];
+   buf[2]= '0';
+   buf[3]= 'x';
+   cpt= buf + 2;
+ } else {
+   if(payload[4] != 32 && payload[4] != 9)
+     return(-1);
+   cpt= buf + 5;
+ }
+ lo= Cdrskin__hexcode(cpt, 0);
+ if(lo < 0 || hi < 0)
+   return(-1);
+ return((hi << 8) | lo);
+}
+
+
+int Cdrskin__cdtext_char_code(char *payload, int flag)
+{
+ int ret;
+
+ ret= Cdrskin__hexcode(payload, 0);
+ if(ret >= 0)
+   return(ret);
+ if(strstr(payload, "8859") != NULL)
+   return(0x00);
+ else if(strstr(payload, "ASCII") != NULL)
+   return(0x01);
+ else if(strstr(payload, "JIS") != NULL)
+   return(0x80);
+
+ fprintf(stderr,
+         "cdrskin: SORRY : input_sheet_v07t : Unknown Text Code '%s'.\n",
+         payload);
+ return(-1);
+}
+
+
+int Cdrskin__cdtext_lang_code(char *payload, int flag)
+{
+ int i, ret;
+ static char *languages[128] = {
+   BURN_CDTEXT_LANGUAGES_0X00,
+   BURN_CDTEXT_FILLER,
+   BURN_CDTEXT_LANGUAGES_0X45
+ };
+
+ ret= Cdrskin__hexcode(payload, 0);
+ if(ret >= 0)
+   return(ret);
+ if(payload[0] != 0)
+   for(i= 0; i < 128; i++)
+     if(strcmp(languages[i], payload) == 0)
+       return(i);
+
+ fprintf(stderr,
+         "cdrskin: SORRY : input_sheet_v07t : Unknown Language Code '%s'.\n",
+         payload);
+ return(-1);
+}
+
+
+int Cdrskin__cdtext_genre_code(char *payload, int flag)
+{
+ int i, ret;
+ static char *genres[BURN_CDTEXT_NUM_GENRES] = {
+   BURN_CDTEXT_GENRE_LIST
+ };
+ 
+ ret= Cdrskin__hexcode(payload, 1);
+ if(ret >= 0)
+   return(ret);
+ for(i= 0; i < BURN_CDTEXT_NUM_GENRES; i++)
+   if(strcmp(genres[i], payload) == 0)
+     return(i);
+
+ fprintf(stderr,
+         "cdrskin: SORRY : input_sheet_v07t : Unknown Genre Code '%s'.\n",
+         payload);
+ return(-1);
+}
+
+
+int Cdrskin__cdtext_len_db(char *payload, int char_code,
+                           int *length, int *double_byte, int flag)
+{
+ if(char_code < 0) {
+   fprintf(stderr,
+ "cdrskin: SORRY : input_sheet_v07t : No 'Text Code' seen before text lines.\n"
+          );
+   return(0);
+ }
+ *double_byte= (char_code == 0x80);
+ *length= strlen(payload) + 1 + *double_byte;
+ return(1);
+}
+
+
+int Cdrskin__cdtext_to_session(struct burn_session *session, int block,
+                               char *payload, int char_code, int pack_type,
+                               char *pack_type_name, int flag)
+{
+ int length, double_byte, ret;
+
+ ret= Cdrskin__cdtext_len_db(payload, char_code, &length, &double_byte, 0);
+ if(ret <= 0)
+   return(ret);
+ ret= burn_session_set_cdtext(session, block, pack_type, pack_type_name,
+                              (unsigned char *) payload, length, double_byte);
+ return(ret);
+}
+
+
+int Cdrskin__cdtext_to_track(struct burn_track *track, int block,
+                             char *payload, int char_code, int pack_type,
+                             char *pack_type_name, int flag)
+{
+ int length, double_byte, ret;
+
+ ret= Cdrskin__cdtext_len_db(payload, char_code, &length, &double_byte, 0);
+ if(ret <= 0)
+   return(ret);
+ ret= burn_track_set_cdtext(track, block, pack_type, pack_type_name,
+                            (unsigned char *) payload, length, double_byte);
+ return(ret);
+}
+
+
+int Cdrskin_read_input_sheet_v07t(struct CdrskiN *skin, char *path, int block,
+                        	struct burn_session *session, int flag)
+{
+ int ret= 0, num_tracks, char_codes[8], copyrights[8], languages[8], i;
+ int genre_code= -1, track_offset= 1, length, pack_type, tno;
+ int session_attr_seen[16], track_attr_seen[16];
+ struct stat stbuf;
+ FILE *fp= NULL;
+ char line[4096], *eq_pos, *payload, genre_text[160], track_txt[3];
+ struct burn_track **tracks;
+
+ for(i= 0; i < 8; i++)
+   char_codes[i]= copyrights[i]= languages[i]= -1;
+ for(i= 0; i < 16; i++)
+   session_attr_seen[i] = track_attr_seen[i]= 0;
+ genre_text[0]= 0;
+
+ tracks= burn_session_get_tracks(session, &num_tracks);
+ if(stat(path, &stbuf) == -1) {
+cannot_open:;
+   fprintf(stderr, "cdrskin: SORRY : Cannot open input_sheet_v07t='%s'\n",
+           path);
+   fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+   ret= 0; goto ex;
+ }
+ if(!S_ISREG(stbuf.st_mode)) {
+   fprintf(stderr,
+     "cdrskin: SORRY : File is not of usable type or content: input_sheet_v07t='%s'\n",
+     path);
+   ret= 0; goto ex;
+ }
+
+ fp= fopen(path, "rb");
+ if(fp == NULL)
+   goto cannot_open;
+
+ while(1) {
+   if(Sfile_fgets(line, 4095, fp) == NULL) {
+     if(!ferror(fp))
+ break;
+     fprintf(stderr,
+         "cdrskin: SORRY : Cannot read all bytes from input_sheet_v07t='%s'\n",
+             path);
+     fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     ret= 0; goto ex;
+   }
+   if(strlen(line) == 0)
+ continue;
+   eq_pos= strchr(line, '=');
+   if(eq_pos == NULL) {
+     fprintf(stderr,
+             "cdrskin: SORRY : input_sheet_v07t : Line without '=' : '%s'.\n",
+             line);
+     ret= 0; goto ex;
+   }
+   for(payload= eq_pos + 1; *payload == 32 || *payload == 9;
+       payload++);
+   *eq_pos= 0;
+   for(eq_pos--; (*eq_pos == 32 || *eq_pos == 9) && eq_pos > line; eq_pos--)
+     *eq_pos= 0;
+
+   if(payload[0] == 0)
+ continue;
+
+   if(strcmp(line, "Text Code") == 0) {
+     ret= Cdrskin__cdtext_char_code(payload, 0);
+     if(ret < 0)
+       goto ex;
+     char_codes[block]= ret;
+
+   } else if(strcmp(line, "Language Code") == 0) {
+     ret= Cdrskin__cdtext_lang_code(payload, 0);
+     if(ret < 0)
+       goto ex;
+     languages[block]= ret;
+
+   } else if(strcmp(line, "0x80") == 0 || strcmp(line, "Album Title") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "TITLE", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x0]= 1;
+
+   } else if(strcmp(line, "0x81") == 0 || strcmp(line, "Artist Name") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "PERFORMER", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x1]= 1;
+
+   } else if(strcmp(line, "0x82") == 0 || strcmp(line, "Songwriter") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "SONGWRITER", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x2]= 1;
+
+   } else if(strcmp(line, "0x83") == 0 || strcmp(line, "Composer") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "COMPOSER", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x3]= 1;
+
+   } else if(strcmp(line, "0x84") == 0 || strcmp(line, "Arranger") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "ARRANGER", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x4]= 1;
+
+   } else if(strcmp(line, "0x85") == 0 || strcmp(line, "Album Message") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload,
+                                     char_codes[block], 0, "MESSAGE", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0x5]= 1;
+
+   } else if(strcmp(line, "0x86") == 0 ||
+             strcmp(line, "Catalog Number") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload, 0x01, 0,
+                                     "DISCID", 0);
+     if(ret <= 0)
+       goto ex;
+
+   } else if(strcmp(line, "Genre Code") == 0) {
+     genre_code= Cdrskin__cdtext_genre_code(payload, 0);
+     if(genre_code < 0)
+       goto ex;
+
+   } else if(strcmp(line, "Genre Information") == 0) {
+     strncpy(genre_text, payload, sizeof(genre_text) - 1);
+     genre_text[sizeof(genre_text) - 1]= 0;
+
+   } else if(strcmp(line, "0x8d") == 0 ||
+             strcmp(line, "Closed Information") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload, 0x00, 0,
+                                     "CLOSED", 0);
+     if(ret <= 0)
+       goto ex;
+
+   } else if(strcmp(line, "0x8e") == 0 || strcmp(line, "UPC / EAN") == 0) {
+     ret= Cdrskin__cdtext_to_session(session, block, payload, 0x01, 0,
+                                     "UPC_ISRC", 0);
+     if(ret <= 0)
+       goto ex;
+     session_attr_seen[0xe]= 1;
+
+   } else if(strncmp(line, "Disc Information ", 17) == 0) {
+
+     /* >>> ??? is this good for anything ? */;
+
+   } else if(strcmp(line, "Input Sheet Version") == 0) {
+     if(strcmp(payload, "0.7T") != 0) {
+       fprintf(stderr,
+         "cdrskin: WARNING : input_sheet_v07t : Input Sheet Version '%s', expected '0.7T'.\n",
+         payload);
+     }
+
+   } else if(strcmp(line, "Remarks") == 0) {
+     ;
+
+   } else if(strcmp(line, "Text Data Copy Protection") == 0) {
+     ret = Cdrskin__hexcode(payload, 0);
+     if(ret >= 0)
+       copyrights[block]= ret;
+     else if(strcmp(payload, "ON") == 0)
+       copyrights[block]= 0x03;
+     else if(strcmp(payload, "OFF") == 0)
+       copyrights[block]= 0x00;
+     else {
+       fprintf(stderr,
+               "cdrskin: SORRY : input_sheet_v07t : Unknown Text Data Copy Protection '%s'.\n",
+               payload);
+       ret= 0; goto ex;
+     }
+
+   } else if(strcmp(line, "First Track Number") == 0) {
+     ret= -1;
+     sscanf(payload, "%d", &ret);
+     if(ret <= 0 || ret > 99) {
+bad_tno:;
+       fprintf(stderr,
+               "cdrskin: SORRY : input_sheet_v07t : Inappropriate First Track Number '%s'.\n",
+               payload);
+       ret= 0; goto ex;
+     } else {
+       track_offset= ret;
+       if(ret != 1) {
+         fprintf(stderr,
+               "cdrskin: WARNING : input_sheet_v07t : First Track Number '%s' will be mapped to 1.\n",
+               payload);
+       }
+     }
+
+   } else if(strcmp(line, "Last Track Number") == 0) {
+     ret= -1;
+     sscanf(payload, "%d", &ret);
+     if(ret < 0) {
+       goto bad_tno;
+     } else {
+
+       /* >>> ??? Is it good for anything ? */;
+
+     }
+
+   } else if(strncmp(line, "Track ", 6) == 0) {
+     tno= -1;
+     sscanf(line + 6, "%d", &tno);
+     if(tno < 0 || tno - track_offset < 0 ||
+        tno - track_offset >= num_tracks) {
+       track_txt[0]= line[6];
+       track_txt[1]= line[7];
+       track_txt[2]= 0;
+bad_track_no:;
+       if(track_offset != 1)
+         fprintf(stderr,
+               "cdrskin: SORRY : input_sheet_v07t : Inappropriate Track number '%s' (mapped to %2.2d)\n",
+               track_txt, tno - track_offset + 1);
+       else
+         fprintf(stderr,
+      "cdrskin: SORRY : input_sheet_v07t : Inappropriate Track number '%s'.\n",
+               track_txt);
+       fprintf(stderr, "cdrskin:         (acceptable range: %2.2d to %2.2d)\n",
+               track_offset, num_tracks + track_offset - 1);
+       ret= 0; goto ex;
+     }
+     tno-= track_offset;
+
+     if(strcmp(line, "0x80") == 0 || strcmp(line + 9, "Title") == 0)
+       pack_type= 0x80;
+     else if(strcmp(line, "0x81") == 0 || strcmp(line + 9, "Artist") == 0)
+       pack_type= 0x81;
+     else if(strcmp(line, "0x82") == 0 || strcmp(line + 9, "Songwriter") == 0)
+       pack_type= 0x82;
+     else if(strcmp(line, "0x83") == 0 || strcmp(line + 9, "Composer") == 0)
+       pack_type= 0x83;
+     else if(strcmp(line, "0x84") == 0 || strcmp(line + 9, "Arranger") == 0)
+       pack_type= 0x84;
+     else if(strcmp(line, "0x85") == 0 || strcmp(line + 9, "Message") == 0)
+       pack_type= 0x85;
+     else if(strcmp(line, "0x8e") == 0 || strcmp(line + 9, "ISRC") == 0)
+       pack_type= 0x8e;
+     else {
+       fprintf(stderr,
+             "cdrskin: SORRY : input_sheet_v07t : Unknown Track header '%s'\n",
+               payload);
+       ret= 0; goto ex;
+     }
+     ret= Cdrskin__cdtext_to_track(tracks[tno], block, payload, 0x00,
+                                   pack_type, "", 0);
+     if(ret <= 0)
+       goto ex;
+     track_attr_seen[pack_type - 0x80]= 1;
+
+   } else if(strncmp(line, "ISRC ", 5) == 0) {
+     /* Track variation of UPC EAN = 0x8e */
+     tno= -1;
+     sscanf(line + 5, "%d", &tno);
+     if (tno < 0 || tno - track_offset < 0 ||
+         tno - track_offset >= num_tracks) {
+       track_txt[0]= line[5];
+       track_txt[1]= line[6];
+       track_txt[2]= 0;
+       goto bad_track_no;
+     }
+     tno-= track_offset;
+     ret= Cdrskin__cdtext_to_track(tracks[tno], block, payload, 0x00,
+                                   0x8e, "", 0);
+     if(ret <= 0)
+         goto ex;
+     track_attr_seen[0xe]= 1;
+
+   } else {
+     fprintf(stderr,
+             "cdrskin: SORRY : input_sheet_v07t : Unknown line header '%s'\n",
+             line);
+     ret= 0; goto ex;
+   }
+ }
+
+ for(i= 0x80; i <= 0x8e; i++) {
+   if(i > 0x85 && i != 0x8e)
+ continue;
+   if(session_attr_seen[i - 0x80] || !track_attr_seen[i - 0x80])
+ continue;
+   ret= Cdrskin__cdtext_to_session(session, block, "", char_codes[block],
+                                   i, NULL, 0);
+   if(ret <= 0)
+     goto ex;
+ }
+ if(genre_code >= 0 && genre_text[0]) {
+   line[0]= (genre_code >> 8) & 0xff;
+   line[1]= genre_code & 0xff;
+   strcpy(line + 2, genre_text);
+   length= 2 + strlen(line + 2) + 1;
+   ret= burn_session_set_cdtext(session, block, 0, "GENRE",
+                              (unsigned char *) line, length, 0);
+   if(ret <= 0)
+     goto ex;
+ }
+ ret= burn_session_set_cdtext_par(session, char_codes, copyrights, languages,
+                                  0);
+ if(ret <= 0)
+   goto ex;
+
+ ret= 1;
+ex:;
+ if(fp != NULL)
+   fclose(fp);
+ return(ret);
+}
+
+
 /** Burn data via libburn according to the parameters set in skin.
     @return <=0 error, 1 success
 */
@@ -6448,6 +6948,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  char *doing;
  char *source_path;
  int source_fd, is_from_stdin;
+ int text_flag= 4; /* Check CRCs and silently repair CRCs if all are 0 */
 
 #ifndef Cdrskin_no_cdrfifO
  double put_counter, get_counter, empty_counter, full_counter;
@@ -6509,6 +7010,20 @@ burn_failed:;
      skin->fixed_size+= size+padding;
    else
      skin->has_open_ended_track= 1;
+ }
+
+ if(skin->sheet_v07t_blocks > 0) {
+   if(skin->num_text_packs > 0) {
+     fprintf(stderr,
+   "cdrskin: WARNING : Option textfile= overrides option input_sheet_v07t=\n");
+   } else {
+     for(i= 0; i < skin->sheet_v07t_blocks; i++) {
+       ret= Cdrskin_read_input_sheet_v07t(skin, skin->sheet_v07t_paths[i], i,
+                                          session, 0);
+       if(ret <= 0)
+         goto burn_failed;
+     }
+   }
  }
 
 #ifndef Cdrskin_extra_leaN
@@ -6622,14 +7137,28 @@ burn_failed:;
  }
  burn_write_opts_set_underrun_proof(o,skin->burnfree);
  if(skin->num_text_packs > 0) {
+   if(!!skin->force_is_set)
+	text_flag= 1; /* No CRC verification or repairing */
    ret= burn_write_opts_set_leadin_text(o, skin->text_packs,
-                                        skin->num_text_packs, 0);
+                                        skin->num_text_packs, text_flag);
    if(ret <= 0)
      goto burn_failed;
  }
  ret= Cdrskin_activate_write_mode(skin,o,disc,0);
  if(ret<=0)
    goto burn_failed;
+
+ if(skin->cdtext_test) {
+   ret= Cdrskin_cdtext_test(skin, o, session, (skin->cdtext_test == 1));
+   if(ret <= 0)
+     goto ex;
+   if(skin->cdtext_test >= 2) {
+     fprintf(stderr,
+       "cdrskin: Option --cdtext_dummy prevents actual burn run\n");
+     ret= 1; goto ex;
+   }
+ }
+
  ret= Cdrskin_obtain_nwa(skin, &nwa,0);
  if(ret<=0)
    nwa= -1;
@@ -7331,6 +7860,12 @@ unsupported_blank_option:;
    } else if(strcmp(argv[i],"--bragg_with_audio")==0) {
      /* OBSOLETE 0.2.3 : was handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i],"--cdtext_dummy")==0) {
+     skin->cdtext_test= 2;
+
+   } else if(strcmp(argv[i],"--cdtext_test")==0) {
+     skin->cdtext_test= 1;
+
    } else if(strcmp(argv[i],"-checkdrive")==0) {
      skin->do_checkdrive= 1;
 
@@ -7580,6 +8115,26 @@ gracetime_equals:;
      skin->modesty_on_drive= 1;
      skin->min_buffer_percent= 75;
      skin->max_buffer_percent= 95;
+
+   } else if(strncmp(argv[i], "input_sheet_v07t=", 17)==0) {
+     if(skin->sheet_v07t_blocks >= 8) {
+       fprintf(stderr,
+            "cdrskin: SORRY : Too many input_sheet_v07t= options. (Max. 8)\n");
+       return(0);
+     }
+     if(argv[i][17] == 0) {
+       fprintf(stderr,
+        "cdrskin: SORRY : Missing file path after option input_sheet_v07t=\n");
+       return(0);
+     }
+     if(strlen(argv[i] + 17) > Cdrskin_adrleN) {
+       fprintf(stderr,
+       "cdrskin: SORRY : File path too long after option input_sheet_v07t=\n");
+       return(0);
+     }
+     strcpy(skin->sheet_v07t_paths[skin->sheet_v07t_blocks], argv[i] + 17);
+     skin->sheet_v07t_blocks++;
+     skin->preskin->demands_cdrskin_caps= 1;
 
    } else if(strcmp(argv[i],"-inq")==0) {
      skin->do_checkdrive= 2;

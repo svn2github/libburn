@@ -18,6 +18,8 @@ Content:
 - Content specifications of particular pack types
 - Format of a CD-TEXT packs array
 - Overview of libburn API calls for CD-TEXT
+- Sony Text File Format (Input Sheet Version 0.7T):
+
 
 -------------------------------------------------------------------------------
 CD-TEXT from the view of the user:
@@ -30,9 +32,9 @@ Up to 8 blocks are possible.
 There are 13 defined attribute categories, which are called Pack Types and are
 identified by a single-byte code:
   0x80 = Title
-  0x81 = Names of performers
+  0x81 = Names of Performers
   0x82 = Names of Songwriters 
-  0x83 = Names of Composers,
+  0x83 = Names of Composers
   0x84 = Names of Arrangers 
   0x85 = Messages
   0x86 = text-and-binary: Disc Identification
@@ -123,6 +125,8 @@ Always ISO-8859-1 encoded.
 
 Pack type 0x8e is documented by Sony as "UPC/EAN Code (POS Code) of the album.
 This field typically consists of 13 characters." Always ASCII encoded.
+It applies to tracks as "ISRC code [which] typically consists of 12 characters"
+and is always ISO-8859-1 encoded.
 
 Pack type 0x8f summarizes the whole list of text packs of a block.
 See below, Format of CD-TEXT packs, for details.
@@ -132,9 +136,12 @@ See below, Format of CD-TEXT packs, for details.
 Format of a CD-TEXT packs array:
 
 The attributes are represented on CD as Text Packs in the sub-channel of
-the Lead-in of the disc.
+the Lead-in of the disc. See doc/cookbook.txt for a description how to write
+the readily formatted CD-TEXT pack array to CD, and how to read CD-TEXT packs
+from CD.
+
 The format is explained in part in MMC-3 (mmc3r10g.pdf, Annex J) and in part by
-the documentation of Sony's cdtext.zip.
+the documentation in Sony's cdtext.zip :
 
 Each pack consists of a 4-byte header, 12 bytes of payload, and 2 bytes of CRC.
 
@@ -416,6 +423,15 @@ and burn_track:
                             int pack_type, char *pack_type_name,
                             unsigned char *payload, int length, int flag);
 
+Macros list the texts for genre and language codes:
+
+  BURN_CDTEXT_LANGUAGES_0X00
+  BURN_CDTEXT_FILLER
+  BURN_CDTEXT_LANGUAGES_0X45
+
+  BURN_CDTEXT_GENRE_LIST
+  BURN_CDTEXT_NUM_GENRES
+
 These attributes can then be converted into an array of text packs by:
 
   int burn_cdtext_from_session(struct burn_session *s,
@@ -445,4 +461,139 @@ and for removing attached attributes:
   int burn_session_dispose_cdtext(struct burn_session *s, int block);
 
   int burn_track_dispose_cdtext(struct burn_track *t, int block);
+
+
+-------------------------------------------------------------------------------
+Sony Text File Format (Input Sheet Version 0.7T):
+
+This text file format provides comprehensive means to define the text
+attributes of session and tracks for a single block. More than one
+such file has to be read to form an attribute set with multiple blocks.
+
+The information is given by text lines of the following form:
+  purpose specifier [whitespace] = [whitespace] content text
+[whitespace] is zero or more ASCII 32 (space) or ASCII 9 (tab) characters.
+The purpose specifier tells the meaning of the content text.
+Empty content text does not cause a CD-TEXT attribute to be attached.
+
+The following purpose specifiers apply to the session as a whole:
+  Specifier           =  Meaning
+  -------------------------------------------------------------------------
+  Text Code           =  Character code for pack type 0x8f
+                         "ASCII", "8859"
+  Language Code       =  One of the language names for pack type 0x8f
+  Album Title         =  Content of pack type 0x80
+  Artist Name         =  Content of pack type 0x81
+  Songwriter          =  Content of pack type 0x82
+  Composer            =  Content of pack type 0x83
+  Arranger            =  Content of pack type 0x84
+  Album Message       =  Content of pack type 0x85
+  Catalog Number      =  Content of pack type 0x86
+  Genre Code          =  One of the genre names for pack type 0x87
+  Genre Information   =  Cleartext part of pack type 0x87
+  Input Sheet Version =  "0.7T"
+  Closed Information  =  Content of pack type 0x8d
+  UPC / EAN           =  Content of pack type 0x8e
+  Text Data Copy Protection = Copyright value for pack type 0x8f
+                              "ON" = 0x03, "OFF" = 0x00
+  First Track Number  =  The lowest track number used in the file
+  Last Track Number   =  The highest track number used in the file
+
+The following purpose specifiers apply to particular tracks:
+  Track NN Title      =  Content of pack type 0x80
+  Track NN Artist     =  Content of pack type 0x81
+  Track NN Songwriter =  Content of pack type 0x82
+  Track NN Composer   =  Content of pack type 0x83
+  Track NN Arranger   =  Content of pack type 0x84
+  Track NN Message    =  Content of pack type 0x85
+  ISRC NN             =  Content of pack type 0x8e
+
+The following purpose specifiers have no effect on CD-TEXT:
+  Remarks             =  Comments with no influence on CD-TEXT
+  Disc Information NN =  Supplementary information for use by record companies.
+                         ISO-8859-1 encoded.
+
+cdrskin peculiarties:
+
+cdrskin reads files of the described format by its option input_sheet_v07t= .
+
+The following purpose specifiers accept byte values of the form 0xXY.
+  Text Code , Language Code , Genre Code , Text Data Copy Protection
+E.g. to indicate MS-JIS character code (of which the exact name is unknown):
+  Text Code           = 0x80
+Genre Code is settable by 0xXY or 0xXYZT or 0xXY 0xZT.
+  Genre Code          = 0x001b
+
+Purpose specifiers which have the meaning "Content of pack type 0xXY"
+may be replaced by the pack type codes.  E.g.:
+  0x80                =  Session content of pack type 0x80
+  Track 02 0x80       =  Track content of pack type 0x80 for track 2.
+Applicable are pack types 0x80 to 0x86, 0x8d, 0x8e.
+
+Text code has to be defined before any content is defined which depends
+on the chosen encoding. I.e before any pack types 0x80 to 0x85.
+
+If a track attribute is set but the corresponding session attribute is not
+defined or defined with empty text, then the session attribute gets attached
+as empty test. (Normally empty content is ignored.)
+
+libburn will always start track numbering by 1. So cdrskin adjusts all track
+numbers from the input sheet file by subtracting (First Track Number - 1).
+cdrskin ignores Last Track number because libburn will always write its
+own first and last track numbers to pack type 0x8f.
+
+Example run with three tracks:
+
+  $ cdrskin dev=/dev/sr0 -v input_sheet_v07t=CDRSKIN_1.TXT \
+            -audio track_source_1 track_source_2 track_source_3
+
+----------------------------------------------------------
+Content of file CDRSKIN_1.TXT                            :
+----------------------------------------------------------
+Text Code           = 8859
+Language Code       = English
+Album Title         = Joyful Nights
+Artist Name         = United Cat Orchestra
+Songwriter          = Various Songwriters
+Composer            = Various Composers
+Arranger            = Tom Cat
+Album Message       = For all our fans
+Catalog Number      = 1234567890
+Genre Code          = Classical
+Genre Information   = Feline classic music
+Closed Information  = This is not to be shown by CD players
+UPC / EAN           = 1234567890123
+Text Data Copy Protection = OFF
+First Track Number  = 1
+Last Track Number   = 3
+Track 01 Title      =  Song of Joy
+Track 01 Artist     =  Felix and The Purrs
+Track 01 Songwriter =  Friedrich Schiller
+Track 01 Composer   =  Ludwig van Beethoven
+Track 01 Arranger   =  Tom Cat
+Track 01 Message    =  Fritz and Louie were punks
+ISRC 01             =  XYBLG1101234
+Track 02 Title      =  Humpty Dumpty
+Track 02 Artist     =  Catwalk Beauties
+Track 02 Songwriter =  Mother Goose
+Track 02 Composer   =  unknown
+Track 02 Arranger   =  Tom Cat
+Track 02 Message    =  Pluck the goose
+ISRC 02             =  XYBLG1100005
+Track 03 Title      =  Mee Owwww
+Track 03 Artist     =  Sicko Gang
+Track 03 Songwriter =  Sicko Gang
+Track 03 Composer   =  Sicko Gang
+Track 03 Arranger   =  Sicko Gang
+Track 03 Message    =  
+ISRC 03             =  XYBLG1100006
+----------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+This text is copyright 2011 Thomas Schmitt <scdbackup@gmx.net>.
+Permission is granted to copy, modify, and distribute it, as long as the
+references to the original information sources are maintained.
+There is NO WARRANTY, to the extent permitted by law.
+-------------------------------------------------------------------------------
 
