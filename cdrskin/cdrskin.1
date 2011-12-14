@@ -1049,40 +1049,69 @@ such sheets can be read by multiple input_sheet_v07t= options.
 Each will define a CD-TEXT language block.
 .br
 The information in such a sheet is given by text lines of the following form:
+.br
   purpose specifier [whitespace] = [whitespace] content text
+.br
 [whitespace] is zero or more ASCII 32 (space) or ASCII 9 (tab) characters.
 The purpose specifier tells the meaning of the content text.
 Empty content text does not cause a CD-TEXT attribute to be attached.
 .br
 The following purpose specifiers apply to the session as a whole:
+.br
   Purpose specifier   | Content example
+.br
   -------------------------------------------------------------
+.br
   Text Code           = 8859
+.br
   Language Code       = English
+.br
   Album Title         = Joyful Nights
+.br
   Artist Name         = United Cat Orchestra
+.br
   Songwriter          = Various Songwriters
+.br
   Composer            = Various Composers
+.br
   Arranger            = Tom Cat
+.br
   Album Message       = For all our fans
+.br
   Catalog Number      = 1234567890
+.br
   Genre Code          = Classical
+.br
   Genre Information   = Feline classic music
+.br
   Closed Information  = This is not to be shown by CD players
+.br
   UPC / EAN           = 1234567890123
+.br
   Text Data Copy Protection = OFF
+.br
   First Track Number  = 1
+.br
   Last Track Number   = 3
 .br
 The following purpose specifiers apply to particular tracks:
+.br
   Purpose specifier   | Content example
+.br
   -------------------------------------------------------------
+.br
   Track 01 Title      = Song of Joy
+.br
   Track 01 Artist     = Felix and The Purrs
+.br
   Track 01 Songwriter = Friedrich Schiller
+.br
   Track 01 Composer   = Ludwig van Beethoven
+.br
   Track 01 Arranger   = Tom Cat
+.br
   Track 01 Message    = Fritz and Louie once were punks
+.br
   ISRC 01             = XYCRR1101234
 .br
 Track numbers are decimal despite the leading 0. There should be as many track
