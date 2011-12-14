@@ -1,6 +1,12 @@
 SVN trunk (to become libburn-1.2.0.tar.gz or higher)
 ===============================================================================
-- no novelties yet
+* Bug fix: Solaris adapter mishandled write commands which failed on first try
+* Bug fix: Interrupting libburn while drive tray is loading led to endless loop
+* New API call burn_disc_get_leadin_text()
+* New API call burn_write_opts_set_leadin_text()
+* New API calls for composing CD-TEXT
+* Implemented cdrskin option textfile=
+* New cdrskin option input_sheet_v07t=
 
 
 libburn-1.1.8.tar.gz Mon Nov 21 2011
