@@ -901,7 +901,7 @@ static int burn_create_tybl_t_packs(struct burn_track *t, int track_no,
 		flags = cdt->flags;
 	}
 	if (payload == NULL) {
-		sprintf((char *) dummy, "%d", track_no);
+		dummy[0]= 0;
 		payload = dummy;
 		length = strlen((char *) dummy) + 1;
 	}
