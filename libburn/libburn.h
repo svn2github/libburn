@@ -1970,9 +1970,8 @@ int burn_session_set_cdtext_par(struct burn_session *s,
          "", "", "", "", \
          "", "", "", "", \
          "", "", "", "", \
+         "", "", "", "", \
          ""
-
-
 
 /* ts B11206 */
 /** Obtain the current settings as of burn_session_set_cdtext_par() resp.
@@ -2084,6 +2083,14 @@ int burn_session_set_cdtext(struct burn_session *s, int block,
 int burn_session_get_cdtext(struct burn_session *s, int block,
                             int pack_type, char *pack_type_name,
                             unsigned char **payload, int *length, int flag);
+
+
+/* ts B11215 */
+/** >>>
+*/
+int burn_session_input_sheet_v07t(struct burn_session *session,
+                                  char *path, int block, int flag);
+
 
 /* ts B11210 */
 /** Produce an array of CD-TEXT packs that could be submitted to

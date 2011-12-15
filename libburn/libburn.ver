@@ -123,6 +123,7 @@ burn_session_get_leadout_entry;
 burn_session_get_sectors;
 burn_session_get_tracks;
 burn_session_hide_first_track;
+burn_session_input_sheet_v07t;
 burn_session_remove_track;
 burn_session_set_cdtext;
 burn_session_set_cdtext_par;

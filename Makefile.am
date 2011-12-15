@@ -21,6 +21,7 @@ libburn_libburn_la_SOURCES = \
 	libburn/async.c \
 	libburn/async.h \
 	libburn/back_hacks.h \
+	libburn/cdtext.c \
 	libburn/cleanup.c \
 	libburn/cleanup.h \
 	libburn/crc.c \

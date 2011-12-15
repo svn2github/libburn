@@ -432,6 +432,12 @@ Macros list the texts for genre and language codes:
   BURN_CDTEXT_GENRE_LIST
   BURN_CDTEXT_NUM_GENRES
 
+There is a reader for Sony Input Sheet Version 0.7T:
+
+  int burn_session_input_sheet_v07t(struct burn_session *session,
+                                    char *path, int block, int flag);
+
+
 These attributes can then be converted into an array of text packs by:
 
   int burn_cdtext_from_session(struct burn_session *s,
@@ -491,7 +497,6 @@ The following purpose specifiers apply to the session as a whole:
   Catalog Number      =  Content of pack type 0x86
   Genre Code          =  One of the genre names for pack type 0x87
   Genre Information   =  Cleartext part of pack type 0x87
-  Input Sheet Version =  "0.7T"
   Closed Information  =  Content of pack type 0x8d
   UPC / EAN           =  Content of pack type 0x8e
   Text Data Copy Protection = Copyright value for pack type 0x8f
@@ -511,11 +516,16 @@ The following purpose specifiers apply to particular tracks:
 The following purpose specifiers have no effect on CD-TEXT:
   Remarks             =  Comments with no influence on CD-TEXT
   Disc Information NN =  Supplementary information for use by record companies.
-                         ISO-8859-1 encoded.
+                         ISO-8859-1 encoded. NN ranges from 01 to 04.
+  Input Sheet Version =  "0.7T"
 
-cdrskin peculiarties:
 
-cdrskin reads files of the described format by its option input_sheet_v07t= .
+libburn peculiarties:
+
+libburn may read files of the described format by
+  burn_session_input_sheet_v07t()
+after the burn_session has been establiched and all burn_track objects have
+been added.
 
 The following purpose specifiers accept byte values of the form 0xXY.
   Text Code , Language Code , Genre Code , Text Data Copy Protection
@@ -530,26 +540,29 @@ may be replaced by the pack type codes.  E.g.:
   Track 02 0x80       =  Track content of pack type 0x80 for track 2.
 Applicable are pack types 0x80 to 0x86, 0x8d, 0x8e.
 
-Text code has to be defined before any content is defined which depends
-on the chosen encoding. I.e before any pack types 0x80 to 0x85.
+Text Code may be specified only once. It gets speficied to "ISO-8850-1"
+automatically as soon as content is defined which depends on the text
+encoding of the block. I.e with pack types 0x80 to 0x85.
 
-If a track attribute is set but the corresponding session attribute is not
+If a track attribute is set, but the corresponding session attribute is not
 defined or defined with empty text, then the session attribute gets attached
 as empty test. (Normally empty content is ignored.)
 
-libburn will always start track numbering by 1. So cdrskin adjusts all track
+libburn will always start track numbering by 1. So it adjusts all track
 numbers from the input sheet file by subtracting (First Track Number - 1).
-cdrskin ignores Last Track number because libburn will always write its
-own first and last track numbers to pack type 0x8f.
+libburn ignores Last Track number because it will always write its own first
+and last track numbers to pack type 0x8f.
 
-Example run with three tracks:
 
-  $ cdrskin dev=/dev/sr0 -v input_sheet_v07t=CDRSKIN_1.TXT \
+Example cdrskin run with three tracks:
+
+  $ cdrskin dev=/dev/sr0 -v input_sheet_v07t=NIGHTCATS.TXT \
             -audio track_source_1 track_source_2 track_source_3
 
 ----------------------------------------------------------
-Content of file CDRSKIN_1.TXT                            :
+Content of file NIGHTCATS.TXT                            :
 ----------------------------------------------------------
+Input Sheet Version = 0.7T
 Text Code           = 8859
 Language Code       = English
 Album Title         = Joyful Nights
@@ -571,7 +584,7 @@ Track 01 Artist     =  Felix and The Purrs
 Track 01 Songwriter =  Friedrich Schiller
 Track 01 Composer   =  Ludwig van Beethoven
 Track 01 Arranger   =  Tom Cat
-Track 01 Message    =  Fritz and Louie were punks
+Track 01 Message    =  Fritz and Louie once were punks
 ISRC 01             =  XYBLG1101234
 Track 02 Title      =  Humpty Dumpty
 Track 02 Artist     =  Catwalk Beauties
@@ -581,10 +594,10 @@ Track 02 Arranger   =  Tom Cat
 Track 02 Message    =  Pluck the goose
 ISRC 02             =  XYBLG1100005
 Track 03 Title      =  Mee Owwww
-Track 03 Artist     =  Sicko Gang
-Track 03 Songwriter =  Sicko Gang
-Track 03 Composer   =  Sicko Gang
-Track 03 Arranger   =  Sicko Gang
+Track 03 Artist     =  Mia Kitten
+Track 03 Songwriter =  Mia Kitten
+Track 03 Composer   =  Mia Kitten
+Track 03 Arranger   =  Mia Kitten
 Track 03 Message    =  
 ISRC 03             =  XYBLG1100006
 ----------------------------------------------------------

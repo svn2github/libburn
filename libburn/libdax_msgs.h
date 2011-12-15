@@ -583,6 +583,12 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002018e (FAILURE,HIGH) = Too many CD-TEXT packs in block
  0x0002018f (FAILURE,HIGH) = CD-TEXT pack CRC mismatch
  0x00020190 (WARNING,HIGH) = CD-TEXT pack CRC mismatch had to be corrected
+ 0x00020191 (FAILURE,HIGH) = Unknown v07t parameter
+ 0x00020192 (FAILURE,HIGH) = Input sheet v07t sequence error
+ 0x00020193 (FAILURE,HIGH) = Input sheet v07t readability problem
+ 0x00020194 (FAILURE,HIGH) = Input sheet v07t syntax error
+ 0x00020195 (WARNING,HIGH) = Input sheet v07t warning
+
 
  libdax_audioxtr:
  0x00020200 (SORRY,HIGH)   = Cannot open audio source file
