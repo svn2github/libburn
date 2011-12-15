@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 14, 2011"
+.TH CDRSKIN 1 "Dec 15, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -763,7 +763,7 @@ Mode -tao is not usable for minimally blanked DVD-RW and for DVD-R DL.
 .BI textfile= path
 Read CD-TEXT packs from the file depicted by path and put them into the
 Lead-in of the emerging session. This session has to be done by Session At Once
-(SAO) mode and should contain audio tracks.
+(SAO) mode and may only contain audio tracks.
 .br
 path must lead to a regular file, which consists of an optional header of four
 bytes and one or more text packs of 18 bytes each. Suitable would be the
@@ -1122,6 +1122,7 @@ possible values for Text Code, Language Code, Genre Code, Text Data Copy
 Protection.
 .br
 This option will get into effect only if no option textfile= is given.
+The write mode must be SAO on CD. All tracks must be -audio tracks.
 .TP
 .BI \--list_formats
 List the available format descriptors as reported by the drive for the

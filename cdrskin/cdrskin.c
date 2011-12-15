@@ -6942,7 +6942,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  struct burn_drive *drive;
  int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
  int fifo_disabled= 0, min_buffer_fill= 101;
- int use_data_image_size, needs_early_fifo_fill= 0,iso_size= -1;
+ int use_data_image_size, needs_early_fifo_fill= 0,iso_size= -1, non_audio= 0;
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
  char *doing;
@@ -7010,12 +7010,16 @@ burn_failed:;
      skin->fixed_size+= size+padding;
    else
      skin->has_open_ended_track= 1;
+   non_audio= (skin->tracklist[i]->track_type != BURN_AUDIO);
  }
 
  if(skin->sheet_v07t_blocks > 0) {
    if(skin->num_text_packs > 0) {
      fprintf(stderr,
    "cdrskin: WARNING : Option textfile= overrides option input_sheet_v07t=\n");
+   } else if(non_audio) {
+     fprintf(stderr, "cdrskin: SORRY : Option input_sheet_v07t= works only if all tracks are -audio\n");
+     goto burn_failed;
    } else {
      for(i= 0; i < skin->sheet_v07t_blocks; i++) {
        ret= Cdrskin_read_input_sheet_v07t(skin, skin->sheet_v07t_paths[i], i,
@@ -7137,6 +7141,10 @@ burn_failed:;
  }
  burn_write_opts_set_underrun_proof(o,skin->burnfree);
  if(skin->num_text_packs > 0) {
+   if(non_audio) {
+     fprintf(stderr, "cdrskin: SORRY : Option textfile= works only if all tracks are -audio\n");
+     goto burn_failed;
+   }
    if(!!skin->force_is_set)
 	text_flag= 1; /* No CRC verification or repairing */
    ret= burn_write_opts_set_leadin_text(o, skin->text_packs,
