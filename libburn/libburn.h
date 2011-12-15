@@ -2086,7 +2086,20 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
 
 
 /* ts B11215 */
-/** >>>
+/** Read a Sony CD-TEXT Input Sheet Version 0.7T file and attach its text
+    attributes to the given session and its tracks for the given CD-TEXT
+    block number. This overrides previous settings made by
+    burn_session_set_cdtext() and burn_track_set_cdtext(). It can later be
+    overridden by said function calls.
+    The format of a v07t sheet file is documented in doc/cdtext.txt.
+    @param s            Session where to attach CD-TEXT attributes
+    @param path         Local filesystem address of the sheet file which
+                        shall be read and interpreted.
+    @param block        Number of the language block in which the attributes
+                        shall appear. Possible values: 0 to 7.
+    @param flag         Bitfield for control purposes. Unused yet. Submit 0.
+    @return             > 0 indicates success , <= 0 is failure
+    @since 1.2.0
 */
 int burn_session_input_sheet_v07t(struct burn_session *session,
                                   char *path, int block, int flag);
