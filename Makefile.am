@@ -204,6 +204,7 @@ EXTRA_DIST = \
 	doc/doxygen.conf.in \
 	doc/cookbook.txt \
 	doc/mediainfo.txt \
+	doc/cdtext.txt \
 	README \
 	AUTHORS \
 	CONTRIBUTORS \
