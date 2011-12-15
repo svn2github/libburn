@@ -145,6 +145,7 @@ then
     $cleanup_src_or_obj \
     \
     "$burn"async.o \
+    "$burn"cdtext.o \
     "$burn"debug.o \
     "$burn"drive.o \
     "$burn"file.o \
