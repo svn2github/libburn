@@ -21,6 +21,7 @@
 #include "init.h"
 #include "structure.h"
 #include "options.h"
+#include "util.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -448,17 +449,6 @@ ex:;
 /* ---------------- Reader of Sony Input Sheet Version 0.7T ------------- */
 
 
-static char *v07t_printify(char *msg)
-{
-	char *cpt;
-
-	for (cpt = msg; *cpt != 0; cpt++)
-		if (*cpt < 32 || *cpt > 126)
-			*cpt = '#';
-	return msg;
-}
-
-
 /* @param flag bit0= allow two byte codes 0xNNNN or 0xNN 0xNN
 */
 static int v07t_hexcode(char *payload, int flag)
@@ -519,7 +509,7 @@ static int v07t_cdtext_char_code(char *payload, int flag)
 	sprintf(msg, "Unknown v07t Text Code '%.80s'", payload);
 	libdax_msgs_submit(libdax_messenger, -1, 0x00020191,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 	ret = -1;
 ex:;
 	BURN_FREE_MEM(msg);
@@ -549,7 +539,7 @@ static int v07t_cdtext_lang_code(char *payload, int flag)
 	sprintf(msg, "Unknown v07t Language Code '%.80s'", payload);
 	libdax_msgs_submit(libdax_messenger, -1, 0x00020191,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 	ret = -1;
 ex:;
 	BURN_FREE_MEM(msg);
@@ -576,7 +566,7 @@ static int v07t_cdtext_genre_code(char *payload, int flag)
 	sprintf(msg, "Unknown v07t Genre Code '%.80s'", payload);
 	libdax_msgs_submit(libdax_messenger, -1, 0x00020191,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 	ret = -1;
 ex:;
 	BURN_FREE_MEM(msg);
@@ -626,29 +616,6 @@ static int v07t_cdtext_to_track(struct burn_track *track, int block,
 }
 
 
-/** Read a line from fp and strip LF or CRLF */
-static char *sfile_fgets(char *line, int maxl, FILE *fp)
-{
-	int l;
-	char *ret;
-
-	ret = fgets(line, maxl, fp);
-	if (ret == NULL)
-		return NULL;
-	l = strlen(line);
-	if (l > 0)
-		if (line[l - 1] == '\r')
-			line[--l] = 0;
-	if (l > 0)
-		if (line[l - 1] == '\n')
-			line[--l] = 0;
-	if(l > 0)
-		if(line[l - 1] == '\r')
-			line[--l] = 0;
-	return ret;
-}
-
-
 int burn_session_input_sheet_v07t(struct burn_session *session,
 					char *path, int block, int flag)
 {
@@ -679,7 +646,7 @@ cannot_open:;
 			path);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), errno, 0);
+				burn_printify(msg), errno, 0);
 		ret = 0; goto ex;
 	}
 	if (!S_ISREG(stbuf.st_mode)) {
@@ -688,7 +655,7 @@ cannot_open:;
 			path);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 		ret = 0; goto ex;
 	}
 
@@ -697,7 +664,7 @@ cannot_open:;
 		goto cannot_open;
 
 	while (1) {
-		if (sfile_fgets(line, 4095, fp) == NULL) {
+		if (burn_sfile_fgets(line, 4095, fp) == NULL) {
 			if (!ferror(fp))
 	break;
 			sprintf(msg,
@@ -705,7 +672,7 @@ cannot_open:;
 				path);
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 			ret = 0; goto ex;
 		}
 		if (strlen(line) == 0)
@@ -717,7 +684,7 @@ cannot_open:;
 				line);
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 			ret = 0; goto ex;
 		}
 		for (payload = eq_pos + 1; *payload == 32 || *payload == 9;
@@ -845,7 +812,7 @@ cannot_open:;
 				libdax_msgs_submit(libdax_messenger, -1,
 					0x00020194, LIBDAX_MSGS_SEV_FAILURE,
 					LIBDAX_MSGS_PRIO_HIGH,
-					v07t_printify(msg), 0, 0);
+					burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			}
 
@@ -867,7 +834,7 @@ cannot_open:;
 				libdax_msgs_submit(libdax_messenger, -1,
 					0x00020191, LIBDAX_MSGS_SEV_FAILURE,
 					LIBDAX_MSGS_PRIO_HIGH,
-					v07t_printify(msg), 0, 0);
+					burn_printify(msg), 0, 0);
 
 				ret = 0; goto ex;
 			}
@@ -883,7 +850,7 @@ bad_tno:;
 				libdax_msgs_submit(libdax_messenger, -1,
 					0x00020194, LIBDAX_MSGS_SEV_FAILURE,
 					LIBDAX_MSGS_PRIO_HIGH,
-					v07t_printify(msg), 0, 0);
+					burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			} else {
 				track_offset = ret;
@@ -894,7 +861,7 @@ bad_tno:;
 					libdax_msgs_submit(libdax_messenger,-1,
 					  0x00020195, LIBDAX_MSGS_SEV_WARNING,
 					  LIBDAX_MSGS_PRIO_HIGH,
-					  v07t_printify(msg), 0, 0);
+					  burn_printify(msg), 0, 0);
 				}
 			}
 
@@ -933,7 +900,7 @@ bad_track_no:;
 				libdax_msgs_submit(libdax_messenger, -1,
 					  0x00020194, LIBDAX_MSGS_SEV_FAILURE,
 					  LIBDAX_MSGS_PRIO_HIGH,
-					  v07t_printify(msg), 0, 0);
+					  burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			}
 			tno -= track_offset;
@@ -966,7 +933,7 @@ bad_track_no:;
 				libdax_msgs_submit(libdax_messenger, -1,
 					  0x00020191, LIBDAX_MSGS_SEV_FAILURE,
 					  LIBDAX_MSGS_PRIO_HIGH,
-					  v07t_printify(msg), 0, 0);
+					  burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			}
 			ret = v07t_cdtext_to_track(tracks[tno], block, payload,
@@ -999,7 +966,7 @@ bad_track_no:;
 				line);
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020191,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				v07t_printify(msg), 0, 0);
+				burn_printify(msg), 0, 0);
 			ret = 0; goto ex;
 		}
 	}

@@ -328,3 +328,38 @@ ex:
 	return ret;
 }
 
+
+/* ts B11216 */
+/** Read a line from fp and strip LF or CRLF */
+char *burn_sfile_fgets(char *line, int maxl, FILE *fp)
+{
+	int l;
+	char *ret;
+
+	ret = fgets(line, maxl, fp);
+	if (ret == NULL)
+		return NULL;
+	l = strlen(line);
+	if (l > 0)
+		if (line[l - 1] == '\r')
+			line[--l] = 0;
+	if (l > 0)
+		if (line[l - 1] == '\n')
+			line[--l] = 0;
+	if(l > 0)
+		if(line[l - 1] == '\r')
+			line[--l] = 0;
+	return ret;
+}
+
+
+char *burn_printify(char *msg)
+{
+	char *cpt;
+
+	for (cpt = msg; *cpt != 0; cpt++)
+		if (*cpt < 32 || *cpt > 126)
+			*cpt = '#';
+	return msg;
+}
+
