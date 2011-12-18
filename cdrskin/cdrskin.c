@@ -2719,6 +2719,10 @@ set_dev:;
          " --any_track        allow source_addresses to match '^-.' or '='\n");
      printf(
          " assert_write_lba=<lba>  abort if not next write address == lba\n");
+     fprintf(stderr,
+        " --cdtext_dummy     show CD-TEXT pack array instead of writing CD\n");
+     fprintf(stderr,
+         " --cdtext_verbose   show CD-TEXT pack array before writing CD\n");
      printf(
     " direct_write_amount=<size>  write random access to media like DVD+RW\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
@@ -7415,7 +7419,7 @@ unsupported_blank_option:;
    } else if(strcmp(argv[i],"--cdtext_dummy")==0) {
      skin->cdtext_test= 2;
 
-   } else if(strcmp(argv[i],"--cdtext_test")==0) {
+   } else if(strcmp(argv[i],"--cdtext_verbose")==0) {
      skin->cdtext_test= 1;
 
    } else if(strcmp(argv[i],"-checkdrive")==0) {

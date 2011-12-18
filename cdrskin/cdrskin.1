@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 15, 2011"
+.TH CDRSKIN 1 "Dec 18, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1232,6 +1232,20 @@ under test reservation.
 .br
 (If you really test experimental media, then please report the outcome on
 libburn-hackers@pykix.org)
+.TP
+.BI \--cdtext_dummy
+Prepare a burn run, report the effective array of CD-TEXT packs to stdout,
+and then end the program run without starting to burn the session.
+A blank CD-R or CD-RW has to be present in the drive, nevertheless.
+.br
+The output is formatted in lines which describe 18 bytes as 2-digit hex
+numbers or as single printable characters.
+See libburn document doc/cdtext.txt about the format of these records.
+.TP
+.BI \--cdtext_verbose
+Like --cdtext_dummy but without preventing the burn run. Combinable with
+option -dummy to exercise a CD burn run with no persistent impact on the
+medium.
 .TP
 .BI dev_translation= <sep><from><sep><to>
 Set drive address alias. This was necessary before cdrskin-0.2.4 to manually
