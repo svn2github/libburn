@@ -2979,6 +2979,8 @@ see_cdrskin_eng_html:;
 set_severities:;
      if(o->verbosity>=Cdrskin_verbose_debuG)
        Cdrpreskin_set_severities(o,"NEVER","DEBUG",0);
+     else if(o->verbosity >= Cdrskin_verbose_progresS)
+       Cdrpreskin_set_severities(o, "NEVER", "NOTE", 0);
 
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
