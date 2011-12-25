@@ -897,6 +897,7 @@ struct CdrtracK {
  int ff_idx;
 
  struct burn_track *libburn_track;
+ int libburn_track_is_own;
 
 #ifdef Cdrskin_use_libburn_fifO
  struct burn_source *libburn_fifo;
@@ -913,6 +914,7 @@ int Cdrtrack_set_track_type(struct CdrtracK *o, int track_type, int flag);
     @param boss The cdrskin control object (corresponds to session)
     @param trackno The index in the cdrskin tracklist array (is not constant)
     @param flag Bitfield for control purposes:
+                bit0= do not set parameters by Cdrskin_get_source()
                 bit1= track is originally stdin
 */
 int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
@@ -959,9 +961,13 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->ff_fifo= NULL;
  o->ff_idx= -1;
  o->libburn_track= NULL;
+ o->libburn_track_is_own= 0;
 #ifdef Cdrskin_use_libburn_fifO
  o->libburn_fifo= NULL;
 #endif /* Cdrskin_use_libburn_fifO */
+
+ if(flag & 1)
+   return(1);
 
  ret= Cdrskin_get_source(boss,o->source_path,&(o->fixed_size),
                          &(o->tao_to_sao_tsize),&(o->use_data_image_size),
@@ -1002,10 +1008,10 @@ int Cdrtrack_destroy(struct CdrtracK **o, int flag)
  Cdrfifo_destroy(&(track->fifo),0);
 #endif
 
- if(track->libburn_track!=NULL)
+ if(track->libburn_track != NULL && track->libburn_track_is_own)
    burn_track_free(track->libburn_track);
  if(track->iso_fs_descr!=NULL)
-     free((char *) track->iso_fs_descr);
+   free((char *) track->iso_fs_descr);
  free((char *) track);
  *o= NULL;
  return(1);
@@ -1631,6 +1637,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  track->trackno= trackno;
  tr= burn_track_create();
  track->libburn_track= tr;
+ track->libburn_track_is_own= 1;
 
  /* Note: track->track_type may get set in here */
  if(track->source_fd==-1) {
@@ -1739,7 +1746,8 @@ int Cdrtrack_cleanup(struct CdrtracK *track, int flag)
 {
  if(track->libburn_track==NULL)
    return(0);
- burn_track_free(track->libburn_track);
+ if(track->libburn_track_is_own)
+   burn_track_free(track->libburn_track);
  track->libburn_track= NULL;
  return(1);
 }
@@ -2897,7 +2905,11 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\ttsize=#\t\tannounces exact size of source data\n");
      fprintf(stderr,"\tpadsize=#\tAmount of padding\n");
      fprintf(stderr,
+             "\t-text\t\tWrite CD-Text from information from *.cue files\n");
+     fprintf(stderr,
              "\ttextfile=name\tSet the file with CD-Text data to 'name'\n");
+     fprintf(stderr,
+             "\tcuefile=name\tSet the file with CDRWIN CUE data to 'name'\n");
      fprintf(stderr,"\t-audio\t\tSubsequent tracks are CD-DA audio tracks\n");
      fprintf(stderr,
             "\t-data\t\tSubsequent tracks are CD-ROM data mode 1 (default)\n");
@@ -3319,6 +3331,10 @@ struct CdrskiN {
  int track_type_by_default; /* 0= explicit, 1=not set, 2=by file extension */
  int swap_audio_bytes;
 
+ /** CDRWIN cue sheet file */
+ char cuefile[Cdrskin_adrleN]; 
+ int use_cdtext;
+
  /** CD-TEXT */
  unsigned char *text_packs;
  int num_text_packs;
@@ -3327,6 +3343,7 @@ struct CdrskiN {
  char sheet_v07t_paths[8][Cdrskin_adrleN];
 
  int cdtext_test;
+
 
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
@@ -3348,7 +3365,7 @@ struct CdrskiN {
  int fifo_size;
  int fifo_start_at;
  int fifo_per_track;
-
+ struct burn_source *cuefile_fifo;
 
  /** User defined address translation */
  struct CdradrtrN *adr_trn;
@@ -3479,6 +3496,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->fill_up_media= 0;
  o->track_type= BURN_MODE1;
  o->swap_audio_bytes= 1;   /* cdrecord default is big-endian (msb_first) */
+ o->cuefile[0] = 0; 
+ o->use_cdtext = 0;
  o->text_packs= NULL;
  o->num_text_packs= 0;
  o->sheet_v07t_blocks= 0;
@@ -3496,6 +3515,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->fifo_size= 4*1024*1024;
  o->fifo_start_at= -1;
  o->fifo_per_track= 0;
+ o->cuefile_fifo= NULL;
  o->adr_trn= NULL;
  o->drives= NULL;
  o->n_drives= 0;
@@ -3551,6 +3571,8 @@ int Cdrskin_destroy(struct CdrskiN **o, int flag)
  Cdradrtrn_destroy(&(skin->adr_trn),0);
 #endif /* ! Cdrskin_extra_leaN */
 
+ if(skin->cuefile_fifo != NULL)
+   burn_source_free(skin->cuefile_fifo);
  if(skin->text_packs != NULL)
    free(skin->text_packs);
  Cdrpreskin_destroy(&(skin->preskin),0);
@@ -4613,7 +4635,8 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
 
 /* @param flag bit0-3= source of text packs:
                         0= CD Lead-in
-                        0= session and tracks
+                        1= session and tracks
+                        2= textfile=
 */
 int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
                              int num_packs, int flag)
@@ -4627,6 +4650,8 @@ int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
    from_text= " from CD Lead-in";
  else if(from == 1)
    from_text= " from session and tracks";
+ else if(from == 2)
+   from_text= " from textfile= or cuefile= CDTEXTFILE";
  printf("CD-TEXT data%s:\n", from_text);
  for(i= 0; i < num_packs; i++) {
    pack= text_packs + 18 * i;
@@ -5333,71 +5358,12 @@ ex:;
 
 int Cdrskin_read_textfile(struct CdrskiN *skin, char *path, int flag)
 {
- int ret= 0, num_packs= 0, residue= 0;
- struct stat stbuf;
- FILE *fp= NULL;
- unsigned char *text_packs = NULL, head[4], tail[1];
+ int ret, num_packs = 0;
+ unsigned char *text_packs = NULL;
 
- if(stat(path, &stbuf) == -1) {
-cannot_open:;
-   fprintf(stderr, "cdrskin: SORRY : Cannot open textfile='%s'\n", path);
-   fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
-   ret= 0; goto ex;
- }
- if(!S_ISREG(stbuf.st_mode))
-   goto not_a_textfile;
- residue= (stbuf.st_size % 18);
- if(residue != 4 && residue != 0 && residue != 1) {
-not_a_textfile:;
-   fprintf(stderr,
-     "cdrskin: SORRY : File is not of usable type or content: textfile='%s'\n",
-     path);
-   ret= 0; goto ex;
- }
- if(stbuf.st_size < 18)
-   goto not_a_textfile;
-
- fp= fopen(path, "rb");
- if(fp == NULL)
-   goto cannot_open;
- if(residue == 4) { /* This is for files from cdrecord -vv -toc */
-   ret= fread(head, 4, 1, fp);
-   if(ret != 1) {
-cannot_read:;
-     fprintf(stderr,
-          "cdrskin: SORRY : Cannot read all bytes from textfile='%s'\n", path);
-     fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
-     ret= 0; goto ex;
-   }
-   if(head[0] * 256 + head[1] != stbuf.st_size - 2)
-     goto not_a_textfile;
- }
- num_packs= (stbuf.st_size - residue) / 18;
- if(num_packs > 2048) {
-   /* Each block can have 256 text packs. There are 8 blocks at most. */
-   fprintf(stderr,
-     "cdrskin: SORRY : File too large (max. 65524 bytes): textfile='%s'\n",
-     path);
-     goto not_a_textfile;
- }
-
- text_packs= calloc(num_packs, 18);
- if(text_packs == NULL) {
-   fprintf(stderr,
-     "cdrskin: FATAL : Cannot allocate %d bytes of memory for CD-TEXT\n",
-     num_packs * 18);
-   ret= -1; goto ex;
- }
- ret= fread(text_packs, num_packs * 18, 1, fp);
- if(ret != 1)
-   goto cannot_read;
- if(residue == 1) { /* This is for Sony CDTEXT files */
-   ret= fread(tail, 1, 1, fp);
-   if(ret != 1)
-     goto cannot_read;
-   if(tail[0] != 0)
-     goto not_a_textfile;
- }
+ ret= burn_cdtext_from_packfile(path, &text_packs, &num_packs, 0);
+ if(ret <= 0)
+   goto ex;
 
  if(skin->text_packs != NULL)
    free(skin->text_packs);
@@ -5407,8 +5373,6 @@ cannot_read:;
 ex:;
  if(ret <= 0 && text_packs != NULL)
    free(text_packs);
- if(fp != NULL)
-   fclose(fp);
  return(ret);
 }
 
@@ -5779,6 +5743,27 @@ ex:;
 }
 
 
+int Cdrskin__libburn_fifo_status(struct burn_source *current_fifo,
+                                 char fifo_text[80], int flag)
+{
+ int ret, size, free_space, fill, fifo_percent;
+ char *status_text= "";
+
+ ret= burn_fifo_inquire_status(current_fifo, &size, &free_space,
+                               &status_text);
+ if(ret <= 0 || ret >= 4) {
+   strcpy(fifo_text, "(fifo   0%) ");
+ } else if(ret == 1) {
+   burn_fifo_next_interval(current_fifo, &fill);
+   fifo_percent= 100.0 * ((double) fill) / (double) size;
+   if(fifo_percent<100 && fill>0)
+     fifo_percent++;
+   sprintf(fifo_text, "(fifo %3d%%) ", fifo_percent);
+ }
+ return(1);
+}
+
+
 /** Report burn progress. This is done partially in cdrecord style.
     Actual reporting happens only if write progress hit the next MB or if in
     non-write-progress states a second has elapsed since the last report. 
@@ -5821,8 +5806,12 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
 
 #ifdef Cdrskin_use_libburn_fifO
  struct burn_source *current_fifo= NULL;
+
+#ifdef NIX
  int size, free_space;
  char *status_text= "";
+#endif
+
 #endif /* Cdrskin_use_libburn_fifO */
 
  /* for debugging */
@@ -5881,7 +5870,8 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
  old_track_idx= skin->supposed_track_idx;
  skin->supposed_track_idx= p->track;
 
- if(old_track_idx>=0 && old_track_idx<skin->supposed_track_idx) {
+ if(old_track_idx>=0 && old_track_idx<skin->supposed_track_idx &&
+    skin->supposed_track_idx < skin->track_counter) {
    Cdrtrack_get_size(skin->tracklist[old_track_idx],&fixed_size,&padding,
                      &sector_size,&use_data_image_size,1);
    if(skin->verbosity>=Cdrskin_verbose_progresS)
@@ -5979,27 +5969,19 @@ thank_you_for_patience:;
      curr_fifo_in= last_fifo_in;
      curr_fifo_out= last_fifo_out;
 
+     if(skin->cuefile_fifo != NULL)
+       Cdrskin__libburn_fifo_status(skin->cuefile_fifo, fifo_text, 0);
+
 #ifdef Cdrskin_use_libburn_fifO
 
      /* Inquire fifo fill and format fifo pacifier text */
      if(skin->fifo == NULL && skin->supposed_track_idx >= 0 && 
         skin->supposed_track_idx < skin->track_counter &&
-        skin->fifo_size > 0) {
+        skin->fifo_size > 0 && fifo_text[0] == 0) {
        Cdrtrack_get_libburn_fifo(skin->tracklist[skin->supposed_track_idx],
                                  &current_fifo, 0);
        if(current_fifo != NULL) {
-         ret= burn_fifo_inquire_status(current_fifo, &size, &free_space,
-                                       &status_text);
-         if(ret <= 0 || ret >= 4) {
-           strcpy(fifo_text, "(fifo   0%) ");
-         } else if(ret == 1) {
-           burn_fifo_next_interval(current_fifo, &fill);
-           fifo_percent= 100.0 * ((double) fill) / (double) size;
-           if(fifo_percent<100 && fill>0)
-             fifo_percent++;
-           sprintf(fifo_text, "(fifo %3d%%) ", fifo_percent);
-         } else
-           strcpy(fifo_text, "(fifo 100%) ");
+         Cdrskin__libburn_fifo_status(current_fifo, fifo_text, 0);
        } else if(skin->fifo_size > 0) {
          strcpy(fifo_text, "(fifo 100%) ");
        }
@@ -6453,6 +6435,10 @@ int Cdrskin_cdtext_test(struct CdrskiN *skin, struct burn_write_opts *o,
  int ret, num_packs;
  unsigned char *text_packs = NULL;
 
+ if(skin->num_text_packs > 0) {
+   Cdrskin_print_text_packs(skin, skin->text_packs, skin->num_text_packs, 2);
+   ret= 1; goto ex;
+ }
  ret= burn_cdtext_from_session(session, &text_packs, &num_packs, 0);
  if(ret < 0)
    goto ex;
@@ -6478,6 +6464,58 @@ int Cdrskin_read_input_sheet_v07t(struct CdrskiN *skin, char *path, int block,
 }
 
 
+int Cdrskin_cdrtracks_from_session(struct CdrskiN *skin,
+                                   struct burn_session *session, int flag)
+{
+ int ret, num_tracks, i;
+ struct burn_track **tracks;
+ struct CdrtracK *t;
+ double sectors;
+
+ for(i= 0; i < skin->track_counter; i++)
+   Cdrtrack_destroy(&(skin->tracklist[i]), 0);
+ skin->track_counter= 0;
+ 
+ tracks= burn_session_get_tracks(session, &num_tracks);
+ if(num_tracks <= 0) {
+   fprintf(stderr, "cdrskin: SORRY : No tracks defined for burn run.\n");
+   ret= 0; goto ex;
+ }
+ for(i= 0; i < num_tracks; i++) {
+   /* Create Cdrtrack without reading parameters from skin */
+   ret= Cdrtrack_new(&(skin->tracklist[skin->track_counter]), skin,
+                     skin->track_counter, 1);
+   if(ret <= 0) {
+     fprintf(stderr,
+             "cdrskin: FATAL : Creation of track control object failed.\n");
+     goto ex;
+   }
+
+   /* Set essential properties */
+   t= skin->tracklist[skin->track_counter];
+   t->track_type= burn_track_get_mode(tracks[i]);
+   if(t->track_type == BURN_AUDIO)
+     t->sector_size= 2352;
+   else
+     t->sector_size= 2048;
+   sectors= burn_track_get_sectors(tracks[i]);
+   t->fixed_size= sectors * t->sector_size;
+   t->libburn_track= tracks[i];
+   t->libburn_track_is_own= 0;
+
+   skin->track_counter++;
+ }
+ ret= 1;
+ex:
+ if(ret <= 0) {
+   for(i= 0; i < skin->track_counter; i++)
+     Cdrtrack_destroy(&(skin->tracklist[i]), 0);
+   skin->track_counter= 0;
+ }
+ return(ret);
+}
+
+
 /** Burn data via libburn according to the parameters set in skin.
     @return <=0 error, 1 success
 */
@@ -6485,7 +6523,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
 {
  struct burn_disc *disc;
  struct burn_session *session;
- struct burn_write_opts *o;
+ struct burn_write_opts *o = NULL;
+ struct burn_source *cuefile_fifo= NULL;
  enum burn_disc_status s;
  enum burn_drive_status drive_status;
  struct burn_progress p;
@@ -6499,6 +6538,8 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  char *source_path;
  int source_fd, is_from_stdin;
  int text_flag= 4; /* Check CRCs and silently repair CRCs if all are 0 */
+ unsigned char *text_packs= NULL;
+ int num_packs= 0;
 
 #ifndef Cdrskin_no_cdrfifO
  double put_counter, get_counter, empty_counter, full_counter;
@@ -6532,45 +6573,87 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(ret==0) {
    fprintf(stderr,"cdrskin: FATAL : Cannot add session to disc object.\n");
 burn_failed:;
+   if(cuefile_fifo != NULL)
+     burn_source_free(cuefile_fifo);
    if(skin->verbosity>=Cdrskin_verbose_progresS) 
      printf("cdrskin: %s failed\n", doing);
    fprintf(stderr,"cdrskin: FATAL : %s failed.\n", doing);
    return(0);
  }
  skin->fixed_size= 0.0;
- for(i=0;i<skin->track_counter;i++) {
-   hflag= (skin->verbosity>=Cdrskin_verbose_debuG);
-   if(i==skin->track_counter-1)
-     Cdrtrack_ensure_padding(skin->tracklist[i],hflag&1);
+ skin->has_open_ended_track= 0;
+ if(skin->cuefile[0]) {
+   if(skin->track_counter > 0) {
+     fprintf(stderr,
+   "cdrskin: SORRY : Option cuefile= cannot be combined with track sources\n");
+     goto burn_failed;
+   }
+   if(strcmp(skin->preskin->write_mode_name, "SAO") != 0 &&
+      strcmp(skin->preskin->write_mode_name, "DEFAULT") != 0) {
+     fprintf(stderr,
+            "cdrskin: SORRY : Option cuefile= works only with write mode SAO");
+     goto burn_failed;
+   }
+   strcpy(skin->preskin->write_mode_name, "SAO");
+
+   ret= burn_session_by_cue_file(session, skin->cuefile, skin->fifo_size,
+                                 &cuefile_fifo,
+                                 &text_packs, &num_packs, !skin->use_cdtext);
+   if(ret <= 0)
+     goto burn_failed;
+   if(num_packs > 0) {
+     if(skin->num_text_packs > 0) {
+       fprintf(stderr, "cdrskin: WARNING : Option textfile= overrides CDTEXTFILE from option cuesheet=\n");
+       if(text_packs != NULL)
+         free(text_packs);
+     } else {
+       skin->text_packs= text_packs;
+       skin->num_text_packs= num_packs;
+     }
+   }
+   ret= Cdrskin_cdrtracks_from_session(skin, session, 0);
+   if(ret <= 0)
+     goto burn_failed;
+   skin->cuefile_fifo= cuefile_fifo;
+   cuefile_fifo= NULL;
+
+ } else {
+   for(i=0;i<skin->track_counter;i++) {
+     hflag= (skin->verbosity>=Cdrskin_verbose_debuG);
+     if(i==skin->track_counter-1)
+       Cdrtrack_ensure_padding(skin->tracklist[i],hflag&1);
 
 /* if(skin->fifo_size >= 256 * 1024) */
 
-     hflag|= 4;
+       hflag|= 4;
 
-   ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
-   if(ret<=0) {
-     fprintf(stderr,"cdrskin: FATAL : Cannot add track %d to session.\n",i+1);
-     goto burn_failed;
+     ret= Cdrtrack_add_to_session(skin->tracklist[i],i,session,hflag);
+     if(ret<=0) {
+       fprintf(stderr,"cdrskin: FATAL : Cannot add track %d to session.\n",i+1);
+       goto burn_failed;
+     }
+     Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
+                       &use_data_image_size,0);
+     if(use_data_image_size==1) { /* still unfulfilled -isosize demand pending */
+       needs_early_fifo_fill= 1;
+     } else if(size>0)
+       skin->fixed_size+= size+padding;
+     else
+       skin->has_open_ended_track= 1;
+     non_audio= (skin->tracklist[i]->track_type != BURN_AUDIO);
    }
-   Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
-                     &use_data_image_size,0);
-   if(use_data_image_size==1) { /* still unfulfilled -isosize demand pending */
-     needs_early_fifo_fill= 1;
-   } else if(size>0)
-     skin->fixed_size+= size+padding;
-   else
-     skin->has_open_ended_track= 1;
-   non_audio= (skin->tracklist[i]->track_type != BURN_AUDIO);
  }
 
  if(skin->sheet_v07t_blocks > 0) {
    if(skin->num_text_packs > 0) {
-     fprintf(stderr,
-   "cdrskin: WARNING : Option textfile= overrides option input_sheet_v07t=\n");
+     fprintf(stderr, "cdrskin: WARNING : Option textfile= or cuefile= overrides option input_sheet_v07t=\n");
    } else if(non_audio) {
      fprintf(stderr, "cdrskin: SORRY : Option input_sheet_v07t= works only if all tracks are -audio\n");
      goto burn_failed;
    } else {
+
+     /* >>> if cuefile and session has block 0, then start at block 1 */;
+
      for(i= 0; i < skin->sheet_v07t_blocks; i++) {
        ret= Cdrskin_read_input_sheet_v07t(skin, skin->sheet_v07t_paths[i], i,
                                           session, 0);
@@ -6603,8 +6686,6 @@ burn_failed:;
  }
 #endif /* Cdrskin_extra_leaN */
 
- skin->fixed_size= 0.0;
- skin->has_open_ended_track= 0;
  for(i=0;i<skin->track_counter;i++) {
    Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                      &use_data_image_size,0);
@@ -6734,7 +6815,7 @@ burn_failed:;
  Cdrskin_announce_tracks(skin,0);
 #endif
 
- if(skin->tell_media_space || skin->track_counter<=0) {
+ if(skin->tell_media_space || skin->track_counter <= 0) {
    /* write capacity estimation and return without actual burning */
 
    free_space= burn_disc_available_space(drive,o);
@@ -6769,6 +6850,8 @@ burn_failed:;
  Cdrskin_wait_before_action(skin,0);
  if(needs_early_fifo_fill==1)
    ret= 1;
+ else if(skin->cuefile[0] != 0)
+   ret= 1;
  else
    ret= Cdrskin_fill_fifo(skin,0);
  if(ret<=0) {
@@ -6779,8 +6862,10 @@ fifo_filling_failed:;
 
 #endif /* ! Cdrskin_extra_leaN */
 
- if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0)
+ if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0) {
    printf("Starting new track at sector: %d\n",nwa);
+   fflush(stdout);
+ }
  skin->drive_is_busy= 1;
  burn_disc_write(o, disc);
  if(skin->preskin->abort_handler==-1)
@@ -6789,6 +6874,7 @@ fifo_filling_failed:;
  last_time= start_time= Sfile_microtime(0);
 
  burn_write_opts_free(o);
+ o= NULL;
 
  while (burn_drive_get_status(drive, NULL) == BURN_DRIVE_SPAWNING) {
 
@@ -6999,6 +7085,10 @@ ex:;
    ClN(printf("cdrskin_debug: do_eject= %d\n",skin->do_eject));
  for(i= 0;i<skin->track_counter;i++)
    Cdrtrack_cleanup(skin->tracklist[i],0);
+ if(o != NULL)
+   burn_write_opts_free(o);
+ if(cuefile_fifo != NULL)
+   burn_source_free(cuefile_fifo);
  burn_session_free(session);
  burn_disc_free(disc);
  return(ret);
@@ -7177,7 +7267,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  static char ignored_partial_options[][41]= {
    "timeout=", "debug=", "kdebug=", "kd=", "driver=", "ts=",
    "pregap=", "defpregap=", "mcn=", "isrc=", "index=",
-   "pktsize=", "cuefile=",
+   "pktsize=",
    ""
  };
  static char ignored_full_options[][41]= {
@@ -7185,7 +7275,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-reset", "-abort", "-overburn", "-ignsize", "-useinfo",
    "-fix", "-nofix",
    "-raw", "-raw96p", "-raw16", "-raw96r",
-   "-clone", "-text",
+   "-clone",
    "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
    "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
    ""
@@ -7697,6 +7787,21 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"-inq")==0) {
      skin->do_checkdrive= 2;
 
+   } else if(strncmp(argv[i],"-cuefile=", 9)==0) {
+     value_pt= argv[i] + 10;
+     goto set_cuefile;
+   } else if(strncmp(argv[i],"cuefile=", 8)==0) {
+     value_pt= argv[i] + 8;
+set_cuefile:;
+     if(strlen(value_pt) >= sizeof(skin->cuefile)) {
+       fprintf(stderr,
+          "cdrskin: FATAL : cuefile=... too long. (max: %d, given: %d)\n",
+          (int) sizeof(skin->cuefile) - 1, (int) strlen(value_pt));
+       return(0);
+     }
+     strcpy(skin->cuefile, value_pt);
+     skin->do_burn= 1;
+
    } else if(strcmp(argv[i],"-isosize")==0) {
      skin->use_data_image_size= 1;
 
@@ -7964,6 +8069,9 @@ set_stream_recording:;
    } else if(strcmp(argv[i],"--tell_media_space")==0) {
      skin->tell_media_space= 1;
      skin->preskin->demands_cdrskin_caps= 1;
+
+   } else if(strcmp(argv[i], "-text") == 0) {
+     skin->use_cdtext= 1;
 
    } else if(strncmp(argv[i],"-textfile=", 10)==0) {
      value_pt= argv[i] + 10;

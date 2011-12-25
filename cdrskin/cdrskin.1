@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 18, 2011"
+.TH CDRSKIN 1 "Dec 25, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -80,15 +80,19 @@ Emulated drives
 The input-output entities which get processed are called tracks.
 A \fBtrack\fP stores a stream of bytes.
 .br
-Each track is initiated by one track source address argument, which may either
-be "-" for standard input or the address of a readable file. If no write mode
-is given explicitly then one will be chosen which matches the peculiarities
-of track sources and the state of the output media.
-.PP
 More than one track can be burned by a single run of cdrskin. 
 In the terms of the MMC standard all tracks written by the same run constitute
 a \fBsession\fP.
 .br
+Normally, each track is initiated by one track source address argument,
+which may either be "-" for standard input or the address of a readable file.
+Alternatively, option cuefile= may be used to read a session description
+from a text file and to read the session content from a single data file.
+.br
+If no write mode
+is given explicitly then one will be chosen which matches the peculiarities
+of track sources and the state of the output media.
+.PP
 Some media types can be kept appendable so that further tracks can
 be written to them in subsequent runs of cdrskin (see option -multi).
 Info about the addresses of burned tracks is kept in a table of
@@ -130,8 +134,8 @@ eventual multi-session capabilities.
 A more restrictive mode
 .B -sao
 (alias -dao) which usually demands a predictable track size and is not
-necessarily capable of multi-session. It may have advantages for some
-readers resp. players of the recorded tracks.
+necessarily capable of multi-session. It can be used to write CD-TEXT and
+it is the only one that works with option cuefile=. 
 .br
 If none of the options -dao, -tao or -sao is given then the program will
 try to choose a write mode which matches the defined recording job,
@@ -494,6 +498,18 @@ Print this list of blanking types.
 Retrieve some info about the addressed drive and then exit.
 Exits with non-zero value if the drive cannot be found and opened.
 .TP
+.BI cuefile= path
+Read a session description from a cue sheet file in CDRWIN format.
+Base the tracks on a single file which is given in the sheet by command FILE.
+To enable CD-TEXT from the cue sheet file, cdrskin option -text has to be
+present.
+.br
+cdrskin currently supports TRACK datatypes AUDIO and MODE1/2048 which may
+not be mixed. It ignores commands POSTGAP, PREGAP, and FLAGS. Only INDEX 01
+is interpreted yet. Commands CATALOG and ISRC only affect CD-TEXT but not
+the Q sub-channel of the program area. Data source may be of FILE type BINARY
+or MOTOROLA.
+.TP
 .BI \-dao
 Alias for option -sao. Write CD in Session at Once mode
 or DVD-R[W] in Disc-at-once mode.
@@ -759,6 +775,11 @@ to appendable media which already hold data. With unformatted DVD-R[W] it is
 the only mode which allows -multi.
 .br
 Mode -tao is not usable for minimally blanked DVD-RW and for DVD-R DL.
+.TP
+.BI \-text
+Enable writing of CD-TEXT attributes read by option cuefile=.
+Without option -text, cue sheet file command CDTEXTFILE will be ignored and
+no CD-TEXT attributes will be read from the file.
 .TP
 .BI textfile= path
 Read CD-TEXT packs from the file depicted by path and put them into the
