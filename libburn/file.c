@@ -26,6 +26,7 @@
 #include "libburn.h"
 #include "file.h"
 #include "async.h"
+#include "init.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -175,7 +176,7 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size)
 
 	if (datafd == -1)
 		return NULL;
-	fs = calloc(1, sizeof(struct burn_source_file));
+	fs = burn_alloc_mem(sizeof(struct burn_source_file), 1, 0);
 	if (fs == NULL) /* ts A70825 */
 		return NULL;
 	fs->datafd = datafd;
@@ -510,7 +511,7 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 				"Desired fifo buffer too small", 0, 0);
 		return NULL;
 	}
-	fs = calloc(1, sizeof(struct burn_source_fifo));
+	fs = burn_alloc_mem(sizeof(struct burn_source_fifo), 1, 0);
 	if (fs == NULL)
 		return NULL;
 	fs->is_started = 0;
@@ -757,9 +758,12 @@ int burn_fifo_fill(struct burn_source *source, int bufsize, int flag)
 
 static void offst_free(struct burn_source *source);
 
-static struct burn_source_offst *offst_auth(struct burn_source *source)
+/* @param flag bit0 = do not check for burn_source_offst, do not return NULL
+*/
+static struct burn_source_offst *offst_auth(struct burn_source *source,
+								int flag)
 {
-	if (source->free_data != offst_free) {
+	if (source->free_data != offst_free && !(flag & 1)) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x0002017a,
 			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
  			"Expected offset source object as parameter",
@@ -773,7 +777,7 @@ static off_t offst_get_size(struct burn_source *source)
 {
         struct burn_source_offst *fs;
 
-	if ((fs = offst_auth(source)) == NULL)
+	if ((fs = offst_auth(source, 0)) == NULL)
 		return (off_t) 0;
         return fs->size;
 }
@@ -782,7 +786,7 @@ static int offst_set_size(struct burn_source *source, off_t size)
 {
 	struct burn_source_offst *fs;
 
-	if ((fs = offst_auth(source)) == NULL)
+	if ((fs = offst_auth(source, 0)) == NULL)
 		return 0;
 	fs->size = size;
 	return 1;
@@ -792,12 +796,12 @@ static void offst_free(struct burn_source *source)
 {
 	struct burn_source_offst *fs;
 
-	if ((fs = offst_auth(source)) == NULL)
+	if ((fs = offst_auth(source, 0)) == NULL)
 		return;
 	if (fs->prev != NULL)
-		offst_auth(fs->prev)->next = fs->next;
+		offst_auth(fs->prev, 1)->next = fs->next;
 	if (fs->next != NULL)
-		offst_auth(fs->next)->prev = fs->prev;
+		offst_auth(fs->next, 1)->prev = fs->prev;
 	if (fs->inp != NULL)
 		burn_source_free(fs->inp); /* i.e. decrement refcount */
 	free(source->data);
@@ -809,13 +813,13 @@ static int offst_read(struct burn_source *source, unsigned char *buffer,
 	int ret, to_read, todo;
 	struct burn_source_offst *fs;
 
-	if ((fs = offst_auth(source)) == NULL)
+	if ((fs = offst_auth(source, 0)) == NULL)
 		return -1;
 
 	/* Eventually skip bytes up to start position */;
 	if (!fs->running) {
 		if (fs->prev != NULL)
-			fs->pos = offst_auth(fs->prev)->pos;
+			fs->pos = offst_auth(fs->prev, 1)->pos;
 		fs->running= 1;
 	}
 	if(fs->pos < fs->start) {
@@ -850,7 +854,7 @@ static int offst_cancel(struct burn_source *source)
 	int ret;
 	struct burn_source_offst *fs;
 
-	if ((fs = offst_auth(source)) == NULL)
+	if ((fs = offst_auth(source, 0)) == NULL)
 		return -1;
 	ret = burn_source_cancel(fs->inp);
 	return ret;
@@ -864,7 +868,7 @@ struct burn_source *burn_offst_source_new(
 	struct burn_source_offst *fs, *prev_fs = NULL;
 
 	if (prev != NULL)
-		if ((prev_fs = offst_auth(prev)) == NULL)
+		if ((prev_fs = offst_auth(prev, 0)) == NULL)
 			return NULL; /* Not type burn_source_offst */
 
 	fs = calloc(1, sizeof(struct burn_source_offst));
@@ -889,7 +893,7 @@ struct burn_source *burn_offst_source_new(
 	fs->next = NULL;
 	if (prev != NULL) {
 		if (prev_fs->next != NULL) {
-			offst_auth(prev_fs->next)->prev = src;
+			offst_auth(prev_fs->next, 1)->prev = src;
 			fs->next = prev_fs->next;
 		}
 		prev_fs->next = src;

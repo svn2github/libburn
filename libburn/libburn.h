@@ -1850,7 +1850,56 @@ int burn_disc_add_session(struct burn_disc *d, struct burn_session *s,
 int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
 
 
-/** Create a track (for TAO recording, or to put in a session) */
+/* ts B11219 */
+/** Read a CDRWIN cue sheet file and equip the session object by tracks and
+    CD-TEXT according to the content of the file.
+    For a description of CDRWIN file format see
+      http://digitalx.org/cue-sheet/syntax/
+>>> supported commands: CDTEXTFILE PERFORMER REM SONGWRITER TITLE
+>>> partly supported commands: CATALOG FILE ISRC INDEX TRACK 
+>>> supported FILE types: BINARY MOTOROLA
+>>> supported FLAGS:
+>>> supported TRACK datatypes: AUDIO MODE1/2048
+>>> ignored commands: POSTGAP PREGAP FLAGS
+>>> ignored INDEX numbers: 00, 02 to 99
+>>> ignored CUE SHEET features: CATALOG and ISRC (but supported as CD-TEXT)
+>>> ignored FLAGS: DCP 4CH PRE SCMS
+>>> not allowed: mixing of ADUIO and MODE1/2048
+>>> not allowed: unsupported FILE types
+>>> not allowed: unsupported TRACK datatypes
+>>> 
+>>> 
+    @param session     Session where to attach tracks. It must not yet have
+                       tracks or else this call will fail.
+    @param path        Filesystem address of the CDRWIN cue sheet file.
+                       Normally with suffix .cue
+    @param fifo_size   Number of bytes in fifo. This will be rounded up by
+                       the block size of the track mode. <= 0 means no fifo.
+    @param fifo        Returns a reference to the burn_source object that
+                       was installed as fifo between FILE and the track
+                       burn sources. One may use this to inquire the fifo
+                       state. Dispose it by burn_source_free() when no longer
+                       needed. It is permissible to pass this parameter to
+                       libburn as NULL, in order to immediately drop ownership
+                       on the fifo.
+    @param text_packs  Returns pre-formatted CD-TEXT packs resulting from
+                       cue sheet command CDTEXTFILE. To be used with call
+                       burn_write_opts_set_leadin_text().
+                       It is permissible to pass this parameter to libburn
+                       as NULL, in order to disable CDTEXTFILE.
+    @param num_packs   Returns the number of 18 byte records in text_packs.
+    @param flag        Bitfield for control purposes.
+                       bit0= Do not attach CD-TEXT information to session and
+                             tracks. Do not load text_packs.
+    @return            > 0 indicates success, <= 0 indicates failure
+    @since 1.2.0
+*/
+int burn_session_by_cue_file(struct burn_session *session,
+			char *path, int fifo_size, struct burn_source **fifo,
+                        unsigned char **text_packs, int *num_packs, int flag);
+
+
+/** Create a track */
 struct burn_track *burn_track_create(void);
 
 /** Free a track
@@ -2074,6 +2123,9 @@ int burn_session_set_cdtext(struct burn_session *s, int block,
                         See above burn_session_set_cdtext().
     @param payload      Will return a pointer to text or binary bytes.
                         Not a copy of data. Do not free() this address.
+                        If no text attribute is attached for pack type and
+                        block, then payload is returned as NULL. The return
+                        value will not indicate error in this case.
     @pram length        Will return the number of bytes pointed to by payload.
                         Including terminating 0-bytes.
     @param flag         Bitfield for control purposes. Unused yet. Submit 0.
@@ -2145,6 +2197,26 @@ int burn_cdtext_from_session(struct burn_session *s,
 int burn_session_dispose_cdtext(struct burn_session *s, int block);
 
 
+/* ts B11221*/ 
+/** Read an array of CD-TEXT packs from a file. This array should be suitable
+    for burn_write_opts_set_leadin_text().
+    The function tolerates and removes 4-byte headers as produced by
+    cdrecord -vv -toc, if this header tells the correct number of bytes which
+    matches the file size. If no 4-byte header is present, then the function
+    tolerates and removes a trailing 0-byte as of Sony specs.
+    @param path         Filesystem address of the CD-TEXT pack file.
+                        Normally with suffix .cdt or .dat
+    @param text_packs   Will return the buffer with the CD-TEXT packs.
+                        Dispose by free() when no longer needed.
+    @param num_packs    Will return the number of 18 byte text packs.
+    @param flag         Bitfield for control purposes. Unused yet.Submit 0.
+    @return             0 is success, <= 0 failure
+    @since 1.2.0
+*/
+int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
+                                 int *num_packs, int flag);
+
+
 /** Define the data in a track
 	@param t the track to define
 	@param offset The lib will write this many 0s before start of data
@@ -2214,6 +2286,9 @@ int burn_track_set_cdtext(struct burn_track *t, int block,
                         See above burn_track_set_cdtext().
     @param payload      Will return a pointer to text bytes.
                         Not a copy of data. Do not free() this address.
+                        If no text attribute is attached for pack type and
+                        block, then payload is returned as NULL. The return
+                        value will not indicate error in this case.
     @pram length        Will return the number of bytes pointed to by payload.
                         Including terminating 0-bytes.
     @param flag         Bitfield for control purposes. Unused yet. Submit 0.
@@ -2424,14 +2499,15 @@ struct burn_source *burn_offst_source_new(
 /** Creates a fifo which acts as proxy for an already existing data source.
     The fifo provides a ring buffer which shall smoothen the data stream
     between burn_source and writer thread. Each fifo serves only for one
-    data source and gets attached to one track as its only data source
-    by burn_track_set_source().
+    data source. It may be attached to one track as its only data source
+    by burn_track_set_source(), or it may be used as input for other burn
+    sources.
     A fifo starts its life in "standby" mode with no buffer space allocated.
-    As soon as its track requires bytes, the fifo establishes a worker thread
-    and allocates its buffer. After input has ended and all buffer content is
-    consumed, the buffer space gets freed and the worker thread ends.
-    This happens asynchronously. So expect two buffers and worker threads to
-    exist for a short time between tracks. Be modest in your size demands if
+    As soon as its consumer requires bytes, the fifo establishes a worker
+    thread and allocates its buffer. After input has ended and all buffer
+    content is consumed, the buffer space gets freed and the worker thread
+    ends. This happens asynchronously. So expect two buffers and worker threads
+    to exist for a short time between tracks. Be modest in your size demands if
     multiple tracks are to be expected. 
     @param inp        The burn_source for which the fifo shall act as proxy.
                       It can be disposed by burn_source_free() immediately
@@ -3697,7 +3773,6 @@ int libdax_audioxtr_detach_fd(struct libdax_audioxtr *o, int *fd, int flag);
     @since 0.2.4
 */
 int libdax_audioxtr_destroy(struct libdax_audioxtr **xtr, int flag);
-
 
 
 #ifndef DOXYGEN

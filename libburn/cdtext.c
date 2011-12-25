@@ -438,8 +438,11 @@ ex:;
 		else if (flag & 1)
 			ret = -1;
 		BURN_FREE_MEM(crs.packs);
-	} else if (crs.num_packs > 0) {
-		*text_packs = crs.packs;
+	} else {
+		if (crs.num_packs > 0)
+			*text_packs = crs.packs;
+		else
+			BURN_FREE_MEM(crs.packs);
 		*num_packs = crs.num_packs;
 	}
 	return(ret);
@@ -616,6 +619,7 @@ static int v07t_cdtext_to_track(struct burn_track *track, int block,
 }
 
 
+/* ts B11215 API */
 int burn_session_input_sheet_v07t(struct burn_session *session,
 					char *path, int block, int flag)
 {
@@ -1005,4 +1009,98 @@ ex:;
 	BURN_FREE_MEM(msg);
 	return ret;
 }
+
+
+/* ts B11221 API */
+int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
+				 int *num_packs, int flag)
+{
+	int ret = 0, residue = 0;
+	struct stat stbuf;
+	FILE *fp = NULL;
+	unsigned char head[4], tail[1];
+	char *msg = NULL;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+
+	if (stat(path, &stbuf) == -1) {
+cannot_open:;
+		sprintf(msg, "Cannot open CD-TEXT pack file '%.4000s'", path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020198,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			burn_printify(msg), errno, 0);
+		ret = 0; goto ex;
+	}
+	if (!S_ISREG(stbuf.st_mode))
+		goto not_a_textfile;
+	residue = (stbuf.st_size % 18);
+	if(residue != 4 && residue != 0 && residue != 1) {
+not_a_textfile:;
+		sprintf(msg,
+	  "File is not of usable type or content for CD-TEXT packs: '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020198,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	if (stbuf.st_size < 18)
+		goto not_a_textfile;
+
+	fp = fopen(path, "rb");
+	if (fp == NULL)
+		goto cannot_open;
+	if (residue == 4) { /* This is for files from cdrecord -vv -toc */
+		ret = fread(head, 4, 1, fp);
+		if (ret != 1) {
+cannot_read:;
+			sprintf(msg,
+		      "Cannot read all bytes from CD-TEXT pack file '%.4000s'",
+				path);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020198,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), errno, 0);
+			ret = 0; goto ex;
+		}
+		if (head[0] * 256 + head[1] != stbuf.st_size - 2)
+			goto not_a_textfile;
+	}
+	*num_packs = (stbuf.st_size - residue) / 18;
+	if (*num_packs > 2048) {
+		/* Each block can have 256 text packs.
+		   There are 8 blocks at most. */
+		sprintf(msg,
+		   "CD-Text pack file too large (max. 36864 bytes): '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002018b,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), errno, 0);
+		ret = 0; goto ex;
+	}
+
+	BURN_ALLOC_MEM(*text_packs, unsigned char, *num_packs * 18);
+	ret = fread(*text_packs, *num_packs * 18, 1, fp);
+	if (ret != 1)
+		goto cannot_read;
+	if (residue == 1) { /* This is for Sony CDTEXT files */
+		ret = fread(tail, 1, 1, fp);
+		if (ret != 1)
+			goto cannot_read;
+		if (tail[0] != 0)
+			goto not_a_textfile;
+	}
+
+	ret= 1;
+ex:;
+	if (ret <= 0) {
+		BURN_FREE_MEM(*text_packs);
+		*text_packs = NULL;
+		*num_packs = 0;
+	}
+	if (fp != NULL)
+		fclose(fp);
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
 

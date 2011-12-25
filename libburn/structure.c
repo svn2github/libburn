@@ -15,11 +15,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
 #include "libburn.h"
 #include "structure.h"
 #include "write.h"
 #include "debug.h"
 #include "init.h"
+#include "util.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -849,6 +856,11 @@ int burn_track_get_cdtext(struct burn_track *t, int block,
 
 	if (burn_cdtext_check_blockno(block) <= 0)
 		return 0;
+	if (t->cdtext[block] == NULL) {
+		*payload = NULL;
+		*length = 0;
+		return 1;
+	}
 	ret = burn_cdtext_get(t->cdtext[block], pack_type, pack_type_name,
 				payload, length, 0);
 	return ret;
@@ -899,6 +911,12 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
 
 	if (burn_cdtext_check_blockno(block) <= 0)
 		return 0;
+
+	if (s->cdtext[block] == NULL) {
+		*payload = NULL;
+		*length = 0;
+		return 1;
+	}
 	ret = burn_cdtext_get(s->cdtext[block], pack_type, pack_type_name,
 				payload, length, 0);
 	return ret;
@@ -961,4 +979,780 @@ int burn_session_dispose_cdtext(struct burn_session *s, int block)
 	return 1;
 }
 
+
+/* --------------------- Reading CDRWIN cue sheet files ----------------- */
+
+
+struct burn_cue_file_cursor {
+	char *cdtextfile;
+	char *source_file;
+	off_t source_size;
+	struct burn_source *file_source;
+	int fifo_size;
+	struct burn_source *fifo;
+	int swap_audio_bytes;
+	int no_cdtext;
+	struct burn_source *offst_source;
+	int current_file_ba;
+	struct burn_track *prev_track;
+	int prev_file_ba;
+	int prev_block_size;
+	struct burn_track *track;
+	int track_no;
+	int track_has_index;
+	int track_has_source;
+	int block_size;
+	int block_size_locked;
+	int flags;
+};
+
+
+static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
+{
+	int ret;
+	struct burn_cue_file_cursor *crs;
+
+	BURN_ALLOC_MEM(crs, struct burn_cue_file_cursor, 1);
+	crs->cdtextfile = NULL;
+	crs->source_file = NULL;
+	crs->source_size = -1;
+	crs->file_source = NULL;
+	crs->fifo_size = 0;
+	crs->fifo = NULL;
+	crs->swap_audio_bytes = 0;
+	crs->no_cdtext = 0;
+	crs->offst_source = NULL;
+	crs->current_file_ba = -1000000000;
+	crs->prev_track = NULL;
+	crs->prev_file_ba = -1000000000;
+	crs->prev_block_size = 0;
+	crs->track = NULL;
+	crs->track_no = 0;
+	crs->track_has_index = 0;
+	crs->track_has_source = 0;
+	crs->block_size = 0;
+	crs->block_size_locked = 0;
+	crs->flags = 0;
+
+	*reply = crs;
+	ret = 1;
+ex:;
+	return ret;
+}
+
+
+static int cue_crs_destroy(struct burn_cue_file_cursor **victim, int flag)
+{
+	struct burn_cue_file_cursor *crs;
+
+	if (*victim == NULL)
+		return 2;
+	crs = *victim;
+	if (crs->cdtextfile != NULL)
+		free(crs->cdtextfile);
+	if (crs->source_file != NULL)
+		free(crs->source_file);
+	if (crs->file_source != NULL)
+		burn_source_free(crs->file_source);
+	if (crs->fifo != NULL)
+		burn_source_free(crs->fifo);
+	if (crs->offst_source != NULL)
+		burn_source_free(crs->offst_source);
+	if (crs->prev_track != NULL)
+		burn_track_free(crs->prev_track);
+	if (crs->track != NULL)
+		burn_track_free(crs->track);
+	BURN_FREE_MEM(crs);
+	*victim = NULL;
+	return 1;
+}
+
+
+static char *cue_unquote_text(char *text, int flag)
+{
+	char *ept, *spt;
+
+	spt = text;
+	for (ept = text + strlen(text); ept > text; ept--)
+		if (*(ept - 1) != 32 && *(ept - 1) != 9)
+			break;
+	if (text[0] == '"') {
+		spt = text + 1;
+		if (ept > spt)
+			if (*(ept - 1) == '"')
+				ept--;
+	}
+	*ept = 0;
+	return spt;
+}
+
+
+/* @param flag bit0= insist in having a track object
+               bit1= remove quotation marks if present
+*/
+static int cue_set_cdtext(struct burn_session *session,
+			struct burn_track *track, int pack_type, char *text,
+			struct burn_cue_file_cursor *crs, int flag)
+{
+	int ret;
+	char *payload;
+
+	if (crs->no_cdtext == 1) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+		  "In cue sheet file: Being set to ignore all CD-TEXT aspects",
+			0, 0);
+		crs->no_cdtext = 2;
+	}
+	if (crs->no_cdtext)
+		return 2;
+	if ((flag & 1) && track == NULL) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		    "Track attribute set before first track in cue sheet file",
+			 0, 0);
+		ret = 0; goto ex;
+	}
+	if (flag & 2)
+		payload = cue_unquote_text(text, 0);
+	else
+		payload = text;
+	if (track != NULL) {
+		ret =  burn_track_set_cdtext(track, 0, pack_type, "",
+					(unsigned char *) payload,
+					strlen(payload) + 1, 0);
+	} else {
+		ret =  burn_session_set_cdtext(session, 0, pack_type, "",
+					(unsigned char *) payload,
+					strlen(payload) + 1, 0);
+	}
+ex:;
+	return ret;
+}
+	
+
+static int cue_attach_track(struct burn_session *session,
+				struct burn_cue_file_cursor *crs, int flag)
+{
+	int ret;
+
+	if (crs->track == NULL)
+		return 2;
+
+	if (!crs->track_has_source) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"In cue sheet file: TRACK without INDEX 01", 0, 0);
+		return 0;
+	}
+	if (crs->track_no > 1 && session->tracks == 0) {
+
+		/* >>> ??? implement ? */;
+
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+		   "In cue sheet file: TRACK numbering does not start with 01",
+			 0, 0);
+	}
+	ret = burn_session_add_track(session, crs->track, BURN_POS_END);
+	if (ret <= 0)
+		return ret;
+	if (crs->prev_track != NULL)
+		burn_track_free(crs->prev_track); /* release reference */
+	crs->prev_track = crs->track;
+	crs->prev_file_ba = crs->current_file_ba;
+	crs->prev_block_size = crs->block_size;
+	crs->track = NULL;
+	crs->track_has_index = crs->track_has_source = 0;
+	crs->current_file_ba = -1;
+	if (!crs->block_size_locked)
+		crs->block_size = 0;
+	return 1;
+}
+
+
+/* @param flag bit0= do not alter the content of *payload
+                     do not change *payload
+*/
+static int cue_read_number(char **payload, int *number, int flag)
+{
+	int ret, at_end = 0;
+	char *apt, *msg = NULL;
+
+	for(apt = *payload; *apt != 0 && *apt != 32 && *apt != 9; apt++);
+	if (*apt == 0)
+		at_end = 1;
+	else if (!(flag & 1))
+		*apt = 0;
+	ret = sscanf(*payload, "%d", number);
+	if (ret != 1) {
+		BURN_ALLOC_MEM(msg, char, 4096);
+		sprintf(msg,
+			"Unsuitable number in cue sheet file: '%.4000s'",
+			*payload);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	/* Find start of next argument */
+	if (!at_end)
+		for (apt++; *apt == 32 || *apt == 9; apt++);
+	if (!(flag & 1))
+		*payload = apt;
+
+	ret = 1;
+ex:
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+
+static int cue_create_file_source(char *path, struct burn_cue_file_cursor *crs,
+								int flag)
+{
+	int fd, ret;
+	char *msg = NULL;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+
+	fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		sprintf(msg, "In cue sheet: Cannot open FILE '%.4000s'", path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), errno, 0);
+		ret = 0; goto ex;
+	}
+	crs->file_source = burn_fd_source_new(fd, -1, crs->source_size);
+	if (crs->file_source == NULL) {
+		ret = -1; goto ex;
+	}
+
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+
+static int cue_interpret_line(struct burn_session *session, char *line,
+				struct burn_cue_file_cursor *crs, int flag)
+{
+	int ret, mode, index_no, minute, second, frame, file_ba, chunks;
+	int block_size;
+	off_t size;
+	char *cmd, *apt, *msg = NULL, msf[3], *msf_pt, *cpt, *filetype;
+	struct burn_source *src, *inp_src;
+	enum burn_source_status source_status;
+	struct stat stbuf;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+
+	if (line[0] == 0 || line[0] == '#') {
+		ret = 1; goto ex;
+	}
+
+	for (cmd = line; *cmd == 32 || *cmd == 9; cmd++);
+	for(apt = cmd; *apt != 0 && *apt != 32 && *apt != 9; apt++);
+	if (*apt != 0) {
+		*apt = 0;
+		for (apt++; *apt == 32 || *apt == 9; apt++);
+	}
+
+	if (strcmp(cmd, "CATALOG") == 0) {
+		ret = cue_set_cdtext(session, NULL, 0x8e, apt, crs, 0);
+		if (ret <= 0)
+			goto ex;
+
+		/* >>> ??? data for burn_write_opts_set_mediacatalog ?
+		       (not implemented yet in SAO) */
+
+
+	} else if (strcmp(cmd, "CDTEXTFILE") == 0) {
+		if (crs->no_cdtext) {
+			ret = 1; goto ex;
+		}
+		apt = cue_unquote_text(apt, 0);
+		if (crs->cdtextfile != NULL)
+			free(crs->cdtextfile);
+		crs->cdtextfile = strdup(apt);
+		if (crs->cdtextfile == NULL) {
+out_of_mem:;
+			libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Out of virtual memory", 0, 0);
+			ret = -1; goto ex;
+		}
+
+	} else if (strcmp(cmd, "FILE") == 0) {
+		if (crs->file_source != NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			      "In cue sheet file: Multiple occurences of FILE",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		/* Obtain type */
+		for (cpt = apt + (strlen(apt) - 1);
+		     cpt > apt && (*cpt == 32 || *cpt == 9); cpt--);
+		cpt[1] = 0;
+		for (;  cpt > apt && *cpt != 32  && *cpt != 9; cpt--);
+		if (cpt <= apt) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"In cue sheet file: FILE without type word",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		*cpt = 0;
+		filetype = cpt + 1;
+		if (strcmp(filetype, "BINARY") == 0) {
+			crs->swap_audio_bytes = 0;
+		} else if (strcmp(filetype, "MOTOROLA") == 0) {
+			crs->swap_audio_bytes = 1;
+		} else if (strcmp(filetype, "WAVE") == 0     && 0    ) {
+
+			/* >>> Use libdax_audioxtr_* functions to extract */;
+
+		} else {
+			sprintf(msg,
+			  "In cue sheet file: Unsupported FILE type '%.4000s'",
+				filetype);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020197,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+
+		apt = cue_unquote_text(apt, 0);
+		if (*apt == 0)
+			ret = -1;
+		else
+			ret = stat(apt, &stbuf);
+		if (ret == -1) {
+not_usable_file:;
+			sprintf(msg,
+				"In cue sheet file: Unusable FILE '%.4000s'",
+				apt);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+		if (!S_ISREG(stbuf.st_mode))
+			goto not_usable_file;
+		crs->source_size = stbuf.st_size;
+		if (crs->source_file != NULL)
+			free(crs->source_file);
+		crs->source_file = strdup(apt);
+		if (crs->source_file == NULL)
+			goto out_of_mem;
+		ret = cue_create_file_source(apt, crs, 0);
+		if (ret <= 0)
+			goto ex;
+
+	} else if (strcmp(cmd, "FLAGS") == 0) {
+
+		/* >>> Interpret DCP 4CH PRE SCMS into crs->flags */;
+
+	} else if (strcmp(cmd, "INDEX") == 0) {
+		if (crs->track == NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"In cue sheet file: INDEX found before TRACK",
+				0, 0);
+			ret = 0; goto ex;
+		}
+
+		ret = cue_read_number(&apt, &index_no, 0);
+		if (ret <= 0)
+			goto ex;
+
+		/* Obtain time point */
+		if (strlen(apt) < 8) {
+no_time_point:;
+			sprintf(msg,
+		     "Inappropriate cue sheet file index time point '%.4000s'",
+				apt);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+		if (apt[2] != ':' || apt[5] != ':' ||
+				(apt[8] != 0 && apt[8] != 32 && apt[8] != 9))
+			goto no_time_point;
+		msf[2] = 0;
+		msf_pt = msf;
+		strncpy(msf, apt, 2);
+		ret = cue_read_number(&msf_pt, &minute, 1);
+		if (ret <= 0)
+			goto ex;
+		strncpy(msf, apt + 3, 2);
+		ret = cue_read_number(&msf_pt, &second, 1);
+		if (ret <= 0)
+			goto ex;
+		strncpy(msf, apt + 6, 2);
+		ret = cue_read_number(&msf_pt, &frame, 1);
+		if (ret <= 0)
+			goto ex;
+
+		file_ba = ((minute * 60) + second ) * 75 + frame;
+		if (file_ba <= crs->prev_file_ba) {
+overlapping_ba:;
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			       "Overlapping INDEX addresses in cue sheet file",
+				0, 0);
+			ret = 0; goto ex;
+		}
+
+		if (crs->prev_track != NULL && !crs->track_has_index) {
+			size = (file_ba - crs->prev_file_ba) *
+							crs->prev_block_size;
+			if (size <= 0)
+				goto overlapping_ba;
+			burn_track_set_size(crs->prev_track, size);
+		}
+		crs->track_has_index = 1;
+
+		if (index_no != 1) {
+
+			/* >>> what to do with index != 1 ? */;
+			/* >>> INDEX 00 defines start of a track pregap
+			       Pregap and postgap still has to be properly
+			       mapped onto track
+			 */;
+
+
+			ret = 1; goto ex;
+		}
+
+		if (crs->block_size_locked && crs->fifo == NULL &&
+		    crs->fifo_size > 0) {
+			/* Now that the block size is known from TRACK:
+			   Create fifo and use it for creating the offset
+			   sources. This will fixate the block size to one
+			   common value.
+			*/
+			chunks = crs->fifo_size / crs->block_size +
+				!!(crs->fifo_size % crs->block_size);
+			if (chunks < 4)
+				chunks = 4;
+			crs->fifo = burn_fifo_source_new(crs->file_source,
+						crs->block_size, chunks, 0);
+			if (crs->fifo == NULL) {
+				ret = -1; goto ex;
+			}
+		}
+		if (crs->fifo != NULL)
+			inp_src = crs->fifo;
+		else
+			inp_src = crs->file_source;
+		src = burn_offst_source_new(inp_src, crs->offst_source,
+			(off_t) (file_ba * crs->block_size), (off_t) 0, 0);
+		if (src == NULL)
+			goto out_of_mem;
+
+		/* >>> Alternative to above fifo creation:
+		   Create a fifo for each track track.
+		   This will be necessary if mixed-mode sessions get supporded.
+		*/;
+
+		source_status = burn_track_set_source(crs->track, src);
+		if (source_status != BURN_SOURCE_OK) {
+			ret = -1; goto ex;
+		}
+
+		/* Switch current source in crs */
+		if (crs->offst_source != NULL)
+			burn_source_free(crs->offst_source);
+		crs->offst_source = src;
+		crs->current_file_ba = file_ba;
+		crs->track_has_source = 1;
+
+	} else if (strcmp(cmd, "ISRC") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x8e, apt, crs,
+                                     1 | 2);
+		if (ret <= 0)
+			goto ex;
+
+		/* >>> ??? burn_track_set_isrc ?
+			(not implemented yet in SAO) */
+
+	} else if (strcmp(cmd, "PERFORMER") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x81, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
+
+	} else if (strcmp(cmd, "POSTGAP") == 0) {
+
+		/* >>> ??? implement ? */;
+
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+			"In cue sheet file: POSTGAP command not supported",
+			0, 0);
+
+	} else if (strcmp(cmd, "PREGAP") == 0) {
+
+		/* >>> ??? implement ? */;
+
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
+			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+			"In cue sheet file: PREGAP command not supported",
+			0, 0);
+
+	} else if (strcmp(cmd, "REM") == 0) {
+		;
+
+	} else if (strcmp(cmd, "SONGWRITER") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x82, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
+
+	} else if (strcmp(cmd, "TITLE") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x80, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
+
+	} else if (strcmp(cmd, "TRACK") == 0) {
+		if (crs->file_source == NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			      "No FILE defined before TRACK in cue sheet file",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		/* Attach previous track to session */
+		ret = cue_attach_track(session, crs, 0);
+		if (ret <= 0)
+			goto ex;
+		/* Create new track */;
+		ret = cue_read_number(&apt, &(crs->track_no), 0);
+		if (ret <= 0)
+			goto ex;
+		if (crs->track_no < 1 || crs->track_no > 99) {
+			sprintf(msg,
+				"Inappropriate cue sheet file track number %d",
+				crs->track_no);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+		if (strcmp(apt, "AUDIO") == 0) {
+			mode = BURN_AUDIO;
+			block_size = 2352;
+		} else if (strcmp(apt, "MODE1/2048") == 0) {
+			mode = BURN_MODE1;
+			block_size = 2048;
+		} else {
+			sprintf(msg,
+			 "Unsupported cue sheet file track datatype '%.4000s'",
+				apt);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020197,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+		if (block_size != crs->block_size && crs->block_size > 0 &&
+						crs->block_size_locked) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020197,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			"In cue sheet file: Unsupported mix track block sizes",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		crs->block_size = block_size;
+
+		crs->track = burn_track_create();
+		if (crs->track == NULL)
+			goto out_of_mem;
+		crs->track_has_source = 0;
+		burn_track_define_data(crs->track, 0, 0, 1, mode);
+		if (mode == BURN_AUDIO)
+			burn_track_set_byte_swap(crs->track,
+						!!crs->swap_audio_bytes);
+
+	} else {
+		sprintf(msg, "Unknown cue sheet file command '%.4000s'", line);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020191,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+
+/* ts B11216 API */
+/* @param flag bit0= do not attach CD-TEXT information to session and tracks
+*/
+int burn_session_by_cue_file(struct burn_session *session, char *path,
+			int fifo_size, struct burn_source **fifo,
+			unsigned char **text_packs, int *num_packs, int flag)
+{
+	int ret, num_tracks, i, pack_type, length, double_byte = 0;
+	struct burn_track **tracks;
+	char *msg = NULL, *line = NULL;
+	unsigned char *payload;
+	struct stat stbuf;
+	FILE *fp = NULL;
+	struct burn_cue_file_cursor *crs;
+
+	static unsigned char dummy_cdtext[2] = {0, 0};
+
+	if (fifo != NULL)
+		*fifo = NULL;
+	if (text_packs != NULL)
+		*text_packs = NULL;
+	*num_packs = 0;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+	BURN_ALLOC_MEM(line, char, 4096);
+	ret = cue_crs_new(&crs, 0);
+	if (ret <= 0)
+		goto ex;
+	crs->no_cdtext = (flag & 1);
+	crs->fifo_size = fifo_size;
+	crs->block_size_locked = 1; /* No mixed sessions for now */
+
+	tracks = burn_session_get_tracks(session, &num_tracks);
+	if (num_tracks > 0) {
+		sprintf(msg,
+      "Cue sheet file reader called while session has already defined tracks");
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020196,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	if (stat(path, &stbuf) == -1) {
+cannot_open:;
+		sprintf(msg, "Cannot open cue sheet file '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), errno, 0);
+		ret = 0; goto ex;
+	}
+	if (!S_ISREG(stbuf.st_mode)) {
+		sprintf(msg,
+			"File is not of usable type: Cue sheet file '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+
+	fp = fopen(path, "rb");
+	if (fp == NULL)
+		goto cannot_open;
+
+	while (1) {
+		if (burn_sfile_fgets(line, 4095, fp) == NULL) {
+			if (!ferror(fp))
+	break;
+			sprintf(msg,
+			 "Cannot read all bytes from cue sheet file '%.4000s'",
+				path);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+		ret = cue_interpret_line(session, line, crs, 0);
+		if (ret <= 0)
+			goto ex;
+	}
+
+	/* Attach last track to session */
+	if (crs->track != NULL) {
+		/* Set track size up to end of file */
+		if (crs->current_file_ba < 0) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		     "No INDEX 01 defined for last TRACK in cue sheet file",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		if (crs->current_file_ba * crs->block_size >=
+							crs->source_size) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		"INDEX 01 time point exceeds size of FILE from cue sheet file",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		burn_track_set_size(crs->track, crs->source_size -
+			(off_t) (crs->current_file_ba * crs->block_size));
+
+		ret = cue_attach_track(session, crs, 0);
+		if (ret <= 0)
+			goto ex;
+	}
+	if (crs->cdtextfile != NULL) {
+		if (text_packs == NULL) {
+
+			/* >>> Warn of ignored text packs */;
+
+		} else {
+			ret = burn_cdtext_from_packfile(crs->cdtextfile,
+						text_packs, num_packs, 0);
+			if (ret <= 0)
+				goto ex;
+		}
+	}
+
+	/* Check which tracks have data of pack types where session has not */
+	tracks = burn_session_get_tracks(session, &num_tracks);
+	for (pack_type = 0x80; pack_type < 0x8f; pack_type++) {
+		if (pack_type > 0x86 && pack_type != 0x8e)
+	continue;
+		ret = burn_session_get_cdtext(session, 0, pack_type, "",
+						&payload, &length, 0);
+		if (ret <= 0)
+			goto ex;
+		if (payload != NULL)
+	continue;
+		for (i = 0; i < num_tracks; i++) {
+			ret = burn_track_get_cdtext(tracks[i], 0, pack_type,
+						 "", &payload, &length, 0);
+			if (ret <= 0)
+				goto ex;
+			double_byte = (ret > 1);
+			if (payload != NULL)
+		break;
+		}
+		if (i < num_tracks) {
+			ret = burn_session_set_cdtext(session, 0, pack_type,
+					"", dummy_cdtext, 1 + double_byte,
+					double_byte);
+			if (ret <= 0)
+				goto ex;
+		}
+	}
+	ret = 1;
+ex:
+	if (ret <= 0) {
+		tracks = burn_session_get_tracks(session, &num_tracks);
+		for (i = 0; i < num_tracks; i++)
+			burn_track_free(tracks[i]);
+	} else {
+		if (fifo != NULL) {
+			*fifo = crs->fifo;
+			crs->fifo = NULL;
+		}
+	}
+	cue_crs_destroy(&crs, 0);
+	BURN_FREE_MEM(line);
+	BURN_FREE_MEM(msg);
+	return ret;
+}
 

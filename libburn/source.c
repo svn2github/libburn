@@ -15,6 +15,7 @@
 #include "libburn.h"
 #include "source.h"
 #include "structure.h"
+#include "init.h"
 
 void burn_source_free(struct burn_source *src)
 {
@@ -41,12 +42,10 @@ struct burn_source *burn_source_new(void)
 {
 	struct burn_source *out;
 
-	out = calloc(1, sizeof(struct burn_source));
-
-	/* ts A70825 */
+	/* ts A70825 , B11219 */
+	out = burn_alloc_mem(sizeof(struct burn_source), 1, 0);
 	if (out == NULL)
 		return NULL;
-	memset((char *) out, 0, sizeof(struct burn_source));
 
 	out->refcount = 1;
 	return out;
