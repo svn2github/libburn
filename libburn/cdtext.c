@@ -629,7 +629,7 @@ int burn_session_input_sheet_v07t(struct burn_session *session,
 	int int0x00 = 0x00, int0x01 = 0x01;
 	struct stat stbuf;
 	FILE *fp = NULL;
-	char *line = NULL, *eq_pos, *payload, *genre_text, track_txt[3];
+	char *line = NULL, *eq_pos, *payload, *genre_text = NULL, track_txt[3];
 	char *msg = NULL;
 	struct burn_track **tracks;
 

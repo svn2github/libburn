@@ -1604,7 +1604,7 @@ int burn_session_by_cue_file(struct burn_session *session, char *path,
 	unsigned char *payload;
 	struct stat stbuf;
 	FILE *fp = NULL;
-	struct burn_cue_file_cursor *crs;
+	struct burn_cue_file_cursor *crs = NULL;
 
 	static unsigned char dummy_cdtext[2] = {0, 0};
 
