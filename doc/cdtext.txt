@@ -4,6 +4,7 @@
 Guided by Leon Merten Lohse       via  libcdio-devel@gnu.org
 by reading           mmc3r10g.pdf from http://www.t10.org/ftp/t10/drafts/mmc3/
 by docs and results of cdtext.zip from http://www.sonydadc.com/file/
+by reading                 syntax from http://digitalx.org/cue-sheet/
 by reading source of      libcdio from http://www.gnu.org/s/libcdio
 which quotes source of   cdrecord from ftp://ftp.berlios.de/pub/cdrecord/alpha
 
@@ -18,7 +19,8 @@ Content:
 - Content specifications of particular pack types
 - Format of a CD-TEXT packs array
 - Overview of libburn API calls for CD-TEXT
-- Sony Text File Format (Input Sheet Version 0.7T):
+- Sony Text File Format (Input Sheet Version 0.7T)
+- CDRWIN cue sheet files
 
 
 -------------------------------------------------------------------------------
@@ -115,8 +117,11 @@ Format, Q Sub-channel).
 See below, Format of CD-TEXT packs, for more details about the content of
 pack type 0x88.
 
-Pack type 0x89 is yet quite unclear. See below, Format of CD-TEXT packs, for
-an example of this pack type.
+Pack type 0x89 is yet quite unclear. It might be a representation of Playback
+Skip Interval, Mode-5 Q sub-channel, POINT 01 to 40 (mmc5r03.pdf 4.2.3.7.4).
+If so, then this seems not to apply to write type SAO, because the CUE SHEET
+format offers no way to express Mode-5 Q.
+See below, Format of CD-TEXT packs, for an example of this pack type.
 
 Pack type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
 Any information can be recorded on disc as memorandum. Information in this
@@ -408,8 +413,14 @@ This set may be attached as array of readily formatted text packs by:
                                       unsigned char *text_packs,
                                       int num_packs, int flag);
 
-Alternatively it may be defined by attaching CD-TEXT attributes to burn_session
-and burn_track:
+The array may be read from a file by
+
+  int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
+                                int *num_packs, int flag);
+
+
+Alternatively the pack set may be defined by attaching CD-TEXT attributes
+to burn_session and burn_track:
 
   int burn_session_set_cdtext_par(struct burn_session *s,
                                   int char_codes[8], int copyrights[8],
@@ -438,7 +449,8 @@ There is a reader for Sony Input Sheet Version 0.7T:
                                     char *path, int block, int flag);
 
 
-These attributes can then be converted into an array of text packs by:
+The session and track attributes can then be converted into an array of
+text packs by:
 
   int burn_cdtext_from_session(struct burn_session *s,
                                unsigned char **text_packs, int *num_packs, 
@@ -467,6 +479,13 @@ and for removing attached attributes:
   int burn_session_dispose_cdtext(struct burn_session *s, int block);
 
   int burn_track_dispose_cdtext(struct burn_track *t, int block);
+
+CD-TEXT can be read from a CDRWIN cue sheet file which defines the tracks
+of a session
+
+  int burn_session_by_cue_file(struct burn_session *session,
+                        char *path, int fifo_size, struct burn_source **fifo,
+                        unsigned char **text_packs, int *num_packs, int flag);
 
 
 -------------------------------------------------------------------------------
@@ -601,6 +620,51 @@ Track 03 Arranger   =  Mia Kitten
 Track 03 Message    =  
 ISRC 03             =  XYBLG1100006
 ----------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+CDRWIN cue sheet files:
+
+A CDRWIN cue sheet file defines the track data source (FILE), various text
+attributes (CATALOG, TITLE, PERFORMER, SONGWRITER, ISRC), track block types
+(TRACK) and track start addresses (INDEX 01).
+The rules for CDRWIN cue sheet files are described at
+  http://digitalx.org/cue-sheet/syntax/
+
+----------------------------------------------------------
+Example of a CDRWIN cue sheet file                       :
+----------------------------------------------------------
+
+FILE "cdtext.bin" BINARY
+CATALOG 1234567890123
+TITLE "Joyful Nights"
+  TRACK 01 AUDIO
+    TITLE "Song of Joy"
+    PERFORMER "Felix and The Purrs"
+    SONGWRITER "Friedrich Schiller"
+    ISRC XYBLG1101234
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "Humpty Dumpty"
+    PERFORMER "Catwalk Beauties"
+    SONGWRITER "Mother Goose"
+    ISRC XYBLG1100005
+    INDEX 01 08:20:12
+  TRACK 03 AUDIO
+    TITLE "Mee Owwww"
+    PERFORMER "Mia Kitten"
+    SONGWRITER "Mia Kitten"
+    ISRC XYBLG1100006
+    INDEX 01 13:20:33
+
+----------------------------------------------------------
+
+Several restrictions apply in the libburn call burn_session_by_cue_file():
+
+Commands FLAGS, POSTGAP, PREGAP are ignored. Only FILE types BINARY, MOTOROLA
+are allowed. Only TRACK datatypes AUDIO, MODE1/2048 are allowed. They may not
+be mixed in the same session. INDEX numbers 00, 02 to 99 are ignored.
+CATALOG and ISRC are not yet written into Q sub-channel, but only into CD-TEXT.
 
 
 -------------------------------------------------------------------------------
