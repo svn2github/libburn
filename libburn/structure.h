@@ -123,6 +123,8 @@ struct burn_session
 	unsigned char cdtext_copyright[8];
 	unsigned char cdtext_language[8];
 
+	/* ts B11226 */
+	unsigned char mediacatalog[14]; /* overrideable by burn_write_opts */
 };
 
 struct burn_disc

@@ -1862,7 +1862,8 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
 >>> supported TRACK datatypes: AUDIO MODE1/2048
 >>> ignored commands: POSTGAP PREGAP FLAGS
 >>> ignored INDEX numbers: 00, 02 to 99
->>> ignored CUE SHEET features: CATALOG and ISRC (but supported as CD-TEXT)
+>>> ignored CUE SHEET features: CATALOG and ISRC
+>>>                             (not yet transmitted by mode page 5)
 >>> ignored FLAGS: DCP 4CH PRE SCMS
 >>> not allowed: mixing of ADUIO and MODE1/2048
 >>> not allowed: unsupported FILE types
@@ -1891,6 +1892,8 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     @param flag        Bitfield for control purposes.
                        bit0= Do not attach CD-TEXT information to session and
                              tracks. Do not load text_packs.
+                       bit1= Do not use media catalog string of session or ISRC
+                             strings of tracks for writing to Q sub-channel.
     @return            > 0 indicates success, <= 0 indicates failure
     @since 1.2.0
 */
@@ -2144,13 +2147,15 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
     burn_session_set_cdtext() and burn_track_set_cdtext(). It can later be
     overridden by said function calls.
     The format of a v07t sheet file is documented in doc/cdtext.txt.
-    @param s            Session where to attach CD-TEXT attributes
-    @param path         Local filesystem address of the sheet file which
-                        shall be read and interpreted.
-    @param block        Number of the language block in which the attributes
-                        shall appear. Possible values: 0 to 7.
-    @param flag         Bitfield for control purposes. Unused yet. Submit 0.
-    @return             > 0 indicates success , <= 0 is failure
+    @param s           Session where to attach CD-TEXT attributes
+    @param path        Local filesystem address of the sheet file which
+                       shall be read and interpreted.
+    @param block       Number of the language block in which the attributes
+                       shall appear. Possible values: 0 to 7.
+    @param flag        Bitfield for control purposes.
+                       bit1= Do not use media catalog string of session or ISRC
+                             strings of tracks for writing to Q sub-channel.
+    @return            > 0 indicates success , <= 0 is failure
     @since 1.2.0
 */
 int burn_session_input_sheet_v07t(struct burn_session *session,
@@ -2214,7 +2219,7 @@ int burn_session_dispose_cdtext(struct burn_session *s, int block);
     @since 1.2.0
 */
 int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
-                                 int *num_packs, int flag);
+                              int *num_packs, int flag);
 
 
 /** Define the data in a track
@@ -2328,7 +2333,8 @@ int burn_track_dispose_cdtext(struct burn_track *t, int block);
 int burn_track_set_cdxa_conv(struct burn_track *t, int value);
 
 
-/** Set the ISRC details for a track
+/** Set the ISRC details for a track. When writing to CD media, ISRC will get
+    written into the Q sub-channel.
 	@param t The track to change
 	@param country the 2 char country code. Each character must be
 	       only numbers or letters.
@@ -2340,10 +2346,24 @@ int burn_track_set_cdxa_conv(struct burn_track *t, int value);
 void burn_track_set_isrc(struct burn_track *t, char *country, char *owner,
 			 unsigned char year, unsigned int serial);
 
+/* ts B11226 */
+/** Set the composed ISRC string for a track. This is an alternative to
+    burn_track_set_isrc().
+    @param t      The track to be manipulated
+    @param isrc   12 characters which are composed from ISRC details.
+                  Format is CCOOOYYSSSSS, terminated by a 0-byte:
+                  Country, Owner, Year(decimal digits), Serial(decimal digits).
+    @param flag   Bitfield for control purposes. Unused yet. Submit 0.
+    @return       > 0 indicates success, <= 0 means failure
+    @since 1.2.0
+*/
+int burn_track_set_isrc_string(struct burn_track *t, char isrc[13], int flag);
+
 /** Disable ISRC parameters for a track
 	@param t The track to change
 */
 void burn_track_clear_isrc(struct burn_track *t);
+
 
 /** Hide the first track in the "pre gap" of the disc
 	@param s session to change
@@ -2801,9 +2821,24 @@ int burn_write_opts_set_underrun_proof(struct burn_write_opts *opts,
 */
 void burn_write_opts_set_perform_opc(struct burn_write_opts *opts, int opc);
 
-void burn_write_opts_set_has_mediacatalog(struct burn_write_opts *opts, int has_mediacatalog);
 
-void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts, unsigned char mediacatalog[13]);
+/** The Q sub-channel of a CD may contain a Media Catalog Number of 13 decimal
+    digits. This call sets the string of digits, but does not yet activate it
+    for writing.
+    @param opts          The write opts to change
+    @param mediacatalog  The 13 decimal digits as ASCII bytes. I.e. '0' = 0x30.
+*/
+void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts,
+                                      unsigned char mediacatalog[13]);
+
+/** This call activates the Media Catalog Number for writing. The digits of
+    that number have to be set by call burn_write_opts_set_mediacatalog().
+    @param opts             The write opts to change
+    @param has_mediacatalog 1= activate writing of catalog to Q sub-channel
+                            0= deactivate it
+*/
+void burn_write_opts_set_has_mediacatalog(struct burn_write_opts *opts,
+                                          int has_mediacatalog);
 
 
 /* ts A61106 */

@@ -99,6 +99,7 @@ struct burn_session *burn_session_create(void)
 		s->cdtext_copyright[i] = 0x00;
 	}
 	s->cdtext_language[0] = 0x09;     /* Single-block default is English */
+	s->mediacatalog[0] = 0;
 	return s;
 }
 
@@ -359,6 +360,9 @@ void burn_track_set_isrc(struct burn_track *t, char *country, char *owner,
 {
 	int i;
 
+	/* ts B11226 */
+	t->isrc.has_isrc = 0;
+
 	for (i = 0; i < 2; ++i) {
 
 		/* ts A61008 : This is always true */
@@ -410,6 +414,26 @@ is_not_allowed:;
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			"Attempt to set ISRC with bad data", 0, 0);
 	return;
+}
+
+/* ts B11226 API */
+int burn_track_set_isrc_string(struct burn_track *t, char isrc[13], int flag)
+{
+	unsigned char year;
+	unsigned int serial = 2000000000;
+
+	if (strlen(isrc) != 12 ||
+	    isrc[5] < '0' || isrc[5] > '9' || isrc[6] < '0' || isrc[6] > '9') {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020114,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Attempt to set ISRC with bad data", 0, 0);
+		return 0;
+	}
+	year = (isrc[5] - '0') * 10 + (isrc[6] - '0');
+	isrc[12] = 0;
+	sscanf(isrc + 7, "%u", &serial);
+	burn_track_set_isrc(t, isrc, isrc + 2, year, serial);
+	return t->isrc.has_isrc;
 }
 
 void burn_track_clear_isrc(struct burn_track *t)
@@ -992,6 +1016,7 @@ struct burn_cue_file_cursor {
 	struct burn_source *fifo;
 	int swap_audio_bytes;
 	int no_cdtext;
+	int no_catalog_isrc;
 	struct burn_source *offst_source;
 	int current_file_ba;
 	struct burn_track *prev_track;
@@ -1021,6 +1046,7 @@ static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
 	crs->fifo = NULL;
 	crs->swap_audio_bytes = 0;
 	crs->no_cdtext = 0;
+	crs->no_catalog_isrc = 0;
 	crs->offst_source = NULL;
 	crs->current_file_ba = -1000000000;
 	crs->prev_track = NULL;
@@ -1261,13 +1287,22 @@ static int cue_interpret_line(struct burn_session *session, char *line,
 	}
 
 	if (strcmp(cmd, "CATALOG") == 0) {
+		for (cpt = apt; (cpt - apt) < 13 && *cpt == (*cpt & 0x7f);
+		     cpt++);
+		if ((cpt - apt) < 13) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			 "In cue sheet file: Inappropriate content of CATALOG",
+				0, 0);
+			ret = 0; goto ex;
+		}
 		ret = cue_set_cdtext(session, NULL, 0x8e, apt, crs, 0);
 		if (ret <= 0)
 			goto ex;
-
-		/* >>> ??? data for burn_write_opts_set_mediacatalog ?
-		       (not implemented yet in SAO) */
-
+		if (!crs->no_catalog_isrc) {
+			memcpy(session->mediacatalog, apt, 13);
+			session->mediacatalog[13] = 0;
+		}
 
 	} else if (strcmp(cmd, "CDTEXTFILE") == 0) {
 		if (crs->no_cdtext) {
@@ -1477,9 +1512,11 @@ overlapping_ba:;
                                      1 | 2);
 		if (ret <= 0)
 			goto ex;
-
-		/* >>> ??? burn_track_set_isrc ?
-			(not implemented yet in SAO) */
+		if (!crs->no_catalog_isrc) {
+			ret = burn_track_set_isrc_string(crs->track, apt, 0);
+			if (ret <= 0)
+				goto ex;
+		}
 
 	} else if (strcmp(cmd, "PERFORMER") == 0) {
 		ret = cue_set_cdtext(session, crs->track, 0x81, apt, crs, 2);
@@ -1593,6 +1630,8 @@ ex:;
 
 /* ts B11216 API */
 /* @param flag bit0= do not attach CD-TEXT information to session and tracks
+               bit1= do not attach CATALOG to session or ISRC to track for
+                     writing to Q sub-channel
 */
 int burn_session_by_cue_file(struct burn_session *session, char *path,
 			int fifo_size, struct burn_source **fifo,
@@ -1620,6 +1659,7 @@ int burn_session_by_cue_file(struct burn_session *session, char *path,
 	if (ret <= 0)
 		goto ex;
 	crs->no_cdtext = (flag & 1);
+	crs->no_catalog_isrc = !!(flag & 2);
 	crs->fifo_size = fifo_size;
 	crs->block_size_locked = 1; /* No mixed sessions for now */
 
