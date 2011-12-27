@@ -272,7 +272,6 @@ int burn_write_close_track(struct burn_write_opts *o, struct burn_session *s,
 }
 
 
-
 /* ts A61030 */
 int burn_write_close_session(struct burn_write_opts *o)
 {
@@ -301,8 +300,19 @@ int burn_write_close_session(struct burn_write_opts *o)
 /* ts A60819:
    This is unused since about Feb 2006, icculus.org/burn CVS.
    The compiler complains. We shall please our compiler.
+ # define Libburn_write_with_function_print_cuE
 */
+
 #ifdef Libburn_write_with_function_print_cuE
+
+
+static char cue_printify(char c)
+{
+	if (c >= 32 && c < 127)
+		return c;
+	return '#';
+}
+
 
 static void print_cue(struct cue_sheet *sheet)
 {
@@ -310,37 +320,46 @@ static void print_cue(struct cue_sheet *sheet)
 	unsigned char *unit;
 
 	printf("\n");
-	printf("ctladr|trno|indx|form|scms|  msf\n");
-	printf("------+----+----+----+----+--------\n");
+	printf("ctladr|trno|indx|form|scms|   msf    |  text\n");
+	printf("------+----+----+----+----+----------+--------\n");
 	for (i = 0; i < sheet->count; i++) {
 		unit = sheet->data + 8 * i;
-		printf(" %1X  %1X | %02X | %02X | %02X | %02X |",
-		       (unit[0] & 0xf0) >> 4, unit[0] & 0xf, unit[1], unit[2],
-		       unit[3], unit[4]);
-		printf("%02X:%02X:%02X\n", unit[5], unit[6], unit[7]);
+		if ((unit[0] & 0xf) == 2) {
+			printf(
+		" %1X  %1X |    |    |    |    |          | %c%c%c%c%c%c%c\n",
+				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
+				cue_printify(unit[1]), cue_printify(unit[2]), 
+				cue_printify(unit[3]), cue_printify(unit[4]), 
+				cue_printify(unit[5]), cue_printify(unit[6]), 
+				unit[7] == 0 ? ' ' : cue_printify(unit[7]));
+		} else if ((unit[0] & 0xf) == 3) {
+			printf(
+		" %1X  %1X | %02X |    |    |    |          | %c%c%c%c%c%c\n",
+				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
+				unit[1], cue_printify(unit[2]), 
+				cue_printify(unit[3]), cue_printify(unit[4]), 
+				cue_printify(unit[5]), cue_printify(unit[6]), 
+				cue_printify(unit[7]));
+		} else {
+			printf(" %1X  %1X | %02X | %02X | %02X | %02X |",
+				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
+				unit[1], unit[2], unit[3], unit[4]);
+			printf(" %02X:%02X:%02X |\n",
+				unit[5], unit[6], unit[7]);
+		}
 	}
+	fflush(stdout);
 }
 
 #endif /* Libburn_write_with_print_cuE */
 
 
-/* ts A61009 : changed type from void to int */
-/** @return 1 = success , <=0 failure */
-static int add_cue(struct cue_sheet *sheet, unsigned char ctladr,
-		    unsigned char tno, unsigned char indx,
-		    unsigned char form, unsigned char scms, int lba)
+/* ts B11226 */
+static int new_cue(struct cue_sheet *sheet, int number, int flag)
 {
-	unsigned char *unit;
 	unsigned char *ptr;
-	int m, s, f;
 
-	burn_lba_to_msf(lba, &m, &s, &f);
-
-	sheet->count++;
-	ptr = realloc(sheet->data, sheet->count * 8);
-
-	/* ts A61009 */
-	/* a ssert(ptr); */
+	ptr = realloc(sheet->data, (sheet->count + number) * 8);
 	if (ptr == NULL) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020111,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
@@ -348,8 +367,26 @@ static int add_cue(struct cue_sheet *sheet, unsigned char ctladr,
 			0, 0);
 		return -1;
 	}
-
 	sheet->data = ptr;
+	sheet->count += number;
+	return 1;
+}
+
+
+/* ts B11226 : outsourced new_cue() */
+/** @return 1 = success , <=0 failure */
+static int add_cue(struct cue_sheet *sheet, unsigned char ctladr,
+		    unsigned char tno, unsigned char indx,
+		    unsigned char form, unsigned char scms, int lba)
+{
+	unsigned char *unit;
+	int m, s, f, ret;
+
+	burn_lba_to_msf(lba, &m, &s, &f);
+
+	ret = new_cue(sheet, 1, 0);
+	if (ret <= 0)
+		return -1;
 	unit = sheet->data + (sheet->count - 1) * 8;
 	unit[0] = ctladr;
 	unit[1] = tno;
@@ -362,13 +399,59 @@ static int add_cue(struct cue_sheet *sheet, unsigned char ctladr,
 	return 1;
 }
 
+
+/* ts B11226 */
+static int add_catalog_cue(struct cue_sheet *sheet, unsigned char catalog[13])
+{
+	unsigned char *unit;
+	int i, ret;
+
+	ret = new_cue(sheet, 2, 0);
+	if (ret <= 0)
+		return -1;
+	unit = sheet->data + (sheet->count - 2) * 8;
+	unit[0] = unit[8] = 0x02;
+	for (i = 0; i < 13; i++)
+		unit[1 + (i >= 7) * 8 + (i % 7)] = catalog[i];
+	unit[15] = 0x00;
+	return 1;
+}
+
+
+/* ts B11226 */
+static int add_isrc_cue(struct cue_sheet *sheet, unsigned char ctladr, int tno,
+			struct isrc *isrc)
+{
+	unsigned char *unit;
+	int i, ret;
+	char text[8];
+
+	ret = new_cue(sheet, 2, 0);
+	if (ret <= 0)
+		return -1;
+	unit = sheet->data + (sheet->count - 2) * 8;
+	unit[0] = unit[8] = (ctladr & 0xf0) | 0x03;
+	unit[1] = unit[9] = tno;
+	unit[2] = isrc->country[0];
+	unit[3] = isrc->country[1];
+	unit[4] = isrc->owner[0];
+	unit[5] = isrc->owner[1];
+	unit[6] = isrc->owner[2];
+	sprintf(text, "%-2.2u%-5.5u", (unsigned int) isrc->year, isrc->serial);
+	unit[7] = text[0];
+	for (i = 1; i < 7; i++)
+		unit[9 + i] = text[i];
+	return 1;
+}
+
+
 /* ts A61114: added parameter nwa */
 struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  struct burn_session *session,
 					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
-	int leadin_form;
+	int leadin_form, leadin_start;
 	unsigned char ctladr;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
@@ -376,6 +459,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	struct burn_track **tar = session->track;
 	int ntr = session->tracks;
 	int rem = 0;
+
 
 	d = o->drive;
 
@@ -422,13 +506,28 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 				leadin_form = 0x41;
 		}
 	}
-	ret = add_cue(sheet, ctladr | 1, 0, 0, leadin_form, 0, runtime);
+
+	if (o->has_mediacatalog)
+		ret = add_catalog_cue(sheet, o->mediacatalog);
+	else if (session->mediacatalog[0])
+		ret = add_catalog_cue(sheet, session->mediacatalog);
+	else
+		ret = 1;
 	if (ret <= 0)
 		goto failed;
-	ret = add_cue(sheet, ctladr | 1, 1, 0, form, 0, runtime);
+
+	/* ts B11225 
+	   MMC-5 6.33.3.15 Data Form of Sub-channel
+	   seems to indicate that for leadin_form 0x41 one should announce
+	   d->start_lba as start of the leadin (e.g. -12490) and that data
+	   block type should 2 or 3 with mode page 05h. But my drives refuse
+	   on that.
+           It works with LBA -150 and data block type 0. Shrug.
+	*/
+	leadin_start = runtime;
+	ret = add_cue(sheet, ctladr | 1, 0, 0, leadin_form, 0, leadin_start);
 	if (ret <= 0)
 		goto failed;
-	runtime += 150;
 
 	d->toc_entries = ntr + 3;
 
@@ -483,6 +582,20 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	for (i = 0; i < ntr; i++) {
 		type_to_form(tar[i]->mode, &ctladr, &form);
 
+		if (tar[i]->isrc.has_isrc) {
+			ret = add_isrc_cue(sheet, ctladr, i + 1,
+							&(tar[i]->isrc));
+			if (ret <= 0)
+				goto failed;
+		}
+
+		if (i == 0) {
+			ret = add_cue(sheet, ctladr | 1, 1, 0, form, 0,
+					runtime);
+			if (ret <= 0)
+				goto failed;
+			runtime += 150;
+		}
 
 		/* ts A70121 : This seems to be thw wrong test. Correct would
 		   be to compare tar[]->mode or bit2 of ctladr.
@@ -705,9 +818,9 @@ static int burn_write_leadin_cdtext(struct burn_write_opts *o,
 			{ret = 1; goto ex;}
 		/* Try to create CD-TEXT from .cdtext_* of session and track */
 		ret = burn_create_text_packs(o, s, 0);
+		self_made_text_packs = 1;
 		if (ret <= 0)
 			goto ex;
-		self_made_text_packs = 1;
 		if (o->num_text_packs <= 0)
 			{ret = 1; goto ex;}
 	}
@@ -2673,7 +2786,6 @@ return crap.  so we send the command, then ignore the result.
 	if (o->write_type == BURN_WRITE_TAO) {
 		nwa = 0; /* get_nwa() will be called in burn_track() */
 	} else {
-
 		d->send_write_parameters(d, o);
 
 		ret = d->get_nwa(d, -1, &lba, &nwa);
@@ -2701,7 +2813,11 @@ return crap.  so we send the command, then ignore the result.
 		if (sheet == NULL)
 			goto fail;
 
-/*		print_cue(sheet);*/
+#ifdef Libburn_write_with_function_print_cuE
+		print_cue(sheet);
+		/* goto fail_wo_sync; */
+#endif /* Libburn_write_with_function_print_cuE */
+
 		if (o->write_type == BURN_WRITE_SAO)
 			d->send_cue_sheet(d, sheet);
 		if (sheet->data != NULL)

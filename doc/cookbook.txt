@@ -225,7 +225,7 @@ sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
 Guided by reading     libburn/* from http://icculus.org/burn
 backed by reading  mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
 and by experiments with drives  NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S,
-                                Optiarc BD RW BD-5300S,
+                                Optiarc BD RW BD-5300S, LG BDDVDRW GGC-H20L
 
 For libburnia-project.org by Thomas Schmitt <scdbackup@gmx.net>
 
@@ -264,7 +264,8 @@ CTL|ADR, TNO, INDEX, DATA FORM, SCMS, MIN, SEC, FRAME .
 
 CTL is 40h for data and 00h for audio.
 (mmc5r03c.pdf 6.33.3.4)
-ADR is always 01h.
+ADR is 01h for entries which define time points. It is 02h for media catalog
+entries and it is 03h for track ISRC entries.
 TNO is the track number (1 to 99).
 INDEX is a subaddress within tracks. This recipe uses only INDEX 01h within
 tracks.
@@ -277,18 +278,33 @@ MIN, SEC, FRAME give the MSF address where the described data entity starts.
 LBA = frames - 150, 75 frames = 1 sec , 60 sec = 1 min.
 This address must increase from entry to entry (or at least stay equal).
 
+The first two entries describe the Media Catalog Number, a string of 13
+characters, also known with CD-TEXT as "UPC/EAN".
+(02h, catalog characters 1 to 7)
+(02h, catalog characters 8 to 13, 00h)
+These two entries shall be omitted if no catalog number is given.
 
-The first entry describes the Lead-in. Its content is 
+The next entry (eventually being the first one) describes the Lead-in.
+Its content is 
 (CTL|ADR ,00h,00h, DATA FORM ,00h,00h,00h,00h)
 With the CTL|ADR for the first track: 41h for data, 01h for audio.
 DATA FORM is 41h if CD-TEXT shall be stored in Lean-in. Else it is 01h.
 
 The LBA for the first write is negative: -150. This corresponds to MSF address
 00h:00h:00h. All addresses are to be given in MSF format.
+
+Each track may be preceded by two entries describing an ISRC string of 12
+characters.
+(CTL | 03h, TNO, characters 1 to 6)
+(CTL | 03h, TNO, characters 7 to 12)
+These entries shall be omitted if no ISRC is given for the track.
+CTL shall be the same as with the track.
+
 The first information track on disc is preceded by a pause encoding of 2 sec:
 (CTL|ADR,01h,00h, DATA FORM ,00h,00h,00h,00h) 
 with DATA FORM = 00h for audio and 10h for data. By those 2 seconds the MSF
-address increases to 00h:02h:00h = LBA 0.
+address increases to 00h:02h:00h = LBA 0. This entry has to come after ISRC,
+if ISRC is given for the track.
 
 Each track is represented by an entry
 (CTL|ADR, TNO ,01h,DATA FORM,00h, MIN , SEC , FRAME)
@@ -331,6 +347,10 @@ A Write Parameters mode page 05h has to be composed and transmitted via
  Track Mode       Describes frame type            0 (is ignored)
  Data Block Type  Layout of payload blocks        0 (is ignored)
  Audio Pause Length                               150 = 2 seconds (ignored ?)
+
+>>> CATALOG
+>>> no ISRC with SAO
+
 Any other parameters may be set to 0.
 Mode page data as of MMC-5 table 644 are preceded by a Mode Parameter Header
 as of SPC-3 table 240. This 8-byte header may be filled with zeros.

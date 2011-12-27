@@ -620,6 +620,9 @@ static int v07t_cdtext_to_track(struct burn_track *track, int block,
 
 
 /* ts B11215 API */
+/* @param flag bit1= do not attach CATALOG to session or ISRC to track for
+                     writing to Q sub-channel
+*/
 int burn_session_input_sheet_v07t(struct burn_session *session,
 					char *path, int block, int flag)
 {
@@ -802,6 +805,10 @@ cannot_open:;
 					&int0x01, 0, "UPC_ISRC", 0);
 			if (ret <= 0)
 				goto ex;
+			if (!(flag & 2)) {
+				memcpy(session->mediacatalog, payload, 13);
+				session->mediacatalog[13] = 0;
+			}
 			session_attr_seen[0xe] = 1;
 
 		} else if (strncmp(line, "Disc Information ", 17) == 0) {
@@ -928,9 +935,15 @@ bad_track_no:;
 					strcmp(line + 9, "Message") == 0)
 				pack_type = 0x85;
 			else if (strcmp(line + 9, "0x8e") == 0 ||
-					strcmp(line + 9, "ISRC") == 0)
+					strcmp(line + 9, "ISRC") == 0) {
 				pack_type = 0x8e;
-			else {
+				if (!(flag & 2)) {
+					ret = burn_track_set_isrc_string(
+						tracks[tno], payload, 0);
+					if (ret <= 0)
+						goto ex;
+				}
+			} else {
 				sprintf(msg,
 				   "Unknown v07t Track purpose specifier '%s'",
 				       line + 9);
@@ -958,6 +971,12 @@ bad_track_no:;
 				goto bad_track_no;
 			}
 			tno -= track_offset;
+			if (!(flag & 2)) {
+				ret = burn_track_set_isrc_string(
+						tracks[tno], payload, 0);
+				if (ret <= 0)
+					goto ex;
+			}
 			ret = v07t_cdtext_to_track(tracks[tno], block, payload,
 						&int0x00, 0x8e, "", 0);
 			if (ret <= 0)
