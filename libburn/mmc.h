@@ -71,6 +71,7 @@ int mmc_get_write_performance(struct burn_drive *d);
          is the eventual duty of the caller.
 */
 int mmc_compose_mode_page_5(struct burn_drive *d,
+                            struct burn_session *s, int tno,
                             const struct burn_write_opts *o,
                             unsigned char *pd);
 

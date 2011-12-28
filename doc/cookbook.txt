@@ -98,6 +98,10 @@ parameters:
  Data Block Type  Layout of payload blocks        8 for 2048 byte data blocks
                                                   0 for 2352 byte audio blocks
  Audio Pause Length                               150 = 2 seconds
+ Media Catalog Number  A property of the disc     0x80 if valid
+                                                  13 decimal digits as ASCII
+ ISRC             A property of the track         0x80 if valid
+                                                  12 letters and digits, ASCII
 Any other parameters may be set to 0.
 Mode page data as of MMC-5 table 644 are preceded by a Mode Parameter Header
 as of SPC-3 table 240. This 8-byte header may be filled with zeros.
@@ -347,9 +351,9 @@ A Write Parameters mode page 05h has to be composed and transmitted via
  Track Mode       Describes frame type            0 (is ignored)
  Data Block Type  Layout of payload blocks        0 (is ignored)
  Audio Pause Length                               150 = 2 seconds (ignored ?)
-
->>> CATALOG
->>> no ISRC with SAO
+ Media Catalog Number                             0x80 if valid
+                  See also Cue Sheet ADR 02h      13 decimal digits as ASCII
+ (With SAO, ISRC is transmitted only by the Cue Sheet.)
 
 Any other parameters may be set to 0.
 Mode page data as of MMC-5 table 644 are preceded by a Mode Parameter Header

@@ -1855,15 +1855,13 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     CD-TEXT according to the content of the file.
     For a description of CDRWIN file format see
       http://digitalx.org/cue-sheet/syntax/
->>> supported commands: CDTEXTFILE PERFORMER REM SONGWRITER TITLE
->>> partly supported commands: CATALOG FILE ISRC INDEX TRACK 
+>>> supported commands: CATALOG CDTEXTFILE ISRC PERFORMER REM SONGWRITER TITLE
+>>> partly supported commands: FILE INDEX TRACK 
 >>> supported FILE types: BINARY MOTOROLA
 >>> supported FLAGS:
 >>> supported TRACK datatypes: AUDIO MODE1/2048
 >>> ignored commands: POSTGAP PREGAP FLAGS
 >>> ignored INDEX numbers: 00, 02 to 99
->>> ignored CUE SHEET features: CATALOG and ISRC
->>>                             (not yet transmitted by mode page 5)
 >>> ignored FLAGS: DCP 4CH PRE SCMS
 >>> not allowed: mixing of ADUIO and MODE1/2048
 >>> not allowed: unsupported FILE types

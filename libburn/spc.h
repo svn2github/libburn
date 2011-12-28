@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -21,6 +21,7 @@ void spc_select_error_params(struct burn_drive *,
 void spc_getcaps(struct burn_drive *d);
 void spc_sense_write_params(struct burn_drive *);
 void spc_select_write_params(struct burn_drive *,
+			     struct burn_session *, int,
 			     const struct burn_write_opts *);
 void spc_probe_write_modes(struct burn_drive *);
 void spc_request_sense(struct burn_drive *d, struct buffer *buf);

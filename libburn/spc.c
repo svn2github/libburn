@@ -721,8 +721,8 @@ Although command MODE SELECT is SPC, the content of the
 Write Parameters Mode Page (05h) is MMC (Table 108 in MMC-1). 
 Thus the filling of the mode page is done by mmc_compose_mode_page_5().
 */
-void spc_select_write_params(struct burn_drive *d,
-			     const struct burn_write_opts *o)
+void spc_select_write_params(struct burn_drive *d, struct burn_session *s,
+			     int tno, const struct burn_write_opts *o)
 {
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
@@ -779,7 +779,7 @@ void spc_select_write_params(struct burn_drive *d,
 	c->page->bytes = alloc_len;
 
 	/* ts A61229 */
-	if (mmc_compose_mode_page_5(d, o, c->page->data + 8) <= 0)
+	if (mmc_compose_mode_page_5(d, s, tno, o, c->page->data + 8) <= 0)
 		goto ex;
 
 	c->dir = TO_DRIVE;

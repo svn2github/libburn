@@ -539,7 +539,7 @@ void mmc_close_disc(struct burn_write_opts *o)
 	/* a ssert(o->drive == d); */
 
 	o->multi = 0;
-	spc_select_write_params(d, o);
+	spc_select_write_params(d, NULL, 0, o);
 	mmc_close(d, 1, 0);
 }
 
@@ -560,7 +560,7 @@ void mmc_close_session(struct burn_write_opts *o)
 	/* a ssert(o->drive == d); */
 
 	o->multi = 3;
-	spc_select_write_params(d, o);
+	spc_select_write_params(d, NULL, 0, o);
 	mmc_close(d, 1, 0);
 }
 
@@ -3981,10 +3981,14 @@ int mmc_get_write_performance(struct burn_drive *d)
            memset(pd, 0, 2 + d->mdata->write_page_length);
          is the eventual duty of the caller.
 */
-int mmc_compose_mode_page_5(struct burn_drive *d,
-				const struct burn_write_opts *o,
+int mmc_compose_mode_page_5(struct burn_drive *d, struct burn_session *s,
+				int tno, const struct burn_write_opts *o,
 				unsigned char *pd)
 {
+	unsigned char *catalog = NULL;
+	char isrc_text[13];
+	struct isrc *isrc;
+
 	pd[0] = 5;
 	pd[1] = d->mdata->write_page_length;
 
@@ -4094,6 +4098,39 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 /*XXX need session format! */
 /* ts A61229 : but session format (pd[8]) = 0 seems ok */
 
+		/* Media Catalog Number at byte 16 to 31,
+		   MMC-5, 7.5, Tables 664, 670
+		*/
+		if (o->has_mediacatalog)
+			catalog = (unsigned char *) o->mediacatalog;
+		else if (s != NULL) {
+			if (s->mediacatalog[0])
+				catalog = s->mediacatalog;
+		}
+		if (catalog != NULL && d->mdata->write_page_length >= 30) {
+			pd[16] = 0x80; /* MCVAL */
+			memcpy(pd + 17, catalog, 13);
+		}
+
+		/* ISRC at bytes 32 to 47. Tables 664, 671 */
+		isrc_text[0] = 0;
+		if (s != NULL && o->write_type == BURN_WRITE_TAO)
+			if (tno >= 1 && tno <= s->tracks) 
+				if (s->track[tno - 1]->isrc.has_isrc) {
+					isrc = &(s->track[tno - 1]->isrc);
+					isrc_text[0] = isrc->country[0];
+					isrc_text[1] = isrc->country[1];
+					isrc_text[2] = isrc->owner[0];
+					isrc_text[3] = isrc->owner[1];
+					isrc_text[4] = isrc->owner[2];
+					sprintf(isrc_text + 5, "%-2.2u%-5.5u",
+						(unsigned int) isrc->year,
+						isrc->serial);
+				}
+		if (isrc_text[0] != 0 && d->mdata->write_page_length >= 46) {
+			pd[32] = 0x80; /* TCVAL */
+			memcpy(pd + 33, isrc_text, 12);
+		}
 	}
 	return 1;
 }
