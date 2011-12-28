@@ -868,6 +868,7 @@ struct CdrtracK {
  int cdxa_conversion; /* bit0-30: for burn_track_set_cdxa_conv()
                          bit31  : ignore bits 0 to 30
                        */
+ char isrc[13];
 
  /** Eventually detected data image size */
  double data_image_size;
@@ -950,6 +951,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->track_type_by_default= 1;
  o->swap_audio_bytes= 0;
  o->cdxa_conversion= 0;
+ o->isrc[0]= 0;
  o->data_image_size= -1.0;
  o->iso_fs_descr= NULL;
  o->use_data_image_size= 0;
@@ -1675,6 +1677,11 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
  if(!(track->cdxa_conversion & (1 << 31)))
    burn_track_set_cdxa_conv(tr, track->cdxa_conversion & 0x7fffffff);
+ if(track->isrc[0]) {
+   ret= burn_track_set_isrc_string(tr, track->isrc, 0);
+   if(ret <= 0)
+     goto ex;
+ }
 
  fixed_size= track->fixed_size;
  if((flag&2) && track->padding>0) {
@@ -2905,6 +2912,10 @@ see_cdrskin_eng_html:;
      fprintf(stderr,"\ttsize=#\t\tannounces exact size of source data\n");
      fprintf(stderr,"\tpadsize=#\tAmount of padding\n");
      fprintf(stderr,
+         "\tmcn=text\tSet the media catalog number for this CD to 'text'\n");
+     fprintf(stderr,
+          "\tisrc=text\tSet the ISRC number for the next track to 'text'\n");
+     fprintf(stderr,
              "\t-text\t\tWrite CD-Text from information from *.cue files\n");
      fprintf(stderr,
              "\ttextfile=name\tSet the file with CD-Text data to 'name'\n");
@@ -3344,6 +3355,10 @@ struct CdrskiN {
 
  int cdtext_test;
 
+ /* Media Catalog Number and ISRC */
+ char mcn[14];
+ char next_isrc[13];
+
 
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
@@ -3504,6 +3519,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  for(i= 0; i < 8; i++)
    memset(o->sheet_v07t_paths, 0, Cdrskin_adrleN);
  o->cdtext_test= 0;
+ o->mcn[0]= 0;
+ o->next_isrc[0]= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
    o->tracklist[i]= NULL;
@@ -6783,6 +6800,10 @@ burn_failed:;
    if(ret <= 0)
      goto burn_failed;
  }
+ if(skin->mcn[0]) {
+   burn_write_opts_set_mediacatalog(o, (unsigned char *) skin->mcn);
+   burn_write_opts_set_has_mediacatalog(o, 1);
+ }
  ret= Cdrskin_activate_write_mode(skin,o,disc,0);
  if(ret<=0)
    goto burn_failed;
@@ -7266,7 +7287,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  /* cdrecord 2.01 options which are not scheduled for implementation, yet */
  static char ignored_partial_options[][41]= {
    "timeout=", "debug=", "kdebug=", "kd=", "driver=", "ts=",
-   "pregap=", "defpregap=", "mcn=", "isrc=", "index=",
+   "pregap=", "defpregap=", "index=",
    "pktsize=",
    ""
  };
@@ -7516,6 +7537,21 @@ unsupported_blank_option:;
 
    } else if(strcmp(argv[i],"-checkdrive")==0) {
      skin->do_checkdrive= 1;
+
+   } else if(strncmp(argv[i],"-cuefile=", 9)==0) {
+     value_pt= argv[i] + 9;
+     goto set_cuefile;
+   } else if(strncmp(argv[i],"cuefile=", 8)==0) {
+     value_pt= argv[i] + 8;
+set_cuefile:;
+     if(strlen(value_pt) >= sizeof(skin->cuefile)) {
+       fprintf(stderr,
+          "cdrskin: FATAL : cuefile=... too long. (max: %d, given: %d)\n",
+          (int) sizeof(skin->cuefile) - 1, (int) strlen(value_pt));
+       return(0);
+     }
+     strcpy(skin->cuefile, value_pt);
+     skin->do_burn= 1;
 
    } else if(strcmp(argv[i],"-data")==0) {
 option_data:;
@@ -7787,23 +7823,21 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"-inq")==0) {
      skin->do_checkdrive= 2;
 
-   } else if(strncmp(argv[i],"-cuefile=", 9)==0) {
-     value_pt= argv[i] + 10;
-     goto set_cuefile;
-   } else if(strncmp(argv[i],"cuefile=", 8)==0) {
-     value_pt= argv[i] + 8;
-set_cuefile:;
-     if(strlen(value_pt) >= sizeof(skin->cuefile)) {
-       fprintf(stderr,
-          "cdrskin: FATAL : cuefile=... too long. (max: %d, given: %d)\n",
-          (int) sizeof(skin->cuefile) - 1, (int) strlen(value_pt));
-       return(0);
-     }
-     strcpy(skin->cuefile, value_pt);
-     skin->do_burn= 1;
-
    } else if(strcmp(argv[i],"-isosize")==0) {
      skin->use_data_image_size= 1;
+
+   } else if(strncmp(argv[i],"-isrc=", 6) == 0) {
+     value_pt= argv[i] + 6;
+     goto set_isrc;
+   } else if(strncmp(argv[i],"isrc=", 5) == 0) {
+     value_pt= argv[i] + 5;
+set_isrc:;
+     if(strlen(value_pt) != 12) {
+       fprintf(stderr,
+          "cdrskin: SORRY : isrc=... is not exactly 12 characters long.\n");
+       return(0);
+     }
+     memcpy(skin->next_isrc, value_pt, 13);
 
    } else if(strcmp(argv[i],"--list_formats")==0) {
      skin->do_list_formats= 1;
@@ -7832,6 +7866,19 @@ set_cuefile:;
      skin->do_atip= 3;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
+
+   } else if(strncmp(argv[i],"-mcn=", 5) == 0) {
+     value_pt= argv[i] + 5;
+     goto set_mcn;
+   } else if(strncmp(argv[i],"mcn=", 4) == 0) {
+     value_pt= argv[i] + 4;
+set_mcn:;
+     if(strlen(value_pt) != 13) {
+       fprintf(stderr,
+          "cdrskin: SORRY : mcn=... is not exactly 13 characters long.\n");
+       return(0);
+     }
+     memcpy(skin->mcn, value_pt, 14);
 
    } else if(strncmp(argv[i],"-minbuf=",8)==0) {
      value_pt= argv[i]+8;
@@ -8199,6 +8246,9 @@ track_too_large:;
                "cdrskin: FATAL : Creation of track control object failed.\n");
        return(ret);
      }
+     if(skin->next_isrc[0])
+       memcpy(skin->tracklist[skin->track_counter]->isrc, skin->next_isrc, 13);
+
      skin->track_counter++;
      skin->use_data_image_size= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD) {
@@ -8215,6 +8265,7 @@ track_too_large:;
                             the man page says padsize= is reset to 0
                             Joerg Schilling will change in 2.01.01 to 0 */
      skin->fixed_size= 0;
+     skin->next_isrc[0]= 0;
    } else {
 ignore_unknown:;
      if(skin->preskin->fallback_program[0])

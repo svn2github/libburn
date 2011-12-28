@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 27, 2011"
+.TH CDRSKIN 1 "Dec 28, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -625,6 +625,14 @@ This option can be performed on track sources which are regular files or block
 devices. For the first track of the session it can be performed on any type
 of source if there is a fifo of at least 64 kiB. See option fs= .
 .TP
+.BI isrc= text
+Set the ISRC for the next track source to the given text, which must be exactly
+13 characters long. It must comply to the format CCOOOYYSSSSS.
+.br
+CC is the country code. OOO is the owner code. Both may consist of capital
+letters A to Z and of decimal digits 0 to 9. YY depicts the year (00 to 99).
+SSSSS is the serial number (00000 to 99999).
+.TP
 .BI -load
 Load the media and exit. Exit value is 0 if any kind of media was found, non
 zero else. Note: Option -eject will unload the media even if -load is given.
@@ -643,6 +651,10 @@ Equivalent to:
 modesty_on_drive=1:min_percent=<percentage>:max_percent=95
 .br
 Percentage is permissible between 25 and 95.
+.TP
+.BI mcn= text
+Set the CD Media Catalog Number to text, which must be exactly 13 characters
+long and should consist of decimal digits.
 .TP
 .BI -minfo
 Print information about the loaded media. This includes media type, writability
