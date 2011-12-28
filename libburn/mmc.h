@@ -48,7 +48,8 @@ void mmc_get_configuration(struct burn_drive *);
    @return 1=nwa is valid , 0=nwa is not valid , -1=error */
 int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa);
 
-void mmc_send_cue_sheet(struct burn_drive *, struct cue_sheet *);
+/* ts B11228 : changed from void to int */ 
+int mmc_send_cue_sheet(struct burn_drive *, struct cue_sheet *);
 
 /* ts A61023 : get size and free space of drive buffer */
 int mmc_read_buffer_capacity(struct burn_drive *d);

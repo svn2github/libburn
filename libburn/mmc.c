@@ -302,7 +302,7 @@ int mmc_start_if_needed(struct burn_drive *d, int flag)
 }
 
 
-void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
+int mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 {
 	struct buffer *buf = NULL;
 	struct command *c;
@@ -310,7 +310,7 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_send_cue_sheet") <= 0)
-		return;
+		return 0;
 	BURN_ALLOC_MEM_VOID(buf, struct buffer, 1);
 	scsi_init_command(c, MMC_SEND_CUE_SHEET, sizeof(MMC_SEND_CUE_SHEET));
 	c->retry = 1;
@@ -325,6 +325,11 @@ void mmc_send_cue_sheet(struct burn_drive *d, struct cue_sheet *s)
 	d->issue_command(d, c);
 ex:;
 	BURN_FREE_MEM(buf);
+	if (c->error) {
+		d->cancel = 1;
+		scsi_notify_error(d, c, c->sense, 18, 2);
+	}
+	return !c->error;
 }
 
 

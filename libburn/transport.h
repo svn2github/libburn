@@ -383,7 +383,7 @@ struct burn_drive
 	void (*send_write_parameters) (struct burn_drive *,
 				       struct burn_session *, int tno,
 				       const struct burn_write_opts *);
-	void (*send_cue_sheet) (struct burn_drive *, struct cue_sheet *);
+	int (*send_cue_sheet) (struct burn_drive *, struct cue_sheet *);
 
 	/* ts A70205 : Announce size of a DVD-R[W] DAO session. */
 	int (*reserve_track) (struct burn_drive *d, off_t size);

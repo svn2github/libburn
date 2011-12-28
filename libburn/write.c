@@ -1023,7 +1023,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 					{ ret = 0; goto ex; }
 	} else {
 		o->control = t->entry->control;
-		d->send_write_parameters(d, o);
+		d->send_write_parameters(d, s, tnum + 1, o);
 
 		/* ts A61103 */
 		ret = d->get_nwa(d, -1, &lba, &nwa);
@@ -1364,7 +1364,7 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	off_t size;
 
 	BURN_ALLOC_MEM(msg, char, 160);
-	d->send_write_parameters(d, o);
+	d->send_write_parameters(d, NULL, 0, o);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
 		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
@@ -2035,7 +2035,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 	5.4.14 finally states that profile 0013h includes feature
 	002Ch rather than 0026h.
 		
-		d->send_write_parameters(d, o);
+		d->send_write_parameters(d, NULL, 0, o);
 	*/
 
 	d->busy = BURN_DRIVE_FORMATTING;
@@ -2674,6 +2674,7 @@ void burn_disc_write_sync(struct burn_write_opts *o, struct burn_disc *disc)
 	struct cue_sheet *sheet;
 	struct burn_drive *d = o->drive;
 	struct buffer *buffer_mem = o->drive->buffer;
+	struct burn_session *s;
 	struct burn_track *lt, *t;
 	int first = 1, i, ret, lba, nwa = 0, multi_mem;
 	off_t default_size;
@@ -2786,7 +2787,11 @@ return crap.  so we send the command, then ignore the result.
 	if (o->write_type == BURN_WRITE_TAO) {
 		nwa = 0; /* get_nwa() will be called in burn_track() */
 	} else {
-		d->send_write_parameters(d, o);
+		if (disc->sessions > 0)
+			s = disc->session[0];
+		else
+			s = NULL;
+		d->send_write_parameters(d, s, 0, o);
 
 		ret = d->get_nwa(d, -1, &lba, &nwa);
 		sprintf(msg,
@@ -2811,7 +2816,7 @@ return crap.  so we send the command, then ignore the result.
 
 		/* ts A61009 */
 		if (sheet == NULL)
-			goto fail;
+			goto fail_wo_sync;
 
 #ifdef Libburn_write_with_function_print_cuE
 		print_cue(sheet);
@@ -2819,10 +2824,14 @@ return crap.  so we send the command, then ignore the result.
 #endif /* Libburn_write_with_function_print_cuE */
 
 		if (o->write_type == BURN_WRITE_SAO)
-			d->send_cue_sheet(d, sheet);
+			ret = d->send_cue_sheet(d, sheet);
 		if (sheet->data != NULL)
 			free(sheet->data);
 		free(sheet);
+		if (ret <= 0)
+			goto fail_wo_sync;
+
+		/* --- From here on, final sync is needed. --- */
 
 		if (o->write_type == BURN_WRITE_RAW) {
 			if (!burn_write_leadin(o, disc->session[i], first))
@@ -3103,7 +3112,7 @@ int burn_disc_close_damaged(struct burn_write_opts *o, int flag)
 		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
 
 		/* Send mode page 5 */;
-		d->send_write_parameters(d, o);
+		d->send_write_parameters(d, NULL, 0, o);
 
 		ret = burn_write_close_session(o);
 		if (ret <= 0)
@@ -3114,7 +3123,7 @@ int burn_disc_close_damaged(struct burn_write_opts *o, int flag)
 		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
 
 		/* Send mode page 5 */;
-		d->send_write_parameters(d, o);
+		d->send_write_parameters(d, NULL, 0, o);
 
 		ret = burn_disc_close_track_dvd_minus_r(o, 0);
 		if (ret <= 0)
