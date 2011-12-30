@@ -1671,8 +1671,18 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 	if (outcome == RETRY && c->retry && !(flag & 1)) {
 		/* Calming down retries and breaking up endless cycle
 		*/
-		usleep_time = Libburn_scsi_retry_usleeP +
-				loop_count * Libburn_scsi_retry_incR;
+		if (c->opcode[0] == 0x2A || c->opcode[0] == 0xAA) {
+			/* WRITE(10) , WRITE(12) */
+			usleep_time = Libburn_scsi_write_retry_usleeP +
+				loop_count * Libburn_scsi_write_retry_incR;
+			if (usleep_time > Libburn_scsi_write_retry_umaX)
+				usleep_time = Libburn_scsi_write_retry_umaX;
+		} else {
+			usleep_time = Libburn_scsi_retry_usleeP +
+					loop_count * Libburn_scsi_retry_incR;
+			if (usleep_time > Libburn_scsi_retry_umaX)
+				usleep_time = Libburn_scsi_retry_umaX;
+		}
 		if (time(NULL) + usleep_time / 1000000 - start_time >
 		    timeout_ms / 1000 + 1) {
 			BURN_ALLOC_MEM(msg, char, 320);
@@ -1688,7 +1698,8 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 		}
 		if (d->cancel)
 			{done = 1; goto ex;}
-		usleep(usleep_time);
+		if (usleep_time > 0)
+			usleep(usleep_time);
 		if (d->cancel)
 			{done = 1; goto ex;}
 		if (burn_sg_log_scsi & 3) 

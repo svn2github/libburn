@@ -111,12 +111,20 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp_in,
                         int duration, time_t start_time, int timeout_ms,
 			int loop_count, int flag);
 
+
 /* The waiting time before eventually retrying a failed SCSI command.
    Before each retry wait Libburn_scsi_retry_incR longer than with
-   the previous one.
+   the previous one. At most wait for Libburn_scsi_retry_umaX microseconds.
 */
 #define Libburn_scsi_retry_usleeP 100000
 #define Libburn_scsi_retry_incR   100000
+#define Libburn_scsi_retry_umaX   500000
+
+/* The retry waiting time for commands WRITE(10) and WRITE(12).
+*/
+#define Libburn_scsi_write_retry_usleeP     0
+#define Libburn_scsi_write_retry_incR    2000
+#define Libburn_scsi_write_retry_umaX   25000
 
 
 /* ts B11124 */

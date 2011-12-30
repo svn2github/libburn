@@ -873,12 +873,40 @@ void mmc_write_12(struct burn_drive *d, int start, struct buffer *buf)
 }
 
 
+#ifdef Libburn_write_time_debuG
+
+static int print_time(int flag)
+{
+	static struct timeval prev = {0, 0};
+	struct timeval now;
+	struct timezone tz;
+	int ret, diff;
+
+	ret = gettimeofday(&now, &tz);
+	if (ret == -1)
+		return 0;
+	if (now.tv_sec - prev.tv_sec < Libburn_scsi_write_timeouT) {
+		diff = (now.tv_sec - prev.tv_sec) * 1000000 +
+			((int) (now.tv_usec) - (int) prev.tv_usec);
+		fprintf(stderr, "\nlibburn_DEBUG:  %d.%-6d : %d\n", (int) now.tv_sec, (int) now.tv_usec, diff);
+	}
+	memcpy(&prev, &now, sizeof(struct timeval));
+	return 1;
+}
+
+#endif /* Libburn_write_time_debuG */
+
+
 int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 {
 	int cancelled;
 	struct command *c;
 	int len, key, asc, ascq;
 	char *msg = NULL;
+
+#ifdef Libburn_write_time_debuG
+	extern int burn_sg_log_scsi;
+#endif
 
 	c = &(d->casual_command);
 
@@ -924,6 +952,11 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	/* ts A70711 */
 	if(d->wait_for_buffer_free)
 		mmc_wait_for_buffer_free(d, buf);
+
+#ifdef Libburn_write_time_debuG
+	if (burn_sg_log_scsi & 3)
+		print_time(0);
+#endif
 
 	/* ts A80412 */
 	if(d->do_stream_recording > 0 && start >= d->stream_recording_start) {
