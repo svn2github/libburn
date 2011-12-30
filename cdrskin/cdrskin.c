@@ -6547,16 +6547,17 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  struct burn_progress p;
  struct burn_drive *drive;
  int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
- int fifo_disabled= 0, min_buffer_fill= 101;
+ int fifo_disabled= 0, min_buffer_fill= 101, length;
  int use_data_image_size, needs_early_fifo_fill= 0,iso_size= -1, non_audio= 0;
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
  char *doing;
  char *source_path;
+ unsigned char *payload;
  int source_fd, is_from_stdin;
  int text_flag= 4; /* Check CRCs and silently repair CRCs if all are 0 */
  unsigned char *text_packs= NULL;
- int num_packs= 0;
+ int num_packs= 0, start_block;
 
 #ifndef Cdrskin_no_cdrfifO
  double put_counter, get_counter, empty_counter, full_counter;
@@ -6668,12 +6669,21 @@ burn_failed:;
      fprintf(stderr, "cdrskin: SORRY : Option input_sheet_v07t= works only if all tracks are -audio\n");
      goto burn_failed;
    } else {
-
-     /* >>> if cuefile and session has block 0, then start at block 1 */;
-
-     for(i= 0; i < skin->sheet_v07t_blocks; i++) {
-       ret= Cdrskin_read_input_sheet_v07t(skin, skin->sheet_v07t_paths[i], i,
-                                          session, 0);
+     /* If cuefile and session has block 0, then start at block 1 */
+     start_block= 0;
+     if(skin->cuefile[0]) {
+       for(i= 0x80; i < 0x8f; i++) {
+         ret= burn_session_get_cdtext(session, 0, i, "", &payload, &length, 0);
+         if(ret > 0 && length > 0)
+       break;
+       }
+       if(i < 0x8f)
+         start_block= 1;
+     }
+     for(i= 0; i < skin->sheet_v07t_blocks && i < 8 - start_block; i++) {
+       ret= Cdrskin_read_input_sheet_v07t(skin,
+                                       skin->sheet_v07t_paths[i],
+                                       i + start_block, session, 0);
        if(ret <= 0)
          goto burn_failed;
      }

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Dec 28, 2011"
+.TH CDRSKIN 1 "Dec 30, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -507,6 +507,10 @@ present.
 cdrskin currently supports TRACK datatypes AUDIO and MODE1/2048 which may
 not be mixed. It ignores commands POSTGAP, PREGAP, and FLAGS. Only INDEX 01
 is interpreted yet. Data source may be of FILE type BINARY or MOTOROLA.
+.br
+Cue sheet file commands CATALOG and ISRC override options mcn= and isrc=.
+They may be overridden by input_sheet_v07t= purpose specifiers "UPC / EAN"
+and "ISRC".
 .TP
 .BI \-dao
 Alias for option -sao. Write CD in Session at Once mode
@@ -645,16 +649,16 @@ Use program "eject" or cdrskin -eject to get the tray out of the drive.
 Runs of programs like cdrecord, growisofs, wodim, cdrskin will not be hampered
 and normally enable the drive's eject button when they are done.
 .TP
+.BI mcn= text
+Set the CD Media Catalog Number to text, which must be exactly 13 characters
+long and should consist of decimal digits.
+.TP
 .BI minbuf= percentage
 Equivalent to:
 .br
 modesty_on_drive=1:min_percent=<percentage>:max_percent=95
 .br
 Percentage is permissible between 25 and 95.
-.TP
-.BI mcn= text
-Set the CD Media Catalog Number to text, which must be exactly 13 characters
-long and should consist of decimal digits.
 .TP
 .BI -minfo
 Print information about the loaded media. This includes media type, writability
@@ -789,7 +793,8 @@ Mode -tao is not usable for minimally blanked DVD-RW and for DVD-R DL.
 .BI \-text
 Enable writing of CD-TEXT attributes read by option cuefile=.
 Without option -text, cue sheet file command CDTEXTFILE will be ignored and
-no CD-TEXT attributes will be read from the file.
+no CD-TEXT attributes will be read from the file. Nevertheless, CATALOG and
+ISRC will have the same effect as options mcn= and isrc=.
 .TP
 .BI textfile= path
 Read CD-TEXT packs from the file depicted by path and put them into the
@@ -1076,7 +1081,7 @@ growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
 .TP
 .BI input_sheet_v07t= path
 Read CD-TEXT definitions from a Sony Input Sheet version 0.7T. Up to eight
-such sheets can be read by multiple input_sheet_v07t= options.
+or seven such sheets can be read by multiple input_sheet_v07t= options.
 Each will define a CD-TEXT language block.
 .br
 The information in such a sheet is given by text lines of the following form:
@@ -1151,6 +1156,13 @@ definitions as there are track source files given.
 See libburn's doc/cdtext.txt for a detailed definition of 0.7T and the
 possible values for Text Code, Language Code, Genre Code, Text Data Copy
 Protection.
+.br
+Purpose specifiers "UPC / EAN" and "ISRC" override options mcn= and isrc=
+and the cuefile= commands CATALOG and ISRC.
+.br
+If options -text cuefile= are given and if the cue sheet file defines CD-TEXT,
+then only seven input_sheet_v07t= options may be given. They will then be
+used as CD-TEXT language blocks 1 to 7.
 .br
 This option will get into effect only if no option textfile= is given.
 The write mode must be SAO on CD. All tracks must be -audio tracks.
