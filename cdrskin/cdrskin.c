@@ -1677,11 +1677,6 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
  if(!(track->cdxa_conversion & (1 << 31)))
    burn_track_set_cdxa_conv(tr, track->cdxa_conversion & 0x7fffffff);
- if(track->isrc[0]) {
-   ret= burn_track_set_isrc_string(tr, track->isrc, 0);
-   if(ret <= 0)
-     goto ex;
- }
 
  fixed_size= track->fixed_size;
  if((flag&2) && track->padding>0) {
@@ -6739,6 +6734,13 @@ burn_failed:;
      skin->fixed_size+= size+padding;
    else
      skin->has_open_ended_track= 1;
+   if(skin->tracklist[i]->isrc[0] &&
+      skin->tracklist[i]->libburn_track != NULL) {
+      ret= burn_track_set_isrc_string(skin->tracklist[i]->libburn_track,
+                                      skin->tracklist[i]->isrc, 0);
+      if(ret <= 0)
+        goto ex;
+   }
  }
  
  o= burn_write_opts_new(drive);
