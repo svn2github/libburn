@@ -121,6 +121,13 @@ struct burn_write_opts;
 /** Input mode modifier - subcodes present raw 96 */
 #define BURN_SUBCODE_R96	(1 << 12)
 
+/* ts B11230 */
+/** Track mode modifier - Serial Copy Management System, SAO only
+    @since 1.2.0
+*/
+#define BURN_SCMS		(1 << 13)
+
+
 /** Possible disc writing style/modes */
 enum burn_write_types
 {

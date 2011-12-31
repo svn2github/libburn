@@ -452,7 +452,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
 	int leadin_form, leadin_start;
-	unsigned char ctladr;
+	unsigned char ctladr, scms;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
 	struct cue_sheet *sheet;
@@ -581,6 +581,10 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	pform = form;
 	for (i = 0; i < ntr; i++) {
 		type_to_form(tar[i]->mode, &ctladr, &form);
+		if (tar[i]->mode & BURN_SCMS)
+			scms = 0x80;
+		else
+			scms = 0; 
 
 		if (tar[i]->isrc.has_isrc) {
 			ret = add_isrc_cue(sheet, ctladr, i + 1,
@@ -603,7 +607,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
 		if (pform != form) {
 
-			ret = add_cue(sheet, ctladr | 1, i + 1, 0, form, 0,
+			ret = add_cue(sheet, ctladr | 1, i + 1, 0, form, scms,
 					 runtime);
 			if (ret <= 0)
 				goto failed;
@@ -644,7 +648,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		e[3 + i].adr = 1;
 		e[3 + i].control = type_to_ctrl(tar[i]->mode);
 
-		ret = add_cue(sheet, ctladr | 1, i + 1, 1, form, 0, runtime);
+		ret = add_cue(sheet, ctladr | 1, i + 1, 1, form, scms,
+				runtime);
 		if (ret <= 0)
 			goto failed;
 

@@ -228,6 +228,8 @@ sync. libburn uses the info provided by 52h READ TRACK INFORMATION.
 -------------------------------------------------------------------------------
 Guided by reading     libburn/* from http://icculus.org/burn
 backed by reading  mmc5r03c.pdf from http://www.t10.org/ftp/t10/drafts/mmc5/
+backed by reading     scms.html from
+                     http://www.barrel-of-monkeys.com/graphics/prod/dvdplayers/
 and by experiments with drives  NEC ND-4570A, LG GSA-4082B, LITE-ON LTR48125S,
                                 Optiarc BD RW BD-5300S, LG BDDVDRW GGC-H20L
 
@@ -266,24 +268,39 @@ Each entry of the sheet is of 8 bytes size. Its fields are named
 CTL|ADR, TNO, INDEX, DATA FORM, SCMS, MIN, SEC, FRAME .
 (mmc5r03c.pdf 6.33)
 
-CTL is 40h for data and 00h for audio.
+CTL is comprised of four bits:
+  bit4 = Pre-emphasis (audio only)
+  bit5 = Digital copy permission:
+         0 = prohibited (one-time copy is permitted if SCMS is 00h)
+         1 = permitted (unlimited)                         
+  bit6 = Data track indicator (bit4 and bit7 shall be 0)
+  bit7 = 4-channel audio
+Usually CTL is 40h for data and 00h for audio.
 (mmc5r03c.pdf 6.33.3.4)
 ADR is 01h for entries which define time points. It is 02h for media catalog
 entries and it is 03h for track ISRC entries.
+The bits of CTL and ADR are combined in the CTL|ADR byte.
+
 TNO is the track number (1 to 99).
+
 INDEX is a subaddress within tracks. This recipe uses only INDEX 01h within
 tracks.
 (mmc5r03c.pdf 4.2.3.5.2)
+
 DATA FORM is 00h for audio payload, 01h for audio pause, 10h for data,
 41h for CD-TEXT in Lead-in. 
 (mmc5r03c.pdf 6.33.3.11 CD-DA Data Form, 6.33.3.12 CD-ROM mode 1 Form)
-SCMS is always 00h.
+
+SCMS value 80h in conjunction with bit5 of CTL is an indicator for exhausted
+one-time-copy permission. If this permission is still intact, then SCMS is 00h.
+
 MIN, SEC, FRAME give the MSF address where the described data entity starts.
 LBA = frames - 150, 75 frames = 1 sec , 60 sec = 1 min.
 This address must increase from entry to entry (or at least stay equal).
 
-The first two entries describe the Media Catalog Number, a string of 13
-characters, also known with CD-TEXT as "UPC/EAN".
+
+The first two entries in a Cue Sheet describe the Media Catalog Number,
+a string of 13 characters, also known with CD-TEXT as "UPC/EAN".
 (02h, catalog characters 1 to 7)
 (02h, catalog characters 8 to 13, 00h)
 These two entries shall be omitted if no catalog number is given.
