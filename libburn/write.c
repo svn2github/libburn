@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -297,10 +297,9 @@ int burn_write_close_session(struct burn_write_opts *o)
 }
 
 
-/* ts A60819:
-   This is unused since about Feb 2006, icculus.org/burn CVS.
-   The compiler complains. We shall please our compiler.
- # define Libburn_write_with_function_print_cuE
+/* ts A60819, B20101:
+   This is useful only when changes about CD SAO get tested.
+ # define Libburn_write_with_function_print_cuE yes
 */
 
 #ifdef Libburn_write_with_function_print_cuE
@@ -525,7 +524,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
            It works with LBA -150 and data block type 0. Shrug.
 	*/
 	leadin_start = runtime;
-	ret = add_cue(sheet, ctladr | 1, 0, 0, leadin_form, 0, leadin_start);
+	ret = add_cue(sheet, (ctladr & 64) | 1, 0, 0, leadin_form, 0,
+								leadin_start);
 	if (ret <= 0)
 		goto failed;
 
