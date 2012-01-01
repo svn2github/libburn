@@ -2971,11 +2971,12 @@ int burn_disc_get_write_mode_demands(struct burn_disc *disc,
 				last_track_is_unknown = 1;
 			} else
 				last_track_is_unknown = 0;
-			if (mode != track->mode)
+			if ((mode & BURN_MODE_BITS) !=
+						(track->mode & BURN_MODE_BITS))
 				result->mixed_mode = 1;
-			if (track->mode == BURN_MODE1) {
+			if (track->mode & BURN_MODE1) {
 				result->block_types |= BURN_BLOCK_MODE1;
-			} else if (track->mode == BURN_AUDIO) {
+			} else if (track->mode & BURN_AUDIO) {
 				result->audio = 1;
 				result->block_types |= BURN_BLOCK_RAW0;
 				result->exotic_track = 1;
