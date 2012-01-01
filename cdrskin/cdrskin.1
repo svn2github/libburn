@@ -499,7 +499,7 @@ Retrieve some info about the addressed drive and then exit.
 Exits with non-zero value if the drive cannot be found and opened.
 .TP
 .BI \-copy
-Subsequent tracks get permission for an unlimited number of copies.
+Create the subsequent tracks with permission for an unlimited number of copies.
 .TP
 .BI cuefile= path
 Read a session description from a cue sheet file in CDRWIN format.
@@ -722,9 +722,9 @@ for lifting the ban on -multi.
 Note: -multi might make DVD media unreadable in some DVD-ROM drives.
 .TP
 .BI \-nocopy
-Subsequent tracks get permission for a single level of copies. I.e. those
-copies would then be marked by -scms as offering no permission for further
-copies.
+Create subsequent tracks with permission for a single level of copies.
+I.e. those copies would then be marked by -scms as offering no permission
+for further copies.
 .TP
 .BI \-nopad
 Do not add trailing zeros to the data stream. Nevertheless, since there seems
@@ -732,7 +732,7 @@ to be no use for audio tracks with incomplete last sector, this option applies
 only to data tracks. There it is default.
 .TP
 .BI \-nopreemp
-Subsequent tracks get marked as having been mastered without pre-emphasis.
+Indicate for subsequent tracks that they were mastered without pre-emphasis.
 .TP
 .BI \-pad
 Add 30 kiB of trailing zeros to each data track. (This is not sufficient to
@@ -744,7 +744,7 @@ gets reset to padsize=0 after that next track is written. It may be set
 again before the next track argument. About size specifiers, see option fs=.
 .TP
 .BI \-preemp
-Subsequent tracks get marked as having been mastered with pre-emphasis.
+Indicate for subsequent tracks that they were mastered with pre-emphasis.
 .TP
 .BI \-sao
 Write CD in Session At Once mode or sequential DVD-R[W] in Disc-at-once
@@ -779,12 +779,12 @@ The useful fields in a result line are:
 Bus,Target,Lun Number) 'Vendor' 'Mode' 'Revision'
 .TP
 .BI \-scms
-Subsequent tracks get no permission for being copied. This is usually done
-for tracks which are copies of tracks that were marked with -nocopy (but not
-yet with -scms). So copies of copies are prohibited.
+Create subsequent tracks without permission for being copied. This is usually
+done for tracks which are copies of tracks that were marked with -nocopy
+(but not yet with -scms). So copies of copies are prohibited.
 .br
-This option gets reset by option -copy. So the combination -copy -nocopy means
--nocopy surely without -scms.
+This option gets reset by option -copy. Thus the combination -copy -nocopy
+means -nocopy surely without -scms.
 .TP
 .BI speed= number
 Set speed of drive. With data CD, 1x speed corresponds to a throughput of
@@ -1054,6 +1054,9 @@ implies fallback_program=cdrecord
 .br
 .B codim
 implies fallback_program=wodim
+.TP 
+.BI --four_channel
+Indicate for subsequent tracks that they were mastered with four channels.
 .TP
 .BI fifo_start_at= size
 Do not wait for full fifo but start burning as soon as the given number
@@ -1278,6 +1281,9 @@ The result gets printed to standard output. It is 0 or empty if no writing
 is possible with the given options.
 This option redirects to stderr all message output except its own result
 string and eventual output of -msinfo.
+.TP 
+.BI --two_channel
+Indicate for subsequent tracks that they were mastered with two channels.
 .TP 
 .BI write_start_address= byte_offset
 Set the address on media where to start writing the track. With DVD+RW, DVD-RAM 

@@ -2771,6 +2771,7 @@ set_dev:;
      printf(
          "                    as soon as the given number of bytes is read\n");
      printf(" --fill_up_media    cause the last track to have maximum size\n");
+     printf(" --four_channel     indicate that audio tracks have 4 channels\n");
      printf(
           " grab_drive_and_wait=<num>  grab drive, wait given number of\n");
      printf(
@@ -2814,7 +2815,8 @@ set_dev:;
      printf(
           "                    and no tsize= was specified.\n");
      printf(
- " --tell_media_space  prints maximum number of writeable data blocks\n");
+ " --tell_media_space  print maximum number of writeable data blocks\n");
+     printf(" --two_channel      indicate that audio tracks have 2 channels\n");
      printf(
          " write_start_address=<num>  write to given byte address (DVD+RW)\n");
      printf(
