@@ -643,18 +643,21 @@ CATALOG 1234567890123
 FILE "cdtext.bin" BINARY
 TITLE "Joyful Nights"
   TRACK 01 AUDIO
+    FLAGS DCP 4CH PRE
     TITLE "Song of Joy"
     PERFORMER "Felix and The Purrs"
     SONGWRITER "Friedrich Schiller"
     ISRC XYBLG1101234
     INDEX 01 00:00:00
   TRACK 02 AUDIO
+    FLAGS DCP
     TITLE "Humpty Dumpty"
     PERFORMER "Catwalk Beauties"
     SONGWRITER "Mother Goose"
     ISRC XYBLG1100005
     INDEX 01 08:20:12
   TRACK 03 AUDIO
+    FLAGS DCP
     TITLE "Mee Owwww"
     PERFORMER "Mia Kitten"
     SONGWRITER "Mia Kitten"
@@ -665,13 +668,13 @@ TITLE "Joyful Nights"
 
 Several restrictions apply in the libburn call burn_session_by_cue_file():
 
-Commands FLAGS, POSTGAP, PREGAP are ignored. Only FILE types BINARY, MOTOROLA
-are allowed. Only TRACK datatypes AUDIO, MODE1/2048 are allowed. They may not
+Commands POSTGAP, PREGAP are ignored. Only FILE types BINARY, MOTOROLA are
+allowed. Only TRACK datatypes AUDIO, MODE1/2048 are allowed. They may not
 be mixed in the same session. INDEX numbers 00, 02 to 99 are ignored.
 
 
 -------------------------------------------------------------------------------
-This text is copyright 2011 Thomas Schmitt <scdbackup@gmx.net>.
+This text is copyright 2011 - 2012 Thomas Schmitt <scdbackup@gmx.net>.
 Permission is granted to copy, modify, and distribute it, as long as the
 references to the original information sources are maintained.
 There is NO WARRANTY, to the extent permitted by law.

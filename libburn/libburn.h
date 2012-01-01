@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    This is the official API definition of libburn.
@@ -123,6 +123,8 @@ struct burn_write_opts;
 
 /* ts B11230 */
 /** Track mode modifier - Serial Copy Management System, SAO only
+    If this is set and BURN_COPY is not set, then copying the emerging
+    track will be forbidden.
     @since 1.2.0
 */
 #define BURN_SCMS		(1 << 13)
@@ -1862,18 +1864,19 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     CD-TEXT according to the content of the file.
     For a description of CDRWIN file format see
       http://digitalx.org/cue-sheet/syntax/
->>> supported commands: CATALOG CDTEXTFILE ISRC PERFORMER REM SONGWRITER TITLE
+>>> fully supported commands: CATALOG CDTEXTFILE FLAGS ISRC PERFORMER REM
+>>>                           SONGWRITER TITLE
 >>> partly supported commands: FILE INDEX TRACK 
 >>> supported FILE types: BINARY MOTOROLA
->>> supported FLAGS:
 >>> supported TRACK datatypes: AUDIO MODE1/2048
->>> ignored commands: POSTGAP PREGAP FLAGS
+>>> ignored commands: POSTGAP PREGAP
 >>> ignored INDEX numbers: 00, 02 to 99
->>> ignored FLAGS: DCP 4CH PRE SCMS
 >>> not allowed: mixing of ADUIO and MODE1/2048
 >>> not allowed: unsupported FILE types
 >>> not allowed: unsupported TRACK datatypes
 >>> 
+>>> man cdrecord documents further commands:
+>>>   ARRANGER COMPOSER MESSAGE
 >>> 
     @param session     Session where to attach tracks. It must not yet have
                        tracks or else this call will fail.

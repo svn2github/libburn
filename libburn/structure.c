@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1028,6 +1028,7 @@ struct burn_cue_file_cursor {
 	int track_has_source;
 	int block_size;
 	int block_size_locked;
+	int track_mode;
 	int flags;
 };
 
@@ -1058,6 +1059,7 @@ static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
 	crs->track_has_source = 0;
 	crs->block_size = 0;
 	crs->block_size_locked = 0;
+	crs->track_mode = 0;
 	crs->flags = 0;
 
 	*reply = crs;
@@ -1266,7 +1268,7 @@ static int cue_interpret_line(struct burn_session *session, char *line,
 				struct burn_cue_file_cursor *crs, int flag)
 {
 	int ret, mode, index_no, minute, second, frame, file_ba, chunks;
-	int block_size;
+	int block_size, step;
 	off_t size;
 	char *cmd, *apt, *msg = NULL, msf[3], *msf_pt, *cpt, *filetype;
 	struct burn_source *src, *inp_src;
@@ -1388,8 +1390,49 @@ not_usable_file:;
 			goto ex;
 
 	} else if (strcmp(cmd, "FLAGS") == 0) {
+		if (crs->track == NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"In cue sheet file: FLAGS found before TRACK",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		while (*apt) {
+			if (strncmp(apt, "DCP", 3) == 0) {
+				crs->track_mode |= BURN_COPY;
+				step = 3;
+			} else if (strncmp(apt, "4CH", 3) == 0) {
+				crs->track_mode |= BURN_4CH;
+				step = 3;
+			} else if (strncmp(apt, "PRE", 3) == 0) {
+				crs->track_mode |= BURN_PREEMPHASIS;
+				step = 3;
+			} else if (strncmp(apt, "SCMS", 4) == 0) {
+				crs->track_mode |= BURN_SCMS;
+				step = 4;
+			} else {
+bad_flags:;
+				for (cpt = apt;
+				  *cpt != 32 && *cpt != 9 && *cpt != 0; cpt++);
+				*cpt = 0;
+				sprintf(msg,
+			"In cue sheet file: Unknown FLAGS option '%.4000s'",
+					apt);
+				libdax_msgs_submit(libdax_messenger, -1,
+						0x00020194,
+						LIBDAX_MSGS_SEV_FAILURE,
+						LIBDAX_MSGS_PRIO_HIGH,
+						burn_printify(msg), 0, 0);
+				ret = 0; goto ex;
+			}
 
-		/* >>> Interpret DCP 4CH PRE SCMS into crs->flags */;
+			/* Look for start of next word */
+			if (apt[step] != 0 && apt[step] != 32 &&
+			    apt[step] != 9)
+				goto bad_flags;
+			for (apt += step; *apt == 32 || *apt == 9; apt++);
+		}
+		burn_track_define_data(crs->track, 0, 0, 1, crs->track_mode);
 
 	} else if (strcmp(cmd, "INDEX") == 0) {
 		if (crs->track == NULL) {
@@ -1608,8 +1651,9 @@ overlapping_ba:;
 		if (crs->track == NULL)
 			goto out_of_mem;
 		crs->track_has_source = 0;
+		crs->track_mode = mode;
 		burn_track_define_data(crs->track, 0, 0, 1, mode);
-		if (mode == BURN_AUDIO)
+		if (mode & BURN_AUDIO)
 			burn_track_set_byte_swap(crs->track,
 						!!crs->swap_audio_bytes);
 
