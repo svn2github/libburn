@@ -1288,7 +1288,12 @@ static int cue_interpret_line(struct burn_session *session, char *line,
 		for (apt++; *apt == 32 || *apt == 9; apt++);
 	}
 
-	if (strcmp(cmd, "CATALOG") == 0) {
+	if (strcmp(cmd, "ARRANGER") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x84, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
+
+	} else if (strcmp(cmd, "CATALOG") == 0) {
 		for (cpt = apt; (cpt - apt) < 13 && *cpt == (*cpt & 0x7f);
 		     cpt++);
 		if ((cpt - apt) < 13) {
@@ -1321,6 +1326,11 @@ out_of_mem:;
 				"Out of virtual memory", 0, 0);
 			ret = -1; goto ex;
 		}
+
+	} else if (strcmp(cmd, "COMPOSER") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x83, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
 
 	} else if (strcmp(cmd, "FILE") == 0) {
 		if (crs->file_source != NULL) {
@@ -1560,6 +1570,11 @@ overlapping_ba:;
 			if (ret <= 0)
 				goto ex;
 		}
+
+	} else if (strcmp(cmd, "MESSAGE") == 0) {
+		ret = cue_set_cdtext(session, crs->track, 0x85, apt, crs, 2);
+		if (ret <= 0)
+			goto ex;
 
 	} else if (strcmp(cmd, "PERFORMER") == 0) {
 		ret = cue_set_cdtext(session, crs->track, 0x81, apt, crs, 2);
