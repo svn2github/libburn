@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2011 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2012 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
@@ -862,6 +862,7 @@ struct CdrtracK {
  int set_by_padsize;
  int sector_pad_up; /* enforce single sector padding */
  int track_type;
+ int mode_modifiers;
  double sector_size;
  int track_type_by_default;
  int swap_audio_bytes;
@@ -928,7 +929,8 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
                         int *use_data_image_size,
                         double *padding, int *set_by_padsize,
                         int *track_type, int *track_type_by_default,
-                        int *swap_audio_bytes, int *cdxa_conversion, int flag);
+                        int *mode_mods, int *swap_audio_bytes,
+                        int *cdxa_conversion, int flag);
  int Cdrskin_get_fifo_par(struct CdrskiN *skin, int *fifo_enabled,
                           int *fifo_size, int *fifo_start_at, int flag);
 
@@ -947,6 +949,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->set_by_padsize= 0;
  o->sector_pad_up= 1;
  o->track_type= BURN_MODE1;
+ o->mode_modifiers= 0;
  o->sector_size= 2048.0;
  o->track_type_by_default= 1;
  o->swap_audio_bytes= 0;
@@ -974,8 +977,8 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  ret= Cdrskin_get_source(boss,o->source_path,&(o->fixed_size),
                          &(o->tao_to_sao_tsize),&(o->use_data_image_size),
                          &(o->padding),&(o->set_by_padsize),&(skin_track_type),
-                         &(o->track_type_by_default),&(o->swap_audio_bytes),
-                         &(o->cdxa_conversion), 0);
+                         &(o->track_type_by_default), &(o->mode_modifiers),
+                         &(o->swap_audio_bytes), &(o->cdxa_conversion), 0);
  if(ret<=0)
    goto failed;
  strcpy(o->original_source_path,o->source_path);
@@ -1671,7 +1674,7 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
    }
  }
  burn_track_define_data(tr,0,(int) lib_padding,sector_pad_up,
-                        track->track_type);
+                        track->track_type | track->mode_modifiers);
  burn_track_set_default_size(tr, (off_t) track->tao_to_sao_tsize);
  burn_track_set_byte_swap(tr,
                    (track->track_type==BURN_AUDIO && track->swap_audio_bytes));
@@ -2923,6 +2926,11 @@ see_cdrskin_eng_html:;
      "\t-xa1\t\tSubsequent tracks are CD-ROM XA mode 2 form 1 - 2056 bytes\n");
      fprintf(stderr,
            "\t-isosize\tUse iso9660 file system size for next data track\n");
+     fprintf(stderr,"\t-preemp\t\tAudio tracks are mastered with 50/15 microseconds preemphasis\n");
+     fprintf(stderr,"\t-nopreemp\tAudio tracks are mastered with no preemphasis (default)\n");
+     fprintf(stderr,"\t-copy\t\tAudio tracks have unlimited copy permission\n");
+     fprintf(stderr,"\t-nocopy\t\tAudio tracks may only be copied once for personal use (default)\n");
+     fprintf(stderr,"\t-scms\t\tAudio tracks will not have any copy permission at all\n");
      fprintf(stderr,"\t-pad\t\tpadsize=30k\n");
      fprintf(stderr,
         "\t-nopad\t\tDo not pad (default, but applies only to data tracks)\n");
@@ -3336,6 +3344,7 @@ struct CdrskiN {
  int track_type;
  int track_type_by_default; /* 0= explicit, 1=not set, 2=by file extension */
  int swap_audio_bytes;
+ int track_modemods;
 
  /** CDRWIN cue sheet file */
  char cuefile[Cdrskin_adrleN]; 
@@ -3353,7 +3362,6 @@ struct CdrskiN {
  /* Media Catalog Number and ISRC */
  char mcn[14];
  char next_isrc[13];
-
 
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
@@ -3516,6 +3524,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->cdtext_test= 0;
  o->mcn[0]= 0;
  o->next_isrc[0]= 0;
+ o->track_modemods= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
    o->tracklist[i]= NULL;
@@ -3625,6 +3634,7 @@ int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
                        int *use_data_image_size,
                        double *padding, int *set_by_padsize,
                        int *track_type, int *track_type_by_default,
+                       int *mode_mods,
                        int *swap_audio_bytes, int *cdxa_conversion, int flag)
 {
  strcpy(source_path,skin->source_path);
@@ -3635,6 +3645,7 @@ int Cdrskin_get_source(struct CdrskiN *skin, char *source_path,
  *set_by_padsize= skin->set_by_padsize;
  *track_type= skin->track_type;
  *track_type_by_default= skin->track_type_by_default;
+ *mode_mods= skin->track_modemods;
  *swap_audio_bytes= skin->swap_audio_bytes;
  *cdxa_conversion= skin->cdxa_conversion;
  return(1);
@@ -7309,8 +7320,8 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
    "-fix", "-nofix",
    "-raw", "-raw96p", "-raw16", "-raw96r",
    "-clone",
-   "-cdi", "-preemp", "-nopreemp", "-copy", "-nocopy",
-   "-scms", "-shorttrack", "-noshorttrack", "-packet", "-noclose",
+   "-cdi", 
+   "-shorttrack", "-noshorttrack", "-packet", "-noclose",
    ""
  };
 
@@ -7550,6 +7561,10 @@ unsupported_blank_option:;
    } else if(strcmp(argv[i],"-checkdrive")==0) {
      skin->do_checkdrive= 1;
 
+   } else if(strcmp(argv[i],"-copy")==0) {
+     skin->track_modemods|= BURN_COPY;
+     skin->track_modemods&= ~BURN_SCMS;
+
    } else if(strncmp(argv[i],"-cuefile=", 9)==0) {
      value_pt= argv[i] + 9;
      goto set_cuefile;
@@ -7742,6 +7757,9 @@ dvd_obs:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf(
        "cdrskin: will format DVD+RW by blank=format_overwrite_full -force\n"));
+
+   } else if(strcmp(argv[i],"--four_channel")==0) {
+     skin->track_modemods|= BURN_4CH;
 
 #ifndef Cdrskin_extra_leaN
 
@@ -8007,10 +8025,16 @@ msifile_equals:;
    } else if(strcmp(argv[i],"--no_rc")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i],"-nocopy")==0) {
+     skin->track_modemods&= ~BURN_COPY;
+
    } else if(strcmp(argv[i],"-nopad")==0) {
      skin->padding= 0.0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: padding : off\n"));
+
+   } else if(strcmp(argv[i],"-nopreemp")==0) {
+     skin->track_modemods&= ~BURN_PREEMPHASIS;
 
    } else if(strcmp(argv[i],"--old_pseudo_scsi_adr")==0) {
      /* is handled in Cdrpreskin_setup() */;
@@ -8032,6 +8056,9 @@ set_padsize:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: padding : %.f\n",skin->padding));
 
+   } else if(strcmp(argv[i],"-preemp")==0) {
+     skin->track_modemods|= BURN_PREEMPHASIS;
+
    } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
      skin->prodvd_cli_compatible= 1;
 
@@ -8040,6 +8067,9 @@ set_padsize:;
 
    } else if(strcmp(argv[i],"-scanbus")==0) {
      skin->do_scanbus= 1;
+
+   } else if(strcmp(argv[i],"-scms")==0) {
+     skin->track_modemods|= BURN_SCMS;
 
    } else if(strcmp(argv[i],"--single_track")==0) {
      skin->single_track= 1;
@@ -8163,6 +8193,9 @@ track_too_large:;
        ClN(printf("cdrskin: fixed track size : %.f\n",skin->fixed_size));
      if(skin->smallest_tsize<0 || skin->smallest_tsize>skin->fixed_size)
        skin->smallest_tsize= skin->fixed_size;
+
+   } else if(strcmp(argv[i],"--two_channel")==0) {
+     skin->track_modemods&= ~BURN_4CH;
 
    } else if(strcmp(argv[i],"-V")==0 || strcmp(argv[i],"-Verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
