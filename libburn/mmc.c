@@ -4151,9 +4151,10 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 		}
 
 		/* ISRC at bytes 32 to 47. Tables 664, 671 */
+		/* SCMS at byte 3 bit 4 */
 		isrc_text[0] = 0;
-		if (s != NULL && o->write_type == BURN_WRITE_TAO)
-			if (tno >= 1 && tno <= s->tracks) 
+		if (s != NULL && o->write_type == BURN_WRITE_TAO) {
+			if (tno >= 1 && tno <= s->tracks) {
 				if (s->track[tno - 1]->isrc.has_isrc) {
 					isrc = &(s->track[tno - 1]->isrc);
 					isrc_text[0] = isrc->country[0];
@@ -4165,6 +4166,11 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 						(unsigned int) isrc->year,
 						isrc->serial);
 				}
+				if ((s->track[tno - 1]->mode & BURN_SCMS) &&
+				    !(s->track[tno - 1]->mode & BURN_COPY))
+					pd[3] |= 0x10;
+			}
+		}
 		if (isrc_text[0] != 0 && d->mdata->write_page_length >= 46) {
 			pd[32] = 0x80; /* TCVAL */
 			memcpy(pd + 33, isrc_text, 12);

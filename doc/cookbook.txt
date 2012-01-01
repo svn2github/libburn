@@ -94,6 +94,7 @@ parameters:
  Write Type       Packet/TAO/SAO/RAW              01h = TAO
  Multi-session    Whether to keep appendable      00b = finalize
                                                   11b = keep appendable
+ Copy             Whether to deny copying         1 = deny by SCMS , 0 = allow
  Track Mode       Describes frame type            4 for data , 0 for audio
  Data Block Type  Layout of payload blocks        8 for 2048 byte data blocks
                                                   0 for 2352 byte audio blocks
@@ -1489,7 +1490,7 @@ at the NWA of a sufficiently sized track.
 
 
 -------------------------------------------------------------------------------
-This text is copyright 2011 Thomas Schmitt <scdbackup@gmx.net>.
+This text is copyright 2011 - 2012 Thomas Schmitt <scdbackup@gmx.net>.
 Permission is granted to copy, modify, and distribute it, as long as the
 references to the original information sources are maintained.
 There is NO WARRANTY, to the extent permitted by law.
