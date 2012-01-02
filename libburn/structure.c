@@ -1697,6 +1697,7 @@ int burn_session_by_cue_file(struct burn_session *session, char *path,
 			unsigned char **text_packs, int *num_packs, int flag)
 {
 	int ret, num_tracks, i, pack_type, length, double_byte = 0;
+	int line_counter = 0;
 	struct burn_track **tracks;
 	char *msg = NULL, *line = NULL;
 	unsigned char *payload;
@@ -1766,9 +1767,17 @@ cannot_open:;
 				burn_printify(msg), 0, 0);
 			ret = 0; goto ex;
 		}
+		line_counter++;
 		ret = cue_interpret_line(session, line, crs, 0);
-		if (ret <= 0)
+		if (ret <= 0) {
+			sprintf(msg,
+		 "Cue sheet file '%.4000s': Reading aborted after line %d",
+				path, line_counter);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020199,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
 			goto ex;
+		}
 	}
 
 	/* Attach last track to session */
