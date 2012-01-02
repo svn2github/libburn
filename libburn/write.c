@@ -343,7 +343,7 @@ static void print_cue(struct cue_sheet *sheet)
 			printf(" %1X  %1X | %02X | %02X | %02X | %02X |",
 				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
 				unit[1], unit[2], unit[3], unit[4]);
-			printf(" %02X:%02X:%02X |\n",
+			printf(" %02d:%02d:%02d |\n",
 				unit[5], unit[6], unit[7]);
 		}
 	}
