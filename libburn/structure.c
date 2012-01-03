@@ -168,6 +168,8 @@ struct burn_track *burn_track_create(void)
 		return NULL;
 	t->refcnt = 1;
 	t->indices = 0;
+	for (i = 0; i < 100; i++)
+		t->index[i] = 0x7fffffff;
 	t->offset = 0;
 	t->offsetcount = 0;
 	t->tail = 0;
@@ -440,6 +442,37 @@ void burn_track_clear_isrc(struct burn_track *t)
 {
 	t->isrc.has_isrc = 0;
 }
+
+/* ts B20103 API */
+int burn_track_set_index(struct burn_track *t, int index_number,
+					unsigned int relative_lba, int flag)
+{
+	if (index_number < 0 || index_number > 99) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019a,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				"Bad track index number", 0, 0);
+		return 0;
+	}
+
+	/* >>> if track size known : check index */;
+
+	t->index[index_number] = relative_lba;
+	if (index_number >= t->indices)
+		t->indices = index_number + 1;
+	return 1;
+}
+
+/* ts B20103 API */
+int burn_track_clear_indice(struct burn_track *t, int flag)
+{
+	int i;
+
+	for (i = 0; i < 100; i++)
+		t->index[i] = 0x7fffffff;
+	t->indices = 0;
+	return 1;
+}
+
 
 int burn_track_get_sectors(struct burn_track *t)
 {
@@ -1024,7 +1057,7 @@ struct burn_cue_file_cursor {
 	int prev_block_size;
 	struct burn_track *track;
 	int track_no;
-	int track_has_index;
+	int track_current_index;
 	int track_has_source;
 	int block_size;
 	int block_size_locked;
@@ -1055,7 +1088,7 @@ static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
 	crs->prev_block_size = 0;
 	crs->track = NULL;
 	crs->track_no = 0;
-	crs->track_has_index = 0;
+	crs->track_current_index = -1;
 	crs->track_has_source = 0;
 	crs->block_size = 0;
 	crs->block_size_locked = 0;
@@ -1173,6 +1206,13 @@ static int cue_attach_track(struct burn_session *session,
 			"In cue sheet file: TRACK without INDEX 01", 0, 0);
 		return 0;
 	}
+	if (crs->track_current_index < 1) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		     "No INDEX 01 defined for last TRACK in cue sheet file",
+			0, 0);
+		return 0;
+	}
 	if (crs->track_no > 1 && session->tracks == 0) {
 
 		/* >>> ??? implement ? */;
@@ -1191,7 +1231,8 @@ static int cue_attach_track(struct burn_session *session,
 	crs->prev_file_ba = crs->current_file_ba;
 	crs->prev_block_size = crs->block_size;
 	crs->track = NULL;
-	crs->track_has_index = crs->track_has_source = 0;
+	crs->track_current_index = -1;
+	crs->track_has_source = 0;
 	crs->current_file_ba = -1;
 	if (!crs->block_size_locked)
 		crs->block_size = 0;
@@ -1487,33 +1528,42 @@ no_time_point:;
 			goto ex;
 
 		file_ba = ((minute * 60) + second ) * 75 + frame;
-		if (file_ba <= crs->prev_file_ba) {
+		if (file_ba < crs->prev_file_ba) {
 overlapping_ba:;
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-			       "Overlapping INDEX addresses in cue sheet file",
+				"Backward INDEX address in cue sheet file",
 				0, 0);
 			ret = 0; goto ex;
 		}
 
-		if (crs->prev_track != NULL && !crs->track_has_index) {
+		if (crs->prev_track != NULL && crs->track_current_index < 0) {
 			size = (file_ba - crs->prev_file_ba) *
 							crs->prev_block_size;
 			if (size <= 0)
 				goto overlapping_ba;
 			burn_track_set_size(crs->prev_track, size);
 		}
-		crs->track_has_index = 1;
+		if (crs->track_current_index + 1 != index_no &&
+		    !(crs->track_current_index < 0 && index_no <= 1)) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"Backward INDEX number in cue sheet file",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		crs->track_current_index = index_no;
 
-		if (index_no != 1) {
+		if (crs->current_file_ba < 0)
+			crs->current_file_ba = file_ba;
 
-			/* >>> what to do with index != 1 ? */;
-			/* >>> INDEX 00 defines start of a track pregap
-			       Pregap and postgap still has to be properly
-			       mapped onto track
-			 */;
+		/* Set index address relative to track source start */
+		ret = burn_track_set_index(crs->track, index_no,
+					file_ba - crs->current_file_ba, 0);
+		if (ret <= 0)
+			goto ex;
 
-
+		if (crs->track_has_source) {
 			ret = 1; goto ex;
 		}
 
@@ -1557,7 +1607,6 @@ overlapping_ba:;
 		if (crs->offst_source != NULL)
 			burn_source_free(crs->offst_source);
 		crs->offst_source = src;
-		crs->current_file_ba = file_ba;
 		crs->track_has_source = 1;
 
 	} else if (strcmp(cmd, "ISRC") == 0) {
@@ -1783,7 +1832,7 @@ cannot_open:;
 	/* Attach last track to session */
 	if (crs->track != NULL) {
 		/* Set track size up to end of file */
-		if (crs->current_file_ba < 0) {
+		if (crs->current_file_ba < 0 || crs->track_current_index < 1) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 		     "No INDEX 01 defined for last TRACK in cue sheet file",
@@ -1794,7 +1843,7 @@ cannot_open:;
 							crs->source_size) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-		"INDEX 01 time point exceeds size of FILE from cue sheet file",
+	"TRACK start time point exceeds size of FILE from cue sheet file",
 				0, 0);
 			ret = 0; goto ex;
 		}

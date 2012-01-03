@@ -1864,13 +1864,12 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     CD-TEXT according to the content of the file.
     For a description of CDRWIN file format see
       http://digitalx.org/cue-sheet/syntax/
->>> fully supported commands: CATALOG CDTEXTFILE FLAGS ISRC PERFORMER REM
+>>> fully supported commands: CATALOG CDTEXTFILE FLAGS INDEX ISRC PERFORMER REM
 >>>                           SONGWRITER TITLE
->>> partly supported commands: FILE INDEX TRACK 
+>>> partly supported commands: FILE TRACK 
 >>> supported FILE types: BINARY MOTOROLA
 >>> supported TRACK datatypes: AUDIO MODE1/2048
 >>> ignored commands: POSTGAP PREGAP
->>> ignored INDEX numbers: 00, 02 to 99
 >>> not allowed: mixing of ADUIO and MODE1/2048
 >>> not allowed: unsupported FILE types
 >>> not allowed: unsupported TRACK datatypes
@@ -2371,6 +2370,39 @@ int burn_track_set_isrc_string(struct burn_track *t, char isrc[13], int flag);
 	@param t The track to change
 */
 void burn_track_clear_isrc(struct burn_track *t);
+
+
+/* ts B20103 */
+/** Define an index start address within a track. The index numbers inside a
+    track have to form sequence starting at 0 or 1 with no gaps up to the
+    highest number used. They affect only writing of CD SAO sessions.
+    The first index start address of a track must be 0.
+    Blocks between index 0 and index 1 are considered to be located before the
+    track start as of the table-of-content.
+    @param t             The track to be manipulated
+    @param index_number  A number between 0 and 99
+    @param relative_lba  The start address relative to the start of the
+                         burn_source of the track. It will get mapped to the
+                         appropriate absolute block address.
+    @param flag          Bitfield for control purposes. Unused yet. Submit 0.
+    @return              > 0 indicates success, <= 0 means failure
+    @since 1.2.0
+*/
+int burn_track_set_index(struct burn_track *t, int index_number,
+                                        unsigned int relative_lba, int flag);
+
+/* ts B20103 */
+/** Remove all index start addresses and reset to the default indexing of
+    CD SAO sessions. This means index 0 of track 1 reaches from LBA -150
+    to LBA -1. Index 1 of track 1 reaches from LBA 0 to track end. Index 1
+    of track 2 follows immediately. The same happens for all further tracks
+    after the end of their predecessor.
+    @param t             The track to be manipulated
+    @param flag          Bitfield for control purposes. Unused yet. Submit 0.
+    @return  i           > 0 indicates success, <= 0 means failure
+    @since 1.2.0
+*/
+int burn_track_clear_indice(struct burn_track *t, int flag);
 
 
 /** Hide the first track in the "pre gap" of the disc

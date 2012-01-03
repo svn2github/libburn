@@ -301,6 +301,7 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
+#define Libburn_write_with_function_print_cuE
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -450,7 +451,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
-	int leadin_form, leadin_start;
+	int leadin_form, leadin_start, pregap;
 	unsigned char ctladr, scms;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
@@ -458,6 +459,13 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	struct burn_track **tar = session->track;
 	int ntr = session->tracks;
 	int rem = 0;
+
+#define Libburn_track_multi_indeX yes
+
+#ifdef Libburn_track_multi_indeX
+	int j;
+#endif
+
 
 
 	d = o->drive;
@@ -571,12 +579,14 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	e[2].control = e[1].control;
 	e[2].adr = 1;
 
-	/* ts A70121 : The pause before the first track is not a Pre-gap.
+	/* ts A70121 : The pause before the first track is not really Pre-gap.
 	   To count it as part 2 of a Pre-gap is a dirty hack. It also seems
 	   to have caused confusion in dealing with part 1 of an eventual
 	   real Pre-gap. mmc5r03c.pdf 6.33.3.2, 6.33.3.18 .
+	   ts B20103 : It is not really Pre-gap with audio tracks.
 	*/
 	tar[0]->pregap2 = 1;
+	pregap = 150;
 
 	pform = form;
 	for (i = 0; i < ntr; i++) {
@@ -593,19 +603,63 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 				goto failed;
 		}
 
+
+#ifdef Libburn_track_multi_indeX
+
+		for(j = 0; j < tar[i]->indices || j < 2; j++) {
+			if(tar[i]->index[j] == 0x7fffffff) {
+				if (j > 1)
+		break;
+				if (j == 0 && i > 0)
+		continue;
+				/* force existence of mandatory index */
+				tar[i]->index[j] = 0;
+			} else if (j == 0) {
+				tar[i]->index[j] = 0;
+			} else if (j == 1 && tar[i]->index[0] == 0x7fffffff) {
+				tar[i]->index[j] = 0;
+			}
+
+			if (j == 1) {
+				tar[i]->entry = &e[3 + i];
+				e[3 + i].point = i + 1;
+				burn_lba_to_msf(runtime, &m, &s, &f);
+				e[3 + i].pmin = m;
+				e[3 + i].psec = s;
+				e[3 + i].pframe = f;
+				e[3 + i].adr = 1;
+				e[3 + i].control = type_to_ctrl(tar[i]->mode);
+			}
+
+			/* >>> ??? else if j == 0 && mode change to -data :
+							Extended pregap */;
+
+			/* >>> ??? user defined pregap ? */;
+
+			/* >>> check index with track size */;
+
+			tar[i]->index[j] += runtime;
+			ret = add_cue(sheet, ctladr | 1, i + 1, j, form, scms,
+					tar[i]->index[j]);
+			if (ret <= 0)
+				goto failed;
+			runtime += pregap;
+			pregap = 0;
+		}
+
+#else /* Libburn_track_multi_indeX */
+
 		if (i == 0) {
 			ret = add_cue(sheet, ctladr | 1, 1, 0, form, 0,
 					runtime);
 			if (ret <= 0)
 				goto failed;
 			runtime += 150;
-		}
+		} else if (pform != form) {
 
 		/* ts A70121 : This seems to be thw wrong test. Correct would
 		   be to compare tar[]->mode or bit2 of ctladr.
 		*/ 
-
-		if (pform != form) {
 
 			ret = add_cue(sheet, ctladr | 1, i + 1, 0, form, scms,
 					 runtime);
@@ -652,6 +706,9 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 				runtime);
 		if (ret <= 0)
 			goto failed;
+
+#endif /* ! Libburn_track_multi_indeX */
+
 
 		/* ts A70125 : 
 		   Still not understanding the sense behind linking tracks,

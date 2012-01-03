@@ -37,8 +37,11 @@ struct burn_track
 	int refcnt;
 	struct burn_toc_entry *entry;
 	unsigned char indices;
-	/* lba address of the index */
-	unsigned int index[99];
+	/* lba address of the index. CD only. 0x7fffffff means undefined index.
+	   To be programmed relative to track source start before burning,
+           but to hold absolute addresses after burning or reading.
+	*/
+	int index[100];
 	/** number of 0 bytes to write before data */
 	int offset;
 	/** how much offset has been used */

@@ -592,6 +592,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020197 (FAILURE,HIGH) = Unsupported text input file feature
  0x00020198 (FAILURE,HIGH) = CD-TEXT pack file readability problem
  0x00020199 (SORRY,HIGH)   = Text input file reading aborted
+ 0x0002019a (SORRY,HIGH)   = Bad track index number
 
 
  libdax_audioxtr:
