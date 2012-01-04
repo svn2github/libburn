@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 03, 2012"
+.TH CDRSKIN 1 "Jan 04, 2012"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -614,6 +614,20 @@ The name of this cdrecord option stems from the "Immed" bit which can make some
 long running drive commands asynchronous and thus eases the load on some
 wiring hardware types. Regardless of option -immed, cdrskin uses asynchronous
 commands where possible and appropriate. 
+.TP
+.BI index= list
+Set a comma separated list of index start address numbers for the next track.
+This applies to CD SAO sessions only.
+.br
+The addresses count sectors from the start of the next track. The first number
+is for index 1 and must be 0. The following numbers have to be larger than
+their respective predecessors. Up to 99 numbers are allowed.
+.br
+Sector numbers are computed from Min:Sec:Frame addresses by
+.br
+ Sector = ((Min*60)+Sec)*75+Frame
+.br
+E.g.: "0,7512,20408" sets index 2 to 01:40:12 and index 3 to 04:32:08.
 .TP
 .BI -inq
 Print the identification of the drive and then exit.

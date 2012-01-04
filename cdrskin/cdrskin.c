@@ -871,6 +871,8 @@ struct CdrtracK {
                        */
  char isrc[13];
 
+ char *index_string;
+
  /** Eventually detected data image size */
  double data_image_size;
  char *iso_fs_descr;  /* eventually block 16 to 31 of input during detection */
@@ -955,6 +957,7 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->swap_audio_bytes= 0;
  o->cdxa_conversion= 0;
  o->isrc[0]= 0;
+ o->index_string= NULL;
  o->data_image_size= -1.0;
  o->iso_fs_descr= NULL;
  o->use_data_image_size= 0;
@@ -1017,6 +1020,8 @@ int Cdrtrack_destroy(struct CdrtracK **o, int flag)
    burn_track_free(track->libburn_track);
  if(track->iso_fs_descr!=NULL)
    free((char *) track->iso_fs_descr);
+ if(track->index_string != NULL)
+   free(track->index_string);
  free((char *) track);
  *o= NULL;
  return(1);
@@ -1621,6 +1626,46 @@ int Cdrtrack_fill_fifo(struct CdrtracK *track, int fifo_start_at, int flag)
 #endif /* ! Cdrskin_extra_leaN */
 
 
+int Cdrtrack_set_indice(struct CdrtracK *track, int flag)
+{
+ int idx= 1, adr, prev_adr, ret;
+ char *cpt, *ept;
+
+ if(track->index_string == NULL)
+   return(2);
+
+ for(cpt= track->index_string; ept != NULL; cpt= ept + 1) {
+     ept= strchr(cpt, ',');
+     if(ept != NULL)
+       *ept= 0;
+     adr= -1;
+     sscanf(cpt, "%d", &adr);
+     if(adr < 0) {
+       fprintf(stderr, "cdrskin: SORRY : Bad address number with index=\n");
+       return(0);
+     }
+     if(idx == 1 && adr != 0) {
+       fprintf(stderr,
+               "cdrskin: SORRY : First address number of index= is not 0\n");
+       return(0);
+     }
+     if(idx > 1 && adr < prev_adr) {
+       fprintf(stderr,
+               "cdrskin: SORRY : Backward address number with index=\n");
+       return(0);
+     }
+     ret= burn_track_set_index(track->libburn_track, idx, adr, 0);
+     if(ret <= 0)
+       return(ret);
+     prev_adr= adr;
+     if(ept != NULL)
+       *ept= ',';
+     idx++;
+ }
+
+ return(1);
+}     
+
 /** Create a corresponding libburn track object and add it to the libburn
     session. This may change the trackno index set by Cdrtrack_new().
 */
@@ -1641,6 +1686,8 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 
  track->trackno= trackno;
  tr= burn_track_create();
+ if(tr == NULL)
+   {ret= -1; goto ex;}
  track->libburn_track= tr;
  track->libburn_track_is_own= 1;
 
@@ -1735,6 +1782,10 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
    fprintf(stderr,"cdrskin: FATAL : libburn rejects data source object\n");
    {ret= 0; goto ex;}
  }
+ ret= Cdrtrack_set_indice(track, 0);
+ if(ret <= 0)
+   goto ex;
+
  burn_session_add_track(session,tr,BURN_POS_END);
  ret= 1;
 ex:
@@ -2916,6 +2967,8 @@ see_cdrskin_eng_html:;
      fprintf(stderr,
           "\tisrc=text\tSet the ISRC number for the next track to 'text'\n");
      fprintf(stderr,
+          "\tindex=list\tSet the index list for the next track to 'list'\n");
+     fprintf(stderr,
              "\t-text\t\tWrite CD-Text from information from *.cue files\n");
      fprintf(stderr,
              "\ttextfile=name\tSet the file with CD-Text data to 'name'\n");
@@ -3019,7 +3072,7 @@ set_severities:;
      int major, minor, micro;
 
      printf(
-"Cdrecord 2.01-Emulation Copyright (C) 2006-2011, see libburnia-project.org\n");
+"Cdrecord 2.01-Emulation Copyright (C) 2006-2012, see libburnia-project.org\n");
      if(o->fallback_program[0]) {
        char *hargv[2];
 
@@ -3365,6 +3418,8 @@ struct CdrskiN {
  char mcn[14];
  char next_isrc[13];
 
+ char *index_string;
+
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
  int track_counter;
@@ -3526,6 +3581,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->cdtext_test= 0;
  o->mcn[0]= 0;
  o->next_isrc[0]= 0;
+ o->index_string= NULL;
  o->track_modemods= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
@@ -3589,6 +3645,8 @@ int Cdrskin_destroy(struct CdrskiN **o, int flag)
    Cdrskin_release_drive(skin,0);
  for(i=0;i<skin->track_counter;i++)
    Cdrtrack_destroy(&(skin->tracklist[i]),0);
+ if(skin->index_string != NULL)
+   free(skin->index_string);
 
 #ifndef Cdrskin_extra_leaN
  Cdradrtrn_destroy(&(skin->adr_trn),0);
@@ -7312,7 +7370,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
  /* cdrecord 2.01 options which are not scheduled for implementation, yet */
  static char ignored_partial_options[][41]= {
    "timeout=", "debug=", "kdebug=", "kd=", "driver=", "ts=",
-   "pregap=", "defpregap=", "index=",
+   "pregap=", "defpregap=",
    "pktsize=",
    ""
  };
@@ -7832,6 +7890,20 @@ gracetime_equals:;
      skin->min_buffer_percent= 75;
      skin->max_buffer_percent= 95;
 
+   } else if(strncmp(argv[i],"-index=", 7) == 0) {
+     value_pt= argv[i] + 7;
+     goto set_index;
+   } else if(strncmp(argv[i],"index=", 6) == 0) {
+     value_pt= argv[i] + 6;
+set_index:;
+     if(skin->index_string != NULL)
+       free(skin->index_string);
+     skin->index_string= strdup(value_pt);
+     if(skin->index_string == NULL) {
+       fprintf(stderr, "cdrskin: FATAL : Out of memory\n");
+       return(-1);
+     }
+
    } else if(strncmp(argv[i], "input_sheet_v07t=", 17)==0) {
      if(skin->sheet_v07t_blocks >= 8) {
        fprintf(stderr,
@@ -8295,7 +8367,8 @@ track_too_large:;
      }
      if(skin->next_isrc[0])
        memcpy(skin->tracklist[skin->track_counter]->isrc, skin->next_isrc, 13);
-
+     skin->tracklist[skin->track_counter]->index_string= skin->index_string;
+     skin->index_string= NULL;
      skin->track_counter++;
      skin->use_data_image_size= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD) {
