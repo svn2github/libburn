@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -863,12 +863,34 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	d->erase(d, fast);
 	d->busy = BURN_DRIVE_ERASING;
 
+#ifdef Libburn_old_progress_looP
+
 	/* read the initial 0 stage */
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
 	while ((d->progress.sector = d->get_erase_progress(d)) > 0 ||
 		!d->test_unit_ready(d))
 		sleep(1);
+
+#else /* Libburn_old_progress_looP */
+
+	while (1) {
+		ret = d->get_erase_progress(d);
+		if (ret == -2 || ret > 0)
+	break;
+		sleep(1);
+	}
+	while (1) {
+		ret = d->get_erase_progress(d);
+		if(ret == -2)
+	break;
+		if (ret >= 0)
+			d->progress.sector = ret;
+		sleep(1);
+        }
+
+#endif /* ! Libburn_old_progress_looP */
+
 	d->progress.sector = 0x10000;
 
 	/* ts A61125 : update media state records */
@@ -913,6 +935,8 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 	if (ret <= 0)
 		d->cancel = 1;
 
+#ifdef Libburn_old_progress_looP
+
 	while (!d->test_unit_ready(d) && d->get_erase_progress(d) == 0)
 		sleep(1);
 	while ((pseudo_sector = d->get_erase_progress(d)) > 0 ||
@@ -920,6 +944,26 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 		d->progress.sector = pseudo_sector / stages;
 		sleep(1);
         }
+
+#else /* Libburn_old_progress_looP */
+
+	while (1) {
+		ret = d->get_erase_progress(d);
+		if (ret == -2 || ret > 0)
+	break;
+		sleep(1);
+	}
+	while (1) {
+		pseudo_sector = d->get_erase_progress(d);
+		if(pseudo_sector == -2)
+	break;
+		if (pseudo_sector >= 0)
+			d->progress.sector = pseudo_sector / stages;
+		sleep(1);
+        }
+
+#endif /* ! Libburn_old_progress_looP */
+
 	d->sync_cache(d);
 
 	if (size <= 0)

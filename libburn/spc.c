@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -102,7 +102,8 @@ int spc_decode_sense(unsigned char *sense, int senselen,
 }
 
 
-int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
+int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq,
+				int *progress)
 {
 	struct command *c;
 
@@ -115,8 +116,13 @@ int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
 	*key = *asc = *ascq = 0;
+	*progress = -1;
 	if (c->error) {
 		spc_decode_sense(c->sense, 0, key, asc, ascq);
+		if (c->sense[0] == 0x70 &&
+		    ((c->sense[2] & 0x0f) == 0 || (c->sense[2] & 0x0f) == 2) &&
+		    (c->sense[15] & 0x80))
+			*progress = (c->sense[16] << 8) + c->sense[17];
 		return (key == 0);
 	}
 	return 1;
@@ -125,9 +131,9 @@ int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq)
 
 int spc_test_unit_ready(struct burn_drive *d)
 {
-	int key,asc,ascq;
+	int key, asc, ascq, progress;
 
-	return spc_test_unit_ready_r(d, &key, &asc, &ascq);
+	return spc_test_unit_ready_r(d, &key, &asc, &ascq, &progress);
 }
 
 
@@ -141,7 +147,7 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 {
 	int i, ret = 1, key = 0, asc = 0, ascq = 0, clueless_start = 0;
 	static double tests_per_second = 2.0;
-	int sleep_usecs, loop_limit, clueless_timeout;
+	int sleep_usecs, loop_limit, clueless_timeout, progress;
 	char *msg = NULL;
 	unsigned char sense[14];
 
@@ -154,7 +160,7 @@ int spc_wait_unit_attention(struct burn_drive *d, int max_sec, char *cmd_text,
 		usleep(sleep_usecs);
 
 	for(i = !(flag & 1); i < loop_limit; i++) {
-		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq);
+		ret = spc_test_unit_ready_r(d, &key, &asc, &ascq, &progress);
 		if (ret > 0) /* ready */
 	break;
 		if (key!=0x2 || asc!=0x4) {
@@ -256,17 +262,38 @@ void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 	d->issue_command(d, c);
 }
 
+/* @return -2 = drive is ready , -1 = not ready, but no progress reported
+           >= 0 progress indication between 0 and 65535
+*/
 int spc_get_erase_progress(struct burn_drive *d)
 {
 	struct buffer *b = NULL;
-	int ret;
+	int ret, key, asc, ascq, progress;
 
 	if (mmc_function_spy(d, "get_erase_progress") <= 0)
 		{ret = 0; goto ex;}
 
+	/* ts B20104 :
+	   TEST UNIT READY seems to be more reliable than REQUEST SENSE.
+	   Nevertheless growisofs still uses the latter as fallback.
+	*/
+	ret = spc_test_unit_ready_r(d, &key, &asc, &ascq, &progress);
+	if (ret > 0)
+		{ret = -2; goto ex;}
+	if (progress >= 0)
+		{ret = progress; goto ex;}
+
+	/* Fallback to request sense */
 	BURN_ALLOC_MEM(b, struct buffer, 1);
 	spc_request_sense(d, b);
-	ret = (b->data[16] << 8) | b->data[17];
+
+	/* Now checking the the preconditions as of SPC-3 4.5.2.4.4 and 4.5.3
+	*/
+	ret = -1;
+	if (b->data[0] == 0x70 &&
+	    ((b->data[2] & 0x0f) == 0 || (b->data[2] & 0x0f) == 2) &&
+	    (b->data[15] & 0x80))
+		ret = (b->data[16] << 8) | b->data[17];
 ex:;
 	BURN_FREE_MEM(b);
 	return ret;
