@@ -1628,13 +1628,13 @@ int Cdrtrack_fill_fifo(struct CdrtracK *track, int fifo_start_at, int flag)
 
 int Cdrtrack_set_indice(struct CdrtracK *track, int flag)
 {
- int idx= 1, adr, prev_adr, ret;
+ int idx= 1, adr, prev_adr= -1, ret;
  char *cpt, *ept;
 
  if(track->index_string == NULL)
    return(2);
 
- for(cpt= track->index_string; ept != NULL; cpt= ept + 1) {
+ for(ept= cpt= track->index_string; ept != NULL; cpt= ept + 1) {
      ept= strchr(cpt, ',');
      if(ept != NULL)
        *ept= 0;
