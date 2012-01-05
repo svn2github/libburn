@@ -10589,20 +10589,262 @@ doc/cdtext.txt
 doc/cookbook.txt
 New option input_sheet_v07t=
 
+14 Dec 2011  [4496]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.1.9 - 2011.12.14.132711
+* Bug fix: Solaris adapter mishandled write commands which failed on first try
+* Bug fix: Interrupting libburn while drive tray is loading led to endless loop
+* New API calls burn_disc_get_leadin_text(), burn_write_opts_set_leadin_text()
+* New API calls for composing CD-TEXT
+* Implemented cdrskin option textfile=
+* Implemented cdrskin option combination -vv -toc for cdtext.dat production
+* New cdrskin option input_sheet_v07t=
+
+
+14 Dec 2011  [4497]
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+Improved cdrskin man page and web page
+
+15 Dec 2011  [4498]
+Makefile.am
+Included doc/cdtext.txt in libburn tarball
+
+2011.12.15.104259  [4499]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Refusing to burn CD-TEXT if non-audio tracks are present
+
+2011.12.15.154818  [4502]
+Makefile.am
+libburn/libburn.h
+libburn/libdax_msgs.h
++ libburn/cdtext.c
+libburn/libburn.ver
+doc/cdtext.txt
+New API call burn_session_input_sheet_v07t()
+
+2011.12.15.155642  [4503]
+cdrskin/cdrskin.c
+cdrskin/compile_cdrskin.sh
+Moved reading of Sony Input Sheet v07 from cdrskin to libburn
+
+2011.12.15.161349  [4504]
+libburn/libburn.h
+Documented new API call
+
+2011.12.15.174914  [4505]
+libburn/cdtext.c
+libburn/write.c
+Moved burn_cdtext_from_session() from write.c to cdtext.c
+
+2011.12.16.105329  [4506]
+libburn/util.c
+libburn/util.h
+libburn/cdtext.c
+Moved a function from cdtext.c to util.c
+
+2011.12.16.111300  [4507]
+libburn/util.c
+libburn/util.h
+libburn/cdtext.c
+Moved a function from cdtext.c to util.c
+
+2011.12.18.161107  [4508]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New options --cdtext_dummy and --cdtext_verbose
+
+2011.12.22.112138  [4509]
+cdrskin/cdrskin.c
+Changed libburn print threshold of cdrskin -v to severity NOTE
+
+
+2011.12.25.103852  [4510]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/structure.c
+libburn/file.c
+libburn/source.c
+libburn/cdtext.c
+libburn/libburn.ver
+New API calls burn_cdtext_from_packfile() and burn_session_by_cue_file()
+
+2011.12.25.105032  [4511]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Partly implemented options cuefile= and -text
+
+2011.12.25.110440  [4512]
+libburn/structure.c
+libburn/cdtext.c
+Reacted on compiler warnings about uninitialized variables
+
+26 Dec 2011  [4514]
+doc/cdtext.txt
+Updated doc/cdtext.txt
+
+2011.12.27.115645  [4515]
+libburn/libburn.h
+libburn/structure.h
+libburn/structure.c
+libburn/libburn.ver
+New API call burn_track_set_isrc_string()
+
+2011.12.27.133733  [4516]
+libburn/write.c
+libburn/cdtext.c
+doc/cookbook.txt
+doc/cdtext.txt
+cdrskin/cdrskin.1
+Writing CATALOG and ISRC into Q sub-channel of CD SAO sessions
+
+2011.12.28.104044  [4517]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c      
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+doc/cookbook.txt
+doc/cdtext.txt
+Transmitting CATALOG by mode page 5. ISRC too, if TAO.
+
+2011.12.28.104536  [4518]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented options mcn= and isrc=
+
+2011.12.28.152153  [4519]
+libburn/transport.h
+libburn/write.c
+libburn/mmc.h
+libburn/mmc.c
+Improved reaction on failure of SEND CUE SHEET
+
+2011.12.30.142742  [4521]
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.c
+Reduced waiting time between retries of WRITE commands
+
+2011.12.30.164755  [4522]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Coordinated option cuefile= with option input_sheet_v07t=
+
+2011.12.30.174416  [4523]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Corrected precedence of media catalog and ISRC options
+
+2011.12.31.120007  [4524]
+libburn/libburn.h
+libburn/write.c
+doc/cookbook.txt
+New track mode modifier BURN_SCMS
+
+2012.01.01.124121  [4525]
+libburn/write.c
+Corrected CTL of lead-in CUE SHEET entry
+
+2012.01.01.124330  [4526]
+libburn/mmc.c
+doc/cookbook.txt
+Writing SCMS into mode page 5 if TAO
+
+2012.01.01.124424  [4627]
+libburn/drive.c
+Fixed a wrong assumption about track.mode
+
+2012.01.01.124645  [4628]
+libburn/libburn.h
+libburn/structure.c
+doc/cdtext.txt
+Interpreting CDRWIN command FLAGS
+
+2012.01.01.125539  [4529]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented options -scms -copy -nocopy -preemp -nopreemp
+
+2012.01.01.125539  [4530]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin options --four_channel --two_channel
+
+2012.01.01.173446  [4531]
+libburn/structure.c
+doc/cdtext.txt
+cdrskin/cdrskin.1
+Implemented cue sheet file commands ARRANGER, COMPOSER, MESSAGE
+
+2012.01.02.143655  [4532]
+libburn/libdax_msgs.h
+libburn/structure.c
+Reporting line number in case of cue sheet file problems
+
+2012.01.02.164110  [4533]
+libburn/write.c
+Changed debug messages about CUE SHEET MSF from hex to decimal
+
+2012.01.03.194322  [4534]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/structure.h
+libburn/structure.c
+libburn/write.c
+doc/cdtext.txt
+cdrskin/cdrskin.1
+libburn/libburn.ver
+New API calls burn_track_set_index(), burn_track_clear_indice()
+
+2012.01.04.131808  [4535]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Implemented option index=
+
+2012.01.05.115516  [4536]
+libburn/drive.c
+libburn/write.c
+libburn/spc.h
+libburn/spc.c
+Bug fix: Progress report with blanking and formatting could be bogus
+
+2012.01.05.120246  [4537]
+cdrskin/cdrskin.c
+Reacted on compiler warnings about rev 4535
+
+  []
+ChangeLog
+cdrskin/changelog.txt
+cdrskin/cdrskin_eng.html
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.1.9 - 
+* New API call burn_session_input_sheet_v07t()
+* New API calls burn_cdtext_from_packfile() and burn_session_by_cue_file()
+* New API call burn_track_set_isrc_string()
+* New API calls burn_track_set_index(), burn_track_clear_indice()
+* New cdrskin options --cdtext_dummy and --cdtext_verbose
+* New cdrskin options --four_channel --two_channel
+* Implemented cdrskin options mcn= and isrc=
+* Implemented cdrskin options -scms -copy -nocopy -preemp -nopreemp
+* Implemented cdrskin option index=
+* Partly implemented cdrskin options cuefile= and -text
+* Bug fix: Progress report with blanking and formatting could be bogus
+
+
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.1.9 - 
-* Bug fix: Solaris adapter mishandled write commands which failed on first try
-* Bug fix: Interrupting libburn while drive tray is loading led to endless loop
-* New API call burn_disc_get_leadin_text()
-* New API call burn_write_opts_set_leadin_text()
-* New API calls for composing CD-TEXT
-* Implemented cdrskin option textfile=
-* New cdrskin option input_sheet_v07t=
-
 
   []
 ChangeLog
@@ -10622,20 +10864,23 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
+
 CD-TEXT:
   - with SAO
     - libburn:
-      - API to attach CD-TEXT items to session and tracks
-        - optionally genererate TOC pack type 0x88 with A[123] and track POINTS
-    - cdrskin:
-      - option for reading Sony Textfile format ? Own format ?
-      - man cdrskin: mention -force with textfile=
+      - optionally genererate TOC pack type 0x88 with A[123] and track POINTS
   - .cue file
+    - PREGAP, POSTGAP
+    - TRACK start != 01
+    - extraction of WAVE files
   - .inf files
+  - enforcing constraints:
+    - is everything safe against non-audio tracks ?
+    - how to react on tracks of less than 600 sectors ?
+    - INDEX sequence in .cue files
+    - examine how drives react on wodim's cue sheet of INDEX 00 == INDEX 01
+    - are index numbers other than 1 suitable for non-audio tracks ?
 
-
-??? Can the command repetition delay be to blame for low USB speed ?
-    scsi_eval_cmd_outcome()
 
 
 qemu:

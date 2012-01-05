@@ -2,11 +2,23 @@ SVN trunk (to become libburn-1.2.0.tar.gz or higher)
 ===============================================================================
 * Bug fix: Solaris adapter mishandled write commands which failed on first try
 * Bug fix: Interrupting libburn while drive tray is loading led to endless loop
+* Bug fix: Progress report with blanking and formatting could be bogus
 * New API call burn_disc_get_leadin_text()
 * New API call burn_write_opts_set_leadin_text()
 * New API calls for composing CD-TEXT
+* New API call burn_session_input_sheet_v07t()
+* New API calls burn_cdtext_from_packfile() and burn_session_by_cue_file()
+* New API call burn_track_set_isrc_string()
+* New API calls burn_track_set_index(), burn_track_clear_indice()
 * Implemented cdrskin option textfile=
-* New cdrskin option input_sheet_v07t=
+* Implemented cdrskin option combination -vv -toc for cdtext.dat production
+* Implemented cdrskin options mcn= and isrc=
+* Implemented cdrskin options -scms -copy -nocopy -preemp -nopreemp
+* Implemented cdrskin option index=
+* Partly implemented cdrskin options cuefile= and -text
+* New cdrskin option input_sheet_v07t= for CD-TEXT definition
+* New cdrskin options --cdtext_dummy and --cdtext_verbose
+* New cdrskin options --four_channel --two_channel
 
 
 libburn-1.1.8.tar.gz Mon Nov 21 2011
