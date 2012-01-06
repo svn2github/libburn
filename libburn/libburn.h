@@ -1866,16 +1866,14 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
       http://digitalx.org/cue-sheet/syntax/
 >>> fully supported commands: CATALOG CDTEXTFILE FLAGS INDEX ISRC PERFORMER REM
 >>>                           SONGWRITER TITLE
+>>> supported commands introduced by cdrecord: ARRANGER COMPOSER MESSAGE
 >>> partly supported commands: FILE TRACK 
->>> supported FILE types: BINARY MOTOROLA
+>>> supported FILE types: BINARY MOTOROLA WAVE
 >>> supported TRACK datatypes: AUDIO MODE1/2048
 >>> ignored commands: POSTGAP PREGAP
 >>> not allowed: mixing of ADUIO and MODE1/2048
 >>> not allowed: unsupported FILE types
 >>> not allowed: unsupported TRACK datatypes
->>> 
->>> man cdrecord documents further commands:
->>>   ARRANGER COMPOSER MESSAGE
 >>> 
     @param session     Session where to attach tracks. It must not yet have
                        tracks or else this call will fail.
@@ -3785,7 +3783,8 @@ int libdax_audioxtr_new(struct libdax_audioxtr **xtr, char *path, int flag);
     @param num_channels     e.g. 1=mono, 2=stereo, etc
     @param sample_rate      e.g. 11025, 44100
     @param bits_per_sample  e.g. 8= 8 bits per sample, 16= 16 bits ...
-    @param msb_first Byte order of samples: 0=Intel 1=Motorola
+    @param msb_first Byte order of samples: 0= Intel    = Little Endian
+                                            1= Motorola = Big Endian
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return >0 success, <=0 failure
     @since 0.2.4

@@ -1277,6 +1277,70 @@ ex:
 }
 
 
+/* @param flag    bit0-7: desired type : 0=any , 1=.wav
+*/
+static int cue_open_audioxtr(char *path, struct burn_cue_file_cursor *crs,
+				int *fd, int flag)
+{
+	struct libdax_audioxtr *xtr= NULL;
+	char *fmt, *fmt_info;
+	int ret, num_channels, sample_rate, bits_per_sample, msb_first;
+	char *msg = NULL;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+
+	/* >>> obtain fd by libdax_audioxtr */;
+	ret= libdax_audioxtr_new(&xtr, path, 0);
+	if (ret <= 0)
+		return ret;
+	libdax_audioxtr_get_id(xtr, &fmt, &fmt_info, &num_channels,
+		 		&sample_rate, &bits_per_sample, &msb_first, 0);
+	if ((flag & 255) == 1) {
+		if (strcmp(fmt, ".wav") != 0) {
+			sprintf(msg,
+		       "In cue sheet: Not recognized as WAVE : FILE '%.4000s'",
+				path);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+			ret = 0; goto ex;
+		}
+	}
+	ret = libdax_audioxtr_get_size(xtr, &(crs->source_size), 0);
+	if (ret <= 0) {
+		sprintf(msg,
+		     "In cue sheet: Cannot get payload size of FILE '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	ret = libdax_audioxtr_detach_fd(xtr, fd, 0);
+	if (ret <= 0) {
+		sprintf(msg,
+	  "In cue sheet: Cannot represent payload as plain fd: FILE '%.4000s'",
+			path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	crs->swap_audio_bytes = (msb_first == 1);
+
+	ret = 1;
+ex:
+	if (xtr != NULL)
+		libdax_audioxtr_destroy(&xtr, 0);
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+
+/* @param flag    bit0-7: desired type : 0=any , 1=.wav
+                  bit8= open by libdax_audioxtr functions
+                
+*/
 static int cue_create_file_source(char *path, struct burn_cue_file_cursor *crs,
 								int flag)
 {
@@ -1285,13 +1349,21 @@ static int cue_create_file_source(char *path, struct burn_cue_file_cursor *crs,
 
 	BURN_ALLOC_MEM(msg, char, 4096);
 
-	fd = open(path, O_RDONLY);
-	if (fd == -1) {
-		sprintf(msg, "In cue sheet: Cannot open FILE '%.4000s'", path);
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
+	if (flag & 256) {
+		ret = cue_open_audioxtr(path, crs, &fd, flag & 255);
+		if (ret <= 0)
+			goto ex;
+	} else {
+		fd = open(path, O_RDONLY);
+		if (fd == -1) {
+			sprintf(msg,
+				"In cue sheet: Cannot open FILE '%.4000s'",
+				path);
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020193,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 				burn_printify(msg), errno, 0);
-		ret = 0; goto ex;
+			ret = 0; goto ex;
+		}
 	}
 	crs->file_source = burn_fd_source_new(fd, -1, crs->source_size);
 	if (crs->file_source == NULL) {
@@ -1309,7 +1381,7 @@ static int cue_interpret_line(struct burn_session *session, char *line,
 				struct burn_cue_file_cursor *crs, int flag)
 {
 	int ret, mode, index_no, minute, second, frame, file_ba, chunks;
-	int block_size, step;
+	int block_size, step, audio_xtr = 0;
 	off_t size;
 	char *cmd, *apt, *msg = NULL, msf[3], *msf_pt, *cpt, *filetype;
 	struct burn_source *src, *inp_src;
@@ -1399,10 +1471,8 @@ out_of_mem:;
 			crs->swap_audio_bytes = 0;
 		} else if (strcmp(filetype, "MOTOROLA") == 0) {
 			crs->swap_audio_bytes = 1;
-		} else if (strcmp(filetype, "WAVE") == 0     && 0    ) {
-
-			/* >>> Use libdax_audioxtr_* functions to extract */;
-
+		} else if (strcmp(filetype, "WAVE") == 0) {
+			audio_xtr = 0x101;
 		} else {
 			sprintf(msg,
 			  "In cue sheet file: Unsupported FILE type '%.4000s'",
@@ -1436,7 +1506,7 @@ not_usable_file:;
 		crs->source_file = strdup(apt);
 		if (crs->source_file == NULL)
 			goto out_of_mem;
-		ret = cue_create_file_source(apt, crs, 0);
+		ret = cue_create_file_source(apt, crs, audio_xtr);
 		if (ret <= 0)
 			goto ex;
 
