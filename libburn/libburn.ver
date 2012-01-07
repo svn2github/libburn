@@ -129,6 +129,7 @@ burn_session_input_sheet_v07t;
 burn_session_remove_track;
 burn_session_set_cdtext;
 burn_session_set_cdtext_par;
+burn_session_set_start_tno;
 burn_set_messenger;
 burn_set_scsi_logging;
 burn_set_signal_handling;

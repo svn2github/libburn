@@ -1932,6 +1932,22 @@ int burn_session_add_track(struct burn_session *s, struct burn_track *t,
 int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
 
 
+/* ts B20107 */
+/** Set the number which shall be written as CD track number with the first
+    track of the session. The following tracks will then get written with
+    consequtive CD track numbers. The resulting number of the last track
+    must not exceed 99. The lowest possible start number is 1, which is also
+    the default. This setting applies only to CD SAO writing.
+    @param session   The session to be manipulated
+    @param tno       A number between 1 and 99
+    @param flag      Bitfield for control purposes. Unused yet. Submit 0.
+    @return          > 0 indicates success, <= 0 indicates failure
+    @since 1.2.0
+*/
+int burn_session_set_start_tno(struct burn_session *session, int tno,
+                               int flag);
+
+
 /* ts B11206 */
 /** Set the Character Codes, the Copyright bytes, and the Language Codes
     for CD-TEXT blocks 0 to 7. They will be used in the block summaries

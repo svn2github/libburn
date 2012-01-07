@@ -4020,7 +4020,7 @@ int mmc_get_write_performance(struct burn_drive *d)
          is the eventual duty of the caller.
 */
 int mmc_compose_mode_page_5(struct burn_drive *d, struct burn_session *s,
-				int tno, const struct burn_write_opts *o,
+				int tnum, const struct burn_write_opts *o,
 				unsigned char *pd)
 {
 	unsigned char *catalog = NULL;
@@ -4154,9 +4154,9 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 		/* SCMS at byte 3 bit 4 */
 		isrc_text[0] = 0;
 		if (s != NULL && o->write_type == BURN_WRITE_TAO) {
-			if (tno >= 1 && tno <= s->tracks) {
-				if (s->track[tno - 1]->isrc.has_isrc) {
-					isrc = &(s->track[tno - 1]->isrc);
+			if (tnum >= 0 && tnum < s->tracks) {
+				if (s->track[tnum]->isrc.has_isrc) {
+					isrc = &(s->track[tnum]->isrc);
 					isrc_text[0] = isrc->country[0];
 					isrc_text[1] = isrc->country[1];
 					isrc_text[2] = isrc->owner[0];
@@ -4166,8 +4166,8 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 						(unsigned int) isrc->year,
 						isrc->serial);
 				}
-				if ((s->track[tno - 1]->mode & BURN_SCMS) &&
-				    !(s->track[tno - 1]->mode & BURN_COPY))
+				if ((s->track[tnum]->mode & BURN_SCMS) &&
+				    !(s->track[tnum]->mode & BURN_COPY))
 					pd[3] |= 0x10;
 			}
 		}

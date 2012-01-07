@@ -287,8 +287,7 @@ int spc_get_erase_progress(struct burn_drive *d)
 	BURN_ALLOC_MEM(b, struct buffer, 1);
 	spc_request_sense(d, b);
 
-	/* Now checking the the preconditions as of SPC-3 4.5.2.4.4 and 4.5.3
-	*/
+	/* Checking the preconditions as of SPC-3 4.5.2.4.4 and 4.5.3 */
 	ret = -1;
 	if (b->data[0] == 0x70 &&
 	    ((b->data[2] & 0x0f) == 0 || (b->data[2] & 0x0f) == 2) &&
@@ -749,7 +748,7 @@ Write Parameters Mode Page (05h) is MMC (Table 108 in MMC-1).
 Thus the filling of the mode page is done by mmc_compose_mode_page_5().
 */
 void spc_select_write_params(struct burn_drive *d, struct burn_session *s,
-			     int tno, const struct burn_write_opts *o)
+			     int tnum, const struct burn_write_opts *o)
 {
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
@@ -806,7 +805,7 @@ void spc_select_write_params(struct burn_drive *d, struct burn_session *s,
 	c->page->bytes = alloc_len;
 
 	/* ts A61229 */
-	if (mmc_compose_mode_page_5(d, s, tno, o, c->page->data + 8) <= 0)
+	if (mmc_compose_mode_page_5(d, s, tnum, o, c->page->data + 8) <= 0)
 		goto ex;
 
 	c->dir = TO_DRIVE;

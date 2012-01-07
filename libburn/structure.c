@@ -88,6 +88,8 @@ struct burn_session *burn_session_create(void)
 	s = calloc(1, sizeof(struct burn_session));
 	if (s == NULL) /* ts A70825 */
 		return NULL;
+	s->firsttrack = 1;
+	s->lasttrack = 0;
 	s->refcnt = 1;
 	s->tracks = 0;
 	s->track = NULL;
@@ -759,6 +761,27 @@ failure:
 ex:;
 	BURN_FREE_MEM(msg_data);
 	return ret;
+}
+
+
+/* ts B20107 API */
+int burn_session_set_start_tno(struct burn_session *session, int tno, int flag)
+{
+	if (tno < 1 || tno > 99) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019b,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"CD start track number exceeds range of 1 to 99",
+			0, 0);
+		return 0;
+	}
+	if (tno + session->tracks - 1 > 99) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019b,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"CD track number exceeds 99", 0, 0);
+		return 0;
+	}
+	session->firsttrack = tno;
+	return 1;
 }
 
 

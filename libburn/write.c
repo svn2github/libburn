@@ -556,6 +556,13 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		goto failed;
 		*/
 	}
+	if (session->firsttrack + ntr - 1 > 99) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019b,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"CD track number exceeds 99", 0, 0);
+		goto failed;
+	}
+	session->lasttrack = session->firsttrack + ntr - 1;
 
 	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
 	e = d->toc_entry;
@@ -564,11 +571,11 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		e[0].control = TOC_CONTROL_AUDIO;
 	else
 		e[0].control = TOC_CONTROL_DATA;
-	e[0].pmin = 1;
+	e[0].pmin = session->firsttrack;
 	e[0].psec = o->format;
 	e[0].adr = 1;
 	e[1].point = 0xA1;
-	e[1].pmin = ntr;
+	e[1].pmin = session->lasttrack;
 	e[1].adr = 1;
 	if (tar[ntr - 1]->mode & BURN_AUDIO)
 		e[1].control = TOC_CONTROL_AUDIO;
@@ -596,8 +603,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			scms = 0; 
 
 		if (tar[i]->isrc.has_isrc) {
-			ret = add_isrc_cue(sheet, ctladr, i + 1,
-							&(tar[i]->isrc));
+			ret = add_isrc_cue(sheet, ctladr,
+				i + session->firsttrack, &(tar[i]->isrc));
 			if (ret <= 0)
 				goto failed;
 		}
@@ -621,7 +628,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
 			if (j == 1) {
 				tar[i]->entry = &e[3 + i];
-				e[3 + i].point = i + 1;
+				e[3 + i].point = i + session->firsttrack;
 				burn_lba_to_msf(runtime, &m, &s, &f);
 				e[3 + i].pmin = m;
 				e[3 + i].psec = s;
@@ -638,7 +645,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			/* >>> check index with track size */;
 
 			tar[i]->index[j] += runtime;
-			ret = add_cue(sheet, ctladr | 1, i + 1, j, form, scms,
+			ret = add_cue(sheet, ctladr | 1,
+					i + session->firsttrack, j, form, scms,
 					tar[i]->index[j]);
 			if (ret <= 0)
 				goto failed;
@@ -649,8 +657,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 #else /* Libburn_track_multi_indeX */
 
 		if (i == 0) {
-			ret = add_cue(sheet, ctladr | 1, 1, 0, form, 0,
-					runtime);
+			ret = add_cue(sheet, ctladr | 1, session->firsttrack,
+					0, form, 0, runtime);
 			if (ret <= 0)
 				goto failed;
 			runtime += 150;
@@ -660,8 +668,9 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		   be to compare tar[]->mode or bit2 of ctladr.
 		*/ 
 
-			ret = add_cue(sheet, ctladr | 1, i + 1, 0, form, scms,
-					 runtime);
+			ret = add_cue(sheet, ctladr | 1,
+					i + session->firsttrack, 0, form, scms,
+					runtime);
 			if (ret <= 0)
 				goto failed;
 
@@ -693,7 +702,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 /* XXX HERE IS WHERE WE DO INDICES IN THE CUE SHEET */
 /* XXX and we should make sure the gaps conform to ecma-130... */
 		tar[i]->entry = &e[3 + i];
-		e[3 + i].point = i + 1;
+		e[3 + i].point = i + session->firsttrack;
 		burn_lba_to_msf(runtime, &m, &s, &f);
 		e[3 + i].pmin = m;
 		e[3 + i].psec = s;
@@ -701,8 +710,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		e[3 + i].adr = 1;
 		e[3 + i].control = type_to_ctrl(tar[i]->mode);
 
-		ret = add_cue(sheet, ctladr | 1, i + 1, 1, form, scms,
-				runtime);
+		ret = add_cue(sheet, ctladr | 1, i + session->firsttrack,
+				1, form, scms, runtime);
 		if (ret <= 0)
 			goto failed;
 
@@ -1084,7 +1093,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 					{ ret = 0; goto ex; }
 	} else {
 		o->control = t->entry->control;
-		d->send_write_parameters(d, s, tnum + 1, o);
+		d->send_write_parameters(d, s, tnum, o);
 
 		/* ts A61103 */
 		ret = d->get_nwa(d, -1, &lba, &nwa);
@@ -1425,7 +1434,7 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 	off_t size;
 
 	BURN_ALLOC_MEM(msg, char, 160);
-	d->send_write_parameters(d, NULL, 0, o);
+	d->send_write_parameters(d, NULL, -1, o);
 	ret = d->get_nwa(d, -1, &lba, &nwa);
 	sprintf(msg, 
 		"DVD pre-track %2.2d : get_nwa(%d), ret= %d , d->nwa= %d",
@@ -2096,7 +2105,7 @@ int burn_disc_setup_dvd_minus_rw(struct burn_write_opts *o,
 	5.4.14 finally states that profile 0013h includes feature
 	002Ch rather than 0026h.
 		
-		d->send_write_parameters(d, NULL, 0, o);
+		d->send_write_parameters(d, NULL, -1, o);
 	*/
 
 	d->busy = BURN_DRIVE_FORMATTING;
@@ -2852,7 +2861,7 @@ return crap.  so we send the command, then ignore the result.
 			s = disc->session[0];
 		else
 			s = NULL;
-		d->send_write_parameters(d, s, 0, o);
+		d->send_write_parameters(d, s, -1, o);
 
 		ret = d->get_nwa(d, -1, &lba, &nwa);
 		sprintf(msg,
@@ -3174,7 +3183,7 @@ int burn_disc_close_damaged(struct burn_write_opts *o, int flag)
 		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
 
 		/* Send mode page 5 */;
-		d->send_write_parameters(d, NULL, 0, o);
+		d->send_write_parameters(d, NULL, -1, o);
 
 		ret = burn_write_close_session(o);
 		if (ret <= 0)
@@ -3185,7 +3194,7 @@ int burn_disc_close_damaged(struct burn_write_opts *o, int flag)
 		o->write_type = BURN_WRITE_TAO; /* no action without TAO */
 
 		/* Send mode page 5 */;
-		d->send_write_parameters(d, NULL, 0, o);
+		d->send_write_parameters(d, NULL, -1, o);
 
 		ret = burn_disc_close_track_dvd_minus_r(o, 0);
 		if (ret <= 0)

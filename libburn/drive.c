@@ -340,7 +340,7 @@ int burn_drive_send_default_page_05(struct burn_drive *d, int flag)
 	else
 		burn_write_opts_set_write_type(opts,
 			BURN_WRITE_SAO, BURN_BLOCK_SAO);
-	d->send_write_parameters(d, NULL, 0, opts);
+	d->send_write_parameters(d, NULL, -1, opts);
 	burn_write_opts_free(opts);
 	d->sent_default_page_05 = 1;
 	return 1;
@@ -2513,7 +2513,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 	if (d->drive_role != 1)
 		return 0;
 	if (o != NULL)
-		d->send_write_parameters(d, NULL, 0, o);
+		d->send_write_parameters(d, NULL, -1, o);
 	ret = d->get_nwa(d, trackno, lba, nwa);
 	return ret;
 }
@@ -2566,7 +2566,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
 			  (off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
 	} else {
 		if (o != NULL)
-			d->send_write_parameters(d, NULL, 0, o);
+			d->send_write_parameters(d, NULL, -1, o);
 		d->get_nwa(d, -1, &lba, &nwa);
 	}
 	if (o != NULL) {
