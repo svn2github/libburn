@@ -5861,7 +5861,7 @@ int Cdrskin__libburn_fifo_status(struct burn_source *current_fifo,
                 bit0= report in growisofs style rather than cdrecord style
     @return <=0 error, 1 seems to be writing payload, 2 doing something else 
 */
-int Cdrskin_burn_pacifier(struct CdrskiN *skin,
+int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
                           enum burn_drive_status drive_status,
                           struct burn_progress *p,
                           double start_time, double *last_time,
@@ -5960,7 +5960,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin,
    if(skin->verbosity>=Cdrskin_verbose_progresS)
      printf("\n");
    printf("%sTrack %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
-          debug_mark,old_track_idx+1,fixed_size,fixed_size+padding,
+          debug_mark, old_track_idx + start_tno, fixed_size,fixed_size+padding,
           (fixed_size+padding)/sector_size);
  }
 
@@ -6131,8 +6131,8 @@ thank_you_for_patience:;
        *min_buffer_fill= buffer_fill;
 
      printf("\r%sTrack %-2.2d: %s MB written %s[buf %3d%%]  %4.1fx.",
-            debug_mark,skin->supposed_track_idx+1,mb_text,fifo_text,
-            buffer_fill,measured_speed/speed_factor);
+            debug_mark, skin->supposed_track_idx + start_tno, mb_text,
+            fifo_text, buffer_fill,measured_speed/speed_factor);
      fflush(stdout);
    }
    if(skin->is_writing==0) {
@@ -6156,7 +6156,8 @@ thank_you_for_patience:;
    skin->is_writing= 1;
  }
  printf("\rTrack %-2.2d: %3d MB written ",
-        skin->supposed_track_idx+1,(int) (written_total_bytes/1024.0/1024.0));
+        skin->supposed_track_idx + start_tno,
+        (int) (written_total_bytes/1024.0/1024.0));
  fflush(stdout);
  if(skin->is_writing==0)
    printf("\n");
@@ -6265,23 +6266,25 @@ report_failure:;
 
 #ifndef Cdrskin_extra_leaN
 
-int Cdrskin_announce_tracks(struct CdrskiN *skin, int flag)
+int Cdrskin_announce_tracks(struct CdrskiN *skin, int start_tno, int flag)
 {
  int i,mb,use_data_image_size;
  double size,padding,sector_size= 2048.0;
  double sectors;
 
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
+   if(start_tno < 1)
+     start_tno= 1;
    for(i=0;i<skin->track_counter;i++) {
      Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                        &use_data_image_size,0);
      if(size<=0) {
        printf("Track %-2.2d: %s unknown length",
-              i+1,(sector_size==2048?"data ":"audio"));
+              i + start_tno, (sector_size==2048?"data ":"audio"));
      } else {
        mb= size/1024.0/1024.0;
        printf("Track %-2.2d: %s %4d MB        ",
-              i+1,(sector_size==2048?"data ":"audio"),mb);
+              i + start_tno, (sector_size==2048?"data ":"audio"), mb);
      }
      if(padding>0)
        printf(" padsize:  %.f KB\n",padding/1024.0);
@@ -6613,7 +6616,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  struct burn_progress p;
  struct burn_drive *drive;
  int ret,loop_counter= 0,max_track= -1,i,hflag,nwa,num, wrote_well= 2;
- int fifo_disabled= 0, min_buffer_fill= 101, length;
+ int fifo_disabled= 0, min_buffer_fill= 101, length, start_tno= 1;
  int use_data_image_size, needs_early_fifo_fill= 0,iso_size= -1, non_audio= 0;
  double start_time,last_time;
  double total_count= 0.0,last_count= 0.0,size,padding,sector_size= 2048.0;
@@ -6916,7 +6919,7 @@ burn_failed:;
  }
 
 #ifndef Cdrskin_extra_leaN
- Cdrskin_announce_tracks(skin,0);
+ Cdrskin_announce_tracks(skin, burn_session_get_start_tno(session, 0), 0);
 #endif
 
  if(skin->tell_media_space || skin->track_counter <= 0) {
@@ -6966,6 +6969,7 @@ fifo_filling_failed:;
 
 #endif /* ! Cdrskin_extra_leaN */
 
+ start_tno = burn_session_get_start_tno(session, 0);
  if(skin->verbosity>=Cdrskin_verbose_progresS && nwa>=0) {
    printf("Starting new track at sector: %d\n",nwa);
    fflush(stdout);
@@ -6995,7 +6999,8 @@ fifo_filling_failed:;
    /* >>> how do i learn about success or failure ? */
 
    if(loop_counter>0 || Cdrskin__is_aborting(0))
-     Cdrskin_burn_pacifier(skin,drive_status,&p,start_time,&last_time,
+     Cdrskin_burn_pacifier(skin, start_tno,
+                           drive_status,&p,start_time,&last_time,
                            &total_count,&last_count,&min_buffer_fill,0);
 
    if(max_track<skin->supposed_track_idx)
@@ -7080,13 +7085,15 @@ fifo_filling_failed:;
      wrote_well= 0;
  }
  if(max_track<0) {
-   printf("Track 01: Total bytes read/written: %.f/%.f (%.f sectors).\n",
-          total_count,total_count,total_count/sector_size);
+   printf("Track %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
+          start_tno, total_count, total_count, total_count / sector_size);
  } else {
    Cdrtrack_get_size(skin->tracklist[max_track],&size,&padding,&sector_size,
                      &use_data_image_size,1);
+   if (start_tno <= 0)
+     start_tno = 1;
    printf("Track %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
-         max_track+1,size,size+padding,(size+padding)/sector_size);
+         max_track + start_tno, size,size+padding,(size+padding)/sector_size);
  }
  if(skin->verbosity>=Cdrskin_verbose_progresS)
    printf("Writing  time:  %.3fs\n",Sfile_microtime(0)-start_time);
