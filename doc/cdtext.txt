@@ -453,6 +453,13 @@ There is a reader for Sony Input Sheet Version 0.7T:
   int burn_session_input_sheet_v07t(struct burn_session *session,
                                     char *path, int block, int flag);
 
+CD-TEXT can be read from a CDRWIN cue sheet file which defines the tracks
+of a session
+
+  int burn_session_by_cue_file(struct burn_session *session,
+                        char *path, int fifo_size, struct burn_source **fifo,
+                        unsigned char **text_packs, int *num_packs, int flag);
+
 
 The session and track attributes can then be converted into an array of
 text packs by:
@@ -485,12 +492,22 @@ and for removing attached attributes:
 
   int burn_track_dispose_cdtext(struct burn_track *t, int block);
 
-CD-TEXT can be read from a CDRWIN cue sheet file which defines the tracks
-of a session
 
-  int burn_session_by_cue_file(struct burn_session *session,
-                        char *path, int fifo_size, struct burn_source **fifo,
-                        unsigned char **text_packs, int *num_packs, int flag);
+UPC/EAN and ISRC not only affect CD-TEXT but also information that is written
+along with the tracks in Q sub-channel. These can be influenced by
+burn_session_input_sheet_v07t(), burn_session_by_cue_file() and by
+
+  void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts,
+                                      unsigned char mediacatalog[13]);
+
+  void burn_write_opts_set_has_mediacatalog(struct burn_write_opts *opts,
+                                          int has_mediacatalog);
+
+  void burn_track_set_isrc(struct burn_track *t, char *country, char *owner,
+                           unsigned char year, unsigned int serial);
+
+  int burn_track_set_isrc_string(struct burn_track *t, char isrc[13],
+                                 int flag);
 
 
 -------------------------------------------------------------------------------
@@ -571,11 +588,6 @@ encoding of the block. I.e with pack types 0x80 to 0x85.
 If a track attribute is set, but the corresponding session attribute is not
 defined or defined with empty text, then the session attribute gets attached
 as empty test. (Normally empty content is ignored.)
-
-libburn will always start track numbering by 1. So it adjusts all track
-numbers from the input sheet file by subtracting (First Track Number - 1).
-libburn ignores Last Track number because it will always write its own first
-and last track numbers to pack type 0x8f.
 
 
 Example cdrskin run with three tracks:

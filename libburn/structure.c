@@ -1073,6 +1073,7 @@ struct burn_cue_file_cursor {
 	int swap_audio_bytes;
 	int no_cdtext;
 	int no_catalog_isrc;
+	int start_track_no;
 	struct burn_source *offst_source;
 	int current_file_ba;
 	struct burn_track *prev_track;
@@ -1104,6 +1105,7 @@ static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
 	crs->swap_audio_bytes = 0;
 	crs->no_cdtext = 0;
 	crs->no_catalog_isrc = 0;
+	crs->start_track_no = 1;
 	crs->offst_source = NULL;
 	crs->current_file_ba = -1000000000;
 	crs->prev_track = NULL;
@@ -1236,14 +1238,18 @@ static int cue_attach_track(struct burn_session *session,
 			0, 0);
 		return 0;
 	}
-	if (crs->track_no > 1 && session->tracks == 0) {
-
-		/* >>> ??? implement ? */;
-
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
-			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
-		   "In cue sheet file: TRACK numbering does not start with 01",
-			 0, 0);
+	if (session->tracks == 0) {
+		crs->start_track_no = crs->track_no;
+		ret = burn_session_set_start_tno(session, crs->track_no, 0);
+		if (ret <= 0)
+			return ret;
+	}
+	if (session->tracks + crs->start_track_no - 1 > 99) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019b,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"CD track number exceeds 99",
+			0, 0);
+		return 0;
 	}
 	ret = burn_session_add_track(session, crs->track, BURN_POS_END);
 	if (ret <= 0)
@@ -1312,7 +1318,6 @@ static int cue_open_audioxtr(char *path, struct burn_cue_file_cursor *crs,
 
 	BURN_ALLOC_MEM(msg, char, 4096);
 
-	/* >>> obtain fd by libdax_audioxtr */;
 	ret= libdax_audioxtr_new(&xtr, path, 0);
 	if (ret <= 0)
 		return ret;

@@ -36,6 +36,7 @@ struct burn_pack_cursor {
 	int td_used;
 	int hiseq[8];
 	int pack_count[16];
+	int track_offset;
 };
 
 
@@ -196,13 +197,10 @@ static int burn_create_bl_size_packs(int block, unsigned char *char_codes,
 {
 	int i, ret;
 	unsigned char payload[12];
-	/* Normal is track_offset = 0.
-	   But if the CUE sheet supports offset, then it is needed here too */
-	int track_offset = 0;
 
 	payload[0] = char_codes[block];
-	payload[1] = 1 + track_offset;
-	payload[2] = num_tracks + track_offset;
+	payload[1] = crs->track_offset;
+	payload[2] = num_tracks + crs->track_offset - 1;
 	payload[3] = copyrights[block];
 	for (i = 0; i < 8; i++)
 		payload[i + 4] = crs->pack_count[i];
@@ -318,9 +316,6 @@ static int burn_create_tybl_s_packs(struct burn_session *s,
 {
 	int i, ret, idx, double_byte, use_tab;
 	struct burn_cdtext *cdt;
-	/* Normal is track_offset = 0.
-	   But if the CUE sheet supports offset, then it is needed here too */
-	int track_offset = 0;
 
 	cdt = s->cdtext[block];
 	idx = pack_type - Libburn_pack_type_basE;
@@ -347,7 +342,7 @@ static int burn_create_tybl_s_packs(struct burn_session *s,
 		else
 			use_tab = 0;
 		ret = burn_create_tybl_t_packs(s->track[i],
-					i + 1 + track_offset, pack_type,
+					i + crs->track_offset, pack_type,
 					block, crs, use_tab);
 		if (ret <= 0)
 			return ret;
@@ -375,6 +370,7 @@ int burn_cdtext_from_session(struct burn_session *s,
 		*num_packs = 0;
 	}
 	memset(&crs, 0, sizeof(struct burn_pack_cursor));
+	crs.track_offset = s->firsttrack;
 	BURN_ALLOC_MEM(crs.packs, unsigned char,
 					Libburn_leadin_cdtext_packs_maX * 18);
 
@@ -627,7 +623,7 @@ int burn_session_input_sheet_v07t(struct burn_session *session,
 					char *path, int block, int flag)
 {
 	int ret = 0, num_tracks, char_codes[8], copyrights[8], languages[8], i;
-	int genre_code = -1, track_offset = 1, length, pack_type, tno;
+	int genre_code = -1, track_offset = 1, length, pack_type, tno, tnum;
 	int session_attr_seen[16], track_attr_seen[16];
 	int int0x00 = 0x00, int0x01 = 0x01;
 	struct stat stbuf;
@@ -865,15 +861,10 @@ bad_tno:;
 				ret = 0; goto ex;
 			} else {
 				track_offset = ret;
-				if (ret != 1) {
-					sprintf(msg,
-				"First Track Number '%s' will be mapped to 1",
-						payload);
-					libdax_msgs_submit(libdax_messenger,-1,
-					  0x00020195, LIBDAX_MSGS_SEV_WARNING,
-					  LIBDAX_MSGS_PRIO_HIGH,
-					  burn_printify(msg), 0, 0);
-				}
+				ret = burn_session_set_start_tno(session,
+							track_offset, 0);
+				if (ret <= 0)
+					goto ex;
 			}
 
 		} else if (strcmp(line, "Last Track Number") == 0) {
@@ -890,18 +881,13 @@ bad_tno:;
 		} else if (strncmp(line, "Track ", 6) == 0) {
 			tno = -1;
 			sscanf(line + 6, "%d", &tno);
-			if (tno < 0 || tno - track_offset < 0 ||
+			if (tno < 1 || tno - track_offset < 0 ||
 				tno - track_offset >= num_tracks) {
 				track_txt[0] = line[6];
 				track_txt[1] = line[7];
 				track_txt[2] = 0;
 bad_track_no:;
-				if (track_offset != 1)
-					sprintf(msg,
-		"Inappropriate v07t Track number '%.3900s' (mapped to %2.2d)",
-					   track_txt, tno - track_offset + 1);
-				else
-				  sprintf(msg,
+				sprintf(msg,
 				   "Inappropriate v07t Track number '%.3900s'",
 					track_txt);
 				sprintf(msg + strlen(msg),
@@ -914,7 +900,7 @@ bad_track_no:;
 					  burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			}
-			tno -= track_offset;
+			tnum = tno - track_offset;
 
 			if (strcmp(line, "0x80") == 0 ||
 			    strcmp(line + 9, "Title") == 0)
@@ -939,7 +925,7 @@ bad_track_no:;
 				pack_type = 0x8e;
 				if (!(flag & 2)) {
 					ret = burn_track_set_isrc_string(
-						tracks[tno], payload, 0);
+						tracks[tnum], payload, 0);
 					if (ret <= 0)
 						goto ex;
 				}
@@ -953,8 +939,8 @@ bad_track_no:;
 					  burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
 			}
-			ret = v07t_cdtext_to_track(tracks[tno], block, payload,
-						&int0x00, pack_type, "", 0);
+			ret = v07t_cdtext_to_track(tracks[tnum], block,
+					payload, &int0x00, pack_type, "", 0);
 			if (ret <= 0)
 				goto ex;
 			track_attr_seen[pack_type - 0x80] = 1;
@@ -963,22 +949,22 @@ bad_track_no:;
 			/* Track variation of UPC EAN = 0x8e */
 			tno = -1;
 			sscanf(line + 5, "%d", &tno);
-			if (tno < 0 || tno - track_offset < 0 ||
+			if (tno <= 0 || tno - track_offset < 0 ||
 				tno - track_offset >= num_tracks) {
 				track_txt[0] = line[5];
 				track_txt[1] = line[6];
 				track_txt[2] = 0;
 				goto bad_track_no;
 			}
-			tno -= track_offset;
+			tnum = tno - track_offset;
 			if (!(flag & 2)) {
 				ret = burn_track_set_isrc_string(
-						tracks[tno], payload, 0);
+						tracks[tnum], payload, 0);
 				if (ret <= 0)
 					goto ex;
 			}
-			ret = v07t_cdtext_to_track(tracks[tno], block, payload,
-						&int0x00, 0x8e, "", 0);
+			ret = v07t_cdtext_to_track(tracks[tnum], block,
+					 payload, &int0x00, 0x8e, "", 0);
 			if (ret <= 0)
 				goto ex;
 			track_attr_seen[0xe] = 1;

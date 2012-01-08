@@ -1871,7 +1871,7 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
 >>> supported FILE types: BINARY MOTOROLA WAVE
 >>> supported TRACK datatypes: AUDIO MODE1/2048
 >>> ignored commands: POSTGAP PREGAP
->>> not allowed: mixing of ADUIO and MODE1/2048
+>>> not allowed: mixing of AUDIO and MODE1/2048
 >>> not allowed: unsupported FILE types
 >>> not allowed: unsupported TRACK datatypes
 >>> 
