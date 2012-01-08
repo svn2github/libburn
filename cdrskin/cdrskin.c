@@ -4803,6 +4803,7 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
  int session_no, track_no, pmin, psec, pframe, ret, final_ret= 1;
+ int track_offset = 1;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions;
@@ -4838,19 +4839,26 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    goto cannot_read;
  }
  sessions= burn_disc_get_sessions(disc,&num_sessions);
+ if(num_sessions > 0)
+   track_offset = burn_session_get_start_tno(sessions[0], 0);
+ if(track_offset <= 0)
+   track_offset= 1;
  if(flag&1) {
    for(session_no= 0; session_no<num_sessions; session_no++) {
      tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
      total_tracks+= num_tracks;
    }
-   printf("first: 1 last %d\n",total_tracks);
+   printf("first: %d last %d\n",
+          track_offset, total_tracks + track_offset - 1);
  }
  for(session_no= 0; session_no<num_sessions; session_no++) {
    tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
    if(tracks==NULL)
  continue;
    if(!(flag&1))
-     printf("first: %d last: %d\n",track_count+1,track_count+num_tracks);
+     printf("first: %d last: %d\n",
+            track_count + track_offset,
+            track_count + num_tracks + track_offset - 1);
    for(track_no= 0; track_no<num_tracks; track_no++) {
      track_count++;
      burn_track_get_entry(tracks[track_no], &toc_entry);
@@ -4865,8 +4873,8 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
      }
      if(track_no==0 && burn_session_get_hidefirst(sessions[session_no]))
        printf("cdrskin: NOTE : first track is marked as \"hidden\".\n");
-     printf("track:  %2d lba: %9d (%9d) %2.2d:%2.2d:%2.2d",track_count,
-            lba,4*lba,pmin,psec,pframe);
+     printf("track:  %2d lba: %9d (%9d) %2.2d:%2.2d:%2.2d",
+            track_count + track_offset - 1, lba, 4 * lba, pmin, psec, pframe);
      printf(" adr: %d control: %d",toc_entry.adr,toc_entry.control);
 
      /* >>> From where does cdrecord take "mode" ? */
@@ -4947,7 +4955,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
  int session_no, track_no, pmin, psec, pframe, ret, size= 0, nwa= 0;
- int last_leadout= 0, ovwrt_full= 0;
+ int last_leadout= 0, ovwrt_full= 0, track_offset= 1;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions= NULL;
@@ -5017,8 +5025,12 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    ftils= ltils= 1;
  } else {
 
-   first_track= 1;
    sessions= burn_disc_get_sessions(disc, &num_sessions);
+   if(num_sessions > 0)
+     track_offset= burn_session_get_start_tno(sessions[0], 0);
+   if(track_offset <= 0)
+     track_offset= 1;
+   first_track= track_offset;
    nominal_sessions= num_sessions;
    if(s == BURN_DISC_APPENDABLE)
      nominal_sessions++;
@@ -5038,8 +5050,8 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  }
  printf("first track:              %d\n", first_track);
  printf("number of sessions:       %d\n", nominal_sessions);
- printf("first track in last sess: %d\n", ftils);
- printf("last track in last sess:  %d\n", ltils);
+ printf("first track in last sess: %d\n", ftils + track_offset - 1);
+ printf("last track in last sess:  %d\n", ltils + track_offset - 1);
 
  burn_disc_get_cd_info(drive, disc_type, &disc_id, bar_code, &app_code,
                        &cd_info_valid);
@@ -5110,7 +5122,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 #endif /* Cdrskin_with_last_recorded_addresS */
 
      printf("%5d %5d %-6s %-10d %-10d %-10d\n",
-            track_count, session_no + 1,
+            track_count + track_offset - 1, session_no + 1,
             ((toc_entry.control&7)<4) ? "Audio" : "Data", lba, lra, size);
 
      last_leadout= lba + size;
