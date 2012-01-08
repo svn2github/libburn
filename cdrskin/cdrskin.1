@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 06, 2012"
+.TH CDRSKIN 1 "Jan 08, 2012"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -516,6 +516,8 @@ Non-CDRWIN commands ARRANGER, COMPOSER, MESSAGE are supported.
 Cue sheet file commands CATALOG and ISRC may be overridden by option mcn=
 and by input_sheet_v07t= purpose specifiers "UPC / EAN" and "ISRC".
 This does not affect their appearance in CD-TEXT, but only on Q sub-channel.
+.br
+The track numbers may be overridden by option cd_start_tno=.
 .TP
 .BI \-dao
 Alias for option -sao. Write CD in Session at Once mode
@@ -982,6 +984,16 @@ taken as plain block number with block size 2048 byte.
 (E.g ...=1000 or ...=1000s means block 1000, ...=1m means block
 512, ...=4096b means block number 2)
 .TP
+.BI cd_start_tno= number
+Set the number which shall be written as CD track number with the first
+track of the session. The following tracks will then get written with
+consequtive CD track numbers. The resulting number of the last track
+must not exceed 99. The lowest possible start number is 1, which is also
+the default.
+.br
+This setting applies only to CD SAO writing. It overrides the track number
+settings caused by options cuefile= or input_sheet_v07t=.
+.TP
 .BI \--demand_a_drive
 Exit with a nonzero value if no drive can be found during a bus scan.
 .TP
@@ -1212,6 +1224,8 @@ used as CD-TEXT language blocks 1 to 7.
 .br
 This option will get into effect only if no option textfile= is given.
 The write mode must be SAO on CD. All tracks must be -audio tracks.
+.br
+The track numbers may be overridden by option cd_start_tno=.
 .TP
 .BI \--list_formats
 List the available format descriptors as reported by the drive for the

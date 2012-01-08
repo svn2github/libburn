@@ -2784,6 +2784,8 @@ set_dev:;
      printf(
          " assert_write_lba=<lba>  abort if not next write address == lba\n");
      fprintf(stderr,
+      " cd_start_tno=<number>  set number of first track in CD SAO session\n");
+     fprintf(stderr,
         " --cdtext_dummy     show CD-TEXT pack array instead of writing CD\n");
      fprintf(stderr,
          " --cdtext_verbose   show CD-TEXT pack array before writing CD\n");
@@ -3426,6 +3428,9 @@ struct CdrskiN {
  /** a guess about what track might be processing right now */
  int supposed_track_idx;
 
+ /** The number of the first track in a CD SAO session */
+ int cd_start_tno;
+
  int fifo_enabled;
  /** Optional fifo between input fd and libburn. It uses a pipe(2) to transfer
      data to libburn. This fifo may be actually the start of a chain of fifos
@@ -3588,6 +3593,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
    o->tracklist[i]= NULL;
  o->track_counter= 0;
  o->supposed_track_idx= -1;
+ o->cd_start_tno= 0;
  o->fifo_enabled= 1;
  o->fifo= NULL;
  o->fifo_outlet_fd= -1;
@@ -6902,6 +6908,11 @@ burn_failed:;
    burn_write_opts_set_mediacatalog(o, (unsigned char *) skin->mcn);
    burn_write_opts_set_has_mediacatalog(o, 1);
  }
+ if(skin->cd_start_tno >= 1 && skin->cd_start_tno <= 99) {
+   ret= burn_session_set_start_tno(session, skin->cd_start_tno, 0);
+   if(ret <= 0)
+     goto burn_failed;
+ }
  ret= Cdrskin_activate_write_mode(skin,o,disc,0);
  if(ret<=0)
    goto burn_failed;
@@ -7381,7 +7392,7 @@ sorry_failed_to_eject:;
 */
 int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
- int i,k,l,ret, idx= -1;
+ int i,k,l,ret, idx= -1, cd_start_tno;
  double value,grab_and_wait_value= -1.0, num;
  char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
  struct stat stbuf;
@@ -7630,6 +7641,21 @@ unsupported_blank_option:;
 
    } else if(strcmp(argv[i],"--bragg_with_audio")==0) {
      /* OBSOLETE 0.2.3 : was handled in Cdrpreskin_setup() */;
+
+   } else if(strncmp(argv[i], "-cd_start_tno", 14)==0) {
+     value_pt= argv[i] + 14;
+     goto set_cd_start_tno;
+   } else if(strncmp(argv[i], "cd_start_tno=", 13) ==0 ) {
+     value_pt= argv[i] + 13;
+set_cd_start_tno:;
+     cd_start_tno= -1;
+     sscanf(value_pt, "%d", &cd_start_tno);
+     if(cd_start_tno < 1 || cd_start_tno > 99) {
+       fprintf(stderr,
+         "cdrskin: FATAL : cd_start_tno= gives a number outside [1 ... 99]\n");
+       return(0);
+     }
+     skin->cd_start_tno= cd_start_tno;
 
    } else if(strcmp(argv[i],"--cdtext_dummy")==0) {
      skin->cdtext_test= 2;
