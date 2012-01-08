@@ -1947,6 +1947,17 @@ int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
 int burn_session_set_start_tno(struct burn_session *session, int tno,
                                int flag);
 
+/* ts B20108 */
+/** Inquire the CD track start number, as set by default ot by 
+    burn_session_set_start_tno().
+    @param session   The session to be inquired
+    @return          > 0 is the currently set CD track start number
+                     <= 0 indicates failure
+    @since 1.2.0
+*/
+int burn_session_get_start_tno(struct burn_session *session, int flag);
+
+
 
 /* ts B11206 */
 /** Set the Character Codes, the Copyright bytes, and the Language Codes
@@ -2165,8 +2176,11 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
 /** Read a Sony CD-TEXT Input Sheet Version 0.7T file and attach its text
     attributes to the given session and its tracks for the given CD-TEXT
     block number. This overrides previous settings made by
-    burn_session_set_cdtext() and burn_track_set_cdtext(). It can later be
-    overridden by said function calls.
+    burn_session_set_cdtext(), burn_track_set_cdtext(), burn_track_set_isrc(),
+    burn_session_set_start_tno(). It can later be overridden by said function
+    calls.
+    The media catalog number from purpose specifier "UPC / EAN" gets into
+    effect only if burn_write_opts_set_has_mediacatalog() is set to 0.
     The format of a v07t sheet file is documented in doc/cdtext.txt.
     @param s           Session where to attach CD-TEXT attributes
     @param path        Local filesystem address of the sheet file which

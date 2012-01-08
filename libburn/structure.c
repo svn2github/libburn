@@ -785,6 +785,13 @@ int burn_session_set_start_tno(struct burn_session *session, int tno, int flag)
 }
 
 
+/* ts B20108 API */
+int burn_session_get_start_tno(struct burn_session *session, int flag)
+{
+	return (int) session->firsttrack;
+}
+
+
 struct burn_cdtext *burn_cdtext_create(void)
 {
 	struct burn_cdtext *t;
