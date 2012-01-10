@@ -301,7 +301,6 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
-#define Libburn_write_with_function_print_cuE
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -2893,7 +2892,7 @@ return crap.  so we send the command, then ignore the result.
 
 #ifdef Libburn_write_with_function_print_cuE
 		print_cue(sheet);
-		goto fail_wo_sync;
+		/* goto fail_wo_sync; */
 #endif /* Libburn_write_with_function_print_cuE */
 
 		ret = 1;
