@@ -1935,7 +1935,7 @@ int burn_session_remove_track(struct burn_session *s, struct burn_track *t);
 /* ts B20107 */
 /** Set the number which shall be written as CD track number with the first
     track of the session. The following tracks will then get written with
-    consequtive CD track numbers. The resulting number of the last track
+    consecutive CD track numbers. The resulting number of the last track
     must not exceed 99. The lowest possible start number is 1, which is also
     the default. This setting applies only to CD SAO writing.
     @param session   The session to be manipulated
@@ -2270,16 +2270,6 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
 			    int pad, int mode);
 
 
-/* ts A61024 */
-/** Define whether a track shall swap bytes of its input stream.
-    @param t The track to change
-    @param swap_source_bytes 0=do not swap, 1=swap byte pairs
-    @return 1=success , 0=unacceptable value
-    @since 0.2.6
-*/
-int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
-
-
 /* ts B11206 */
 /** Attach text or binary data as CD-TEXT attributes to a track.
     The payload will be used to generate CD-TEXT packs by
@@ -2427,10 +2417,39 @@ int burn_track_set_index(struct burn_track *t, int index_number,
     after the end of their predecessor.
     @param t             The track to be manipulated
     @param flag          Bitfield for control purposes. Unused yet. Submit 0.
-    @return  i           > 0 indicates success, <= 0 means failure
+    @return              > 0 indicates success, <= 0 means failure
     @since 1.2.0
 */
 int burn_track_clear_indice(struct burn_track *t, int flag);
+
+
+/* ts B20110 */
+/** Define whether a pre-gap shall be written before the track and how many
+    sectors this pregap shall have. A pre-gap is written in the range of track
+    index 0 and contains zeros resp. silence. No bytes from the track source
+    will be read for writing the pre-gap.
+    This setting affects only CD SAO write runs.
+    Track 1 always has a pre-gap of at least 150 sectors. Further pre-gaps
+    are not mandatory for MMC compliance as long as track modes are not mixed.
+    Mode mixing is currently not supported by libburn.
+    @param t             The track to change
+    @param size          Number of sectors in the pre-gap.
+                         0 disables pre-gap, except for the first track.
+    @param flag          Bitfield for control purposes. Unused yet. Submit 0.
+    @return              > 0 indicates success, <= 0 means failure
+    @since 1.2.0
+*/
+int burn_track_set_pregap_size(struct burn_track *t, int size, int flag);
+
+
+/* ts A61024 */
+/** Define whether a track shall swap bytes of its input stream.
+    @param t The track to change
+    @param swap_source_bytes 0=do not swap, 1=swap byte pairs
+    @return 1=success , 0=unacceptable value
+    @since 0.2.6
+*/
+int burn_track_set_byte_swap(struct burn_track *t, int swap_source_bytes);
 
 
 /** Hide the first track in the "pre gap" of the disc

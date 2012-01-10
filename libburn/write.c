@@ -301,6 +301,7 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
+#define Libburn_write_with_function_print_cuE
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -333,14 +334,20 @@ static void print_cue(struct cue_sheet *sheet)
 				unit[7] == 0 ? ' ' : cue_printify(unit[7]));
 		} else if ((unit[0] & 0xf) == 3) {
 			printf(
-		" %1X  %1X | %02X |    |    |    |          | %c%c%c%c%c%c\n",
+		" %1X  %1X | %2d |    |    |    |          | %c%c%c%c%c%c\n",
 				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
 				unit[1], cue_printify(unit[2]), 
 				cue_printify(unit[3]), cue_printify(unit[4]), 
 				cue_printify(unit[5]), cue_printify(unit[6]), 
 				cue_printify(unit[7]));
+		} else if (unit[1] > 99) {
+			printf(" %1X  %1X |0x%02X| %02X | %02X | %02X |",
+				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
+				unit[1], unit[2], unit[3], unit[4]);
+			printf(" %02d:%02d:%02d |\n",
+				unit[5], unit[6], unit[7]);
 		} else {
-			printf(" %1X  %1X | %02X | %02X | %02X | %02X |",
+			printf(" %1X  %1X | %2d | %02X | %02X | %02X |",
 				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
 				unit[1], unit[2], unit[3], unit[4]);
 			printf(" %02d:%02d:%02d |\n",
@@ -585,14 +592,10 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	e[2].control = e[1].control;
 	e[2].adr = 1;
 
-	/* ts A70121 : The pause before the first track is not really Pre-gap.
-	   To count it as part 2 of a Pre-gap is a dirty hack. It also seems
-	   to have caused confusion in dealing with part 1 of an eventual
-	   real Pre-gap. mmc5r03c.pdf 6.33.3.2, 6.33.3.18 .
-	   ts B20103 : It is not really Pre-gap with audio tracks.
-	*/
 	tar[0]->pregap2 = 1;
-	pregap = 150;
+	if (tar[0]->pregap2_size < 150)
+		tar[0]->pregap2_size = 150;
+	pregap = tar[0]->pregap2_size;
 
 	pform = form;
 	for (i = 0; i < ntr; i++) {
@@ -1057,7 +1060,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		if (t->pregap1)
 			d->rlba += 75;
 		if (t->pregap2)
-			d->rlba += 150;
+			d->rlba += t->pregap2_size;
 
 		if (t->pregap1) {
 
@@ -1087,7 +1090,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 					{ ret = 0; goto ex; }
 		}
 		if (t->pregap2)
-			for (i = 0; i < 150; i++)
+			for (i = 0; i < t->pregap2_size; i++)
 				if (!sector_pregap(o, t->entry->point,
 					           t->entry->control, t->mode))
 					{ ret = 0; goto ex; }
@@ -2890,7 +2893,7 @@ return crap.  so we send the command, then ignore the result.
 
 #ifdef Libburn_write_with_function_print_cuE
 		print_cue(sheet);
-		/* goto fail_wo_sync; */
+		goto fail_wo_sync;
 #endif /* Libburn_write_with_function_print_cuE */
 
 		ret = 1;

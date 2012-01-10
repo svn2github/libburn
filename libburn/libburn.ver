@@ -159,6 +159,7 @@ burn_track_set_default_size;
 burn_track_set_index;
 burn_track_set_isrc;
 burn_track_set_isrc_string;
+burn_track_set_pregap_size;
 burn_track_set_size;
 burn_track_set_source;
 burn_version;

@@ -90,6 +90,11 @@ struct burn_track
 	int pregap1;
 	/** The track contains interval two of a pregap */
 	int pregap2;
+
+	/* ts B20110 */
+	/** The number of sectors in pre-gap 2, if .pregap2 is set */
+	int pregap2_size;
+
 	/** The track contains a postgap */
 	int postgap;
 	struct isrc isrc;
