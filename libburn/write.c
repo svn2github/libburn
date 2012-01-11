@@ -456,7 +456,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
-	int leadin_form, leadin_start, pregap;
+	int leadin_form, leadin_start, pregap = 150;
 	unsigned char ctladr, scms;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
