@@ -5145,7 +5145,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
      if(read_capacity == 0 && skin->media_is_overwriteable)
        size= 0; /* unformatted overwriteable media */
      printf("%5d %5d %-6s %-10d %-10d %-10d\n",
-            track_count + 1, nominal_sessions,
+            track_count + track_offset, nominal_sessions,
             ovwrt_full ? "Data" : "Blank",
             nwa, lba + size - 1, size);
    }
