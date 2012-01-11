@@ -594,7 +594,6 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	tar[0]->pregap2 = 1;
 	if (tar[0]->pregap2_size < 150)
 		tar[0]->pregap2_size = 150;
-	pregap = tar[0]->pregap2_size;
 
 	pform = form;
 	for (i = 0; i < ntr; i++) {
@@ -610,7 +609,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			if (ret <= 0)
 				goto failed;
 		}
-
+		if (tar[i]->pregap2)
+			pregap = tar[i]->pregap2_size;
 
 #ifdef Libburn_track_multi_indeX
 
@@ -618,7 +618,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			if(tar[i]->index[j] == 0x7fffffff) {
 				if (j > 1)
 		break;
-				if (j == 0 && i > 0)
+				if (pregap <= 0)
 		continue;
 				/* force existence of mandatory index */
 				tar[i]->index[j] = 0;
@@ -641,8 +641,6 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
 			/* >>> ??? else if j == 0 && mode change to -data :
 							Extended pregap */;
-
-			/* >>> ??? user defined pregap ? */;
 
 			/* >>> check index with track size */;
 
