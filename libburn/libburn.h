@@ -1371,6 +1371,9 @@ int burn_disc_get_phys_format_info(struct burn_drive *d, int *disk_category,
     @param d The drive to query.
     @param o If not NULL: write parameters to be set on drive before query
     @param trackno 0=next track to come, >0 number of existing track
+                   The first existing track on a CD may have a number higher
+                   than 1. Use burn_session_get_start_tno() to inquire this
+                   start number.
     @param lba return value: start lba
     @param nwa return value: Next Writeable Address
     @return 1=nwa is valid , 0=nwa is not valid , -1=error
