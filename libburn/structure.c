@@ -1420,13 +1420,55 @@ ex:;
 }
 
 
+static int cue_read_timepoint_lba(char *apt, char *purpose, int *file_ba,
+								int flag)
+{
+	int ret, minute, second, frame;
+	char *msg = NULL, msf[3], *msf_pt;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+	if (strlen(apt) < 8) {
+no_time_point:;
+		sprintf(msg,
+			"Inappropriate cue sheet file %s '%.4000s'",
+			purpose, apt);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	}
+	if (apt[2] != ':' || apt[5] != ':' ||
+				(apt[8] != 0 && apt[8] != 32 && apt[8] != 9))
+		goto no_time_point;
+	msf[2] = 0;
+	msf_pt = msf;
+	strncpy(msf, apt, 2);
+	ret = cue_read_number(&msf_pt, &minute, 1);
+	if (ret <= 0)
+		goto ex;
+	strncpy(msf, apt + 3, 2);
+	ret = cue_read_number(&msf_pt, &second, 1);
+	if (ret <= 0)
+		goto ex;
+	strncpy(msf, apt + 6, 2);
+	ret = cue_read_number(&msf_pt, &frame, 1);
+	if (ret <= 0)
+		goto ex;
+
+	*file_ba = ((minute * 60) + second ) * 75 + frame;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
 static int cue_interpret_line(struct burn_session *session, char *line,
 				struct burn_cue_file_cursor *crs, int flag)
 {
-	int ret, mode, index_no, minute, second, frame, file_ba, chunks;
+	int ret, mode, index_no, file_ba, chunks;
 	int block_size, step, audio_xtr = 0;
 	off_t size;
-	char *cmd, *apt, *msg = NULL, msf[3], *msf_pt, *cpt, *filetype;
+	char *cmd, *apt, *msg = NULL, *cpt, *filetype;
 	struct burn_source *src, *inp_src;
 	enum burn_source_status source_status;
 	struct stat stbuf;
@@ -1610,37 +1652,10 @@ bad_flags:;
 		ret = cue_read_number(&apt, &index_no, 0);
 		if (ret <= 0)
 			goto ex;
-
-		/* Obtain time point */
-		if (strlen(apt) < 8) {
-no_time_point:;
-			sprintf(msg,
-		     "Inappropriate cue sheet file index time point '%.4000s'",
-				apt);
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020194,
-				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				burn_printify(msg), 0, 0);
-			ret = 0; goto ex;
-		}
-		if (apt[2] != ':' || apt[5] != ':' ||
-				(apt[8] != 0 && apt[8] != 32 && apt[8] != 9))
-			goto no_time_point;
-		msf[2] = 0;
-		msf_pt = msf;
-		strncpy(msf, apt, 2);
-		ret = cue_read_number(&msf_pt, &minute, 1);
+		ret = cue_read_timepoint_lba(apt, "index time point",
+					 &file_ba, 0);
 		if (ret <= 0)
 			goto ex;
-		strncpy(msf, apt + 3, 2);
-		ret = cue_read_number(&msf_pt, &second, 1);
-		if (ret <= 0)
-			goto ex;
-		strncpy(msf, apt + 6, 2);
-		ret = cue_read_number(&msf_pt, &frame, 1);
-		if (ret <= 0)
-			goto ex;
-
-		file_ba = ((minute * 60) + second ) * 75 + frame;
 		if (file_ba < crs->prev_file_ba) {
 overlapping_ba:;
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
@@ -1753,13 +1768,20 @@ overlapping_ba:;
 			0, 0);
 
 	} else if (strcmp(cmd, "PREGAP") == 0) {
-
-		/* >>> ??? implement ? */;
-
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
-			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
-			"In cue sheet file: PREGAP command not supported",
-			0, 0);
+		if (crs->track == NULL) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				"In cue sheet file: INDEX found before TRACK",
+				0, 0);
+			ret = 0; goto ex;
+		}
+		ret = cue_read_timepoint_lba(apt, "pre-gap duration",
+					 	&file_ba, 0);
+		if (ret <= 0)
+			goto ex;
+		ret = burn_track_set_pregap_size(crs->track, file_ba, 0);
+		if (ret <= 0)
+			goto ex;
 
 	} else if (strcmp(cmd, "REM") == 0) {
 		;

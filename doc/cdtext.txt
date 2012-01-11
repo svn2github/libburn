@@ -684,7 +684,7 @@ TITLE "Joyful Nights"
 
 Several restrictions apply in the libburn call burn_session_by_cue_file():
 
-Commands POSTGAP, PREGAP are ignored.
+Command POSTGAP gets ignored.
 Only FILE types BINARY, MOTOROLA, WAVE are allowed.
 Only TRACK datatypes AUDIO, MODE1/2048 are allowed. They may not be mixed in
 the same session.

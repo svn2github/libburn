@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 08, 2012"
+.TH CDRSKIN 1 "Jan 11, 2012"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -508,7 +508,7 @@ To enable CD-TEXT from the cue sheet file, cdrskin option -text has to be
 present.
 .br
 cdrskin currently supports TRACK datatypes AUDIO and MODE1/2048 which may
-not be mixed. It ignores commands POSTGAP and PREGAP.
+not be mixed. It ignores command POSTGAP.
 Data source may be of FILE type BINARY, MOTOROLA, or WAVE.
 .br
 Non-CDRWIN commands ARRANGER, COMPOSER, MESSAGE are supported.
@@ -987,7 +987,7 @@ taken as plain block number with block size 2048 byte.
 .BI cd_start_tno= number
 Set the number which shall be written as CD track number with the first
 track of the session. The following tracks will then get written with
-consequtive CD track numbers. The resulting number of the last track
+consecutive CD track numbers. The resulting number of the last track
 must not exceed 99. The lowest possible start number is 1, which is also
 the default.
 .br
