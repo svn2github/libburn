@@ -27,6 +27,8 @@
 #include "debug.h"
 #include "init.h"
 #include "util.h"
+#include "transport.h"
+#include "mmc.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -690,14 +692,18 @@ int burn_session_get_hidefirst(struct burn_session *session)
 
 
 /* ts A80808 : Enhance CD toc to DVD toc */
-int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
+int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 {
-	int sidx= 0, tidx= 0, ret;
+	int sidx= 0, tidx= 0, ret, track_offset, alloc_len = 34;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
+	struct burn_disc *d;
 	/* ts A81126 : ticket 146 : There was a SIGSEGV in here */
 	char *msg_data = NULL, *msg;
+	struct buffer *buf = NULL;
 
+	d = drive->disc;
 	BURN_ALLOC_MEM(msg_data, char, 321);
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	strcpy(msg_data,
 		"Damaged CD table-of-content detected and truncated.");
 	strcat(msg_data, " In burn_disc_cd_toc_extensions: ");
@@ -706,6 +712,14 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 		strcpy(msg, "d->session == NULL");
 		goto failure;
 	}
+	if (d->sessions <= 0) {
+		ret = 1;
+		goto ex;
+	}
+	track_offset = burn_session_get_start_tno(d->session[0], 0);
+	if (track_offset <= 0)
+		track_offset = 1;
+
 	for (sidx = 0; sidx < d->sessions; sidx++) {
 		if (d->session[sidx] == NULL) {
 			sprintf(msg, "d->session[%d of %d] == NULL",
@@ -749,6 +763,19 @@ int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag)
 				prev_entry->track_blocks =
 					entry->start_lba
 					- prev_entry->start_lba;
+
+				/* The drive might know size restrictions
+				   like pre-gaps
+				*/
+				ret = mmc_read_track_info(drive,
+					tidx - 1 + track_offset, buf,
+					alloc_len); 
+				if (ret > 0) {
+					ret = mmc_four_char_to_int(
+							buf->data + 24);
+					if (ret < prev_entry->track_blocks)
+						prev_entry->track_blocks = ret;
+				}
 				prev_entry->extensions_valid |= 1;
 			}
 			if (tidx == d->session[sidx]->tracks) {
@@ -767,6 +794,7 @@ failure:
 	d->sessions= sidx;
 	ret = 0;
 ex:;
+	BURN_FREE_MEM(buf);
 	BURN_FREE_MEM(msg_data);
 	return ret;
 }

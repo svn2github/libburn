@@ -1587,7 +1587,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	}
 
 	/* A80808 */
-	burn_disc_cd_toc_extensions(d->disc, 0);
+	burn_disc_cd_toc_extensions(d, 0);
 
 	ret = 1;
 ex:;

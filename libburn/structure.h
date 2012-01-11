@@ -164,7 +164,7 @@ off_t burn_track_get_default_size(struct burn_track *t);
 
 
 /* ts A80808 : Enhance CD toc to DVD toc */
-int burn_disc_cd_toc_extensions(struct burn_disc *d, int flag);
+int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag);
 
 
 /* ts B11206 */
