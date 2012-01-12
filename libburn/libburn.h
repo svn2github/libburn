@@ -2428,21 +2428,42 @@ int burn_track_clear_indice(struct burn_track *t, int flag);
 
 /* ts B20110 */
 /** Define whether a pre-gap shall be written before the track and how many
-    sectors this pregap shall have. A pre-gap is written in the range of track
+    sectors this pre-gap shall have. A pre-gap is written in the range of track
     index 0 and contains zeros resp. silence. No bytes from the track source
     will be read for writing the pre-gap.
     This setting affects only CD SAO write runs.
-    Track 1 always has a pre-gap of at least 150 sectors. Further pre-gaps
-    are not mandatory for MMC compliance as long as track modes are not mixed.
-    Mode mixing is currently not supported by libburn.
+    The first track automatically gets a pre-gap of at least 150 sectors. Its
+    size may be enlarged by this call. Further pre-gaps are demanded by MMC
+    for tracks which follow tracks of a different mode. (But Mode mixing in
+    CD SAO sessions is currently not supported by libburn.)
     @param t             The track to change
     @param size          Number of sectors in the pre-gap.
-                         0 disables pre-gap, except for the first track.
+                         -1 disables pre-gap, except for the first track.
+                         libburn allows 0, but MMC does not propose this.
     @param flag          Bitfield for control purposes. Unused yet. Submit 0.
     @return              > 0 indicates success, <= 0 means failure
     @since 1.2.0
 */
 int burn_track_set_pregap_size(struct burn_track *t, int size, int flag);
+
+/* ts B20111 */
+/** Define whether a post-gap shall be written at the end of the track and
+    how many sectors this gap shall have. A post-gap occupies the range of
+    an additional index of the track. It contains zeros. No bytes from the
+    track source will be read for writing the post-gap.
+    This setting affects only CD SAO write runs.
+    MMC prescribes to add a post-gap to a data track which is followed by
+    a non-data track. (But libburn does not yet support mixed mode CD SAO
+    sessions.)
+    @param t             The track to change
+    @param size          Number of sectors in the post-gap.
+                         -1 disables post-gap.
+                         libburn allows 0, but MMC does not propose this.
+    @param flag          Bitfield for control purposes. Unused yet. Submit 0.
+    @return              > 0 indicates success, <= 0 means failure
+    @since 1.2.0
+*/
+int burn_track_set_postgap_size(struct burn_track *t, int size, int flag);
 
 
 /* ts A61024 */

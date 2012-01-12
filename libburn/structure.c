@@ -202,10 +202,12 @@ struct burn_track *burn_track_create(void)
 	/* ts B10103 */
 	t->end_on_premature_eoi = 0;
 
-	t->postgap = 0;
 	t->pregap1 = 0;
 	t->pregap2 = 0;
 	t->pregap2_size = 150;
+
+	t->postgap = 0;
+	t->postgap_size = 150;
 
 	/* ts A61024 */
 	t->swap_source_bytes = 0;
@@ -481,8 +483,16 @@ int burn_track_clear_indice(struct burn_track *t, int flag)
 /* ts B20110 API */
 int burn_track_set_pregap_size(struct burn_track *t, int size, int flag)
 {
-	t->pregap2 = (size > 0);
+	t->pregap2 = (size >= 0);
 	t->pregap2_size = size;
+	return 1;
+}
+
+/* ts B20111 API */
+int burn_track_set_postgap_size(struct burn_track *t, int size, int flag)
+{
+	t->postgap = (size >= 0);
+	t->postgap_size = size;
 	return 1;
 }
 

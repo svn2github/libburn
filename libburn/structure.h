@@ -97,6 +97,11 @@ struct burn_track
 
 	/** The track contains a postgap */
 	int postgap;
+
+	/* ts B20111 */
+	/** The number of sectors in post-gap, if .postgap is set */
+	int postgap_size;
+
 	struct isrc isrc;
 
 	/* ts A61024 */

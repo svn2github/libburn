@@ -456,7 +456,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  int nwa)
 {
 	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
-	int leadin_form, leadin_start, pregap = 150;
+	int leadin_form, leadin_start, pregap = 150, postgap;
 	unsigned char ctladr, scms;
 	struct burn_drive *d;
 	struct burn_toc_entry *e;
@@ -471,7 +471,12 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	int j;
 #endif
 
-
+	if (ntr < 1) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019c,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			"Session has no defined tracks", 0, 0);
+		return NULL;
+	}
 
 	d = o->drive;
 
@@ -597,6 +602,20 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
 	pform = form;
 	for (i = 0; i < ntr; i++) {
+
+		/* ts A70125 : 
+		   Still not understanding the sense behind linking tracks,
+		   i decided to at least enforce the MMC specs' minimum
+		   track length.
+		*/ 
+		track_length = burn_track_get_sectors(tar[i]);
+		if (track_length < 300 && !burn_track_is_open_ended(tar[i])) {
+			track_length = 300;
+			if (!tar[i]->pad)
+				tar[i]->pad = 1;
+			burn_track_set_sectors(tar[i], track_length);
+		}
+
 		type_to_form(tar[i]->mode, &ctladr, &form);
 		if (tar[i]->mode & BURN_SCMS)
 			scms = 0x80;
@@ -609,16 +628,33 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			if (ret <= 0)
 				goto failed;
 		}
+		pregap = 0;
 		if (tar[i]->pregap2)
 			pregap = tar[i]->pregap2_size;
+		postgap = 0;
+		if (tar[i]->postgap) {
+			if (tar[i]->indices >= 99) {
+				libdax_msgs_submit(libdax_messenger, -1,
+					0x0002019a, LIBDAX_MSGS_SEV_SORRY,
+					LIBDAX_MSGS_PRIO_HIGH,
+					"Post-gap index number exceeds 99",
+					0, 0);
+				goto failed;
+			}
+			if (tar[i]->indices < 2)
+				tar[i]->indices = 2;
+			tar[i]->index[tar[i]->indices] = track_length;
+			postgap = tar[i]->postgap_size;
+		}
 
 #ifdef Libburn_track_multi_indeX
 
-		for(j = 0; j < tar[i]->indices || j < 2; j++) {
+		for(j = 0; j < (tar[i]->indices + !!tar[i]->postgap) || j < 2;
+									j++) {
 			if(tar[i]->index[j] == 0x7fffffff) {
 				if (j > 1)
 		break;
-				if (pregap <= 0)
+				if (j == 0 && pregap <= 0)
 		continue;
 				/* force existence of mandatory index */
 				tar[i]->index[j] = 0;
@@ -653,6 +689,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			runtime += pregap;
 			pregap = 0;
 		}
+
+		runtime += track_length + postgap;
 
 #else /* Libburn_track_multi_indeX */
 
@@ -691,6 +729,10 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
    Next one has to care for Post-gap: table 555 in mmc5r03c.pdf does not
    show any although 6.33.3.19 would prescribe some.
+   ts B20111: Table 1 of MMC-1 shows two post-gaps. The first matches the
+              precriptions with SEND CUE SHEET. The second one is riddling.
+              Both are part of a track and occupy the range of the last index
+              of the track. Length is 2 seconds for each.
 
    Nobody seems to have ever tested this situation, up to now.
    It is banned for now in burn_disc_write().
@@ -715,22 +757,10 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		if (ret <= 0)
 			goto failed;
 
+		runtime += track_length;
+
 #endif /* ! Libburn_track_multi_indeX */
 
-
-		/* ts A70125 : 
-		   Still not understanding the sense behind linking tracks,
-		   i decided to at least enforce the MMC specs' minimum
-		   track length.
-		*/ 
-		track_length = burn_track_get_sectors(tar[i]);
-		if (track_length < 300 && !burn_track_is_open_ended(tar[i])) {
-			track_length = 300;
-			if (!tar[i]->pad)
-				tar[i]->pad = 1;
-			burn_track_set_sectors(tar[i], track_length);
-		}
-		runtime += track_length;
 
 /* if we're padding, we'll clear any current shortage.
    if we're not, we'll slip toc entries by a sector every time our
@@ -1174,9 +1204,9 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	}
 
 	if (t->postgap)
-		for (i = 0; i < 150; i++)
-			if (!sector_postgap(o, t->entry->point, t->entry->control,
-				            t->mode))
+		for (i = 0; i < t->postgap_size; i++)
+			if (!sector_postgap(o, t->entry->point,
+						 t->entry->control, t->mode))
 				{ ret = 0; goto ex; }
 	i = t->offset;
 	if (o->write_type == BURN_WRITE_SAO) {

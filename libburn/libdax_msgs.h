@@ -594,6 +594,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x00020199 (SORRY,HIGH)   = Text input file reading aborted
  0x0002019a (SORRY,HIGH)   = Bad track index number
  0x0002019b (SORRY,HIGH)   = CD track number exceeds range of 1 to 99
+ 0x0002019c (FAILURE,HIGH) = Session has no defined tracks
 
 
  libdax_audioxtr:
