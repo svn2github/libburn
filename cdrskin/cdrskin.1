@@ -1482,6 +1482,26 @@ Linux specific:
 Use and report literal Bus,Target,Lun addresses rather than real SCSI and
 pseudo ATA addresses. This method is outdated and was never compatible with
 original cdrecord.
+.TP
+.BI sao_postgap= off|number
+Define whether a post-gap shall be written at the end of the track and
+how many sectors this gap shall have. A post-gap occupies the range of
+an additional index of the track. It contains zeros. No bytes from the
+track source will be read for writing the post-gap.
+.br
+This setting affects only CD SAO write runs.
+.TP
+.BI sao_pregap= off|number
+Define whether a pre-gap shall be written before the track and how many
+sectors this pre-gap shall have. A pre-gap is written in the range of track
+index 0 and contains zeros resp. silence. No bytes from the track source
+will be read for writing the pre-gap.
+.br
+This setting affects only CD SAO write runs.
+.br
+The first track automatically gets a pre-gap of at least 150 sectors. Its
+size can only be enlarged by this call.
+.TP
 .BI --xa1-ignore
 Silently interpret option -xa1 as -data. This may be necessary if a frontent
 does not prepare -xa1 block headers but insists in using option -xa1.

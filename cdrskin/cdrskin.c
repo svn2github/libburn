@@ -873,6 +873,9 @@ struct CdrtracK {
 
  char *index_string;
 
+ int sao_pregap;
+ int sao_postgap;
+
  /** Eventually detected data image size */
  double data_image_size;
  char *iso_fs_descr;  /* eventually block 16 to 31 of input during detection */
@@ -958,6 +961,8 @@ int Cdrtrack_new(struct CdrtracK **track, struct CdrskiN *boss,
  o->cdxa_conversion= 0;
  o->isrc[0]= 0;
  o->index_string= NULL;
+ o->sao_pregap= -1;
+ o->sao_postgap= -1;
  o->data_image_size= -1.0;
  o->iso_fs_descr= NULL;
  o->use_data_image_size= 0;
@@ -1630,6 +1635,18 @@ int Cdrtrack_set_indice(struct CdrtracK *track, int flag)
 {
  int idx= 1, adr, prev_adr= -1, ret;
  char *cpt, *ept;
+
+ if(track->sao_pregap >= 0) {
+   ret= burn_track_set_pregap_size(track->libburn_track, track->sao_pregap, 0);
+   if(ret <= 0)
+     return(ret);
+ }
+ if(track->sao_postgap >= 0) {
+   ret= burn_track_set_postgap_size(track->libburn_track, track->sao_postgap,
+                                    0);
+   if(ret <= 0)
+     return(ret);
+ }
 
  if(track->index_string == NULL)
    return(2);
@@ -2847,6 +2864,14 @@ set_dev:;
      printf("                    rather than real SCSI and pseudo ATA.\n");
      printf(" --prodvd_cli_compatible  react on some DVD types more like\n");
      printf("                    cdrecord-ProDVD with blank= and -multi\n");
+     printf(" sao_postgap=\"off\"|number\n");
+     printf("                    defines whether the next track will get a\n");
+     printf(
+          "                    post-gap and how many sectors it shall have\n");
+     printf(" sao_pregap=\"off\"|number\n");
+     printf("                    defines whether the next track will get a\n");
+     printf(
+           "                    pre-gap and how many sectors it shall have\n");
      printf(
           " --single_track     accept only last argument as source_address\n");
      printf(" stream_recording=\"on\"|\"off\"|number\n");
@@ -3422,6 +3447,9 @@ struct CdrskiN {
 
  char *index_string;
 
+ int sao_pregap;
+ int sao_postgap;
+
  /** The list of tracks with their data sources and parameters */
  struct CdrtracK *tracklist[Cdrskin_track_maX];
  int track_counter;
@@ -3587,6 +3615,8 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->mcn[0]= 0;
  o->next_isrc[0]= 0;
  o->index_string= NULL;
+ o->sao_pregap= -1;
+ o->sao_postgap= -1;
  o->track_modemods= 0;
  o->track_type_by_default= 1;
  for(i=0;i<Cdrskin_track_maX;i++)
@@ -8197,6 +8227,40 @@ set_padsize:;
 "cdrskin: --single_track : will only accept last argument as track source\n"));
      skin->preskin->demands_cdrskin_caps= 1;
 
+   } else if(strncmp(argv[i], "-sao_postgap=", 13) == 0) {
+     value_pt= argv[i] + 13;
+     goto set_sao_postgap;
+   } else if(strncmp(argv[i], "sao_postgap=", 12) == 0) {
+     value_pt= argv[i] + 12;
+set_sao_postgap:;
+     skin->sao_postgap= -1;
+     if(strcmp(value_pt, "off") == 0)
+       skin->sao_postgap = -1;
+     else
+       sscanf(value_pt, "%d", &(skin->sao_postgap));
+     if(skin->sao_postgap < 0) {
+       fprintf(stderr,
+            "cdrskin: SORRY : sao_postgap must be \"off\" or a number >= 0\n");
+       return(0);
+     }
+
+   } else if(strncmp(argv[i], "-sao_pregap=", 12) == 0) {
+     value_pt= argv[i] + 12;
+     goto set_sao_pregap;
+   } else if(strncmp(argv[i], "sao_pregap=", 11) == 0) {
+     value_pt= argv[i] + 11;
+set_sao_pregap:;
+     skin->sao_pregap= -1;
+     if(strcmp(value_pt, "off") == 0)
+       skin->sao_pregap = -1;
+     else
+       sscanf(value_pt, "%d", &(skin->sao_pregap));
+     if(skin->sao_pregap < 0) {
+       fprintf(stderr,
+             "cdrskin: SORRY : sao_pregap must be \"off\" or a number >= 0\n");
+       return(0);
+     }
+
    } else if(strncmp(argv[i],"-speed=",7)==0) {
      value_pt= argv[i]+7;
      goto set_speed;
@@ -8413,7 +8477,10 @@ track_too_large:;
      if(skin->next_isrc[0])
        memcpy(skin->tracklist[skin->track_counter]->isrc, skin->next_isrc, 13);
      skin->tracklist[skin->track_counter]->index_string= skin->index_string;
+     skin->tracklist[skin->track_counter]->sao_pregap= skin->sao_pregap;
+     skin->tracklist[skin->track_counter]->sao_postgap= skin->sao_postgap;
      skin->index_string= NULL;
+     skin->sao_postgap= skin->sao_pregap= -1;
      skin->track_counter++;
      skin->use_data_image_size= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD) {
