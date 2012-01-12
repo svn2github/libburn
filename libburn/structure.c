@@ -1500,6 +1500,28 @@ ex:;
 	return ret;
 }
 
+static int cue_check_for_track(struct burn_cue_file_cursor *crs, char *cmd,
+				int flag)
+{
+	int ret;
+	char *msg = NULL;
+
+	if (crs->track == NULL) {
+		BURN_ALLOC_MEM(msg, char, 4096);
+		sprintf(msg, "In cue sheet file: %s found before TRACK",
+			cmd);
+		libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		ret = 0; goto ex;
+	}
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+	
 static int cue_interpret_line(struct burn_session *session, char *line,
 				struct burn_cue_file_cursor *crs, int flag)
 {
@@ -1634,13 +1656,9 @@ not_usable_file:;
 			goto ex;
 
 	} else if (strcmp(cmd, "FLAGS") == 0) {
-		if (crs->track == NULL) {
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
-				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				"In cue sheet file: FLAGS found before TRACK",
-				0, 0);
-			ret = 0; goto ex;
-		}
+		ret = cue_check_for_track(crs, cmd, 0);
+		if (ret <= 0)
+			goto ex;
 		while (*apt) {
 			if (strncmp(apt, "DCP", 3) == 0) {
 				crs->track_mode |= BURN_COPY;
@@ -1679,14 +1697,9 @@ bad_flags:;
 		burn_track_define_data(crs->track, 0, 0, 1, crs->track_mode);
 
 	} else if (strcmp(cmd, "INDEX") == 0) {
-		if (crs->track == NULL) {
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
-				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				"In cue sheet file: INDEX found before TRACK",
-				0, 0);
-			ret = 0; goto ex;
-		}
-
+		ret = cue_check_for_track(crs, cmd, 0);
+		if (ret <= 0)
+			goto ex;
 		ret = cue_read_number(&apt, &index_no, 0);
 		if (ret <= 0)
 			goto ex;
@@ -1776,6 +1789,9 @@ overlapping_ba:;
 		crs->track_has_source = 1;
 
 	} else if (strcmp(cmd, "ISRC") == 0) {
+		ret = cue_check_for_track(crs, cmd, 0);
+		if (ret <= 0)
+			goto ex;
 		ret = cue_set_cdtext(session, crs->track, 0x8e, apt, crs,
                                      1 | 2);
 		if (ret <= 0)
@@ -1797,22 +1813,21 @@ overlapping_ba:;
 			goto ex;
 
 	} else if (strcmp(cmd, "POSTGAP") == 0) {
-
-		/* >>> ??? implement ? */;
-
-		libdax_msgs_submit(libdax_messenger, -1, 0x00020195,
-			LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
-			"In cue sheet file: POSTGAP command not supported",
-			0, 0);
+		ret = cue_check_for_track(crs, cmd, 0);
+		if (ret <= 0)
+			goto ex;
+		ret = cue_read_timepoint_lba(apt, "post-gap duration",
+					 	&file_ba, 0);
+		if (ret <= 0)
+			goto ex;
+		ret = burn_track_set_postgap_size(crs->track, file_ba, 0);
+		if (ret <= 0)
+			goto ex;
 
 	} else if (strcmp(cmd, "PREGAP") == 0) {
-		if (crs->track == NULL) {
-			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
-				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				"In cue sheet file: INDEX found before TRACK",
-				0, 0);
-			ret = 0; goto ex;
-		}
+		ret = cue_check_for_track(crs, cmd, 0);
+		if (ret <= 0)
+			goto ex;
 		ret = cue_read_timepoint_lba(apt, "pre-gap duration",
 					 	&file_ba, 0);
 		if (ret <= 0)

@@ -112,7 +112,7 @@ The two binary bytes form a big-endian index to the following list.
 Sony documents the cleartext part as "Genre information that would supplement
 the Genre Code, such as 'USA Rock music in the 60s'". Always ASCII encoded.
 
-Pack type 0x88 records information from the CDs Table of Content, as of
+Pack type 0x88 records information from the CD's Table of Content, as of
 READ PMA/TOC/ATIP Format 0010b (mmc5r03c.pdf, table 490 TOC Track Descriptor
 Format, Q Sub-channel).
 See below, Format of CD-TEXT packs, for more details about the content of
@@ -682,9 +682,8 @@ TITLE "Joyful Nights"
 
 --------------------------------------
 
-Several restrictions apply in the libburn call burn_session_by_cue_file():
+Some restrictions apply in the libburn call burn_session_by_cue_file():
 
-Command POSTGAP gets ignored.
 Only FILE types BINARY, MOTOROLA, WAVE are allowed.
 Only TRACK datatypes AUDIO, MODE1/2048 are allowed. They may not be mixed in
 the same session.

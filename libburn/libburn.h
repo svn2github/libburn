@@ -1867,17 +1867,18 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     CD-TEXT according to the content of the file.
     For a description of CDRWIN file format see
       http://digitalx.org/cue-sheet/syntax/
->>> fully supported commands: CATALOG CDTEXTFILE FLAGS INDEX ISRC PERFORMER REM
->>>                           SONGWRITER TITLE
->>> supported commands introduced by cdrecord: ARRANGER COMPOSER MESSAGE
->>> partly supported commands: FILE TRACK 
->>> supported FILE types: BINARY MOTOROLA WAVE
->>> supported TRACK datatypes: AUDIO MODE1/2048
->>> ignored commands: POSTGAP PREGAP
->>> not allowed: mixing of AUDIO and MODE1/2048
->>> not allowed: unsupported FILE types
->>> not allowed: unsupported TRACK datatypes
->>> 
+    Fully supported commands are:
+      CATALOG , CDTEXTFILE , FLAGS , INDEX , ISRC , PERFORMER ,
+      POSTGAP , PREGAP , REM , SONGWRITER , TITLE
+    Further supported commands introduced by cdrecord (usage like PERFORMER):
+      ARRANGER , COMPOSER , MESSAGE
+    Partly supported commands are:
+      FILE which supports only types BINARY , MOTOROLA , WAVE
+      TRACK which supports only datatypes AUDIO , MODE1/2048
+    Unsupported types of FILE or TRACK lead to failure of the call.
+    libburn does not yet support mixing of AUDIO and MODE1/2048. So this call
+    will fail if such a mix is found.
+    Empty lines and lines which start by '#' are ignored.
     @param session     Session where to attach tracks. It must not yet have
                        tracks or else this call will fail.
     @param path        Filesystem address of the CDRWIN cue sheet file.
