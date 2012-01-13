@@ -6010,6 +6010,7 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
    printf("%sTrack %-2.2d: Total bytes read/written: %.f/%.f (%.f sectors).\n",
           debug_mark, old_track_idx + start_tno, fixed_size,fixed_size+padding,
           (fixed_size+padding)/sector_size);
+   *last_count= 0;
  }
 
  sector_size= 2048.0;
@@ -6070,10 +6071,11 @@ thank_you_for_patience:;
  }
  if(written_bytes==written_total_bytes && elapsed_total_time>0) {
    measured_speed= measured_total_speed;
- } else if(elapsed_time>0.0)
+ } else if(elapsed_time>0.0) {
    measured_speed= written_bytes/elapsed_time;
- else if(written_bytes>0.0)
+ } else if(written_bytes>0.0) {
    measured_speed= 99.91*Cdrskin_speed_factoR;
+ }
 
  if(measured_speed<=0.0 && written_total_bytes>=skin->fixed_size && 
     skin->fixed_size>0) {
