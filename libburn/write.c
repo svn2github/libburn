@@ -301,6 +301,7 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
+#define Libburn_write_with_function_print_cuE yes
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -1127,8 +1128,8 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 					           t->entry->control, t->mode))
 					{ ret = 0; goto ex; }
 
-		/* Flush buffer to avoid influence of previous track or pregap
-		   on track counter */
+		/* ts B20113 : Flush buffer to avoid influence pregap
+		               on track counter */
 		ret = sector_write_buffer(d, NULL, 0);
 		if (ret <= 0)
 			goto ex;
@@ -1215,29 +1216,20 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		d->progress.sector++;
 	}
 
-	if (t->postgap)
+	/* ts B20113 : Flush buffer to get buffered bytes assigned to the
+	               track counter */
+	ret = sector_write_buffer(d, t, 0);
+	if (ret <= 0)
+		goto ex;
+
+	if (t->postgap && o->write_type != BURN_WRITE_TAO) {
 		for (i = 0; i < t->postgap_size; i++)
 			if (!sector_postgap(o, t->entry->point,
 						 t->entry->control, t->mode))
 				{ ret = 0; goto ex; }
-	i = t->offset;
-	if (o->write_type == BURN_WRITE_SAO) {
-		if (d->buffer->bytes) {
-			int err;
-			err = d->write(d, d->nwa, d->buffer);
-			if (err == BE_CANCELLED)
-				{ ret = 0; goto ex; }
-
-			/* A61101 : probably this is not all payload data */
-			/* A61108 : but audio count is short without this */
-			t->writecount += d->buffer->bytes;
-			t->written_sectors += d->buffer->sectors;
-			d->progress.buffered_bytes += d->buffer->bytes;
-
-			d->nwa += d->buffer->sectors;
-			d->buffer->bytes = 0;
-			d->buffer->sectors = 0;
-		}
+		ret = sector_write_buffer(d, NULL, 0);
+		if (ret <= 0)
+			goto ex;
 	}
 
 	/* ts A61103 */
