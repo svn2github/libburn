@@ -6630,10 +6630,13 @@ int Cdrskin_cdrtracks_from_session(struct CdrskiN *skin,
    /* Set essential properties */
    t= skin->tracklist[skin->track_counter];
    t->track_type= burn_track_get_mode(tracks[i]);
-   if(t->track_type == BURN_AUDIO)
+   if(t->track_type & BURN_AUDIO) {
      t->sector_size= 2352;
-   else
+     t->track_type= BURN_AUDIO;
+   } else {
      t->sector_size= 2048;
+     t->track_type= BURN_MODE1;
+   }
    sectors= burn_track_get_sectors(tracks[i]);
    t->fixed_size= sectors * t->sector_size;
    t->libburn_track= tracks[i];
