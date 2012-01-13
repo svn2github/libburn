@@ -6368,6 +6368,7 @@ int Cdrskin_announce_tracks(struct CdrskiN *skin, int start_tno, int flag)
      frac= (seconds-min*60-sec)*100;
      if(frac>99)
        frac= 99;
+     sectors+= 150;
      printf("Lout start:    %5d MB (%-2.2d:%-2.2d/%-2.2d) = %d sectors\n",
             mb,min,sec,frac,(int) sectors);
    }
@@ -6774,13 +6775,11 @@ burn_failed:;
      }
      Cdrtrack_get_size(skin->tracklist[i],&size,&padding,&sector_size,
                        &use_data_image_size,0);
-     if(use_data_image_size==1) { /* still unfulfilled -isosize demand pending */
+     if(use_data_image_size==1) {
+       /* still unfulfilled -isosize demand pending */
        needs_early_fifo_fill= 1;
-     } else if(size>0)
-       skin->fixed_size+= size+padding;
-     else
-       skin->has_open_ended_track= 1;
-     non_audio= (skin->tracklist[i]->track_type != BURN_AUDIO);
+     }
+     non_audio|= (skin->tracklist[i]->track_type != BURN_AUDIO);
    }
  }
 
