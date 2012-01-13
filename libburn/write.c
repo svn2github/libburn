@@ -1052,7 +1052,12 @@ int burn_disc_init_track_status(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 
 	/* Update progress */
+
+	/* >>> ts B20113 : This is wrong, because nwa does not count buffered
+	                   but yet unwritten sectors.
+	*/
 	d->progress.start_sector = d->nwa;
+
 	d->progress.sectors = sectors;
 	d->progress.sector = 0;
 
@@ -1121,6 +1126,13 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 				if (!sector_pregap(o, t->entry->point,
 					           t->entry->control, t->mode))
 					{ ret = 0; goto ex; }
+
+		/* Flush buffer to avoid influence of previous track or pregap
+		   on track counter */
+		ret = sector_write_buffer(d, NULL, 0);
+		if (ret <= 0)
+			goto ex;
+
 	} else {
 		o->control = t->entry->control;
 		d->send_write_parameters(d, s, tnum, o);

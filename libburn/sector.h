@@ -24,6 +24,10 @@ int sector_postgap(struct burn_write_opts *, unsigned char tno,
 int sector_lout(struct burn_write_opts *, unsigned char control, int mode);
 int sector_data(struct burn_write_opts *, struct burn_track *t, int psub);
 
+/* ts B20113 */
+int sector_write_buffer(struct burn_drive *d,
+			struct burn_track *track, int flag);
+
 /* ts A61009 */
 int sector_headers_is_ok(struct burn_write_opts *o, int mode);
 

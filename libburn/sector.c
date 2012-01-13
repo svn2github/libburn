@@ -223,6 +223,36 @@ ex:;
 	}
 }
 
+
+/* ts B20113 : outsourced from get_sector() */
+int sector_write_buffer(struct burn_drive *d, 
+			struct burn_track *track, int flag)
+{
+	int err;
+	struct buffer *out;
+
+	out = d->buffer;
+	if (out->sectors <= 0)
+		return 2;
+	err = d->write(d, d->nwa, out);
+	if (err == BE_CANCELLED)
+		return 0;
+
+	/* ts A61101 */
+	if(track != NULL) {
+		track->writecount += out->bytes;
+		track->written_sectors += out->sectors;
+	}
+	/* ts A61119 */
+	d->progress.buffered_bytes += out->bytes;
+
+	d->nwa += out->sectors;
+	out->bytes = 0;
+	out->sectors = 0;
+	return 1;
+}
+
+
 /* ts A61009 : seems to hand out sector start pointer in opts->drive->buffer
 		and to count hand outs as well as reserved bytes */
 /* ts A61101 : added parameter track for counting written bytes */
@@ -231,7 +261,7 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 {
 	struct burn_drive *d = opts->drive;
 	struct buffer *out = d->buffer;
-	int outmode, seclen;
+	int outmode, seclen, write_ret;
 	unsigned char *ret;
 
 	outmode = get_outmode(opts);
@@ -250,22 +280,9 @@ static unsigned char *get_sector(struct burn_write_opts *opts,
 	/* (there is enough buffer size reserve for track->cdxa_conversion) */
 	if (out->bytes + seclen > BUFFER_SIZE ||
 	    (opts->obs > 0 && out->bytes + seclen > opts->obs)) {
-		int err;
-		err = d->write(d, d->nwa, out);
-		if (err == BE_CANCELLED)
+		write_ret = sector_write_buffer(d, track, 0);
+		if (write_ret <= 0)
 			return NULL;
-
-		/* ts A61101 */
-		if(track != NULL) {
-			track->writecount += out->bytes;
-			track->written_sectors += out->sectors;
-		}
-		/* ts A61119 */
-		d->progress.buffered_bytes += out->bytes;
-
-		d->nwa += out->sectors;
-		out->bytes = 0;
-		out->sectors = 0;
 	}
 	ret = out->data + out->bytes;
 	out->bytes += seclen;
