@@ -228,7 +228,7 @@ ex:;
 int sector_write_buffer(struct burn_drive *d, 
 			struct burn_track *track, int flag)
 {
-	int err;
+	int err, i;
 	struct buffer *out;
 
 	out = d->buffer;
@@ -242,6 +242,13 @@ int sector_write_buffer(struct burn_drive *d,
 	if(track != NULL) {
 		track->writecount += out->bytes;
 		track->written_sectors += out->sectors;
+
+		/* Determine index of d->nwa */
+		for (i = d->progress.index; i + 1 < track->indices; i++) {
+			if (track->index[i + 1] > d->nwa + out->sectors)
+		break;
+			d->progress.index = i + 1;
+		}
 	}
 	/* ts A61119 */
 	d->progress.buffered_bytes += out->bytes;

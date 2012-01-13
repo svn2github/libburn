@@ -1047,15 +1047,13 @@ ex:;
 
 /* ts A61218 : outsourced from burn_write_track() */
 int burn_disc_init_track_status(struct burn_write_opts *o,
-				struct burn_session *s, int tnum, int sectors)
+				struct burn_session *s, struct burn_track *t,
+				int tnum, int sectors)
 {
 	struct burn_drive *d = o->drive;
 
 	/* Update progress */
 
-	/* >>> ts B20113 : This is wrong, because nwa does not count buffered
-	                   but yet unwritten sectors.
-	*/
 	d->progress.start_sector = d->nwa;
 
 	d->progress.sectors = sectors;
@@ -1064,6 +1062,13 @@ int burn_disc_init_track_status(struct burn_write_opts *o,
 	/* ts A60831: added tnum-line, extended print message on proposal
            by bonfire-app@wanadoo.fr in http://libburn.pykix.org/ticket/58 */
         d->progress.track = tnum;
+
+	/* ts B20113 */
+	d->progress.indices = t->indices;
+	d->progress.index = 0;
+	if (d->progress.indices > 1)
+		if (t->index[0] == 0x7fffffff)
+			d->progress.index = 1;
 
 	/* ts A61102 */
 	d->busy = BURN_DRIVE_WRITING;
@@ -1172,7 +1177,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	sectors = burn_track_get_sectors(t);
 	open_ended = burn_track_is_open_ended(t);
 
-	burn_disc_init_track_status(o, s, tnum, sectors);
+	burn_disc_init_track_status(o, s, t, tnum, sectors);
 
 	/* ts A61030 : this cannot happen. tnum is always < s->tracks */
 	if (tnum == s->tracks)
@@ -1821,7 +1826,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 
 	/* (offset padding is done within sector_data()) */
 
-	burn_disc_init_track_status(o, s, tnum, sectors);
+	burn_disc_init_track_status(o, s, t, tnum, sectors);
 	for (i = 0; open_ended || i < sectors; i++) {
 
 		/* From time to time inquire drive buffer */
@@ -2660,7 +2665,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 	BURN_ALLOC_MEM(buf, char, bufsize);
 
 	sectors = burn_track_get_sectors(t);
-	burn_disc_init_track_status(o, s, tnum, sectors);
+	burn_disc_init_track_status(o, s, t, tnum, sectors);
 	open_ended = burn_track_is_open_ended(t);
 
 	t->end_on_premature_eoi = (o->write_type == BURN_WRITE_TAO);
