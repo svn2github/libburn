@@ -243,7 +243,7 @@ int sector_write_buffer(struct burn_drive *d,
 		track->writecount += out->bytes;
 		track->written_sectors += out->sectors;
 
-		/* Determine index of d->nwa */
+		/* Determine current index */
 		for (i = d->progress.index; i + 1 < track->indices; i++) {
 			if (track->index[i + 1] > d->nwa + out->sectors)
 		break;
