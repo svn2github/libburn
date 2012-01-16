@@ -1878,6 +1878,7 @@ int burn_disc_remove_session(struct burn_disc *d, struct burn_session *s);
     Unsupported types of FILE or TRACK lead to failure of the call.
     libburn does not yet support mixing of AUDIO and MODE1/2048. So this call
     will fail if such a mix is found.
+    CD-TEXT information is allowed only if all tracks are of datatype AUDIO.
     Empty lines and lines which start by '#' are ignored.
     @param session     Session where to attach tracks. It must not yet have
                        tracks or else this call will fail.

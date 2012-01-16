@@ -340,13 +340,13 @@ static void print_cue(struct cue_sheet *sheet)
 				cue_printify(unit[5]), cue_printify(unit[6]), 
 				cue_printify(unit[7]));
 		} else if (unit[1] > 99) {
-			printf(" %1X  %1X |0x%02X| %02X | %02X | %02X |",
+			printf(" %1X  %1X |0x%02X| %2d | %02X | %02X |",
 				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
 				unit[1], unit[2], unit[3], unit[4]);
 			printf(" %02d:%02d:%02d |\n",
 				unit[5], unit[6], unit[7]);
 		} else {
-			printf(" %1X  %1X | %2d | %02X | %02X | %02X |",
+			printf(" %1X  %1X | %2d | %2d | %02X | %02X |",
 				(unit[0] & 0xf0) >> 4, unit[0] & 0xf,
 				unit[1], unit[2], unit[3], unit[4]);
 			printf(" %02d:%02d:%02d |\n",
@@ -1351,6 +1351,35 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 }
 
 
+static int precheck_write_is_audio(struct burn_disc *disc, int flag)
+{
+	struct burn_session **sessions;
+	int num_sessions, i, j;
+
+	sessions = burn_disc_get_sessions(disc, &num_sessions);
+	for (i = 0; i < num_sessions; i++)
+		for (j = 0; j < sessions[i]->tracks; j++)
+			if (!(sessions[i]->track[j]->mode & BURN_AUDIO))
+				return 0;
+	return 1;
+}
+
+
+static int precheck_disc_has_cdtext(struct burn_disc *disc, int flag)
+{
+	struct burn_session **sessions;
+	int num_sessions, i, ret;
+
+	sessions = burn_disc_get_sessions(disc, &num_sessions);
+	for (i = 0; i < num_sessions; i++) {
+		ret = burn_cdtext_from_session(sessions[i], NULL, NULL, 1);
+		if (ret > 0)
+			return 1;
+	}
+	return 0;
+}
+
+
 /* ts A70219 : API */
 int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 				 char reasons[BURN_REASONS_LEN], int silent)
@@ -1358,7 +1387,7 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;
 	char *msg = NULL, *reason_pt;
-	int no_media = 0;
+	int no_media = 0, ret, has_cdtext;
 
 	reason_pt= reasons;
 	reasons[0] = 0;
@@ -1385,10 +1414,22 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	reason_pt= reasons + strlen(reasons);
 	if (d->status == BURN_DISC_UNSUITABLE)
 		goto unsuitable_profile;
-	if (d->current_profile != 0x09 && d->current_profile != 0x0a)
-		if (o->num_text_packs > 0)
+	if (o->num_text_packs > 0) {
+		has_cdtext = 1;
+	} else {
+		has_cdtext = precheck_disc_has_cdtext(disc, 0);
+	}
+	if (has_cdtext > 0) {
+		if (d->current_profile == 0x09 || d->current_profile == 0x0a) {
+			ret = precheck_write_is_audio(disc, 0);
+			if (ret <= 0)
+				strcat(reasons,
+			"CD-TEXT supported only with pure audio CD media, ");
+		} else {
 			strcat(reasons,
-				"CD-TEXT supported only with write CD media, ");
+				"CD-TEXT supported only with CD media, ");
+		}
+	}
 	if (d->drive_role == 2 || d->drive_role == 5 ||
 		d->current_profile == 0x1a || d->current_profile == 0x12 ||
 		d->current_profile == 0x43) { 
