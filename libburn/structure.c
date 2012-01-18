@@ -1129,6 +1129,7 @@ struct burn_cue_file_cursor {
 	int start_track_no;
 	struct burn_source *offst_source;
 	int current_file_ba;
+	int current_index_ba;
 	struct burn_track *prev_track;
 	int prev_file_ba;
 	int prev_block_size;
@@ -1161,6 +1162,7 @@ static int cue_crs_new(struct burn_cue_file_cursor **reply, int flag)
 	crs->start_track_no = 1;
 	crs->offst_source = NULL;
 	crs->current_file_ba = -1000000000;
+	crs->current_index_ba = -1000000000;
 	crs->prev_track = NULL;
 	crs->prev_file_ba = -1000000000;
 	crs->prev_block_size = 0;
@@ -1316,6 +1318,7 @@ static int cue_attach_track(struct burn_session *session,
 	crs->track_current_index = -1;
 	crs->track_has_source = 0;
 	crs->current_file_ba = -1;
+	crs->current_index_ba = -1;
 	if (!crs->block_size_locked)
 		crs->block_size = 0;
 	return 1;
@@ -1715,7 +1718,8 @@ overlapping_ba:;
 				0, 0);
 			ret = 0; goto ex;
 		}
-
+		if (file_ba < crs->current_index_ba)
+			goto overlapping_ba;
 		if (crs->prev_track != NULL && crs->track_current_index < 0) {
 			size = (file_ba - crs->prev_file_ba) *
 							crs->prev_block_size;
@@ -1727,7 +1731,7 @@ overlapping_ba:;
 		    !(crs->track_current_index < 0 && index_no <= 1)) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				"Backward INDEX number in cue sheet file",
+				"Unacceptable INDEX number in cue sheet file",
 				0, 0);
 			ret = 0; goto ex;
 		}
@@ -1735,6 +1739,7 @@ overlapping_ba:;
 
 		if (crs->current_file_ba < 0)
 			crs->current_file_ba = file_ba;
+		crs->current_index_ba = file_ba;
 
 		/* Set index address relative to track source start */
 		ret = burn_track_set_index(crs->track, index_no,
