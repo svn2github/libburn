@@ -1070,6 +1070,11 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	sprintf(msg, "[%X %2.2X %2.2X] ", *key, *asc, *ascq);
 	msg= msg + strlen(msg);
 
+	if (key_def[*key & 0xf][0] != '(') {
+		sprintf(msg, "%s. ", key_def[*key & 0xf]);
+		msg= msg + strlen(msg);
+	}
+
 	switch (*asc) {
 	case 0x00:
 		if (*key > 0 || *ascq > 0) 
@@ -1079,17 +1084,15 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 
 	case 0x02:
 		sprintf(msg, "Not ready");
-		return RETRY;
+		goto return_retry;
 	case 0x04:
 		if (*ascq == 1)
 			sprintf(msg,
 			"Logical unit is in the process of becoming ready");
 		else
 			sprintf(msg, "Logical unit is not ready");
-		return RETRY;
+		goto return_retry;
 	case 0x08:
-		if (*key != 4)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Logical unit communication failure");
 		else if (*ascq == 1)
@@ -1098,10 +1101,10 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "Logical unit communication parity error");
 		else if (*ascq == 3)
 			sprintf(msg, "Logical unit communication crc error");
-		return RETRY;
-	case 0x09:
-		if (*key != 4)
+		else
 			break;
+		goto return_retry;
+	case 0x09:
 		if (*ascq == 0)
 			sprintf(msg, "Track following error");
 		else if (*ascq == 1)
@@ -1114,24 +1117,27 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "Head select fault");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x0C:
-		if (*key == 2 && *ascq == 7)
-			sprintf(msg, "Write error, recovery needed"); 
-		else if (*key == 2 && *ascq == 0x0f)
-			sprintf(msg, "Defects in error window"); 
-		else if (*key == 3 && *ascq == 2)
-			sprintf(msg, "Write error, auto reallocation failed");
-		else if (*key == 3 && *ascq == 9)
-			sprintf(msg, "Write error, loss of streaming");
-		else if (*key == 3)
+		if (*ascq == 0)
 			sprintf(msg, "Write error");
+		else if (*ascq == 1)
+			sprintf(msg,
+				"Write error, recovered with auto-allocation");
+		else if (*ascq == 2)
+			sprintf(msg, "Write error, auto reallocation failed");
+		else if (*ascq == 7)
+			sprintf(msg, "Write error, recovery needed"); 
+		else if (*ascq == 8)
+			sprintf(msg, "Write error, recovery failed"); 
+		else if (*ascq == 9)
+			sprintf(msg, "Write error, loss of streaming");
+		else if (*ascq == 0x0f)
+			sprintf(msg, "Defects in error window"); 
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x11:
-		if (*key != 3)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Unrecovered read error");
 		else if (*ascq == 1)
@@ -1144,70 +1150,73 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "CIRC uncorrectable error");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x15:
-		if (*key != 3 && *key != 4)
+		if (*ascq == 0)
+			sprintf(msg, "Random positioning error");
+		else if (*ascq == 1)
+			sprintf(msg, "Mechanical positioning error");
+		else
 			break;
-		sprintf(msg, "Random positioning error");
-		return FAIL;
+		goto return_fail;
 	case 0x1a:
-		if (*key != 5)
+		if (*ascq == 0)
+			sprintf(msg, "Parameter list length error");
+		else
 			break;
-		sprintf(msg, "Parameter list length error");
-		return FAIL;
+		goto return_fail;
 	case 0x1b:
-		if (*key != 4)
+		if (*ascq == 0)
+			sprintf(msg, "Synchronous data transfer error");
+		else
 			break;
-		sprintf(msg, "Synchronous data transfer error");
-		return FAIL;
+		goto return_fail;
 	case 0x20:
-		if (*key != 5)
+		if (*ascq == 0)
+			sprintf(msg, "Invalid command operation code");
+		else
 			break;
-		sprintf(msg, "Invalid command operation code");
-		return FAIL;
+		goto return_fail;
 	case 0x21:
-		if (*key != 5)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Lba out of range");
+		else if (*ascq == 1)
+			sprintf(msg, "Invalid element address");
+		else if (*ascq == 2)
+			sprintf(msg, "Invalid address for write");
 		else if (*ascq == 3)
 			sprintf(msg, "Invalid write crossing layer jump");
 		else
-			sprintf(msg, "Invalid address");
-		return FAIL;
+			break;
+		goto return_fail;
 	case 0x24:
-		if (*key != 5)
+		if (*ascq == 0)
+			sprintf(msg, "Invalid field in cdb");
+		else
 			break;
-		sprintf(msg, "Invalid field in cdb");
-		return FAIL;
+		goto return_fail;
 	case 0x26:
-		if (*key != 5)
-			break;
-		if (*ascq == 1)
+		if (*ascq == 0)
+			sprintf(msg, "Invalid field in parameter list");
+		else if (*ascq == 1)
 			sprintf(msg, "Parameter not supported");
 		else if (*ascq == 2)
 			sprintf(msg, "Parameter value invalid");
 		else
-			sprintf(msg, "Invalid field in parameter list");
-		return FAIL;
+			break;
+		goto return_fail;
 	case 0x27:
-		if (*key != 7)
-			break;
 		sprintf(msg, "Write protected");
-		return FAIL;
+		goto return_fail;
 	case 0x28:
-		if (*key != 6)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Medium may have changed");
 		else if (*ascq == 2)
 			sprintf(msg, "Format layer may have changed");
 		else
 			break;
-		return RETRY;
+		goto return_retry;
 	case 0x29:
-		if (*key != 6)
-			break;
 		if (*ascq == 0)
 			sprintf(msg,
                                "Power on, reset, or bus device reset occured");
@@ -1221,28 +1230,23 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "Device internal reset");
 		else
 			break;
-		return RETRY;
+		goto return_retry;
 	case 0x2c:
-		if (*key != 5)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Command sequence error");
 		else 
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x2e:
-		if (*key != 6)
-			break;
 		if (*ascq == 0)
-			sprintf(msg,
-                               "Insufficient time for operation");
+			sprintf(msg, "Insufficient time for operation");
 		else 
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x30:
-		if (*key != 2 && *key != 5)
-			break;
-		if (*ascq == 1)
+		if (*ascq == 0)
+			sprintf(msg, "Incompatible medium installed");
+		else if (*ascq == 1)
 			sprintf(msg, "Cannot read medium, unknown format");
 		else if (*ascq == 2)
 			sprintf(msg,
@@ -1258,47 +1262,50 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else if (*ascq == 7)
 			sprintf(msg, "Cleaning failure");
 		else
-			sprintf(msg, "Incompatible medium installed");
-		return FAIL;
-	case 0x31:
-		if (*key != 3)
 			break;
+		goto return_fail;
+	case 0x31:
 		if (*ascq == 0)
 			sprintf(msg, "Medium unformatted or format corrupted");
 		else if (*ascq == 1)
 			sprintf(msg, "Format command failed");
-		return FAIL;
-	case 0x3A:
-		if (*key != 2)
+		else
 			break;
-		if (*ascq == 1)
+		goto return_fail;
+	case 0x3A:
+		if (*ascq == 0)
+			sprintf(msg, "Medium not present");
+		else if (*ascq == 1)
 			sprintf(msg, "Medium not present, tray closed");
 		else if (*ascq == 2)
 			sprintf(msg, "Medium not present, tray open");
 		else if (*ascq == 3)
 			sprintf(msg, "Medium not present, loadable");
 		else
-			sprintf(msg, "Medium not present");
+			break;
 		d->status = BURN_DISC_EMPTY;
-		return FAIL;
+		goto return_fail;
 	case 0x3E:
 		if (*ascq == 1)
 			sprintf(msg, "Logical unit failure");
 		else if (*ascq == 2)
 			sprintf(msg, "Timeout on logical unit");
-		return FAIL;
+		else
+			break;
+		goto return_fail;
 	case 0x44:
 		if (*ascq == 0)
 			sprintf(msg, "Internal target failure");
-		return FAIL;
+		else
+			break;
+		goto return_fail;
 	case 0x57:
-		if (*key != 3 || *ascq != 0)
+		if (*ascq == 0)
+			sprintf(msg, "Unable to recover Table-of-Content");
+		else
 			break;
-		sprintf(msg, "Unable to recover Table-of-Content");
-		return FAIL;
+		goto return_fail;
 	case 0x63:
-		if (*key != 5)
-			break;
 		if (*ascq == 0)
 			sprintf(msg,
 				"End of user area encountered on this track");
@@ -1306,51 +1313,67 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 			sprintf(msg, "Packet does not fit in available space");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x64:
-		if (*key != 5)
-			break;
 		if (*ascq == 0)
 			sprintf(msg, "Illegal mode for this track");
 		else if (*ascq == 1)
 			sprintf(msg, "Invalid packet size");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x72:
-		if (*key == 3)
+		if (*ascq == 0)
 			sprintf(msg, "Session fixation error");
-		else if (*key == 5 && *ascq == 3)
+		else if (*ascq == 1)
+			sprintf(msg, "Session fixation error writing lead-in");
+		else if (*ascq == 2)
+			sprintf(msg,
+				"Session fixation error writing lead-out");
+		else if (*ascq == 3)
 			sprintf(msg,
 			"Session fixation error, incomplete track in session");
-		else if (*key == 5 && *ascq == 4)
+		else if (*ascq == 4)
 			sprintf(msg,
-			"Empty or partially written reserved track");
-		else if (*key == 5 && *ascq == 5)
-			sprintf(msg,
-			"No more track reservations allowed");
+				"Empty or partially written reserved track");
+		else if (*ascq == 5)
+			sprintf(msg, "No more track reservations allowed");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	case 0x73:
-		if (*key == 3 && *ascq == 0)
+		if (*ascq == 0)
 			sprintf(msg, "CD control error");
-		else if (*key == 3 && *ascq == 2)
+		else if (*ascq == 1)
+			sprintf(msg, "Power calibration area almost full");
+		else if (*ascq == 2)
 			sprintf(msg, "Power calibration area is full");
-		else if (*key == 3 && *ascq == 3)
+		else if (*ascq == 3)
 			sprintf(msg, "Power calibration area error");
-		else if (*key == 3 && *ascq == 4)
+		else if (*ascq == 4)
 			sprintf(msg, "Program memory area update failure");
-		else if (*key == 3 && *ascq == 5)
+		else if (*ascq == 5)
 			sprintf(msg, "Program memory area is full");
 		else
 			break;
-		return FAIL;
+		goto return_fail;
 	}
 	sprintf(msg_data,
 		"See MMC specs: Sense Key %X \"%s\", ASC %2.2X ASCQ %2.2X",
 		*key & 0xf, key_def[(*key) & 0xf], *asc, *ascq);
+	goto return_fail;
+
+return_fail:
+	strcat(msg, ".");
+	if (*key == 1)
+		return GO_ON;
 	return FAIL;
+
+return_retry:;
+	strcat(msg, ".");
+	if (*key == 1)
+		return GO_ON;
+	return RETRY;
 }
 
 
