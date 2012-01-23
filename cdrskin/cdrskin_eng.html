@@ -293,9 +293,11 @@ Misinterpreted mode page 2A if block descriptors are present
 <LI>Implemented options -scms -copy -nocopy -preemp -nopreemp</LI>
 <LI>Implemented option index=</LI>
 <LI>Partly implemented options cuefile= and -text</LI>
-<LI>New cdrskin option input_sheet_v07t= for CD-TEXT definition</LI>
-<LI>New cdrskin options --cdtext_dummy and --cdtext_verbose</LI>
-<LI>New cdrskin options --four_channel --two_channel</LI>
+<LI>New option input_sheet_v07t= for CD-TEXT definition</LI>
+<LI>New options --cdtext_dummy and --cdtext_verbose</LI>
+<LI>New options --four_channel --two_channel</LI>
+<LI>New option cd_start_tno=</LI>
+<LI>New options sao_pregap=, sao_postgap=</LI>
 </LI>
 <!--
 <LI>none yet</LI>
@@ -306,6 +308,7 @@ Misinterpreted mode page 2A if block descriptors are present
 
 <DD>Bug fixes towards cdrskin-1.1.8:
 <UL>
+<LI>Memory fault if interupted before writing began</LI>
 <LI>Solaris adapter mishandled write commands which failed on first try</LI>
 <LI>Interrupting libburn while drive tray is loading led to endless loop</LI>
 <LI>Progress report with blanking and formatting could be bogus</LI>

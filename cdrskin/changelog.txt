@@ -10819,13 +10819,17 @@ Bug fix: Progress report with blanking and formatting could be bogus
 cdrskin/cdrskin.c
 Reacted on compiler warnings about rev 4535
 
-  []
+2012.01.05.123114  [4538]
 ChangeLog
 cdrskin/changelog.txt
 cdrskin/cdrskin_eng.html
-Updated change log
+Updated change log and web page
 
------------------------------------- cycle  - cdrskin-1.1.9 - 
+2012.01.05.140927  [4539]
+libburn/write.c
+Reacted on compiler warning about rev 4519
+
+------------------------------------ cycle  - cdrskin-1.1.9 - 2012.01.05.141340
 * New API call burn_session_input_sheet_v07t()
 * New API calls burn_cdtext_from_packfile() and burn_session_by_cue_file()
 * New API call burn_track_set_isrc_string()
@@ -10839,12 +10843,228 @@ Updated change log
 * Bug fix: Progress report with blanking and formatting could be bogus
 
 
+2012.01.06.125849  [4540]
+libburn/libburn.h
+libburn/structure.c
+cdrskin/cdrskin.1
+doc/cdtext.txt
+Implemented data extraction from cue sheet FILE type WAVE
+
+2012.01.07.190901  [4541]
+libburn/libburn.h
+libburn/libdax_msgs.h
+libburn/drive.c
+libburn/structure.c
+libburn/write.c
+libburn/spc.c
+libburn/mmc.c
+libburn/libburn.ver
+New API call burn_session_set_start_tno()
+
+2012.01.08.132304  [4542]
+libburn/libburn.h
+libburn/structure.c
+libburn/cdtext.c
+doc/cdtext.txt
+Implemented track number starts > 1 with .cue and v07t.txt files
+
+2012.01.08.140810  [4543]
+libburn/libburn.h
+libburn/libburn.ver
+libburn/structure.c
+New API call burn_session_get_start_tno()
+
+2012.01.08.141104  [4544]
+cdrskin/cdrskin.c
+While writing: Reporting track numbers with correct start number offset
+
+2012.01.08.154822  [4545]
+cdrskin/cdrskin.c
+Corrected display of track number offset with -toc and -minfo
+
+2012.01.08.191443  [4546]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin option cd_start_tno=
+
+2012.01.10.122000  [4547]
+libburn/libburn.h
+libburn/libburn.ver
+libburn/structure.h
+libburn/structure.c
+libburn/write.c
+New API call burn_track_set_pregap_size()
+
+2012.01.10.124916  [4548]
+libburn/write.c
+Removed a development test contraption introduced by previous revision
+
+2012.01.11.111602  [4549]
+libburn/write.c
+Enabled pre-gap size for tracks other than the first one
+
+2012.01.11.122013  [4550]
+libburn/write.c
+Reacted on compiler warning
+
+2012.01.11.122158  [4551]
+libburn/structure.c
+doc/cdtext.txt
+cdrskin/cdrskin.1
+Interpreting .cue file command PREGAP
+
+2012.01.11.122442  [4552]
+libburn/structure.h
+libburn/structure.c
+libburn/mmc.h
+libburn/mmc.c
+Obtaining more accurate track sizes for CD with pre-gap
+
+2012.01.11.132847  [4553]
+cdrskin/cdrskin.c
+Corrected track number of blank track reported by cdrskin -minfo
+
+2012.01.11.132946  [4554]
+libburn/libburn.h
+Clarified meaning of parameter trackno with call burn_disc_track_lba_nwa()
+
+2012.01.12.084429  [4555]
+libburn/libburn.h
+libburn/libburn.ver
+libburn/libdax_msgs.h
+libburn/structure.h
+libburn/structure.c
+libburn/write.c
+New API call burn_track_set_postgap_size()
+
+2012.01.12.120316  [4556]
+libburn/libburn.h
+libburn/structure.c
+doc/cdtext.txt
+cdrskin/cdrskin.1
+Interpreting .cue file command POSTGAP
+
+2012.01.12.191143  [4557]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin options sao_pregap=, sao_postgap=
+
+2012.01.13.101844  [4558]
+cdrskin/cdrskin.c
+Avoided display of negative speed numbers at track change
+
+2012.01.13.122205  [4559]
+libburn/write.c
+libburn/sector.h
+libburn/sector.c
+Flushing buffer to MMC before a new track begins
+
+2012.01.13.141517  [4560]
+cdrskin/cdrskin.c
+Corrected type and sector size for .cue generated tracks
+
+2012.01.13.142723  [4561]
+libburn/write.c
+Corrected write count for tracks with post-gap
+
+2012.01.13.150949  [4562]
+libburn/write.c
+Removed development macro which sneaked in with previous revision
+
+2012.01.13.151126  [4563]
+cdrskin/cdrskin.c
+Corrected total size summary of cdrskin before burn start
+
+2012.01.13.170914  [4564]
+libburn/write.c
+libburn/sector.c
+Implemented index reporting for struct burn_progress
+
+15 Jan 2012  [4568]
+doc/cookbook.txt
+Updated SAO cookbook about indice, pre-gap, post-gap
+
+2012.01.16.112048  [4570]
+libburn/sector.c
+Corrected a comment
+
+2012.01.16.112258  [4571]
+libburn/libburn.h
+libburn/write.c
+Preventing CD-TEXT with sessions that are not pure audio
+
+2012.01.18.120429  [4573]
+libburn/structure.c
+Detecting address sequence errors with .cue command INDEX
+
+2012.01.18.141954  [4574]
+libburn/spc.c
+Made conversion of ASC ASCQ to text independent of key and its text
+
+2012.01.19.210418  [4575,4577] delayed_commit/B20119.200204
+libburn/libburn.h
+libburn/structure.h
+libburn/structure.c
+libburn/write.c
+Counting post-gap as part of track with burn_track_get_sectors()
+
+2012.01.20.091016  [4576,4578] delayed_commit/B20120.091044
+libburn/libburn.h
+libburn/file.h
+libburn/file.c
+libburn/structure.c
+Introduced burn_offst_source_new() flag bit0 which prevents later size changes
+
+2012.01.21.174103  [4579] delayed_commit/B20121.174108
+libburn/read.c
+Allowing SCSI read operations > 32 kB
+
+2012.01.22.124929  [4580] delayed_commit/B20122.124935
+libburn/spc.c
+Revoked an aspect of rev 4465 which aborted operation before drive is ready
+
+2012.01.22.125048  [4581] delayed_commit/B20122.125048
+libburn/async.c
+Prevented SIGSEGV with testing drive for being prepared for writing
+
+2012.01.22.125357  [4582] delayed_commit/B20122.125357
+libburn/drive.c
+Improved reaction time on interrupt during writing of lead-in
+
+2012.01.22.182854  [4583] delayed_commit/B20122.182858
+libburn/libburn.h
+libburn/init.h
+libburn/init.c
+libburn/drive.c
+Disabled dangerous abort handler actions while BURN_DRIVE_GRABBING
+
+2012.01.22.194131  [4584] delayed_commit/B20122.194131
+cdrskin/cdrskin.c
+Bug fix: cdrskin produced a memory fault if interupted before writing began
+
+2012.01.23.102720  [4585]
+libburn/libdax_msgs.h
+libburn/mmc.c
+libburn/options.c
+libburn/sg-freebsd-port.c
+libburn/crc.c
+libburn/write.c
+Corrected some minor differences between SVN and local development tree
+
+
   []
 ChangeLog
+cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.1.9 - 
+* Bug fix: cdrskin produced a memory fault if interupted before writing began
+* New API calls burn_session_set_start_tno(), burn_session_get_start_tno()
+* New API calls burn_track_set_pregap_size(), burn_track_set_postgap_size()
+* New cdrskin option cd_start_tno=
+* New cdrskin options sao_pregap=, sao_postgap=
+
 
   []
 ChangeLog
@@ -10869,18 +11089,9 @@ CD-TEXT:
   - with SAO
     - libburn:
       - optionally genererate TOC pack type 0x88 with A[123] and track POINTS
-  - .cue file
-    - PREGAP, POSTGAP
-    - TRACK start != 01
-    - extraction of WAVE files
   - .inf files
   - enforcing constraints:
-    - is everything safe against non-audio tracks ?
-    - how to react on tracks of less than 600 sectors ?
-    - INDEX sequence in .cue files
     - examine how drives react on wodim's cue sheet of INDEX 00 == INDEX 01
-    - are index numbers other than 1 suitable for non-audio tracks ?
-
 
 
 qemu:
