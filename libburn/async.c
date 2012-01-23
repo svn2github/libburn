@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -587,6 +587,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	struct write_opts o;
 	char *reasons= NULL;
 	struct burn_drive *d;
+	int mvalid;
 
 	d = opts->drive;
 
@@ -634,12 +635,18 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	}
 
 	/* ts A61007 : obsolete Assert in spc_select_write_params() */
-	if (d->drive_role == 1 && d->mdata->valid <= 0) {
-		libdax_msgs_submit(libdax_messenger,
+	if (d->drive_role == 1) {
+		mvalid = 0;
+		if (d->mdata != NULL)
+			if (d->mdata->valid > 0)
+				mvalid = 1;
+		if (!mvalid) {
+			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x00020113,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				"Drive capabilities not inquired yet", 0, 0);
-		return;
+			return;
+		}
 	}
 
 	/* ts A70219 : intended to replace all further tests here and many
