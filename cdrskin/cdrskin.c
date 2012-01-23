@@ -4071,7 +4071,6 @@ int Cdrskin_abort(struct CdrskiN *skin, int flag)
  if(ret<=0) {
    fprintf(stderr,
        "\ncdrskin: ABORT : Cannot cancel burn session and release drive.\n");
-   return(0);
  } else {
    fprintf(stderr,
   "cdrskin: ABORT : Drive is released and library is shut down now.\n");
@@ -4090,6 +4089,15 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
 {
  struct burn_progress p;
  enum burn_drive_status drive_status= BURN_DRIVE_GRABBING;
+
+/*
+ fprintf(stderr,
+"cdrskin_DEBUG: Cdrskin_abort_handler: signum=%d, flag=%d, drive_is_busy=%d\n",
+         signum, flag, skin->drive_is_busy);
+*/
+
+ if(!skin->drive_is_busy)
+   Cdrskin_abort(skin, 0); /* Never comes back */
 
  if(getpid()!=skin->control_pid) {
    if(skin->verbosity>=Cdrskin_verbose_debuG)   
@@ -4132,12 +4140,13 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
    fprintf(stderr,"cdrskin: ABORT : Usually it is done with 4x speed after about a MINUTE\n");
    fprintf(stderr,"cdrskin: URGE  : But wait at least the normal burning time before any kill -9\n");
  }
- if(skin->verbosity>=Cdrskin_verbose_debuG)
-   ClN(fprintf(stderr,"cdrskin_debug: ABORT : Calling burn_abort()\n"));
 
  Cdrskin_abort_leveL= -1;
- if (!(flag & 1))
- burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
+ if (!(flag & 1)) {
+   if(skin->verbosity>=Cdrskin_verbose_debuG)
+     ClN(fprintf(stderr,"cdrskin_debug: ABORT : Calling burn_abort()\n"));
+   burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
+ }
  fprintf(stderr,
         "cdrskin: ABORT : Urged drive worker threads to do emergency halt.\n");
  return(-2);
@@ -5582,6 +5591,8 @@ int Cdrskin_wait_before_action(struct CdrskiN *skin, int flag)
  }
  for(i= skin->gracetime-1;i>=0;i--) {
    usleep(1000000);
+   if(Cdrskin__is_aborting(0))
+     return(0);
    if(skin->verbosity>=Cdrskin_verbose_progresS) {
      printf("\b\b\b\b\b\b\b\b\b\b\b\b\b %3d seconds.",i);
      fflush(stdout);
@@ -5813,6 +5824,8 @@ unsupported_format_type:;
                             1+(do_format==1 || do_format==3 || do_format==4));
 #endif /* ! Cdrskin_extra_leaN */
 
+ if(Cdrskin__is_aborting(0))
+   {ret= 0; goto ex;}
  skin->drive_is_busy= 1;
  if(do_format==0 || do_format==2) {
    burn_disc_erase(drive,skin->blank_fast);
@@ -7012,6 +7025,9 @@ burn_failed:;
 
 #ifndef Cdrskin_extra_leaN
  Cdrskin_wait_before_action(skin,0);
+ if(burn_is_aborting(0))
+   {ret= 0; goto ex;}
+
  if(needs_early_fifo_fill==1)
    ret= 1;
  else if(skin->cuefile[0] != 0)
@@ -7031,6 +7047,8 @@ fifo_filling_failed:;
    printf("Starting new track at sector: %d\n",nwa);
    fflush(stdout);
  }
+ if(burn_is_aborting(0))
+   {ret= 0; goto ex;}
  skin->drive_is_busy= 1;
  burn_disc_write(o, disc);
  if(skin->preskin->abort_handler==-1)
@@ -7079,6 +7097,8 @@ fifo_filling_failed:;
       exit(1);
    }
 
+   if(Cdrskin__is_aborting(0))
+     fifo_disabled= 1;
    if(skin->fifo==NULL || fifo_disabled) {
      usleep(20000);
    } else {
