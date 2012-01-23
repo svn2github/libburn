@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -362,6 +362,23 @@ char *burn_util_thread_id(pid_t pid, pthread_t tid, char text[80])
 	return text;
 }
 
+
+/* ts B20122 */
+/* @param value 0=return rather than exit(value)
+*/
+int burn_abort_exit(int value)
+{
+	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
+	fprintf(stderr,
+	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
+		abort_message_prefix);
+	if (value)
+		exit(value);
+	burn_global_abort_level = -2;
+	return(1);
+}
+
+
 int burn_builtin_abort_handler(void *handle, int signum, int flag)
 {
 
@@ -476,13 +493,9 @@ int burn_builtin_abort_handler(void *handle, int signum, int flag)
 		"%sABORT : Wait the normal burning time before any kill -9\n",
 		abort_message_prefix);
 	close(0); /* somehow stdin as input blocks abort until EOF */
-	burn_abort(4440, burn_abort_pacifier, abort_message_prefix);
 
-	fprintf(stderr,
-	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
-		abort_message_prefix);
-	burn_global_abort_level = -2;
-	return(1);
+	burn_abort_exit(0);
+	return (1);
 }
 
 
@@ -547,6 +560,41 @@ int burn_init_catch_on_abort(int flag)
 	"\n%sABORT : Program done. Even if you do not see a shell prompt.\n\n",
 		abort_message_prefix);
 	exit(1);
+}
+
+
+/* B20122 */
+/* Temporarily disable builtin actions 0,1,2 to avoid that burn_abort()
+   waits for its own thread to end grabbing.
+*/
+int burn_grab_prepare_sig_action(int *signal_action_mem, int flag)
+{
+	*signal_action_mem = -1;
+	if (burn_global_signal_handler == burn_builtin_abort_handler &&
+	    burn_builtin_signal_action >= 0 &&
+	    burn_builtin_signal_action <= 2) {
+		*signal_action_mem = burn_builtin_signal_action;
+		burn_builtin_signal_action = 3;
+	}
+	return 1;
+}
+
+
+/* B20122 */
+/* Re-enable builtin actions 0,1,2 and perform delayed signal reactions
+*/
+int burn_grab_restore_sig_action(int signal_action_mem, int flag)
+{
+	if (signal_action_mem >= 0)
+		burn_builtin_signal_action = signal_action_mem;
+	if (burn_is_aborting(0) && signal_action_mem >= 0) {
+		if (signal_action_mem == 0 || signal_action_mem == 1) {
+			burn_abort_exit(1); /* Never comes back */
+		} else if (signal_action_mem == 2) {
+			burn_builtin_triggered_action = signal_action_mem;
+		}
+	}
+	return 1;
 }
 
 

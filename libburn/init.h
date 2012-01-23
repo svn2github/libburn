@@ -48,4 +48,9 @@ void *burn_alloc_mem(size_t size, size_t count, int flag);
 	}
 
 
+/* B20122 */
+int burn_grab_prepare_sig_action(int *signal_action_mem, int flag);
+int burn_grab_restore_sig_action(int signal_action_mem, int flag);
+
+
 #endif /* BURN__INIT_H */

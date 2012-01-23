@@ -486,9 +486,10 @@ int burn_drive_grab_stdio(struct burn_drive *d, int flag)
 int burn_drive_grab(struct burn_drive *d, int le)
 {
 	int errcode;
-	/* ts A61125 - B10314 */
-	int ret, sose;
+	/* ts A61125 - B20122 */
+	int ret, sose, signal_action_mem = -1;
 
+	sose = d->silent_on_scsi_error;
 	if (!d->released) {
                 libdax_msgs_submit(libdax_messenger, d->global_index,
                                 0x00020189, LIBDAX_MSGS_SEV_FATAL,
@@ -505,26 +506,40 @@ int burn_drive_grab(struct burn_drive *d, int le)
 	errcode = d->grab(d);
 	if (errcode == 0)
 		return 0;
+
+	burn_grab_prepare_sig_action(&signal_action_mem, 0);
 	d->busy = BURN_DRIVE_GRABBING;
 
 	if (le)
 		d->load(d);
+	if (d->cancel || burn_is_aborting(0))
+		{ret = 0; goto ex;}
 
 	d->lock(d);
+	if (d->cancel || burn_is_aborting(0))
+		{ret = 0; goto ex;}
 
 	/* ts A61118 */
 	d->start_unit(d);
+	if (d->cancel || burn_is_aborting(0))
+		{ret = 0; goto ex;}
 
 	/* ts A61202 : gave bit1 of le a meaning */
-	sose = d->silent_on_scsi_error;
 	if (!le)
 		d->silent_on_scsi_error = 1;
 	/* ts A61125 : outsourced media state inquiry aspects */
 	ret = burn_drive_inquire_media(d);
+	if (d->cancel || burn_is_aborting(0))
+		{ret = 0; goto ex;}
 
 	burn_drive_send_default_page_05(d, 0);
+	if (d->cancel || burn_is_aborting(0))
+		{ret = 0; goto ex;}
+
+ex:;
 	d->silent_on_scsi_error = sose;
 	d->busy = BURN_DRIVE_IDLE;
+	burn_grab_restore_sig_action(signal_action_mem, 0);
 	return ret;
 }
 
@@ -748,7 +763,7 @@ void burn_drive_release(struct burn_drive *d, int le)
 /* API */
 int burn_drive_re_assess(struct burn_drive *d, int flag)
 {
-	int ret;
+	int ret, signal_action_mem;
 
 	if (d->released) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -765,10 +780,12 @@ int burn_drive_re_assess(struct burn_drive *d, int flag)
 		return ret;
 	}
 
+	burn_grab_prepare_sig_action(&signal_action_mem, 0);
 	d->busy = BURN_DRIVE_GRABBING;
 	ret = burn_drive_inquire_media(d);
 	burn_drive_send_default_page_05(d, 0);
 	d->busy = BURN_DRIVE_IDLE;
+	burn_grab_restore_sig_action(signal_action_mem, 0);
 	d->released = 0;
 	return ret;
 }
@@ -1388,7 +1405,7 @@ int burn_drive_forget(struct burn_drive *d, int force)
 	if(occup > 0)
 		if(force < 1)
 			return 0; 
-	if(occup > 10)
+	if(occup >= 10)
 		return 0;
 
 	/* >>> do any drive calming here */;
@@ -2364,13 +2381,15 @@ int burn_abort_5(int patience,
 
 			}
 
-			if(occup <= 10) {
+			if(occup < 10) {
+				if (!drive_array[i].cancel)
+					burn_drive_cancel(&(drive_array[i]));
 				if (drive_array[i].drive_role != 1)
 		 			/* occup == -1 comes early */
 					usleep(1000000);
 				burn_drive_forget(&(drive_array[i]), 1);
 			} else if(occup <= 100) {
-				if(first_round)
+				if (!drive_array[i].cancel)
 					burn_drive_cancel(&(drive_array[i]));
 				still_not_done++;
 			} else if(occup <= 1000) {

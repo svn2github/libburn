@@ -3622,12 +3622,17 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
 
     @param handle Opaque handle eventually pointing to an application
                   provided memory object
-    @param handler A function to be called on signals. It will get handle as
-                  argument. flag will be 0.
+    @param handler A function to be called on signals, if the handling bits
+                  in parameter mode are set 0.
+                  It will get parameter handle as argument. flag will be 0.
                   It should finally call burn_abort(). See there.
-    @param mode : bit0 - bit3:
-                    Receiving signals:
-                    0 Call handler(handle, signum, 0) on nearly all signals
+                  If the handler function returns 2 or -2, then the wrapping
+                  signal handler of libburn will return and let the program
+                  continue its operations. Any other return value causes
+                  exit(1).
+    @param mode : bit0 - bit3: Handling of received signals:
+                    0 Install libburn wrapping signal handler, which will call
+                      handler(handle, signum, 0) on nearly all signals
                     1 Enable system default reaction on all signals
                     2 Try to ignore nearly all signals
                    10 like mode 2 but handle SIGABRT like with mode 0
