@@ -1,15 +1,16 @@
 SVN trunk (to become libburn-1.2.0.tar.gz or higher)
 ===============================================================================
+* Bug fix: cdrskin produced a memory fault if interupted before writing began
 * Bug fix: Solaris adapter mishandled write commands which failed on first try
 * Bug fix: Interrupting libburn while drive tray is loading led to endless loop
 * Bug fix: Progress report with blanking and formatting could be bogus
-* New API call burn_disc_get_leadin_text()
-* New API call burn_write_opts_set_leadin_text()
-* New API calls for composing CD-TEXT
-* New API call burn_session_input_sheet_v07t()
-* New API calls burn_cdtext_from_packfile() and burn_session_by_cue_file()
+* New API calls burn_disc_get_leadin_text(), burn_write_opts_set_leadin_text()
+* New API calls for composing CD-TEXT, see doc/cdtext.txt
+* New API call burn_session_by_cue_file() for reading CDRWIN .cue files
 * New API call burn_track_set_isrc_string()
 * New API calls burn_track_set_index(), burn_track_clear_indice()
+* New API calls burn_session_set_start_tno(), burn_session_get_start_tno()
+* New API calls burn_track_set_pregap_size(), burn_track_set_postgap_size()
 * Implemented cdrskin option textfile=
 * Implemented cdrskin option combination -vv -toc for cdtext.dat production
 * Implemented cdrskin options mcn= and isrc=
@@ -19,6 +20,8 @@ SVN trunk (to become libburn-1.2.0.tar.gz or higher)
 * New cdrskin option input_sheet_v07t= for CD-TEXT definition
 * New cdrskin options --cdtext_dummy and --cdtext_verbose
 * New cdrskin options --four_channel --two_channel
+* New cdrskin option cd_start_tno= 
+* New cdrskin options sao_pregap=, sao_postgap=
 
 
 libburn-1.1.8.tar.gz Mon Nov 21 2011
