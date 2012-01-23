@@ -116,6 +116,9 @@ unsigned long crc32_table[256] = {
 
    Use in libburn for raw write modes in sector.c.
    There is also disabled code in read.c which would use it.
+
+   ts B11222:
+   libburn/cdtext.c uses a simple bit shifting function : crc_11021()
 */
 unsigned short crc_ccitt(unsigned char *q, int len)
 {

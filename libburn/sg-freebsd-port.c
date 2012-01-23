@@ -548,8 +548,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	ccb->csio.cdb_len = c->oplen;
 	memcpy(&ccb->csio.cdb_io.cdb_bytes, &c->opcode, c->oplen);
 	
-	memset(&ccb->csio.sense_data, 0, sizeof (ccb->csio.sense_data));
-
 	if (c->page) {
 		ccb->csio.data_ptr  = c->page->data;
 		if (c->dir == FROM_DRIVE) {
@@ -570,6 +568,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	}
 
 	do {
+		memset(&ccb->csio.sense_data, 0, sizeof(ccb->csio.sense_data));
 		err = cam_send_ccb(d->cam, ccb);
 		if (err == -1) {
 			libdax_msgs_submit(libdax_messenger,

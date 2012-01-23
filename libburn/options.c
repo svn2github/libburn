@@ -186,7 +186,7 @@ void burn_write_opts_set_has_mediacatalog(struct burn_write_opts *opts,
 void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts,
 				      unsigned char mediacatalog[13])
 {
-	memcpy(opts->mediacatalog, &mediacatalog, 13);
+	memcpy(opts->mediacatalog, mediacatalog, 13);
 }
 
 
