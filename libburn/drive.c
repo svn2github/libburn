@@ -187,7 +187,10 @@ int burn_drive_is_occupied(struct burn_drive *d)
 	if(d->busy == BURN_DRIVE_READING_SYNC ||
 		 d->busy == BURN_DRIVE_WRITING_SYNC)
 		return 2;
-	if(d->busy == BURN_DRIVE_WRITING) {
+	if(d->busy == BURN_DRIVE_WRITING ||
+	   d->busy == BURN_DRIVE_WRITING_LEADIN ||
+	   d->busy == BURN_DRIVE_WRITING_LEADOUT ||
+	   d->busy == BURN_DRIVE_WRITING_PREGAP) {
 
 		/* ts A70928 */
 		/* >>> how do i learn whether the writer thread is still
