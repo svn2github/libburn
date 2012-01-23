@@ -301,7 +301,6 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
-#define Libburn_write_with_function_print_cuE yes
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -611,6 +610,11 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		*/ 
 		track_length = burn_track_get_sectors_2(tar[i], 1);
 		if (track_length < 300 && !burn_track_is_open_ended(tar[i])) {
+
+
+/* >>> ??? Does this work properly with burn_offst_source ? */;
+
+
 			track_length = 300;
 			if (!tar[i]->pad)
 				tar[i]->pad = 1;

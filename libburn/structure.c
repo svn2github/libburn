@@ -1784,7 +1784,7 @@ overlapping_ba:;
 		else
 			inp_src = crs->file_source;
 		src = burn_offst_source_new(inp_src, crs->offst_source,
-			(off_t) (file_ba * crs->block_size), (off_t) 0, 1);
+			(off_t) (file_ba * crs->block_size), (off_t) 0, 0);
 		if (src == NULL)
 			goto out_of_mem;
 
@@ -2051,10 +2051,8 @@ cannot_open:;
 				0, 0);
 			ret = 0; goto ex;
 		}
-		ret = burn_track_set_size(crs->track, crs->source_size -
+		burn_track_set_size(crs->track, crs->source_size -
 			(off_t) (crs->current_file_ba * crs->block_size));
-		if (ret <= 0)
-			goto ex;
 
 		ret = cue_attach_track(session, crs, 0);
 		if (ret <= 0)
