@@ -465,9 +465,9 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 	wpt = data;
 	for (; start < upto; start += chunksize) {
 		chunksize = upto - start;
-		if (chunksize > 16) {
-			chunksize = 16;
-			cpy_size = 16 * 2048;
+		if (chunksize > (BUFFER_SIZE / 2048)) {
+			chunksize = (BUFFER_SIZE / 2048);
+			cpy_size = BUFFER_SIZE;
 		} else
 			cpy_size = data_size - *data_count;
 		if (flag & 2)
