@@ -779,7 +779,7 @@ static off_t offst_get_size(struct burn_source *source)
 
 	if ((fs = offst_auth(source, 0)) == NULL)
 		return (off_t) 0;
-        return fs->size;
+        return fs->nominal_size;
 }
 
 static int offst_set_size(struct burn_source *source, off_t size)
@@ -788,7 +788,10 @@ static int offst_set_size(struct burn_source *source, off_t size)
 
 	if ((fs = offst_auth(source, 0)) == NULL)
 		return 0;
-	fs->size = size;
+
+	fs->nominal_size = size;
+	if (fs->size <= 0 || fs->size_adjustable)
+		fs->size = size;
 	return 1;
 }
 
@@ -907,6 +910,8 @@ struct burn_source *burn_offst_source_new(
 	}
 	fs->start = start;
 	fs->size = size;
+	fs->size_adjustable = !(flag & 1);
+	fs->nominal_size = size;
 	fs->running = 0;
 	fs->pos = 0;
         inp->refcount++; /* make sure inp lives longer than src */

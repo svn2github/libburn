@@ -82,6 +82,10 @@ struct burn_source_offst {
 	struct burn_source *prev;
 	off_t start;
 	off_t size;
+	int size_adjustable;
+
+	/* for set_size/get_size */
+	int nominal_size;
 
 	/* To help offst_free() */
 	struct burn_source *next;
