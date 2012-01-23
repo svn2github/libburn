@@ -176,5 +176,10 @@ int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag);
 struct burn_cdtext *burn_cdtext_create(void);
 void burn_cdtext_free(struct burn_cdtext **cdtext);
 
+/* ts B20119 */
+/* @param flag bit0= do not add post-gap
+*/
+int burn_track_get_sectors_2(struct burn_track *t, int flag);
+
 
 #endif /* BURN__STRUCTURE_H */

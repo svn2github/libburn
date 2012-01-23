@@ -496,7 +496,10 @@ int burn_track_set_postgap_size(struct burn_track *t, int size, int flag)
 	return 1;
 }
 
-int burn_track_get_sectors(struct burn_track *t)
+/* ts B20119: outsourced from burn_track_get_sectors()
+   @param flag bit0= do not add post-gap
+*/
+int burn_track_get_sectors_2(struct burn_track *t, int flag)
 {
 	/* ts A70125 : was int */
 	off_t size = 0;
@@ -508,9 +511,12 @@ int burn_track_get_sectors(struct burn_track *t)
 		/* ts A90911 : will read blocks of 2056 bytes and write 2048 */
 		seclen += 8;
 
-	if (t->source != NULL)                /* ts A80808 : mending sigsegv */
+	if (t->source != NULL) {              /* ts A80808 : mending sigsegv */
 		size = t->offset + t->source->get_size(t->source) + t->tail;
-	else if(t->entry != NULL) {
+		/* ts B20119 : adding post-gap */
+		if (t->postgap && !(flag & 1))
+			size += t->postgap_size;
+	} else if(t->entry != NULL) {
 		/* ts A80808 : all burn_toc_entry of track starts should now
 			have (extensions_valid & 1), even those from CD.
 		*/
@@ -523,6 +529,11 @@ int burn_track_get_sectors(struct burn_track *t)
 	return sectors;
 }
 
+
+int burn_track_get_sectors(struct burn_track *t)
+{
+	return burn_track_get_sectors_2(t, 0);
+}
 
 /* ts A70125 */
 int burn_track_set_sectors(struct burn_track *t, int sectors)
@@ -1773,7 +1784,7 @@ overlapping_ba:;
 		else
 			inp_src = crs->file_source;
 		src = burn_offst_source_new(inp_src, crs->offst_source,
-			(off_t) (file_ba * crs->block_size), (off_t) 0, 0);
+			(off_t) (file_ba * crs->block_size), (off_t) 0, 1);
 		if (src == NULL)
 			goto out_of_mem;
 
@@ -2040,8 +2051,10 @@ cannot_open:;
 				0, 0);
 			ret = 0; goto ex;
 		}
-		burn_track_set_size(crs->track, crs->source_size -
+		ret = burn_track_set_size(crs->track, crs->source_size -
 			(off_t) (crs->current_file_ba * crs->block_size));
+		if (ret <= 0)
+			goto ex;
 
 		ret = cue_attach_track(session, crs, 0);
 		if (ret <= 0)

@@ -301,6 +301,7 @@ int burn_write_close_session(struct burn_write_opts *o)
    This is useful only when changes about CD SAO get tested.
  # define Libburn_write_with_function_print_cuE yes
 */
+#define Libburn_write_with_function_print_cuE yes
 
 #ifdef Libburn_write_with_function_print_cuE
 
@@ -608,7 +609,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 		   i decided to at least enforce the MMC specs' minimum
 		   track length.
 		*/ 
-		track_length = burn_track_get_sectors(tar[i]);
+		track_length = burn_track_get_sectors_2(tar[i], 1);
 		if (track_length < 300 && !burn_track_is_open_ended(tar[i])) {
 			track_length = 300;
 			if (!tar[i]->pad)
@@ -1151,8 +1152,9 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 		/* <<< */
 		sprintf(msg, 
 	"TAO pre-track %2.2d : get_nwa(%d)=%d, d=%d , demand=%.f , cap=%.f\n",
-	tnum+1, nwa, ret, d->nwa, (double) burn_track_get_sectors(t) * 2048.0,
-	(double) d->media_capacity_remaining);
+			tnum+1, nwa, ret, d->nwa,
+			(double) burn_track_get_sectors_2(t, 1) * 2048.0,
+			(double) d->media_capacity_remaining);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -1174,7 +1176,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 /* user data */
 
-	sectors = burn_track_get_sectors(t);
+	sectors = burn_track_get_sectors_2(t, 1);
 	open_ended = burn_track_is_open_ended(t);
 
 	burn_disc_init_track_status(o, s, t, tnum, sectors);
@@ -1539,7 +1541,7 @@ int burn_disc_open_track_dvd_minus_r(struct burn_write_opts *o,
 #endif
 
 	if (o->write_type == BURN_WRITE_SAO) { /* DAO */
-		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+		size = ((off_t) burn_track_get_sectors_2(s->track[tnum], 1))
 			* (off_t) 2048;
 
  		/* Eventually round track size up to write chunk */
@@ -1588,7 +1590,7 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 	if (o->write_type == BURN_WRITE_SAO &&
 	    ! burn_track_is_open_ended(s->track[tnum])) {
  		/* Round track size up to write chunk size and reserve track */
-		size = ((off_t) burn_track_get_sectors(s->track[tnum]))
+		size = ((off_t) burn_track_get_sectors_2(s->track[tnum], 1))
 			* (off_t) 2048;
 		/* o->obs should be 32k or 64k already. But 32k alignment
 		  was once performed in d->reserve_track() */
@@ -1862,7 +1864,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 			goto ex;
 	}
 
-	sectors = burn_track_get_sectors(t);
+	sectors = burn_track_get_sectors_2(t, 1);
 	open_ended = burn_track_is_open_ended(t);
 
 	/* (offset padding is done within sector_data()) */
@@ -2705,7 +2707,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 
 	BURN_ALLOC_MEM(buf, char, bufsize);
 
-	sectors = burn_track_get_sectors(t);
+	sectors = burn_track_get_sectors_2(t, 1);
 	burn_disc_init_track_status(o, s, t, tnum, sectors);
 	open_ended = burn_track_is_open_ended(t);
 
