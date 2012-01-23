@@ -3500,8 +3500,14 @@ struct CdrskiN {
  int lib_is_initialized;
  pid_t control_pid; /* pid of the thread that calls libburn */
  int drive_is_grabbed;
- int drive_is_busy; /* Whether drive was told to do something cancel-worthy */
  struct burn_drive *grabbed_drive;
+ /* Whether drive was told to do something cancel-worthy 
+    0= no: directly call burn_abort
+    1= yes: A worker thread is busy (e.g. writing, formatting)
+    2= yes: A synchronous operation is busy (e.g. grabbing).
+            Do not wait but return -2.
+ */
+ int drive_is_busy;
 
 #ifndef Cdrskin_extra_leaN
  /** Abort test facility */
@@ -3892,6 +3898,34 @@ ex:;
 }
 
 
+int Cdrskin__is_aborting(int flag)
+{
+ if(Cdrskin_abort_leveL)
+   return(-1);
+ return(burn_is_aborting(0));
+}
+
+
+int Cdrskin_abort(struct CdrskiN *skin, int flag)
+{
+ int ret;
+
+ Cdrskin_abort_leveL= 1;
+ ret= burn_abort(skin->abort_max_wait, burn_abort_pacifier, "cdrskin: ");
+ if(ret<=0) {
+   fprintf(stderr,
+       "\ncdrskin: ABORT : Cannot cancel burn session and release drive.\n");
+ } else {
+   fprintf(stderr,
+  "cdrskin: ABORT : Drive is released and library is shut down now.\n");
+ }
+ fprintf(stderr,
+  "cdrskin: ABORT : Program done. Even if you do not see a shell prompt.\n");
+ fprintf(stderr,"\n");
+ exit(1);
+}
+
+
 /** Obtain access to a libburn drive for writing or information retrieval.
     If libburn is not restricted to a single persistent address then the
     unused drives are dropped. This might be done by shutting down and
@@ -3913,7 +3947,7 @@ ex:;
 */
 int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
 {
- int ret,i,profile_number;
+ int ret,i,profile_number, mem;
  struct burn_drive *drive;
  char profile_name[80];
  enum burn_disc_status s;
@@ -3933,16 +3967,31 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
  }
  if(skin->drive_is_grabbed) {
    drive= skin->grabbed_drive;
+   mem= skin->drive_is_busy;
+   skin->drive_is_busy= 2;
    ret= burn_drive_re_assess(skin->grabbed_drive, 0);
-   if(ret <=0 ) {
+   skin->drive_is_busy= mem;
+   if(Cdrskin__is_aborting(0)) {
+     fprintf(stderr,"cdrskin: ABORT : Drive re-assessment aborted\n");
+     Cdrskin_abort(skin, 0); /* Never comes back */
+   }
+   if(ret <= 0) {
      if(!(flag&4))
        fprintf(stderr,"cdrskin: FATAL : unable to re-assess drive '%s'\n",
                skin->preskin->device_adr);
      goto ex;
    }
  } else if(flag&1) {
+   mem= skin->drive_is_busy;
+   skin->drive_is_busy= 2;
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,
                                  !(flag&2));
+   skin->drive_is_busy= mem;
+   if(Cdrskin__is_aborting(0)) {
+aborted:;
+     fprintf(stderr,"cdrskin: ABORT : Drive aquiration aborted\n");
+     Cdrskin_abort(skin, 0); /* Never comes back */
+   }
    if(ret<=0) {
      if(!(flag&4))
        fprintf(stderr,"cdrskin: FATAL : unable to open drive '%s'\n",
@@ -3974,7 +4023,12 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
      }
    }
 
+   mem= skin->drive_is_busy;
+   skin->drive_is_busy= 2;
    ret= burn_drive_grab(drive,!(flag&2));
+   skin->drive_is_busy= mem;
+   if(Cdrskin__is_aborting(0))
+     goto aborted;
    if(ret==0) {
      if(!(flag&4))
        fprintf(stderr,"cdrskin: FATAL : unable to open drive %d\n",
@@ -4054,41 +4108,13 @@ int Cdrskin_release_drive(struct CdrskiN *skin, int flag)
 }
 
 
-int Cdrskin__is_aborting(int flag)
-{
- if(Cdrskin_abort_leveL)
-   return(-1);
- return(burn_is_aborting(0));
-}
-
-
-int Cdrskin_abort(struct CdrskiN *skin, int flag)
-{
- int ret;
-
- Cdrskin_abort_leveL= 1;
- ret= burn_abort(skin->abort_max_wait, burn_abort_pacifier, "cdrskin: ");
- if(ret<=0) {
-   fprintf(stderr,
-       "\ncdrskin: ABORT : Cannot cancel burn session and release drive.\n");
- } else {
-   fprintf(stderr,
-  "cdrskin: ABORT : Drive is released and library is shut down now.\n");
- }
- fprintf(stderr,
-  "cdrskin: ABORT : Program done. Even if you do not see a shell prompt.\n");
- fprintf(stderr,"\n");
- exit(1);
-}
-
-
 /** Clean up resources in abort situations. To be called by Cleanup subsystem
     but hardly ever by the application. The program must exit afterwards.
 */
 int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
 {
  struct burn_progress p;
- enum burn_drive_status drive_status= BURN_DRIVE_GRABBING;
+ enum burn_drive_status drive_status= BURN_DRIVE_SPAWNING;
 
 /*
  fprintf(stderr,
@@ -4096,7 +4122,7 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
          signum, flag, skin->drive_is_busy);
 */
 
- if(!skin->drive_is_busy)
+ if(skin->drive_is_busy == 0)
    Cdrskin_abort(skin, 0); /* Never comes back */
 
  if(getpid()!=skin->control_pid) {
@@ -4142,6 +4168,11 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  }
 
  Cdrskin_abort_leveL= -1;
+ if(skin->drive_is_busy == 2 || drive_status == BURN_DRIVE_GRABBING) {
+   if(skin->grabbed_drive != NULL)
+     burn_drive_cancel(skin->grabbed_drive);
+   return(-2);
+ }
  if (!(flag & 1)) {
    if(skin->verbosity>=Cdrskin_verbose_debuG)
      ClN(fprintf(stderr,"cdrskin_debug: ABORT : Calling burn_abort()\n"));
@@ -8621,7 +8652,7 @@ ignore_unknown:;
 int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
                    int *exit_value, int flag)
 {
- int ret, stdio_drive= 0;
+ int ret, stdio_drive= 0, mem;
  struct CdrskiN *skin;
  char reason[4096];
 
@@ -8682,8 +8713,15 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  Cdrpreskin_queue_msgs(skin->preskin,1);
 
  if(stdio_drive) {
+   mem= skin->drive_is_busy;
+   skin->drive_is_busy= 1;
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,0);
-   if(ret<=0) {
+   skin->drive_is_busy= mem;
+   if(Cdrskin__is_aborting(0)) {
+     fprintf(stderr,"cdrskin: ABORT : Startup aborted\n");
+     Cdrskin_abort(skin, 0); /* Never comes back */
+   }
+   if(ret <= 0) {
      fprintf(stderr,"cdrskin: FATAL : Failed to grab emulated stdio-drive\n");
      {*exit_value= 2; goto ex;}
    }
