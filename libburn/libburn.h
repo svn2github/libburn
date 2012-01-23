@@ -2619,8 +2619,15 @@ struct burn_source *burn_fd_source_new(int datafd, int subfd, off_t size);
     @param start The byte address where to start reading bytes for the
                  consumer. inp bytes may get skipped to reach this address.
     @param size  The number of bytes to be delivered to the consumer.
-    @param flag  Bitfield for control purposes (unused yet, submit 0).
->>> bit0 = allow set_size() to override existing sizes > 0
+                 If size is <= 0 then it may be set later by a call of method
+                 set_size(). If it is >= 0, then it can only be changed if
+                 flag bit0 was set with burn_offst_source_new().
+    @param flag  Bitfield for control purposes
+                 bit0 = Prevent set_size() from overriding interval sizes > 0.
+                        If such a size is already set, then the new one will
+                        only affect the reply of get_size().
+                        See also above struct burn_source.
+                        @since 1.2.0
     @return      Pointer to a burn_source object, later to be freed by
                  burn_source_free(). NULL indicates failure.
     @since 0.8.8
