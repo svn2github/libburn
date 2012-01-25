@@ -3505,7 +3505,6 @@ struct CdrskiN {
     0= no: directly call burn_abort
     1= yes: A worker thread is busy (e.g. writing, formatting)
     2= yes: A synchronous operation is busy (e.g. grabbing).
-            Do not wait but return -2.
  */
  int drive_is_busy;
 
@@ -4168,14 +4167,9 @@ int Cdrskin_abort_handler(struct CdrskiN *skin, int signum, int flag)
  }
 
  Cdrskin_abort_leveL= -1;
- if(skin->drive_is_busy == 2 || drive_status == BURN_DRIVE_GRABBING) {
-   if(skin->grabbed_drive != NULL)
-     burn_drive_cancel(skin->grabbed_drive);
-   return(-2);
- }
  if (!(flag & 1)) {
    if(skin->verbosity>=Cdrskin_verbose_debuG)
-     ClN(fprintf(stderr,"cdrskin_debug: ABORT : Calling burn_abort()\n"));
+     ClN(fprintf(stderr,"cdrskin: ABORT : Calling burn_abort(-1)\n"));
    burn_abort(-1, burn_abort_pacifier, "cdrskin: ");
  }
  fprintf(stderr,
