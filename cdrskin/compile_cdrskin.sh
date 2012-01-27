@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # compile_cdrskin.sh  
-# Copyright 2005 - 2011 Thomas Schmitt, scdbackup@gmx.net, GPL
+# Copyright 2005 - 2012 Thomas Schmitt, scdbackup@gmx.net, GPL
 # to be executed within  ./libburn-*  resp ./cdrskin-*
 
 debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
 fifo_opts=""
-libvers="-DCdrskin_libburn_1_1_9"
+libvers="-DCdrskin_libburn_1_2_1"
 
 # To be used if Makefile.am uses libburn_libburn_la_CFLAGS
 # burn="libburn/libburn_libburn_la-"
@@ -41,15 +41,15 @@ do
   elif test "$i" = "-compile_dewav"
   then
     compile_dewav=1
-  elif test "$i" = "-libburn_1_1_8"
+  elif test "$i" = "-libburn_1_2_0"
   then
-    libvers="-DCdrskin_libburn_1_1_8"
+    libvers="-DCdrskin_libburn_1_2_0"
     libdax_audioxtr_o="$burn"libdax_audioxtr.o
     libdax_msgs_o="$burn"libdax_msgs.o
     cleanup_src_or_obj="$burn"cleanup.o
   elif test "$i" = "-libburn_svn"
   then
-    libvers="-DCdrskin_libburn_1_1_9"
+    libvers="-DCdrskin_libburn_1_2_1"
     libdax_audioxtr_o="$burn"libdax_audioxtr.o
     libdax_msgs_o="$burn"libdax_msgs.o
     cleanup_src_or_obj="$burn"cleanup.o
@@ -99,7 +99,7 @@ do
     echo "Options:"
     echo "  -compile_cdrfifo  compile program cdrskin/cdrfifo."
     echo "  -compile_dewav    compile program test/dewav without libburn."
-    echo "  -libburn_1_1_8    set macro to match libburn-1.1.8"
+    echo "  -libburn_1_2_0    set macro to match libburn-1.2.0"
     echo "  -libburn_svn      set macro to match current libburn-SVN."
     echo "  -dvd_obs_64k      64 KB default size for DVD/BD writing."
     echo "  -use_libcdio      link with -lcdio because libburn uses it."

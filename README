@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburn-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2011 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2012 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.1.8.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.2.0.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.1.8.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.2.0.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.1.8.tar.gz
-   cd libburn-1.1.8
+   tar xzf libburn-1.2.0.tar.gz
+   cd libburn-1.2.0
    ./configure --prefix=/usr
    make
 
@@ -665,6 +665,12 @@ Project history as far as known to me:
   libburn avoids to close and open drive device files while operating on them.
   xorriso emulation mode xorrecord now has an own manual. libburn and xorriso
   were prepared to operate on qemu virtio-blk-pci devices.
+
+- Sat Jan 28 2012 release 1.2.0:
+  libburn has learned to read and write CD-TEXT with CD SAO audio sessions.
+  It can now read CDRWIN .cue files which define pure audio or pure data
+  sessions. libisofs and libisoburn improved timestamp handling. Several
+  minor bugs were fixed.
 
 
 ------------------------------------------------------------------------------
