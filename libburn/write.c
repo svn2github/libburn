@@ -302,6 +302,8 @@ int burn_write_close_session(struct burn_write_opts *o)
  # define Libburn_write_with_function_print_cuE yes
 */
 
+#ifdef Libburn_write_with_function_print_cuE
+
 
 static char cue_printify(char c)
 {
