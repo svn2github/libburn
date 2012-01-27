@@ -11051,14 +11051,24 @@ libburn/crc.c
 libburn/write.c
 Corrected some minor differences between SVN and local development tree
 
-
-  []
-ChangeLog
+23 Jan 2012  [4590]
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.9 - 
+23 Jan 2012  [4591]
+ChangeLog
+Updated change log
+
+23 Jan 2012  [4592]
+cdrskin/wiki_plain.txt
+Updated cdrskin wiki text
+
+2012.01.23.164346  [4593]
+cdrskin/cdrskin.c
+Fixed an endless loop with cdrskin signal handling
+
+------------------------------------ cycle  - cdrskin-1.1.9 - 2012.01.23.164529
 * Bug fix: cdrskin produced a memory fault if interupted before writing began
 * New API calls burn_session_set_start_tno(), burn_session_get_start_tno()
 * New API calls burn_track_set_pregap_size(), burn_track_set_postgap_size()
@@ -11066,12 +11076,103 @@ Updated change log
 * New cdrskin options sao_pregap=, sao_postgap=
 
 
+2012.01.25.092650  [4595]
+cdrskin/cdrskin.c
+Removed overdone part of rev 4593
+
+27 Jan 2012  [4598]
+svn copy -m Branching for libburn release 1.2.0
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.2.0
+
+2012.01.27.103001  [4599]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.0
+
+27 Jan 2012  [4600]
+- cdrskin/add_ts_changes_to_libburn_1_1_8
+- cdrskin/add_ts_changes_to_libburn_1_1_9
++ cdrskin/add_ts_changes_to_libburn_1_2_0
++ cdrskin/add_ts_changes_to_libburn_1_2_1
+Updated cdrskin tarball generator
+
+27 Jan 2012  [4601]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.2.0 - 2012.01.27.103001
+* Bug fix: cdrskin produced a memory fault if interupted before writing began
+* Bug fix: Solaris adapter mishandled write commands which failed on first try
+* Bug fix: Interrupting libburn while drive tray is loading led to endless loop
+* Bug fix: Progress report with blanking and formatting could be bogus
+* New API calls burn_disc_get_leadin_text(), burn_write_opts_set_leadin_text()
+* New API calls for composing CD-TEXT, see doc/cdtext.txt
+* New API call burn_session_by_cue_file() for reading CDRWIN .cue files
+* New API call burn_track_set_isrc_string()
+* New API calls burn_track_set_index(), burn_track_clear_indice()
+* New API calls burn_session_set_start_tno(), burn_session_get_start_tno()
+* New API calls burn_track_set_pregap_size(), burn_track_set_postgap_size()
+* Implemented cdrskin option textfile=
+* Implemented cdrskin option combination -vv -toc for cdtext.dat production
+* Implemented cdrskin options mcn= and isrc=
+* Implemented cdrskin options -scms -copy -nocopy -preemp -nopreemp
+* Implemented cdrskin option index=
+* Partly implemented cdrskin options cuefile= and -text
+* New cdrskin option input_sheet_v07t= for CD-TEXT definition
+* New cdrskin options --cdtext_dummy and --cdtext_verbose
+* New cdrskin options --four_channel --two_channel
+* New cdrskin option cd_start_tno=
+* New cdrskin options sao_pregap=, sao_postgap=
+
+
+2012.01.27.150951  [4605]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.1
+
+27 Jan 2012 [4606]
+- cdrskin/add_ts_changes_to_libburn_1_1_8
+- cdrskin/add_ts_changes_to_libburn_1_1_9
++ cdrskin/add_ts_changes_to_libburn_1_2_0
++ cdrskin/add_ts_changes_to_libburn_1_2_1
+Updated cdrskin tarball generator
+
+27 Jan 2012  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.1 - 2012.01.27.150951
+
+
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.1.9 - 
+------------------------------------ cycle  - cdrskin-1.2.1 - 
+  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.1 - 
 
 
 
