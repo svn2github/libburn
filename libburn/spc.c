@@ -1705,7 +1705,7 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 			int loop_count, int flag)
 {
 	enum response outcome;
-	int done = -1, usleep_time, ret;
+	int done = -1, usleep_time;
 	char *msg = NULL;
 
 	if (burn_sg_log_scsi & 3)
@@ -1732,7 +1732,9 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 		}
 		if (time(NULL) + usleep_time / 1000000 - start_time >
 		    timeout_ms / 1000 + 1) {
-			BURN_ALLOC_MEM(msg, char, 320);
+			done = -1; /* In case of alloc failure */
+			BURN_ALLOC_MEM_VOID(msg, char, 320);
+			done = 1;
 			sprintf(msg,
 				"Timeout exceed (%d ms). Retry canceled.\n",
 				timeout_ms);
@@ -1740,7 +1742,6 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 				0x0002018a,
 				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
-			done = 1;
 			goto err_ex;
 		}
 		if (d->cancel)

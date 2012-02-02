@@ -455,7 +455,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 					  struct burn_session *session,
 					  int nwa)
 {
-	int i, m, s, f, form, pform, runtime = -150, ret, track_length;
+	int i, m, s, f, form, runtime = -150, ret, track_length;
 	int leadin_form, leadin_start, pregap = 150, postgap;
 	unsigned char ctladr, scms;
 	struct burn_drive *d;
@@ -469,6 +469,8 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 
 #ifdef Libburn_track_multi_indeX
 	int j;
+#else
+	int pform;
 #endif
 
 	if (ntr < 1) {
@@ -600,7 +602,10 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 	if (tar[0]->pregap2_size < 150)
 		tar[0]->pregap2_size = 150;
 
+#ifndef Libburn_track_multi_indeX
 	pform = form;
+#endif
+
 	for (i = 0; i < ntr; i++) {
 
 		/* ts A70125 : 
@@ -788,7 +793,11 @@ XXX this is untested :)
 			rem -= burn_sector_length(tar[i]->mode);
 			runtime--;
 		}
+
+#ifndef Libburn_track_multi_indeX
 		pform = form;
+#endif
+
 	}
 	burn_lba_to_msf(runtime, &m, &s, &f);
 	e[2].pmin = m;
