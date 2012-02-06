@@ -113,16 +113,16 @@ Sony documents the cleartext part as "Genre information that would supplement
 the Genre Code, such as 'USA Rock music in the 60s'". Always ASCII encoded.
 
 Pack type 0x88 records information from the CD's Table of Content, as of
-READ PMA/TOC/ATIP Format 0010b (mmc5r03c.pdf, table 490 TOC Track Descriptor
+READ PMA/TOC/ATIP Format 0010b (mmc3r10g.pdf, table 237 TOC Track Descriptor
 Format, Q Sub-channel).
-See below, Format of CD-TEXT packs, for more details about the content of
-pack type 0x88.
+See below, Format of a CD-TEXT packs array, for more details about the content
+of pack type 0x88.
 
 Pack type 0x89 is yet quite unclear. It might be a representation of Playback
-Skip Interval, Mode-5 Q sub-channel, POINT 01 to 40 (mmc5r03.pdf 4.2.3.7.4).
+Skip Interval, Mode-5 Q sub-channel, POINT 01 to 40 (mmc3r10g.pdf 4.2.3.6.3).
 If so, then this seems not to apply to write type SAO, because the CUE SHEET
 format offers no way to express Mode-5 Q.
-See below, Format of CD-TEXT packs, for an example of this pack type.
+See below, Format of a CD-TEXT packs array, for an example of this pack type.
 
 Pack type 0x8d is documented by Sony as "Closed Information: (use 8859-1 Code)
 Any information can be recorded on disc as memorandum. Information in this
@@ -139,7 +139,7 @@ ISRC consists of 12 characters: 2 country code [0-9A-Z], 3 owner code [0-9A-Z],
 2 year digits (00 to 99), 5 serial number digits (00000 to 99999).
 
 Pack type 0x8f summarizes the whole list of text packs of a block.
-See below, Format of CD-TEXT packs, for details.
+See below, Format of a CD-TEXT packs array, for details.
 
 
 -------------------------------------------------------------------------------
@@ -180,8 +180,8 @@ the next text of the same pack type. If no text of the same type follows,
 then the remaining text bytes are set to 0.
 
 The CRC algorithm uses divisor 0x11021. The resulting 16-bit residue of the
-polynomial division gets exored with 0xffff and written as big-endian
-number to bytes 16 and 17 of the pack. 
+polynomial division get inverted and written as big-endian number to bytes
+16 and 17 of the pack. 
 
 
 The text packs are grouped in up to 8 blocks of at most 256 packs. Each block
@@ -189,7 +189,7 @@ is in charge for one language. Sequence numbers of each block are counted
 separately. All packs of block 0 come before the packs of block 1.
 
 The limitation of block number and sequence numbers imply that there are at
-most 2048 text packs possible. (READ TOC/PMS/ATIP could retrieve 3640 packs,
+most 2048 text packs possible. (READ TOC/PMA/ATIP could retrieve 3640 packs,
 as it is limited to 64 kB - 2.)
 
 
