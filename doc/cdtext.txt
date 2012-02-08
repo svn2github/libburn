@@ -656,7 +656,7 @@ Example of a CDRWIN cue sheet file   :
 --------------------------------------
 
 CATALOG 1234567890123
-FILE "cdtext.bin" BINARY
+FILE "audiodata.bin" BINARY
 TITLE "Joyful Nights"
   TRACK 01 AUDIO
     FLAGS DCP
