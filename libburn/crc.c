@@ -114,11 +114,100 @@ unsigned long crc32_table[256] = {
    Generating polynomial: x^16 + x^12 + x^5 + 1
    Also known as CRC-16-CCITT, CRC-CCITT 
 
-   Use in libburn for raw write modes in sector.c.
+   Used in libburn for raw write modes in sector.c.
    There is also disabled code in read.c which would use it.
 
+
    ts B11222:
+   The same algorithm is prescribed for CD-TEXT.
    libburn/cdtext.c uses a simple bit shifting function : crc_11021()
+
+   ts B20211:
+   Discussion why both are equivalent in respect to their result:
+
+   Both map the bits of the given bytes to a polynomial over the finite field
+   of two elements. If bytes 0 .. M are given, then bit n of byte m is mapped
+   to the coefficient of x exponent (n + ((M - m) * 8) + 16).
+   I.e. they translate the bits into a polynomial with the highest bit
+   becomming the coefficient of the highest power of x. Then this polynomial
+   is multiplied by (x exp 16).
+
+   The set of all such polynomials forms a commutative ring. Its addition
+   corresponds to bitwise exclusive or. Addition and subtraction are identical.
+   Multiplication with polynomials of only one single non-zero coefficient
+   corresponds to leftward bit shifting by the exponent of that coefficient.
+   The same rules apply as with elementary school arithmetics on integer
+   numbers, but with surprising results due to the finite nature of the
+   coefficient number space.
+   Note that multiplication is _not_ an iteration of addition here.
+
+   Function crc_11021() performs a division with residue by the euclidian
+   algorithm. I.e. it splits polynomial d into quotient q(d) and residue r(d)
+   in respect to the polynomial p = x exp 16 + x exp 12 + x exp 5 + x exp 0
+      d = p * q(d) + r(d)
+   where r(d) is of a polynomial rank lower than p, i.e. only x exp 15
+   or lower have non-zero coefficients.
+   The checksum crc(D) is derived by reverse mapping (r(d) * (x exp 16)).
+   I.e. by mapping the coefficient of (x exp n) to bit n of the 16 bit word
+   crc(D).
+   The function result is the bit-wise complement of crc(D).
+
+   Function crc_ccitt uses a table ccitt_table of r(d) values for the
+   polynomials d which represent the single byte values 0x00 to 0xff.
+   It computes r(d) by computing the residues of an iteratively expanded
+   polynomial. The expansion of the processed byte string A by the next byte B
+   from the input byte string happens by shifting the string 8 bits to the
+   left, and by oring B onto bits 0 to 7.
+   In the space of polynomials, the already processed polynomial "a" (image of
+   byte string A) gets expanded by polynomial b (the image of byte B) like this
+      a * X + b
+   where X is (x exp 8), i.e. the single coefficient polynomial of rank 8.
+
+   The following argumentation uses algebra with commutative, associative
+   and distributive laws.
+   Valid especially with polynomials is this rule:
+     (1):  r(a + b) = r(a) + r(b)
+   because r(a) and r(b) are of rank lower than rank(p) and
+   rank(a + b) <= max(rank(a), rank(b))
+   Further valid are:
+     (2):  r(a) = r(r(a))
+     (3):  r(p * a) = 0
+
+   The residue of this expanded polynomials can be expressed by means of the
+   residue r(a) which is known from the previous iteration step, and the
+   residue r(b) which may be looked up in ccitt_table.
+      r(a * X + b)
+    = r(p * q(a) * X + r(a) * X + p * q(b) + r(b))
+
+   Applying rule (1):
+    = r(p * q(a) * X) + r(r(a) * X) + r(p * q(b)) + r(r(b))
+
+   Rule (3) and rule (2):
+    = r(r(a) * X) + r(b)
+
+   Be h(a) and l(a) chosen so that:  r(a) = h(a) * X + l(a),
+   and l(a) has zero coefficients above (x exp 7), and h(a) * X has zero
+   coefficients below (x exp 8). (They correspond to the high and low byte
+   of the 16 bit word crc(A).)
+   Now we have:
+    = r(h(a) * X * X)  + r(l(a) * X) + r(b)
+
+   Since the rank of l(a) is lower than 8, rank of l(a) * X is lower than 16.
+   Thus it cannot be divisible by p which has rank 16.
+   So: r(l(a) * X) =  l(a) * X
+   This yields
+    = l(a) * X + r(h(a) * X * X + b)
+
+   h(a) * X * X is the polynomial representation of the high byte of 16 bit
+   word crc(A).
+   So in the world of bit patterns we have:
+
+      crc(byte string A expanded by byte B)
+    = (low_byte(crc(A)) << 8) ^ crc(high_byte(crc(A)) ^ B)
+
+   And this is what function crc_ccitt() does, modulo swapping the exor
+   operants and some C obfuscation.
+
 */
 unsigned short crc_ccitt(unsigned char *q, int len)
 {
@@ -135,10 +224,6 @@ unsigned short crc_ccitt(unsigned char *q, int len)
    "The EDC codeword must be divisible by the check polynomial:
     P(x) = (x^16 + x^15 + x^2 + 1) . (x^16 + x^2 + x + 1)   
    "
-
-   >>> Test whether this coincides with CRC-32 IEEE 802.3
-   x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10
-   + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
 
    Used for raw writing in sector.c
 */
