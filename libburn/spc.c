@@ -1090,6 +1090,12 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			sprintf(msg, "Logical unit is not ready");
 		goto return_retry;
+	case 0x06:
+		if (*ascq == 0)
+			sprintf(msg, "No reference position found");
+		else
+			break;
+		goto return_fail;
 	case 0x08:
 		if (*ascq == 0)
 			sprintf(msg, "Logical unit communication failure");
