@@ -1186,6 +1186,9 @@ TYG11               TAIYO YUDEN  DVD-R DL 8x
 TYG-BD      Y01     TAIYO YUDEN Co., Ltd.  1-2X LTH   [Blu]
 TYG-BD      Y03     TAIYO YUDEN Co., Ltd.   1-4X LTH   [Blu]
 
+"UmeDisc Ltd. HK"
+UMEDISC     DL1     Elite DVD+R DL [User report feb 2012]
+
 "Unifino Inc."
 UTJR001001          UNIFINO  4X   [Hij]
 
