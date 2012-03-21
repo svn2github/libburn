@@ -2335,7 +2335,7 @@ int Cdrpreskin_fallback(struct CdrpreskiN *preskin, int argc, char **argv,
  execvp(hargv[0], hargv);
 failure:;
  fprintf(stderr,"cdrskin: FATAL : Cannot start fallback program '%s'\n",
-         hargv[0]);
+         preskin->fallback_program);
  fprintf(stderr,"cdrskin: errno=%d  \"%s\"\n",
          errno, (errno > 0 ? strerror(errno) : "unidentified error"));
  exit(15);
