@@ -1477,6 +1477,8 @@ off_t burn_disc_available_space(struct burn_drive *d,
       0x40 "BD-ROM",
     Read-only for now is this BD-R profile (testers wanted)
       0x42 "BD-R random recording"
+    Empty drives are supposed to report
+      0x00 ""
     @param d The drive where the media is inserted.
     @param pno Profile Number. See also mmc5r03c.pdf, table 89
     @param name Profile Name (see above list, unknown profiles have empty name)
@@ -2927,10 +2929,14 @@ void burn_write_opts_set_format(struct burn_write_opts *opts, int format);
 */
 int  burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim);
 
-/** Controls buffer underrun prevention
+/** Controls buffer underrun prevention. This is only needed with CD media
+    and possibly with old DVD-R drives. All other media types are not
+    vulnerable to burn failure due to buffer underrun.
     @param opts The write opts to change
     @param underrun_proof if non-zero, buffer underrun protection is enabled
-    @return Returns 1 on success and 0 on failure.
+    @return Returns 1 if the drive announces to be capable of underrun
+                      prevention,
+            Returns 0 if not.
 */
 int burn_write_opts_set_underrun_proof(struct burn_write_opts *opts,
 				       int underrun_proof);
@@ -3432,7 +3438,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  2
-#define burn_header_version_micro  1
+#define burn_header_version_micro  3
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
