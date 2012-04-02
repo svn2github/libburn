@@ -1,3 +1,12 @@
+SVN trunk (to become libburn-1.2.4 or higher)
+===============================================================================
+- no novelties yet
+
+
+libburn-1.2.2.tar.gz Mon Apr 02 2012
+===============================================================================
+* Small internal refinements
+
 libburn-1.2.0.tar.gz Sat Jan 28 2012
 ===============================================================================
 * Bug fix: cdrskin produced a memory fault if interupted before writing began

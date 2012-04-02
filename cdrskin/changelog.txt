@@ -11153,26 +11153,137 @@ Made number transition to 1.2.1
 + cdrskin/add_ts_changes_to_libburn_1_2_1
 Updated cdrskin tarball generator
 
-27 Jan 2012  []
+27 Jan 2012  [4607]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
+
+27 Jan 2012  [4608]
+svn move -m libburn release 1.2.0 is ready
+http://svn.libburnia-project.org/libburn/branches/1.2.0 
+http://svn.libburnia-project.org/libburn/tags/1.2.0
+
+27 Jan 2012  [tag:4612] [4613]
+libburn/write.c
+ChangeLog
+Corrected small flaws of libburn release tarball
+
+27 Jan 2012  [4614] [4615]
+libburn/write.c
+One of the flaws was phony. Corrected back.
 
 ------------------------------------ cycle  - cdrskin-1.2.1 - 2012.01.27.150951
 
 
+2012.02.02.190720  [4624]
+libburn/write.c
+libburn/spc.c
+Reacted on warnings of Debian buildd
+
+06 Feb 2012  [4625]
+doc/cdtext.txt
+Small corrections in CD-TEXT documentation
+
+08 Feb 2012  [4626]
+doc/cdtext.txt
+Small corrections in CD-TEXT documentation
+
+2012.02.11.171228  [4627]
+libburn/crc.c
+Mathematical description of crc_ccitt() versus crc_11021()
+
+2012.02.13.102837  [4628]
+libburn/spc.c
+Added LG drive sense code 2 06 00 to error list (officially listed is 3 06 00)
+
+2012.02.19.101022  [4631]
+libburn/crc.h
+libburn/crc.c
+Re-implemented the CRC functions under own copyright
+
+2012.02.22.103056  [4632]
+libburn/util.c
+doc/mediainfo.txt
+Added to DVD manufacturer list: "UmeDisc Limited" 
+
+2012.03.21.193320  [4671]
+cdrskin/cdrskin.c
+Reacted on warning of cppcheck
+
+2 Apr 2012  [4684]
+svn copy -m Branching for libburn release 1.2.2
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.2.2
+
+2012.04.02.110001  [4685]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.2
+
+02 Apr 2012  [4686]
+- cdrskin/add_ts_changes_to_libburn_1_2_0
+- cdrskin/add_ts_changes_to_libburn_1_2_1
++ cdrskin/add_ts_changes_to_libburn_1_2_2
++ cdrskin/add_ts_changes_to_libburn_1_2_3
+Updated cdrskin tarball generator
+
+02 Apr 2012  [4687]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.2.2 - 2012.04.02.110001
+* Small internal refinements
+
+
+2012.04.02.172347  [4691]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.3
+
+02 Apr 2012  [4692]
+- cdrskin/add_ts_changes_to_libburn_1_2_0
+- cdrskin/add_ts_changes_to_libburn_1_2_1
++ cdrskin/add_ts_changes_to_libburn_1_2_2
++ cdrskin/add_ts_changes_to_libburn_1_2_3
+Updated cdrskin tarball generator
+
+02 Apr 2012  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.3 - 2012.04.02.172347
+
+
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.1 - 
+------------------------------------ cycle  - cdrskin-1.2.3 - 
+
+
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.1 - 
+------------------------------------ cycle  - cdrskin-1.2.3 - 
 
 
 
@@ -11197,7 +11308,7 @@ CD-TEXT:
 
 qemu:
 
-- Re-asses benefit of BLKFLSBUF as of dvd+rw-tools/transport.hxx
+- Re-assess benefit of BLKFLSBUF as of dvd+rw-tools/transport.hxx
 
 - Centralize SCSI log /tmp file opening 
 
@@ -11223,11 +11334,6 @@ Could need ioctl to obtain SCSI bus,target,lun from fd rather than name
 Subject: Re: [osol-help] DHCP configuration with fixed addresses
 pntadm -A 10.0.0.24 -f MANUAL -i 010008544255E7 -m 10.0.0.0 -y 10.0.0.0
 )
-
-
-----------------------------------------------------------------------------
-
-- find out from where libburn/crc.c stems. What algorithm is crc_32() ?
 
 
 --------------------------------- bugs -------------------------------------
@@ -11262,8 +11368,6 @@ Support for BD-R SRM+POW
 Provide DVD+R DL layer break setter
 
 Check all SORRY and FATAL errors whether they should become FAILUREs
-
-problem with telltoc: double descriptor list from before load and after load 
 
 
 What about cdrskin rc files ? Forward with fallback runs ?
