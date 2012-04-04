@@ -1341,8 +1341,13 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
  else {
    *fd= -1;
 
-   Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
-                          &no_convert_fs_adr,0);
+ ret= Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
+                             &no_convert_fs_adr,0);
+ if(ret <= 0) {
+   fprintf(stderr,
+           "cdrskin: FATAL : No drive found. Cannot prepare track.\n");
+   return(0);
+ }
 /*    
    fprintf(stderr,
            "cdrskin: DEBUG : device_adr='%s' , raw_adr='%s' , ncfs=%d\n",
@@ -3706,12 +3711,25 @@ int Cdrskin_destroy(struct CdrskiN **o, int flag)
 }
 
 
+int Cdrskin_assert_driveno(struct CdrskiN *skin, int flag)
+{
+ if(skin->driveno < 0 || (unsigned int) skin->driveno >= skin->n_drives) {
+   fprintf(stderr,
+       "cdrskin: FATAL : No drive found. Cannot perform desired operation.\n");
+   return(0);
+ }
+ return(1);
+}
+
+
 /** Return the addresses of the drive. device_adr is the libburn persistent
     address of the drive, raw_adr is the address as given by the user.
 */
 int Cdrskin_get_device_adr(struct CdrskiN *skin,
            char **device_adr, char **raw_adr, int *no_convert_fs_adr, int flag)
 {
+ if(skin->driveno < 0 || (unsigned int) skin->driveno >= skin->n_drives)
+   return(0);
  burn_drive_get_adr(&skin->drives[skin->driveno],skin->device_adr);
  *device_adr= skin->device_adr;
  *raw_adr= skin->preskin->raw_device_adr;
@@ -3781,6 +3799,10 @@ int Cdrskin_attach_fifo(struct CdrskiN *skin, int flag)
 
  int profile_number;
  char profile_name[80];
+
+ ret= Cdrskin_assert_driveno(skin, 0);
+ if(ret <= 0)
+   return(ret);
 
  /* Refuse here and thus use libburn fifo only with single track, non-CD */
  ret= burn_disc_get_profile(skin->drives[skin->driveno].drive,
@@ -3960,6 +3982,9 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
      drive= NULL;
      skin->grabbed_drive= drive;
    } else {
+     ret= Cdrskin_assert_driveno(skin, 0);
+     if(ret <= 0)
+       return(ret);
      drive= skin->drives[skin->driveno].drive;
      skin->grabbed_drive= drive;
    }
@@ -8720,12 +8745,15 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
      {*exit_value= 2; goto ex;}
    }
    skin->n_drives= 1;
+   skin->driveno= 0;
    burn_drive_release(skin->drives[0].drive, 0);
  } else {
    while (!burn_drive_scan(&(skin->drives), &(skin->n_drives))) {
      usleep(20000);
      /* >>> ??? set a timeout ? */
    }
+   if(skin->n_drives <= 0)
+     skin->driveno= -1;
  }
 
  burn_msgs_set_severities(skin->preskin->queue_severity,
