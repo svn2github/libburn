@@ -312,7 +312,8 @@ unsigned int rfl32(unsigned int acc)
 */
 static unsigned int crc_18001801b(unsigned char *data, int count, int flag)
 {
-	long int acc = 0, i, top;
+	unsigned long int acc = 0, top;
+	long int i;
 	unsigned int inv_acc;
 
 	for (i = 0; i < count * 8 + 32; i++) {
