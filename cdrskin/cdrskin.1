@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Jan 12, 2012"
+.TH CDRSKIN 1 "Version 1.2.3, Jan 12, 2012"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1051,9 +1051,10 @@ overwriteable DVD-RW it is 32k.
 .BI dvd_obs= default|32k|64k
 Linux specific:
 Set the number of bytes to be transmitted with each write operation to DVD
-or BD media. Tracks get padded up to the next multiple of this write
-size. A number of 64 KB may improve throughput with bus systems which
-show latency problems. The default depends on media type, option
+or BD media. With most write types, tracks get padded up to the next multiple
+of this write size (see option obs_pad=).
+A number of 64 KB may improve throughput with systems
+which show latency problems. The default depends on media type, option
 stream_recording=, and on compile time options.
 .TP
 .BI fallback_program= command
@@ -1476,6 +1477,15 @@ Such opening is needed for Bus,Target,Lun addresses unless option
 --old_pseudo_scsi_adr is given. It is also needed to resolve device file
 addresses which are not listed with cdrskin --devices but nevertheless point
 to a usable drive. (Like /dev/sg0 using the same SCSI address as /dev/sr0.)
+.TP
+.BI \--obs_pad
+Pad the data of last write operation of a DVD-R[W] DAO session or
+stdio: pseudo-drive up to the full size of an output chunk.
+This padding has to be applied automatically to the other DVD and BD media
+types, where it causes e.g. ISO images to have trailing unclaimed blocks.
+.br
+There are reports that DAO sessions of a size that is not a multiple of 16
+blocks abort on some Linux kernels and/or DVD drives.
 .TP
 .BI \--old_pseudo_scsi_adr
 Linux specific:
