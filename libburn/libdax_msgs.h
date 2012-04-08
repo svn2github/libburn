@@ -411,6 +411,7 @@ Range "libdax_msgs"        :  0x00000000 to 0x0000ffff
  0x00000001 (DEBUG,ZERO)   = Test error message
  0x00000002 (DEBUG,ZERO)   = Debugging message
  0x00000003 (FATAL,HIGH)   = Out of virtual memory
+ 0x00000004 (FATAL,HIGH)   = Generic fatal error
 
 
 ------------------------------------------------------------------------------

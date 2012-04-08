@@ -1597,15 +1597,29 @@ int burn_disc_open_track_dvd_plus_r(struct burn_write_opts *o,
 
 	if (o->write_type == BURN_WRITE_SAO &&
 	    ! burn_track_is_open_ended(s->track[tnum])) {
- 		/* Round track size up to write chunk size and reserve track */
+ 		/* Reserve track */
 		size = ((off_t) burn_track_get_sectors_2(s->track[tnum], 1))
 			* (off_t) 2048;
-		/* o->obs should be 32k or 64k already. But 32k alignment
-		  was once performed in d->reserve_track() */
-		if (o->obs % 32768)
-			o->obs += 32768 - (o->obs % 32768);
-		if (size % o->obs)
-			size += (off_t) (o->obs - (size % o->obs));
+		if (o->obs_pad) {
+	 		/* Round track size up to write chunk size */
+			/* o->obs should be 32k or 64k already. But 32k
+			   alignment was once performed in d->reserve_track()*/
+			if (o->obs % 32768)
+				o->obs += 32768 - (o->obs % 32768);
+			if (size % o->obs)
+				size += (off_t) (o->obs - (size % o->obs));
+		}
+
+		/* <<< Only for now until the first DVD+R succeeded */
+		if (!o->obs_pad) {
+			sprintf(msg, "Program error: encountered DVD+R without chunk padding");
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00000004,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			{ret = 0; goto ex;}
+		}
+
 		ret = d->reserve_track(d, size);
 		if (ret <= 0) {
 			sprintf(msg, "Cannot reserve track of %.f bytes",
@@ -2280,11 +2294,13 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 		}
-		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
+		if (o->obs_pad < 2)
+			o->obs_pad = 0; /* no filling-up of last 32k buffer */
 		if (d->current_profile == 0x43) /* BD-RE */
 			o->obs = Libburn_bd_re_obS;
 		if (d->do_stream_recording) {
-			o->obs_pad = 1;
+			if (o->obs_pad < 2)
+				o->obs_pad = 1;
 			if (d->current_profile == 0x43) /* BD-RE */
 				o->obs = Libburn_bd_re_streamed_obS;
 		}
@@ -2321,7 +2337,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			burn_track_set_size(t, default_size);
 		}
 		/* Whether to fill-up last 32k buffer of track. */
-		o->obs_pad = (o->write_type != BURN_WRITE_SAO);
+		if (o->obs_pad < 2)
+			o->obs_pad = (o->write_type != BURN_WRITE_SAO);
 		ret = burn_disc_setup_dvd_minus_r(o, disc);
 		if (ret <= 0) {
 			sprintf(msg,
@@ -2362,7 +2379,8 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			goto early_failure;
 		}
 		/* ??? padding needed ??? cowardly doing it for now */
-		o->obs_pad = 1; /* fill-up track's last 32k buffer */
+		if (o->obs_pad < 2)
+			o->obs_pad = 1; /* fill-up track's last 32k buffer */
 		if (d->do_stream_recording) {
 			if (d->current_profile == 0x41) /* BD-R */
 				o->obs = Libburn_bd_re_streamed_obS;
@@ -2777,7 +2795,8 @@ int burn_stdio_write_sync(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 
 	d->needs_close_session = 0;
-	o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
+	if (o->obs_pad < 2)
+		o->obs_pad = 0; /* no filling-up of track's last 32k buffer */
 	o->obs = 32*1024; /* buffer size */
 
 	if (disc->sessions != 1)

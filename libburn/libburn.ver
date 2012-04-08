@@ -176,6 +176,7 @@ burn_write_opts_set_has_mediacatalog;
 burn_write_opts_set_leadin_text;
 burn_write_opts_set_mediacatalog;
 burn_write_opts_set_multi;
+burn_write_opts_set_obs_pad;
 burn_write_opts_set_perform_opc;
 burn_write_opts_set_simulate;
 burn_write_opts_set_start_byte;

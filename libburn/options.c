@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -477,6 +477,13 @@ void burn_write_opts_set_dvd_obs(struct burn_write_opts *opts, int obs)
 	if (obs != 0 && obs != 32 * 1024 && obs != 64 * 1024)
 		return;
 	opts->dvd_obs_override = obs;
+}
+
+
+/* ts B20406: API */
+void burn_write_opts_set_obs_pad(struct burn_write_opts *opts, int pad)
+{
+	opts->obs_pad = 2 * !!pad;
 }
 
 

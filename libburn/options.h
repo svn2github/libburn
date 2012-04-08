@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -42,7 +42,9 @@ struct burn_write_opts
 	/* ts A61219 : Output block size to trigger buffer flush if hit.
 			 -1 with CD, 32 kB with DVD */
 	int obs;
-	int obs_pad; /* 1=pad up last block to obs */
+	int obs_pad; /* >0 pad up last block to obs, 0 do not
+	                2 indicates burn_write_opts_set_obs_pad(,1)
+	             */
 
 	/* ts A61222 : Start address for media which allow a choice */
 	off_t start_byte;
