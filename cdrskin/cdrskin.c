@@ -2507,7 +2507,7 @@ return:
 */
 {
  int i,ret;
- char *value_pt, reason[4096];
+ char *value_pt, reason[4096], *argpt;
 
 #ifndef Cdrskin_extra_leaN
  if(argc>1) {
@@ -2546,6 +2546,10 @@ return:
 
  for (i= 1;i<argc;i++) {
 
+   argpt= argv[i];
+   if (strncmp(argpt, "--", 2) == 0 && strlen(argpt) > 3)
+     argpt++;
+
    if(strcmp(argv[i],"--abort_handler")==0) {
      o->abort_handler= 3;
 
@@ -2565,8 +2569,8 @@ return:
    } else if(strcmp(argv[i],"--allow_untested_media")==0) {
      o->allow_untested_media= 1;
 
-   } else if(strcmp(argv[i],"blank=help")==0 ||
-             strcmp(argv[i],"-blank=help")==0) {
+   } else if(strcmp(argpt, "blank=help") == 0 ||
+             strcmp(argpt, "-blank=help") == 0) {
 
 #ifndef Cdrskin_extra_leaN
 
@@ -2667,11 +2671,11 @@ no_adr_trn_mem:;
 #endif /* Cdrskin_extra_leaN */
 
 
-   } else if(strncmp(argv[i],"-dev=",5)==0) {
-     value_pt= argv[i]+5;
+   } else if(strncmp(argpt, "-dev=", 5) == 0) {
+     value_pt= argpt + 5;
      goto set_dev;
-   } else if(strncmp(argv[i],"dev=",4)==0) {
-     value_pt= argv[i]+4;
+   } else if(strncmp(argpt, "dev=", 4) == 0) {
+     value_pt= argpt + 4;
 set_dev:;
      if(strcmp(value_pt,"help")==0) {
 
@@ -2764,8 +2768,8 @@ set_dev:;
      o->drive_exclusive= 2;
      o->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i],"driveropts=help")==0 ||
-             strcmp(argv[i],"-driveropts=help")==0) {
+   } else if(strcmp(argpt,"driveropts=help")==0 ||
+             strcmp(argpt,"-driveropts=help")==0) {
 
 #ifndef Cdrskin_extra_leaN
 
@@ -3071,23 +3075,23 @@ see_cdrskin_eng_html:;
         "cdrskin: NOTE : option --no_rc would only work as first argument.\n");
 
 #ifndef Cdrskin_disable_raw96R
-   } else if(strcmp(argv[i],"-raw96r")==0) {
+   } else if(strcmp(argpt,"-raw96r")==0) {
      strcpy(o->write_mode_name,"RAW/RAW96R");
 #endif
 
-   } else if(strcmp(argv[i],"-sao")==0 || strcmp(argv[i],"-dao")==0) {
+   } else if(strcmp(argpt,"-sao")==0 || strcmp(argpt,"-dao")==0) {
      strcpy(o->write_mode_name,"SAO");
 
-   } else if(strcmp(argv[i],"-scanbus")==0) {
+   } else if(strcmp(argpt,"-scanbus")==0) {
      o->no_whitelist= 1;
 
-   } else if(strcmp(argv[i],"-tao")==0) {
+   } else if(strcmp(argpt,"-tao")==0) {
      strcpy(o->write_mode_name,"TAO");
 
-   } else if(strcmp(argv[i],"-V")==0 || strcmp(argv[i],"-Verbose")==0) {
+   } else if(strcmp(argv[i],"-V")==0 || strcmp(argpt, "-Verbose") == 0) {
      burn_set_scsi_logging(2 | 4); /* log SCSI to stderr */
 
-   } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
+   } else if(strcmp(argv[i],"-v")==0 || strcmp(argpt, "-verbose") == 0) {
      (o->verbosity)++;
      ClN(printf("cdrskin: verbosity level : %d\n",o->verbosity));
 set_severities:;
@@ -3101,7 +3105,7 @@ set_severities:;
      (o->verbosity)+= strlen(argv[i])-1;
      goto set_severities;
 
-   } else if(strcmp(argv[i],"-version")==0) {
+   } else if(strcmp(argpt,"-version")==0) {
      int major, minor, micro;
 
      printf(
@@ -3133,10 +3137,10 @@ set_severities:;
      printf("Build timestamp   :  %s\n",Cdrskin_build_timestamP);
      {ret= 2; goto ex;}
 
-   } else if(strcmp(argv[i],"-waiti")==0) {
+   } else if(strcmp(argpt,"-waiti")==0) {
      o->do_waiti= 1;
 
-   } else if(strcmp(argv[i],"-xamix")==0) {
+   } else if(strcmp(argpt,"-xamix")==0) {
      fprintf(stderr,
        "cdrskin: FATAL : Option -xamix not implemented and data not yet convertible to other modes.\n");
      return(0);
@@ -7502,7 +7506,7 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 {
  int i,k,l,ret, idx= -1, cd_start_tno;
  double value,grab_and_wait_value= -1.0, num;
- char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "";
+ char *cpt,*value_pt,adr[Cdrskin_adrleN],*blank_mode= "", *argpt;
  struct stat stbuf;
 
  /* cdrecord 2.01 options which are not scheduled for implementation, yet */
@@ -7553,28 +7557,32 @@ int Cdrskin_setup(struct CdrskiN *skin, int argc, char **argv, int flag)
 
  for (i= 1;i<argc;i++) {
 
+   argpt= argv[i];
+   if (strncmp(argpt, "--", 2) == 0 && strlen(argpt) > 3)
+     argpt++;
+
    /* is this a known option which is not planned to be implemented ? */
    /* such an option will not be accepted as data source */
    for(k=0;ignored_partial_options[k][0]!=0;k++) {
-     if(argv[i][0]=='-')
-       if(strncmp(argv[i]+1,ignored_partial_options[k],
-                            strlen(ignored_partial_options[k]))==0)
+     if(argpt[0]=='-')
+       if(strncmp(argpt+1,ignored_partial_options[k],
+                          strlen(ignored_partial_options[k]))==0)
          goto no_volunteer;
-     if(strncmp(argv[i],ignored_partial_options[k],
-                        strlen(ignored_partial_options[k]))==0)
+     if(strncmp(argpt,ignored_partial_options[k],
+                      strlen(ignored_partial_options[k]))==0)
        goto no_volunteer;
    }
    for(k=0;ignored_full_options[k][0]!=0;k++) 
-     if(strcmp(argv[i],ignored_full_options[k])==0) 
+     if(strcmp(argpt,ignored_full_options[k])==0) 
        goto no_volunteer;
    if(0) {
 no_volunteer:;
      skin->preskin->demands_cdrecord_caps= 1;
      if(skin->preskin->fallback_program[0])
-       fprintf(stderr,"cdrskin: NOTE : Unimplemented option: '%s'\n",argv[i]);
+       fprintf(stderr,"cdrskin: NOTE : Unimplemented option: '%s'\n",argpt);
      else  
        fprintf(stderr,"cdrskin: NOTE : ignoring unimplemented option : '%s'\n",
-               argv[i]);
+               argpt);
      fprintf(stderr,
        "cdrskin: NOTE : option is waiting for a volunteer to implement it.\n");
  continue;
@@ -7639,21 +7647,21 @@ set_abort_max_wait:;
        value/= 2048.0;
      skin->assert_write_lba= value; 
 
-   } else if(strcmp(argv[i],"-atip")==0) {
+   } else if(strcmp(argpt,"-atip")==0) {
      if(skin->do_atip<1)
        skin->do_atip= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines\n"));
 
-   } else if(strcmp(argv[i],"-audio")==0) {
+   } else if(strcmp(argpt,"-audio")==0) {
      skin->track_type= BURN_AUDIO;
      skin->track_type_by_default= 0;
 
-   } else if(strncmp(argv[i],"-blank=",7)==0) {
-     cpt= argv[i]+7;
+   } else if(strncmp(argpt,"-blank=",7)==0) {
+     cpt= argpt + 7;
      goto set_blank;
-   } else if(strncmp(argv[i],"blank=",6)==0) {
-     cpt= argv[i]+6;
+   } else if(strncmp(argpt,"blank=",6)==0) {
+     cpt= argpt + 6;
 set_blank:;
      skin->blank_format_type= 0;
      blank_mode= cpt;
@@ -7771,18 +7779,18 @@ set_cd_start_tno:;
    } else if(strcmp(argv[i],"--cdtext_verbose")==0) {
      skin->cdtext_test= 1;
 
-   } else if(strcmp(argv[i],"-checkdrive")==0) {
+   } else if(strcmp(argpt,"-checkdrive")==0) {
      skin->do_checkdrive= 1;
 
-   } else if(strcmp(argv[i],"-copy")==0) {
+   } else if(strcmp(argpt,"-copy")==0) {
      skin->track_modemods|= BURN_COPY;
      skin->track_modemods&= ~BURN_SCMS;
 
-   } else if(strncmp(argv[i],"-cuefile=", 9)==0) {
-     value_pt= argv[i] + 9;
+   } else if(strncmp(argpt, "-cuefile=", 9)==0) {
+     value_pt= argpt + 9;
      goto set_cuefile;
-   } else if(strncmp(argv[i],"cuefile=", 8)==0) {
-     value_pt= argv[i] + 8;
+   } else if(strncmp(argpt, "cuefile=", 8)==0) {
+     value_pt= argpt + 8;
 set_cuefile:;
      if(strlen(value_pt) >= sizeof(skin->cuefile)) {
        fprintf(stderr,
@@ -7793,7 +7801,7 @@ set_cuefile:;
      strcpy(skin->cuefile, value_pt);
      skin->do_burn= 1;
 
-   } else if(strcmp(argv[i],"-data")==0) {
+   } else if(strcmp(argpt,"-data")==0) {
 option_data:;
      /* All Subsequent Tracks Option */
      skin->cdxa_conversion= (skin->cdxa_conversion & ~0x7fffffff) | 0;
@@ -7835,9 +7843,9 @@ option_data:;
 #endif /* ! Cdrskin_extra_leaN */
 
 
-   } else if(strncmp(argv[i],"-dev=",5)==0) {
+   } else if(strncmp(argpt,"-dev=",5)==0) {
      /* is handled in Cdrpreskin_setup() */;
-   } else if(strncmp(argv[i],"dev=",4)==0) {
+   } else if(strncmp(argpt,"dev=",4)==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"direct_write_amount=",20)==0) {
@@ -7873,27 +7881,27 @@ option_data:;
    } else if(strcmp(argv[i],"--drive_scsi_exclusive")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strncmp(argv[i],"-driveropts=",12)==0) {
-     value_pt= argv[i]+12;
+   } else if(strncmp(argpt, "-driveropts=", 12)==0) {
+     value_pt= argpt + 12;
      goto set_driveropts;
-   } else if(strncmp(argv[i],"driveropts=",11)==0) {
-     value_pt= argv[i]+11;
+   } else if(strncmp(argpt, "driveropts=", 11)==0) {
+     value_pt= argpt + 11;
 set_driveropts:;
      if(strcmp(value_pt,"burnfree")==0 || strcmp(value_pt,"burnproof")==0) {
        skin->burnfree= 1;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
          ClN(printf("cdrskin: burnfree : on\n"));
-     } else if(strcmp(argv[i]+11,"noburnfree")==0 ||
-               strcmp(argv[i]+11,"noburnproof")==0 ) {
+     } else if(strcmp(argpt+11,"noburnfree")==0 ||
+               strcmp(argpt+11,"noburnproof")==0 ) {
        skin->burnfree= 0;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
          ClN(printf("cdrskin: burnfree : off\n"));
-     } else if(strcmp(argv[i]+11,"help")==0) {
+     } else if(strcmp(argpt+11,"help")==0) {
        /* handled in Cdrpreskin_setup() */;
      } else 
        goto ignore_unknown;
 
-   } else if(strcmp(argv[i],"-dummy")==0) {
+   } else if(strcmp(argpt,"-dummy")==0) {
      skin->dummy_mode= 1;
 
    } else if(strncmp(argv[i], "-dvd_obs=", 9)==0) {
@@ -7912,7 +7920,7 @@ dvd_obs:;
      } else
        skin->dvd_obs= num;
 
-   } else if(strcmp(argv[i],"-eject")==0) {
+   } else if(strcmp(argpt,"-eject")==0) {
      skin->do_eject= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: eject after work : on\n"));
@@ -7959,10 +7967,10 @@ dvd_obs:;
        ClN(printf(
                "cdrskin: will fill up last track to full free media space\n"));
 
-   } else if(strcmp(argv[i],"-force")==0) {
+   } else if(strcmp(argpt,"-force")==0) {
      skin->force_is_set= 1;
 
-   } else if(strcmp(argv[i],"-format")==0) {
+   } else if(strcmp(argpt,"-format")==0) {
      skin->do_blank= 1;
      skin->blank_format_type= 3|(1<<10);
      skin->blank_format_size= 0;
@@ -7976,11 +7984,11 @@ dvd_obs:;
 
 #ifndef Cdrskin_extra_leaN
 
-   } else if(strncmp(argv[i],"-fs=",4)==0) {
-     value_pt= argv[i]+4;
+   } else if(strncmp(argpt, "-fs=", 4) == 0) {
+     value_pt= argpt + 4;
      goto fs_equals;
-   } else if(strncmp(argv[i],"fs=",3)==0) {
-     value_pt= argv[i]+3;
+   } else if(strncmp(argpt, "fs=", 3) == 0) {
+     value_pt= argpt + 3;
 fs_equals:;
      if(skin->fifo_enabled) {
        value= Scanf_io_size(value_pt,0);
@@ -7999,11 +8007,11 @@ fs_equals:;
      grab_and_wait_value= Scanf_io_size(value_pt,0);
      skin->preskin->demands_cdrskin_caps= 1;
 
-   } else if(strncmp(argv[i],"-gracetime=",11)==0) {
-     value_pt= argv[i]+11;
+   } else if(strncmp(argpt, "-gracetime=", 11) == 0) {
+     value_pt= argpt + 11;
      goto gracetime_equals;
-   } else if(strncmp(argv[i],"gracetime=",10)==0) {
-     value_pt= argv[i]+10;
+   } else if(strncmp(argpt, "gracetime=", 10) == 0) {
+     value_pt= argpt + 10;
 gracetime_equals:;
      sscanf(value_pt,"%d",&(skin->gracetime));
 
@@ -8038,16 +8046,16 @@ gracetime_equals:;
    } else if(strcmp(argv[i],"--ignore_signals")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-immed")==0) {
+   } else if(strcmp(argpt,"-immed")==0) {
      skin->modesty_on_drive= 1;
      skin->min_buffer_percent= 75;
      skin->max_buffer_percent= 95;
 
-   } else if(strncmp(argv[i],"-index=", 7) == 0) {
-     value_pt= argv[i] + 7;
+   } else if(strncmp(argpt, "-index=", 7) == 0) {
+     value_pt= argpt + 7;
      goto set_index;
-   } else if(strncmp(argv[i],"index=", 6) == 0) {
-     value_pt= argv[i] + 6;
+   } else if(strncmp(argpt, "index=", 6) == 0) {
+     value_pt= argpt + 6;
 set_index:;
      if(skin->index_string != NULL)
        free(skin->index_string);
@@ -8077,17 +8085,17 @@ set_index:;
      skin->sheet_v07t_blocks++;
      skin->preskin->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i],"-inq")==0) {
+   } else if(strcmp(argpt,"-inq")==0) {
      skin->do_checkdrive= 2;
 
-   } else if(strcmp(argv[i],"-isosize")==0) {
+   } else if(strcmp(argpt,"-isosize")==0) {
      skin->use_data_image_size= 1;
 
-   } else if(strncmp(argv[i],"-isrc=", 6) == 0) {
-     value_pt= argv[i] + 6;
+   } else if(strncmp(argpt, "-isrc=", 6) == 0) {
+     value_pt= argpt + 6;
      goto set_isrc;
-   } else if(strncmp(argv[i],"isrc=", 5) == 0) {
-     value_pt= argv[i] + 5;
+   } else if(strncmp(argpt, "isrc=", 5) == 0) {
+     value_pt= argpt + 5;
 set_isrc:;
      if(strlen(value_pt) != 12) {
        fprintf(stderr,
@@ -8113,10 +8121,10 @@ set_isrc:;
    } else if(strncmp(argv[i],"fallback_program=",17)==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-load")==0) {
+   } else if(strcmp(argpt,"-load")==0) {
      skin->do_load= 1;
 
-   } else if(strcmp(argv[i],"-lock")==0) {
+   } else if(strcmp(argpt,"-lock")==0) {
      skin->do_load= 2;
 
    } else if(strcmp(argv[i],"--long_toc")==0) {
@@ -8124,11 +8132,11 @@ set_isrc:;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
 
-   } else if(strncmp(argv[i],"-mcn=", 5) == 0) {
-     value_pt= argv[i] + 5;
+   } else if(strncmp(argpt,"-mcn=", 5) == 0) {
+     value_pt= argpt + 5;
      goto set_mcn;
-   } else if(strncmp(argv[i],"mcn=", 4) == 0) {
-     value_pt= argv[i] + 4;
+   } else if(strncmp(argpt,"mcn=", 4) == 0) {
+     value_pt= argpt + 4;
 set_mcn:;
      if(strlen(value_pt) != 13) {
        fprintf(stderr,
@@ -8137,11 +8145,11 @@ set_mcn:;
      }
      memcpy(skin->mcn, value_pt, 14);
 
-   } else if(strncmp(argv[i],"-minbuf=",8)==0) {
-     value_pt= argv[i]+8;
+   } else if(strncmp(argpt, "-minbuf=", 8) == 0) {
+     value_pt= argpt + 8;
      goto minbuf_equals;
-   } else if(strncmp(argv[i],"minbuf=",7)==0) {
-     value_pt= argv[i]+7;
+   } else if(strncmp(argpt, "minbuf=", 7) == 0) {
+     value_pt= argpt + 7;
 minbuf_equals:;
      skin->modesty_on_drive= 1;
      sscanf(value_pt,"%lf",&value);
@@ -8155,11 +8163,11 @@ minbuf_equals:;
      ClN(printf("cdrskin: minbuf=%d percent desired buffer fill\n",
                 skin->min_buffer_percent));
 
-   } else if(strcmp(argv[i],"-minfo") == 0 ||
-             strcmp(argv[i],"-media-info") == 0) {
+   } else if(strcmp(argpt,"-minfo") == 0 ||
+             strcmp(argpt,"-media-info") == 0) {
      skin->do_atip= 4;
 
-   } else if(strcmp(argv[i], "-mode2") == 0) {
+   } else if(strcmp(argpt, "-mode2") == 0) {
      fprintf(stderr,
              "cdrskin: NOTE : defaulting option -mode2 to option -data\n");
      goto option_data;
@@ -8219,14 +8227,14 @@ minbuf_equals:;
      }
      skin->preskin->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i],"-multi")==0) {
+   } else if(strcmp(argpt,"-multi")==0) {
      skin->multi= 1;
 
-   } else if(strncmp(argv[i],"-msifile=",9)==0) {
-     value_pt= argv[i]+9;
+   } else if(strncmp(argpt, "-msifile=", 9) == 0) {
+     value_pt= argpt + 9;
      goto msifile_equals;
-   } else if(strncmp(argv[i],"msifile=",8)==0) {
-     value_pt= argv[i]+8;
+   } else if(strncmp(argpt, "msifile=", 8) == 0) {
+     value_pt= argpt + 8;
 msifile_equals:;
      if(strlen(value_pt)>=sizeof(skin->msifile)) {
        fprintf(stderr,
@@ -8237,7 +8245,7 @@ msifile_equals:;
      strcpy(skin->msifile, value_pt);
      skin->do_msinfo= 1;
 
-   } else if(strcmp(argv[i],"-msinfo")==0) {
+   } else if(strcmp(argpt,"-msinfo")==0) {
      skin->do_msinfo= 1;
 
    } else if(strcmp(argv[i],"--no_abort_handler")==0) {
@@ -8252,15 +8260,15 @@ msifile_equals:;
    } else if(strcmp(argv[i],"--no_rc")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-nocopy")==0) {
+   } else if(strcmp(argpt,"-nocopy")==0) {
      skin->track_modemods&= ~BURN_COPY;
 
-   } else if(strcmp(argv[i],"-nopad")==0) {
+   } else if(strcmp(argpt,"-nopad")==0) {
      skin->padding= 0.0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: padding : off\n"));
 
-   } else if(strcmp(argv[i],"-nopreemp")==0) {
+   } else if(strcmp(argpt,"-nopreemp")==0) {
      skin->track_modemods&= ~BURN_PREEMPHASIS;
 
    } else if(strcmp(argv[i],"--obs_pad")==0) {
@@ -8269,36 +8277,36 @@ msifile_equals:;
    } else if(strcmp(argv[i],"--old_pseudo_scsi_adr")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-pad")==0) {
+   } else if(strcmp(argpt,"-pad")==0) {
      skin->padding= 15*2048;
      skin->set_by_padsize= 0;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: padding : %.f\n",skin->padding));
 
-   } else if(strncmp(argv[i],"-padsize=",9)==0) {
-     value_pt= argv[i]+9;
+   } else if(strncmp(argpt, "-padsize=", 9) == 0) {
+     value_pt= argpt + 9;
      goto set_padsize;
-   } else if(strncmp(argv[i],"padsize=",8)==0) {
-     value_pt= argv[i]+8;
+   } else if(strncmp(argpt, "padsize=", 8) == 0) {
+     value_pt= argpt + 8;
 set_padsize:;
-     skin->padding= Scanf_io_size(argv[i]+8,0);
+     skin->padding= Scanf_io_size(value_pt, 0);
      skin->set_by_padsize= 1;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: padding : %.f\n",skin->padding));
 
-   } else if(strcmp(argv[i],"-preemp")==0) {
+   } else if(strcmp(argpt,"-preemp")==0) {
      skin->track_modemods|= BURN_PREEMPHASIS;
 
    } else if(strcmp(argv[i],"--prodvd_cli_compatible")==0) {
      skin->prodvd_cli_compatible= 1;
 
-   } else if(strcmp(argv[i],"-sao")==0 || strcmp(argv[i],"-dao")==0) {
+   } else if(strcmp(argpt,"-sao")==0 || strcmp(argpt,"-dao")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-scanbus")==0) {
+   } else if(strcmp(argpt,"-scanbus")==0) {
      skin->do_scanbus= 1;
 
-   } else if(strcmp(argv[i],"-scms")==0) {
+   } else if(strcmp(argpt,"-scms")==0) {
      skin->track_modemods|= BURN_SCMS;
 
    } else if(strcmp(argv[i],"--single_track")==0) {
@@ -8342,11 +8350,11 @@ set_sao_pregap:;
        return(0);
      }
 
-   } else if(strncmp(argv[i],"-speed=",7)==0) {
-     value_pt= argv[i]+7;
+   } else if(strncmp(argpt, "-speed=", 7) == 0) {
+     value_pt= argpt + 7;
      goto set_speed;
-   } else if(strncmp(argv[i],"speed=",6)==0) {
-     value_pt= argv[i]+6;
+   } else if(strncmp(argpt, "speed=", 6) == 0) {
+     value_pt= argpt + 6;
 set_speed:;
      if(strcmp(value_pt,"any")==0)
        skin->x_speed= -1;
@@ -8401,10 +8409,10 @@ set_stream_recording:;
          skin->stream_recording_is_set= 0;
      } else
        skin->stream_recording_is_set= 0;
-   } else if(strcmp(argv[i],"-swab")==0) {
+   } else if(strcmp(argpt,"-swab")==0) {
      skin->swap_audio_bytes= 0;
 
-   } else if(strcmp(argv[i],"-tao")==0) {
+   } else if(strcmp(argpt,"-tao")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"tao_to_sao_tsize=",17)==0) {
@@ -8423,29 +8431,29 @@ set_stream_recording:;
      skin->tell_media_space= 1;
      skin->preskin->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i], "-text") == 0) {
+   } else if(strcmp(argpt, "-text") == 0) {
      skin->use_cdtext= 1;
 
-   } else if(strncmp(argv[i],"-textfile=", 10)==0) {
-     value_pt= argv[i] + 10;
+   } else if(strncmp(argpt, "-textfile=", 10) == 0) {
+     value_pt= argpt + 10;
      goto set_textfile;
-   } else if(strncmp(argv[i],"textfile=", 9)==0) {
-     value_pt= argv[i] + 9;
+   } else if(strncmp(argpt ,"textfile=", 9) == 0) {
+     value_pt= argpt + 9;
 set_textfile:;
      ret= Cdrskin_read_textfile(skin, value_pt, 0);
      if(ret <= 0)
        return(ret);
 
-   } else if(strcmp(argv[i],"-toc")==0) {
+   } else if(strcmp(argpt,"-toc")==0) {
      skin->do_atip= 2;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
        ClN(printf("cdrskin: will put out some -atip style lines plus -toc\n"));
 
-   } else if(strncmp(argv[i],"-tsize=",7)==0) {
-     value_pt= argv[i]+7;
+   } else if(strncmp(argpt, "-tsize=", 7) == 0) {
+     value_pt= argpt + 7;
      goto set_tsize;
-   } else if(strncmp(argv[i],"tsize=",6)==0) {
-     value_pt= argv[i]+6;
+   } else if(strncmp(argpt, "tsize=", 6) == 0) {
+     value_pt= argpt + 6;
 set_tsize:;
      skin->fixed_size= Scanf_io_size(value_pt,0);
      if(skin->fixed_size>Cdrskin_tracksize_maX) {
@@ -8461,18 +8469,18 @@ track_too_large:;
    } else if(strcmp(argv[i],"--two_channel")==0) {
      skin->track_modemods&= ~BURN_4CH;
 
-   } else if(strcmp(argv[i],"-V")==0 || strcmp(argv[i],"-Verbose")==0) {
+   } else if(strcmp(argv[i],"-V")==0 || strcmp(argpt, "-Verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
-   } else if(strcmp(argv[i],"-v")==0 || strcmp(argv[i],"-verbose")==0) {
+   } else if(strcmp(argv[i],"-v")==0 || strcmp(argpt,"-verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
-   } else if(strcmp(argv[i],"-version")==0) {
+   } else if(strcmp(argpt,"-version")==0) {
      /* is handled in Cdrpreskin_setup() and should really not get here */;
 
-   } else if(strcmp(argv[i],"-waiti")==0) {
+   } else if(strcmp(argpt,"-waiti")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
    } else if(strncmp(argv[i],"write_start_address=",20)==0) {
@@ -8482,17 +8490,17 @@ track_too_large:;
                   skin->write_start_address));
      skin->preskin->demands_cdrskin_caps= 1;
 
-   } else if(strcmp(argv[i], "-xa") == 0) {
+   } else if(strcmp(argpt, "-xa") == 0) {
      fprintf(stderr,"cdrskin: NOTE : defaulting option -xa to option -data\n");
      goto option_data;
 
-   } else if(strcmp(argv[i], "-xa1") == 0) {
+   } else if(strcmp(argpt, "-xa1") == 0) {
      /* All Subsequent Tracks Option */
      skin->cdxa_conversion= (skin->cdxa_conversion & ~0x7fffffff) | 1;
      skin->track_type= BURN_MODE1;
      skin->track_type_by_default= 0;
 
-   } else if(strcmp(argv[i], "-xa2") == 0) {
+   } else if(strcmp(argpt, "-xa2") == 0) {
      fprintf(stderr,
              "cdrskin: NOTE : defaulting option -xa2 to option -data\n");
      goto option_data;
