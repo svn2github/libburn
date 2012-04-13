@@ -1484,8 +1484,10 @@ stdio: pseudo-drive up to the full size of an output chunk.
 This padding has to be applied automatically to the other DVD and BD media
 types, where it causes e.g. ISO images to have trailing unclaimed blocks.
 .br
-There are reports that DAO sessions of a size that is not a multiple of 16
-blocks abort on some Linux kernels and/or DVD drives.
+Use this option if there is the suspicion that DAO sessions abort with
+your kernel and/or DVD drive, if their size is not a multiple of 16 blocks.
+.br
+This option may also get enabled at compile time of libburn.
 .TP
 .BI \--old_pseudo_scsi_adr
 Linux specific:

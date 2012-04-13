@@ -3083,6 +3083,8 @@ void burn_write_opts_set_dvd_obs(struct burn_write_opts *opts, int obs);
 /* ts B20406 */
 /** Overrides the automatic decision whether to pad up the last write chunk to
     its full size. This applies to DVD, BD and stdio: pseudo-drives.
+    Note: This override may get enabled fixely already at compile time by
+          defining macro  Libburn_dvd_always_obs_paD .
     @param opts The write opts to change
     @param pad  1 means to pad up in any case, 0 means automatic decision.
     @since 1.2.4

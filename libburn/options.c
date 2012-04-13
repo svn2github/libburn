@@ -46,7 +46,13 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->underrun_proof = drive->mdata->underrun_proof;
 	opts->perform_opc = 1;
 	opts->obs = -1;
+
+#ifdef Libburn_dvd_always_obs_paD
+	opts->obs_pad = 1;
+#else
 	opts->obs_pad = 0;
+#endif
+
 	opts->start_byte = -1;
 	opts->fill_up_media = 0;
 	opts->force_is_set = 0;
