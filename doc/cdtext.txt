@@ -401,7 +401,7 @@ Byte :Value Meaning
 
 
 -------------------------------------------------------------------------------
-libburn API calls for CD-TEXT (see libburn/libburn.h for details):
+Overview of libburn API calls for CD-TEXT (see libburn/libburn.h for details):
 
 libburn can retrieve the set of text packs from a CD:
 
@@ -651,9 +651,9 @@ There are three more text attributes mentioned in man cdrecord for defining
 the corresponding CD-TEXT attributes: ARRANGER, COMPOSER, MESSAGE.
 
 
---------------------------------------
-Example of a CDRWIN cue sheet file   :
---------------------------------------
+--------------------------------------------------------
+Example of a CDRWIN cue sheet file named NIGHTCATS.CUE :
+--------------------------------------------------------
 
 CATALOG 1234567890123
 FILE "audiodata.bin" BINARY
@@ -679,6 +679,35 @@ TITLE "Joyful Nights"
     SONGWRITER "Mia Kitten"
     ISRC XYBLG1100006
     INDEX 01 13:20:33
+
+By 
+
+  $ cdrskin -v dev=/dev/sr0 -text cuefile=NIGHTCATS.CUE
+
+this yields as text packs:
+
+   0 : 80 00 00 00  J  o  y  f  u  l     N  i  g  h  t f0 f7
+   1 : 80 00 01 0c  s 00  S  o  n  g     o  f     J  o 43 1c
+   2 : 80 01 02 0a  y 00  H  u  m  p  t  y     D  u  m 43 f9
+   3 : 80 02 03 0a  p  t  y 00  M  e  e     O  w  w  w 24 72
+   4 : 80 03 04 08  w 00 00 00 00 00 00 00 00 00 00 00 6e af
+   5 : 81 00 05 00 00  F  e  l  i  x     a  n  d     T 4d 51
+   6 : 81 01 06 0b  h  e     P  u  r  r  s 00  C  a  t a7 40
+   7 : 81 02 07 03  w  a  l  k     B  e  a  u  t  i  e 59 80
+   8 : 81 02 08 0f  s 00  M  i  a     K  i  t  t  e  n 30 c9
+   9 : 81 03 09 0a 00 00 00 00 00 00 00 00 00 00 00 00 ad 19
+  10 : 82 00 0a 00 00  F  r  i  e  d  r  i  c  h     S 70 8f
+  11 : 82 01 0b 0b  c  h  i  l  l  e  r 00  M  o  t  h 33 43
+  12 : 82 02 0c 04  e  r     G  o  o  s  e 00  M  i  a d6 f5
+  13 : 82 03 0d 03     K  i  t  t  e  n 00 00 00 00 00 f5 83
+  14 : 8e 00 0e 00  1  2  3  4  5  6  7  8  9  0  1  2 92 3e
+  15 : 8e 00 0f 0c  3 00  X  Y  B  L  G  1  1  0  1  2 c0 2b
+  16 : 8e 01 10 0a  3  4 00  X  Y  B  L  G  1  1  0  0 bb b3
+  17 : 8e 02 11 09  0  0  5 00  X  Y  B  L  G  1  1  0 f3 bf
+  18 : 8e 03 12 08  0  0  0  6 00 00 00 00 00 00 00 00 5b 5c
+  19 : 8f 00 13 00 00 01 03 00 05 05 04 00 00 00 00 00 9b fe
+  20 : 8f 01 14 00 00 00 00 00 00 00 05 03 15 00 00 00 11 0b
+  21 : 8f 02 15 00 00 00 00 00 09 00 00 00 00 00 00 00 da 77
 
 --------------------------------------
 
