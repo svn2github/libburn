@@ -130,6 +130,16 @@
    And this is what function crc_ccitt() does, modulo swapping the exor
    operants and the final bit inversion which is prescribed by ECMA-130
    and MMC-3 Annex J.
+
+   The start value of the table driven byte shifting algorithm may be
+   different from the start value of an equivalent bit shifting algorithm.
+   This is because the final flushing by zero bits is already pre-computed
+   in the table. So the start value of the table driven algorithm must be
+   the CRC of the 0-polynomial under the start value of the bit shifting
+   algorithm.
+   This fact is not of much importance here, because the start value of
+   the bit shifter is 0x0000 which leads to CRC 0x0000 and thus to start
+   value 0x0000 with the table driven byte shifter.
 */
 
 
@@ -312,7 +322,7 @@ unsigned int rfl32(unsigned int acc)
 */
 static unsigned int crc_18001801b(unsigned char *data, int count, int flag)
 {
-	unsigned long int acc = 0, top;
+	unsigned int acc = 0, top;
 	long int i;
 	unsigned int inv_acc;
 
@@ -328,11 +338,11 @@ static unsigned int crc_18001801b(unsigned char *data, int count, int flag)
 				acc |= ((data[i / 8] >> (i % 8)) & 1);
 		}
 		if (top)
-			acc ^= 0x18001801b;
+			acc ^= 0x8001801b;
 	}
 
 	if (flag & 1)
-		return (unsigned int) acc;
+		return (unsigned int) (acc & 0xffffffff);
 
 	/* The bits of the whole 32 bit result are mirrored for ECMA-130
 	   output compliance and for sector.c habit to store CRC little endian
@@ -386,6 +396,9 @@ static unsigned int crc_18001801b(unsigned char *data, int count, int flag)
    This demands a final result mirroring to meet the ECMA-130 prescription.
 
    rfl8() can be implemented as lookup table.
+
+   The start value of the bit shifting iteration is 0x00000000, which leads
+   to the same start value for the table driven byte shifting.
 
    The following function crc32_by_tab() yields the same results as functions
    crc_18001801b() and crc_32():
