@@ -508,11 +508,13 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			"Track mode has unusable value", 0, 0);
 		goto failed;
 	}
-	if (o->num_text_packs > 0) {
-		leadin_form = 0x41;
-	} else {
+	if (tar[0]->mode & BURN_AUDIO)
 		leadin_form = 0x01;
-
+	else
+		leadin_form = 0x14;
+	if (o->num_text_packs > 0) {
+		leadin_form |= 0x40;
+	} else {
 		/* Check for CD-TEXT in session. Not the final creation,
 		   because the cue sheet content might be needed for CD-TEXT
 		   pack type 0x88 "TOC".
@@ -522,7 +524,7 @@ struct cue_sheet *burn_create_toc_entries(struct burn_write_opts *o,
 			if (ret < 0)
 				goto failed;
 			else if (ret > 0)
-				leadin_form = 0x41;
+				leadin_form |= 0x40;
 		}
 	}
 
@@ -803,7 +805,9 @@ XXX this is untested :)
 	e[2].pmin = m;
 	e[2].psec = s;
 	e[2].pframe = f;
-	ret = add_cue(sheet, ctladr | 1, 0xAA, 1, 1, 0, runtime);
+
+	ret = add_cue(sheet, ctladr | 1, 0xAA, 1, leadin_form & 0x3f,
+                      0, runtime);
 	if (ret <= 0)
 		goto failed;
 	return sheet;

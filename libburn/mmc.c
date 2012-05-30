@@ -908,6 +908,12 @@ int mmc_write(struct burn_drive *d, int start, struct buffer *buf)
 	extern int burn_sg_log_scsi;
 #endif
 
+/*
+fprintf(stderr, "libburn_DEBUG: buffer sectors= %d  bytes= %d\n",
+        buf->sectors, buf->bytes);
+*/
+
+
 	c = &(d->casual_command);
 
 #ifdef Libburn_log_in_and_out_streaM

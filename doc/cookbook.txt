@@ -296,8 +296,9 @@ A pre-gap of 2 seconds is mandatory only for the first track. Pre-gap and
 post-gap may be needed with further tracks if they have neighbors with
 different DATA FORM values. (Such mixing is not yet supported by libburn.)
 
-DATA FORM is 00h for audio payload, 01h for audio pause, 10h for data,
-41h for CD-TEXT in Lead-in. 
+DATA FORM is 00h for audio payload, 01h for audio pause (Lead-in and Lead-out),
+10h for data, 14h for data pause (Lead-in and Lead-out).
+This shall be ored with 40h for CD-TEXT in Lead-in. 
 (mmc5r03c.pdf 6.33.3.11 CD-DA Data Form, 6.33.3.12 CD-ROM mode 1 Form)
 
 SCMS value 80h in conjunction with bit5 of CTL is an indicator for exhausted
@@ -318,7 +319,8 @@ The next entry (eventually being the first one) describes the Lead-in.
 Its content is 
 (CTL|ADR ,00h,00h, DATA FORM ,00h,00h,00h,00h)
 With the CTL|ADR for the first track: 41h for data, 01h for audio.
-DATA FORM is 41h if CD-TEXT shall be stored in Lean-in. Else it is 01h.
+DATA FORM is pause (audio=01h, data=14h). Ored with 40h if CD-TEXT shall
+be stored in Lean-in.
 
 The LBA for the first write is negative: -150. This corresponds to MSF address
 00h:00h:00h. All addresses are to be given in MSF format.
@@ -354,8 +356,9 @@ A track must at least contain 300 payload blocks: 4 seconds of audio or
 (mmc5r03c.pdf 6.33.3.6)
 
 At the end of the session there is a lead-out entry
-(CTL|ADR,AAh,01h,01h,00h,MIN,SEC,FRAME)
+(CTL|ADR,AAh,01h,DATA FORM,00h,MIN,SEC,FRAME)
 marking the end of the last track. (With libburn CTL is as of the last track.)
+DATA FORM is 01h for audio, 14h for data.
 
 
 -------------------------------------------------------------------------------
