@@ -185,13 +185,18 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
 	if (track->end_on_premature_eoi && shortage >= count &&
 	    !track->open_ended) {
 		char msg[80];
-		/* Memorize that premature end of input happened */
+		off_t missing, inp_block_size, track_blocks;
+
+		inp_block_size = burn_sector_length(track->mode);
+		track_blocks = burn_track_get_sectors_2(track, 1);
+		missing = track_blocks * inp_block_size - track->sourcecount;
 		sprintf(msg,
-		    "Premature end of input encountered. Missing: %d bytes",
-		    shortage);
+		      "Premature end of input encountered. Missing: %.f bytes",
+		      (double) missing);
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020180,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0,0);
+		/* Memorize that premature end of input happened */
 		track->end_on_premature_eoi = 2;
 	}
 	if (track->open_ended || track->end_on_premature_eoi)
