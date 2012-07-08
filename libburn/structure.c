@@ -794,7 +794,9 @@ int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 				if (ret > 0) {
 					ret = mmc_four_char_to_int(
 							buf->data + 24);
-					if (ret < prev_entry->track_blocks)
+					if (ret < prev_entry->track_blocks &&
+					    ((!drive->current_is_cd_profile) ||
+					   ret < prev_entry->track_blocks - 2))
 						prev_entry->track_blocks = ret;
 				}
 				prev_entry->extensions_valid |= 1;
