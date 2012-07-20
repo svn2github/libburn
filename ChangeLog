@@ -1,7 +1,14 @@
-SVN trunk (to become libburn-1.2.4 or higher)
+SVN trunk (to become libburn-1.2.6 or higher)
 ===============================================================================
-- no novelties yet
+- no novelties yet -
 
+libburn-1.2.4.tar.gz Fri Jul 20 2012
+===============================================================================
+* New API call burn_write_opts_set_obs_pad(), ./configure --enable-dvd-obs-pad
+* New cdrskin option --obs_pad
+* Bug fix: CD SAO sessions with data tracks started by an audio pause
+* Bug fix: CD tracks were perceived 2 sectors too short. Nice with TAO, bad with SAO.
+* Bug fix: cdrskin SIGSEGV if track source was added when no drive was available
 
 libburn-1.2.2.tar.gz Mon Apr 02 2012
 ===============================================================================

@@ -11262,20 +11262,149 @@ Made number transition to 1.2.3
 + cdrskin/add_ts_changes_to_libburn_1_2_3
 Updated cdrskin tarball generator
 
-02 Apr 2012  []
+02 Apr 2012  [4693]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
+
+02 Apr 2012  [4694]
+svn move -m libburn release 1.2.2 is ready
+http://svn.libburnia-project.org/libburn/branches/1.2.2
+http://svn.libburnia-project.org/libburn/tags/1.2.2
 
 ------------------------------------ cycle  - cdrskin-1.2.3 - 2012.04.02.172347
 
 
+2012.04.04.100754  [4698]
+cdrskin/cdrskin.c
+Bug fix: cdrskin SIGSEGV if track source was added when no drive was available
+
+2012.04.04.183902  [4699]
+libburn/crc.c
+Reacted on warning of Debian buildd
+
+2012.04.08.112703  [4701]
+libburn/libburn.h
+libburn/options.h
+libburn/options.c
+libburn/write.c
+libburn/libdax_msgs.h
+libburn/libburn.ver
+New API call burn_write_opts_set_obs_pad()
+
+2012.04.08.112825  [4702]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --obs_pad
+
+2012.04.10.181239  [4704]
+cdrskin/cdrskin.c
+Now recognizing long options with double dash
+
+13 Apr 2012  [4706]
+cdrskin/cdrskin.1
+Small correction in cdrskin man page
+
+2012.04.13.202654  [4707]
+configure.ac
+libburn/libburn.h
+libburn/options.c
+cdrskin/cdrskin.1
+Compile time option for obs_pad
+
+18 Apr 2012  [4708]
+doc/cdtext.txt
+Augmented CD-TEXT documentation by a complete example of packs
+
+18 Apr 2012  [4709]
+doc/cookbook.txt
+Small change in cookbook.txt about DVD-R DL
+
+2012.05.08.080449  [4731]
+libburn/crc.c
+Corrections of CRC-32 algorithm for 32 bit systems. Mentioning of start value.
+
+2012.05.30.202249  [4744]
+libburn/write.c
+libburn/mmc.c
+doc/cookbook.txt
+Bug fix: CD SAO sessions with data tracks started by an audio pause
+
+2012.06.17.173420  [4762]
+libburn/sector.c
+Improved reported number of missing bytes in case of track source shortage
+
+2012.07.08.103007  [4778]
+libburn/structure.c
+Bug fix: CD tracks were perceived 2 sectors too short. Nice with TAO, bad with SAO.
+
+20 Jul 2012  [4794]
+svn copy -m "Branching for libburn release 1.2.4" 
+http://svn.libburnia-project.org/libburn/trunk 
+http://svn.libburnia-project.org/libburn/branches/1.2.4
+
+2012.07.20.113001  [4795]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.4
+
+20 Jul 2012  [4796]
+- cdrskin/add_ts_changes_to_libburn_1_2_2
+- cdrskin/add_ts_changes_to_libburn_1_2_3
++ cdrskin/add_ts_changes_to_libburn_1_2_4
++ cdrskin/add_ts_changes_to_libburn_1_2_5
+Updated cdrskin tarball generator
+
+20 Jul 2012  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.2.4 - 2012.07.20.113001
+* New API call burn_write_opts_set_obs_pad(), ./configure --enable-dvd-obs-pad
+* New cdrskin option --obs_pad
+* Bug fix: CD SAO sessions with data tracks started by an audio pause
+* Bug fix: CD tracks were perceived 2 sectors too short. Nice with TAO, bad with SAO.
+* Bug fix: cdrskin SIGSEGV if track source was added when no drive was available
+
+
+2012.07.20.164346  [4801]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.5
+
+20 Jul 2012  [4802]
+- cdrskin/add_ts_changes_to_libburn_1_2_2
+- cdrskin/add_ts_changes_to_libburn_1_2_3
++ cdrskin/add_ts_changes_to_libburn_1_2_4
++ cdrskin/add_ts_changes_to_libburn_1_2_5
+Updated cdrskin tarball generator
+
   []
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.3 - 
+  []
+svn move -m libburn release 1.2.4 is ready
+http://svn.libburnia-project.org/libburn/branches/1.2.4
+http://svn.libburnia-project.org/libburn/tags/1.2.4
+
+------------------------------------ cycle  - cdrskin-1.2.5 - 2012.07.20.164346
 
 
   []
@@ -11283,7 +11412,7 @@ ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.3 - 
+------------------------------------ cycle  - cdrskin-1.2.5 - 
 
 
 
@@ -11296,6 +11425,11 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
+
+>>> TRACK SHORTAGE
+  xorriso: If libburn fails to produce the announced number of blocks
+   libburn : FAILURE : Premature end of input encountered. Missing: 2048 bytes
+  But actually several hundered blocks are missing.
 
 CD-TEXT:
   - with SAO
