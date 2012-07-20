@@ -87,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.2.3"
+#define Cdrskin_prog_versioN "1.2.5"
 #endif
 
 /** The official libburn interface revision to use.
@@ -100,7 +100,7 @@ or
 #define Cdrskin_libburn_minoR 2
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -120,34 +120,34 @@ or
 #undef Cdrskin_libburn_versioN 
 #endif
 
-#ifdef Cdrskin_libburn_1_2_2
-#define Cdrskin_libburn_versioN "1.2.2"
+#ifdef Cdrskin_libburn_1_2_4
+#define Cdrskin_libburn_versioN "1.2.4"
 #endif
 
-#ifdef Cdrskin_libburn_1_2_3
-#define Cdrskin_libburn_versioN "1.2.3"
+#ifdef Cdrskin_libburn_1_2_5
+#define Cdrskin_libburn_versioN "1.2.5"
 #endif
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_2_2
-#define Cdrskin_libburn_versioN "1.2.2"
+#define Cdrskin_libburn_1_2_4
+#define Cdrskin_libburn_versioN "1.2.4"
 #endif
 
-#ifdef Cdrskin_libburn_1_2_2
+#ifdef Cdrskin_libburn_1_2_4
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 2
-#define Cdrskin_libburn_micrO 2
+#define Cdrskin_libburn_micrO 4
 #endif
-#ifdef Cdrskin_libburn_1_2_3
+#ifdef Cdrskin_libburn_1_2_5
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 2
-#define Cdrskin_libburn_micrO 3
+#define Cdrskin_libburn_micrO 5
 #endif
 
 
@@ -1341,13 +1341,13 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
  else {
    *fd= -1;
 
- ret= Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
-                             &no_convert_fs_adr,0);
- if(ret <= 0) {
-   fprintf(stderr,
-           "cdrskin: FATAL : No drive found. Cannot prepare track.\n");
-   return(0);
- }
+   ret= Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
+                               &no_convert_fs_adr,0);
+   if(ret <= 0) {
+     fprintf(stderr,
+             "cdrskin: FATAL : No drive found. Cannot prepare track.\n");
+     return(0);
+   }
 /*    
    fprintf(stderr,
            "cdrskin: DEBUG : device_adr='%s' , raw_adr='%s' , ncfs=%d\n",
