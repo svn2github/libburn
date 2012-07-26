@@ -2867,6 +2867,7 @@ set_dev:;
      printf(" --no_abort_handler  exit even if the drive is in busy state\n");
      printf(" --no_blank_appendable  refuse to blank appendable CD-RW\n");
      printf(" --no_convert_fs_adr  only literal translations of dev=\n");
+     printf(" --no_load          do not try to load the drive tray\n");
      printf(
          " --no_rc            as first argument: do not read startup files\n");
      printf(" --obs_pad          pad DVD DAO to full 16 or 32 blocks\n");
@@ -3334,7 +3335,7 @@ struct CdrskiN {
 
  int do_scanbus;
 
- int do_load;
+ int do_load;                 /* 1= -load , 2= -lock , -1= --no_load */
 
  int do_checkdrive;
 
@@ -4016,7 +4017,7 @@ int Cdrskin_grab_drive(struct CdrskiN *skin, int flag)
    mem= skin->drive_is_busy;
    skin->drive_is_busy= 2;
    ret= burn_drive_scan_and_grab(&(skin->drives),skin->preskin->device_adr,
-                                 !(flag&2));
+                                 (skin->do_load != -1) && !(flag&2));
    skin->drive_is_busy= mem;
    if(Cdrskin__is_aborting(0)) {
 aborted:;
@@ -4056,7 +4057,7 @@ aborted:;
 
    mem= skin->drive_is_busy;
    skin->drive_is_busy= 2;
-   ret= burn_drive_grab(drive,!(flag&2));
+   ret= burn_drive_grab(drive,(skin->do_load != -1) && !(flag&2));
    skin->drive_is_busy= mem;
    if(Cdrskin__is_aborting(0))
      goto aborted;
@@ -8257,6 +8258,9 @@ msifile_equals:;
    } else if(strcmp(argv[i],"--no_convert_fs_adr")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i],"--no_load")==0) {
+     skin->do_load= -1;
+
    } else if(strcmp(argv[i],"--no_rc")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -8830,7 +8834,7 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
      fprintf(stderr,"cdrskin: FATAL : -scanbus failed.\n");
    {*exit_value= 5*(ret<=0); goto ex;}
  }
- if(skin->do_load) {
+ if(skin->do_load > 0) {
    if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_grab_drive(skin,8);
