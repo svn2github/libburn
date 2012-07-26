@@ -11349,6 +11349,7 @@ configure.ac
 README
 libburn/libburn.h
 cdrskin/cdrskin.c
+cdrskin/cdrskin.1
 cdrskin/README
 cdrskin/compile_cdrskin.sh
 cdrskin/cdrskin_timestamp.h
@@ -11381,6 +11382,7 @@ configure.ac
 README
 libburn/libburn.h
 cdrskin/cdrskin.c
+cdrskin/cdrskin.1
 cdrskin/README
 cdrskin/compile_cdrskin.sh
 cdrskin/cdrskin_timestamp.h
@@ -11394,17 +11396,32 @@ Made number transition to 1.2.5
 + cdrskin/add_ts_changes_to_libburn_1_2_5
 Updated cdrskin tarball generator
 
-  []
+20 Jul 2012  [4803]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
-  []
+20 Jul 2012  [4806]
 svn move -m libburn release 1.2.4 is ready
 http://svn.libburnia-project.org/libburn/branches/1.2.4
 http://svn.libburnia-project.org/libburn/tags/1.2.4
 
 ------------------------------------ cycle  - cdrskin-1.2.5 - 2012.07.20.164346
+
+
+2012.07.26.122909  [4811]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --no_load
+
+26 Jul 2012  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.5 - 
+* New option --no_load
 
 
   []
