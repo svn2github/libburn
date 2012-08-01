@@ -180,7 +180,7 @@ the next text of the same pack type. If no text of the same type follows,
 then the remaining text bytes are set to 0.
 
 The CRC algorithm uses divisor 0x11021. The resulting 16-bit residue of the
-polynomial division get inverted and written as big-endian number to bytes
+polynomial division gets inverted and written as big-endian number to bytes
 16 and 17 of the pack. 
 
 
