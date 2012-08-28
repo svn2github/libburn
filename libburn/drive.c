@@ -69,7 +69,7 @@ extern int burn_drive_role_4_allowed;
 */
 int burn_setup_drive(struct burn_drive *d, char *fname)
 {
-	d->devname = burn_strdup(fname);
+	d->devname = strdup(fname);
 	memset(&d->params, 0, sizeof(struct params));
 	d->idata = NULL;
 	d->mdata = NULL;

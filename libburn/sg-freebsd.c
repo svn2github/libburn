@@ -448,7 +448,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.channel = channel_no;
 	out.lun = lun_no;
 
-	out.devname = burn_strdup(fname);
+	out.devname = strdup(fname);
 
 	out.cam = NULL;
 	out.lock_fd = -1;
