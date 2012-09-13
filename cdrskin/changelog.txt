@@ -11414,18 +11414,44 @@ cdrskin/cdrskin.c
 cdrskin/cdrskin.1
 New option --no_load
 
-26 Jul 2012  []
+26 Jul 2012  [4813]
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.5 - 2012.07.26.195346
+* New option --no_load
+
+
+1 Aug 2012  [4814]
+doc/cdtext.txt
+Small grammatical correction in CD-TEXT documentaion
+
+2012.08.28.161949  [4820]
+libburn/drive.c
+libburn/util.h
+libburn/util.c
+libburn/sg-freebsd.c
+Removed buggy burn_strdup() and burn_strndup(). Thanks to Rich Felker.
+
+2012.09.13.085623  [4828]
+libburn/mmc.c
+Bug fix: Speed setting had no effect on BD media. Thanks to Dennis Vshivkov.
+
+  []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.2.5 - 
-* New option --no_load
+Bug fix: Speed setting had no effect on BD media. Thanks to Dennis Vshivkov.
 
 
   []
 ChangeLog
+cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
@@ -11441,6 +11467,9 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
+
+>>>
+Failure of FORMAT UNIT does not report SCSI error
 
 
 >>> TRACK SHORTAGE

@@ -1,6 +1,7 @@
 SVN trunk (to become libburn-1.2.6 or higher)
 ===============================================================================
 * New cdrskin option --no_load
+* Bug fix: Speed setting had no effect on BD media
 
 
 libburn-1.2.4.tar.gz Fri Jul 20 2012
