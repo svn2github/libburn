@@ -2563,7 +2563,9 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	d->nominal_write_speed = w;
 
 	/* ts A61221 : try to set DVD speed via command B6h */
-	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text){
+	if (strstr(d->current_profile_text, "DVD") == d->current_profile_text
+	    ||
+	    strstr(d->current_profile_text, "BD") == d->current_profile_text) {
 		ret = mmc_set_streaming(d, r, w, end_lba);
 		if (ret != 0)
 			return; /* success or really fatal failure */ 
