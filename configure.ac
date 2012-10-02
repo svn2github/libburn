@@ -242,10 +242,24 @@ else
 fi
 CFLAGS="$LIBBURN_DVD_OBS_PAD $CFLAGS"
 
-dnl ts A91218
+dnl ts A91218 - B21002
+case $host_os in
+    cygwin*|mingw*)
+        default_libcdio=yes
+        ;;
+    *)
+        default_libcdio=no
+        ;;
+esac
+# Check for proper library versions if this is desired.
+# (It fails too often on too many systems.)
+AC_ARG_ENABLE(pkg-check-modules,
+[  --enable-pkg-check-modules      Enable pkg-config check for libcdio , default=no],
+               , enable_pkg_check_modules=no)
 AC_ARG_ENABLE(libcdio,
-[  --enable-libcdio        Enable EXPERIMENTAL use of libcdio as system adapter, default=no],
-               , enable_libcdio=no)
+[  --enable-libcdio        Enable use of libcdio as system adapter, default=no (except on MSWindows)],
+               , enable_libcdio=$default_libcdio)
+PKG_PROG_PKG_CONFIG
 if test x$enable_libcdio = xyes; then
 dnl Check whether there is libcdio-devel and libcdio-runtime.
 dnl If not, erase this macro
@@ -262,12 +276,15 @@ then
       echo "WARNING: could not enable use of libcdio as system adapter"
     fi
 else
-    echo "enabled  EXPERIMENTAL use of libcdio as system adapter"
+    echo "enabled  use of libcdio as system adapter"
     CFLAGS="$LIBCDIO_DEF $CFLAGS"
 
-    LIBCDIO_REQUIRED=0.83
-    PKG_CHECK_MODULES(LIBCDIO, libcdio >= $LIBCDIO_REQUIRED)
-
+    if test x$enable_pkg_check_modules = xyes; then
+        LIBCDIO_REQUIRED=0.83
+        PKG_CHECK_MODULES(LIBCDIO, libcdio >= $LIBCDIO_REQUIRED)
+    else
+        echo "checking for LIBCDIO... skipped, no --enable-pkg-check-modules"
+    fi
 fi
 
 dnl ts B00704
