@@ -395,11 +395,16 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 	    ||
 	    (drive->drive_role != 1 && drive->drive_role != 5)
 	   ) {
+		char msg[160];
+
+		sprintf(msg, "Drive and media state unsuitable for blanking. (role= %d , profile= 0x%x , status= %d)",
+			drive->drive_role,
+			(unsigned int) drive->current_profile,
+			drive->status);
 		libdax_msgs_submit(libdax_messenger, drive->global_index,
 			0x00020130,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-			"Drive and media state unsuitable for blanking",
-			0, 0);
+			msg, 0, 0);
 		return;
 	}
 
