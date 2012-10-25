@@ -490,7 +490,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
 			if ((flag & 16) && (d->had_particular_error & 1))
-				ret = -3; goto ex;
+				{ret = -3; goto ex;}
 			/* Try to read a smaller part of the chunk */
 			if(!(flag & 4))
 			  for (i = 0; i < chunksize - 1; i++) {
