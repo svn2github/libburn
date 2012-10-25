@@ -4193,7 +4193,7 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 {
 	struct command *c;
 	char *msg = NULL;
-	int key, asc, ascq;
+	int key, asc, ascq, silent;
 
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
@@ -4221,7 +4221,12 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 			  "SCSI error on read_10(%d,%d): ", start, amount);
 			scsi_error_msg(d, c->sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
-			if(!d->silent_on_scsi_error)
+			silent = (d->silent_on_scsi_error == 1);
+			if (key == 5 && asc == 0x64 && ascq == 0x0) {
+				d->had_particular_error |= 1;
+				silent = 1;
+			}
+			if(!silent)
 				libdax_msgs_submit(libdax_messenger,
 				d->global_index,
 				0x00020144,

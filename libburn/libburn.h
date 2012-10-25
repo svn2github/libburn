@@ -3767,6 +3767,13 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
                         bit3= return -2 on permission denied error rather than
                               issueing a warning message.
                               @since 1.0.6
+                        bit4= return -3 on SCSI error
+                                5 64 00 ILLEGAL MODE FOR THIS TRACK
+                              and prevent this error from being reported as
+                              event message. Do not retry reading in this case.
+                              (Useful to try the last two blocks of a CD
+                               track which might be non-data because of TAO.)
+                              @since 1.2.6
     @return 1=sucessful , <=0 an error occured
                           with bit3:  -2= permission denied error
     @since 0.4.0

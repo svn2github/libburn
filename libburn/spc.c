@@ -1003,6 +1003,9 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	/* ts A61106 */
 	d->silent_on_scsi_error = 0;
 
+	/* ts B21023 */
+	d->had_particular_error = 0;
+
 
 	d->idata = calloc(1, sizeof(struct burn_scsi_inquiry_data));
 	d->mdata = calloc(1, sizeof(struct scsi_mode_data));

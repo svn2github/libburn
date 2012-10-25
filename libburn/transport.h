@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -261,7 +261,17 @@ struct burn_drive
 	volatile int released;
 
 	/* ts A61106 */
+	/* 0= report errors
+	   1= do not report errors
+	   2= do not report errors which the libburn function indicates in
+	      member .had_particular_error
+	*/
 	int silent_on_scsi_error;
+
+	/* ts B21023 */
+	/* bit0= 5 64 00 occured with READ10 in mmc_read_10()
+	*/
+	int had_particular_error;
 
 	int stdio_fd;
 

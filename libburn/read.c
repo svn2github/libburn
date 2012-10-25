@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -472,6 +472,11 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			cpy_size = data_size - *data_count;
 		if (flag & 2)
 			d->silent_on_scsi_error = 1;
+		if (flag & 16) {
+			d->had_particular_error &= ~1;
+			if (!d->silent_on_scsi_error)
+				d->silent_on_scsi_error = 2;
+		}
 		if (d->drive_role == 1) {
 			err = d->read_10(d, start, chunksize, d->buffer);
 		} else {
@@ -481,9 +486,11 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			if (ret <= 0)
 				err = BE_CANCELLED;
 		}
-		if (flag & 2) 
+		if (flag & (2 | 16))
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
+			if ((flag & 16) && (d->had_particular_error & 1))
+				ret = -3; goto ex;
 			/* Try to read a smaller part of the chunk */
 			if(!(flag & 4))
 			  for (i = 0; i < chunksize - 1; i++) {
