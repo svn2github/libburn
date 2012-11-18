@@ -128,4 +128,11 @@ int mmc_get_leadin_text(struct burn_drive *d,
                         unsigned char **text_packs, int *num_packs, int flag);
 
 
+#ifdef Libburn_develop_quality_scaN
+/* B21108 ts */
+int mmc_nec_optiarc_f3(struct burn_drive *d, int sub_op,
+                       int start_lba, int rate_period,
+                       int *eba, int *error_rate1, int *error_rate2);
+#endif
+
 #endif /*__MMC*/

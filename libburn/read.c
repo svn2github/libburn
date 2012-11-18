@@ -36,6 +36,7 @@
 #include "init.h"
 #include "toc.h"
 #include "util.h"
+#include "mmc.h"
 #include "sg.h"
 #include "read.h"
 #include "options.h"
@@ -535,3 +536,42 @@ ex:;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
 }
+
+
+#ifdef Libburn_develop_quality_scaN
+
+/* B21108 ts */
+int burn_nec_optiarc_rep_err_rate(struct burn_drive *d,
+                                  int start_lba, int rate_period, int flag)
+{
+	int ret, lba = 0, error_rate1 = 0, error_rate2 = 0, enabled = 0, dret;
+
+	/* Sub Operation Code 1 : Enable Error Rate reporting function */
+	ret = mmc_nec_optiarc_f3(d, 1, start_lba, rate_period,
+	                         &lba, &error_rate1, &error_rate2);
+	if (ret <= 0)
+		goto ex;
+	enabled = 1;
+
+	/* >>> Sub Operation Code 2 : Seek to starting address
+               start_lba , rate_period
+	*/;
+
+	/* >>> Loop with Sub Operation Code 3 : Send Error Rate information
+               reply: 4-byte LBA , 2-byte C1/PIE , 2-byte C2/PIF
+	*/;
+
+	ret = 1;
+ex:;
+	if (enabled) {
+		/* Code F : Disable Error Rate reporting function */
+		dret = mmc_nec_optiarc_f3(d, 0xf, 0, 0,
+					&lba, &error_rate1, &error_rate2);
+		if (dret < ret)
+			ret = dret;
+	}
+	return ret;
+}
+
+#endif /* Libburn_develop_quality_scaN */
+

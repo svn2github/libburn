@@ -1466,6 +1466,14 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "SET CD SPEED";
         case 0xbe:
 		return "READ CD";
+
+#ifdef Libburn_develop_quality_scaN
+
+        case 0xf3:
+		return "NEC/OPTIARC REPORT ERROR RATE";
+
+#endif /* Libburn_develop_quality_scaN */
+
 	}
 	return "(NOT IN LIBBURN COMMAND LIST)";
 }

@@ -3996,4 +3996,19 @@ BURN_END_DECLS
 #define Libburn_dummy_probe_write_modeS 1
 
 
+/* Early experimental:
+   Do not define Libburn_develop_quality_scaN unless you want to work
+   towards a usable implementation.
+   If it gets enabled, then the call must be published in libburn/libburn.ver
+*/
+#ifdef Libburn_develop_quality_scaN
+
+/* B21108 ts */
+/* Experiments mit quality scan command F3 on Optiarc drive */
+int burn_nec_optiarc_rep_err_rate(struct burn_drive *d,
+                                  int start_lba, int rate_period, int flag);
+
+#endif /* Libburn_develop_quality_scaN */
+
+
 #endif /*LIBBURN_H*/

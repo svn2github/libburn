@@ -4243,6 +4243,77 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 }
 
 
+#ifdef Libburn_develop_quality_scaN
+
+/* B21108 ts : Vendor specific command REPORT ERROR RATE, see
+               http://liggydee.cdfreaks.com/ddl/errorcheck.pdf
+*/
+int mmc_nec_optiarc_f3(struct burn_drive *d, int sub_op,
+                       int start_lba, int rate_period,
+                       int *ret_lba, int *error_rate1, int *error_rate2)
+{
+	struct buffer *buf = NULL;
+	struct command *c;
+	char *msg = NULL;
+	int key, asc, ascq, ret;
+	static unsigned char MMC_NEC_OPTIARC_F3[] =
+		{ 0xF3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM(c, struct command, 1);
+	mmc_start_if_needed(d, 0);
+	if (mmc_function_spy(d, "mmc_nec_optiarc_f3") <= 0)
+		return -1;
+
+	scsi_init_command(c, MMC_NEC_OPTIARC_F3, sizeof(MMC_NEC_OPTIARC_F3));
+	if (sub_op == 3) {
+		c->dxfer_len = 8;
+		c->dir = FROM_DRIVE;
+	} else {
+		c->dxfer_len = 0;
+		c->dir = NO_TRANSFER;
+	}
+	c->retry = 0;
+	c->opcode[1] = sub_op;
+	mmc_int_to_four_char(c->opcode + 2, start_lba);
+	c->opcode[8] = rate_period;
+	c->page = buf;
+	c->page->bytes = 0;
+	c->page->sectors = 0;
+	d->issue_command(d, c);
+	if (c->error) {
+		msg = calloc(1, 256);
+		if (msg != NULL) {
+			sprintf(msg,
+			  "SCSI error on nec_optiarc_f3(%d, %d, %d): ",
+                           sub_op, start_lba, rate_period);
+			scsi_error_msg(d, c->sense, 14, msg + strlen(msg), 
+					&key, &asc, &ascq);
+			libdax_msgs_submit(libdax_messenger,
+				d->global_index, 0x00020144,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			free(msg);
+		}
+		return BE_CANCELLED;
+	}
+
+	if (sub_op == 3) {
+		*ret_lba = mmc_four_char_to_int(c->page->data);
+		*error_rate1 = c->page->data[4] * 256 + c->page->data[5];
+		*error_rate2 = c->page->data[6] * 256 + c->page->data[7];
+	}
+
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(c);
+	BURN_FREE_MEM(buf);
+	return ret;
+}
+
+#endif /* Libburn_develop_quality_scaN */
+
+
 /* ts A81210 : Determine the upper limit of readable data size */
 int mmc_read_capacity(struct burn_drive *d)
 {
