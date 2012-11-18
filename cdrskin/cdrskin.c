@@ -3345,6 +3345,10 @@ struct CdrskiN {
  int do_atip;
  int do_list_formats;
 
+#ifdef Libburn_develop_quality_scaN
+ int do_qcheck;              /* 0= no , 1=nec_optiarc_rep_err_rate */
+#endif /* Libburn_develop_quality_scaN */
+
  int do_blank;
  int blank_fast;
  int no_blank_appendable;
@@ -3590,6 +3594,11 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->msifile[0]= 0;
  o->do_atip= 0;
  o->do_list_formats= 0;
+
+#ifdef Libburn_develop_quality_scaN
+ o->do_qcheck= 0;
+#endif /* Libburn_develop_quality_scaN */
+
  o->do_blank= 0;
  o->blank_fast= 0;
  o->no_blank_appendable= 0;
@@ -7342,6 +7351,38 @@ ex:;
 }
 
 
+#ifdef Libburn_develop_quality_scaN
+
+int Cdrskin_qcheck(struct CdrskiN *skin, int flag)
+{
+ struct burn_drive *drive;
+ int ret, rate_period, profile_number;
+ char profile_name[80]; 
+
+ printf("cdrskin: beginning to perform quality check on disc\n");
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   return(ret);
+ drive= skin->drives[skin->driveno].drive;
+
+ ret= burn_disc_get_profile(drive, &profile_number, profile_name);
+ if(ret <= 0)
+   profile_number= 0;
+ if(profile_number != 0x08 && profile_number != 0x09 && profile_number != 0x0a)
+   rate_period= 8;
+ else
+   rate_period= 75;
+ if(skin->do_qcheck == 1) {
+   ret= burn_nec_optiarc_rep_err_rate(drive, 0, rate_period, 0);
+   if(ret<=0)
+     return(ret);
+ }
+ return(1);
+}
+
+#endif /* Libburn_develop_quality_scaN */
+
+
 /** Print lba of first track of last session and Next Writeable Address of
     the next unwritten session.
 */
@@ -8249,6 +8290,13 @@ msifile_equals:;
    } else if(strcmp(argpt,"-msinfo")==0) {
      skin->do_msinfo= 1;
 
+#ifdef Libburn_develop_quality_scaN
+
+   } else if(strcmp(argv[i],"--nec_optiarc_qcheck")==0) {
+     skin->do_qcheck= 1;
+
+#endif /* Libburn_develop_quality_scaN */
+
    } else if(strcmp(argv[i],"--no_abort_handler")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -8911,6 +8959,17 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 10; goto ex;}
  }
+
+#ifdef Libburn_develop_quality_scaN
+
+ if(skin->do_qcheck) {
+   ret= Cdrskin_qcheck(skin, 0);
+   if(ret<=0)
+     {*exit_value= 15; goto ex;}
+ }
+
+#endif /* Libburn_develop_quality_scaN */
+
 ex:;
  if(Cdrskin__is_aborting(0))
    Cdrskin_abort(skin, 0); /* Never comes back */
