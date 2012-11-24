@@ -2193,6 +2193,15 @@ void mmc_read_atip(struct burn_drive *d)
 	d->erasable = !!(data[6]&64);
 	d->start_lba = burn_msf_to_lba(data[8],data[9],data[10]);
 	d->end_lba = burn_msf_to_lba(data[12],data[13],data[14]);
+
+	/* ts B21124 : LITE-ON LTR-48125S returns crap on pressed
+	               audio CD and CD-ROM
+	*/
+	if (d->start_lba >= d->end_lba) {
+		d->start_lba = 0;
+		d->end_lba = 0;
+	}
+
 	if (data[6]&4) {
 		if (speed_value[(data[16]>>4)&7] > 0) {
 			d->mdata->min_write_speed = 
@@ -2319,19 +2328,54 @@ ex:;
 	BURN_FREE_MEM(c);
 }
 
-void mmc_read_sectors(struct burn_drive *d,
-		      int start,
-		      int len,
-		      const struct burn_read_opts *o, struct buffer *buf)
+
+int mmc_eval_read_error(struct burn_drive *d, struct command *c,
+                        char *what, int start, int len, int flag)
 {
-	int temp;
-	int req;
+	char *msg = NULL;
+	int key, asc, ascq, silent;
+
+	if (!c->error)
+		return 0;
+
+	msg = calloc(1, 256);
+	if (msg != NULL) {
+		sprintf(msg,
+		        "SCSI error on %s(%d,%d): ", what, start, len);
+		scsi_error_msg(d, c->sense, 14, msg + strlen(msg),
+				&key, &asc, &ascq);
+		silent = (d->silent_on_scsi_error == 1);
+		if (key == 5 && asc == 0x64 && ascq == 0x0) {
+			d->had_particular_error |= 1;
+			silent = 1;
+		}
+		if(!silent)
+			libdax_msgs_submit(libdax_messenger,
+				d->global_index,
+				0x00020144,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		free(msg);
+	}
+	return BE_CANCELLED;
+}
+
+
+/* ts B21119 : Derived from older mmc_read_sectors() 
+   @param flag bit0= set DAP bit (also with o->dap_bit)
+*/
+int mmc_read_cd(struct burn_drive *d, int start, int len,
+                int sec_type, int main_ch,
+		const struct burn_read_opts *o, struct buffer *buf, int flag)
+{
+	int temp, req, ret, dap_bit;
+	int report_recovered_errors = 0, subcodes_audio = 0, subcodes_data = 0;
 	struct command *c;
 
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
-	if (mmc_function_spy(d, "mmc_read_sectors") <= 0)
-		return;
+	if (mmc_function_spy(d, "mmc_read_cd") <= 0)
+		return -1;
 
 	/* ts A61009 : to be ensured by callers */
 	/* a ssert(len >= 0); */
@@ -2340,8 +2384,17 @@ void mmc_read_sectors(struct burn_drive *d,
 	/* ts A61006 : i second that question */
 	/* a ssert(d->busy); */
 
+	dap_bit = flag & 1;
+	if (o != NULL) {
+		report_recovered_errors = o->report_recovered_errors;
+		subcodes_audio = o->subcodes_audio;	
+		subcodes_data = o->subcodes_data;
+		dap_bit |= o->dap_bit;
+	}
+
 	scsi_init_command(c, MMC_READ_CD, sizeof(MMC_READ_CD));
 	c->retry = 1;
+	c->opcode[1] = ((sec_type & 7) << 2) | ((!!dap_bit) << 1);
 	temp = start;
 	c->opcode[5] = temp & 0xFF;
 	temp >>= 8;
@@ -2355,11 +2408,11 @@ void mmc_read_sectors(struct burn_drive *d,
 	c->opcode[7] = len & 0xFF;
 	len >>= 8;
 	c->opcode[6] = len & 0xFF;
-	req = 0xF8;
+	req = main_ch & 0xf8;
 
 	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h
 
-	if (d->busy == BURN_DRIVE_GRABBING || o->report_recovered_errors)
+	if (d->busy == BURN_DRIVE_GRABBING || report_recovered_errors)
 		req |= 2;
 	*/
 
@@ -2367,14 +2420,15 @@ void mmc_read_sectors(struct burn_drive *d,
 /* always read the subcode, throw it away later, since we don't know
    what we're really reading
 */
-	if (d->busy == BURN_DRIVE_GRABBING || (o->subcodes_audio)
-	    || (o->subcodes_data))
+	if (d->busy == BURN_DRIVE_GRABBING || subcodes_audio || subcodes_data)
 		c->opcode[10] = 1;
 
 	c->opcode[9] = req;
 	c->page = buf;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
+	ret = mmc_eval_read_error(d, c, "read_cd", start, len, 0);
+	return ret;
 }
 
 void mmc_erase(struct burn_drive *d, int fast)
@@ -4214,6 +4268,8 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 	c->page->sectors = 0;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
+
+	/* <<< replace by mmc_eval_read_error */;
 	if (c->error) {
 		msg = calloc(1, 256);
 		if (msg != NULL) {
@@ -4789,7 +4845,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->read_toc = mmc_read_toc;
 	d->write = mmc_write;
 	d->erase = mmc_erase;
-	d->read_sectors = mmc_read_sectors;
+	d->read_cd = mmc_read_cd;
 	d->perform_opc = mmc_perform_opc;
 	d->set_speed = mmc_set_speed;
 	d->send_cue_sheet = mmc_send_cue_sheet;
