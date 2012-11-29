@@ -159,6 +159,8 @@ drive, or only store a subset of the _opts structs in drives */
 		       drive_lba);
 
 		/* >>> ts A61009 : ensure page.sectors >= 0 before calling */
+  		/* >>> ts B21123 :  Would now be d->read_cd() with
+                                    with sectype = 0 , mainch = 0xf8 */
 		d->r ead_sectors(d, drive_lba, page.sectors, o, &page);
 
 		printf("Read %d\n", page.sectors);
@@ -536,6 +538,113 @@ ex:;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
 }
+
+
+#ifdef Libburn_with_read_audiO
+
+/* ts B21119 : API function*/
+int burn_read_audio(struct burn_drive *d, int sector_no,
+                    char data[], off_t data_size, off_t *data_count, int flag)
+{
+	int alignment = 2352, start, upto, chunksize = 1, err, cpy_size, i;
+	int sose_mem = 0, ret;
+	char msg[81], *wpt;
+	struct buffer *buf = NULL, *buffer_mem = d->buffer;
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	*data_count = 0;
+	sose_mem = d->silent_on_scsi_error;
+
+	if (d->released) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020142,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is not grabbed on random access read", 0, 0);
+		{ret = 0; goto ex;}
+	}
+	if (d->drive_role != 1) {
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00020146,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+		"Drive is a virtual placeholder (stdio-drive or null-drive)",
+			 0, 0);
+		{ret = 0; goto ex;} 
+	}
+	if ((data_size % alignment) != 0) {
+		sprintf(msg,
+			"Audio read size not properly aligned (%d bytes)",
+			alignment);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x0002019d,
+			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		{ret = 0; goto ex;}
+	}
+	if (d->busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020145,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is busy on attempt to read audio", 0, 0);
+		{ret = 0; goto ex;}
+	}
+
+        d->busy = BURN_DRIVE_READING_SYNC;
+        d->buffer = buf;
+
+	start = sector_no;
+	upto = start + data_size / alignment;
+	wpt = data;
+	for (; start < upto; start += chunksize) {
+		chunksize = upto - start;
+		if (chunksize > (BUFFER_SIZE / alignment))
+			chunksize = (BUFFER_SIZE / alignment);
+		cpy_size = chunksize * alignment;
+		if (flag & 2)
+			d->silent_on_scsi_error = 1;
+		if (flag & 16) {
+			d->had_particular_error &= ~1;
+			if (!d->silent_on_scsi_error)
+				d->silent_on_scsi_error = 2;
+		}
+		err = d->read_cd(d, start, chunksize, 1, 0x10, NULL, d->buffer,
+				 (flag & 8) >> 3);
+		if (flag & (2 | 16))
+			d->silent_on_scsi_error = sose_mem;
+		if (err == BE_CANCELLED) {
+			if ((flag & 16) && (d->had_particular_error & 1))
+				{ret = -3; goto ex;}
+			if(!(flag & 4))
+			  for (i = 0; i < chunksize - 1; i++) {
+				if (flag & 2)
+					d->silent_on_scsi_error = 1;
+				err = d->read_cd(d, start + i, 1, 1, 0x10,
+				             NULL, d->buffer, (flag & 8) >> 3);
+				if (flag & 2)
+					d->silent_on_scsi_error = sose_mem;
+				if (err == BE_CANCELLED)
+			  break;
+				memcpy(wpt, d->buffer->data, alignment);
+				wpt += alignment;
+				*data_count += alignment;
+			  }
+
+			ret = 0; goto ex;
+		}
+                memcpy(wpt, d->buffer->data, cpy_size);
+                wpt += cpy_size;
+                *data_count += cpy_size;
+        }
+
+	ret = 1;
+ex:
+	BURN_FREE_MEM(buf);
+	d->buffer = buffer_mem;
+	d->busy = BURN_DRIVE_IDLE;
+	return ret;
+}
+
+
+#endif /* Libburn_with_read_audiO */
 
 
 #ifdef Libburn_develop_quality_scaN

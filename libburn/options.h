@@ -129,6 +129,14 @@ struct burn_read_opts
 	/** The number of retries the hardware should make to correct
 	    errors. */
 	unsigned char hardware_error_retries;
+
+	/* ts B21119 */
+	/* >>> Needs API access */
+	/** Whether to set DAP bit which allows drive to apply
+	    "flaw obscuring mechanisms like audio data mute and interpolate"
+	*/
+	unsigned int dap_bit;
+
 };
 
 #endif /* BURN__OPTIONS_H */

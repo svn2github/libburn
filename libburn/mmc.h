@@ -36,9 +36,9 @@ void mmc_erase(struct burn_drive *, int);
 void mmc_read_toc(struct burn_drive *);
 void mmc_read_disc_info(struct burn_drive *);
 void mmc_read_atip(struct burn_drive *);
-void mmc_read_sectors(struct burn_drive *,
-		      int,
-		      int, const struct burn_read_opts *, struct buffer *);
+int mmc_read_cd(struct burn_drive *d, int start, int len,
+                int sec_type, int main_ch,
+                const struct burn_read_opts *o, struct buffer *buf, int flag);
 void mmc_set_speed(struct burn_drive *, int, int);
 void mmc_read_lead_in(struct burn_drive *, struct buffer *);
 void mmc_perform_opc(struct burn_drive *);

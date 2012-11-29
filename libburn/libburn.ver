@@ -100,6 +100,7 @@ burn_os_open_track_src;
 burn_precheck_write;
 burn_preset_device_open;
 burn_random_access_write;
+burn_read_audio;
 burn_read_data;
 burn_read_opts_free;
 burn_read_opts_new;

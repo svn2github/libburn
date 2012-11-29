@@ -1462,6 +1462,8 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "READ DISC STRUCTURE";
         case 0xb6:
 		return "SET STREAMING";
+        case 0xb9:
+		return "READ CD MSF";
         case 0xbb:
 		return "SET CD SPEED";
         case 0xbe:
@@ -1587,7 +1589,7 @@ int scsi_show_command_reply(unsigned char *opcode, int data_dir,
 	if (data_dir != FROM_DRIVE)
 		return 2;
 	if (opcode[0] == 0x28 || opcode[0] == 0x3C ||
-	    opcode[0] == 0xA8 || opcode[0] == 0xBE) {
+	    opcode[0] == 0xA8 || opcode[0] == 0xB9 || opcode[0] == 0xBE) {
 							/* READ commands */
 		/* >>> report amount of data */;
 

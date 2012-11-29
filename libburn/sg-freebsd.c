@@ -477,7 +477,7 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.read_toc = mmc_read_toc;
 	out.write = mmc_write;
 	out.erase = mmc_erase;
-	out.read_sectors = mmc_read_sectors;
+	out.read_cd = mmc_read_cd;
 	out.perform_opc = mmc_perform_opc;
 	out.set_speed = mmc_set_speed;
 	out.send_parameters = spc_select_error_params;

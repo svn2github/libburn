@@ -93,6 +93,7 @@ struct burn_read_opts *burn_read_opts_new(struct burn_drive *drive)
 	opts->report_recovered_errors = 0;
 	opts->transfer_damaged_blocks = 0;
 	opts->hardware_error_retries = 3;
+	opts->dap_bit = 0;
 
 	return opts;
 }

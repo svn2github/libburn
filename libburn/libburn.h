@@ -4003,12 +4003,54 @@ BURN_END_DECLS
 */
 #ifdef Libburn_develop_quality_scaN
 
-/* B21108 ts */
+/* ts B21108 */
 /* Experiments mit quality scan command F3 on Optiarc drive */
 int burn_nec_optiarc_rep_err_rate(struct burn_drive *d,
                                   int start_lba, int rate_period, int flag);
 
 #endif /* Libburn_develop_quality_scaN */
+
+
+/* Early experimental:
+*/
+#define Libburn_with_read_audiO
+
+#ifdef Libburn_with_read_audiO
+
+/* ts B21119 */
+/** Read CD audio sectors in random access mode.
+    The drive must be grabbed successfully before calling this function.
+    Only CD audio tracks with 2352 bytes per sector can be read this way.
+    I.e. not data tracks, not CD-video-stream, ...
+    @param d            The drive from which to read.
+                        It must be a real MMC drive (i.e. not a stdio file)
+                        and it must have a CD loaded (i.e. not DVD or BD).
+    @param sector_no    The sector number (Logical Block Address)
+    @param data         A memory buffer capable of taking data_size bytes
+    @param data_size    The amount of data to be read. This must be aligned
+                        to full multiples of 2352.
+    @param data_count   The amount of data actually read (interesting on error)
+    @param flag         Bitfield for control purposes:
+                        bit0= - reserved -
+                        bit1= do not submit error message if read error
+                        bit2= on error do not try to read a second time
+                              with single block steps.
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+                        bit4= return -3 on SCSI error
+                                5 64 00 ILLEGAL MODE FOR THIS TRACK
+                              and prevent this error from being reported as
+                              event message. Do not retry reading in this case.
+                              (Useful to try the last two blocks of a CD
+                               track which might be non-audio because of TAO.)
+    @return 1=sucessful , <=0 an error occured
+                          with bit3:  -2= permission denied error
+    @since 1.2.6
+*/
+int burn_read_audio(struct burn_drive *d, int sector_no,
+                    char data[], off_t data_size, off_t *data_count, int flag);
+
+#endif /* Libburn_with_read_audiO */   
 
 
 #endif /*LIBBURN_H*/

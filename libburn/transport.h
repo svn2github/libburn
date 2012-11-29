@@ -382,10 +382,10 @@ struct burn_drive
 	int is_stopped;
 
 	void (*read_disc_info) (struct burn_drive *);
-	void (*read_sectors) (struct burn_drive *,
-			      int start,
-			      int len,
-			      const struct burn_read_opts *, struct buffer *);
+	int (*read_cd) (struct burn_drive *, int start, int len,
+	                int sec_type, int main_ch,
+	                const struct burn_read_opts *, struct buffer *,
+	                int flag);
 	void (*perform_opc) (struct burn_drive *);
 	void (*set_speed) (struct burn_drive *, int, int);
 	void (*send_parameters) (struct burn_drive *,

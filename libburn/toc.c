@@ -147,7 +147,11 @@ void toc_find_modes(struct burn_drive *d)
 					lba = burn_msf_to_lba(e->pmin, e->psec,
 							      e->pframe);
 				mem->sectors = 1;
+
+				ts B21119 : Would now be d->read_cd() with
+					    with sectype = 0 , mainch = 0xf8
 				d->read_sectors(d, lba, mem.sectors, &o, mem);
+
 				t->mode = sector_identify(mem->data);
 */
 			}
