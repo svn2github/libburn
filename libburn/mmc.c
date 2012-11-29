@@ -3993,6 +3993,11 @@ unsuitable_media:;
 			sprintf(msg, "SCSI error on format_unit(%s): ", descr);
 			scsi_error_msg(d, c->sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020122, 
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+
 		}
 		{ret = 0; goto ex;}
 	} else if ((!c->error) && (format_type == 0x13 || format_type == 0x15))

@@ -475,7 +475,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002011f (SORRY,HIGH)   = Burning is restricted to a single track
  0x00020120 (NOTE,HIGH)    = FORMAT UNIT ignored
  0x00020121 (FATAL,HIGH)   = Write preparation setup failed
- 0x00020122 (FATAL,HIGH)   = SCSI error on format_unit
+ 0x00020122 (FAILURE,HIGH) = SCSI error on format_unit
  0x00020123 (SORRY,HIGH)   = DVD Media are unsuitable for desired track type
  0x00020124 (SORRY,HIGH)   = SCSI error on set_streaming
  0x00020125 (SORRY,HIGH)   = Write start address not supported
