@@ -236,6 +236,11 @@ static unsigned char MMC_READ_CAPACITY[] =
 static unsigned char MMC_READ_DISC_STRUCTURE[] =
 	{ 0xAD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* ts B21125 : An alternatvie to BEh READ CD
+*/
+static unsigned char MMC_READ_CD_MSF[] =
+	{ 0xB9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
 static int mmc_function_spy_do_tell = 0;
 
 int mmc_function_spy(struct burn_drive *d, char * text)
@@ -2329,8 +2334,9 @@ ex:;
 }
 
 
-int mmc_eval_read_error(struct burn_drive *d, struct command *c,
-                        char *what, int start, int len, int flag)
+int mmc_eval_read_error(struct burn_drive *d, struct command *c, char *what,
+                        int start_m, int start_s, int start_f,
+                        int end_m, int end_s, int end_f, int flag)
 {
 	char *msg = NULL;
 	int key, asc, ascq, silent;
@@ -2340,8 +2346,14 @@ int mmc_eval_read_error(struct burn_drive *d, struct command *c,
 
 	msg = calloc(1, 256);
 	if (msg != NULL) {
-		sprintf(msg,
-		        "SCSI error on %s(%d,%d): ", what, start, len);
+		if (start_s < 0 || start_f < 0 || end_s < 0 || end_f < 0) {
+			sprintf(msg,
+		           "SCSI error on %s(%d,%d): ", what, start_m, end_m);
+		} else {
+			sprintf(msg, "SCSI error on %s(%dm%ds%df,%dm%ds%df): ",
+			      what,
+			      start_m, start_s, start_f, end_m, end_s, end_f);
+		}
 		scsi_error_msg(d, c->sense, 14, msg + strlen(msg),
 				&key, &asc, &ascq);
 		silent = (d->silent_on_scsi_error == 1);
@@ -2364,6 +2376,84 @@ int mmc_eval_read_error(struct burn_drive *d, struct command *c,
 /* ts B21119 : Derived from older mmc_read_sectors() 
    @param flag bit0= set DAP bit (also with o->dap_bit)
 */
+int mmc_read_cd_msf(struct burn_drive *d,
+		int start_m, int start_s, int start_f,
+		int end_m, int end_s, int end_f,
+		int sec_type, int main_ch,
+		const struct burn_read_opts *o, struct buffer *buf, int flag)
+{
+	int req, ret, dap_bit;
+	int report_recovered_errors = 0, subcodes_audio = 0, subcodes_data = 0;
+	struct command *c;
+
+	c = &(d->casual_command);
+	mmc_start_if_needed(d, 0);
+	if (mmc_function_spy(d, "mmc_read_cd_msf") <= 0)
+		return -1;
+
+	dap_bit = flag & 1;
+	if (o != NULL) {
+		report_recovered_errors = o->report_recovered_errors;
+		subcodes_audio = o->subcodes_audio;	
+		subcodes_data = o->subcodes_data;
+		dap_bit |= o->dap_bit;
+	}
+
+	scsi_init_command(c, MMC_READ_CD_MSF, sizeof(MMC_READ_CD_MSF));
+	c->retry = 1;
+	c->opcode[1] = ((sec_type & 7) << 2) | ((!!dap_bit) << 1);
+	c->opcode[3] = start_m;
+	c->opcode[4] = start_s;
+	c->opcode[5] = start_f;
+	c->opcode[6] = end_m;
+	c->opcode[7] = end_s;
+	c->opcode[8] = end_f;
+
+	req = main_ch & 0xf8;
+
+	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h
+
+	if (d->busy == BURN_DRIVE_GRABBING || report_recovered_errors)
+		req |= 2;
+	*/
+	c->opcode[9] = req;
+
+	c->opcode[10] = 0;
+/* always read the subcode, throw it away later, since we don't know
+   what we're really reading
+*/
+/* >>> ts B21125 : This is very obscure:
+                   MMC-3 has sub channel selection 001b as "RAW"
+                   MMC-5 does neither mention 001b nor "RAW".
+                   And why should a non-grabbed drive get here ?
+*/
+	if (d->busy == BURN_DRIVE_GRABBING || subcodes_audio || subcodes_data)
+		c->opcode[10] = 1;
+
+/* <<< ts B21125 : test with sub channel selection 100b
+                   no data, only sub channel
+	c->opcode[9] = 0;
+	c->opcode[10] = 4;
+	Did not help either with reading before LBA -150
+*/
+/* <<< ts B21125 : test with sub channel selection 001b and no user data
+	c->opcode[9] = 0;
+	c->opcode[10] = 1;
+*/
+
+	c->page = buf;
+	c->dir = FROM_DRIVE;
+	d->issue_command(d, c);
+	ret = mmc_eval_read_error(d, c, "read_cd_msf",
+	                          start_m, start_s, start_f,
+				  end_m, end_s, end_f, 0);
+	return ret;
+}
+
+
+/* ts B21119 : Derived from older mmc_read_sectors() 
+   @param flag bit0= set DAP bit (also with o->dap_bit)
+*/
 int mmc_read_cd(struct burn_drive *d, int start, int len,
                 int sec_type, int main_ch,
 		const struct burn_read_opts *o, struct buffer *buf, int flag)
@@ -2372,17 +2462,24 @@ int mmc_read_cd(struct burn_drive *d, int start, int len,
 	int report_recovered_errors = 0, subcodes_audio = 0, subcodes_data = 0;
 	struct command *c;
 
+/* # define Libburn_read_cd_by_msF 1 */
+#ifdef Libburn_read_cd_by_msF
+
+	int start_m, start_s, start_f, end_m, end_s, end_f;
+
+	burn_lba_to_msf(start, &start_m, &start_s, &start_f);
+	burn_lba_to_msf(start + len, &end_m, &end_s, &end_f);
+	ret = mmc_read_cd_msf(d, start_m, start_s, start_f,
+	                      end_m, end_s, end_f,
+	                      sec_type, main_ch, o, buf, flag);
+	return ret;
+
+#endif /* Libburn_read_cd_by_msF */
+
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
 	if (mmc_function_spy(d, "mmc_read_cd") <= 0)
 		return -1;
-
-	/* ts A61009 : to be ensured by callers */
-	/* a ssert(len >= 0); */
-
-/* if the drive isn't busy, why the hell are we here? */ 
-	/* ts A61006 : i second that question */
-	/* a ssert(d->busy); */
 
 	dap_bit = flag & 1;
 	if (o != NULL) {
@@ -2416,18 +2513,32 @@ int mmc_read_cd(struct burn_drive *d, int start, int len,
 		req |= 2;
 	*/
 
+	c->opcode[9] = req;
 	c->opcode[10] = 0;
 /* always read the subcode, throw it away later, since we don't know
    what we're really reading
 */
+/* >>> ts B21125 : This is very obscure:
+                   MMC-3 has sub channel selection 001b as "RAW"
+                   MMC-5 does neither mention 001b nor "RAW".
+                   And why should a non-grabbed drive get here ?
+*/
 	if (d->busy == BURN_DRIVE_GRABBING || subcodes_audio || subcodes_data)
 		c->opcode[10] = 1;
 
-	c->opcode[9] = req;
+/* <<< ts B21125 : test with sub channel selection 100b
+	c->opcode[10] = 4;
+*/
+/* <<< ts B21125 : test with sub channel selection 001b and no user data
+	c->opcode[9] = 0;
+	c->opcode[10] = 1;
+*/
+
 	c->page = buf;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
-	ret = mmc_eval_read_error(d, c, "read_cd", start, len, 0);
+	ret = mmc_eval_read_error(d, c, "read_cd", start, -1, -1,
+	                          len, -1, -1, 0);
 	return ret;
 }
 
