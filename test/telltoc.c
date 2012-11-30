@@ -7,8 +7,9 @@
   
   telltoc is a minimal demo application for the library libburn as provided
   on  http://libburnia-project.org . It can list the available devices, can
-  display some drive properties, the type of media, eventual table of content
-  and multisession info for mkisofs option -C . 
+  display some drive properties, the type of media, eventual table of content,
+  multisession info for mkisofs option -C, and can read audio or data tracks. 
+
   It's main purpose, nevertheless, is to show you how to use libburn and also
   to serve the libburn team as reference application. telltoc.c does indeed
   define the standard way how above gestures can be implemented and stay upward
@@ -25,8 +26,9 @@
      telltoc_media()   prints some information about the media in a drive
      telltoc_toc()     prints a table of content (if there is content)
      telltoc_msinfo()  prints parameters for mkisofs option -C
-     telltoc_read_and_print()  reads from data CD or from DVD and prints 7-bit 
-                       to stdout (encodings 0,2) or 8-bit to file (encoding 1)
+     telltoc_read_and_print()  reads from audio or data CD or from DVD or BD
+                       and prints 7-bit to stdout (encodings 0,2) or 8-bit to
+                       file (encoding 1)
   When everything is done, main() releases the drive and shuts down libburn:
      burn_drive_release();
      burn_finish()
@@ -75,9 +77,10 @@ int telltoc_aquire_by_adr(char *drive_adr);
 int telltoc_aquire_by_driveno(int *drive_no, int silent);
 
 
-/* A message from --toc to --read_and_print (CD tracksize is a bit tricky) */
+/* Messages from --toc to --read_and_print (CD tracksize is a bit tricky) */
 static int last_track_start = 0, last_track_size = -1;
-static int media_is_cd_profile = 0;
+static int medium_is_cd_profile = 0;  /* 0 = undecided , -1 = no , 1 = yes */
+static int cd_is_audio = 0;           /* 0 = undecided , -1 = no , 1 = yes */
 
 
 /* ------------------------------- API gestures ---------------------------- */
@@ -464,12 +467,25 @@ int telltoc_formatlist(struct burn_drive *drive)
 }
 
 
+void telltoc_detect_cd(struct burn_drive *drive)
+{
+	int pno;
+	char profile_name[80];
+
+	if (burn_disc_get_profile(drive, &pno, profile_name) > 0) {
+		if (pno >= 0x08 && pno <= 0x0a)
+			medium_is_cd_profile = 1;
+		else
+			medium_is_cd_profile = -1;
+	}
+}
+
+
 int telltoc_toc(struct burn_drive *drive)
 {
 	int num_sessions = 0 , num_tracks = 0 , lba = 0, pmin, psec, pframe;
-	int track_count = 0, pno;
+	int track_count = 0, track_is_audio;
 	int session_no, track_no;
-	char profile_name[80];
 	struct burn_disc *disc= NULL;
 	struct burn_session **sessions;
 	struct burn_track **tracks;
@@ -499,10 +515,20 @@ int telltoc_toc(struct burn_drive *drive)
 				pframe = toc_entry.pframe;
 				lba= burn_msf_to_lba(pmin, psec, pframe);
 			}
+
+			if ((toc_entry.control & 7) < 4) {
+				if (cd_is_audio == 0)
+					cd_is_audio = 1;
+				track_is_audio = 1;
+			} else {
+				track_is_audio = 0;
+				cd_is_audio = -1;
+			}
+
 			printf("Media content: session %2d  ", session_no+1);
 			printf("track    %2d %s  lba: %9d  %4.2d:%2.2d:%2.2d\n",
 				track_count,
-				((toc_entry.control&7)<4?"audio":"data "),
+				(track_is_audio ? "audio" : "data "),
 				lba, pmin, psec, pframe);
 			last_track_start = lba;
 		}
@@ -521,10 +547,7 @@ int telltoc_toc(struct burn_drive *drive)
 		printf("leadout            lba: %9d  %4.2d:%2.2d:%2.2d\n",
 			lba, pmin, psec, pframe);
 		last_track_size = lba - last_track_start;
-		if (burn_disc_get_profile(drive, &pno, profile_name) > 0)
-			if (pno == 0x09 || pno == 0x0a)
-				media_is_cd_profile = 1;
-			
+		telltoc_detect_cd(drive);
 	}
 	if (disc!=NULL)
 		burn_disc_free(disc);
@@ -597,27 +620,26 @@ int telltoc_read_and_print(struct burn_drive *drive,
 	int start_sector, int sector_count, char *raw_file, int encoding)
 {
 	int j, i, request = 16, done, lbas = 0, final_cd_try = -1, todo;
-	int ret = 0;
+	int ret = 0, sector_size, chunk_size, read_audio = 0;
 	char buf[16 * 2048], line[81];
 	off_t data_count, total_count= 0, last_reported_count= 0;
 	struct stat stbuf;
 	FILE *raw_fp = NULL;
 
+	if (medium_is_cd_profile == 0)
+		telltoc_detect_cd(drive);
 	if (start_sector == -1)
 		start_sector = last_track_start;
 	if (sector_count == -1) {
 		sector_count = last_track_start + last_track_size
 				- start_sector;
-		if (media_is_cd_profile)  /* In case it is a TAO track */
+		if (medium_is_cd_profile > 0)  /* In case it is a TAO track */
 			final_cd_try = 0; /* allow it (-1 is denial) */
 	}
-	if (start_sector < 0)
-		start_sector = 0;
+
 	if (sector_count <= 0)
 		sector_count = 2147483632;
 
-	if (sector_count <= 0)
-		return -1;
 	if (encoding == 1) {
                 if (stat(raw_file,&stbuf) != -1) {
 			if (!(S_ISCHR(stbuf.st_mode) || S_ISFIFO(stbuf.st_mode)
@@ -640,16 +662,45 @@ int telltoc_read_and_print(struct burn_drive *drive,
 		printf(
 		"Data         : start=%ds , count=%ds , read=0 , encoding=%d\n",
 		start_sector, sector_count, encoding);
+
+	/* Whether to read audio or data */
+	if (cd_is_audio > 0) {
+		read_audio = 1;
+	} else if (medium_is_cd_profile > 0 && cd_is_audio == 0) {
+		/* Try whether the start sector is audio */
+		ret = burn_read_audio(drive, start_sector,
+					buf, (off_t) 2352, &data_count, 2 | 4);
+		if (ret > 0)
+			read_audio = 1;
+	}
+	if (read_audio) {
+		sector_size = 2352;
+		chunk_size = 12;
+	} else {
+		sector_size = 2048;
+		chunk_size = 16;
+		if (start_sector < 0)
+			start_sector = 0;
+	}
+
 	todo = sector_count - 2*(final_cd_try > -1);
 	for (done = 0; done < todo && final_cd_try != 1; done += request) {
-		if (todo - done > 16)
-			request = 16;
+		if (todo - done > chunk_size)
+			request = chunk_size;
 		else
 			request = todo - done;
-		ret = burn_read_data(drive,
-			((off_t) start_sector + done) * (off_t) 2048,
-			buf, (off_t) (request * 2048), &data_count, 1);
-			
+
+		if (read_audio) {
+			ret = burn_read_audio(drive, start_sector + done,
+					buf, (off_t) (request * sector_size),
+					&data_count, 0);
+		} else {
+			ret = burn_read_data(drive,
+					((off_t) start_sector + done) *
+							(off_t) sector_size,
+					buf, (off_t) (request * sector_size),
+					&data_count, 1);
+		}
 print_result:;
 		total_count += data_count;
 		if (encoding == 1) {
@@ -658,8 +709,8 @@ print_result:;
 		} else for (i = 0; i < data_count; i += 16) {
 			if (encoding == 0) {
 				sprintf(line, "%8ds + %4d : ",
-					start_sector + done + i / 2048,
-					i % 2048);
+					start_sector + done + i / sector_size,
+					i % sector_size);
 				lbas = strlen(line);
 			}
 			for (j = 0; j < 16 && i + j < data_count; j++) {
@@ -675,11 +726,11 @@ print_result:;
 			printf("%s\n",line);
 		}
 		if (encoding == 1 &&
-		    total_count - last_reported_count >= 1000 * 2048) {
+		    total_count - last_reported_count >= 1000 * sector_size) {
 			fprintf(stderr, 
 	     		 "\rReading data : start=%ds , count=%ds , read=%ds  ",
 			 start_sector, sector_count,
-			  (int) (total_count / (off_t) 2048));
+			  (int) (total_count / (off_t) sector_size));
 			last_reported_count = total_count;
 		}
 		if (ret <= 0) {
@@ -687,13 +738,21 @@ print_result:;
 	break;
 		}
 	}
-	if (ret > 0 && media_is_cd_profile && final_cd_try == 0) {
+	if (ret > 0 && medium_is_cd_profile > 0 && final_cd_try == 0) {
 		/* In a SAO track the last 2 frames should be data too */
 		final_cd_try = 1;
-		burn_read_data(drive,
-			((off_t) start_sector + todo) * (off_t) 2048,
-			buf, (off_t) (2 * 2048), &data_count, 2);
-		if (data_count < 2 * 2048)
+		if (read_audio) {
+			ret = burn_read_audio(drive, start_sector + todo,
+					buf, (off_t) (2 * sector_size),
+					&data_count, 2);
+		} else {
+			burn_read_data(drive,
+					((off_t) start_sector + todo) *
+							(off_t) sector_size,
+					buf, (off_t) (2 * sector_size),
+					&data_count, 2);
+		}
+		if (data_count < 2 * sector_size)
 			fprintf(stderr, "\rNOTE : Last two frames of CD track unreadable. This is normal if TAO track.\n");
 		if (data_count > 0)
 			goto print_result;	
@@ -702,7 +761,8 @@ print_result:;
 		fprintf(stderr,
 "\r                                                                       \r");
 	printf("End Of Data  : start=%ds , count=%ds , read=%ds\n",
-		start_sector, sector_count,(int) (total_count / (off_t) 2048));
+		start_sector, sector_count,
+	        (int) (total_count / (off_t) sector_size));
 
 	return ret;
 }
@@ -808,10 +868,10 @@ int telltoc_setup(int argc, char **argv)
         printf("  mkisofs ... -C \"$msinfo\" ...\n");
 	printf("Obtain what is available about drive 0 and its media\n");
 	printf("  %s --drive 0\n",argv[0]);
-	printf("View blocks 16 to 19 of data CD or DVD in human readable form\n");
+	printf("View blocks 16 to 19 of audio or data CD or DVD or BD in human readable form\n");
 	printf("  %s --drive /dev/sr1 --read_and_print 16 4 0 | less\n",
 		argv[0]);
-        printf("Copy last data track from CD to file /tmp/data\n");
+        printf("Copy last track from CD to file /tmp/data\n");
         printf("  %s --drive /dev/sr1 --toc --read_and_print -1 -1 raw:/tmp/data\n",
                 argv[0]);
     }
@@ -891,7 +951,7 @@ int main(int argc, char **argv)
 		if (ret<=0)
 			{ret = 38; goto release_drive; }
 	}
-	if (read_start >= -1 && (read_count > 0 || read_count == -1)) {
+	if (read_start != -2 && (read_count > 0 || read_count == -1)) {
 		ret = telltoc_read_and_print(drive_list[driveno].drive,
 				read_start, read_count, print_raw_file,
 				print_encoding);
