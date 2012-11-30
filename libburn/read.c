@@ -540,8 +540,6 @@ ex:;
 }
 
 
-#ifdef Libburn_with_read_audiO
-
 /* ts B21119 : API function*/
 int burn_read_audio(struct burn_drive *d, int sector_no,
                     char data[], off_t data_size, off_t *data_count, int flag)
@@ -642,9 +640,6 @@ ex:
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
 }
-
-
-#endif /* Libburn_with_read_audiO */
 
 
 #ifdef Libburn_develop_quality_scaN
