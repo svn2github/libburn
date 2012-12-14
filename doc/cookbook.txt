@@ -913,7 +913,8 @@ To support CD, DVD and BD media alike, it is advisable to round the NWA
 to the next multiple of 32 (= 64 KiB).
 
 So one can use 0 as MSC1 and prepare a new ISO session for the computed NWA.
-After writing the session it is necessary to patch the PVD at LBA 16.
+After writing the session it is necessary to copy the PVD from session start
+plus 16 to LBA 16 and to adjust it to its new location.
 The minimal change would be to update the number of image sectors.
 It is stored in both notations LSB and MSB:
    for(i= 0; i < 4; i++)
