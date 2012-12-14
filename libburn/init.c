@@ -347,6 +347,17 @@ int burn_sev_to_text(int severity_number, char **severity_name, int flag)
 	return ret;
 }
 
+
+/* ts B21214 API */
+char *burn_list_sev_texts(int flag)
+{
+ char *sev_list;
+
+ libdax_msgs__sev_to_text(0, &sev_list, 1);
+ return sev_list;
+}
+
+
 /* ts B00224 */
 char *burn_util_thread_id(pid_t pid, pthread_t tid, char text[80])
 {

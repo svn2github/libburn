@@ -3589,14 +3589,23 @@ int burn_text_to_sev(char *severity_name, int *severity_number, int flag);
 
 /* ts A80202 */
 /** Convert a severity number into a severity name
-    @since 0.4.4
     @param severity_number The rank number: the higher, the more severe.
     @param severity_name A name as with burn_msgs_submit(), e.g. "SORRY".
     @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return >0 success, <=0 failure
     @since 0.4.4
 */
 int burn_sev_to_text(int severity_number, char **severity_name, int flag);
 
+
+/* ts B21214 */
+/** Return a blank separated list of severity names. Sorted from low
+    to high severity.
+    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @return  A constant string with the severity names
+    @since 1.2.6
+*/
+char *burn_list_sev_texts(int flag);
 
 
 /* ts A70915 */

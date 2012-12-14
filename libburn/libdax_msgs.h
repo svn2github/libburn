@@ -316,7 +316,7 @@ int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
 
 /** Convert a registered severity number into a severity name
     @param flag Bitfield for control purposes:
-      bit0= list all severity names in a newline separated string
+      bit0= list all severity names in a blank separated string
     @return >0 success, <=0 failure
 */
 int libdax_msgs__sev_to_text(int severity, char **severity_name,
