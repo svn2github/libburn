@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2012 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2013 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.2.2.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.2.6.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.2.4.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.2.6.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.2.4.tar.gz
-   cd libburn-1.2.4
+   tar xzf libburn-1.2.6.tar.gz
+   cd libburn-1.2.6
    ./configure --prefix=/usr
    make
 
@@ -681,10 +681,16 @@ Project history as far as known to me:
   been improved in libisofs. libisoburn and xorriso now make use of these
   improvements. Some rarely occuring bugs have been fixed.  
 
-- Fri Jul 20 2012 releae 1.2.4:
+- Fri Jul 20 2012 release 1.2.4:
   libburn and libisofs got some rarely occuring bugs fixed. libisofs learned
   to produce HFS+ metadata and Apple Partition Map. The capabilities of
   isohybrid options --efi and --mac have been implemented (GPT and APM).
+
+- Tue Jan 08 2013 release 1.2.6:
+  Small improvements were made in libburn. Minor bugs were fixed in the
+  libraries. xorriso improved its capabilities to serve the needs of frontend
+  programs. A proof of concept for a GUI frontend has been implemented:
+  xorriso-tcltk
 
 
 ------------------------------------------------------------------------------

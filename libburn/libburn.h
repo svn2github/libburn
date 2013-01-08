@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    This is the official API definition of libburn.
@@ -3451,7 +3451,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  2
-#define burn_header_version_micro  5
+#define burn_header_version_micro  7
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
