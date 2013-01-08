@@ -11439,23 +11439,180 @@ Removed buggy burn_strdup() and burn_strndup(). Thanks to Rich Felker.
 libburn/mmc.c
 Bug fix: Speed setting had no effect on BD media. Thanks to Dennis Vshivkov.
 
-  []
+13 Sep 2012  [4829]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.5 - 
+------------------------------------ cycle  - cdrskin-1.2.5 - 2012.09.13.090310
 Bug fix: Speed setting had no effect on BD media. Thanks to Dennis Vshivkov.
 
 
+2012.10.02.134821  [4841]
+configure.ac
+Configuration for use of libcdio on cygwin. Thanks Rocky Bernstein.
+
+2012.10.24.095725  [4850]
+libburn/async.c
+Reporting (still cryptic) details about refusal to blank
+
+2012.10.25.123837  [4852]
+libburn/libburn.h
+libburn/transport.h
+libburn/read.c
+libburn/spc.c
+libburn/mmc.c
+New flag bit4 of burn_read_data() for better handling of TAO end blocks
+
+2012.10.25.173408  [4854]
+libburn/read.c
+Corrected error handling which was spoiled by rev 4852
+
+2012.11.18.184006  [4858]
+libburn/libburn.h
+libburn/read.c
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+Preserving an immature sketch of media quality scanning
+
+2012.11.18.184114  [4859]
+cdrskin/cdrskin.c
+Preserving an immature sketch of media quality scanning
+
+2012.11.24.181347  [4860]
+libburn/mmc.c
+Better reaction on non-plausible ATIP info from CD-ROM
+
+2012.11.29.111344  [4865]
+libburn/libburn.h
+libburn/transport.h
+libburn/libdax_msgs.h
+libburn/options.h
+libburn/options.c
+libburn/toc.c
+libburn/read.c
+libburn/spc.c
+libburn/mmc.h
+libburn/sg-freebsd.c
+libburn/libburn.ver
+Beginning to create new API call burn_read_audio
+
+2012.11.29.112506  [4866]
+libburn/mmc.c
+Forgot mcc.c with the previous commit
+
+2012.11.29.112605  [4867]
+libburn/libdax_msgs.h
+libburn/mmc.c
+Let mmc_format_unit issue failure message on SCSI error
+
+2012.11.30.193330  [4868]
+libburn/libburn.h
+libburn/read.c
+New API call burn_read_audio
+
+2012.11.30.193415  [4869]
+test/telltoc.c
+Made telltoc ready for reading CD audio
+
+2012.12.14.145101  [4878]
+libburn/libburn.h
+libburn/init.c
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+libburn/libburn.ver
+New API call burn_list_sev_texts()
+
+14 Dec 2012  [4879]
+doc/cookbook.txt
+Small change to burn cookbook about ISO multi-session emulation
+
+08 Jan 2013  [4935]
+svn copy -m "Branching for libburn release 1.2.6" 
+http://svn.libburnia-project.org/libburn/trunk 
+http://svn.libburnia-project.org/libburn/branches/1.2.6
+
+2013.01.08.090001  [4936]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.6
+
+08 Jan 2013  [4937]
+- cdrskin/add_ts_changes_to_libburn_1_2_4
+- cdrskin/add_ts_changes_to_libburn_1_2_5
++ cdrskin/add_ts_changes_to_libburn_1_2_6
++ cdrskin/add_ts_changes_to_libburn_1_2_7
+Updated cdrskin tarball generator
+
+08 Jan 2013  [4938]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.2.6 - 2013.01.08.090001
+Bug fix: Speed setting had no effect on BD media. Thanks to Dennis Vshivkov.
+* New API call burn_read_audio()
+* New API call burn_list_sev_texts()
+* New cdrskin option --no_load
+
+
+2013.01.08.144634 []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.7
+
+08 Jan 2013  [4947]
+- cdrskin/add_ts_changes_to_libburn_1_2_4
+- cdrskin/add_ts_changes_to_libburn_1_2_5
++ cdrskin/add_ts_changes_to_libburn_1_2_6
++ cdrskin/add_ts_changes_to_libburn_1_2_7
+Updated cdrskin tarball generator
+
+  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+  []
+svn move -m libburn release 1.2.6 is ready
+http://svn.libburnia-project.org/libburn/branches/1.2.6
+http://svn.libburnia-project.org/libburn/tags/1.2.6
+
+------------------------------------ cycle  - cdrskin-1.2.7 - 
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.5 - 
+------------------------------------ cycle  - cdrskin-1.2.7 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.7 - 
 
 
 
@@ -11468,14 +11625,12 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
->>>
-Failure of FORMAT UNIT does not report SCSI error
+
+cdrskin option to emit pacifiers with newline rather than carriage return
+
+cdrskin does not have a runtime check for sizeof(off_t) >= 6.
 
 
->>> TRACK SHORTAGE
-  xorriso: If libburn fails to produce the announced number of blocks
-   libburn : FAILURE : Premature end of input encountered. Missing: 2048 bytes
-  But actually several hundered blocks are missing.
 
 CD-TEXT:
   - with SAO
