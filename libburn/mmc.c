@@ -1126,6 +1126,12 @@ err_ex:;
 	if (dlen + 2 > old_alloc_len)
 		dlen = old_alloc_len - 2;
 	d->complete_sessions = 1 + c->page->data[3] - c->page->data[2];
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+	/* ts B30112 : number of open sessions */
+	d->incomplete_sessions = 0;
+#endif
+
 	d->last_track_no = d->complete_sessions;
 	if (dlen - 2 < (d->last_track_no + 1) * 8) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -1253,9 +1259,22 @@ int mmc_fake_toc(struct burn_drive *d)
 		{ret = -1; goto ex;}
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+	if (d->last_track_no <= 0 ||
+            d->complete_sessions  + d->incomplete_sessions <= 0 ||
+	    d->status == BURN_DISC_BLANK)
+		{ret = 2; goto ex;}
+
+#else
+
 	if (d->last_track_no <= 0 || d->complete_sessions <= 0 ||
 	    d->status == BURN_DISC_BLANK)
 		{ret = 2; goto ex;}
+
+#endif /* ! Libburn_disc_with_incomplete_sessioN */
+
+
 	if (d->last_track_no > BURN_MMC_FAKE_TOC_MAX_SIZE) {
 		msg = calloc(1, 160);
 		if (msg != NULL) {
@@ -1279,18 +1298,34 @@ int mmc_fake_toc(struct burn_drive *d)
 	d->disc = burn_disc_create();
 	if (d->disc == NULL)
 		{ret = -1; goto ex;}
-	d->toc_entries = d->last_track_no + d->complete_sessions;
+	d->toc_entries = d->last_track_no
+	                 + d->complete_sessions + d->incomplete_sessions;
 	d->toc_entry = calloc(d->toc_entries, sizeof(struct burn_toc_entry));
 	if (d->toc_entry == NULL)
 		{ret = -1; goto ex;}
 	memset(d->toc_entry, 0,d->toc_entries * sizeof(struct burn_toc_entry));
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+	for (i = 0; i < d->complete_sessions + d->incomplete_sessions; i++) {
+
+#else
+
 	for (i = 0; i < d->complete_sessions; i++) {
+
+#endif
+
 		session = burn_session_create();
 		if (session == NULL)
 			{ret = -1; goto ex;}
 		burn_disc_add_session(d->disc, session, BURN_POS_END);
 		burn_session_free(session);
 	}
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+	d->disc->incomplete_sessions = d->incomplete_sessions;
+#endif
+
 	memset(size_data, 0, 4);
 	memset(start_data, 0, 4);
 
@@ -1333,7 +1368,16 @@ int mmc_fake_toc(struct burn_drive *d)
 									entry;
 		}
 
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+		if (session_number > d->complete_sessions) {
+
+#else
+
 		if (session_number > d->disc->sessions) {
+
+#endif
+
 			if (i == d->last_track_no - 1) {
 				/* ts A70212 : Last track field Free Blocks */
 				burn_drive_set_media_capacity_remaining(d,
@@ -1341,7 +1385,18 @@ int mmc_fake_toc(struct burn_drive *d)
 				  ((off_t) 2048));
 				d->media_lba_limit = 0;
 			}	
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+			if (session_number > d->disc->sessions )
 	continue;
+
+#else
+
+	continue;
+
+#endif
+
 		}
 
 		entry = &(d->toc_entry[i + session_number - 1]);
@@ -1359,12 +1414,16 @@ int mmc_fake_toc(struct burn_drive *d)
 		memcpy(end_data, tdata + 28, 4);
 		mmc_fake_toc_entry(entry, session_number, i + 1,
 					 size_data, start_data, end_data);
+		entry->track_status_bits = tdata[5] | (tdata[6] << 8) |
+		                           (tdata[7] << 16);
+		entry->extensions_valid |= 4;
 
 		if (prev_session != session_number)
 			d->disc->session[session_number - 1]->firsttrack = i+1;
 		d->disc->session[session_number - 1]->lasttrack = i+1;
 		prev_session = session_number;
 	}
+
 	if (prev_session > 0 && prev_session <= d->disc->sessions) {
 		/* leadout entry of last session of closed disc */
 		entry = &(d->toc_entry[(d->last_track_no - 1) + prev_session]);
@@ -2029,15 +2088,27 @@ regard_as_blank:;
 	    d->current_profile == 0x12 || d->current_profile == 0x43)
 		d->status = BURN_DISC_BLANK;
 
+#ifdef Libburn_disc_with_incomplete_sessioN
+	/* ts B30112 : number of open sessions */
+	d->incomplete_sessions = 0;
+#endif
+
 	if (d->status == BURN_DISC_BLANK) {
                 d->last_track_no = 1; /* The "incomplete track" */
 		d->complete_sessions = 0;
 	} else {
-		/* ts A70131 : number of non-empty sessions */
+		/* ts A70131 : number of closed sessions */
 		d->complete_sessions = number_of_sessions;
 		/* mmc5r03c.pdf 6.22.3.1.3 State of Last Session: 3=complete */
-		if (d->state_of_last_session != 3 && d->complete_sessions >= 1)
+		if (d->state_of_last_session != 3 &&
+		    d->complete_sessions >= 1) {
 			d->complete_sessions--;
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+			d->incomplete_sessions++;
+#endif
+
+		}
 
 		/* ts A70129 : mmc5r03c.pdf 6.22.3.1.7
 		   This includes the "incomplete track" if the disk is
@@ -5014,6 +5085,11 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->disc_info_valid = 0;
 	d->num_format_descr = 0;
 	d->complete_sessions = 0;
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+	d->incomplete_sessions = 0;
+#endif
+
 	d->state_of_last_session = -1;
 	d->last_track_no = 1;
 	d->media_capacity_remaining = 0;

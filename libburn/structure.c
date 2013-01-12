@@ -65,6 +65,11 @@ struct burn_disc *burn_disc_create(void)
 	d->refcnt = 1;
 	d->sessions = 0;
 	d->session = NULL;
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+	d->incomplete_sessions= 0;
+#endif
+
 	return d;
 }
 
@@ -691,9 +696,36 @@ void burn_session_get_leadout_entry(struct burn_session *s,
 
 struct burn_session **burn_disc_get_sessions(struct burn_disc *d, int *num)
 {
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+	*num = d->sessions - d->incomplete_sessions;
+
+#else
+
 	*num = d->sessions;
+
+#endif
+
+
 	return d->session;
 }
+
+
+/* ts B30112 : API */
+int burn_disc_get_incomplete_sessions(struct burn_disc *d)
+{
+#ifdef Libburn_disc_with_incomplete_sessioN
+
+	return d->incomplete_sessions;
+
+#else
+
+	return 0;
+
+#endif
+}
+
 
 struct burn_track **burn_session_get_tracks(struct burn_session *s, int *num)
 {

@@ -144,6 +144,11 @@ struct burn_disc
 {
 	int sessions;
 	struct burn_session **session;
+
+#ifdef Libburn_disc_with_incomplete_sessioN
+        int incomplete_sessions;
+#endif
+
 	int refcnt;
 };
 

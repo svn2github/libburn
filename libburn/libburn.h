@@ -343,7 +343,6 @@ enum burn_drive_status
     "session", "point", "pmin", ...
     Do not rely on the current size of a burn_toc_entry. 
 
-    ts A70201 : DVD extension, see below
 */
 struct burn_toc_entry
 {
@@ -372,6 +371,8 @@ struct burn_toc_entry
 	   older elements in this structure:
 	     bit0= DVD extension is valid @since 0.3.2
                    @since 0.5.2 : DVD extensions are made valid for CD too
+             bit1= LRA extension is valid @since 0.7.2
+             bit2= Track status bits extension is valid @since 1.2.8
 	*/
 	unsigned char extensions_valid;  
 
@@ -393,6 +394,24 @@ struct burn_toc_entry
 	   This would mean profiles: 0x11, 0x15, 0x13, 0x14, 0x51, 0x41, 0x42 
 	*/
 	int last_recorded_address;
+
+	/* ts B30112 : Track status bits extension. extensions_valid:bit2 */
+	/* @since 1.2.8 */
+	/* Names as of READ TRACK INFORMATION, MMC-5 6.27.3 :
+	    bit0 -  bit3 = Track Mode
+	    bit4         = Copy
+	    bit5         = Damage
+	    bit6 -  bit7 = LJRS
+	    bit8 - bit11 = Data Mode
+	   bit12         = FP
+	   bit13         = Packet/Inc
+	   bit14         = Blank
+	   bit15         = RT
+	   bit16         = NWA_V
+	   bit17         = LRA_V
+	*/
+	int track_status_bits;
+
 };
 
 
@@ -3387,14 +3406,29 @@ void burn_track_get_entry(struct burn_track *t, struct burn_toc_entry *entry);
 void burn_session_get_leadout_entry(struct burn_session *s,
                                     struct burn_toc_entry *entry);
 
-/** Gets an array of all the sessions for the disc
+/** Gets an array of all complete sessions for the disc
     THIS IS NO LONGER VALID AFTER YOU ADD OR REMOVE A SESSION
+    The result array contains *num + burn_disc_get_open_sessions()
+    elements. All above *num are incomplete sessions.
+    Typically there is one incomplete session with one empty track.
+    DVD+R and BD-R seem to allow more than one track with even readable data.
     @param d Disc to get session array for
     @param num Returns the number of sessions in the array
     @return array of sessions
 */
 struct burn_session **burn_disc_get_sessions(struct burn_disc *d,
                                              int *num);
+
+/* ts B30112 */
+/* @since 1.2.8 */
+/** Obtains the number of incomplete sessions which are recorded in the
+    result array of burn_disc_get_sessions() after the complete sessions.
+    See above.
+    @param d Disc object to inquire
+    @return  Number of incomplete sessions
+*/
+int burn_disc_get_incomplete_sessions(struct burn_disc *d);
+
 
 int burn_disc_get_sectors(struct burn_disc *d);
 
@@ -4047,6 +4081,12 @@ BURN_END_DECLS
 
 */
 #define Libburn_dummy_probe_write_modeS 1
+
+/* ts B30112 */
+/* Handle DVD+R with reserved tracks in incomplete first session
+   by loading info about the incomplete session into struct burn_disc
+*/
+#define Libburn_disc_with_incomplete_sessioN 1
 
 
 /* Early experimental:
