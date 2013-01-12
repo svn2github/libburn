@@ -4915,7 +4915,7 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
  int session_no, track_no, pmin, psec, pframe, ret, final_ret= 1;
- int track_offset = 1;
+ int track_offset = 1, open_sessions= 0, have_real_open_session= 0;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions;
@@ -4951,21 +4951,32 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
    goto cannot_read;
  }
  sessions= burn_disc_get_sessions(disc,&num_sessions);
+ open_sessions= burn_disc_get_incomplete_sessions(disc);
  if(num_sessions > 0)
    track_offset = burn_session_get_start_tno(sessions[0], 0);
  if(track_offset <= 0)
    track_offset= 1;
  if(flag&1) {
-   for(session_no= 0; session_no<num_sessions; session_no++) {
+   for(session_no= 0; session_no < num_sessions + open_sessions;
+       session_no++) {
      tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
      total_tracks+= num_tracks;
+     if(session_no == num_sessions + open_sessions - 1 && open_sessions > 0) {
+       total_tracks--; /* Do not count invisible track */
+       if(num_tracks > 1)
+         have_real_open_session= 1;
+     }
    }
    printf("first: %d last %d\n",
           track_offset, total_tracks + track_offset - 1);
  }
- for(session_no= 0; session_no<num_sessions; session_no++) {
+ for(session_no= 0; session_no < num_sessions + open_sessions; session_no++) {
    tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
    if(tracks==NULL)
+ continue;
+   if(session_no == num_sessions + open_sessions - 1 && open_sessions > 0)
+     num_tracks--;
+   if(num_tracks <= 0)
  continue;
    if(!(flag&1))
      printf("first: %d last: %d\n",
@@ -4998,9 +5009,15 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
      printf(" mode: %d\n",((toc_entry.control&7)<4?0:1));
 
    }
-   if((flag&1) && session_no<num_sessions-1)
+   if((flag&1) &&
+    session_no < num_sessions + open_sessions - 1 + have_real_open_session - 1)
  continue;
-   burn_session_get_leadout_entry(sessions[session_no],&toc_entry);
+   if(have_real_open_session) {
+     /* Use start of invisible track */
+     burn_track_get_entry(tracks[num_tracks], &toc_entry);
+   } else {
+     burn_session_get_leadout_entry(sessions[session_no],&toc_entry);
+   }
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
      lba= toc_entry.start_lba;
      burn_lba_to_msf(lba, &pmin, &psec, &pframe);
@@ -5039,13 +5056,15 @@ summary:
    strcpy(profile_name, "media");
 
  printf("Media summary: %d sessions, %d tracks, %s %s\n",
-        num_sessions, track_count, 
+        num_sessions + open_sessions - 1 + have_real_open_session, track_count, 
         s==BURN_DISC_BLANK ? "blank" :
         s==BURN_DISC_APPENDABLE ? "appendable" :
         s==BURN_DISC_FULL ? "closed" :
         s==BURN_DISC_EMPTY ? "no " : "unknown ",
         profile_name);
         
+ if(have_real_open_session)
+   printf("Warning      : Incomplete session encountered !\n");
  
  if(disc!=NULL)
    burn_disc_free(disc);
@@ -5067,7 +5086,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 {
  int num_sessions= 0,num_tracks= 0,lba= 0,track_count= 0,total_tracks= 0;
  int session_no, track_no, pmin, psec, pframe, ret, size= 0, nwa= 0;
- int last_leadout= 0, ovwrt_full= 0, track_offset= 1;
+ int last_leadout= 0, ovwrt_full= 0, track_offset= 1, open_sessions= 0;
  struct burn_drive *drive;
  struct burn_disc *disc= NULL;
  struct burn_session **sessions= NULL;
@@ -5079,8 +5098,9 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  char media_class[80];
  int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
  int app_code, cd_info_valid, lra, alloc_blocks, free_blocks;
+ int have_real_open_session= 0;
  off_t avail, buf_count;
- char disc_type[80], bar_code[9], buf[2 * 2048];
+ char disc_type[80], bar_code[9], buf[2 * 2048], *type_text;
  unsigned int disc_id;
 
  drive= skin->drives[skin->driveno].drive;
@@ -5138,15 +5158,17 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  } else {
 
    sessions= burn_disc_get_sessions(disc, &num_sessions);
+   open_sessions= burn_disc_get_incomplete_sessions(disc);
    if(num_sessions > 0)
      track_offset= burn_session_get_start_tno(sessions[0], 0);
    if(track_offset <= 0)
      track_offset= 1;
    first_track= track_offset;
-   nominal_sessions= num_sessions;
-   if(s == BURN_DISC_APPENDABLE)
+   nominal_sessions= num_sessions + open_sessions;
+   if(s == BURN_DISC_APPENDABLE && open_sessions == 0)
      nominal_sessions++;
-   for(session_no= 0; session_no<num_sessions; session_no++) {
+   for(session_no= 0; session_no < num_sessions + open_sessions;
+       session_no++) {
      ftils= total_tracks + 1;
      tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
      if(tracks==NULL)
@@ -5157,7 +5179,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
         && total_tracks >= 2)
        first_track= 2;
    }
-   if(s == BURN_DISC_APPENDABLE)
+   if(s == BURN_DISC_APPENDABLE && open_sessions == 0)
      ftils= ltils= total_tracks + 1;
  }
  printf("first track:              %d\n", first_track);
@@ -5187,7 +5209,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  printf("\n");
  printf("Track  Sess Type   Start Addr End Addr   Size\n");
  printf("==============================================\n");
- for(session_no= 0; session_no<num_sessions; session_no++) {
+ for(session_no= 0; session_no < num_sessions + open_sessions; session_no++) {
    tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
    if(tracks==NULL)
  continue;
@@ -5233,11 +5255,33 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
 
 #endif /* Cdrskin_with_last_recorded_addresS */
 
+     if(session_no < num_sessions) {
+       type_text= ((toc_entry.control&7)<4) ? "Audio" : "Data";
+     } else {
+       if(track_no < num_tracks - 1) {
+         type_text= "Rsrvd";
+         have_real_open_session = 1;
+       } else {
+         type_text= "Blank";
+       }
+       if(toc_entry.extensions_valid & 4) {
+         if(toc_entry.track_status_bits & (1 << 14))
+           type_text= "Blank";
+         else if(toc_entry.track_status_bits & (1 << 16)) {
+           type_text= "Apdbl";
+           have_real_open_session = 1;
+         } else if(toc_entry.track_status_bits & (1 << 15)) {
+           type_text= "Rsrvd";
+           have_real_open_session = 1;
+         } else
+           type_text= "Invsb";
+       }
+     }
      printf("%5d %5d %-6s %-10d %-10d %-10d\n",
             track_count + track_offset - 1, session_no + 1,
-            ((toc_entry.control&7)<4) ? "Audio" : "Data", lba, lra, size);
-
-     last_leadout= lba + size;
+            type_text, lba, lra, size);
+     if(session_no < num_sessions)
+       last_leadout= lba + size;
    }
  }
  if(last_leadout > 0)
@@ -5250,10 +5294,12 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
      size= avail / 2048;
      if(read_capacity == 0 && skin->media_is_overwriteable)
        size= 0; /* unformatted overwriteable media */
-     printf("%5d %5d %-6s %-10d %-10d %-10d\n",
-            track_count + track_offset, nominal_sessions,
-            ovwrt_full ? "Data" : "Blank",
-            nwa, lba + size - 1, size);
+     if(nominal_sessions > num_sessions + open_sessions) {
+       printf("%5d %5d %-6s %-10d %-10d %-10d\n",
+              track_count + track_offset, nominal_sessions,
+              ovwrt_full ? "Data" : "Blank",
+              nwa, lba + size - 1, size);
+     }
    }
  }
  printf("\n");
@@ -5283,6 +5329,9 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    printf("cdrskin: Media is overwriteable. No blanking needed. No reliable track size.\n");
    printf("cdrskin: Above contrary statements follow cdrecord traditions.\n");
  }
+
+ if(have_real_open_session)
+   printf("\nWarning: Incomplete session encountered !\n");
 
  if(disc!=NULL)
    burn_disc_free(disc);
@@ -7388,7 +7437,7 @@ int Cdrskin_qcheck(struct CdrskiN *skin, int flag)
 */
 int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
 {
- int num_sessions, session_no, ret, num_tracks;
+ int num_sessions, session_no, ret, num_tracks, open_sessions= 0;
  int nwa= -123456789, lba= -123456789, aux_lba;
  char msg[80];
  enum burn_disc_status s;
@@ -7428,7 +7477,8 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
    {ret= 0; goto ex;}
  }
  sessions= burn_disc_get_sessions(disc,&num_sessions);
- for(session_no= 0; session_no<num_sessions; session_no++) {
+ open_sessions= burn_disc_get_incomplete_sessions(disc);
+ for(session_no= 0; session_no < num_sessions + open_sessions; session_no++) {
    tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
    if(tracks==NULL || num_tracks<=0)
  continue;
