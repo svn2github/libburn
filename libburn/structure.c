@@ -769,11 +769,11 @@ int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 		ret = 1;
 		goto ex;
 	}
-	track_offset = burn_session_get_start_tno(d->session[0], 0);
-	if (track_offset <= 0)
-		track_offset = 1;
 
 	for (sidx = 0; sidx < d->sessions; sidx++) {
+		track_offset = burn_session_get_start_tno(d->session[sidx], 0);
+		if (track_offset <= 0)
+			track_offset = 1;
 		if (d->session[sidx] == NULL) {
 			sprintf(msg, "d->session[%d of %d] == NULL",
 				sidx, d->sessions);
