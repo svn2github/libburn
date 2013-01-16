@@ -11586,17 +11586,49 @@ Made number transition to 1.2.7
 + cdrskin/add_ts_changes_to_libburn_1_2_7
 Updated cdrskin tarball generator
 
-  []
+08 Jan 2013  [4948]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
-  []
+08 Jan 2013  [4949]
 svn move -m libburn release 1.2.6 is ready
 http://svn.libburnia-project.org/libburn/branches/1.2.6
 http://svn.libburnia-project.org/libburn/tags/1.2.6
 
------------------------------------- cycle  - cdrskin-1.2.7 - 
+------------------------------------ cycle  - cdrskin-1.2.7 - 2013.01.08.150303
+
+
+2013.01.12.195030  [4955]
+libburn/libburn.h
+libburn/transport.h
+libburn/structure.h
+libburn/structure.c
+libburn/mmc.c
+libburn/libburn.ver
+New API call burn_disc_get_incomplete_sessions(), new burn_toc_entry.track_status_bits
+
+2013.01.12.195311  [4956]
+cdrskin/cdrskin.c
+Made use of new API features to handle incomplete sessions
+
+2013.01.15.104005  [4961]
+libburn/structure.c
+Bug fix: All CD tracks were reported with the sizes of the tracks in the first session. Regression introduced with version 1.2.0 (rev 4552).
+
+16 Jan 2013  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.7 - 2013.01.15.104005
+* New API call burn_disc_get_incomplete_sessions()
+* New burn_toc_entry component .track_status_bits
+* -toc and -minfo now report about tracks in the incomplete session
+* Bug fix: All CD tracks were reported with the sizes of the tracks in the
+           first session. Regression introduced with version 1.2.0 (rev 4552).
+
 
   []
 ChangeLog
@@ -11605,6 +11637,7 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.2.7 - 
+
 
   []
 ChangeLog
