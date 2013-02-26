@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -2123,7 +2123,7 @@ int burn_drive_convert_scsi_adr(int bus_no, int host_no, int channel_no,
 	ret = 0;
 ex:;
 	if (first == 0)
-		sg_give_next_adr(&enm, fname, sizeof(fname), -1);
+		sg_give_next_adr(&enm, fname, fname_size, -1);
 	BURN_FREE_MEM(fname);
 	BURN_FREE_MEM(msg);
 	return ret;
