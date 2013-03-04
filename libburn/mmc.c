@@ -4250,14 +4250,22 @@ int mmc_get_write_performance(struct burn_drive *d)
 		return 0;
 
 	/* first command execution to learn number of descriptors and 
-           dxfer_len */
+           dxfer_len
+	*/
 	ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+	if (max_descr > 0 && ret > 0) {
+		/* Some drives announce only 1 descriptor if asked for 0.
+		   So ask twice for non-0 descriptors.
+		*/
+		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+	}
 /*
 	fprintf(stderr,"LIBBURN_DEBUG: ACh alloc_len = %d , ret = %d\n",
 			alloc_len, ret);
 */
 	if (max_descr > 0 && ret > 0)
-		/* second execution with announced length */
+		/* final execution with announced length */
+		max_descr = (alloc_len - 8) / 16;
 		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
 	return ret; 
 }
