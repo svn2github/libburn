@@ -4091,8 +4091,10 @@ ex:;
 
 
 /* ts A61225 */
+/* @param flag bit0= register speed descriptors
+*/
 static int mmc_get_write_performance_al(struct burn_drive *d,
-		 int *alloc_len, int *max_descr)
+		 int *alloc_len, int *max_descr, int flag)
 {
 	struct buffer *buf = NULL;
 	int len, i, b, num_descr, ret, old_alloc_len;
@@ -4175,7 +4177,7 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	pd = c->page->data;
 	if (num_descr > *max_descr)
 		num_descr = *max_descr;
-	for (i = 0; i < num_descr; i++) {
+	for (i = 0; i < num_descr && !(flag & 1); i++) {
 		exact_bit = !!(pd[8 + i*16] & 2);
 		end_lba = read_speed = write_speed = 0;
 		for (b = 0; b < 4 ; b++) {
@@ -4252,12 +4254,13 @@ int mmc_get_write_performance(struct burn_drive *d)
 	/* first command execution to learn number of descriptors and 
            dxfer_len
 	*/
-	ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+	ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr, 0);
 	if (max_descr > 0 && ret > 0) {
 		/* Some drives announce only 1 descriptor if asked for 0.
 		   So ask twice for non-0 descriptors.
 		*/
-		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr,
+		                                   0);
 	}
 /*
 	fprintf(stderr,"LIBBURN_DEBUG: ACh alloc_len = %d , ret = %d\n",
@@ -4266,7 +4269,8 @@ int mmc_get_write_performance(struct burn_drive *d)
 	if (max_descr > 0 && ret > 0)
 		/* final execution with announced length */
 		max_descr = (alloc_len - 8) / 16;
-		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr);
+		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr,
+		                                   1);
 	return ret; 
 }
 
