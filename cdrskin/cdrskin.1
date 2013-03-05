@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.2.7, Jan 08, 2013"
+.TH CDRSKIN 1 "Version 1.2.7, Mar 04, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1242,6 +1242,27 @@ sizes than in the types.
 List all ignored cdrecord options. The "-" options cannot be used as addresses
 of track sources. No track source address may begin with a text equal to an
 option which ends by "=". The list is ended by an empty line.
+.TP
+.BI \--list_speeds
+Put out a list of speed values as reported by the output drive with
+the loaded medium. This does not necessarily mean that the medium is writable
+or that these speeds are actually achievable. Especially the
+lists reported with empty drive or with ROM media obviously advertise
+speeds for other media.
+.br
+It is not mandatory to use speed values out of the listed range.
+The drive is supposed to choose a safe speed that is as near to the desired
+speed as possible.
+.br
+At the end of the list, "Write speed L" and "Write speed H"
+are the best guesses for lower and upper speed limit.
+"Write speed l" and "Write speed h" may appear only with CD
+and eventually override the list of other speed offers.
+.br
+Only if the drive reports contradicting speed information there will appear
+"Write speed 0" or "Write speed-1", which tell the outcome of speed selection
+by options speed=0 resp. speed=-1, if it deviates from "Write speed L"
+resp. "Write speed H".
 .TP
 .BI \--long_toc
 Like option -toc but marking each session start by a line "first: X last: Y"
