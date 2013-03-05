@@ -11616,19 +11616,47 @@ Made use of new API features to handle incomplete sessions
 libburn/structure.c
 Bug fix: All CD tracks were reported with the sizes of the tracks in the first session. Regression introduced with version 1.2.0 (rev 4552).
 
-16 Jan 2013  []
+16 Jan 2013  [4965]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.7 - 2013.01.15.104005
+2013.01.16.181124  [4966]
+cdrskin/cdrskin.c
+Updated cdrskin copyright message
+ 
+------------------------------------ cycle  - cdrskin-1.2.7 - 2013.01.16.181124
 * New API call burn_disc_get_incomplete_sessions()
 * New burn_toc_entry component .track_status_bits
 * -toc and -minfo now report about tracks in the incomplete session
 * Bug fix: All CD tracks were reported with the sizes of the tracks in the
            first session. Regression introduced with version 1.2.0 (rev 4552).
 
+
+2013.02.26.080127  [4972]
+libburn/drive.c
+Corrected wrong use of sizeof
+
+2013.03.04.211258  [4975]
+libburn/mmc.c
+Bug fix: On some drives the request for minimum speed yielded maximum speed
+
+2013.03.04.232436  [4976]
+libburn/mmc.c
+Corrected previous bug fix which caused speed descriptors to appear twice
+
+2013.03.05.124217  [4977]
+libburn/mmc.c
+Still correcting the bug fix of rev 4975
+
+2013.03.05.124508  [4978]
+cdrskin/cdrskin.c
+New cdrskin option --list_speeds
+
+05 Mar 2013  [4979]
+cdrskin/cdrskin.1
+Mentioned --list_speeds in manual page
 
   []
 ChangeLog
@@ -11637,6 +11665,9 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.2.7 - 
+* Bug fix: On some drives the request for minimum speed yielded maximum speed
+* New cdrskin option --list_speeds
+
 
 
   []

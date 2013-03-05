@@ -1,9 +1,11 @@
 SVN trunk (to become libburn-1.2.8 or higher)
 ===============================================================================
+* New cdrskin option --list_speeds
 * New API call burn_disc_get_incomplete_sessions()
 * New burn_toc_entry component .track_status_bits
 * Bug fix: All CD tracks were reported with the sizes of the tracks in the 
            first session. Regression introduced with version 1.2.0 (rev 4552).
+* Bug fix: On some drives the request for minimum speed yielded maximum speed
 
 
 libburn-1.2.6.tar.gz Tue Jan 08 2013
