@@ -2784,9 +2784,9 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 	if (r <= 0 || w <= 0) {
 		/* ts A70712 : now searching for best speed descriptor */
 		if (w > 0 && r <= 0) 
-			burn_drive_get_best_speed(d, r, &best_sd, 1);
+			burn_drive_get_best_speed(d, r, &best_sd, 1 | 2);
 		else
-			burn_drive_get_best_speed(d, w, &best_sd, 0);
+			burn_drive_get_best_speed(d, w, &best_sd, 2);
 		if (best_sd != NULL) {
 			w = best_sd->write_speed;
 			d->nominal_write_speed = w;
