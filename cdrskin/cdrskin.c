@@ -2862,6 +2862,7 @@ set_dev:;
      printf(" input_sheet_v07t=<path>  read a Sony CD-TEXT definition file\n");
      printf(" --list_formats     list format descriptors for loaded media.\n");
      printf(" --list_ignored_options list all ignored cdrecord options.\n");
+     printf(" --list_speeds      list speed descriptors for loaded media.\n");
      printf(" --long_toc         print overview of media content\n");
      printf(" modesty_on_drive=<options> no writing into full drive buffer\n");
      printf(" --no_abort_handler  exit even if the drive is in busy state\n");
@@ -3343,6 +3344,7 @@ struct CdrskiN {
  char msifile[Cdrskin_strleN];
 
  int do_atip;
+ int do_list_speeds;
  int do_list_formats;
 
 #ifdef Libburn_develop_quality_scaN
@@ -3593,6 +3595,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_msinfo= 0;
  o->msifile[0]= 0;
  o->do_atip= 0;
+ o->do_list_speeds= 0;
  o->do_list_formats= 0;
 
 #ifdef Libburn_develop_quality_scaN
@@ -5608,6 +5611,117 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
  }
  ret= 1;
 ex:;
+ return(ret);
+}
+
+
+/** Perform --list_speeds
+    @param flag Bitfield for control purposes:
+    @return <=0 error, 1 success
+*/
+int Cdrskin_list_speeds(struct CdrskiN *skin, int flag)
+{
+ struct burn_drive *drive;
+ int ret, i, profile_no, high= -1, low= 0x7fffffff, is_cd= 0;
+ char profile_name[90], *speed_unit= "D";
+ double speed_factor= 1385000.0, cd_factor= 75.0 * 2352;
+ struct burn_speed_descriptor *speed_list= NULL, *item, *other;
+
+ ret= Cdrskin_grab_drive(skin,0);
+ if(ret<=0)
+   return(ret);
+ drive= skin->drives[skin->driveno].drive;
+ ret= burn_drive_get_speedlist(drive, &speed_list);
+ if(ret <= 0) {
+   fprintf(stderr, "cdrskin: SORRY: Cannot obtain speed list info\n");
+   ret= 0; goto ex;
+ }
+ ret= burn_disc_get_profile(drive, &profile_no, profile_name);
+ printf("Media current: ");
+ if(profile_no > 0 && ret > 0) {
+   if(profile_name[0])
+     printf("%s\n", profile_name);
+   else
+     printf("%4.4Xh\n", profile_no);
+ } else
+   printf("is not recognizable\n");
+ if(profile_no >= 0x08 && profile_no <= 0x0a)
+   is_cd= profile_no;
+ speed_factor= Cdrskin_libburn_speed_factoR * 1000.0;
+ if(Cdrskin_libburn_speed_factoR == Cdrskin_libburn_cd_speed_factoR)
+   speed_unit= "C";
+ else if(Cdrskin_libburn_speed_factoR ==  Cdrskin_libburn_bd_speed_factoR)
+   speed_unit= "B";
+
+ for (item= speed_list; item != NULL; item= item->next) {
+   if(item->source == 1) {
+     /* CD mode page 2Ah : report only if not same speed by GET PERFORMANCE */
+     for(other= speed_list; other != NULL; other= other->next)
+       if(other->source == 2 && item->write_speed == other->write_speed)
+     break;
+     if(other != NULL)
+ continue;
+   }
+   printf("Write speed  :  %5dk , %4.1fx%s\n",
+          item->write_speed,
+          ((double) item->write_speed) * 1000.0 / speed_factor, speed_unit);
+   if(item->write_speed > high)
+     high= item->write_speed;
+   if(item->write_speed < low)
+     low= item->write_speed;
+ }
+   
+ /* Maybe there is ATIP info */
+ if(is_cd) {
+   ret= burn_disc_read_atip(drive);
+   if(ret < 0)
+     goto ex;
+   if(ret > 0) {
+     for(i= 0; i < 2; i++) {
+       if(i == 0)
+         ret= burn_drive_get_min_write_speed(drive);
+       else
+         ret= burn_drive_get_write_speed(drive);
+       if(ret > 0) {
+         if(ret < low || (i == 0 && ret != low)) { 
+           printf("Write speed l:  %5dk , %4.1fx%s\n",
+                  ret, ((double) ret) * 1000.0 / cd_factor, "C");
+           low= ret;
+         }
+         if(ret > high || (i == 1 && ret != high)) {
+           printf("Write speed h:  %5dk , %4.1fx%s\n",
+                  ret, ((double) ret) * 1000.0 / cd_factor, "C");
+           high= ret;
+         }
+       }
+     }
+   }
+ }
+ if(high > -1) {
+   printf("Write speed L:  %5dk , %4.1fx%s\n",
+          low, ((double) low) * 1000.0 / speed_factor, speed_unit);
+   printf("Write speed H:  %5dk , %4.1fx%s\n",
+           high, ((double) high) * 1000.0 / speed_factor, speed_unit);
+   ret= burn_drive_get_best_speed(drive, -1, &item, 0);
+   if(ret > 0 && item != NULL)
+     if(item->write_speed != low)
+       printf("Write speed 0:  %5dk , %4.1fx%s\n",
+              item->write_speed,
+             ((double) item->write_speed) * 1000.0 / speed_factor, speed_unit);
+   ret= burn_drive_get_best_speed(drive, 0, &item, 0);
+   if(ret > 0 && item != NULL)
+     if(item->write_speed != high)
+       printf("Write speed-1:  %5dk , %4.1fx%s\n",
+              item->write_speed,
+             ((double) item->write_speed) * 1000.0 / speed_factor, speed_unit);
+ } else {
+   fprintf(stderr,
+      "cdrskin: SORRY : Could not get any write speed information from drive");
+ }
+ ret= 1;
+ex:;
+ if(speed_list != NULL)
+   burn_drive_free_speedlist(&speed_list);
  return(ret);
 }
 
@@ -8210,6 +8324,10 @@ set_isrc:;
        printf("%s\n",ignored_full_options[k]);
      printf("\n");
 
+   } else if(strcmp(argv[i],"--list_speeds")==0) {
+     skin->do_list_speeds= 1;
+     skin->preskin->demands_cdrskin_caps= 1;
+
    } else if(strncmp(argv[i],"fallback_program=",17)==0) {
      /* is handled in Cdrpreskin_setup() */;
 
@@ -8974,14 +9092,23 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
    if(ret<=0)
      {*exit_value= 7; goto ex;}
  }
+ if(skin->do_list_speeds) {
+   if(skin->n_drives<=0)
+     {*exit_value= 17; goto no_drive;}
+   if(Cdrskin__is_aborting(0))
+     goto ex;
+   ret= Cdrskin_list_speeds(skin, 0);
+   if(ret<=0)
+     {*exit_value= 17; goto ex;}
+ }
  if(skin->do_list_formats) {
    if(skin->n_drives<=0)
-     {*exit_value= 14; goto no_drive;}
+     {*exit_value= 16; goto no_drive;}
    if(Cdrskin__is_aborting(0))
      goto ex;
    ret= Cdrskin_list_formats(skin, 0);
    if(ret<=0)
-     {*exit_value= 14; goto ex;}
+     {*exit_value= 16; goto ex;}
  }
  if(skin->do_blank) {
    if(skin->n_drives<=0)
