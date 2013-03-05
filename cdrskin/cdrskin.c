@@ -5702,13 +5702,13 @@ int Cdrskin_list_speeds(struct CdrskiN *skin, int flag)
           low, ((double) low) * 1000.0 / speed_factor, speed_unit);
    printf("Write speed H:  %5dk , %4.1fx%s\n",
            high, ((double) high) * 1000.0 / speed_factor, speed_unit);
-   ret= burn_drive_get_best_speed(drive, -1, &item, 0);
+   ret= burn_drive_get_best_speed(drive, -1, &item, 2);
    if(ret > 0 && item != NULL)
      if(item->write_speed != low)
        printf("Write speed 0:  %5dk , %4.1fx%s\n",
               item->write_speed,
              ((double) item->write_speed) * 1000.0 / speed_factor, speed_unit);
-   ret= burn_drive_get_best_speed(drive, 0, &item, 0);
+   ret= burn_drive_get_best_speed(drive, 0, &item, 2);
    if(ret > 0 && item != NULL)
      if(item->write_speed != high)
        printf("Write speed-1:  %5dk , %4.1fx%s\n",
