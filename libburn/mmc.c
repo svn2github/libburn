@@ -4177,7 +4177,7 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	pd = c->page->data;
 	if (num_descr > *max_descr)
 		num_descr = *max_descr;
-	for (i = 0; i < num_descr && !(flag & 1); i++) {
+	for (i = 0; i < num_descr && (flag & 1); i++) {
 		exact_bit = !!(pd[8 + i*16] & 2);
 		end_lba = read_speed = write_speed = 0;
 		for (b = 0; b < 4 ; b++) {
