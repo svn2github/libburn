@@ -1861,7 +1861,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 	struct burn_drive *d = o->drive;
 	struct buffer *out = d->buffer;
 	int sectors;
-	int i, open_ended = 0, ret= 0, is_flushed = 0;
+	int i, open_ended = 0, ret= 0, is_flushed = 0, track_open = 0;
 	int first_buf_cap = 0, further_cap = 0, buf_cap_step = 1024;
 
 	/* ts A70213 : eventually expand size of track to max */
@@ -1889,6 +1889,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 		if (ret <= 0)
 			goto ex;
 	}
+	track_open = 1;
 
 	sectors = burn_track_get_sectors_2(t, 1);
 	open_ended = burn_track_is_open_ended(t);
@@ -1971,7 +1972,7 @@ int burn_dvd_write_track(struct burn_write_opts *o,
 ex:;
 	if (d->cancel)
 		burn_source_cancel(t->source);
-	if (!is_flushed)
+	if (track_open && !is_flushed)
 		d->sync_cache(d); /* burn_write_flush() was not called */
 	return ret;
 }
