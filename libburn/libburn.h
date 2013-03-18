@@ -1974,7 +1974,7 @@ int burn_session_set_start_tno(struct burn_session *session, int tno,
                                int flag);
 
 /* ts B20108 */
-/** Inquire the CD track start number, as set by default ot by 
+/** Inquire the CD track start number, as set by default or by 
     burn_session_set_start_tno().
     @param session   The session to be inquired
     @return          > 0 is the currently set CD track start number
@@ -3408,9 +3408,9 @@ void burn_session_get_leadout_entry(struct burn_session *s,
 
 /** Gets an array of all complete sessions for the disc
     THIS IS NO LONGER VALID AFTER YOU ADD OR REMOVE A SESSION
-    The result array contains *num + burn_disc_get_open_sessions()
+    The result array contains *num + burn_disc_get_incomplete_sessions()
     elements. All above *num are incomplete sessions.
-    Typically there is one incomplete session with one empty track.
+    Typically there is at most one incomplete session with one empty track.
     DVD+R and BD-R seem to allow more than one track with even readable data.
     @param d Disc to get session array for
     @param num Returns the number of sessions in the array
@@ -3485,7 +3485,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  2
-#define burn_header_version_micro  7
+#define burn_header_version_micro  8
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
