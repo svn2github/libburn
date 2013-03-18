@@ -8,7 +8,7 @@ debug_opts="-O2"
 def_opts=
 largefile_opts="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1"
 fifo_opts=""
-libvers="-DCdrskin_libburn_1_2_8"
+libvers="-DCdrskin_libburn_1_2_9"
 
 # To be used if Makefile.am uses libburn_libburn_la_CFLAGS
 # burn="libburn/libburn_libburn_la-"

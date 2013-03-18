@@ -1,4 +1,4 @@
-AC_INIT([libburn], [1.2.8], [http://libburnia-project.org])
+AC_INIT([libburn], [1.2.9], [http://libburnia-project.org])
 AC_PREREQ([2.50])
 dnl AC_CONFIG_HEADER([config.h])	
 
@@ -125,7 +125,7 @@ dnl
 dnl As said: Only copies. Original in libburn/libburn.h : burn_header_version_*
 BURN_MAJOR_VERSION=1
 BURN_MINOR_VERSION=2
-BURN_MICRO_VERSION=8
+BURN_MICRO_VERSION=9
 BURN_VERSION=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 
 AC_SUBST(BURN_MAJOR_VERSION)
@@ -136,8 +136,8 @@ AC_SUBST(BURN_VERSION)
 dnl Libtool versioning
 LT_RELEASE=$BURN_MAJOR_VERSION.$BURN_MINOR_VERSION.$BURN_MICRO_VERSION
 dnl
-dnl This is the release version libburn-1.2.8
-dnl ### This is the development version after above release version
+dnl ### This is the release version libburn-1.2.8
+dnl This is the development version after above release version
 dnl LT_CURRENT++, LT_AGE++ has not yet happened.
 dnl ### LT_CURRENT++, LT_AGE++ has happened meanwhile.
 dnl

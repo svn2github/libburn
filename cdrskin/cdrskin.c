@@ -139,7 +139,7 @@ or
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 2
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
 #ifdef Cdrskin_libburn_1_2_9
 #undef Cdrskin_libburn_majoR
@@ -147,7 +147,7 @@ or
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 2
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 
