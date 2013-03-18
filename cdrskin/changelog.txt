@@ -11658,17 +11658,96 @@ New cdrskin option --list_speeds
 cdrskin/cdrskin.1
 Mentioned --list_speeds in manual page
 
-  []
+05 Mar 2013  [4980]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.7 - 
+2013.03.05.185356  [4981]
+libburn/mmc.c
+Always considering mode page 2A when looking for min and max speed
+
+2013.03.05.185440  [4982]
+cdrskin/cdrskin.c
+Always considering mode page 2A when looking for min and max speed
+
+------------------------------------ cycle  - cdrskin-1.2.7 - 2013.03.05.185655
 * Bug fix: On some drives the request for minimum speed yielded maximum speed
 * New cdrskin option --list_speeds
 
 
+2013.03.12.114739  [4987]
+libburn/write.c
+Avoiding SYNCHRONIZE CACHE if DVD track preparation has failed
+
+18 Mar 2013  [4994]
+svn copy -m "Branching for libburn release 1.2.8" 
+http://svn.libburnia-project.org/libburn/trunk 
+http://svn.libburnia-project.org/libburn/branches/1.2.8
+
+2013.03.18.080001  [4997]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.8
+
+18 Mar 2013  [4998]
+- cdrskin/add_ts_changes_to_libburn_1_2_6
+- cdrskin/add_ts_changes_to_libburn_1_2_7
++ cdrskin/add_ts_changes_to_libburn_1_2_8
++ cdrskin/add_ts_changes_to_libburn_1_2_9
+Updated cdrskin tarball generator
+
+18 Mar 2013  [4999]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.2.8 - 2013.03.18.080001
+* -toc and -minfo now report about tracks in the incomplete session
+* New API call burn_disc_get_incomplete_sessions()
+* New burn_toc_entry component .track_status_bits
+* Bug fix: All CD tracks were reported with the sizes of the tracks in the
+           first session. Regression introduced with version 1.2.0 (rev 4552).
+* Bug fix: On some drives the request for minimum speed yielded maximum speed
+* New cdrskin option --list_speeds
+
+
+2013.03.18.210519  [5007]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.2.9
+
+18 Mar 2013  [4996]
+- cdrskin/add_ts_changes_to_libburn_1_2_6
+- cdrskin/add_ts_changes_to_libburn_1_2_7
++ cdrskin/add_ts_changes_to_libburn_1_2_8
++ cdrskin/add_ts_changes_to_libburn_1_2_9
+Updated cdrskin tarball generator
+
+18 Mar 2013  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.9 - 
+
 
   []
 ChangeLog
@@ -11676,7 +11755,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.7 - 
+------------------------------------ cycle  - cdrskin-1.2.9 - 
 
 
 
