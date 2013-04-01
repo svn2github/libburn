@@ -87,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.2.8"
+#define Cdrskin_prog_versioN "1.2.9"
 #endif
 
 /** The official libburn interface revision to use.
