@@ -1,6 +1,7 @@
 SVN trunk (to become libburn-1.3.0 or higher)
 ===============================================================================
-- no novelties yet -
+* Bug fix: Full formatting of BD-RE used certification regardless of drive
+           capabilities
 
 
 libburn-1.2.8.tar.gz Mon Mar 08 2013

@@ -11741,13 +11741,45 @@ Made number transition to 1.2.9
 + cdrskin/add_ts_changes_to_libburn_1_2_9
 Updated cdrskin tarball generator
 
-18 Mar 2013  []
+18 Mar 2013  [5008]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.9 - 
+18 Mar 2013  [5009]
+svn move -m libburn release 1.2.8 is ready
+http://svn.libburnia-project.org/libburn/branches/1.2.8
+http://svn.libburnia-project.org/libburn/tags/1.2.8
 
+------------------------------------ cycle  - cdrskin-1.2.9 - 2013.03.18.211611
+
+
+2013.04.01.121637  [5013]
+cdrskin/cdrskin.c
+Forgot to increment cdrskin version number
+
+2013.04.01.121851  [5014]
+libburn/mmc.c
+libburn/libdax_msgs.h
+Bug fix: Formatting of BD-RE used certification regardless of drive capabilities
+
+01 Apr 2013  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.9 - 
+Bug fix: Formatting of BD-RE used certification regardless of drive capabilities
+
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.2.9 - 
 
   []
 ChangeLog
