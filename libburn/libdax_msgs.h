@@ -597,6 +597,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002019b (SORRY,HIGH)   = CD track number exceeds range of 1 to 99
  0x0002019c (SORRY,HIGH)   = Session has no defined tracks
  0x0002019d (SORRY,HIGH)   = Audio read size not properly aligned
+ 0x0002019e (NOTE,HIGH)    = Drive does not support media certification
 
 
  libdax_audioxtr:

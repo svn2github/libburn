@@ -3957,10 +3957,22 @@ no_suitable_formatting_type:;
 			goto no_suitable_formatting_type;
 		format_type = d->format_descriptors[index].type;
 		if (format_type == 0x30 || format_type == 0x31) {
-			if (flag & 64)
-				format_sub_type = 3; /* Quick certification */
-			else
-				format_sub_type = 2; /* Full certification */
+			if ((flag & 64) || !(d->current_feat23h_byte4 & 3)) {
+				format_sub_type = 0;
+				if (!(flag & 64))
+					libdax_msgs_submit(libdax_messenger,
+					    d->global_index, 0x0002019e,
+					    LIBDAX_MSGS_SEV_NOTE,
+					    LIBDAX_MSGS_PRIO_HIGH,
+				"Drive does not support media certification",
+					    0, 0);
+			} else {
+				/* With Certification */
+				if (d->current_feat23h_byte4 & 1)
+					format_sub_type = 2; /* Full */
+				else
+					format_sub_type = 3; /* Quick */
+			}
 		}
 
 #ifdef Libburn_bd_re_format_olD
@@ -4056,6 +4068,11 @@ unsuitable_media:;
 		{ret = 1; goto ex;}
 	}
 #endif /* Libburn_do_not_format_dvd_ram_or_bd_rE */
+
+/* <<<
+fprintf(stderr, "\nlibburn_DEBUG: FORMAT UNIT temporarily disabled.\n");
+ret = 1; goto ex;
+ */
 
 	d->issue_command(d, c);
 	if (c->error && !tolerate_failure) {
