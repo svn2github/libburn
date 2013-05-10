@@ -5301,7 +5301,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
        printf("%5d %5d %-6s %-10d %-10d %-10d\n",
               track_count + track_offset, nominal_sessions,
               ovwrt_full ? "Data" : "Blank",
-              nwa, lba + size - 1, size);
+              nwa, nwa + size - 1, size);
      }
    }
  }
