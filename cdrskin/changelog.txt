@@ -11781,23 +11781,100 @@ Bug fix: DVD+R with damaged TOC were reported by -minfo with wrong end address
 libburn/libdax_msgs.h
 Added new item to list of error codes
 
-  []
+10 May 2013  [5036]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.9 - 
+------------------------------------ cycle  - cdrskin-1.2.9 - 2013.05.10.073212
 Bug fix: DVD+R with damaged TOC were reported by -minfo with wrong end address
 
 
+17 May 2013  [5044]
+svn copy -m Branching for libburn release 1.3.0
+
+2013.05.17.090001  [5045]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.0
+
+17 May 2013 [5046]
+- cdrskin/add_ts_changes_to_libburn_1_2_8
+- cdrskin/add_ts_changes_to_libburn_1_2_9
++ cdrskin/add_ts_changes_to_libburn_1_3_0
++ cdrskin/add_ts_changes_to_libburn_1_3_1
+Updated cdrskin tarball generator
+
+17 May 2013  [5047]
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - libburn-1.3.0 - 2013.05.17.090001
+* Bug fix: Full formatting of BD-RE used certification regardless of drive
+           capabilities
+* Bug fix: DVD+R with damaged TOC were reported by -minfo with wrong end
+           address
+
+
+17 May 2013 [5051]
+- cdrskin/add_ts_changes_to_libburn_1_2_8
+- cdrskin/add_ts_changes_to_libburn_1_2_9
++ cdrskin/add_ts_changes_to_libburn_1_3_0
++ cdrskin/add_ts_changes_to_libburn_1_3_1
+Updated cdrskin tarball generator
+
+2013.05.17.180032  [5052]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.1
+
+17 May 2013  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.1 - 
+
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.2.9 - 
+------------------------------------ cycle  - cdrskin-1.3.1 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.1 - 
+
+  []
+libburn/libdax_msgs.h
+Changed item description in list of error codes
 
 
 
@@ -11810,30 +11887,6 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
->>> Bad DVD+R : -minfo End Addr is computed wrongly.
-
-book type:     DVD+R (emulated booktype)
-Product Id:    MBIPG101/R05/48
-Producer:      Moser Baer India Limited
-
-Mounted media class:      DVD
-Mounted media type:       DVD+R
-Disk Is not erasable
-disk status:              incomplete/appendable
-session status:           empty
-first track:              1
-number of sessions:       1
-first track in last sess: 1
-last track in last sess:  1
-Disk Is not unrestricted
-Disk type: DVD, HD-DVD or BD
-
-Track  Sess Type   Start Addr End Addr   Size
-==============================================
-    1     1 Blank  1928880    366223     366224
-
-Next writable address:              1928880
-Remaining writable size:            366224
 
 
 cdrskin option to emit pacifiers with newline rather than carriage return
@@ -11850,7 +11903,7 @@ CD-TEXT:
   - enforcing constraints:
     - examine how drives react on wodim's cue sheet of INDEX 00 == INDEX 01
   >>> produce v07t text sheet from binary text pack array
-
+      >>> bring make_v07t.c into libburn
 
 qemu:
 

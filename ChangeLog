@@ -1,34 +1,40 @@
-SVN trunk (to become libburn-1.3.0 or higher)
+SVN trunk (to become libburn-1.3.2 or higher)
+===============================================================================
+- no changes yet
+
+
+libburn-1.3.0.tar.gz Fri May 17 2013
 ===============================================================================
 * Bug fix: Full formatting of BD-RE used certification regardless of drive
            capabilities
 * Bug fix: DVD+R with damaged TOC were reported by -minfo with wrong end
            address
 
-libburn-1.2.8.tar.gz Mon Mar 08 2013
+libburn-1.2.8.tar.gz Mon Mar 18 2013
 ===============================================================================
+* Bug fix: All CD tracks were reported with the sizes of the tracks in the 
+           first session. Regression introduced with version 1.2.0 (rev 4552).
+* Bug fix: On some drives the request for minimum speed yielded maximum speed
 * New cdrskin option --list_speeds
 * -toc and -minfo now report about tracks in the incomplete session
 * New API call burn_disc_get_incomplete_sessions()
 * New burn_toc_entry component .track_status_bits
-* Bug fix: All CD tracks were reported with the sizes of the tracks in the 
-           first session. Regression introduced with version 1.2.0 (rev 4552).
-* Bug fix: On some drives the request for minimum speed yielded maximum speed
 
 libburn-1.2.6.tar.gz Tue Jan 08 2013
 ===============================================================================
-* New cdrskin option --no_load
 * Bug fix: Speed setting had no effect on BD media
+* New cdrskin option --no_load
 * New API call burn_read_audio()
 * New API call burn_list_sev_texts()
 
 libburn-1.2.4.tar.gz Fri Jul 20 2012
 ===============================================================================
+* Bug fix: CD SAO sessions with data tracks started by an audio pause
+* Bug fix: CD tracks were perceived 2 sectors too short.
+           Nice with TAO, bad with SAO.
+* Bug fix: cdrskin SIGSEGV if track source was added when no drive was available
 * New API call burn_write_opts_set_obs_pad(), ./configure --enable-dvd-obs-pad
 * New cdrskin option --obs_pad
-* Bug fix: CD SAO sessions with data tracks started by an audio pause
-* Bug fix: CD tracks were perceived 2 sectors too short. Nice with TAO, bad with SAO.
-* Bug fix: cdrskin SIGSEGV if track source was added when no drive was available
 
 libburn-1.2.2.tar.gz Mon Apr 02 2012
 ===============================================================================
