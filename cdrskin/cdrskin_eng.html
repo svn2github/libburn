@@ -65,7 +65,7 @@ connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-1.2.8</DT>
+<DT>libburn-1.3.0</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -200,13 +200,13 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.2.8.tar.gz">cdrskin-1.2.8.tar.gz</A>
-(945 KB).
+<DD><A HREF="cdrskin-1.3.0.tar.gz">cdrskin-1.3.0.tar.gz</A>
+(950 KB).
 </DD>
-<DD><A HREF="cdrskin-1.2.8.tar.gz.sig">cdrskin-1.2.8.tar.gz.sig</A></DD>
+<DD><A HREF="cdrskin-1.3.0.tar.gz.sig">cdrskin-1.3.0.tar.gz.sig</A></DD>
 <DD>
 (detached GPG signature for verification by
-<KBD>gpg --verify cdrskin-1.2.8.tar.gz.sig cdrskin-1.2.8.tar.gz</KBD>
+<KBD>gpg --verify cdrskin-1.3.0.tar.gz.sig cdrskin-1.3.0.tar.gz</KBD>
 <BR>
 after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
@@ -257,27 +257,21 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-1.2.6:
+Enhancements towards previous stable version cdrskin-1.2.8:
 <UL>
-<LI>
--toc and -minfo now report about tracks in the incomplete session
-</LI>
-<LI>
-New cdrskin option --list_speeds
-</LI>
+<LI>none</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-1.2.6:
+Bug fixes towards cdrskin-1.2.8:
 <UL>
 <LI>
-All CD tracks were reported with the sizes of the tracks in the 
-first session. Regression introduced with version 1.2.0
+Full formatting of BD-RE used certification regardless of drive capabilities
 </LI>
 <LI>
-On some drives the request for minimum speed yielded maximum speed
+DVD+R with damaged TOC were reported by -minfo with wrong end address
 </LI>
 <!--
 <LI>none</LI>
@@ -288,8 +282,8 @@ On some drives the request for minimum speed yielded maximum speed
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 1.2.9 :</H3></DT>
-<DD>Enhancements towards current stable version 1.2.8:
+<DT><H3>Development snapshot, version 1.3.1 :</H3></DT>
+<DD>Enhancements towards current stable version 1.3.0:
 <UL>
 <LI>
 none yet
@@ -301,14 +295,9 @@ none yet
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-1.2.8:
+<DD>Bug fixes towards cdrskin-1.3.0:
 <UL>
-<LI>
-Full formatting of BD-RE used certification regardless of drive capabilities
-</LI>
-<LI>
-DVD+R with damaged TOC were reported by -minfo with wrong end address
-</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -316,10 +305,10 @@ DVD+R with damaged TOC were reported by -minfo with wrong end address
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 1.2.9</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin-1.2.9 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin-1.2.9 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.2.9)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 1.3.1</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin-1.3.1 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin-1.3.1 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.3.1)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -339,8 +328,8 @@ admins with full system souvereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-1.2.9.tar.gz">cdrskin-1.2.9.tar.gz</A>
-(945 KB).
+<A HREF="cdrskin-1.3.1.tar.gz">cdrskin-1.3.1.tar.gz</A>
+(950 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008
@@ -536,11 +525,15 @@ and by <A HREF="http://sourceforge.net">sourceforge.net</A><BR>
 <A href="http://sourceforge.net">
 <IMG src="sflogo-88-1.png" BORDER="0" ALT="SourceForge Logo"></A>
 <!-- on sourceforge use : <IMG src="http://sourceforge.net/sflogo.php?group_id=16010" width="88" height="31" border="0" alt="SourceForge Logo"></A> -->
+
+<!-- 
 <P>
 Enjoying a FreeBSD shell account with the opportunity to
 build and install cdrskin at<BR>
 <A HREF="http://www.en.free-shells.com.ar">free-shells.com.ar</A>
 </P>
+-->
+
 </FONT></CENTER>
 <HR>
 <DL>
