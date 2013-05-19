@@ -1109,3 +1109,506 @@ ex:;
 }
 
 
+/* --------------------------------- make_v07t -------------------------- */
+
+
+static int search_pack(unsigned char *text_packs, int num_packs,
+                       int start_no, int pack_type, int block,
+                       unsigned char **found_pack, int *found_no, int flag)
+{
+	int i;
+
+	for (i = start_no; i < num_packs; i++) {
+		if (pack_type >= 0)
+			if (text_packs[i * 18] != pack_type)
+	continue;
+		if (block >= 0)
+			if (((text_packs[i * 18 + 3] >> 4) & 7) != block)
+	continue;
+		*found_pack = text_packs + i * 18;
+		*found_no = i;
+		return 1;
+	}
+	*found_pack = NULL;
+	*found_no = num_packs;
+	return 0;
+}
+
+
+static void write_v07t_line(char **respt, char *spec, char *value, int vlen,
+                            int *result_len, int flag)
+{
+	int len;
+
+	if (vlen == -1)
+		vlen = strlen(value);
+	len = strlen(spec);
+	if (len < 19)
+		len = 19;
+	len += 3 + vlen + 1;
+	if(flag & 1) {
+		*result_len += len;
+		return;
+	}
+	sprintf(*respt, "%-19s = ", spec);
+	if (vlen > 0)
+		memcpy(*respt + strlen(*respt), value, vlen);
+	(*respt)[len - 1] = '\n';
+	(*respt)[len] = 0;
+	*respt+= len;
+}
+
+
+/*
+    @return            -1 error
+                        0 no pack of block,pack_type found
+                        1 packs found, delimiter is single 0-byte
+                        2 packs found, delimiter is double 0-byte
+*/
+static int collect_payload(unsigned char *text_packs, int num_packs,
+                           int pack_type, int block,
+                           unsigned char **payload, int *payload_count,
+                           int flag)
+{
+	unsigned char *pack;
+	int pack_no, ret, double_byte = 0;
+
+	*payload_count = 0;
+	for (pack_no = 0; ; pack_no++) {
+		ret = search_pack(text_packs, num_packs, pack_no, pack_type,
+		                  block, &pack, &pack_no, 0);
+		if (ret <= 0)
+	break;
+		*payload_count += 12;
+	}
+	if (*payload_count == 0)
+		return 0;
+	*payload = burn_alloc_mem(*payload_count + 1, 1, 0);
+	if (*payload == NULL)
+		return -1;
+	*payload_count = 0;
+	for (pack_no = 0; ; pack_no++) {
+		ret = search_pack(text_packs, num_packs, pack_no, pack_type,
+		                  block, &pack, &pack_no, 0);
+		if (ret <= 0)
+	break;
+		memcpy(*payload + *payload_count, pack + 4, 12);
+		*payload_count += 12;
+		if (pack[4] & 128)
+			double_byte = 1;
+	}
+	(*payload)[*payload_count] = 0;
+	return 1 + double_byte;
+}
+
+
+/*
+    @param flag        Bitfield for control purposes.
+                       bit0= use double 0 as delimiter
+*/
+static int pick_payload_text(unsigned char *payload, int payload_count,
+                             int tno,
+                             unsigned char **text_start, int *text_len,
+                             int flag)
+{
+	int i, skipped = 0, end_found = 0;
+
+	if (tno <= 0) {
+		*text_start = payload;
+		*text_len = strlen((char *) payload);
+		return 1;
+	}
+	*text_start = NULL;
+	*text_len = 0;
+	for (i = 0; i < payload_count; i += 1 + (flag & 1)) {
+		if (flag & 1) {
+			if (payload[i] == 0 && i < payload_count - 1)
+				if (payload[i + 1] == 0)
+					end_found = 1;
+		} else if (payload[i] == 0)
+			end_found = 1;
+		if (end_found) {
+			skipped++;
+			if (skipped == tno) {
+				*text_start = payload + (i + 1 + (flag & 1));
+			} else if (skipped == tno + 1) {
+				*text_len = i - (*text_start - payload);
+				return 1;
+			}
+			end_found = 0;
+		}
+	}
+	if (*text_start == NULL)
+		return 0;
+	*text_len = payload_count - (*text_start - payload);
+	return 1;
+}
+
+
+static int write_v07t_textline(unsigned char *text_packs, int num_packs,
+                               int pack_type, int block,
+                               int tno, int first_tno, char *spec,
+                               char **respt, int *result_len, int flag)
+{
+	unsigned char *payload = NULL, *text_start;
+	int ret, payload_count = 0, text_len;
+	char msg[80];
+
+	ret = collect_payload(text_packs, num_packs, pack_type, block, 
+                              &payload, &payload_count, 0);
+	if(ret > 0) {
+		ret = pick_payload_text(payload, payload_count, tno,
+		                        &text_start, &text_len, ret == 2);
+		if (ret > 0) {
+			if (tno > 0)
+				sprintf(msg, "Track %-2.2d %s",
+				              tno + first_tno - 1, spec);
+			else
+				strcpy(msg, spec);
+			write_v07t_line(respt, msg,
+			                (char *) text_start, text_len,
+			                result_len, flag & 1);
+			ret = 1;
+		}
+	}
+	BURN_FREE_MEM(payload);
+	return ret;
+}
+
+
+static int report_track(unsigned char *text_packs, int num_packs, 
+                        int block, int tno, int first_tno,
+                        char **respt, int *result_len, int flag)
+{
+	int ret, i;
+	static char *track_specs[6] = {
+		"Title", "Artist", "Songwriter", "Composer",
+		"Arranger", "Message"
+	};
+
+	for (i = 0; i < 6; i++) {
+		ret = write_v07t_textline(text_packs, num_packs, 0x80 + i,
+		                          block, tno, first_tno,
+		                          track_specs[i], respt, result_len,
+	                                  flag & 1);
+		if (ret < 0)
+			return -1;
+	}
+	ret = write_v07t_textline(text_packs, num_packs, 0x8e, block,
+	                          tno, first_tno,
+	                          "ISRC", respt, result_len, flag & 1);
+	if (ret < 0)
+		return -1;
+	return 1;
+}
+
+
+/*
+    @param flag        Bitfield for control purposes.
+                       bit0= Do not store text in result but only determine
+                             the minimum size for the result array.
+                             It is permissible to submit result == NULL.
+                             Submit the already occupied size as result_size.
+    @return            > 0 tells the number of valid text bytes in result resp.
+                           with flag bit0 the prediction of that number.
+                           This does not include the trailing 0-byte.
+                       = 0 indicates that the block is not present
+                       < 0 indicates failure.
+*/
+static int report_block(unsigned char *text_packs, int num_packs, 
+                        int block, int first_tno, int last_tno, int char_code,
+                        char *result, int result_size, int flag)
+{
+	char *respt = NULL;
+	unsigned char *pack, *payload = NULL;
+	int result_len = 0, pack_no, ret, i, lang, payload_count = 0, genre;
+	char msg[80];
+	static char *languages[] = {
+		BURN_CDTEXT_LANGUAGES_0X00,
+		BURN_CDTEXT_FILLER,
+		BURN_CDTEXT_LANGUAGES_0X45
+	};
+	static char *volume_specs[7] = {
+		"Album Title", "Artist Name", "Songwriter", "Composer",
+		"Arranger", "Album Message", "Catalog Number",
+	};
+	static char *genres[BURN_CDTEXT_NUM_GENRES] = {
+		BURN_CDTEXT_GENRE_LIST
+	};
+
+	/* Search for any pack of the block. But do not accept 0x8f as first.*/
+	ret = search_pack(text_packs, num_packs, 0, -1, block, 
+                          &pack, &pack_no, 0);
+	if (ret <= 0)
+		return 0;
+	if (pack[0] == 0x8f)
+		return 0;
+	
+	if (flag & 1) {
+		result_len = result_size;
+	} else {
+		respt = result + result_size;
+	}
+	write_v07t_line(&respt, "Input Sheet Version", "0.7T", -1, &result_len,
+	                flag & 1);
+	sprintf(msg, "Libburn report of CD-TEXT Block %d", block);
+	write_v07t_line(&respt, "Remarks            ", msg, -1, &result_len,
+	                flag & 1);
+	write_v07t_line(&respt, "Text Code          ",
+	      char_code == 0 ? "8859" : char_code == 0x01 ? "ASCII" : "MS-JIS",
+	                -1, &result_len, flag & 1);
+
+	pack_no = 0;
+	for (i = 0; i < 3; i++) {
+		ret = search_pack(text_packs, num_packs, pack_no, 0x8f, -1, 
+                                  &pack, &pack_no, 0);
+		if (ret <= 0) {
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+			    LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+	    	  "No third CD-TEXT pack 0x8f found. No language code defined",
+			    0, 0);
+			goto failure;
+		}
+		pack_no++;
+	}
+	lang = pack[8 + block];
+	if (lang > 127) {
+		sprintf(msg, "CD-TEXT with unknown language code %2.2x",
+		             (unsigned int) lang);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		goto failure;
+	}
+	write_v07t_line(&respt, "Language Code", languages[lang], -1,
+	                &result_len, flag & 1);
+
+	for (i = 0; i < 7; i++) {
+		ret = write_v07t_textline(text_packs, num_packs, 0x80 + i,
+		                          block, 0, 0, volume_specs[i],
+	                                  &respt, &result_len,
+	                                  flag & 1);
+		if (ret < 0)
+			goto failure;
+	}
+
+	ret = collect_payload(text_packs, num_packs, 0x87, -1, 
+                              &payload, &payload_count, 0);
+	if(ret > 0) {
+		genre = (payload[0] << 8) | payload[1];
+		if (genre < BURN_CDTEXT_NUM_GENRES) 
+			strcpy(msg, genres[genre]);
+		else
+			sprintf(msg, "0x%-4.4x", (unsigned int) genre);
+		write_v07t_line(&respt, "Genre Code", msg,
+				-1, &result_len, flag & 1);
+		write_v07t_line(&respt, "Genre Information",
+		                (char *) payload + 2,
+				-1, &result_len, flag & 1);
+		BURN_FREE_MEM(payload); payload = NULL;
+	}
+	ret = collect_payload(text_packs, num_packs, 0x8d, -1, 
+                              &payload, &payload_count, 0);
+	if(ret > 0) {
+		write_v07t_line(&respt, "Closed Information", (char *) payload,
+		                -1, &result_len, flag & 1);
+		BURN_FREE_MEM(payload); payload = NULL;
+	}
+	ret = write_v07t_textline(text_packs, num_packs, 0x8e, block, 0, 0,
+	                          "UPC / EAN", &respt, &result_len, flag & 1);
+	if (ret < 0)
+		goto failure;
+	ret = search_pack(text_packs, num_packs, 0, 0x8f, -1, 
+	                  &pack, &pack_no, 0);
+	if (ret < 0)
+		goto failure;
+	if (pack[7] == 0x00)
+		strcpy(msg, "OFF");
+	else if (pack[7] == 0x03)
+		strcpy(msg, "ON");
+	else
+		sprintf(msg, "0x%2.2x", (unsigned int) pack[7]);
+	write_v07t_line(&respt, "Text Data Copy Protection", msg,
+				-1, &result_len, flag & 1);
+	sprintf(msg, "%d", first_tno);
+	write_v07t_line(&respt, "First Track Number", msg,
+		                -1, &result_len, flag & 1);
+	sprintf(msg, "%d", last_tno);
+	write_v07t_line(&respt, "Last Track Number", msg,
+		                -1, &result_len, flag & 1);
+	
+	for (i = 0; i < last_tno - first_tno + 1; i++) {
+		ret = report_track(text_packs, num_packs, block,
+		                   i + 1, first_tno,
+                                   &respt, &result_len, flag & 1);
+		if (ret < 0)
+			goto failure;
+	}
+
+	if (flag & 1)
+		return result_len;
+	return respt - result;
+
+failure:;
+	BURN_FREE_MEM(payload);
+	return -1;
+}
+
+
+/*
+    @param result      A byte buffer of sufficient size.
+                       It will be filled by the text for the v07t sheet file
+                       plus a trailing 0-byte. (Be aware that double-byte
+                       characters might contain 0-bytes, too.)
+    @param result_size The number of bytes in result.
+                       To be determined by a run with flag bit0 set.
+    @param flag        Bitfield for control purposes.
+                       bit0= Do not store text in result but only determine
+                             the minimum size for the result array.
+                             It is permissible to submit result == NULL and
+                             result_size == 0.
+    @return            > 0 tells the number of valid text bytes in result resp.
+                           with flag bit0 the prediction of that number.
+                           This does not include the trailing 0-byte.
+                       <= 0 indicates failure.
+*/
+static int burn_make_v07t(unsigned char *text_packs, int num_packs,
+                          int first_tno, int track_count,
+                          char *result, int result_size,
+                          int *char_code, int flag)
+{
+	int pack_no = 0, ret, block, last_tno = 0;
+	unsigned char *pack;
+	char msg[80];
+
+	/* >>> ??? Verify checksums ? */;
+
+	/* Check character code, reject unknown ones */
+	ret = search_pack(text_packs, num_packs, 0, 0x8f, -1, 
+                          &pack, &pack_no, 0);
+	if (ret <= 0) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+		    LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+		    "No CD-TEXT pack 0x8f found. No character code defined",
+		    0, 0);
+		return 0;
+	}
+	*char_code = pack[4];
+	if (*char_code != 0x00 && *char_code != 0x01 && *char_code != 0x80) {
+		sprintf(msg, "CD-TEXT with unknown character code %2.2x",
+			    (unsigned int) *char_code);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+		return 0;
+	}
+
+	/* Obtain first_tno and last_tno from type 0x88 if present. */
+	if (first_tno <= 0) {
+		if (pack[5] > 0 &&  pack[5] + pack[6] < 100 &&
+		    pack[5] <= pack[6]) {
+			first_tno = pack[5];
+			last_tno = pack[6];
+		} else {
+			sprintf(msg,
+			        "CD-TEXT with illegal track range %d to %d",
+			        (int) pack[5], (int) pack[6]);
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			return 0;
+		}
+	}
+	if (last_tno <= 0) {
+		if (track_count > 0) {
+			last_tno = first_tno + track_count - 1;
+		} else {
+			last_tno = 99;
+		}
+	}
+
+	/* Report content */
+	result_size = 0;
+	for (block = 0; block < 8; block++) {
+		ret = report_block(text_packs, num_packs, block, 
+		                   first_tno, last_tno, *char_code,
+		                   result, result_size, flag & 1);
+		if (ret < 0)
+			return ret;
+		if (ret == 0)
+	continue;
+		result_size = ret;
+	}
+
+#ifdef NIX
+	if (flag & 1)
+		return result_size;
+	return (int) strlen((char *) result);
+#else /* NIX */
+
+	return result_size;
+
+#endif /* ! NIX */
+}
+
+
+/*  Convert an array of CD-TEXT packs into the text format of
+    Sony CD-TEXT Input Sheet Version 0.7T .
+
+    @param text_packs  Array of bytes which form CD-TEXT packs of 18 bytes
+                       each. For a description of the format of the array,
+                       see file doc/cdtext.txt.
+                       No header of 4 bytes must be prepended which would
+                       tell the number of pack bytes + 2.
+                       This parameter may be NULL if the currently attached
+                       array of packs shall be removed.
+    @param num_packs   The number of 18 byte packs in text_packs.
+    @param start_tno   The start number of track counting, if known from
+                       CD table-of-content or orther sources.
+                       Submit 0 to enable the attempt to read it and the
+                       track_count from pack type 0x8f.
+    @param track_count The number of tracks, if known from CD table-of-content
+                       or orther sources.
+    @param result      Will return the buffer with Sheet text.
+                       Dispose by free() when no longer needed.
+                       It will be filled by the text for the v07t sheet file
+                       plus a trailing 0-byte. (Be aware that double-byte
+                       characters might contain 0-bytes, too.)
+                       Each CD-TEXT language block starts by the line
+                         "Input Sheet Version = 0.7T"
+                       and a "Remarks" line that tells the block number.
+    @param char_code   Returns the character code of the pack array:
+                         0x00 = ISO-8859-1
+                         0x01 = 7 bit ASCII
+                         0x80 = MS-JIS (japanese Kanji, double byte characters)
+                       The presence of a code value that is not in this list
+                       will cause this function to fail.
+    @param flag        Bitfield for control purposes. Unused yet. Submit 0.
+    @return            > 0 tells the number of valid text bytes in result.
+                           This does not include the trailing 0-byte.
+                       <= 0 indicates failure.
+*/
+int burn_make_input_sheet_v07t(unsigned char *text_packs, int num_packs,
+                               int start_tno, int track_count,
+                               char **result, int *char_code, int flag)
+{
+	int ret, result_size = 0;
+
+	ret = burn_make_v07t(text_packs, num_packs, start_tno, track_count,
+	                     NULL, 0, char_code, 1);
+	if (ret <= 0)
+		return ret;
+	result_size = ret + 1;
+	*result = burn_alloc_mem(result_size, 1, 0);
+	if (*result == NULL)
+		return -1;
+	ret = burn_make_v07t(text_packs, num_packs, start_tno, track_count,
+                             *result, result_size, char_code, 0);
+	if (ret <= 0) {
+		free(*result);
+		return ret;
+	}
+	return result_size - 1;
+}
+
+

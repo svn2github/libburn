@@ -566,7 +566,8 @@ libburn peculiarties:
 libburn may read files of the described format by
   burn_session_input_sheet_v07t()
 after the burn_session has been establiched and all burn_track objects have
-been added.
+been added. It can convert an array of CD-TEXT packs into this format by
+  burn_make_input_sheet_v07t() 
 
 The following purpose specifiers accept byte values of the form 0xXY.
   Text Code , Language Code , Genre Code , Text Data Copy Protection
@@ -593,7 +594,7 @@ as empty test. (Normally empty content is ignored.)
 Example cdrskin run with three tracks:
 
   $ cdrskin dev=/dev/sr0 -v input_sheet_v07t=NIGHTCATS.TXT \
-            -audio track_source_1 track_source_2 track_source_3
+            -audio -swab track_source_1 track_source_2 track_source_3
 
 ----------------------------------------------------------
 Content of file NIGHTCATS.TXT                            :

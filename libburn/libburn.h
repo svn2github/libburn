@@ -2225,7 +2225,8 @@ int burn_session_input_sheet_v07t(struct burn_session *session,
 
 /* ts B11210 */
 /** Produce an array of CD-TEXT packs that could be submitted to
-    burn_write_opts_set_leadin_text() or stored as *.cdt file.
+    burn_write_opts_set_leadin_text(), or stored as *.cdt file,
+    or submitted to burn_make_input_sheet_v07t().
     For a description of the format of the array, see file doc/cdtext.txt.
     The input data stem from burn_session_set_cdtext_par(),
     burn_session_set_cdtext(), and burn_track_set_cdtext().
@@ -2248,6 +2249,49 @@ int burn_session_input_sheet_v07t(struct burn_session *session,
 int burn_cdtext_from_session(struct burn_session *s,
                              unsigned char **text_packs, int *num_packs,
                              int flag);
+
+
+/* ts B30519 */
+/** Convert an array of CD-TEXT packs into the text format of
+    Sony CD-TEXT Input Sheet Version 0.7T .
+
+    @param text_packs  Array of bytes which form CD-TEXT packs of 18 bytes
+                       each. For a description of the format of the array,
+                       see file doc/cdtext.txt.
+                       No header of 4 bytes must be prepended which would
+                       tell the number of pack bytes + 2.
+                       This parameter may be NULL if the currently attached
+                       array of packs shall be removed.
+    @param num_packs   The number of 18 byte packs in text_packs.
+    @param start_tno   The start number of track counting, if known from
+                       CD table-of-content or orther sources.
+                       Submit 0 to enable the attempt to read it and the
+                       track_count from pack type 0x8f.
+    @param track_count The number of tracks, if known from CD table-of-content
+                       or orther sources.
+    @param result      Will return the buffer with Sheet text.
+                       Dispose by free() when no longer needed.
+                       It will be filled by the text for the v07t sheet file
+                       plus a trailing 0-byte. (Be aware that double-byte
+                       characters might contain 0-bytes, too.)
+                       Each CD-TEXT language block starts by the line
+                         "Input Sheet Version = 0.7T"
+                       and a "Remarks" line that tells the block number.
+    @param char_code   Returns the character code of the pack array:
+                         0x00 = ISO-8859-1
+                         0x01 = 7 bit ASCII
+                         0x80 = MS-JIS (japanese Kanji, double byte characters)
+                       The presence of a code value that is not in this list
+                       will cause this function to fail.
+    @param flag        Bitfield for control purposes. Unused yet. Submit 0.
+    @return            > 0 tells the number of valid text bytes in result.
+                           This does not include the trailing 0-byte.
+                       <= 0 indicates failure.
+    @since 1.3.2
+*/
+int burn_make_input_sheet_v07t(unsigned char *text_packs, int num_packs,
+                               int start_tno, int track_count,
+                               char **result, int *char_code, int flag);
 
 
 /* ts B11206 */
