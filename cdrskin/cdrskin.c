@@ -1952,6 +1952,9 @@ struct CdrpreskiN {
      emulated and cdrecord-incompatible ATA: addresses. */
  int old_pseudo_scsi_adr;
 
+ /** Whether to omit bus scanning */
+ int do_not_scan;
+
  /** Whether bus scans shall exit!=0 if no drive was found */
  int scan_demands_drive;
 
@@ -2032,6 +2035,7 @@ int Cdrpreskin_new(struct CdrpreskiN **preskin, int flag)
  o->no_whitelist= 0;
  o->no_convert_fs_adr= 0;
  o->old_pseudo_scsi_adr= 0;
+ o->do_not_scan= 0;
  o->scan_demands_drive= 0;
  o->abort_on_busy_drive= 0;
  o->drive_exclusive= 1;
@@ -2512,7 +2516,9 @@ return:
 #ifndef Cdrskin_extra_leaN
  if(argc>1) {
    if(strcmp(argv[1],"--no_rc")==0 || strcmp(argv[1],"-version")==0 ||
-      strcmp(argv[1],"--help")==0 || strcmp(argv[1],"-help")==0)
+      strcmp(argv[1],"--help")==0 || strcmp(argv[1],"-help")==0 ||
+      strncmp(argv[1], "textfile_to_v07t=", 17) == 0 ||
+      strncmp(argv[1], "-textfile_to_v07t=", 18) == 0)
      flag|= 2;
  }
  if(!(flag&2)) {
@@ -2906,6 +2912,9 @@ set_dev:;
           "                    and no tsize= was specified.\n");
      printf(
  " --tell_media_space  print maximum number of writeable data blocks\n");
+     printf(" textfile_to_v07t=file_path\n");
+     printf(
+          "                    print CD-TEXT file in Sony format and exit.\n");
      printf(" --two_channel      indicate that audio tracks have 2 channels\n");
      printf(
          " write_start_address=<num>  write to given byte address (DVD+RW)\n");
@@ -3089,6 +3098,11 @@ see_cdrskin_eng_html:;
 
    } else if(strcmp(argpt,"-tao")==0) {
      strcpy(o->write_mode_name,"TAO");
+
+   } else if(strncmp(argpt, "-textfile_to_v07t=", 18) == 0) {
+     o->do_not_scan= 1;
+   } else if(strncmp(argpt ,"textfile_to_v07t=", 17) == 0) {
+     o->do_not_scan= 1;
 
    } else if(strcmp(argv[i],"-V")==0 || strcmp(argpt, "-Verbose") == 0) {
      burn_set_scsi_logging(2 | 4); /* log SCSI to stderr */
@@ -3346,6 +3360,7 @@ struct CdrskiN {
  int do_atip;
  int do_list_speeds;
  int do_list_formats;
+ int do_list_v07t;
 
 #ifdef Libburn_develop_quality_scaN
  int do_qcheck;              /* 0= no , 1=nec_optiarc_rep_err_rate */
@@ -3597,6 +3612,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_atip= 0;
  o->do_list_speeds= 0;
  o->do_list_formats= 0;
+ o->do_list_v07t= 0;
 
 #ifdef Libburn_develop_quality_scaN
  o->do_qcheck= 0;
@@ -4835,35 +4851,55 @@ int Cdrskin_obtain_nwa(struct CdrskiN *skin, int *nwa, int flag)
                         0= CD Lead-in
                         1= session and tracks
                         2= textfile=
+               bit4-7= output format
+                        0= -vv -toc
+                        1= Sony CD-TEXT Input Sheet Version 0.7T
 */
 int Cdrskin_print_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
                              int num_packs, int flag)
 {
- int i, j, from;
- char *from_text= "";
+ int i, j, from, fmt, ret, char_code= 0;
+ char *from_text= "", *result= NULL;
  unsigned char *pack;
 
  from= flag & 15;
+ fmt= (flag >> 4) & 15;
  if(from == 0)
    from_text= " from CD Lead-in";
  else if(from == 1)
    from_text= " from session and tracks";
  else if(from == 2)
    from_text= " from textfile= or cuefile= CDTEXTFILE";
- printf("CD-TEXT data%s:\n", from_text);
- for(i= 0; i < num_packs; i++) {
-   pack= text_packs + 18 * i;
-   printf("%4d :", i);
-   for(j= 0; j < 18; j++) {
-     if(j >= 4 && j <= 15 && pack[j] >= 32 && pack[j] <= 126 &&
-        pack[0] != 0x88 && pack[0] != 0x89 && pack[0] != 0x8f)
-       printf("  %c",  pack[j]);
-     else
-       printf(" %2.2x", pack[j]);
+ if (fmt == 1) {
+   ret = burn_make_input_sheet_v07t(text_packs, num_packs, 0, 0, &result,
+                                    &char_code, 0);
+   if(ret <= 0)
+     goto ex;
+   if(char_code == 0x80)
+     fprintf(stderr,
+             "cdrskin : WARNING : Double byte characters encountered.\n");
+   for(i = 0; i < ret; i++)
+     printf("%c", result[i]);
+ } else {
+   printf("CD-TEXT data%s:\n", from_text);
+   for(i= 0; i < num_packs; i++) {
+     pack= text_packs + 18 * i;
+     printf("%4d :", i);
+     for(j= 0; j < 18; j++) {
+       if(j >= 4 && j <= 15 && pack[j] >= 32 && pack[j] <= 126 &&
+          pack[0] != 0x88 && pack[0] != 0x89 && pack[0] != 0x8f)
+         printf("  %c",  pack[j]);
+       else
+         printf(" %2.2x", pack[j]);
+     }
+     printf("\n");
    }
-   printf("\n");
  }
- return(1);
+ ret= 1;
+ex:;
+ if(result != NULL)
+   free(result);
+ return(ret);
 }
 
 
@@ -8664,6 +8700,23 @@ set_textfile:;
      if(ret <= 0)
        return(ret);
 
+   } else if(strncmp(argpt, "-textfile_to_v07t=", 18) == 0) {
+     value_pt= argpt + 18;
+     goto textfile_to_v07t;
+   } else if(strncmp(argpt ,"textfile_to_v07t=", 17) == 0) {
+     value_pt= argpt + 17;
+textfile_to_v07t:;
+     ret= Cdrskin_read_textfile(skin, value_pt, 0);
+     if(ret <= 0)
+       return(ret);
+     ret= Cdrskin_print_text_packs(skin, skin->text_packs,
+                                   skin->num_text_packs, (1 << 4) | 2);
+     if(ret <= 0)
+       return(ret);
+     if(i != 1 || argc != 2)
+       fprintf(stderr, "cdrskin: WARNING : Program run ended by option textfile_to_v07t=. Other options may have been ignored.\n");
+     return(2);
+
    } else if(strcmp(argpt,"-toc")==0) {
      skin->do_atip= 2;
      if(skin->verbosity>=Cdrskin_verbose_cmD)
@@ -8900,7 +8953,7 @@ ignore_unknown:;
     @param o Returns the CdrskiN object created
     @param lib_initialized Returns whether libburn was initialized here
     @param exit_value Returns after error the proposal for an exit value
-    @param flag Unused yet
+    @param flag bit0= do not scan for devices
     @return <=0 error, 1 success
 */
 int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
@@ -8956,7 +9009,8 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
    Cleanup_set_handlers(Cleanup_handler_handlE, Cleanup_handler_funC,
                         2 | 8);
 
- printf("cdrskin: scanning for devices ...\n");
+ if(!(flag & 1))
+   printf("cdrskin: scanning for devices ...\n");
  fflush(stdout);
 
  if(skin->preskin->verbosity<Cdrskin_verbose_debuG)
@@ -8982,6 +9036,9 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
    skin->n_drives= 1;
    skin->driveno= 0;
    burn_drive_release(skin->drives[0].drive, 0);
+ } else if(flag & 1){
+   skin->n_drives= 0;
+   skin->driveno= 0;
  } else {
    while (!burn_drive_scan(&(skin->drives), &(skin->n_drives))) {
      usleep(20000);
@@ -8997,7 +9054,8 @@ int Cdrskin_create(struct CdrskiN **o, struct CdrpreskiN **preskin,
  /* This prints the eventual queued messages */
  Cdrpreskin_queue_msgs(skin->preskin,0);
 
- printf("cdrskin: ... scanning for devices done\n");
+ if(!(flag & 1))
+   printf("cdrskin: ... scanning for devices done\n");
  fflush(stdout);
 ex:;
  return((*exit_value)==0);
@@ -9159,7 +9217,7 @@ no_drive:;
 
 int main(int argc, char **argv)
 {
- int ret,exit_value= 0,lib_initialized= 0,i,result_fd= -1;
+ int ret,exit_value= 0,lib_initialized= 0,i,result_fd= -1, do_not_scan;
  struct CdrpreskiN *preskin= NULL, *h_preskin= NULL;
  struct CdrskiN *skin= NULL;
  char *lean_id= "";
@@ -9207,10 +9265,11 @@ int main(int argc, char **argv)
    {exit_value= 11; goto ex;}
  if(ret==2)
    {exit_value= 0; goto ex;}
- ret= Cdrskin_create(&skin,&preskin,&exit_value,0);
+ do_not_scan= preskin->do_not_scan; /* preskin will vanish in Cdrskin_create */
+ ret= Cdrskin_create(&skin,&preskin,&exit_value, preskin->do_not_scan);
  if(ret<=0)
    {exit_value= 2; goto ex;}
- if(skin->n_drives<=0) {
+ if(skin->n_drives<=0 && !do_not_scan) {
    fprintf(stderr,"cdrskin: NOTE : No usable drive detected.\n");
    if(getuid()!=0) {
      fprintf(stderr,

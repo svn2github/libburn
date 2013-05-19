@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.3.1, May 17, 2013"
+.TH CDRSKIN 1 "Version 1.3.1, May 19, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1338,6 +1338,17 @@ The result gets printed to standard output. It is 0 or empty if no writing
 is possible with the given options.
 This option redirects to stderr all message output except its own result
 string and eventual output of -msinfo.
+.TP 
+.BI textfile_to_v07t= path
+Read a CD-TEXT pack file (e.g. cdtext.dat from a run with -v -v -toc)
+and print its content in the human readable format that is described
+with option input_sheet_v07t=.
+.br
+The program run ends immediately thereafter.
+No drive scan will happen and no drive will be aquired.
+.br
+To avoid the cdrskin start message in the output, run:
+  cdrskin textfile_to_v07t=cdtext.dat | grep -v '^cdrskin'
 .TP 
 .BI --two_channel
 Indicate for subsequent tracks that they were mastered with two channels.
