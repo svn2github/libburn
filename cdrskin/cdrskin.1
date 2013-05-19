@@ -994,6 +994,23 @@ the default.
 This setting applies only to CD SAO writing. It overrides the track number
 settings caused by options cuefile= or input_sheet_v07t=.
 .TP
+.BI cdtext_to_textfile= path
+Extract the CD-TEXT packs from the lead-in of an audio CD and write them to
+the file with the given path. If CD-TEXT can be retrieved, then this file
+will be suitable for option textfile=.
+.br
+Not all drives can read CD-TEXT and not all audio CDs bear CD-TEXT.
+.TP
+.BI cdtext_to_v07t= path
+Extract the CD-TEXT packs from the lead-in of an audio CD and write them
+as human readable Sony Input Sheet Version 0.7T to the file with the
+given path. If CD-TEXT can be retrieved, then this file 
+will be suitable for option input_sheet_v07t=.
+.br
+If the given path is "-", then the result is printed to standard output.
+.br
+Not all drives can read CD-TEXT and not all audio CDs bear CD-TEXT.
+.TP
 .BI \--demand_a_drive
 Exit with a nonzero value if no drive can be found during a bus scan.
 .TP

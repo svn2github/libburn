@@ -2815,12 +2815,15 @@ set_dev:;
          " --any_track        allow source_addresses to match '^-.' or '='\n");
      printf(
          " assert_write_lba=<lba>  abort if not next write address == lba\n");
-     fprintf(stderr,
+     printf(
       " cd_start_tno=<number>  set number of first track in CD SAO session\n");
-     fprintf(stderr,
+     printf(
         " --cdtext_dummy     show CD-TEXT pack array instead of writing CD\n");
-     fprintf(stderr,
-         " --cdtext_verbose   show CD-TEXT pack array before writing CD\n");
+     printf(
+   " cdtext_to_textfile=<path>  extract CD-TEXT from CD to disk file\n");
+     printf(
+   " cdtext_to_v07t=<path|\"-\">  report CD-TEXT from CD to file or stdout\n");
+     printf(" --cdtext_verbose   show CD-TEXT pack array before writing CD\n");
      printf(
     " direct_write_amount=<size>  write random access to media like DVD+RW\n");
      printf(" --demand_a_drive   exit !=0 on bus scans with empty result\n");
@@ -3360,7 +3363,10 @@ struct CdrskiN {
  int do_atip;
  int do_list_speeds;
  int do_list_formats;
- int do_list_v07t;
+ int do_cdtext_to_textfile;
+ char cdtext_to_textfile_path[Cdrskin_strleN];
+ int do_cdtext_to_vt07;
+ char cdtext_to_vt07_path[Cdrskin_strleN];
 
 #ifdef Libburn_develop_quality_scaN
  int do_qcheck;              /* 0= no , 1=nec_optiarc_rep_err_rate */
@@ -3612,7 +3618,10 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->do_atip= 0;
  o->do_list_speeds= 0;
  o->do_list_formats= 0;
- o->do_list_v07t= 0;
+ o->do_cdtext_to_textfile= 0;
+ o->cdtext_to_textfile_path[0]= 0;
+ o->do_cdtext_to_vt07= 0;
+ o->cdtext_to_vt07_path[0]= 0;
 
 #ifdef Libburn_develop_quality_scaN
  o->do_qcheck= 0;
@@ -4903,21 +4912,23 @@ ex:;
 }
 
 
+/* @param flag bit4= no not overwrite existing target file
+*/
 int Cdrskin_store_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
-                             int num_packs, int flag)
+                             int num_packs, char *path, int flag)
 {
  int data_length, ret;
  struct stat stbuf;
  FILE *fp;
  unsigned char fake_head[4];
 
- if(stat("cdtext.dat", &stbuf) != -1) {
-   fprintf(stderr, "cdrskin: SORRY : Will not overwrite file 'cdtext.dat'\n");
+ if(stat(path, &stbuf) != -1 && (flag & 16)) {
+   fprintf(stderr, "cdrskin: SORRY : Will not overwrite file '%s'\n", path);
    return(0);
  }
- fp= fopen("cdtext.dat", "w");
+ fp= fopen(path, "w");
  if(fp == NULL) {
-   fprintf(stderr, "cdrskin: SORRY : Cannot open file 'cdtext.dat' for storing extracted CD-TEXT\n");
+   fprintf(stderr, "cdrskin: SORRY : Cannot open file '%s' for storing extracted CD-TEXT\n", path);
    fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
    return(0);
  }
@@ -4929,7 +4940,7 @@ int Cdrskin_store_text_packs(struct CdrskiN *skin, unsigned char *text_packs,
  if(ret != 1) {
 write_failure:;
    fprintf(stderr,
-           "cdrskin: SORRY : Cannot write all data to file 'cdtext.dat'\n");
+           "cdrskin: SORRY : Cannot write all data to file '%s'\n", path);
    fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
    fclose(fp);
    return(0);
@@ -4938,12 +4949,89 @@ write_failure:;
  if(ret != 1)
    goto write_failure;
  fprintf(stderr,
-    "cdrskin: NOTE : Wrote header and %d CD-TEXT bytes to file 'cdtext.dat'\n",
-         data_length - 2);
+    "cdrskin: NOTE : Wrote header and %d CD-TEXT bytes to file '%s'\n",
+         data_length - 2, path);
  fclose(fp);
  return(1);
 }
 
+
+/* @param flag bit0-3= output format
+                       1= Sony CD-TEXT Input Sheet Version 0.7T
+                      15= Cdrskin_store_text_packs
+               bit4= do not overwrite existing the target file
+*/
+int Cdrskin_cdtext_to_file(struct CdrskiN *skin, char *path, int flag)
+{
+ int ret, fmt, char_code= 0, to_write;
+ struct burn_drive *drive;
+ unsigned char *text_packs= NULL;
+ int num_packs= 0;
+ char *result= 0;
+ FILE *fp= NULL;
+ struct stat stbuf;
+
+ fmt= flag & 15;
+ drive= skin->drives[skin->driveno].drive;
+ ret= burn_disc_get_leadin_text(drive, &text_packs, &num_packs, 0);
+ if(ret <= 0 || num_packs <= 0) {
+   fprintf(stderr, "cdrskin: No CD-Text or CD-Text unaware drive.\n");
+   return(2);
+ }  
+ if(fmt == 1) {
+   ret = burn_make_input_sheet_v07t(text_packs, num_packs, 0, 0, &result,
+                                    &char_code, 0);
+   if(ret <= 0)
+     goto ex;
+   to_write= ret;
+   if(stat(path, &stbuf) != -1 && (flag & 16)) {
+     fprintf(stderr, "cdrskin: SORRY : Will not overwrite file '%s'\n", path);
+     return(0);
+   }
+   if(strcmp(path, "-") == 0)
+     fp= stdout;
+   else
+     fp = fopen(path, "w");
+   if(fp == NULL) {
+     if(errno > 0)
+       fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     fprintf(stderr,
+             "cdrskin: SORRY : Cannot write CD-TEXT list to file '%s'\n",
+             path);
+     {ret= 0; goto ex;}
+   }
+   ret = fwrite(result, to_write, 1, fp);
+   if(ret != 1) {
+     if(errno > 0)
+       fprintf(stderr, "cdrskin: %s (errno=%d)\n", strerror(errno), errno);
+     fprintf(stderr,
+            "cdrskin: SORRY : Cannot write all CD-TEXT to file '%s'\n", path);
+     ret= 0;
+   }
+   if(ret <= 0)
+     goto ex;
+
+ } else if(fmt == 15) {
+   if(skin->verbosity >= Cdrskin_verbose_debuG)
+     Cdrskin_print_text_packs(skin, text_packs, num_packs, 0);
+   ret= Cdrskin_store_text_packs(skin, text_packs, num_packs, path, flag & 16);
+   free(text_packs);
+   if(ret <= 0)
+     goto ex;
+   printf("CD-Text len: %d\n", num_packs * 18 + 4);
+
+ } else {
+   fprintf(stderr, "cdrskin: FATAL : Program error : Unknow format %d with Cdrskin_cdtext_to_file.\n", fmt);
+   {ret= -1; goto ex;}
+ }
+ ret= 1;
+ex:;
+ if(result != NULL)
+   free(result);
+ if(fp != NULL && fp != stdout)
+   fclose(fp);
+ return(1);
+}
 
 /** Perform -toc under control of Cdrskin_atip().
     @param flag Bitfield for control purposes:
@@ -4963,8 +5051,6 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  enum burn_disc_status s;
  char profile_name[80];
  int profile_number;
- unsigned char *text_packs= NULL;
- int num_packs= 0;
 
  drive= skin->drives[skin->driveno].drive;
 
@@ -5073,21 +5159,10 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  }
 
  if(skin->verbosity >= Cdrskin_verbose_cmD) {
-   ret= burn_disc_get_leadin_text(drive, &text_packs, &num_packs, 0);
-   if(ret > 0 && num_packs > 0) {
-     if(skin->verbosity >= Cdrskin_verbose_debuG)
-       Cdrskin_print_text_packs(skin, text_packs, num_packs, 0);
-     ret= Cdrskin_store_text_packs(skin, text_packs, num_packs, 0);
-     free(text_packs);
-     if(ret <= 0 && ret < final_ret)
-       final_ret= ret;
-     if(ret > 0)
-       printf("CD-Text len: %d\n", num_packs * 18 + 4);
-   } else {
-     fprintf(stderr, "cdrskin: No CD-Text or CD-Text unaware drive.\n");
-   }
+   ret= Cdrskin_cdtext_to_file(skin, "cdtext.dat", 15 | 16);
+   if(ret <= 0 && ret < final_ret)
+     final_ret= ret;
  }
-
 
 summary:
  ret= burn_disc_get_profile(drive, &profile_number, profile_name);
@@ -8000,10 +8075,10 @@ unsupported_blank_option:;
    } else if(strcmp(argv[i],"--bragg_with_audio")==0) {
      /* OBSOLETE 0.2.3 : was handled in Cdrpreskin_setup() */;
 
-   } else if(strncmp(argv[i], "-cd_start_tno", 14)==0) {
+   } else if(strncmp(argv[i], "-cd_start_tno=", 14) == 0) {
      value_pt= argv[i] + 14;
      goto set_cd_start_tno;
-   } else if(strncmp(argv[i], "cd_start_tno=", 13) ==0 ) {
+   } else if(strncmp(argv[i], "cd_start_tno=", 13) == 0) {
      value_pt= argv[i] + 13;
 set_cd_start_tno:;
      cd_start_tno= -1;
@@ -8017,6 +8092,36 @@ set_cd_start_tno:;
 
    } else if(strcmp(argv[i],"--cdtext_dummy")==0) {
      skin->cdtext_test= 2;
+
+   } else if(strncmp(argv[i], "-cdtext_to_textfile=", 20) == 0) {
+     value_pt= argv[i] + 20;
+     goto set_cdtext_to_textfile;
+   } else if(strncmp(argv[i], "cdtext_to_textfile=", 19) == 0) {
+     value_pt= argv[i] + 19;
+set_cdtext_to_textfile:;
+     if(strlen(value_pt) >= sizeof(skin->cdtext_to_textfile_path)) {
+       fprintf(stderr,
+    "cdrskin: FATAL : cdtext_to_textfile=... too long. (max: %d, given: %d)\n",
+    (int) sizeof(skin->cdtext_to_textfile_path)-1,(int) strlen(value_pt));
+       return(0);
+     }
+     skin->do_cdtext_to_textfile= 1;
+     strcpy(skin->cdtext_to_textfile_path, value_pt);
+
+   } else if(strncmp(argv[i], "-cdtext_to_v07t=", 16) == 0) {
+     value_pt= argv[i] + 16;
+     goto set_cdtext_to_v07t;
+   } else if(strncmp(argv[i], "cdtext_to_v07t=", 15) == 0) {
+     value_pt= argv[i] + 15;
+set_cdtext_to_v07t:;
+     if(strlen(value_pt) >= sizeof(skin->cdtext_to_vt07_path)) {
+       fprintf(stderr,
+        "cdrskin: FATAL : cdtext_to_vt07=... too long. (max: %d, given: %d)\n",
+        (int) sizeof(skin->cdtext_to_vt07_path)-1,(int) strlen(value_pt));
+       return(0);
+     }
+     skin->do_cdtext_to_vt07= 1;
+     strcpy(skin->cdtext_to_vt07_path, value_pt);
 
    } else if(strcmp(argv[i],"--cdtext_verbose")==0) {
      skin->cdtext_test= 1;
@@ -9149,6 +9254,16 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
                                 (skin->do_atip>1) | (2 * (skin->do_atip > 2)));
    if(ret<=0)
      {*exit_value= 7; goto ex;}
+ }
+ if(skin->do_cdtext_to_textfile) {
+   ret= Cdrskin_cdtext_to_file(skin, skin->cdtext_to_textfile_path, 15);
+   if(ret<=0)
+     {*exit_value= 18; goto ex;}
+ }
+ if(skin->do_cdtext_to_vt07) {
+   ret= Cdrskin_cdtext_to_file(skin, skin->cdtext_to_vt07_path, 1);
+   if(ret<=0)
+     {*exit_value= 19; goto ex;}
  }
  if(skin->do_list_speeds) {
    if(skin->n_drives<=0)
