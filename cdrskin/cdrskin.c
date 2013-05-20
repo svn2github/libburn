@@ -5028,6 +5028,8 @@ int Cdrskin_cdtext_to_file(struct CdrskiN *skin, char *path, int flag)
 ex:;
  if(result != NULL)
    free(result);
+ if(text_packs != NULL)
+   free(text_packs);
  if(fp != NULL && fp != stdout)
    fclose(fp);
  return(1);
