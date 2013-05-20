@@ -2214,9 +2214,18 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
     @param block       Number of the language block in which the attributes
                        shall appear. Possible values: 0 to 7.
     @param flag        Bitfield for control purposes.
+                       bit0= Permission to read multiple blocks from the
+                             given sheet file. Each block is supposed to begin
+                             by a line "Input Sheet Version = 0.7T". Therefore
+                             this permission is only valid if the input file
+                             begins by such a line.
+                             @since 1.3.2
                        bit1= Do not use media catalog string of session or ISRC
                              strings of tracks for writing to Q sub-channel.
-    @return            > 0 indicates success , <= 0 is failure
+                             @since 1.2.0
+    @return              > 0 indicates success and the number of interpreted
+                             blocks (1 if not flag bit0 is set).
+                        <= 0 indicates failure
     @since 1.2.0
 */
 int burn_session_input_sheet_v07t(struct burn_session *session,

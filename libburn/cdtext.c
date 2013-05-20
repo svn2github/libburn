@@ -615,17 +615,65 @@ static int v07t_cdtext_to_track(struct burn_track *track, int block,
 }
 
 
+static int v07t_apply_to_session(struct burn_session *session, int block,
+                     int char_codes[8], int copyrights[8], int languages[8],
+                     int session_attr_seen[16], int track_attr_seen[16],
+                     int genre_code, char *genre_text, int flag)
+{
+	int i, ret, length;
+	char *line = NULL;
+
+	BURN_ALLOC_MEM(line, char, 4096);
+
+	for (i= 0x80; i <= 0x8e; i++) {
+		if (i > 0x85 && i != 0x8e)
+	continue;
+		if (session_attr_seen[i - 0x80] || !track_attr_seen[i - 0x80])
+	continue;
+		ret = v07t_cdtext_to_session(session, block, "",
+					char_codes + block, i, NULL, 0);
+		if (ret <= 0)
+			goto ex;
+	}
+	if (genre_code >= 0 && genre_text[0]) {
+		line[0] = (genre_code >> 8) & 0xff;
+		line[1] = genre_code & 0xff;
+		strcpy(line + 2, genre_text);
+		length = 2 + strlen(line + 2) + 1;
+		ret = burn_session_set_cdtext(session, block, 0, "GENRE",
+					(unsigned char *) line, length, 0);
+		if (ret <= 0)
+			goto ex;
+	}
+	ret = burn_session_set_cdtext_par(session, char_codes, copyrights,
+								languages, 0);
+	if (ret <= 0)
+		goto ex;
+	for (i = 0; i < 8; i++)
+		char_codes[i] = copyrights[i] = languages[i]= -1;
+	for (i = 0; i < 16; i++)
+		session_attr_seen[i] = track_attr_seen[i] = 0;
+	genre_text[0] = 0;
+	ret = 1;
+ex:
+	BURN_FREE_MEM(line);
+	return ret;
+}
+
+
 /* ts B11215 API */
-/* @param flag bit1= do not attach CATALOG to session or ISRC to track for
+/* @param flag bit0= permission to read multiple blocks from the same sheet
+               bit1= do not attach CATALOG to session or ISRC to track for
                      writing to Q sub-channel
 */
 int burn_session_input_sheet_v07t(struct burn_session *session,
 					char *path, int block, int flag)
 {
 	int ret = 0, num_tracks, char_codes[8], copyrights[8], languages[8], i;
-	int genre_code = -1, track_offset = 1, length, pack_type, tno, tnum;
+	int genre_code = -1, track_offset = 1, pack_type, tno, tnum;
 	int session_attr_seen[16], track_attr_seen[16];
 	int int0x00 = 0x00, int0x01 = 0x01;
+	int additional_blocks = -1, line_count = 0, enable_multi_block = 0;
 	struct stat stbuf;
 	FILE *fp = NULL;
 	char *line = NULL, *eq_pos, *payload, *genre_text = NULL, track_txt[3];
@@ -678,6 +726,7 @@ cannot_open:;
 				burn_printify(msg), 0, 0);
 			ret = 0; goto ex;
 		}
+		line_count++;
 		if (strlen(line) == 0)
 	continue;
 		eq_pos = strchr(line, '=');
@@ -821,6 +870,31 @@ cannot_open:;
 					LIBDAX_MSGS_PRIO_HIGH,
 					burn_printify(msg), 0, 0);
 				ret = 0; goto ex;
+			}
+			if (flag & 1)
+				if (line_count == 1)
+					enable_multi_block = 1;
+			if (enable_multi_block) {
+				if (additional_blocks >= 0) {
+					if (block == 7) {
+						libdax_msgs_submit(
+				libdax_messenger, -1, 0x000201a0,
+				LIBDAX_MSGS_SEV_WARNING, LIBDAX_MSGS_PRIO_HIGH,
+				"Maximum number of CD-TEXT blocks exceeded",
+						0, 0);
+	break;
+					}
+					ret = v07t_apply_to_session(
+						session, block, char_codes,
+						copyrights, languages,
+						session_attr_seen,
+						track_attr_seen,
+						genre_code, genre_text, 0);
+					if (ret <= 0)
+						goto ex;
+					block++;
+				}
+				additional_blocks++;
 			}
 
 		} else if (strcmp(line, "Remarks") == 0) {
@@ -979,33 +1053,16 @@ bad_track_no:;
 			ret = 0; goto ex;
 		}
 	}
-
-	for (i= 0x80; i <= 0x8e; i++) {
-		if (i > 0x85 && i != 0x8e)
-	continue;
-		if (session_attr_seen[i - 0x80] || !track_attr_seen[i - 0x80])
-	continue;
-		ret = v07t_cdtext_to_session(session, block, "",
-					char_codes + block, i, NULL, 0);
-		if (ret <= 0)
-			goto ex;
-	}
-	if (genre_code >= 0 && genre_text[0]) {
-		line[0] = (genre_code >> 8) & 0xff;
-		line[1] = genre_code & 0xff;
-		strcpy(line + 2, genre_text);
-		length = 2 + strlen(line + 2) + 1;
-		ret = burn_session_set_cdtext(session, block, 0, "GENRE",
-					(unsigned char *) line, length, 0);
-		if (ret <= 0)
-			goto ex;
-	}
-	ret = burn_session_set_cdtext_par(session, char_codes, copyrights,
-								languages, 0);
+	ret = v07t_apply_to_session(session, block,
+	                            char_codes, copyrights, languages,
+	                            session_attr_seen, track_attr_seen,
+	                            genre_code, genre_text, 0);
 	if (ret <= 0)
 		goto ex;
 
 	ret = 1;
+	if (additional_blocks > 0)
+		ret += additional_blocks;;
 ex:;
 	if(fp != NULL)
 		fclose(fp);

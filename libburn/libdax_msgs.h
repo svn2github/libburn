@@ -598,7 +598,8 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002019c (SORRY,HIGH)   = Session has no defined tracks
  0x0002019d (SORRY,HIGH)   = Audio read size not properly aligned
  0x0002019e (NOTE,HIGH)    = Drive does not support media certification
- 0x0002019f (FAILURE,HIGH) = CD-TEXT with unknown character code
+ 0x0002019f (FAILURE,HIGH) = CD-TEXT binary pack array faulty
+ 0x000201a0 (WARNING,HIGH) = Maximum number of CD-TEXT blocks exceeded
 
 
  libdax_audioxtr:
