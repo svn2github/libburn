@@ -11847,14 +11847,52 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 1.3.1
 
-17 May 2013  []
+17 May 2013  [5053]
 ChangeLog
-cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+17 May 2013  [5054]
+svn move -m libburn release 1.3.0 is ready
 
+------------------------------------ cycle  - cdrskin-1.3.1 - 2013.05.17.181442
+
+
+2013.05.19.114643  [5059]
+libburn/libburn.h
+libburn/cdtext.c
+doc/cdtext.txt
+libburn/libburn.ver
+New API call burn_make_input_sheet_v07t()
+
+2013.05.19.114854  [5060]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option textfile_to_v07t=
+
+2013.05.19.154838  [5061]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New options cdtext_to_textfile= and cdtext_to_v07t=
+
+2013.05.20.104814  [5062]
+libburn/libburn.h
+libburn/cdtext.c
+libburn/libdax_msgs.h
+API call burn_session_input_sheet_v07t(): read multiple blocks from same file
+
+2013.05.20.110128  [5063]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+Allowed option input_sheet_v07t= to read multiple blocks from same file
+
+2013.05.20.124448  [5064]
+libburn/cdtext.c
+Bug fixes with new API call burn_make_input_sheet_v07t()
+
+2013.05.20.124520  [5065]
+cdrskin/cdrskin.c
+Closed memory leak introduced by rev 5063
 
   []
 ChangeLog
@@ -11863,6 +11901,11 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.3.1 - 
+* New API call burn_make_input_sheet_v07t()
+* New option textfile_to_v07t=
+* New options cdtext_to_textfile= and cdtext_to_v07t=
+* API call burn_session_input_sheet_v07t(): read multiple blocks from same file
+
 
   []
 ChangeLog
@@ -11887,6 +11930,7 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
+>>> Let cdrskin on DVD tolerate -sao if -multi is given
 
 
 cdrskin option to emit pacifiers with newline rather than carriage return
@@ -11902,8 +11946,7 @@ CD-TEXT:
   - .inf files
   - enforcing constraints:
     - examine how drives react on wodim's cue sheet of INDEX 00 == INDEX 01
-  >>> produce v07t text sheet from binary text pack array
-      >>> bring make_v07t.c into libburn
+
 
 qemu:
 
