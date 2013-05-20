@@ -1260,8 +1260,29 @@ static int collect_payload(unsigned char *text_packs, int num_packs,
 
 
 /*
+    @param flag        bit0= use double 0 as delimiter
+*/
+static int is_payload_text_end(unsigned char *payload, int payload_count,
+                               int i, int flag)
+{
+	if (i >= payload_count)
+		return 1;
+	if (payload[i])
+		return 0;
+	if (!(flag & 1))
+		return 1;
+	if (i + 1 >= payload_count)
+		return 1;
+	if (payload[i + 1] == 0)
+		return 1;
+	return 0;
+}
+
+
+/*
     @param flag        Bitfield for control purposes.
                        bit0= use double 0 as delimiter
+                       bit1= replace TAB resp. TAB TAB by text of previous tno
 */
 static int pick_payload_text(unsigned char *payload, int payload_count,
                              int tno,
@@ -1270,34 +1291,59 @@ static int pick_payload_text(unsigned char *payload, int payload_count,
 {
 	int i, skipped = 0, end_found = 0;
 
+again:;
 	if (tno <= 0) {
 		*text_start = payload;
-		*text_len = strlen((char *) payload);
+		*text_len = 0;
+		for (i = 0; i < payload_count; i += 1 + (flag & 1)) {
+			end_found = is_payload_text_end(payload, payload_count,
+		                                        i, flag & 1);
+			if (end_found) {
+				*text_len = i;
+		break;
+			}
+		}
 		return 1;
 	}
 	*text_start = NULL;
 	*text_len = 0;
 	for (i = 0; i < payload_count; i += 1 + (flag & 1)) {
-		if (flag & 1) {
-			if (payload[i] == 0 && i < payload_count - 1)
-				if (payload[i + 1] == 0)
-					end_found = 1;
-		} else if (payload[i] == 0)
-			end_found = 1;
+		end_found = is_payload_text_end(payload, payload_count,
+		                                i, flag & 1);
 		if (end_found) {
 			skipped++;
 			if (skipped == tno) {
 				*text_start = payload + (i + 1 + (flag & 1));
 			} else if (skipped == tno + 1) {
 				*text_len = i - (*text_start - payload);
-				return 1;
+				goto found;
 			}
-			end_found = 0;
 		}
 	}
 	if (*text_start == NULL)
 		return 0;
 	*text_len = payload_count - (*text_start - payload);
+
+found:;
+	if (flag & 2) {
+		/* If TAB resp. TAB TAB, then look back */
+		if (flag & 1) {
+			if (*text_len == 2) {
+				if ((*text_start)[0] == '\t' &&
+				    (*text_start)[1] == '\t') {
+					skipped = 0;
+					tno--;
+					goto again;
+				}
+			}
+		} else if (*text_len == 1) {
+			if ((*text_start)[0] == '\t') {
+				skipped = 0;
+				tno--;
+				goto again;
+			}
+		}
+	}
 	return 1;
 }
 
@@ -1308,16 +1354,22 @@ static int write_v07t_textline(unsigned char *text_packs, int num_packs,
                                char **respt, int *result_len, int flag)
 {
 	unsigned char *payload = NULL, *text_start;
-	int ret, payload_count = 0, text_len;
+	int ret, payload_count = 0, text_len, tab_flag = 0;
 	char msg[80];
 
+	if ((pack_type >= 0x80 && pack_type <= 0x85) || pack_type == 0x8e)
+		tab_flag = 2;
 	ret = collect_payload(text_packs, num_packs, pack_type, block, 
                               &payload, &payload_count, 0);
 	if(ret > 0) {
 		ret = pick_payload_text(payload, payload_count, tno,
-		                        &text_start, &text_len, ret == 2);
+		                        &text_start, &text_len,
+		                        (ret == 2) | tab_flag);
 		if (ret > 0) {
-			if (tno > 0)
+			if (tno > 0 && strcmp(spec, "ISRC") == 0)
+				sprintf(msg, "%s %-2.2d",
+				              spec, tno + first_tno - 1);
+			else if (tno > 0)
 				sprintf(msg, "Track %-2.2d %s",
 				              tno + first_tno - 1, spec);
 			else
@@ -1449,7 +1501,7 @@ static int report_block(unsigned char *text_packs, int num_packs,
 			goto failure;
 	}
 
-	ret = collect_payload(text_packs, num_packs, 0x87, -1, 
+	ret = collect_payload(text_packs, num_packs, 0x87, block, 
                               &payload, &payload_count, 0);
 	if(ret > 0) {
 		genre = (payload[0] << 8) | payload[1];
@@ -1464,7 +1516,7 @@ static int report_block(unsigned char *text_packs, int num_packs,
 				-1, &result_len, flag & 1);
 		BURN_FREE_MEM(payload); payload = NULL;
 	}
-	ret = collect_payload(text_packs, num_packs, 0x8d, -1, 
+	ret = collect_payload(text_packs, num_packs, 0x8d, block, 
                               &payload, &payload_count, 0);
 	if(ret > 0) {
 		write_v07t_line(&respt, "Closed Information", (char *) payload,
