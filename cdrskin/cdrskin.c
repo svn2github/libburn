@@ -6950,7 +6950,7 @@ int Cdrskin_read_input_sheet_v07t(struct CdrskiN *skin, char *path, int block,
 {
  int ret= 0;
 
- ret= burn_session_input_sheet_v07t(session, path, block, 0);
+ ret= burn_session_input_sheet_v07t(session, path, block, 1);
  return(ret);
 }
 
@@ -7034,7 +7034,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  int source_fd, is_from_stdin;
  int text_flag= 4; /* Check CRCs and silently repair CRCs if all are 0 */
  unsigned char *text_packs= NULL;
- int num_packs= 0, start_block;
+ int num_packs= 0, start_block, block_no;
 
 #ifndef Cdrskin_no_cdrfifO
  double put_counter, get_counter, empty_counter, full_counter;
@@ -7155,12 +7155,17 @@ burn_failed:;
        if(i < 0x8f)
          start_block= 1;
      }
-     for(i= 0; i < skin->sheet_v07t_blocks && i < 8 - start_block; i++) {
-       ret= Cdrskin_read_input_sheet_v07t(skin,
-                                       skin->sheet_v07t_paths[i],
-                                       i + start_block, session, 0);
+     block_no = start_block;
+     for(i= 0; i < skin->sheet_v07t_blocks && block_no < 8; i++) {
+       ret= Cdrskin_read_input_sheet_v07t(skin, skin->sheet_v07t_paths[i],
+                                          block_no, session, 0);
        if(ret <= 0)
          goto burn_failed;
+       block_no += ret;
+     }
+     if(i < skin->sheet_v07t_blocks) {
+       fprintf(stderr, "cdrskin: WARNING : Too many CD-TEXT blocks. input_sheet_v07t= files ignored: %d\n",
+               skin->sheet_v07t_blocks - i);
      }
    }
  }

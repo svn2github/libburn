@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.3.1, May 19, 2013"
+.TH CDRSKIN 1 "Version 1.3.1, May 20, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1157,7 +1157,15 @@ growisofs -dvd-compat is roughly equivalent to cdrskin without option -multi.
 .BI input_sheet_v07t= path
 Read CD-TEXT definitions from a Sony Input Sheet version 0.7T. Up to eight
 or seven such sheets can be read by multiple input_sheet_v07t= options.
-Each will define a CD-TEXT language block.
+Each will define one CD-TEXT language block.
+.br
+The first line of a sheet file decides whether more than one sheet
+may be defined by the file. If it is
+.br
+  Input Sheet Version = 0.7T
+.br
+then each further line with that text switches to the next sheet for the next block.
+If it is not, then all definitions apply to a single block.
 .br
 The information in such a sheet is given by text lines of the following form:
 .br
