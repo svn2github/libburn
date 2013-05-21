@@ -6648,6 +6648,18 @@ int Cdrskin_activate_write_mode(struct CdrskiN *skin,
    strcpy(skin->preskin->write_mode_name,"SAO");
    skin->write_type= BURN_WRITE_SAO;
    skin->block_type= BURN_BLOCK_SAO;
+   /* cdrecord tolerates the combination of -sao and -multi. -multi wins. */
+   burn_write_opts_set_write_type(opts,skin->write_type,skin->block_type);
+   ret = burn_precheck_write(opts,disc,reasons,0);
+   if(ret <= 0) {
+     if(strstr(reasons, "multi session capability lacking") != NULL) {
+       fprintf(stderr,"cdrskin: WARNING : Cannot do SAO/DAO. Reason: %s\n",
+               reasons);
+       fprintf(stderr,"cdrskin: Defaulting to TAO/Incremental.\n");
+       skin->write_type= BURN_WRITE_TAO;
+       skin->block_type= BURN_BLOCK_MODE1;
+     }
+   }
  }
  if(!was_still_default)
    burn_write_opts_set_write_type(opts,skin->write_type,skin->block_type);
