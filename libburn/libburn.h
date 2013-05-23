@@ -2273,7 +2273,7 @@ int burn_cdtext_from_session(struct burn_session *s,
                        array of packs shall be removed.
     @param num_packs   The number of 18 byte packs in text_packs.
     @param start_tno   The start number of track counting, if known from
-                       CD table-of-content or orther sources.
+                       CD table-of-content or other sources.
                        Submit 0 to enable the attempt to read it and the
                        track_count from pack type 0x8f.
     @param track_count The number of tracks, if known from CD table-of-content
@@ -3922,6 +3922,49 @@ int burn_read_audio(struct burn_drive *d, int sector_no,
                     char data[], off_t data_size, off_t *data_count, int flag);
 
 
+/* ts B30522 */
+/** Extract an interval of audio sectors from CD and store it as a WAVE
+    audio file on hard disk.
+
+    @param drive        The drive from which to read.
+    @param start_sector The logical block address of the first audio sector
+                        which shall be read.
+    @param sector_count The number of audio sectors to be read.
+                        Each sector consists of 2352 bytes.
+    @param target_path  The address of the file where to store the extracted
+                        audio data. Will be opened O_WRONLY | O_CREAT.
+                        The file name should have suffix ".wav".
+    @param flag         Bitfield for control purposes:
+                        bit0= Report about progress by UPDATE messages
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+    @since 1.3.2
+*/
+int burn_drive_extract_audio(struct burn_drive *drive,
+                             int start_sector, int sector_count,
+                             char *target_path, int flag);
+
+
+/* ts B30522 */
+/** Extract all audio sectors of a track from CD and store them as a WAVE
+    audio file on hard disk.
+
+    @param drive        The drive from which to read.
+    @param track        The track which shall be extracted.
+    @param target_path  The address of the file where to store the extracted
+                        audio data. Will be opened O_WRONLY | O_CREAT.
+                        The file name should have suffix ".wav".
+    @param flag         Bitfield for control purposes:
+                        bit0= Report about progress by UPDATE messages
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+    @since 1.3.2
+*/  
+int burn_drive_extract_audio_track(struct burn_drive *drive,
+                                   struct burn_track *track,
+                                   char *target_path, int flag);
+
+
 /* ts A70904 */
 /** Inquire whether the drive object is a real MMC drive or a pseudo-drive
     created by a stdio: address.
@@ -4080,7 +4123,7 @@ int libdax_audioxtr_read(struct libdax_audioxtr *xtr,
 
 /** Try to obtain a file descriptor which will deliver extracted data
     to normal calls of read(2). This may fail because the format is
-    unsuitable for that, but ".wav" is ok. If this call succeeds the xtr
+    unsuitable for that, but WAVE (.wav) is ok. If this call succeeds the xtr
     object will have forgotten its file descriptor and libdax_audioxtr_read()
     will return a usage error. One may use *fd after libdax_audioxtr_destroy()
     and will have to close it via close(2) when done with it.

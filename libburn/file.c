@@ -27,6 +27,7 @@
 #include "file.h"
 #include "async.h"
 #include "init.h"
+#include "util.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -917,5 +918,163 @@ struct burn_source *burn_offst_source_new(
         inp->refcount++; /* make sure inp lives longer than src */
 
         return src;
+}
+
+
+/* -------------------- WAVE file extractor ------------------- */
+
+
+/* ts B30522 */
+/* API
+    @param flag         Bitfield for control purposes:
+                        bit0= Report about progress by UPDATE message
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+
+*/
+int burn_drive_extract_audio(struct burn_drive *drive,
+                             int start_sector, int sector_count,
+                             char *target_path, int flag)
+{
+	int fd = -1, ret, todo, sector_no, val, min, sec, fr;
+	int sectors_done= 0, last_reported = 0;
+	off_t data_size, data_count = 0;
+	time_t last_pacified = 0, now;
+	char *msg = NULL, *buf = NULL;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+	BURN_ALLOC_MEM(buf, char, 24 * 2352);
+
+	fd = open(target_path, O_WRONLY | O_CREAT,
+                  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	if (fd == -1) {
+		sprintf(msg, "Cannot open disk file for writing: %.4000s",
+				target_path);
+		libdax_msgs_submit(libdax_messenger, -1, 0x000201a1,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, errno, 0);
+		ret = 0; goto ex;
+	}
+
+	/* WAV header */
+	strcpy(buf, "RIFF");
+	val = 4 + 8 + 16 + 8 + sector_count * 2352; /* ChunkSize */
+	burn_int_to_lsb(val, buf + 4);
+	strcpy(buf + 8, "WAVE");
+	strcpy(buf + 12, "fmt ");
+	burn_int_to_lsb(16, buf + 16);     /* Subchunk1Size */
+	buf[20] = 1;                       /* AudioFormat */
+	buf[21] = 0;
+	buf[22] = 2;                       /* NumChannels */
+	buf[23] = 0;
+	burn_int_to_lsb(44100, buf + 24);  /* SampleRate */
+	burn_int_to_lsb(176400, buf + 28); /* ByteRate */
+	buf[32] = 4;                       /* BlockAlign */
+	buf[33] = 0;
+	buf[34] = 16;                      /* BitsPerSample */
+	buf[35] = 0;
+	strcpy(buf + 36, "data");
+	burn_int_to_lsb(sector_count * 2352, buf + 40); /* Subchunk2Size */
+
+	ret = write(fd, buf, 44);
+	if (ret == -1)
+		goto write_error;
+
+	/* Audio data */
+	todo = sector_count;
+	sector_no = start_sector;
+	while (todo > 0) {
+		if (todo > 24)
+			data_size = 24 * 2352;
+		else
+			data_size = todo * 2352;
+		ret = burn_read_audio(drive, sector_no, buf, data_size,
+						&data_count, flag & 8);
+		if (ret <= 0) {
+			sprintf(msg, "Failure to read audio sectors");
+			libdax_msgs_submit(libdax_messenger, -1, 0x000201a4,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			goto ex;
+		}
+		ret = write(fd, buf, data_count);
+		if (ret == -1) {
+write_error:;
+			sprintf(msg,
+				"Error while writing to disk file: %.4000s",
+				target_path);
+			libdax_msgs_submit(libdax_messenger, -1, 0x000201a2,
+						LIBDAX_MSGS_SEV_FAILURE,
+						LIBDAX_MSGS_PRIO_HIGH,
+						msg, errno, 0);
+			ret = 0; goto ex;
+		}
+		todo -= data_count / 2352;
+		sectors_done += data_count / 2352;
+		sector_no += data_count / 2352;
+		if ((flag & 1) && (now = time(NULL)) - last_pacified >= 1) {
+			last_pacified = now;
+			burn_lba_to_msf(sectors_done, &min, &sec, &fr);
+			sprintf(msg,
+		   "Minutes:seconds of audio data read: %2d:%2.2d  (%6.2f MB)",
+			   min, sec,
+			   ((double) sectors_done) * 2352.0 / 1048576.0);
+			libdax_msgs_submit(libdax_messenger, -1, 0x000201a3,
+						LIBDAX_MSGS_SEV_UPDATE,
+						LIBDAX_MSGS_PRIO_HIGH,
+						msg, 0, 1);
+			last_reported = sectors_done;
+		}
+	}
+	if ((flag & 1)) {
+		burn_lba_to_msf(sectors_done, &min, &sec, &fr);
+		sprintf(msg,
+		  "Minutes:seconds of audio data read: %2d:%2.2d  (%6.2f MB)",
+		   min, sec, ((double) sectors_done) * 2352.0 / 1048576.0);
+		libdax_msgs_submit(libdax_messenger, -1, 0x000201a3,
+					LIBDAX_MSGS_SEV_UPDATE,
+					LIBDAX_MSGS_PRIO_HIGH,
+					msg, 0, 0);
+		last_reported = sectors_done;
+	}
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(buf);
+	BURN_FREE_MEM(msg);
+	if (fd != -1)
+		close(fd);
+	return ret;
+}
+
+
+/* ts B30522 */
+/* API
+    @param flag         Bitfield for control purposes:
+                        bit0= Report about progress by UPDATE message
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+*/
+int burn_drive_extract_audio_track(struct burn_drive *drive,
+                                   struct burn_track *track,
+                                   char *target_path, int flag)
+{
+	int ret;
+	struct burn_toc_entry toc_entry;
+
+	burn_track_get_entry(track, &toc_entry);
+	if (!(toc_entry.extensions_valid & 1)) {
+		/* Can only happen if burn_disc_cd_toc_extensions() is skipped
+		   in mmc_read_toc_al().
+		*/
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000004,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+	  "Internal libburn error: Outdated burn_toc_entry format encountered",
+				errno, 0);
+		return -1;
+	}
+	ret = burn_drive_extract_audio(drive, toc_entry.start_lba,
+					toc_entry.track_blocks,
+					target_path, flag & (1 | 8));
+	return ret;
 }
 

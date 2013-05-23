@@ -44,6 +44,8 @@ burn_drive_convert_fs_adr;
 burn_drive_convert_scsi_adr;
 burn_drive_d_get_adr;
 burn_drive_equals_adr;
+burn_drive_extract_audio;
+burn_drive_extract_audio_track;
 burn_drive_free_speedlist;
 burn_drive_get_adr;
 burn_drive_get_all_profiles;

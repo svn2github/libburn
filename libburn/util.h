@@ -8,4 +8,7 @@ int burn_util_make_printable_word(char **text, int flag);
 char *burn_sfile_fgets(char *line, int maxl, FILE *fp);
 char *burn_printify(char *msg);
 
+/* ts B30521 */
+void burn_int_to_lsb(int val, char *target);
+
 #endif

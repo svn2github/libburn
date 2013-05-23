@@ -328,3 +328,17 @@ char *burn_printify(char *msg)
 	return msg;
 }
 
+
+/* ts B30521 */
+void burn_int_to_lsb(int val, char *target)
+{
+	unsigned char *buf;
+
+	buf = (unsigned char *) target;
+	buf[0] = val & 0xff;
+	buf[1] = (val >> 8) & 0xff;
+	buf[2] = (val >> 16) & 0xff;
+	buf[3] = (val >> 24) & 0xff;
+}
+
+

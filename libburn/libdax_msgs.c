@@ -327,6 +327,11 @@ int libdax_msgs__sev_to_text(int severity, char **severity_name,
 }
 
 
+/*
+    @param flag Bitfield for control purposes
+                    bit0= If direct output to stderr:
+                          CarriageReturn rather than LineFeed
+*/
 int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
                        int severity, int priority, char *msg_text,
                        int os_errno, int flag)
@@ -345,7 +350,8 @@ int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
    if(ret>0)
      sprintf(sev_text,"%s : ",sev_name);
 
-   fprintf(stderr,"%s%s%s\n",m->print_id,sev_text,textpt);
+   fprintf(stderr, "%s%s%s%c", m->print_id, sev_text, textpt,
+                               (flag & 1) ? '\r' : '\n');
    if(os_errno!=0) {
      ret= libdax_msgs_lock(m,0);
      if(ret<=0)

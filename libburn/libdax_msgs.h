@@ -302,7 +302,9 @@ int libdax_msgs_refer(struct libdax_msgs **pt, struct libdax_msgs *o, int flag);
     @param priority The LIBDAX_MSGS_PRIO_* number of the event.
     @param msg_text Printable and human readable message text.
     @param os_errno Eventual error code from operating system (0 if none)
-    @param flag Bitfield for control purposes (unused yet, submit 0)
+    @param flag Bitfield for control purposes
+                    bit0= If direct output to stderr:
+                          CarriageReturn rather than LineFeed
     @return 1 on success, 0 on rejection, <0 for severe errors
 */
 int libdax_msgs_submit(struct libdax_msgs *m, int origin, int error_code,
@@ -600,6 +602,10 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002019e (NOTE,HIGH)    = Drive does not support media certification
  0x0002019f (FAILURE,HIGH) = CD-TEXT binary pack array faulty
  0x000201a0 (WARNING,HIGH) = Maximum number of CD-TEXT blocks exceeded
+ 0x000201a1 (FAILURE,HIGH) = Cannot open disk file for writing
+ 0x000201a2 (FAILURE,HIGH) = Error while writing to disk file
+ 0x000201a3 (UPDATE,HIGH)  = Progress message of burn_drive_extract_audio()
+ 0x000201a4 (FAILURE,HIGH) = Failure to read audio sectors
 
 
  libdax_audioxtr:
