@@ -11894,19 +11894,50 @@ Bug fixes with new API call burn_make_input_sheet_v07t()
 cdrskin/cdrskin.c
 Closed memory leak introduced by rev 5063
 
-  []
+20 May 2013  [5066]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+------------------------------------ cycle  - cdrskin-1.3.1 - 2013.05.20.141737
 * New API call burn_make_input_sheet_v07t()
 * New option textfile_to_v07t=
 * New options cdtext_to_textfile= and cdtext_to_v07t=
 * API call burn_session_input_sheet_v07t(): read multiple blocks from same file
 
 
+2013.05.21.081819  [5067]
+cdrskin/cdrskin.c
+Defaulting -sao -multi to -tao -multi if -sao -multi is not possible
+
+2013.05.23.154249  [5068]
+libburn/libburn.h
+libburn/file.c
+libburn/util.h
+libburn/util.c
+libburn/libdax_msgs.h
+libburn/libdax_msgs.c
+libburn/libburn.ver
+New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track() 
+
+2013.05.23.154249  [5069]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= , --extract_dap 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.1 - 
+* New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track() 
+* New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,
+  --extract_dap 
+
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
@@ -11916,9 +11947,12 @@ Updated change log
 ------------------------------------ cycle  - cdrskin-1.3.1 - 
 
   []
-libburn/libdax_msgs.h
-Changed item description in list of error codes
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
 
+------------------------------------ cycle  - cdrskin-1.3.1 - 
 
 
 **********************************************************************
@@ -11929,8 +11963,6 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
-
->>> Let cdrskin on DVD tolerate -sao if -multi is given
 
 
 cdrskin option to emit pacifiers with newline rather than carriage return

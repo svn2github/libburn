@@ -1,9 +1,11 @@
 SVN trunk (to become libburn-1.3.2 or higher)
 ===============================================================================
 * New API call burn_make_input_sheet_v07t()
-* New option textfile_to_v07t=
-* New options cdtext_to_textfile= and cdtext_to_v07t=
 * API call burn_session_input_sheet_v07t(): read multiple blocks from same file
+* New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track()
+* New cdrskin option textfile_to_v07t=
+* New cdrskin options cdtext_to_textfile= and cdtext_to_v07t=
+* New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,   --extract_dap
 
 
 libburn-1.3.0.tar.gz Fri May 17 2013
