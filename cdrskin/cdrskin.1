@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.3.1, May 20, 2013"
+.TH CDRSKIN 1 "Version 1.3.1, May 23, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -37,7 +37,7 @@ Blanking of CD-RW and DVD-RW.
 .br
 Formatting of DVD-RW, DVD+RW, DVD-RAM, BD.
 .br
-Burning of data or audio tracks to CD,
+Burning of data tracks or audio tracks with CD-TEXT to CD,
 .br
 either in versatile Track at Once mode (TAO)
 .br
@@ -54,6 +54,8 @@ Single session or emulated ISO-9660 multi-session
 on overwriteable DVD+RW, DVD-RW, DVD-RAM, BD-RE
 .br
 or on data file or block device.
+.br
+Extraction of audio tracks and CD-TEXT to hard disk files.
 .br
 Bus scan, burnfree, speed options, retrieving media info, padding, fifo.
 .br
@@ -1000,6 +1002,7 @@ the file with the given path. If CD-TEXT can be retrieved, then this file
 will be suitable for option textfile=.
 .br
 Not all drives can read CD-TEXT and not all audio CDs bear CD-TEXT.
+It is not considered an error if no CD-TEXT is available.
 .TP
 .BI cdtext_to_v07t= path
 Extract the CD-TEXT packs from the lead-in of an audio CD and write them
@@ -1010,6 +1013,7 @@ will be suitable for option input_sheet_v07t=.
 If the given path is "-", then the result is printed to standard output.
 .br
 Not all drives can read CD-TEXT and not all audio CDs bear CD-TEXT.
+It is not considered an error if no CD-TEXT is available.
 .TP
 .BI \--demand_a_drive
 Exit with a nonzero value if no drive can be found during a bus scan.
@@ -1073,6 +1077,32 @@ of this write size (see option --obs_pad).
 A number of 64 KB may improve throughput with systems
 which show latency problems. The default depends on media type, option
 stream_recording=, and on compile time options.
+.TP
+.BI extract_audio_to= directory_path
+Extract tracks from an audio CD as separate WAVE audio files into the
+given directory.
+This directory has to already exist, but none of the track files may exist.
+This option will rather fail than overwrite an existing file.
+.br
+By default all tracks of the CD are extracted to files with names
+trackNN.wav, where NN is the track number from 01 to at most 99.
+.TP
+.BI extract_basename= name
+Set a filename which shall be used by extract_audio_to= instead of the default
+name "track".
+.TP
+.BI --extract_dap
+Enable Digital Audio Play flaw obscuring mechanisms
+like audio data mute and interpolate.
+.TP
+.BI extract_tracks= number[,number[,...]]
+Set a list of track numbers to define which tracks shall be extracted
+by extract_audio_to=.
+If no extract_tracks= is given, then all audio tracks get extracted.
+It is permissible to have more than one extract_tracks= option in order
+to split a long list into shorter pieces.
+.br
+The lowest permissible track number is 1, the highest is 99.
 .TP
 .BI fallback_program= command
 Set a command name to be executed if cdrskin encounters a known cdrecord
@@ -1613,7 +1643,7 @@ cdrskin -v dev=/dev/sr0 blank=deformat_sequential
 .br
 cdrskin -v dev=/dev/hdc speed=12 fs=8m \\
 .br
-blank=as_needed -eject padsize=300k my_image.iso
+  blank=as_needed -eject padsize=300k my_image.iso
 .SS
 .B Write compressed afio archive on-the-fly (not possible with minimally blanked DVD-RW or DVD-R DL):
 .br
@@ -1621,7 +1651,7 @@ find . | afio -oZ - | \\
 .br
 cdrskin -v dev=0,1,0 fs=32m speed=8 \\
 .br
-blank=as_needed padsize=300k -
+  blank=as_needed padsize=300k -
 .SS
 .B Write multi-session to the same CD, DVD-R[W], DVD+R[/DL], or BD-R:
 .br
@@ -1643,16 +1673,23 @@ mkisofs ... -C "$c_values" ...
 .br
 x=$(cdrskin dev=/dev/sr0 -multi \\
 .br
---tell_media_space 2>/dev/null)
+  --tell_media_space 2>/dev/null)
 .br
 echo "Available: $x blocks of 2048 data bytes"
 .SS
-.B Write audio tracks to CD:
+.B Write audio tracks and CD-TEXT to CD:
 .br
 cdrskin -v dev=ATA:1,0,0 speed=48 -sao \\
 .br
-track1.wav track2.au -audio -swab track3.raw
+  input_sheet_v07t=cdtext.v07t \\
 .br
+  track1.wav track2.au -audio -swab track3.raw
+.SS
+.B Extract audio tracks and CD-TEXT from CD into directory /home/me/my_cd:
+.br
+cdrskin -v dev=/dev/sr0 extract_audio_to=/home/me/my_cd \\
+.br
+  cdtext_to_v07t=/home/me/my_cd/cdtext.v07t
 .SH FILES
 .SS
 Startup files:

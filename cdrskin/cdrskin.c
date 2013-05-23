@@ -2850,8 +2850,21 @@ set_dev:;
      printf(" dvd_obs=\"default\"|number\n");
      printf(
      "                    set number of bytes per DVD/BD write: 32k or 64k\n");
+     printf(" extract_audio_to=<dir>\n");
      printf(
-         " fallback_program=<cmd>  use external program for exotic CD jobs\n");
+          "                    Copy all tracks of an audio CD as separate\n");
+     printf(
+          "                    .WAV files <dir>/track<NN>.wav to hard disk\n");
+     printf(" extract_basename=<name>\n");
+     printf(
+          "                    Compose track files as <dir>/<name><NN>.wav\n");
+     printf(
+   " --extract_dap      Enable flaw obscuring mechanisms for audio reading\n");
+     printf(" extract_tracks=<number[,number[,...]]>\n");
+     printf(
+        "                    Restrict extract_audio_to= to list of tracks.\n");
+     printf(
+        " fallback_program=<cmd>  use external program for exotic CD jobs.\n");
      printf(" --fifo_disable     disable fifo despite any fs=...\n");
      printf(" --fifo_per_track   use a separate fifo for each track\n");
      printf(
@@ -3117,7 +3130,7 @@ set_severities:;
      if(o->verbosity>=Cdrskin_verbose_debuG)
        Cdrpreskin_set_severities(o,"NEVER","DEBUG",0);
      else if(o->verbosity >= Cdrskin_verbose_progresS)
-       Cdrpreskin_set_severities(o, "NEVER", "NOTE", 0);
+       Cdrpreskin_set_severities(o, "NEVER", "UPDATE", 0);
 
    } else if(strcmp(argv[i],"-vv")==0 || strcmp(argv[i],"-vvv")==0 ||
              strcmp(argv[i],"-vvvv")==0) {
@@ -3367,6 +3380,13 @@ struct CdrskiN {
  char cdtext_to_textfile_path[Cdrskin_strleN];
  int do_cdtext_to_vt07;
  char cdtext_to_vt07_path[Cdrskin_strleN];
+ int do_extract_audio;
+ char extract_audio_dir[Cdrskin_strleN];
+ char extract_basename[249];
+ char extract_audio_tracks[100];     /* if [i] > 0 : extract track i */
+ int extract_flags;                  /* bit3 = for flag bit3 of
+                                               burn_drive_extract_audio()
+                                     */
 
 #ifdef Libburn_develop_quality_scaN
  int do_qcheck;              /* 0= no , 1=nec_optiarc_rep_err_rate */
@@ -3622,6 +3642,12 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->cdtext_to_textfile_path[0]= 0;
  o->do_cdtext_to_vt07= 0;
  o->cdtext_to_vt07_path[0]= 0;
+ o->do_extract_audio= 0;
+ o->extract_audio_dir[0]= 0;
+ o->extract_basename[0]= 0;
+ for(i= 0; i < 100; i++)
+   o->extract_audio_tracks[i]= 0;
+ o->extract_flags= 0;
 
 #ifdef Libburn_develop_quality_scaN
  o->do_qcheck= 0;
@@ -4971,12 +4997,16 @@ int Cdrskin_cdtext_to_file(struct CdrskiN *skin, char *path, int flag)
  FILE *fp= NULL;
  struct stat stbuf;
 
+ ret= Cdrskin_grab_drive(skin, 0);
+ if(ret<=0)
+   goto ex;
+
  fmt= flag & 15;
  drive= skin->drives[skin->driveno].drive;
  ret= burn_disc_get_leadin_text(drive, &text_packs, &num_packs, 0);
  if(ret <= 0 || num_packs <= 0) {
    fprintf(stderr, "cdrskin: No CD-Text or CD-Text unaware drive.\n");
-   return(2);
+   ret= 2; goto ex;
  }  
  if(fmt == 1) {
    ret = burn_make_input_sheet_v07t(text_packs, num_packs, 0, 0, &result,
@@ -5034,6 +5064,7 @@ ex:;
    fclose(fp);
  return(1);
 }
+
 
 /** Perform -toc under control of Cdrskin_atip().
     @param flag Bitfield for control purposes:
@@ -5856,6 +5887,117 @@ int Cdrskin_read_textfile(struct CdrskiN *skin, char *path, int flag)
 ex:;
  if(ret <= 0 && text_packs != NULL)
    free(text_packs);
+ return(ret);
+}
+
+
+/*
+    @param flag         Bitfield for control purposes:
+                        bit3= Enable DAP : "flaw obscuring mechanisms like
+                                            audio data mute and interpolate"
+*/
+int Cdrskin_extract_audio_to_dir(struct CdrskiN *skin,
+                                 char *dir, char *basename,
+                                 char print_tracks[100], int flag)
+{
+ int num_sessions= 0, num_tracks= 0, profile_number, session_no, track_no;
+ int track_count= 0, existing= 0, ret, pass, not_audio= 0, pick_tracks= 0, i;
+ int tracks_extracted= 0, min_tno= 100, max_tno= 0;
+ struct burn_drive *drive;
+ struct burn_disc *disc= NULL;
+ struct burn_session **sessions;
+ struct burn_track **tracks;
+ enum burn_disc_status s;
+ struct burn_toc_entry toc_entry;
+ struct stat stbuf;
+ char profile_name[80], path[4096 + 256];
+
+ ret= Cdrskin_grab_drive(skin, 0);
+ if(ret<=0)
+   goto ex;
+ drive= skin->drives[skin->driveno].drive;
+ s= burn_disc_get_status(drive);
+ disc= burn_drive_get_disc(drive);
+ if(s == BURN_DISC_EMPTY || s == BURN_DISC_BLANK || disc == NULL) {
+not_readable:;
+   fprintf(stderr, "cdrskin: SORRY : No audio CD in drive.\n");
+   ret= 0; goto ex;
+ }
+ ret= burn_disc_get_profile(drive, &profile_number, profile_name);
+ if(ret <= 0 || profile_number < 0x08 || profile_number > 0x0a) {
+not_audio_cd:;
+   fprintf(stderr, "cdrskin: SORRY : Medium in drive is not an audio CD.\n");
+   ret= 0; goto ex;
+ }
+ for(i= 0; i < 99; i++)
+   if(print_tracks[i])
+     pick_tracks= 1;
+ sessions= burn_disc_get_sessions(disc, &num_sessions);
+ if(num_sessions <= 0)
+   goto not_readable;
+ for(pass= 0; pass < 2; pass++) {
+   if(pass > 0) {
+     if(existing > 0)
+       {ret= 0; goto ex;}
+     if(not_audio == track_count)
+       goto not_audio_cd;
+   }
+   track_count= 0;
+   for(session_no= 0; session_no < num_sessions; session_no++) {
+     tracks= burn_session_get_tracks(sessions[session_no],&num_tracks);
+     if(tracks==NULL)
+   continue;
+     for(track_no= 0; track_no < num_tracks; track_no++) {
+       track_count++;
+       burn_track_get_entry(tracks[track_no], &toc_entry);
+       if(toc_entry.point < min_tno)
+         min_tno= toc_entry.point;
+       if(toc_entry.point > max_tno)
+         max_tno= toc_entry.point;
+       if(pick_tracks) {
+         if(toc_entry.point <= 0 || toc_entry.point > 99)
+     continue;                                          /* should not happen */
+         if(print_tracks[toc_entry.point] == 0)
+     continue;
+       }
+       if((toc_entry.control & 7) >= 4) {
+         if(pass == 0)
+           fprintf(stderr,
+                   "cdrskin: WARNING : Track %2.2d is not an audio track.\n",
+                   toc_entry.point);
+         not_audio++;
+     continue;
+       }
+       sprintf(path, "%s/%s%2.2u.wav", dir, basename, toc_entry.point);
+       if(pass == 0) {
+         if(stat(path, &stbuf) != -1) {
+           fprintf(stderr,
+                   "cdrskin: SORRY : May not overwrite existing file: '%s'\n",
+                   path);
+           existing++;
+         }
+     continue;
+       }
+       if(skin->verbosity >= Cdrskin_verbose_progresS)
+         fprintf(stderr, "cdrskin: Writing audio track file: %s\n", path);
+       ret= burn_drive_extract_audio_track(drive, tracks[track_no], path,
+                   (flag & 8) | (skin->verbosity >= Cdrskin_verbose_progresS));
+       if(ret <= 0)
+         goto ex;
+       tracks_extracted++;
+     }
+   }
+ }
+ if(tracks_extracted == 0 && pick_tracks) {
+   fprintf(stderr,
+  "cdrskin: SORRY : Not a single track matched the list of extract_tracks=\n");
+   if(min_tno < 100 && max_tno > 0)
+     fprintf(stderr, "cdrskin: HINT : Track range is %2.2d to %2.2d\n",
+             min_tno, max_tno);
+   ret= 0; goto ex;
+ }
+ ret= 1;
+ex:;
  return(ret);
 }
 
@@ -8303,6 +8445,68 @@ dvd_obs:;
        ClN(printf("cdrskin: ignoring obsolete  eject_device=%s\n",
               skin->eject_device));
 
+   } else if(strncmp(argv[i],"-extract_audio_to=", 18)==0) {
+     value_pt= argpt + 18;
+     goto extract_audio_to;
+   } else if(strncmp(argpt, "extract_audio_to=", 17) == 0) {
+     value_pt= argpt + 17;
+extract_audio_to:;
+     if(strlen(value_pt) >= sizeof(skin->extract_audio_dir)) {
+       fprintf(stderr,
+               "cdrskin: FAILURE : extract_audio_to=... is much too long.\n");
+       return(0);
+     }
+     skin->do_extract_audio= 1;
+     strcpy(skin->extract_audio_dir, value_pt);
+
+   } else if(strncmp(argv[i],"-extract_tracks=", 16)==0) {
+     value_pt= argpt + 16;
+     goto extract_tracks;
+   } else if(strncmp(argpt, "extract_tracks=", 15) == 0) {
+     value_pt= argpt + 15;
+extract_tracks:;
+     value= 0.0;
+     for(cpt= value_pt; ; cpt++) {
+       if(*cpt >= '0' && *cpt <= '9') {
+         value= value * 10 + *cpt - '0';
+       } else {
+         if(value >= 1.0 && value <= 99.0) {
+           skin->extract_audio_tracks[(int) value]= 1;
+           if(skin->verbosity >= Cdrskin_verbose_cmD)
+             fprintf(stderr, "cdrskin: Will extract track number %.f\n",
+                             value);
+         } else {
+           fprintf(stderr,
+           "cdrskin: WARNING : extract_tracks= with unsuitable number: %.f\n",
+                   value);
+         }
+         if(*cpt == 0)
+     break;
+         value= 0;
+       }
+     }
+
+   } else if(strncmp(argv[i],"-extract_basename=", 18)==0) {
+     value_pt= argpt + 18;
+     goto extract_basename;
+   } else if(strncmp(argpt, "extract_basename=", 17) == 0) {
+     value_pt= argpt + 17;
+extract_basename:;
+     if(strchr(value_pt, '/') != NULL) {
+       fprintf(stderr,
+         "cdrskin: FAILURE : extract_basename=... may not contain '/'\n");
+       return(0);
+     }
+     if(strlen(value_pt) > 248) {
+       fprintf(stderr,
+         "cdrskin: FAILURE : Oversized extract_basename=... (Max. 248)\n");
+       return(0);
+     }
+     strcpy(skin->extract_basename, value_pt);
+
+   } else if(strcmp(argv[i],"--extract_dap") == 0) {
+     skin->extract_flags|= 8;
+
 #ifndef Cdrskin_extra_leaN
 
    } else if(strcmp(argv[i],"--fifo_disable")==0) {
@@ -9281,6 +9485,14 @@ int Cdrskin_run(struct CdrskiN *skin, int *exit_value, int flag)
  }
  if(skin->do_cdtext_to_vt07) {
    ret= Cdrskin_cdtext_to_file(skin, skin->cdtext_to_vt07_path, 1);
+   if(ret<=0)
+     {*exit_value= 19; goto ex;}
+ }
+ if(skin->do_extract_audio) {
+   ret= Cdrskin_extract_audio_to_dir(skin, skin->extract_audio_dir,
+                                     skin->extract_basename,
+                                     skin->extract_audio_tracks,
+                                     skin->extract_flags & 8);
    if(ret<=0)
      {*exit_value= 19; goto ex;}
  }
