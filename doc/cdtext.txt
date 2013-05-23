@@ -403,7 +403,7 @@ Byte :Value Meaning
 -------------------------------------------------------------------------------
 Overview of libburn API calls for CD-TEXT (see libburn/libburn.h for details):
 
-libburn can retrieve the set of text packs from a CD:
+libburn can retrieve the array of text packs from a CD:
 
   int burn_disc_get_leadin_text(struct burn_drive *d,
                                 unsigned char **text_packs, int *num_packs,
@@ -418,7 +418,7 @@ This set may be attached as array of readily formatted text packs by:
                                       unsigned char *text_packs,
                                       int num_packs, int flag);
 
-The array may be read from a file by
+The array of text packs may be read from a file by
 
   int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
                                 int *num_packs, int flag);
@@ -452,6 +452,12 @@ There is a reader for Sony Input Sheet Version 0.7T:
 
   int burn_session_input_sheet_v07t(struct burn_session *session,
                                     char *path, int block, int flag);
+
+and a writer which converts an array of text packs to such a Sony Input Sheet:
+
+  int burn_make_input_sheet_v07t(unsigned char *text_packs, int num_packs,
+                                 int start_tno, int track_count,
+                                 char **result, int *char_code, int flag);
 
 CD-TEXT can be read from a CDRWIN cue sheet file which defines the tracks
 of a session
