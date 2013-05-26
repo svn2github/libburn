@@ -2937,6 +2937,8 @@ set_dev:;
      printf(
          " --xa1-ignore       with -xa1 do not strip 8 byte headers\n");
      printf(
+ " -xamix             DO NOT USE (Dummy announcement to make K3B use -xa)\n");
+     printf(
         "Preconfigured arguments are read from the following startup files\n");
      printf(
           "if they exist and are readable. The sequence is as listed here:\n");
