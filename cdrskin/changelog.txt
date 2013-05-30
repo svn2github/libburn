@@ -11926,18 +11926,32 @@ cdrskin/cdrskin.c
 cdrskin/cdrskin.1
 New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= , --extract_dap 
 
-  []
+23 May 2013  [5070]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+------------------------------------ cycle  - cdrskin-1.3.1 - 2013.05.23.155617
 * New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track() 
 * New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,
   --extract_dap 
 
 
+23 May 2013  [5071]
+doc/cdtext.txt
+Updated documentation about CD-TEXT
+
+2013.05.26.185945  [5072]
+cdrskin/cdrskin.c
+Luring K3B into using -xa rather than -xa1
+
+2013.05.30.133008  [5076]
+cdrskin/cdrskin.c
+Bug fix: cdrskin -msinfo on DVD and BD reported
+old session start == next writable address.
+Regression introduced by version 1.2.8 (rev 4956).
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
@@ -11945,7 +11959,17 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.3.1 - 
+* Bug fix: cdrskin -msinfo on DVD and BD reported
+           old session start == next writable address.
+           Regression introduced by version 1.2.8 (rev 4956).
 
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.1 - 
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
