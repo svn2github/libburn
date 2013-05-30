@@ -7872,6 +7872,15 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
  continue;
    burn_track_get_entry(tracks[0],&toc_entry);
    if(toc_entry.extensions_valid&1) { /* DVD extension valid */
+     if(session_no >= num_sessions) {
+       if(!(toc_entry.extensions_valid & 4))
+ continue; /* open session with no track status bits from libburn */
+       if((toc_entry.track_status_bits & (1 << 14)) ||
+          !((toc_entry.track_status_bits & (1 << 16)) ||
+            ((toc_entry.track_status_bits & (1 << 17)) &&
+             toc_entry.last_recorded_address > toc_entry.start_lba)))
+ continue; /* Blank or not appendable and not recorded */
+     }   
      lba= toc_entry.start_lba;
    } else {
      lba= burn_msf_to_lba(toc_entry.pmin,toc_entry.psec,toc_entry.pframe);
