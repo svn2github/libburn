@@ -65,7 +65,7 @@ connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-1.3.0</DT>
+<DT>libburn-1.3.0.pl01</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -200,13 +200,13 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.3.0.tar.gz">cdrskin-1.3.0.tar.gz</A>
+<DD><A HREF="cdrskin-1.3.0.pl01.tar.gz">cdrskin-1.3.0.pl01.tar.gz</A>
 (950 KB).
 </DD>
-<DD><A HREF="cdrskin-1.3.0.tar.gz.sig">cdrskin-1.3.0.tar.gz.sig</A></DD>
+<DD><A HREF="cdrskin-1.3.0.pl01.tar.gz.sig">cdrskin-1.3.0.pl01.tar.gz.sig</A></DD>
 <DD>
 (detached GPG signature for verification by
-<KBD>gpg --verify cdrskin-1.3.0.tar.gz.sig cdrskin-1.3.0.tar.gz</KBD>
+<KBD>gpg --verify cdrskin-1.3.0.pl01.tar.gz.sig cdrskin-1.3.0.pl01.tar.gz</KBD>
 <BR>
 after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
@@ -278,12 +278,21 @@ DVD+R with damaged TOC were reported by -minfo with wrong end address
 -->
 </UL>
 
+Bug fix towards cdrskin-1.3.0:
+<UL>
+<LI>
+cdrskin -msinfo on DVD and BD reported
+old session start = next writable address.
+Regression introduced by version 1.2.8
+</LI>
+</UL>
+
 <HR>
 
 <P>
 <DL>
 <DT><H3>Development snapshot, version 1.3.1 :</H3></DT>
-<DD>Enhancements towards current stable version 1.3.0:
+<DD>Enhancements towards current stable version 1.3.0.pl01:
 <UL>
 <LI>
 New option textfile_to_v07t=
@@ -302,11 +311,9 @@ New options extract_audio_to= , extract_tracks= , extract_basename= ,
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-1.3.0:
+<DD>Bug fixes towards cdrskin-1.3.0.pl01:
 <UL>
-<LI>cdrskin -msinfo on DVD and BD reported old session start =
-next writable address. Regression introduced by version 1.2.8.
-</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->

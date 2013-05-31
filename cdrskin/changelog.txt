@@ -11958,10 +11958,48 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+------------------------------------ cycle  - cdrskin-1.3.1 - 2013.05.30.133756
 * Bug fix: cdrskin -msinfo on DVD and BD reported
            old session start == next writable address.
            Regression introduced by version 1.2.8 (rev 4956).
+
+
+31 May 2013  [5079]
+svn copy -m Branching for libburn bugfix release 1.3.0.pl01
+http://svn.libburnia-project.org/libburn/tags/1.3.0
+http://svn.libburnia-project.org/libburn/branches/1.3.0.pl01
+
+2013.05.31.080001  [5080]
+cdrskin/cdrskin.c
+Bug fix: cdrskin -msinfo on DVD and BD reported
+old session start = next writable address.
+Regression introduced by version 1.2.8 (rev 4956).
+
+31 May 2013  [5081]
+README
+cdrskin/README
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Mentioned bug fix and pl01
+
+31 May 2013  [5082]
+svn move -m libburn bugfix release 1.3.0.pl01 is ready
+http://svn.libburnia-project.org/libburn/branches/1.3.0.pl01
+http://svn.libburnia-project.org/libburn/tags/1.3.0.pl01
+
+------------------------------ release - libburn-1.3.0.pl01 - 2013.05.31.080001
+* Bug fix: cdrskin -msinfo on DVD and BD reported
+           old session start = next writable address.
+           Regression introduced by version 1.2.8 (rev 4956).
+
+  []
+README
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Mentioned bug fix and pl01
+
 
   []
 ChangeLog
@@ -11970,6 +12008,7 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.3.1 - 
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
