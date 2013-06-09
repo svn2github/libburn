@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 
 /* ts A80914 : This is unneeded. Version info comes from libburn.h.
@@ -351,13 +352,15 @@ double burn_get_time(int flag)
 	int ret;
 	struct timeval tv;
 
-#ifdef Xorriso_use_clock_gettime_monotoniC
+#ifdef Libburn_use_clock_gettime_monotoniC
+#ifdef _POSIX_MONOTONIC_CLOCK
 
 	struct timespec tp;
-	ret = clock_gettime(CLOCK_MONOTONIC, &tp)
+	ret = clock_gettime(CLOCK_MONOTONIC, &tp);
 	if (ret == 0)
 		return ((double) tp.tv_sec) + ((double) tp.tv_nsec) * 1.0e-9;
 
+#endif /* _POSIX_MONOTONIC_CLOCK */
 #endif /* Xorriso_use_clock_gettime_monotoniC */
 
 	ret = gettimeofday(&tv, NULL);
