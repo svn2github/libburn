@@ -353,7 +353,14 @@ double burn_get_time(int flag)
 	struct timeval tv;
 
 #ifdef Libburn_use_clock_gettime_monotoniC
+#ifdef _POSIX_TIMERS
 #ifdef _POSIX_MONOTONIC_CLOCK
+
+	/* Enable by
+	     export CFLAGS=-DLibburn_use_clock_gettime_monotoniC
+	     export LIBS=-lrt
+	     ./configure ... && make clean && make
+	*/
 
 	struct timespec tp;
 	ret = clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -361,6 +368,7 @@ double burn_get_time(int flag)
 		return ((double) tp.tv_sec) + ((double) tp.tv_nsec) * 1.0e-9;
 
 #endif /* _POSIX_MONOTONIC_CLOCK */
+#endif /* _POSIX_TIMERS */
 #endif /* Xorriso_use_clock_gettime_monotoniC */
 
 	ret = gettimeofday(&tv, NULL);

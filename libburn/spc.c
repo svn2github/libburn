@@ -1676,7 +1676,7 @@ int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
 			                        dxfer_len, fp, 0);
 		}
 		if (!(flag & 2))
-			fprintf(fp, "   %6.f us     [ %.f ]\n",
+			fprintf(fp, " %8.f us     [ %.f ]\n",
 			        duration * 1.0e6,
 			        (burn_get_time(0) - lib_start_time) * 1.0e6);
 		if (burn_sg_log_scsi & 4)
