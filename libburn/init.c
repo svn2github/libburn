@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -31,6 +31,7 @@
 #include "libburn.h"
 #include "drive.h"
 #include "transport.h"
+#include "util.h"
 
 /* ts A60825 : The storage location for back_hacks.h variables. */
 #define BURN_BACK_HACKS_INIT 1
@@ -42,6 +43,9 @@ struct libdax_msgs *libdax_messenger= NULL;
 
 
 int burn_running = 0;
+
+double lib_start_time;
+
 
 /* ts A60813 : GNU/Linux: whether to use O_EXCL on open() of device files
    ts B00212 : FreeBSD:   whether to use flock(LOCK_EX) after open()
@@ -136,6 +140,8 @@ int burn_initialize(void)
 
 	if (burn_running)
 		return 1;
+
+	lib_start_time = burn_get_time(0);
 	burn_support_untested_profiles = 0;
 	ret = burn_msgs_initialize();
 	if (ret <= 0)

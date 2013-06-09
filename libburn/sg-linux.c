@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -404,13 +404,13 @@ static int sgio_log_cmd(unsigned char *cmd, int cmd_len, FILE *fp_in, int flag)
 /* ts B11110 */
 static int sgio_log_reply(unsigned char *opcode, int data_dir,
                           unsigned char *data, int dxfer_len,
-                          void *fp_in, unsigned char sense[18],
-                          int sense_len, int duration, int flag)
+                          void *fp_in, unsigned char sense[18], int sense_len,
+                          double duration, int flag)
 {
 	int ret;
 
 	ret = scsi_log_reply(opcode, data_dir, data, dxfer_len, fp_in,
-	                     sense, sense_len, duration, flag);
+	                   sense, sense_len, duration, flag);
 	return ret;
 }
 
@@ -420,6 +420,7 @@ static int sgio_test(int fd)
 	unsigned char test_ops[] = { 0, 0, 0, 0, 0, 0 };
 	sg_io_hdr_t s;
 	int ret;
+	double c_start_time, c_end_time;
 
 	memset(&s, 0, sizeof(sg_io_hdr_t));
 	s.interface_id = 'S';
@@ -430,10 +431,12 @@ static int sgio_test(int fd)
 
 	sgio_log_cmd(s.cmdp, s.cmd_len, NULL, 0);
 
+	c_start_time = burn_get_time(0);
 	ret= ioctl(fd, SG_IO, &s);
+	c_end_time = burn_get_time(0);
 
-	sgio_log_reply(s.cmdp, NO_TRANSFER, NULL, 0,
-                       NULL, s.sbp, s.sb_len_wr, s.duration, 0);
+	sgio_log_reply(s.cmdp, NO_TRANSFER, NULL, 0, NULL,
+	               s.sbp, s.sb_len_wr, c_end_time - c_start_time, 0);
 	return ret;
 }
 
@@ -446,6 +449,7 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 	unsigned char *sense = NULL;
 	char *msg = NULL, *msg_pt;
 	int ret = 0, i;
+	double c_start_time, c_end_time;
 
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(sense, unsigned char, 128);
@@ -465,7 +469,9 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 
 	sgio_log_cmd(s.cmdp, s.cmd_len, NULL, 0);
 
+	c_start_time = burn_get_time(0);
 	ret = ioctl(fd, SG_IO, &s);
+	c_end_time = burn_get_time(0);
 	if (ret == -1) {
 		sprintf(msg,
 			 "INQUIRY on '%s' : ioctl(SG_IO) failed , errno= %d",
@@ -476,8 +482,8 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 		goto ex;
 	}
 
-	sgio_log_reply(s.cmdp, FROM_DRIVE, buf->data, s.dxfer_len,
-                       NULL, s.sbp, s.sb_len_wr, s.duration, 0);
+	sgio_log_reply(s.cmdp, FROM_DRIVE, buf->data, s.dxfer_len, NULL,
+                       s.sbp, s.sb_len_wr, c_end_time - c_start_time, 0);
 
 	if (s.sb_len_wr > 0 || s.host_status != Libburn_sg_host_oK ||
 	    s.driver_status != Libburn_sg_driver_oK) {
@@ -1992,7 +1998,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	for(i = 0; !done; i++) {
 
 		memset(c->sense, 0, sizeof(c->sense));
+		c->start_time = burn_get_time(0);
+
 		err = ioctl(d->fd, SG_IO, &s);
+
+		c->end_time = burn_get_time(0);
 
 		/* ts A61010 */
 		/* a ssert(err != -1); */
@@ -2009,7 +2019,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			{ret = -1; goto ex;}
 		}
                 done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
-				s.duration, start_time, s.timeout, i, 0);
+				             start_time, s.timeout, i, 0);
 		if (d->cancel)
 			done = 1;
 	}

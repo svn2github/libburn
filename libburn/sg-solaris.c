@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2010 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2010 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -637,7 +637,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	for(i = 0; !done; i++) {
 
 		memset(c->sense, 0, sizeof(c->sense));
+		c->start_time = burn_get_time(0);
+
 		ret = ioctl(d->fd, USCSICMD, &cgc);
+
+		c->end_time = burn_get_time(0);
 
 		/* For cgc.uscsi_status see SAM-3 5.3.1, Table 22
 		   0 = GOOD , 2 = CHECK CONDITION : Sense Data are delivered
@@ -669,8 +673,8 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			sense_len = 18;
 		else
 			sense_len = 0;
-		done = scsi_eval_cmd_outcome(d, c, fp, c->sense, sense_len, 0,
-						start_time, timeout_ms, i, 2);
+		done = scsi_eval_cmd_outcome(d, c, fp, c->sense, sense_len,
+						start_time, timeout_ms, i, 0);
 		if (d->cancel)
 			done = 1;
 					

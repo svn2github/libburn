@@ -1,9 +1,16 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
+/* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPL version 2 or later.
+*/
+
 #ifndef BURN__INIT_H
 #define BURN__INIT_H
 
 extern int burn_running;
+
+extern double lib_start_time;
 
 /** Indicator for burn_drive_get_status() wether a signal hit parts of the
     thread team. 

@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -33,6 +33,7 @@
 #include "debug.h"
 #include "options.h"
 #include "init.h"
+#include "util.h"
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -1649,9 +1650,8 @@ int scsi_log_cmd(struct command *c, void *fp_in, int flag)
 */
 int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
                    int dxfer_len, void *fp_in, unsigned char sense[18],
-		   int sense_len, int duration, int flag)
+		   int sense_len, double duration, int flag)
 {
-	char durtxt[20];
 	FILE *fp = fp_in;
 	int key, asc, ascq, i, l;
 
@@ -1667,20 +1667,18 @@ int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
 			for (i = 0 ; i < l; i++)
 				fprintf(fp, " %2.2X", sense[i]);
 			fprintf(fp, "\n");
-			durtxt[0] = 0;
-			if (!(flag & 2))
-  				sprintf(durtxt, "   (%6d ms)", duration);
 			spc_decode_sense(sense, 0, &key, &asc, &ascq);
-  			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh%s\n",
+  			fprintf(fp, "+++ key=%X  asc=%2.2Xh  ascq=%2.2Xh\n",
 				(unsigned int) key, (unsigned int) asc,
-				(unsigned int) ascq, durtxt);
+				(unsigned int) ascq);
 		} else {
 			scsi_show_command_reply(opcode, data_dir, data,
 			                        dxfer_len, fp, 0);
-
-			if (!(flag & 2))
-				fprintf(fp,"%6d ms\n", duration);
 		}
+		if (!(flag & 2))
+			fprintf(fp, "   %6.f us     [ %.f ]\n",
+			        duration * 1.0e6,
+			        (burn_get_time(0) - lib_start_time) * 1.0e6);
 		if (burn_sg_log_scsi & 4)
 			fflush(fp);
 	}
@@ -1698,16 +1696,19 @@ int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
     @param flag  bit0 causes an error message
                  bit1 do not print duration
 */
-int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
-		 int sense_len, int duration, int flag)
+int scsi_log_err(struct burn_drive *d, struct command *c,
+                 void *fp_in, unsigned char sense[18],
+		 int sense_len, int flag)
 {
 	int ret;
 	unsigned char *data = NULL;
 
 	if (c->page != NULL)
 		data = c->page->data;
+
 	ret= scsi_log_reply(c->opcode, c->dir, data, c->dxfer_len ,
-	                    fp_in, sense, sense_len, duration, flag);
+	                    fp_in, sense, sense_len,
+	                    c->end_time - c->start_time, flag);
 	return ret;
 }
 
@@ -1720,7 +1721,7 @@ int scsi_log_err(struct command *c, void *fp_in, unsigned char sense[18],
 */
 int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 			unsigned char *sense, int sense_len,
-			int duration, time_t start_time, int timeout_ms,
+			time_t start_time, int timeout_ms,
 			int loop_count, int flag)
 {
 	enum response outcome;
@@ -1728,7 +1729,7 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp,
 	char *msg = NULL;
 
 	if (burn_sg_log_scsi & 3)
-		scsi_log_err(c, fp, sense, sense_len, duration,
+		scsi_log_err(d, c, fp, sense, sense_len,
 				 (sense_len > 0) | (flag & 2));
 	if (sense_len <= 0)
 		{done = 1; goto ex;}

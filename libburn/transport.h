@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -65,6 +65,10 @@ struct command
 	int retry;
 	struct buffer *page;
 	int timeout; /* milliseconds */
+
+	double start_time;
+	double end_time;
+
 };
 
 struct burn_scsi_inquiry_data

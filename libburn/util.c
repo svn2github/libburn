@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -15,6 +15,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
+
 
 /* ts A80914 : This is unneeded. Version info comes from libburn.h.
 #include "v ersion.h"
@@ -339,6 +342,28 @@ void burn_int_to_lsb(int val, char *target)
 	buf[1] = (val >> 8) & 0xff;
 	buf[2] = (val >> 16) & 0xff;
 	buf[3] = (val >> 24) & 0xff;
+}
+
+
+/* ts B30609 */
+double burn_get_time(int flag)
+{
+	int ret;
+	struct timeval tv;
+
+#ifdef Xorriso_use_clock_gettime_monotoniC
+
+	struct timespec tp;
+	ret = clock_gettime(CLOCK_MONOTONIC, &tp)
+	if (ret == 0)
+		return ((double) tp.tv_sec) + ((double) tp.tv_nsec) * 1.0e-9;
+
+#endif /* Xorriso_use_clock_gettime_monotoniC */
+
+	ret = gettimeofday(&tv, NULL);
+	if (ret == 0)
+		return ((double) tv.tv_sec) + ((double) tv.tv_usec) * 1.0e-6;
+	return (double) time(NULL);
 }
 
 

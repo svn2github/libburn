@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -87,15 +87,16 @@ int scsi_log_cmd(struct command *c, void *fp, int flag);
 */
 int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
                    int dxfer_len, void *fp_in, unsigned char sense[18],
-                   int sense_len, int duration, int flag);
+                   int sense_len, double duration, int flag);
 
 /* ts A91221 (former sg_log_err ts A91108) */
 /** Legacy frontend to scsi_log_reply().
     @param flag  bit0 causes an error message
                  bit1 do not print duration
 */
-int scsi_log_err(struct command *c, void *fp, unsigned char sense[18], 
-                 int sense_len, int duration, int flag);
+int scsi_log_err(struct burn_drive *d, struct command *c,
+                 void *fp, unsigned char sense[18], 
+                 int sense_len, int flag);
 
 /* ts B00728 */
 int spc_decode_sense(unsigned char *sense, int senselen,
@@ -109,7 +110,7 @@ int spc_decode_sense(unsigned char *sense, int senselen,
 */
 int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp_in,
                         unsigned char *sense, int sense_len,
-                        int duration, time_t start_time, int timeout_ms,
+                        time_t start_time, int timeout_ms,
 			int loop_count, int flag);
 
 

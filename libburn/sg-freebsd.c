@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* 
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later
         and under FreeBSD license revised, i.e. without advertising clause.
 */
@@ -861,8 +861,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 		memset(&ccb->csio.sense_data, 0, sizeof(ccb->csio.sense_data));
 		memset(c->sense, 0, sizeof(c->sense));
+		c->start_time = burn_get_time(0);
+
 		err = cam_send_ccb(d->cam, ccb);
 
+		c->end_time = burn_get_time(0);
 		ignore_error = sense_len = 0;
 		/* ts B00325 : CAM_AUTOSNS_VALID advised by Alexander Motin */
 		if (ccb->ccb_h.status & CAM_AUTOSNS_VALID) {
@@ -959,19 +962,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				c->sense[13] = 0x00;
 				done = 1;
 			}
-
-			/* >>> Need own duration time measurement.
-			       Then remove bit1 from flag.
-			*/
-			done = scsi_eval_cmd_outcome(d, c, fp, c->sense,
-						sense_len, 0, start_time,
-						timeout_ms, i,
-						2 | !!ignore_error);
-			if (d->cancel)
-				done = 1;
-		} else {
-			done = 1;
 		}
+		done = scsi_eval_cmd_outcome(d, c, fp, c->sense,
+						sense_len, start_time,
+						timeout_ms, i, !!ignore_error);
+		if (d->cancel)
+			done = 1;
 	} while (!done);
 	ret = 1;
 ex:;

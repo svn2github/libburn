@@ -11,4 +11,7 @@ char *burn_printify(char *msg);
 /* ts B30521 */
 void burn_int_to_lsb(int val, char *target);
 
+/* ts B30609 */
+double burn_get_time(int flag);
+
 #endif

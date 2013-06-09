@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2009 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2009 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -669,9 +669,12 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 	for(i = 0; !done; i++) {
 
 		memset(c->sense, 0, sizeof(c->sense));
+		c->start_time = burn_get_time(0);
+
 		i_status = mmc_run_cmd(p_cdio, timeout_ms, &cdb, e_direction,
 				 	dxfer_len, c->page->data);
 
+		c->end_time = burn_get_time(0);
 		sense_valid = mmc_last_cmd_sense(p_cdio, &sense_pt);
 		if (sense_valid >= 18) {
 			memcpy(c->sense, (unsigned char *) sense_pt,
@@ -717,7 +720,7 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		else
 			sense_len = 0;
 		done = scsi_eval_cmd_outcome(d, c, fp,  c->sense, sense_len,
-					0, start_time, timeout_ms, i, 2);
+					     start_time, timeout_ms, i, 0);
 		if (d->cancel)
 			done = 1;
 
