@@ -9,6 +9,7 @@ SVN trunk (to become libburn-1.3.2 or higher)
 * New cdrskin option textfile_to_v07t=
 * New cdrskin options cdtext_to_textfile= and cdtext_to_v07t=
 * New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,   --extract_dap
+* Improved granularity of SCSI log time measurement and added timestamp
 
 
 libburn-1.3.0.pl01.tar.gz Fri May 31 2013
