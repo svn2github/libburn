@@ -119,10 +119,6 @@ int telltoc_aquire_by_adr(char *drive_adr)
 	int ret;
 	char libburn_drive_adr[BURN_DRIVE_ADR_LEN];
 
-	/* <<< ts A70907 FOR TESTING ONLY !
-	struct burn_drive_info *test_drive_list;
-	*/
-
 	/* This tries to resolve links or alternative device files */
 	ret = burn_drive_convert_fs_adr(drive_adr, libburn_drive_adr);	
 	if (ret<=0) {
@@ -130,10 +126,6 @@ int telltoc_aquire_by_adr(char *drive_adr)
 			drive_adr);
 		return 0;
 	}
-
-	/* <<< ts A70907 FOR TESTING ONLY ! 
-	ret = burn_drive_scan_and_grab(&test_drive_list, "/dev/sg2", 1);
-	*/
 
 	fprintf(stderr,"Aquiring drive '%s' ...\n", libburn_drive_adr);
 	ret = burn_drive_scan_and_grab(&drive_list, libburn_drive_adr, 1);
@@ -145,10 +137,6 @@ int telltoc_aquire_by_adr(char *drive_adr)
 		fprintf(stderr,"Done\n");
 		drive_is_grabbed = 1;
 	}
-
-	/* <<< ts A70907 FOR TESTING ONLY !
-	burn_drive_info_free(test_drive_list);
-	*/
 
 	return ret;
 }
