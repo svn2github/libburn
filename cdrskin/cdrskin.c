@@ -2637,13 +2637,6 @@ return:
 
    } else if(strcmp(argv[i],"--devices") == 0 ||
              strcmp(argv[i],"--device_links") == 0) {
-#ifndef Cdrskin_extra_leaN
-     printf("Note: If this hangs for a while then there is a drive with\n");
-     printf("      unexpected problems (e.g. ill DMA).\n");
-     printf("      One may exclude such a device file by removing r- and w-\n");
-     printf("      permissions for all cdrskin users.\n");
-#endif /* ! Cdrskin_extra_leaN */
-
      o->no_whitelist= 1;
      o->demands_cdrskin_caps= 1;
 
