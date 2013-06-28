@@ -2104,6 +2104,16 @@ int Cdrpreskin_initialize_lib(struct CdrpreskiN *preskin, int flag)
 {
  int ret, major, minor, micro;
 
+ /* Needed are at least 44 bits in signed type off_t .
+    This is a popular mistake in configuration or compilation.
+ */
+ if(sizeof(off_t) < 6) {
+   fprintf(stderr,
+"\ncdrskin: FATAL : Compile time misconfiguration. sizeof(off_t) too small.\n"
+          );
+   return(0);
+ }
+
 /* This is the minimum requirement of cdrskin towards the libburn header
    at compile time.
    It gets compared against the version macros in libburn/libburn.h :
