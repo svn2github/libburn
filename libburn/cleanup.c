@@ -133,15 +133,27 @@ static void Cleanup_handler_generic(int signum)
 }
 
 
+static char *Cleanup_signo_to_name(int signo)
+{
+ int i;
+ for(i= 0; i < signal_list_count; i++)
+   if(signal_list[i] == signo)
+     return(signal_name_list[i]);
+ return("");
+}
+
+
 int Cleanup_set_handlers(void *handle, Cleanup_app_handler_T handler, int flag)
 /*
  bit0= set to default handlers
  bit1= set to ignore
  bit2= set cleanup_perform_app_handler_first
  bit3= set SIGABRT to handler (makes sense with bits 0 or 1)
+ bit8= set SIGPIPE to SIGIGN
 */
 {
  int i,j,max_sig= -1,min_sig= 0x7fffffff;
+ char *sig_name;
  sighandler_t sig_handler;
 
  cleanup_msg[0]= 0;
@@ -172,8 +184,17 @@ int Cleanup_set_handlers(void *handle, Cleanup_app_handler_T handler, int flag)
      if(i==non_signal_list[j])
    break;
    if(j>=non_signal_list_count) {
-     if(i==SIGABRT && (flag&8))
+     /* Avoid to use particular SIG macros which might not be defined.
+        If ithey are defined, then their names are in the name list.
+     */
+     if(flag & (8 | 256))
+       sig_name= Cleanup_signo_to_name(i);
+     else
+       sig_name= "";
+     if((flag & 8) && strcmp(sig_name, "SIGABRT") == 0)
        signal(i,Cleanup_handler_generic);
+     else if((flag & 256) && strcmp(sig_name, "SIGPIPE") == 0)
+       signal(i, SIG_IGN);
      else
        signal(i,sig_handler);
    }

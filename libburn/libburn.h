@@ -3771,6 +3771,9 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
                       drives to become idle. E.g. by calling burn_abort(>0).
                     4 Like 3, but without calling burn_abort(-1). Only the
                       indicator of burn_is_aborting() gets set.
+                  bit8: @since 1.3.2
+                        try to ignore SIGPIPE (regardless of bit0 - bit3)
+                   
     @since 0.2.6
 */
 void burn_set_signal_handling(void *handle, burn_abort_handler_t handler, 

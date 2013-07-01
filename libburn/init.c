@@ -549,7 +549,7 @@ void burn_set_signal_handling(void *handle, burn_abort_handler_t handler,
 	if(burn_builtin_signal_action == 0)
 		burn_builtin_signal_action = 1;
 	Cleanup_set_handlers(handle, (Cleanup_app_handler_T) handler,
-				 (mode & 15) | 4);
+				 (mode & 15) | 4 | (mode & 256));
 	burn_global_signal_handle = handle;
 	burn_global_signal_handler = handler;
 }
