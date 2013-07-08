@@ -185,7 +185,7 @@ int Cleanup_set_handlers(void *handle, Cleanup_app_handler_T handler, int flag)
    break;
    if(j>=non_signal_list_count) {
      /* Avoid to use particular SIG macros which might not be defined.
-        If ithey are defined, then their names are in the name list.
+        If they are defined, then their names are in the name list.
      */
      if(flag & (8 | 256))
        sig_name= Cleanup_signo_to_name(i);
