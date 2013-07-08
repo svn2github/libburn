@@ -2899,6 +2899,8 @@ set_dev:;
      printf(" --obs_pad          pad DVD DAO to full 16 or 32 blocks\n");
      printf(" --old_pseudo_scsi_adr  use and report literal Bus,Target,Lun\n");
      printf("                    rather than real SCSI and pseudo ATA.\n");
+     printf(
+    " --pacifier_with_newline  do not overwrite pacifier line by next one.\n");
      printf(" --prodvd_cli_compatible  react on some DVD types more like\n");
      printf("                    cdrecord-ProDVD with blank= and -multi\n");
      printf(" sao_postgap=\"off\"|number\n");
@@ -3355,6 +3357,7 @@ struct CdrskiN {
 
  /** Job: what to do, plus some parameters. */
  int verbosity;
+ int pacifier_with_newline;
  double x_speed;
  int adjust_speed_to_drive;
  int gracetime;
@@ -3623,6 +3626,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
    return(-1);
  o->preskin= preskin;
  o->verbosity= preskin->verbosity;
+ o->pacifier_with_newline= 0;
  o->x_speed= -1.0;
  o->adjust_speed_to_drive= 0;
  o->gracetime= 0;
@@ -6346,8 +6350,10 @@ unsupported_format_type:;
        if(p.sectors>0) /* i want a display of 1 to 99 percent */
          percent= 1.0+((double) p.sector+1.0)/((double) p.sectors)*98.0;
        fprintf(stderr,
-          "\rcdrskin: %s ( done %.1f%% , %lu seconds elapsed )          ",
-          presperf,percent,(unsigned long) (Sfile_microtime(0)-start_time));
+          "%scdrskin: %s ( done %.1f%% , %lu seconds elapsed )          %s",
+          skin->pacifier_with_newline ? "" : "\r",
+          presperf,percent,(unsigned long) (Sfile_microtime(0)-start_time),
+          skin->pacifier_with_newline ? "\n" : "");
      }
    sleep(1);
    loop_counter++;
@@ -6356,8 +6362,8 @@ blanking_done:;
  wrote_well = burn_drive_wrote_well(drive);
  if(wrote_well && skin->verbosity>=Cdrskin_verbose_progresS) {
    fprintf(stderr,
-           "\rcdrskin: %s done                                        \n",
-           presperf);
+           "%scdrskin: %s done                                        \n",
+           skin->pacifier_with_newline ? "" : "\r", presperf);
    printf("%s time:   %.3fs\n",
           (do_format==1 || do_format==3 || do_format==4 ?
            "Formatting":"Blanking"),
@@ -6366,8 +6372,8 @@ blanking_done:;
  fflush(stdout);
  if(!wrote_well)
    fprintf(stderr,
-           "\rcdrskin: %s failed                                      \n",
-           presperf);
+           "%scdrskin: %s failed                                      \n",
+           skin->pacifier_with_newline ? "" : "\r", presperf);
  ret= !!(wrote_well);
 ex:;
  skin->drive_is_busy= 0;
@@ -6472,8 +6478,10 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
        if(skin->is_writing)
          fprintf(stderr,"\n");
        fprintf(stderr,
-           "\rcdrskin: %s (burning since %.f seconds)         ",
-           (formatting?"formatting":"working pre-track"), elapsed_total_time);
+           "%scdrskin: %s (burning since %.f seconds)%s",
+           skin->pacifier_with_newline ? "" : "\r",
+           (formatting?"formatting":"working pre-track"), elapsed_total_time,
+           skin->pacifier_with_newline ? "\n" : "         ");
      }
      skin->is_writing= 0;
      advance_interval= 1;
@@ -6488,11 +6496,12 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
      {printf("\nFixating...\n"); fflush(stdout);}
    if(time_to_tell || skin->is_writing) {
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
-       if(skin->is_writing)
+       if(skin->is_writing && !skin->pacifier_with_newline)
          fprintf(stderr,"\n");
        fprintf(stderr,
-           "\rcdrskin: working post-track (burning since %.f seconds)        ",
-           elapsed_total_time);
+               "%scdrskin: working post-track (burning since %.f seconds)%s",
+               skin->pacifier_with_newline ? "" : "\r", elapsed_total_time,
+               skin->pacifier_with_newline ? "\n" : "        ");
      }
      skin->is_writing= 0;
      advance_interval= 1;
@@ -6529,16 +6538,19 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
 thank_you_for_patience:;
    if(time_to_tell || (skin->is_writing && elapsed_total_time>=1.0)) {
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
-       if(skin->is_writing)
+       if(skin->is_writing) {
          fprintf(stderr,"\n");
+       }
        pending[0]= 0;
 /*
        if(bytes_to_write > 0 && skin->verbosity >= Cdrskin_verbose_debuG)
          sprintf(pending, " pnd %.f", bytes_to_write - written_total_bytes);
 */
        fprintf(stderr,
-           "\rcdrskin: thank you for being patient for %.f seconds%21.21s",
-           elapsed_total_time, pending);
+             "%scdrskin: thank you for being patient for %.f seconds%21.21s%s",
+             skin->pacifier_with_newline ? "" : "\r",
+             elapsed_total_time, pending,
+             skin->pacifier_with_newline ? "\n" : "");
      }
      advance_interval= 1;
    }
@@ -6590,8 +6602,8 @@ thank_you_for_patience:;
    skin->is_writing= 1;
  if(skin->supposed_track_idx<0)
    skin->supposed_track_idx= 0;
- if(*last_count<=0.0)
-   printf("%-78.78s\r","");
+ if(*last_count <= 0.0 && !skin->pacifier_with_newline)
+   printf("\r%-78.78s\r", ""); /* wipe output line */
  if(skin->verbosity>=Cdrskin_verbose_progresS) {
    if(flag&1) {
      printf("%.f/%.f (%2.1f%%) @%1.1f, remaining %.f:%2.2d\n",
@@ -6683,9 +6695,11 @@ thank_you_for_patience:;
      if(buffer_fill<*min_buffer_fill)
        *min_buffer_fill= buffer_fill;
 
-     printf("\r%sTrack %-2.2d: %s MB written %s[buf %3d%%]  %4.1fx.",
+     printf("%s%sTrack %-2.2d: %s MB written %s[buf %3d%%]  %4.1fx.%s",
+            skin->pacifier_with_newline ? "" : "\r",
             debug_mark, skin->supposed_track_idx + start_tno, mb_text,
-            fifo_text, buffer_fill,measured_speed/speed_factor);
+            fifo_text, buffer_fill, measured_speed / speed_factor,
+            skin->pacifier_with_newline ? "\n" : "");
      fflush(stdout);
    }
    if(skin->is_writing==0) {
@@ -6704,16 +6718,18 @@ thank_you_for_patience:;
      goto thank_you_for_patience;
    skin->is_writing= 0;
  } else {
-   if(!skin->is_writing)
+   if((!skin->is_writing) && !skin->pacifier_with_newline)
      printf("\n");
    skin->is_writing= 1;
  }
- printf("\rTrack %-2.2d: %3d MB written ",
+ printf("%sTrack %-2.2d: %3d MB written %s",
+        skin->pacifier_with_newline ? "" : "\r",
         skin->supposed_track_idx + start_tno,
-        (int) (written_total_bytes/1024.0/1024.0));
- fflush(stdout);
- if(skin->is_writing==0)
+        (int) (written_total_bytes / 1024.0 / 1024.0),
+        skin->pacifier_with_newline ? "\n" : "");
+ if(skin->is_writing == 0 && !skin->pacifier_with_newline)
    printf("\n");
+ fflush(stdout);
 
 #endif /* Cdrskin_extra_leaN */
 
@@ -6989,9 +7005,13 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
    if(eof_sensed)
  break;
    byte_address+= chunksize;
-   fprintf(stderr,"\r%9.fk written     ",((double) (i+chunksize))/1024.0); 
+   fprintf(stderr, "%s%9.fk written     %s",
+           skin->pacifier_with_newline ? "" : "\r",
+           ((double) (i+chunksize)) / 1024.0,
+           skin->pacifier_with_newline ? "\n" : ""); 
  }
- fprintf(stderr,"\r%9.fk written     \n",((double) i)/1024.0); 
+ fprintf(stderr, "%s%9.fk written     \n",
+         skin->pacifier_with_newline ? "" : "\r", ((double) i) / 1024.0); 
  /* flush drive buffer */
  fprintf(stderr,"syncing cache ...\n"); 
  ret = burn_random_access_write(skin->grabbed_drive,byte_address,buf,0,1);
@@ -8875,6 +8895,9 @@ msifile_equals:;
    } else if(strcmp(argv[i],"--old_pseudo_scsi_adr")==0) {
      /* is handled in Cdrpreskin_setup() */;
 
+   } else if(strcmp(argv[i], "--pacifier_with_newline") == 0) {
+     skin->pacifier_with_newline= 1;
+
    } else if(strcmp(argpt,"-pad")==0) {
      skin->padding= 15*2048;
      skin->set_by_padsize= 0;
@@ -9263,14 +9286,14 @@ ignore_unknown:;
  if(grab_and_wait_value>0) {
    Cdrskin_grab_drive(skin,16);
    for(k= 0; k<grab_and_wait_value; k++) {
-     fprintf(stderr,
-        "\rcdrskin: holding drive grabbed since %d seconds                 ",
-        k);
+     fprintf(stderr, "%scdrskin: holding drive grabbed since %d seconds%s",
+             skin->pacifier_with_newline ? "" : "\r", k,
+             skin->pacifier_with_newline ? "\n" : "                 ");
      usleep(1000000);
    }
    fprintf(stderr,
-        "\rcdrskin: held drive grabbed for %d seconds                      \n",
-        k);
+        "%scdrskin: held drive grabbed for %d seconds                      \n",
+        skin->pacifier_with_newline ? "" : "\r", k);
    Cdrskin_release_drive(skin,0);
  }
      

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.3.1, May 23, 2013"
+.TH CDRSKIN 1 "Version 1.3.1, Jul 08, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -1331,6 +1331,11 @@ which usually lack a motorized tray loader.
 .BI \--no_rc
 Only if used as first command line argument this option prevents reading and
 interpretation of eventual startup files. See section FILES below.
+.TP
+.BI \--pacifier_with_newline
+Adds a newline character to each pacifier line that would elsewise be
+overwritten by the next pacifier line. Such lines are emitted during a
+run of writing, formatting, or blanking if option -v is given. 
 .TP
 .BI \--prodvd_cli_compatible
 Activates behavior modifications with some DVD situations which bring cdrskin
