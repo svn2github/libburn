@@ -4,7 +4,7 @@
    by os.h in case of compilation for
            Linux kernels 2.4 and 2.6, GNU/Linux SCSI Generic (sg)
 
-   Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (C) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -16,29 +16,27 @@
 #define BURN_OS_SIGNAL_MACRO_LIST \
  SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT, \
  SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM, \
- SIGUSR1, SIGUSR2, SIGXCPU, SIGTSTP, SIGTTIN, \
- SIGTTOU, \
- SIGBUS, SIGPOLL, SIGPROF, SIGSYS, SIGTRAP, \
- SIGVTALRM, SIGXCPU, SIGXFSZ
+ SIGUSR1, SIGUSR2, SIGXCPU, SIGBUS, SIGPOLL, \
+ SIGPROF, SIGSYS, SIGTRAP, SIGVTALRM, SIGXCPU, \
+ SIGXFSZ
 
 /* Once as text 1:1 list of strings for messages and interpreters */
 #define BURN_OS_SIGNAL_NAME_LIST \
  "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGABRT", \
  "SIGFPE", "SIGSEGV", "SIGPIPE", "SIGALRM", "SIGTERM", \
- "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGTSTP", "SIGTTIN", \
- "SIGTTOU", \
- "SIGBUS", "SIGPOLL", "SIGPROF", "SIGSYS", "SIGTRAP", \
- "SIGVTALRM", "SIGXCPU", "SIGXFSZ"
+ "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGBUS", "SIGPOLL", \
+ "SIGPROF", "SIGSYS", "SIGTRAP", "SIGVTALRM", "SIGXCPU", \
+ "SIGXFSZ"
 
 /* The number of above list items */
-#define BURN_OS_SIGNAL_COUNT 24
+#define BURN_OS_SIGNAL_COUNT 21
 
 /** To list all signals which shall surely not be caught */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
-SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
+SIGKILL, SIGCHLD, SIGSTOP, SIGTSTP, SIGCONT, SIGURG, SIGWINCH, SIGTTIN, SIGTTOU
 
 /* The number of above list items */
-#define BURN_OS_NON_SIGNAL_COUNT 5
+#define BURN_OS_NON_SIGNAL_COUNT 9
 
 
 /* The maximum size for a (SCSI) i/o transaction */

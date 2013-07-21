@@ -5,7 +5,8 @@
            Unknown X/Open-like systems
            with GNU libcdio MMC transport adapter sg-libcdio.c
 
-   Copyright (C) 2009 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+   Copyright (C) 2009 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPLv2+
 */
 
 
@@ -16,18 +17,16 @@
 #define BURN_OS_SIGNAL_MACRO_LIST \
  SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT, \
  SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM, \
- SIGUSR1, SIGUSR2, SIGXCPU, SIGTSTP, SIGTTIN, \
- SIGTTOU
+ SIGUSR1, SIGUSR2, SIGXCPU
 
 /* Once as text 1:1 list of strings for messages and interpreters */
 #define BURN_OS_SIGNAL_NAME_LIST \
  "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGABRT", \
  "SIGFPE", "SIGSEGV", "SIGPIPE", "SIGALRM", "SIGTERM", \
- "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGTSTP", "SIGTTIN", \
- "SIGTTOU"
+ "SIGUSR1", "SIGUSR2", "SIGXCPU"
 
 /* The number of above list items */
-#define BURN_OS_SIGNAL_COUNT 16
+#define BURN_OS_SIGNAL_COUNT 13
 
 
 /** The list of all signals which shall surely not be caught.
@@ -56,11 +55,12 @@
 /** The combined list of all signals which shall not be caught.
  */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
-SIGKILL, SIGCHLD, SIGSTOP BURN_OS_SIG_WINCH BURN_OS_SIG_URG
+SIGKILL, SIGCHLD, SIGSTOP, SIGTSTP, SIGCONT, SIGTTIN, SIGTTOU \
+BURN_OS_SIG_WINCH BURN_OS_SIG_URG
 
 /* The number of above list items */
 #define BURN_OS_NON_SIGNAL_COUNT \
-( 3 + BURN_OS_SIG_WINCH_CNT + BURN_OS_SIG_URG_CNT )
+( 7 + BURN_OS_SIG_WINCH_CNT + BURN_OS_SIG_URG_CNT )
 
 
 /* The maximum size for a (SCSI) i/o transaction */

@@ -5,7 +5,8 @@
            Solaris based systems, e.g. SunOS 5.11
            with Solaris uscsi MMC transport adapter sg-solaris.c
 
-   Copyright (C) 2010 Thomas Schmitt <scdbackup@gmx.net>, provided under GPLv2+
+   Copyright (C) 2010 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   provided under GPLv2+
 */
 
 
@@ -16,25 +17,23 @@
 #define BURN_OS_SIGNAL_MACRO_LIST \
  SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT, \
  SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM, \
- SIGUSR1, SIGUSR2, SIGXCPU, SIGTSTP, SIGTTIN, \
- SIGTTOU
+ SIGUSR1, SIGUSR2, SIGXCPU
 
 /* Once as text 1:1 list of strings for messages and interpreters */
 #define BURN_OS_SIGNAL_NAME_LIST \
  "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGABRT", \
  "SIGFPE", "SIGSEGV", "SIGPIPE", "SIGALRM", "SIGTERM", \
- "SIGUSR1", "SIGUSR2", "SIGXCPU", "SIGTSTP", "SIGTTIN", \
- "SIGTTOU"
+ "SIGUSR1", "SIGUSR2", "SIGXCPU"
 
 /* The number of above list items */
-#define BURN_OS_SIGNAL_COUNT 16
+#define BURN_OS_SIGNAL_COUNT 13
 
 /** To list all signals which shall surely not be caught */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
-SIGKILL, SIGCHLD, SIGSTOP, SIGURG, SIGWINCH
+SIGKILL, SIGCHLD, SIGSTOP, SIGTSTP, SIGCONT, SIGTTIN, SIGTTOU, SIGURG, SIGWINCH
 
 /* The number of above list items */
-#define BURN_OS_NON_SIGNAL_COUNT 5
+#define BURN_OS_NON_SIGNAL_COUNT 9
 
 
 /* The maximum size for a (SCSI) i/o transaction */
