@@ -1177,7 +1177,7 @@ int burn_drive_snooze(struct burn_drive *d, int flag);
 /** Re-assess drive and media status. This should be done after a drive
     underwent a status change and shall be further used without intermediate
     burn_drive_release(), burn_drive_grab(). E.g. after blanking or burning.
-    @param drive  The already grabbed drive to re-assess.
+    @param d      The already grabbed drive to re-assess.
     @param flag   Unused yet. Submit 0.
     @return       1 success , <= 0 could not determine drive and media state
     @since 1.1.8
@@ -1977,6 +1977,7 @@ int burn_session_set_start_tno(struct burn_session *session, int tno,
 /** Inquire the CD track start number, as set by default or by 
     burn_session_set_start_tno().
     @param session   The session to be inquired
+    @param flag      Bitfield for control purposes. Unused yet. Submit 0.
     @return          > 0 is the currently set CD track start number
                      <= 0 indicates failure
     @since 1.2.0
@@ -2089,7 +2090,7 @@ int burn_session_set_cdtext_par(struct burn_session *s,
     @param s            Session which to inquire
     @param char_codes   Will return Character Codes for block 0 to 7
     @param copyrights   Will return Copyright bytes for block 0 to 7
-    @param languages    Will return Language Codes for block 0 to 7
+    @param block_languages  Will return Language Codes for block 0 to 7
     @param flag         Bitfiled for control purposes. Unused yet. Submit 0.
     @return             <=0 failure, reply invalid, > 0 success, reply valid
     @since 1.2.0
@@ -2138,7 +2139,7 @@ int burn_session_get_cdtext_par(struct burn_session *s,
                         Pack type 0x8d contains ISO-8859-1 cleartext which is
                         not to be shown by commercial audio CD players.
                         Pack type 0x8e is ASCII cleartext with UPC/EAN code.
-    @pram length        Number of bytes in payload. Including terminating
+    @param length       Number of bytes in payload. Including terminating
                         0-bytes.
     @param flag         Bitfield for control purposes.
                         bit0= payload contains double byte characters
@@ -2187,7 +2188,7 @@ int burn_session_set_cdtext(struct burn_session *s, int block,
                         If no text attribute is attached for pack type and
                         block, then payload is returned as NULL. The return
                         value will not indicate error in this case.
-    @pram length        Will return the number of bytes pointed to by payload.
+    @param length       Will return the number of bytes pointed to by payload.
                         Including terminating 0-bytes.
     @param flag         Bitfield for control purposes. Unused yet. Submit 0.
     @return             1 single byte char, 2 double byte char, <=0 error
@@ -2208,7 +2209,7 @@ int burn_session_get_cdtext(struct burn_session *s, int block,
     The media catalog number from purpose specifier "UPC / EAN" gets into
     effect only if burn_write_opts_set_has_mediacatalog() is set to 0.
     The format of a v07t sheet file is documented in doc/cdtext.txt.
-    @param s           Session where to attach CD-TEXT attributes
+    @param session     Session where to attach CD-TEXT attributes
     @param path        Local filesystem address of the sheet file which
                        shall be read and interpreted.
     @param block       Number of the language block in which the attributes
@@ -2373,7 +2374,7 @@ void burn_track_define_data(struct burn_track *t, int offset, int tail,
                           0x8e = "UPC_ISRC"
     @param payload      0-terminated cleartext. If double byte characters
                         are used, then two 0-bytes terminate the cleartext.
-    @pram length        Number of bytes in payload. Including terminating
+    @param length       Number of bytes in payload. Including terminating
                         0-bytes.
     @param flag         Bitfield for control purposes.
                         bit0= payload contains double byte characters
@@ -2398,7 +2399,7 @@ int burn_track_set_cdtext(struct burn_track *t, int block,
                         If no text attribute is attached for pack type and
                         block, then payload is returned as NULL. The return
                         value will not indicate error in this case.
-    @pram length        Will return the number of bytes pointed to by payload.
+    @param length       Will return the number of bytes pointed to by payload.
                         Including terminating 0-bytes.
     @param flag         Bitfield for control purposes. Unused yet. Submit 0.
     @return             1=single byte char , 2= double byte char , <=0 error
