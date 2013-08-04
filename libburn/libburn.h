@@ -3760,18 +3760,20 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
                     0 Same as 1 (for pre-0.7.8 backward compatibility)
                     @since 0.7.8
                     1 Catch the control thread in abort handler, call
-                      burn_abort(>0) and finally exit(1).
+                      burn_abort() with a patience value > 0 and
+                      finally exit(1). Does not always work with FreeBSD.
+                    2 Call burn_abort() with patience -1 and return from
+                      handler. When the control thread calls
+                      burn_drive_get_status(), then call burn_abort()
+                      with patience 1 instead, and finally exit(1).
                       Does not always work with FreeBSD.
-                    2 Call burn_abort(-1) and return from handler. When the
-                      control thread calls burn_drive_get_status(), then do
-                      burn_abort(>0) instead, and finally exit(1).
-                      Does not always work with FreeBSD.
-                    3 Call burn_abort(-1), return from handler. It is duty of
-                      the application to detect a pending abort condition
-                      by calling burn_is_aborting() and to wait for all
-                      drives to become idle. E.g. by calling burn_abort(>0).
-                    4 Like 3, but without calling burn_abort(-1). Only the
-                      indicator of burn_is_aborting() gets set.
+                    3 Call burn_abort() with patience -1, return from handler.
+                      It is duty of the application to detect a pending abort
+                      condition by calling burn_is_aborting() and to wait for
+                      all drives to become idle. E.g. by calling burn_abort()
+                      with patience >0.
+                    4 Like 3, but without calling burn_abort() with -1. Only
+                      the indicator of burn_is_aborting() gets set.
                   bit8: @since 1.3.2
                         try to ignore SIGPIPE (regardless of bit0 - bit3)
                    
