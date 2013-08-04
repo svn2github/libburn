@@ -76,11 +76,15 @@ extern struct libdax_msgs *libdax_messenger;
 
 /* The size to be used with BD-RE media in normal, not streamed mode.
 */
-#define Libburn_bd_re_obS (32 * 1024)
+#define Libburn_bd_re_obS (64 * 1024)
 
-/* The size to be used with BD-RE media in streamed mode.
+/* The size to be used with BD-R media in normal, not streamed mode.
 */
-#define Libburn_bd_re_streamed_obS (64 * 1024)
+#define Libburn_bd_r_obS (64 * 1024)
+
+/* The size to be used with BD-RE and BD-R media in streamed mode.
+*/
+#define Libburn_bd_streamed_obS (64 * 1024)
 
 
 static int type_to_ctrl(int mode)
@@ -2307,7 +2311,7 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 			if (o->obs_pad < 2)
 				o->obs_pad = 1;
 			if (d->current_profile == 0x43) /* BD-RE */
-				o->obs = Libburn_bd_re_streamed_obS;
+				o->obs = Libburn_bd_streamed_obS;
 		}
 
 	} else if (d->current_profile == 0x13) {
@@ -2385,10 +2389,12 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 		}
 		/* ??? padding needed ??? cowardly doing it for now */
 		if (o->obs_pad < 2)
-			o->obs_pad = 1; /* fill-up track's last 32k buffer */
+			o->obs_pad = 1; /* fill-up track's last obs buffer */
+		if (d->current_profile == 0x41) /* BD-R */
+			o->obs = Libburn_bd_r_obS;
 		if (d->do_stream_recording) {
 			if (d->current_profile == 0x41) /* BD-R */
-				o->obs = Libburn_bd_re_streamed_obS;
+				o->obs = Libburn_bd_streamed_obS;
 		}
 	}
 
@@ -2418,10 +2424,10 @@ int burn_dvd_write_sync(struct burn_write_opts *o,
 
 	if (d->do_stream_recording &&
 		(d->current_profile == 0x43 || d->current_profile == 0x41) &&
-		o->obs < Libburn_bd_re_streamed_obS) {
+		o->obs < Libburn_bd_streamed_obS) {
 		/* LG GGW-H20 writes junk with stream recording and obs=32k */
 		sprintf(msg,
-		    "Stream recording disabled because of small OS buffer");
+		   "Stream recording disabled because of small output buffer");
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			 0x00020176, LIBDAX_MSGS_SEV_NOTE,
 			 LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);

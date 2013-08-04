@@ -221,14 +221,14 @@ CFLAGS="$LIBBURN_O_DIRECT_DEF $CFLAGS"
 
 dnl ts A91116
 AC_ARG_ENABLE(dvd-obs-64k,
-[  --enable-dvd-obs-64k    64 KB default size for DVD/BD writing, default=no],
+[  --enable-dvd-obs-64k    64 KB default size for DVD writing, default=no],
                , enable_dvd_obs_64k=no)
 if test x$enable_dvd_obs_64k = xyes; then
     LIBBURN_DVD_OBS_64K="-DLibburn_dvd_obs_default_64K"
-    echo "enabled  write size default 64 KB on DVD and BD"
+    echo "enabled  write size default 64 KB on DVD"
 else
     LIBBURN_DVD_OBS_64K=
-    echo "disabled write size default 64 KB on DVD and BD"
+    echo "disabled write size default 64 KB on DVD"
 fi
 CFLAGS="$LIBBURN_DVD_OBS_64K $CFLAGS"
 
