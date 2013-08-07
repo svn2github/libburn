@@ -12023,23 +12023,157 @@ libburn/util.c
 libburn/spc.c
 Some polishing of SCSI log time measurement
 
-  []
+12 Jun 2013  [5090]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+------------------------------------ cycle  - cdrskin-1.3.1 - 2013.06.12.104457
 * Improved granularity of SCSI log time measurement, now with timestamp
 
 
+24 Jun 2013  [5091]
+test/telltoc.c
+Removed inactive test code from telltoc.c
+
+2013.06.28.104134  [5093]
+cdrskin/cdrskin.c
+Making sure in cdrskin that off_t is large enough before starting libburn
+
+2013.06.28.104316  [5094]
+cdrskin/cdrskin.c
+Removed an obsolete note message from cdrskin --devices
+
+2013.07.01.155958  [5097]
+libburn/libburn.h
+libburn/init.c
+libburn/cleanup.c
+New mode bit8 with burn_set_signal_handling() to particularly ignore SIGPIPE
+
+2013.07.08.145600  [5110]
+libburn/cleanup.c
+Corrected typo in a comment
+
+2013.07.08.151826  [5111]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New option --pacifier_with_newline
+
+2013.07.21.170714  [5112]
+libburn/os-dummy.h
+libburn/os-freebsd.h
+libburn/os-libcdio.h
+libburn/os-linux.h
+libburn/os-solaris.h
+Bug fix: The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
+
+2013.07.29.091415  [5114]
+libburn/libburn.h
+Reacted on warnings of Debian build service about doxygen flaws
+
+2013.08.04.100247  [5116]
+configure.ac
+libburn/write.c
+cdrskin/cdrskin.1
+Changed default write chunk size for BD to 64 KiB
+
+2013.08.04.124449  [5122]
+libburn/libburn.h
+Reacted on advise from Helmut Grohne to avoid confusion of doxygen
+
+04 Aug 2013  [5124]
+doc/doxygen.conf.in
+Update of doxygen configuration for version 1.8.4 provided by George Danchev
+
+07 Aug 2013  [5125]
+svn copy -m Branching for libburn release 1.3.2
+
+2013.08.07.093001  [5126]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.2
+
+07 Aug 2013  [5127]
+- cdrskin/add_ts_changes_to_libburn_1_3_0
+- cdrskin/add_ts_changes_to_libburn_1_3_1
++ cdrskin/add_ts_changes_to_libburn_1_3_2
++ cdrskin/add_ts_changes_to_libburn_1_3_3
+Updated cdrskin tarball generator
+
+07 Aug 2013  [5128]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------------- release - cdrskin-1.3.2 - 2013.08.07.093001
+* Bug fix: cdrskin -msinfo on DVD and BD reported
+           old session start = next writable address.
+           Regression introduced by version 1.2.8 (rev 4956).
+* Bug fix: The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
+* New API call burn_make_input_sheet_v07t()
+* API call burn_session_input_sheet_v07t(): read multiple blocks from same file
+* New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track()
+* New cdrskin option textfile_to_v07t=
+* New cdrskin options cdtext_to_textfile= and cdtext_to_v07t=
+* New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,
+  --extract_dap
+* New cdrskin option --pacifier_with_newline
+* Improved granularity of SCSI log time measurement, now with timestamp
+* Optional "make doc" now demands doxygen 1.8.4
+
+
+2013.08.07.134744  [5132]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.3
+
+  []
+- cdrskin/add_ts_changes_to_libburn_1_3_0
+- cdrskin/add_ts_changes_to_libburn_1_3_1
++ cdrskin/add_ts_changes_to_libburn_1_3_2
++ cdrskin/add_ts_changes_to_libburn_1_3_3
+Updated cdrskin tarball generator
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.1 - 
+------------------------------------ cycle  - cdrskin-1.3.3 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.3 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.3 - 
 
 
 **********************************************************************
@@ -12050,11 +12184,6 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
-
-
-cdrskin option to emit pacifiers with newline rather than carriage return
-
-cdrskin does not have a runtime check for sizeof(off_t) >= 6.
 
 
 

@@ -1,16 +1,24 @@
-SVN trunk (to become libburn-1.3.2 or higher)
+SVN trunk (to become libburn-1.3.4 or higher)
+===============================================================================
+- no novelties yet -
+
+
+libburn-1.3.2.tar.gz Wed Aug 07 2013
 ===============================================================================
 * Bug fix: cdrskin -msinfo on DVD and BD reported
            old session start = next writable address.
            Regression introduced by version 1.2.8 (rev 4956).
+* Bug fix: The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
 * New API call burn_make_input_sheet_v07t()
 * API call burn_session_input_sheet_v07t(): read multiple blocks from same file
 * New API calls burn_drive_extract_audio(), burn_drive_extract_audio_track()
 * New cdrskin option textfile_to_v07t=
 * New cdrskin options cdtext_to_textfile= and cdtext_to_v07t=
-* New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,   --extract_dap
-* Improved granularity of SCSI log time measurement and added timestamp
-
+* New cdrskin options extract_audio_to= , extract_tracks= , extract_basename= ,
+  --extract_dap
+* New cdrskin option --pacifier_with_newline
+* Improved granularity of SCSI log time measurement, now with timestamp
+* Optional "make doc" now demands doxygen 1.8.4
 
 libburn-1.3.0.pl01.tar.gz Fri May 31 2013
 ===============================================================================
