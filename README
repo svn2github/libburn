@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.3.0.pl01.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.3.2.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.3.0.pl01.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.3.2.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.3.0.pl01.tar.gz
-   cd libburn-1.3.0
+   tar xzf libburn-1.3.2.tar.gz
+   cd libburn-1.3.2
    ./configure --prefix=/usr
    make
 
@@ -707,6 +707,11 @@ Project history as far as known to me:
   number as the next writable address.
   Regression introduced by version 1.2.8.
 
+- Fri Aug 07 2013 release 1.3.2:
+  cdrskin has aquired the capability to copy audio tracks to .wav files.
+  It can extract CD-TEXT in a form that is readable for humans and for
+  cdrskin itself. Several small bugs were fixed in xorriso. Its capabilities
+  to serve frontend programs in dialog mode have been improved.
 
 ------------------------------------------------------------------------------
 
