@@ -7959,6 +7959,8 @@ put_out:;
  }
  ret= 1;
 ex:;
+ if(disc!=NULL)
+   burn_disc_free(disc);
  return(ret);
 }
 
