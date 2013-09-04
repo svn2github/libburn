@@ -3422,6 +3422,10 @@ int mmc_read_buffer_capacity(struct burn_drive *d)
 			(data[4]<<24)|(data[5]<<16)|(data[6]<<8)|data[7];
 	d->progress.buffer_available =
 			(data[8]<<24)|(data[9]<<16)|(data[10]<<8)|data[11];
+	if (d->progress.buffer_capacity < d->progress.buffer_available) {
+		/* Default mad buffer usage to 50 percent */
+		d->progress.buffer_available = d->progress.buffer_capacity / 2;
+	}
 	d->pessimistic_buffer_free = d->progress.buffer_available;
 	d->pbf_altered = 0;
 	if (d->progress.buffered_bytes >= d->progress.buffer_capacity){
