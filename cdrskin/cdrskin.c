@@ -7191,6 +7191,21 @@ ex:
 }
 
 
+int Cdrskin_write_result_string(struct CdrskiN *skin, char *msg, int flag)
+{
+ int ret;
+
+ if(skin->preskin->result_fd < 0) {
+   printf("%s",msg);
+   return(1);
+ }
+ ret= write(skin->preskin->result_fd, msg, strlen(msg));
+ if(ret != (int) strlen(msg))
+   return(0);
+ return(1);
+}
+
+
 /** Burn data via libburn according to the parameters set in skin.
     @return <=0 error, 1 success
 */
@@ -7525,10 +7540,7 @@ burn_failed:;
 
    free_space= burn_disc_available_space(drive,o);
    sprintf(msg,"%d\n",(int) (free_space/(off_t) 2048));
-   if(skin->preskin->result_fd>=0) {
-     write(skin->preskin->result_fd,msg,strlen(msg));
-   } else
-     printf("%s",msg);
+   Cdrskin_write_result_string(skin, msg, 0);
    if(skin->track_counter>0)
      fprintf(stderr,
        "cdrskin: NOTE : %s burn run suppressed by option --tell_media_space\n",
@@ -7937,11 +7949,8 @@ obtain_nwa:;
  }
 
 put_out:;
- if(skin->preskin->result_fd>=0) {
-   sprintf(msg,"%d,%d\n",lba,nwa);
-   write(skin->preskin->result_fd,msg,strlen(msg));
- } else
-   printf("%d,%d\n",lba,nwa);
+ sprintf(msg,"%d,%d\n",lba,nwa);
+ Cdrskin_write_result_string(skin, msg, 0);
 
  if(strlen(skin->msifile)) {
    FILE *fp;
