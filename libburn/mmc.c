@@ -2454,8 +2454,11 @@ int mmc_read_cd_msf(struct burn_drive *d,
 		const struct burn_read_opts *o, struct buffer *buf, int flag)
 {
 	int req, ret, dap_bit;
-	int report_recovered_errors = 0, subcodes_audio = 0, subcodes_data = 0;
+	int subcodes_audio = 0, subcodes_data = 0;
 	struct command *c;
+#ifdef Libburn_mmc_report_recovereD
+	int report_recovered_errors = 0;
+#endif
 
 	c = &(d->casual_command);
 	mmc_start_if_needed(d, 0);
@@ -2464,10 +2467,13 @@ int mmc_read_cd_msf(struct burn_drive *d,
 
 	dap_bit = flag & 1;
 	if (o != NULL) {
-		report_recovered_errors = o->report_recovered_errors;
 		subcodes_audio = o->subcodes_audio;	
 		subcodes_data = o->subcodes_data;
 		dap_bit |= o->dap_bit;
+
+#ifdef Libburn_mmc_report_recovereD
+		report_recovered_errors = o->report_recovered_errors;
+#endif
 	}
 
 	scsi_init_command(c, MMC_READ_CD_MSF, sizeof(MMC_READ_CD_MSF));
@@ -2482,11 +2488,12 @@ int mmc_read_cd_msf(struct burn_drive *d,
 
 	req = main_ch & 0xf8;
 
-	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h
-
+#ifdef Libburn_mmc_report_recovereD
+	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h */
 	if (d->busy == BURN_DRIVE_GRABBING || report_recovered_errors)
 		req |= 2;
-	*/
+#endif /* Libburn_mmc_report_recovereD */
+
 	c->opcode[9] = req;
 
 	c->opcode[10] = 0;
@@ -2530,8 +2537,12 @@ int mmc_read_cd(struct burn_drive *d, int start, int len,
 		const struct burn_read_opts *o, struct buffer *buf, int flag)
 {
 	int temp, req, ret, dap_bit;
-	int report_recovered_errors = 0, subcodes_audio = 0, subcodes_data = 0;
+	int subcodes_audio = 0, subcodes_data = 0;
 	struct command *c;
+
+#ifdef Libburn_mmc_report_recovereD
+	int report_recovered_errors = 0;
+#endif
 
 /* # define Libburn_read_cd_by_msF 1 */
 #ifdef Libburn_read_cd_by_msF
@@ -2554,10 +2565,13 @@ int mmc_read_cd(struct burn_drive *d, int start, int len,
 
 	dap_bit = flag & 1;
 	if (o != NULL) {
-		report_recovered_errors = o->report_recovered_errors;
 		subcodes_audio = o->subcodes_audio;	
 		subcodes_data = o->subcodes_data;
 		dap_bit |= o->dap_bit;
+
+#ifdef Libburn_mmc_report_recovereD
+		report_recovered_errors = o->report_recovered_errors;
+#endif
 	}
 
 	scsi_init_command(c, MMC_READ_CD, sizeof(MMC_READ_CD));
@@ -2578,11 +2592,11 @@ int mmc_read_cd(struct burn_drive *d, int start, int len,
 	c->opcode[6] = len & 0xFF;
 	req = main_ch & 0xf8;
 
-	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h
-
+#ifdef Libburn_mmc_report_recovereD
+	/* ts A61106 : LG GSA-4082B dislikes this. key=5h asc=24h ascq=00h */
 	if (d->busy == BURN_DRIVE_GRABBING || report_recovered_errors)
 		req |= 2;
-	*/
+#endif /* Libburn_mmc_report_recovereD */
 
 	c->opcode[9] = req;
 	c->opcode[10] = 0;

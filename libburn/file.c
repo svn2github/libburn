@@ -937,7 +937,7 @@ int burn_drive_extract_audio(struct burn_drive *drive,
                              char *target_path, int flag)
 {
 	int fd = -1, ret, todo, sector_no, val, min, sec, fr;
-	int sectors_done= 0, last_reported = 0;
+	int sectors_done= 0;
 	off_t data_size, data_count = 0;
 	time_t last_pacified = 0, now;
 	char *msg = NULL, *buf = NULL;
@@ -1023,7 +1023,6 @@ write_error:;
 						LIBDAX_MSGS_SEV_UPDATE,
 						LIBDAX_MSGS_PRIO_HIGH,
 						msg, 0, 1);
-			last_reported = sectors_done;
 		}
 	}
 	if ((flag & 1)) {
@@ -1035,7 +1034,6 @@ write_error:;
 					LIBDAX_MSGS_SEV_UPDATE,
 					LIBDAX_MSGS_PRIO_HIGH,
 					msg, 0, 0);
-		last_reported = sectors_done;
 	}
 	ret = 1;
 ex:;
