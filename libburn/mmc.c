@@ -4156,7 +4156,7 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	struct burn_speed_descriptor *sd;
 
 	/* A61225 : 1 = report about speed descriptors */
-	static int speed_debug = 1;
+	static int speed_debug = 0;
 
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
