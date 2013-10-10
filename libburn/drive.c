@@ -844,7 +844,7 @@ void burn_wait_all(void)
 
 void burn_disc_erase_sync(struct burn_drive *d, int fast)
 {
-	int ret;
+	int ret, was_error = 0;
 
 	if (d->drive_role == 5) { /* Random access write-only drive */
 		ret = truncate(d->devname, (off_t) 0);
@@ -898,12 +898,16 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 		ret = d->get_erase_progress(d);
 		if (ret == -2 || ret > 0)
 	break;
+		if (ret == -3)
+			was_error = 1;
 		sleep(1);
 	}
 	while (1) {
 		ret = d->get_erase_progress(d);
 		if(ret == -2)
 	break;
+		if (ret == -3)
+			was_error = 1;
 		if (ret >= 0)
 			d->progress.sector = ret;
 		sleep(1);
@@ -918,6 +922,8 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 	if (d->drive_role == 1)
 		burn_drive_inquire_media(d);
 	d->busy = BURN_DRIVE_IDLE;
+	if (was_error)
+		d->cancel = 1;
 }
 
 /*
@@ -927,6 +933,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 {
 	int ret, buf_secs, err, i, stages = 1, pbase, pfill, pseudo_sector;
+	int was_error = 0;
 	off_t num_bufs;
 	char msg[80];
 	struct buffer *buf = NULL, *buf_mem = d->buffer;
@@ -971,12 +978,16 @@ void burn_disc_format_sync(struct burn_drive *d, off_t size, int flag)
 		ret = d->get_erase_progress(d);
 		if (ret == -2 || ret > 0)
 	break;
+		if (ret == -3)
+			was_error = 1;
 		sleep(1);
 	}
 	while (1) {
 		pseudo_sector = d->get_erase_progress(d);
 		if(pseudo_sector == -2)
 	break;
+		if (pseudo_sector == -3)
+			was_error = 1;
 		if (pseudo_sector >= 0)
 			d->progress.sector = pseudo_sector / stages;
 		sleep(1);
@@ -1040,6 +1051,8 @@ ex:;
 	d->progress.sector = 0x10000;
 	d->busy = BURN_DRIVE_IDLE;
 	d->buffer = buf_mem;
+	if (was_error)
+		d->cancel = 1;
 	BURN_FREE_MEM(buf);
 }
 

@@ -261,7 +261,34 @@ void spc_request_sense(struct burn_drive *d, struct buffer *buf)
 	d->issue_command(d, c);
 }
 
-/* @return -2 = drive is ready , -1 = not ready, but no progress reported
+static int spc_report_async_error(struct burn_drive *d,
+                                  int key, int asc, int ascq, int flag)
+{
+	char *msg = NULL;
+	unsigned char sense[14];
+	int ret;
+
+	BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 160);
+
+	sprintf(msg, "Asynchronous SCSI error : ");
+	sense[0] = 0x70; /* Fixed format sense data */
+	sense[2] = key;
+	sense[12] = asc;
+	sense[13] = ascq;
+	scsi_error_msg(d, sense, 14, msg + strlen(msg), &key, &asc, &ascq);
+	libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x000201a5,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+/* @return -3 = other error reported
+           -2 = drive is ready ,
+           -1 = not ready, but no progress reported ,
            >= 0 progress indication between 0 and 65535
 */
 int spc_get_erase_progress(struct burn_drive *d)
@@ -279,6 +306,14 @@ int spc_get_erase_progress(struct burn_drive *d)
 	ret = spc_test_unit_ready_r(d, &key, &asc, &ascq, &progress);
 	if (ret > 0)
 		{ret = -2; goto ex;}
+
+	/* Check key, asc, ascq for errors other than "not yet ready" */
+	if (key != 0 &&
+	    (key != 0x2 || asc != 0x04 || ascq == 0x02 || ascq ==0x03)) {
+		spc_report_async_error(d, key, asc, ascq, 0);
+		ret= -3; goto ex;
+	}
+
 	if (progress >= 0)
 		{ret = progress; goto ex;}
 
