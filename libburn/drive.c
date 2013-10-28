@@ -570,6 +570,7 @@ struct burn_drive *burn_drive_register(struct burn_drive *d)
 	d->toc_entry = NULL;
 	d->disc = NULL;
 	d->erasable = 0;
+	d->write_opts = NULL;
 
 #ifdef Libburn_ticket_62_re_register_is_possiblE
 	/* ts A60904 : ticket 62, contribution by elmom */
@@ -675,6 +676,10 @@ int burn_drive_mark_unready(struct burn_drive *d, int flag)
 		free(d->toc_entry);
 	d->toc_entry = NULL;
 	d->toc_entries = 0;
+	if (d->write_opts != NULL) {
+		burn_write_opts_free(d->write_opts);
+		d->write_opts = NULL;
+	}
 	if (d->disc != NULL) {
 		burn_disc_free(d->disc);
 		d->disc = NULL;
@@ -3401,4 +3406,14 @@ int burn_disc_get_leadin_text(struct burn_drive *d,
 	ret = mmc_get_leadin_text(d, text_packs, num_packs, 0);
 	return ret;
 }
+
+
+/* ts B31023 API */
+/* Inquire for DVD-RW failure of TAO
+*/
+int burn_drive_was_feat21_failure(struct burn_drive *d)
+{
+	return !!d->was_feat21h_failure;
+}
+
 

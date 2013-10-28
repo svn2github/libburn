@@ -1318,7 +1318,7 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 {
 	struct burn_drive *d = o->drive;
 	struct burn_track *t = NULL;
-	int sx, tx;
+	int sx, tx, ret;
 
 	d->cancel = 0;
 
@@ -1362,6 +1362,11 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 		}
 	if (o->fill_up_media && t != NULL)
 		burn_track_set_fillup(t, 1);
+
+	d->was_feat21h_failure = 0;
+	ret = burn_write_opts_clone(o, &(d->write_opts), 0);
+	if (ret <= 0)
+		return ret;
 
 	d->busy = BURN_DRIVE_WRITING;
 
@@ -2124,13 +2129,16 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 	if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
 	    d->current_profile == 0x15) {
 		/* DVD-R , DVD-RW Sequential, DVD-R/DL Sequential */
-		multi_mem = o->multi;
-		if (!is_last_session)
-			o->multi = 1;
-		ret = burn_disc_close_session_dvd_minus_r(o);
-		o->multi = multi_mem;
-		if (ret <= 0)
-			return 0;
+		/* If feature 21h failed on write 0: do not close session */
+		if (d->was_feat21h_failure != 2) {
+			multi_mem = o->multi;
+			if (!is_last_session)
+				o->multi = 1;
+			ret = burn_disc_close_session_dvd_minus_r(o);
+			o->multi = multi_mem;
+			if (ret <= 0)
+				return 0;
+		}
 	} else if (d->current_profile == 0x12 || d->current_profile == 0x43) {
 		/* DVD-RAM , BD-RE */
 		/* ??? any finalization needed ? */;
@@ -3129,6 +3137,10 @@ ex:;
 		burn_os_free_buffer((char *) d->buffer,
 					sizeof(struct buffer), 0);
 	d->buffer = buffer_mem;
+	if (d->write_opts != NULL) {
+		burn_write_opts_free(d->write_opts);
+		d->write_opts = NULL;
+	}
 	return;
 }
 

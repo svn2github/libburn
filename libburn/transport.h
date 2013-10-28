@@ -188,6 +188,15 @@ struct burn_drive
 	/* 1 = incremental recording available, 0 = not available */
 	int current_has_feat21h;
 
+	/* Some drives announce feature 21h on fast-blanked DVD-RW
+	   although they cannot write them in Incremental mode.
+	   0= does not look like the recent write run failed due to
+	      Incremental on fast blanked DVD-RW
+	   1= it seems to have happened
+	   2= it seems to have happened with write address 0
+	*/
+	int was_feat21h_failure;
+
 	/* Link Size item number 0 from feature 0021h descriptor */
 	int current_feat21h_link_size;
 
@@ -355,6 +364,13 @@ struct burn_drive
 
 	volatile int cancel;
 	volatile enum burn_drive_status busy;
+
+	/* During write runs, this points to a copy of the applied
+	   struct burn_write_opts. Only read this underneath
+	   burn_disc_write_sync() which removes the copy when done.
+	   Especially do not read it from outside the write thread.
+	*/
+	struct burn_write_opts *write_opts;
 
 	/* ts A70929 */
 	pid_t thread_pid;

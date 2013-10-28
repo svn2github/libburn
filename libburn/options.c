@@ -78,6 +78,24 @@ void burn_write_opts_free(struct burn_write_opts *opts)
 	free(opts);
 }
 
+int burn_write_opts_clone(struct burn_write_opts *from,
+                          struct burn_write_opts **to, int flag)
+{
+	if (*to != NULL)
+		burn_write_opts_free(*to);
+	if (from == NULL)
+		return 1;
+	*to = calloc(1, sizeof(struct burn_write_opts));
+	if (*to == NULL) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
+				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				"Out of virtual memory", 0, 0);
+		return -1;
+	}
+	memcpy(*to, from, sizeof(struct burn_write_opts));
+	return 1;
+}
+
 struct burn_read_opts *burn_read_opts_new(struct burn_drive *drive)
 {
 	struct burn_read_opts *opts;
@@ -201,6 +219,21 @@ void burn_write_opts_set_mediacatalog(struct burn_write_opts *opts,
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi)
 {
 	opts->multi = !!multi;
+}
+
+
+/* ts B31024 */
+/* API */
+void burn_write_opts_set_fail21h_sev(struct burn_write_opts *opts,
+                                     char *severity)
+{
+	int ret, sevno;
+
+	ret = libdax_msgs__text_to_sev(severity, &sevno, 0);
+	if (ret <= 0)
+		opts->feat21h_fail_sev = 0;
+	else
+		opts->feat21h_fail_sev = sevno;
 }
 
 

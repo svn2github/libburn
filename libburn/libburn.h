@@ -1814,6 +1814,18 @@ void burn_drive_cancel(struct burn_drive *drive);
 int burn_drive_wrote_well(struct burn_drive *d);
 
 
+/* ts B31023 */
+/** Inquire whether a write error occured which is suspected to have happened
+    due to a false report about DVD-RW capability to be written in write type
+    BURN_WRITE_TAO.
+    @param d The drive to inquire.
+    @return 1= it seems that BURN_WRITE_TAO on DVD-RW caused error,
+            0= it does not seem so
+    @since 1.3.4
+*/
+int burn_drive_was_feat21_failure(struct burn_drive *d);
+
+
 /** Convert a minute-second-frame (MSF) value to sector count
     @param m Minute component
     @param s Second component
@@ -3054,6 +3066,29 @@ void burn_write_opts_set_has_mediacatalog(struct burn_write_opts *opts,
     @since 0.2.6
 */
 void burn_write_opts_set_multi(struct burn_write_opts *opts, int multi);
+
+
+/* ts B31024 */
+/** Set the severity to be used with write error messages which are potentially
+    caused by not using write type BURN_WRITE_SAO on fast blanked DVD-RW. 
+
+    Normally the call burn_write_opts_auto_write_type() can prevent such
+    errors by looking for MMC feature 21h "Incremental Streaming Writable"
+    which anounnces the capability for BURN_WRITE_TAO and multi session.
+    Regrettable many drives announce feature 21h even if they only can do
+    BURN_WRITE_SAO. This mistake becomes obvious by an early write error.
+
+    If you plan to call burn_drive_was_feat21_failure() and to repeat the
+    burn attempt with BURN_WRITE_SAO, then set the severity of the error
+    message low enough, so that the application does not see reason to abort.
+
+    @param opts      The option object to be manipulated
+    @param severity  Severity as with burn_msgs_set_severities().
+                     "ALL" or empty text means the default severity that
+                     is attributed to other kinds of write errors.
+*/
+void burn_write_opts_set_fail21h_sev(struct burn_write_opts *opts,
+                                     char *severity);
 
 /* ts B11204 */
 /** Submit an array of CD-TEXT packs which shall be written to the Lead-in

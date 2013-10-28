@@ -1007,9 +1007,8 @@ fprintf(stderr, "libburn_DEBUG: buffer sectors= %d  bytes= %d\n",
 	/* ts A61112 : react on eventual error condition */ 
 	spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
 	if (c->error && key != 0) {
-
-		/* >>> make this scsi_notify_error() when liberated */
 		int key, asc, ascq;
+		int err_sev = LIBDAX_MSGS_SEV_FATAL;
 
 		msg = calloc(1, 256);
 		if (msg != NULL) {
@@ -1017,13 +1016,33 @@ fprintf(stderr, "libburn_DEBUG: buffer sectors= %d  bytes= %d\n",
 				 start, len);
 			scsi_error_msg(d, c->sense, 14, msg + strlen(msg), 
 						&key, &asc, &ascq);
+		}
+
+		/* ts B31023 */
+		/* Memorize if on DVD-RW write mode is TAO/Incremental and
+		   error [5 64 00] occurs within the first drive buffer fill.
+		*/
+		if (d->current_profile == 0x14 && d->write_opts != NULL &&
+		    (d->progress.buffer_capacity == 0 ||
+		     start < (int) d->progress.buffer_capacity / 2048) &&
+		    key == 5 && asc == 0x64 && ascq == 0) {
+			if (d->write_opts->write_type == BURN_WRITE_TAO) {
+				d->was_feat21h_failure = 1 + (start == 0);
+				if (d->write_opts->feat21h_fail_sev != 0)
+					err_sev =
+					    d->write_opts->feat21h_fail_sev;
+			}
+		}
+
+		if (msg != NULL) {
 			libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x0002011d,
-				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				err_sev, LIBDAX_MSGS_PRIO_HIGH,
 				msg, 0, 0);
 			free(msg);
 		}
 		d->cancel = 1;
+
 		return BE_CANCELLED;
 	} 
 

@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -81,9 +81,19 @@ struct burn_write_opts
 	unsigned char mediacatalog[13];
 	/** Session format */
 	int format;
+
 	/* internal use only */
 	unsigned char control;
+
+	/* Whether to keep medium appendable */
 	unsigned char multi;
+
+	/* ts B31024 */
+	/* The severity to be attributed to error messages about failed
+	   write attempt with blank DVD-RW, possibly due to falsely reported
+	   feature 21h Incremental Streaming Writable
+	*/
+	int feat21h_fail_sev;
 };
 
 /* Default value for burn_write_opts.stdio_flush_size
@@ -138,5 +148,10 @@ struct burn_read_opts
 	unsigned int dap_bit;
 
 };
+
+
+int burn_write_opts_clone(struct burn_write_opts *from,
+                          struct burn_write_opts **to, int flag);
+
 
 #endif /* BURN__OPTIONS_H */
