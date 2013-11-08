@@ -168,6 +168,14 @@ extern struct libdax_msgs *libdax_messenger;
 #define Libburn_wait_for_buffer_min_perC     65
 #define Libburn_wait_for_buffer_max_perC     95
 
+/* ts B31107 The minimum values to be applied if maximum read speed is
+             requested. Some drives tell only the currently set speed and
+             thus cannot be made faster by using the highest told value.
+*/
+#define Libburn_cd_max_read_speeD    (150 * 48)
+#define Libburn_dvd_max_read_speeD  (1385 * 20)
+#define Libburn_bd_max_read_speeD   (4495.625 * 8)
+
 
 static unsigned char MMC_GET_MSINFO[] =
 	{ 0x43, 0, 1, 0, 0, 0, 0, 16, 0, 0 };
@@ -2806,7 +2814,7 @@ ex:;
 void mmc_set_speed(struct burn_drive *d, int r, int w)
 {
 	struct command *c;
-	int ret, end_lba = 0;
+	int ret, end_lba = 0, get_max;
 	struct burn_speed_descriptor *best_sd = NULL;
 
 	c = &(d->casual_command);
@@ -2816,11 +2824,27 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 
 	if (r <= 0 || w <= 0) {
 		/* ts A70712 : now searching for best speed descriptor */
+		/* ts B31030 : keeping max read speed from sinking too low */
 		if (r <= 0) {
+			get_max = (r == 0);
 			burn_drive_get_best_speed(d, r, &best_sd, 1 | 2);
 			if (best_sd != NULL) {
 				r = best_sd->read_speed;
 				end_lba = best_sd->end_lba;
+			}
+			if (get_max) {
+				if (d->current_is_cd_profile) {
+					if (r < Libburn_cd_max_read_speeD)
+						r = Libburn_cd_max_read_speeD;
+				} else if (d->current_profile >= 0x10 &&
+				           d->current_profile <= 0x2f) {
+					if (r < Libburn_dvd_max_read_speeD)
+						r = Libburn_dvd_max_read_speeD;
+				} else if (d->current_profile >= 0x40 &&
+				           d->current_profile <= 0x43) {
+					if (r < Libburn_bd_max_read_speeD)
+						r = Libburn_bd_max_read_speeD;
+				}
 			}
 		}
 		if (w <= 0) {
