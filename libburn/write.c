@@ -1364,6 +1364,8 @@ int burn_disc_init_write_status(struct burn_write_opts *o,
 		burn_track_set_fillup(t, 1);
 
 	d->was_feat21h_failure = 0;
+	if(d->write_opts != NULL)
+		burn_write_opts_free(d->write_opts);
 	ret = burn_write_opts_clone(o, &(d->write_opts), 0);
 	if (ret <= 0)
 		return ret;
