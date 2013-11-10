@@ -2494,6 +2494,13 @@ int burn_disc_pretend_full(struct burn_drive *d)
 	return 1;
 }
 
+/* ts B31110 API function */
+int burn_disc_pretend_full_uncond(struct burn_drive *d)
+{
+	d->status = BURN_DISC_FULL;
+	return 1;
+}
+
 /* ts A61021: new API function */
 int burn_disc_read_atip(struct burn_drive *d)
 {

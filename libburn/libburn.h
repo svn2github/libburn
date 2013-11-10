@@ -1237,6 +1237,14 @@ int burn_disc_pretend_blank(struct burn_drive *drive);
 int burn_disc_pretend_full(struct burn_drive *drive);
 
 
+/* ts B31110 */
+/** WARNING: This overrides the safety measures against unsuitable media.
+    Sets the drive status to BURN_DISC_FULL unconditionally.
+    @since 1.3.4
+*/
+int burn_disc_pretend_full_uncond(struct burn_drive *drive);
+
+
 /* ts A61021 */
 /** Reads ATIP information from inserted media. To be obtained via
     burn_drive_get_write_speed(), burn_drive_get_min_write_speed(),
