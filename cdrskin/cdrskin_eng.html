@@ -200,13 +200,13 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.3.2.tar.gz">cdrskin-1.3.2.tar.gz</A>
+<DD><A HREF="cdrskin-1.3.2.pl01.tar.gz">cdrskin-1.3.2.pl01.tar.gz</A>
 (950 KB).
 </DD>
-<DD><A HREF="cdrskin-1.3.2.tar.gz.sig">cdrskin-1.3.2.tar.gz.sig</A></DD>
+<DD><A HREF="cdrskin-1.3.2.pl01.tar.gz.sig">cdrskin-1.3.2.pl01.tar.gz.sig</A></DD>
 <DD>
 (detached GPG signature for verification by
-<KBD>gpg --verify cdrskin-1.3.2.tar.gz.sig cdrskin-1.3.2.tar.gz</KBD>
+<KBD>gpg --verify cdrskin-1.3.2.pl01.tar.gz.sig cdrskin-1.3.2.pl01.tar.gz</KBD>
 <BR>
 after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
@@ -296,6 +296,14 @@ The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
 -->
 </UL>
 
+Bug fixes of cdrskin-1.3.2.pl01 towards cdrskin-1.3.2:
+<UL>
+<LI>
+cdrskin-1.3.2.tar.gz contained the outdated source code of cdrskin-1.3.0,
+including the -msinfo bug.
+</LI>
+</UL>
+
 <HR>
 
 <P>
@@ -303,7 +311,7 @@ The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
 <DT><H3>Development snapshot, version 1.3.3 :</H3></DT>
 <DD>Enhancements towards current stable version 1.3.2:
 <UL>
-<LI>none yet</LI>
+<LI>New API call burn_disc_pretend_full_uncond()</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -313,7 +321,8 @@ The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
 
 <DD>Bug fixes towards cdrskin-1.3.2:
 <UL>
-<LI>none yet</LI>
+<LI>Drive error reports were ignored during blanking and formatting</LI>
+<LI>Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -339,7 +348,7 @@ vanilla tools like make and gcc are needed.</DD>
 </DD>
 <DD>&nbsp;</DD>
 <DT>The following download is intended for adventurous end users or
-admins with full system souvereignty.</DT>
+admins with full system sovereignty.</DT>
 <DD>Source (./bootstrap is already applied, build tested, for more see
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>

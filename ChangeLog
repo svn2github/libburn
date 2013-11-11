@@ -1,6 +1,8 @@
 SVN trunk (to become libburn-1.3.4 or higher)
 ===============================================================================
-- no novelties yet -
+* Bug fix: Drive error reports were ignored during blanking and formatting
+* Bug fix: Drive LG BH16NS40 stalls on inspection of unformatted DVD+RW
+* New API call burn_disc_pretend_full_uncond()
 
 
 libburn-1.3.2.tar.gz Wed Aug 07 2013

@@ -12144,28 +12144,105 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 1.3.3
 
-  []
+07 Aug 2013  [5133]
 - cdrskin/add_ts_changes_to_libburn_1_3_0
 - cdrskin/add_ts_changes_to_libburn_1_3_1
 + cdrskin/add_ts_changes_to_libburn_1_3_2
 + cdrskin/add_ts_changes_to_libburn_1_3_3
 Updated cdrskin tarball generator
 
-  []
+07 Aug 2013  [5134]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+07 Aug 2013  [5135]
+svn move -m libburn release 1.3.2 is ready
+http://svn.libburnia-project.org/libburn/branches/1.3.2
+http://svn.libburnia-project.org/libburn/tags/1.3.2
+
+------------------------------------ cycle  - cdrskin-1.3.3 - 2013.08.07.135823
+
+
+2013.09.04.105934  [5145]
+libburn/mmc.c
+Catching and defaulting mad responses to READ BUFFER CAPACITY
+
+2013.09.04.110910  [5146] [5147]
+cdrskin/cdrskin.c
+Closed a small memory leak with cdrskin -msinfo
+
+2013.09.04.141706  [5148]
+cdrskin/cdrskin.c
+Reacted on warnings of PLD Linux
+
+2013.09.05.084834  [5152]
+libburn/file.c
+libburn/mmc.c
+Reacted on warnings of PLD Linux build log
+
+2013.09.16.172745  [5157]
+libburn/async.c
+Reacted on warning of Debian buildd with clang
+
+2013.10.03.100011  [5158]
+cdrskin/cdrskin.c
+Made -version message more acceptable for K3B. Proposal of Omegaweapon.
+
+2013.10.09.092306  [5161]
+libburn/mmc.c
+Separately determining the maximum speeds for writing and reading
+
+2013.10.09.134543  [5163]
+libburn/mmc.c
+Forgot to disable a debugging message
+
+2013.10.10.161931  [5164]
+libburn/drive.c
+libburn/spc.c
+libburn/libdax_msgs.h
+Bug fix: Drive error reports were ignored during blanking and formatting
+
+2013.10.28.104957  [5168]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/options.h
+libburn/options.c
+libburn/write.c
+libburn/mmc.c
+libburn/libburn.ver
+New API calls burn_drive_was_feat21_failure(), burn_write_opts_set_fail21h_sev()
+
+2013.11.08.095023  [5172]
+libburn/write.c
+Closed potential memory leak introduced by rev 5168
+
+2013.11.08.095213  [5173] [5174]
+libburn/mmc.c
+Enforcing reasonable maximum read speeds even if the drive is lying
+
+2013.11.10.163403  [5175]
+libburn/libburn.h
+libburn/drive.c
+libburn/libburn.ver
+New API call burn_disc_pretend_full_uncond()
+
+2013.11.11.160915  [5177]
+libburn/mmc.c
+Bug fix: Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW
+
+11 Nov 2013  []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.3.3 - 
+* Bug fix: Drive error reports were ignored during blanking and formatting
+* Bug fix: Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW
+* New API call burn_disc_pretend_full_uncond()
 
-  []
-ChangeLog
-cdrskin/cdrskin_eng.html
-cdrskin/changelog.txt
-Updated change log
-
------------------------------------- cycle  - cdrskin-1.3.3 - 
 
   []
 ChangeLog
@@ -12186,6 +12263,11 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
 
 
+---
+
+>>> consider an option to set the cdrskin startup message
+
+----
 
 CD-TEXT:
   - with SAO
