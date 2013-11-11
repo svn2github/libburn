@@ -4948,7 +4948,7 @@ int mmc_get_media_product_id(struct burn_drive *d,
 
 		/* Check whether the drive supports format 11h */
 		has_11h = 0;
-		ret = mmc_read_disc_structure(d, 0, 0, 4, 0xff, &reply,
+		ret = mmc_read_disc_structure(d, 0, 0, 0xff, 4, &reply,
 							 &reply_len, 0);
 		if (ret > 0) {
 			for (i = 0; i < reply_len; i += 4) {
