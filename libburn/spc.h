@@ -98,6 +98,9 @@ int scsi_log_err(struct burn_drive *d, struct command *c,
                  void *fp, unsigned char sense[18], 
                  int sense_len, int flag);
 
+/* ts B31112 */
+int scsi_log_message(struct burn_drive *d, void *fp, char * msg, int flag);
+
 /* ts B00728 */
 int spc_decode_sense(unsigned char *sense, int senselen,
                      int *key, int *asc, int *ascq);

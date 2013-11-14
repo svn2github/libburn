@@ -1884,6 +1884,167 @@ int sg_release(struct burn_drive *d)
 	return 0;
 }
 
+/* @return -1= transport failed, give up drive
+            0= transport failed, do not retry
+            1= transport succeeded
+            2- transport failed, please retry
+*/
+static int evaluate_transport_success(struct burn_drive *d, struct command *c,
+                                      FILE *fp,
+                                      unsigned short host_status,
+                                      unsigned short driver_status)
+{
+	int ret, do_retry= 0, give_up_drive= 0;
+	char *msg = NULL, *host_problem, *driver_problem, *driver_sugg;
+
+	BURN_ALLOC_MEM(msg, char, 161);
+
+	if ((host_status == Libburn_sg_host_oK &&
+             driver_status == Libburn_sg_driver_oK) || c->error)
+		{ret = 1; goto ex;} /* No transport problems */
+
+	/* See http://www.tldp.org/HOWTO/SCSI-Generic-HOWTO/x291.html */
+
+	switch(host_status) {
+	case 0x00:
+		host_problem =
+		"SG_ERR_DID_OK (No error)";
+	break; case 0x01:
+		host_problem =
+		"SG_ERR_DID_NO_CONNECT (Could not connect before timeout period)";
+		give_up_drive= 1;
+	break; case 0x02:
+		host_problem =
+		"SG_ERR_DID_BUS_BUSY (Bus stayed busy through time out period)";
+	break; case 0x03:
+		host_problem =
+		"SG_ERR_DID_TIME_OUT (Timed out for miscellaneous reasons)";
+	break; case 0x04:
+		host_problem =
+		"SG_ERR_DID_BAD_TARGET (Bad target, device not responding ?)";
+		give_up_drive= 1;
+	break; case 0x05:
+		host_problem =
+		"SG_ERR_DID_ABORT (Told to abort)";
+	break; case 0x06:
+		host_problem =
+		"SG_ERR_DID_PARITY (Parity error)";
+	break; case 0x07:
+		host_problem =
+		"SG_ERR_DID_ERROR (Internal error detected in the host adapter)";
+		give_up_drive= 1;
+	break; case 0x08:
+		host_problem =
+		"SG_ERR_DID_RESET (The SCSI bus or the device have been reset)";
+		give_up_drive= 1;
+	break; case 0x09:
+		host_problem =
+		"SG_ERR_DID_BAD_INTR (Got an unexpected interrupt)";
+	break; case 0x0a:
+		host_problem =
+		"SG_ERR_DID_PASSTHROUGH (Force command past mid-layer)";
+	break; case 0x0b:
+		host_problem =
+		"SG_ERR_DID_SOFT_ERROR (The low level driver wants a retry)";
+		do_retry = 1;
+	default:
+		host_problem =
+		"? (unknown host_status code)";
+	}
+	if (host_status != Libburn_sg_host_oK) {
+		sprintf(msg, "SCSI command %2.2Xh yielded host problem: ",
+			(unsigned int) c->opcode[0]);
+		sprintf(msg+strlen(msg), "0x%x %s",
+			(unsigned int) host_status, host_problem);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x000201a7,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		sprintf(msg, "--- SG_IO: host_status= 0x%x %s",
+			(unsigned int) host_status, host_problem);
+		scsi_log_message(d, fp, msg, 0);
+	}
+
+	switch (driver_status & 0x0f) {
+	case 0:
+		driver_problem = "SG_ERR_DRIVER_OK";
+	break; case 1:
+		driver_problem = "SG_ERR_DRIVER_BUSY";
+	break; case 2:
+		driver_problem = "SG_ERR_DRIVER_SOFT";
+	break; case 3:
+		driver_problem = "SG_ERR_DRIVER_MEDIA";
+	break; case 4:
+		driver_problem = "SG_ERR_DRIVER_ERROR";
+	break; case 5:
+		driver_problem = "SG_ERR_DRIVER_INVALID";
+	break; case 6:
+		driver_problem = "SG_ERR_DRIVER_TIMEOUT";
+	break; case 7:
+		driver_problem = "SG_ERR_DRIVER_HARD";
+	break; case 8:
+		driver_problem = "SG_ERR_DRIVER_SENSE";
+	default:
+		driver_problem = "(unknown driver_status code)";
+	}
+	switch (driver_status & 0xf0) {
+	case 0:
+		driver_sugg = "(no suggestion)";
+	break; case 0x10:
+		driver_sugg = "SG_ERR_SUGGEST_RETRY";
+		do_retry = 1;
+	break; case 0x20:
+		driver_sugg = "SG_ERR_SUGGEST_ABORT";
+		give_up_drive= 1;
+	break; case 0x30:
+		driver_sugg = "SG_ERR_SUGGEST_REMAP";
+		give_up_drive= 1;
+	break; case 0x40:
+		driver_sugg = "SG_ERR_SUGGEST_DIE";
+		give_up_drive= 1;
+	break; case 0x80:
+		driver_sugg = "SG_ERR_SUGGEST_SENSE";
+	default:
+		driver_sugg = "(unknown driver_status suggestion)";
+	}
+	if (driver_status != Libburn_sg_driver_oK) {
+		sprintf(msg, "SCSI command %2.2Xh yielded driver problem: ",
+			(unsigned int) c->opcode[0]);
+		sprintf(msg+strlen(msg), "driver_status= 0x%x %s / %s",
+			(unsigned int) driver_status,
+			driver_problem, driver_sugg);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x000201a8,
+			LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+		sprintf(msg, "--- SG_IO: driver_status= 0x%x %s / %s",
+			(unsigned int) driver_status,
+			driver_problem, driver_sugg);
+		scsi_log_message(d, fp, msg, 0);
+	}
+
+	if (! do_retry)
+		c->error = 1;
+	ret = give_up_drive ? -1 : do_retry ? 2 : 0;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+
+static void react_on_drive_loss(struct burn_drive *d, struct command *c,
+                                FILE *fp)
+{
+	sg_close_drive(d);
+	d->released = 1;
+	d->busy = BURN_DRIVE_IDLE;
+	d->cancel = 1;
+	c->error = 1;
+	libdax_msgs_submit(libdax_messenger,
+				 d->global_index, 0x000201a6,
+				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+				 "Lost connection to drive", 0, 0);
+	scsi_log_message(d, fp, "--- SG_IO: Gave up connection to drive", 0);
+}
 
 /** Sends a SCSI command to the drive, receives reply and evaluates wether
     the command succeeded or shall be retried or finally failed.
@@ -1923,8 +2084,6 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			    "\n-----------------------------------------\n");
 		}
 	}
-	if (burn_sg_log_scsi & 3)
-		scsi_log_cmd(c,fp,0);
 
 	/* ts A61010 : with no fd there is no chance to send an ioctl */
 	if (d->fd < 0) {
@@ -1932,8 +2091,11 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		{ret = 0; goto ex;}
 	}
 
+
 	c->error = 0;
 	memset(&s, 0, sizeof(sg_io_hdr_t));
+	if (burn_sg_log_scsi & 3)
+		scsi_log_cmd(c,fp,0);
 
 	s.interface_id = 'S';
 
@@ -2012,32 +2174,31 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 				 LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				 "Failed to transfer command to drive",
 				 errno, 0);
-			sg_close_drive(d);
-			d->released = 1;
-			d->busy = BURN_DRIVE_IDLE;
-			c->error = 1;
+			sprintf(msg, "--- SG_IO: return= -1 , ");
+		        sprintf(msg + strlen(msg), "errno= %d , ", errno);
+		        sprintf(msg + strlen(msg),
+			        "host_status= 0x%x , driver_status= 0x%x",
+			        (unsigned int) s.host_status,
+			        (unsigned int) s.driver_status);
+			scsi_log_message(d, fp, msg, 0);
+			react_on_drive_loss(d, c, fp);
 			{ret = -1; goto ex;}
 		}
                 done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
 				             start_time, s.timeout, i, 0);
 		if (d->cancel)
-			done = 1;
+	break;
+		ret = evaluate_transport_success(d, c, fp,
+		                               s.host_status, s.driver_status);
+		if (ret == -1)
+			react_on_drive_loss(d, c, fp);
+		if (ret <= 0)
+			{ret = -1; goto ex;}
+		if (ret != 2 || d->cancel)
+	break;
+		/* loop for retry */;
 	}
 
-	if (s.host_status != Libburn_sg_host_oK || 
-	    (s.driver_status != Libburn_sg_driver_oK && !c->error)) {
-		sprintf(msg,
-			"SCSI command %2.2Xh indicates host or driver error:",
-			(unsigned int) c->opcode[0]);
-		sprintf(msg+strlen(msg),
-			" host_status= %xh , driver_status= %xh",
-			(unsigned int) s.host_status,
-			(unsigned int) s.driver_status);
-		libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x0002013b,
-				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-	}
 	ret = 1;
 ex:;
 	BURN_FREE_MEM(msg);

@@ -520,7 +520,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002014a (SORRY,HIGH)   = Cannot read desired amount of data
  0x0002014b (SORRY,HIGH)   = Drive is already registered resp. scanned
  0x0002014c (FATAL,HIGH)   = Emulated drive caught in SCSI function
- 0x0002014d (SORRY,HIGH)   = Asynchromous SCSI error
+ 0x0002014d (SORRY,HIGH)   = Asynchronous SCSI error
  0x0002014f (SORRY,HIGH)   = Timeout with asynchronous SCSI command
  0x00020150 (DEBUG,LOW)    = Reporting asynchronous waiting time
  0x00020151 (FAILURE,HIGH) = Read attempt on write-only drive
@@ -606,6 +606,10 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x000201a2 (FAILURE,HIGH) = Error while writing to disk file
  0x000201a3 (UPDATE,HIGH)  = Progress message of burn_drive_extract_audio()
  0x000201a4 (FAILURE,HIGH) = Failure to read audio sectors
+ 0x000201a5 (FAILURE,HIGH) = Asynchronous SCSI error
+ 0x000201a6 (FATAL,HIGH)   = Lost connection to drive
+ 0x000201a7 (FAILURE,HIGH) = SCSI command yielded host problem
+ 0x000201a8 (FAILURE,HIGH) = SCSI command yielded driver problem
 
 
  libdax_audioxtr:

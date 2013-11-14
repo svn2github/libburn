@@ -1747,6 +1747,22 @@ int scsi_log_err(struct burn_drive *d, struct command *c,
 	return ret;
 }
 
+/* ts B31112 */
+int scsi_log_message(struct burn_drive *d, void *fp_in, char * msg, int flag)
+{
+	int ret;
+	FILE *fp = fp_in;
+
+      	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		fprintf(fp, "%s\n", msg);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
+	}
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
+		return 1;
+	ret = scsi_log_message(d, stderr, msg, flag);
+	return ret;
+}
 
 /* ts B00808 */
 /*
