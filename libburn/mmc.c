@@ -171,10 +171,18 @@ extern struct libdax_msgs *libdax_messenger;
 /* ts B31107 The minimum values to be applied if maximum read speed is
              requested. Some drives tell only the currently set speed and
              thus cannot be made faster by using the highest told value.
+             (The fractions get added or subtracted to yield an integer
+              number on the safe side of the intended limit.)
 */
-#define Libburn_cd_max_read_speeD    (150 * 48)
-#define Libburn_dvd_max_read_speeD  (1385 * 20)
-#define Libburn_bd_max_read_speeD   (4495.625 * 8)
+#define Libburn_cd_max_read_speeD   (52 *  150)
+#define Libburn_dvd_max_read_speeD  (24 * 1385)
+#define Libburn_bd_max_read_speeD   (20 * 4495.625 + 0.5)
+
+/* ts B31114 The maximum values for minimum speed
+*/
+#define Libburn_cd_min_read_speeD   ( 1 *  150)
+#define Libburn_dvd_min_read_speeD  ( 1 * 1385)
+#define Libburn_bd_min_read_speeD   ( 1 * 4495.625 - 0.625)
 
 
 static unsigned char MMC_GET_MSINFO[] =
@@ -2814,7 +2822,7 @@ ex:;
 void mmc_set_speed(struct burn_drive *d, int r, int w)
 {
 	struct command *c;
-	int ret, end_lba = 0, get_max;
+	int ret, end_lba = 0, get_max, get_min;
 	struct burn_speed_descriptor *best_sd = NULL;
 
 	c = &(d->casual_command);
@@ -2827,6 +2835,7 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 		/* ts B31030 : keeping max read speed from sinking too low */
 		if (r <= 0) {
 			get_max = (r == 0);
+			get_min = (r == -1);
 			burn_drive_get_best_speed(d, r, &best_sd, 1 | 2);
 			if (best_sd != NULL) {
 				r = best_sd->read_speed;
@@ -2844,6 +2853,19 @@ void mmc_set_speed(struct burn_drive *d, int r, int w)
 				           d->current_profile <= 0x43) {
 					if (r < Libburn_bd_max_read_speeD)
 						r = Libburn_bd_max_read_speeD;
+				}
+			} else if(get_min) {
+				if (d->current_is_cd_profile) {
+					if (r > Libburn_cd_min_read_speeD)
+						r = Libburn_cd_min_read_speeD;
+				} else if (d->current_profile >= 0x10 &&
+				           d->current_profile <= 0x2f) {
+					if (r > Libburn_dvd_min_read_speeD)
+						r = Libburn_dvd_min_read_speeD;
+				} else if (d->current_profile >= 0x40 &&
+				           d->current_profile <= 0x43) {
+					if (r > Libburn_bd_min_read_speeD)
+						r = Libburn_bd_min_read_speeD;
 				}
 			}
 		}
