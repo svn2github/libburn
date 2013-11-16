@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -93,6 +94,7 @@ int burn_write_opts_clone(struct burn_write_opts *from,
 		return -1;
 	}
 	memcpy(*to, from, sizeof(struct burn_write_opts));
+	(*to)->refcount= 1;
 	return 1;
 }
 
