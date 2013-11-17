@@ -3228,6 +3228,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		if (fd == -1)
 			{ret = 0; goto ex;}
 	}
+	d->cancel = 0;
 	d->busy = BURN_DRIVE_WRITING_SYNC;
 	d->buffer = buf;
 
