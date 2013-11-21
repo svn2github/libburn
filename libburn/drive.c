@@ -537,6 +537,10 @@ int burn_drive_grab(struct burn_drive *d, int le)
 		{ret = 0; goto ex;}
 
 ex:;
+	if (d->cancel || burn_is_aborting(0)) {
+	        d->unlock(d);
+		d->release(d);
+	}
 	d->silent_on_scsi_error = sose;
 	d->busy = BURN_DRIVE_IDLE;
 	burn_grab_restore_sig_action(signal_action_mem, 0);
@@ -1870,8 +1874,10 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 */
 
 	ret = burn_drive_grab(drive_infos[0]->drive, load);
-	if (ret != 1)
+	if (ret != 1) {
+		burn_drive_forget(drive_infos[0]->drive, 0);
 		return -1;
+	}
 	return 1;
 }
 
