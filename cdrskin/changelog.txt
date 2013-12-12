@@ -12238,11 +12238,102 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.3 - 
+------------------------------------ cycle  - cdrskin-1.3.3 - 2013.11.11.172016
 * Bug fix: Drive error reports were ignored during blanking and formatting
 * Bug fix: Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW
 * New API call burn_disc_pretend_full_uncond()
 
+
+2013.11.14.101636  [5180]
+libburn/libdax_msgs.h
+libburn/spc.h
+libburn/spc.c
+libburn/sg-linux.c
+Improved reaction on Linux SG_IO transport problems
+
+2013.11.15.102314  [5182]
+libburn/mmc.c
+Enforcing reasonable minimum read speeds even if the drive is lying
+
+2013.11.16.170431  [5184]
+libburn/options.c
+Prevented a memory leak that in most cases was closed by a race condition
+
+2013.11.17.102351  [5185]
+libburn/write.c
+Resetting the drive failure status before starting random-access writing
+
+2013.11.17.152544  [5187]
+libburn/sg-linux.c
+Corrected bugs introduced with rev 5180
+
+2013.11.21.092012  [5189]
+libburn/drive.c
+Better reaction on drive errors during burn_drive_scan_and_grab()
+
+12 Dec 2013  [5192]
+svn copy -m Branching for libburn release 1.3.4
+ http://svn.libburnia-project.org/libburn/trunk
+ http://svn.libburnia-project.org/libburn/branches/1.3.4
+
+2013.12.12.093001  [5193]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.4
+
+12 Dec 2013  [5194]
+- cdrskin/add_ts_changes_to_libburn_1_3_2
+- cdrskin/add_ts_changes_to_libburn_1_3_3
++ cdrskin/add_ts_changes_to_libburn_1_3_4
++ cdrskin/add_ts_changes_to_libburn_1_3_5
+Updated cdrskin tarball generator
+
+12 Dec 2013  [5195]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------------- release - cdrskin-1.3.4 - 2013.12.12.093001
+* Bug fix: Drive error reports were ignored during blanking and formatting
+* Bug fix: Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW
+* New API call burn_disc_pretend_full_uncond()
+
+
+2013.12.12.140531  [5199]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.5
+
+12 Dec 2013  [5200]
+- cdrskin/add_ts_changes_to_libburn_1_3_2
+- cdrskin/add_ts_changes_to_libburn_1_3_3
++ cdrskin/add_ts_changes_to_libburn_1_3_4
++ cdrskin/add_ts_changes_to_libburn_1_3_5
+Updated cdrskin tarball generator
+
+12 Dec 2013  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+
+------------------------------------ cycle  - cdrskin-1.3.5 - 2013.12.12.140531
 
   []
 ChangeLog
@@ -12250,7 +12341,15 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.3 - 
+------------------------------------ cycle  - cdrskin-1.3.5 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.5 - 
 
 
 **********************************************************************
@@ -12261,9 +12360,6 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
                                     TODO
 ===============================================================================
-
-
----
 
 >>> consider an option to set the cdrskin startup message
 
