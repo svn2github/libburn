@@ -49,7 +49,7 @@ connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 <DL>
 <DT>Linux with kernel 2.4 or higher (and libc, of course) :</DT>
 <DD>With kernel 2.4 an ATA drive has to be under ide-scsi emulation.</DD>
-<DD>With kernel 2.6 the drive should not be under ide-scsi.</DD>
+<DD>With kernel 2.6 or higher the drive should not be under ide-scsi.</DD>
 <DT>or FreeBSD (with libc, of course) :</DT>
 <DD>ATA and SATA drives need atapicam running.</DD>
 <DD>libcam has to be installed.</DD>
@@ -65,7 +65,7 @@ connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-1.3.2</DT>
+<DT>libburn-1.3.4</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -200,13 +200,13 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.3.2.pl01.tar.gz">cdrskin-1.3.2.pl01.tar.gz</A>
-(950 KB).
+<DD><A HREF="cdrskin-1.3.4.tar.gz">cdrskin-1.3.4.tar.gz</A>
+(965 KB).
 </DD>
-<DD><A HREF="cdrskin-1.3.2.pl01.tar.gz.sig">cdrskin-1.3.2.pl01.tar.gz.sig</A></DD>
+<DD><A HREF="cdrskin-1.3.4.tar.gz.sig">cdrskin-1.3.4.tar.gz.sig</A></DD>
 <DD>
 (detached GPG signature for verification by
-<KBD>gpg --verify cdrskin-1.3.2.pl01.tar.gz.sig cdrskin-1.3.2.pl01.tar.gz</KBD>
+<KBD>gpg --verify cdrskin-1.3.4.tar.gz.sig cdrskin-1.3.4.tar.gz</KBD>
 <BR>
 after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
@@ -257,45 +257,28 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-1.3.0:
+Enhancements towards previous stable version cdrskin-1.3.2:
+<UL>
+<LI>none</LI>
+<!--
+<LI>none</LI>
+-->
+</UL>
+
+Bug fixes towards cdrskin-1.3.2:
 <UL>
 <LI>
-New option textfile_to_v07t=
+Drive error reports were ignored during blanking and formatting
 </LI>
 <LI>
-New options cdtext_to_textfile= and cdtext_to_v07t=
-</LI>
-<LI>
-New options extract_audio_to= , extract_tracks= , extract_basename= ,
---extract_dap
-</LI>
-<LI>
-Improved granularity of SCSI log time measurement, now with timestamp
-</LI>
-<LI>
-New cdrskin option --pacifier_with_newline
+Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW
 </LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-1.3.0:
-<UL>
-<LI>
-cdrskin -msinfo on DVD and BD reported
-old session start = next writable address.
-Regression introduced by version 1.2.8.
-(Also fixed by patch release 1.3.0.pl01 in may 2013.)
-</LI>
-<LI>
-The signal handler aborted on SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU
-</LI>
 <!--
-<LI>none</LI>
--->
-</UL>
-
 Bug fixes of cdrskin-1.3.2.pl01 towards cdrskin-1.3.2:
 <UL>
 <LI>
@@ -303,15 +286,16 @@ cdrskin-1.3.2.tar.gz contained the outdated source code of cdrskin-1.3.0,
 including the -msinfo bug.
 </LI>
 </UL>
+-->
 
 <HR>
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 1.3.3 :</H3></DT>
-<DD>Enhancements towards current stable version 1.3.2:
+<DT><H3>Development snapshot, version 1.3.5 :</H3></DT>
+<DD>Enhancements towards current stable version 1.3.4:
 <UL>
-<LI>New API call burn_disc_pretend_full_uncond()</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -319,10 +303,9 @@ including the -msinfo bug.
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-1.3.2:
+<DD>Bug fixes towards cdrskin-1.3.4:
 <UL>
-<LI>Drive error reports were ignored during blanking and formatting</LI>
-<LI>Drive LG BH16NS40 stalled on inspection of unformatted DVD+RW</LI>
+<LI>none yet</LI>
 <!--
 <LI>none yet</LI>
 -->
@@ -330,10 +313,10 @@ including the -msinfo bug.
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 1.3.3</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin-1.3.3 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin-1.3.3 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.3.3)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 1.3.5</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin-1.3.5 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin-1.3.5 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.3.5)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -353,8 +336,8 @@ admins with full system sovereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-1.3.3.tar.gz">cdrskin-1.3.3.tar.gz</A>
-(950 KB).
+<A HREF="cdrskin-1.3.5.tar.gz">cdrskin-1.3.5.tar.gz</A>
+(965 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008
