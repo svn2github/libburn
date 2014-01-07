@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -131,6 +131,24 @@ struct burn_format_descr {
 };
 
 
+/* ts B40106 : represents a Feature Descriptor as of mmc5r03c.pdf 5.2.2
+               There can be many of them. Thus a linked list.
+*/
+struct burn_feature_descr {
+	unsigned short feature_code;
+
+	unsigned char  flags; /* bit0= current
+                                 bit1= persistent
+                                 bit2-5= version
+                              */
+
+        unsigned char  data_lenght;
+        unsigned char *data;
+
+        struct burn_feature_descr *next;
+};
+
+
 /** Gets initialized in enumerate_common() and burn_drive_register() */
 struct burn_drive
 {
@@ -181,6 +199,9 @@ struct burn_drive
 	/* ts A90815 */
 	unsigned char all_profiles[256];
 	int num_profiles;
+
+	/* ts B40106 : All feature descriptors as read from drive */
+	struct burn_feature_descr *features;
 
 	/* ts A70128 : MMC-to-MMC feature info from 46h for DVD-RW.
            Quite internal. Regard as opaque :)

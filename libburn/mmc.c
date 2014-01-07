@@ -2928,6 +2928,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	struct command *c = NULL;
 	int phys_if_std = 0;
 	char *phys_name = "";
+	struct burn_feature_descr *recent_feature = NULL, *new_feature;
 
 /* Enable this to get loud and repeated reports about the feature set :
  # define Libburn_print_feature_descriptorS 1
@@ -2949,6 +2950,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	d->current_is_supported_profile = 0;
         d->current_is_guessed_profile = 0;
 	d->num_profiles = 0;
+	if (d->features != NULL)
+		burn_feature_descr_free(&(d->features), 0);
 	d->current_has_feat21h = 0;
 	d->current_feat21h_link_size = -1;
 	d->current_feat23h_byte4 = 0;
@@ -3080,6 +3083,17 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 		descr_len = 4 + descr[3];
 		feature_code = (descr[0] << 8) | descr[1];
 		feature_is_current = descr[2] & 1;
+
+		ret = burn_feature_descr_new(&new_feature, descr,
+		                             up_to - descr, 0);
+		if (ret > 0) {
+			if (d->features == NULL)
+				d->features = new_feature;
+			else
+				recent_feature->next = new_feature;
+			recent_feature = new_feature;
+		}
+
 		if (only_current && !feature_is_current)
 	continue;
 

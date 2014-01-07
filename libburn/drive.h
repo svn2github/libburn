@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -19,6 +19,7 @@ struct command;
 struct mempage;
 struct scsi_mode_data;
 struct burn_speed_descriptor;
+struct burn_feature_descr;
 
 #define LEAD_IN 1
 #define GAP 2
@@ -154,5 +155,17 @@ int burn_abort_5(int patience,
 /* ts B10730 */
 /* Send a default mode page 05 to CD and DVD-R-oids */
 int burn_drive_send_default_page_05(struct burn_drive *d, int flag);
+
+
+/* ts B40106 */
+int burn_feature_descr_new(struct burn_feature_descr **new,
+                           unsigned char *descr, int descr_len, int flag);
+
+/* ts B40106 */
+int burn_feature_descr_free(struct burn_feature_descr **new, int flag);
+
+/* ts B40107 */
+int burn_drive_has_feature(struct burn_drive *d, int feature_code,
+                           struct burn_feature_descr **descr, int flag);
 
 #endif /* __DRIVE */

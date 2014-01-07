@@ -80,6 +80,7 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->do_stream_recording = 0;
         d->stream_recording_start= 0;
 	d->role_5_nwa = 0;
+	d->features = NULL;
 	return 1;
 }
 
@@ -104,6 +105,7 @@ void burn_drive_free_subs(struct burn_drive *d)
 	if (d->stdio_fd >= 0)
 		close (d->stdio_fd);
 	d->stdio_fd = -1;
+	burn_feature_descr_free(&(d->features), 0);
 	sg_dispose_drive(d, 0);
 }
 
@@ -3427,6 +3429,73 @@ int burn_disc_get_leadin_text(struct burn_drive *d,
 int burn_drive_was_feat21_failure(struct burn_drive *d)
 {
 	return !!d->was_feat21h_failure;
+}
+
+
+/* ts B40106 */
+int burn_feature_descr_new(struct burn_feature_descr **new,
+                           unsigned char *descr, int descr_len, int flag)
+{
+	struct burn_feature_descr *o;
+
+	*new = NULL;
+	if (descr_len < 4)
+		return 0;
+	(*new) = o = calloc(1, sizeof(struct burn_speed_descriptor));
+	if (o == NULL)
+		return -1;
+	o->feature_code = (descr[0] << 8) | descr[1];
+        o->flags = descr[2];
+        if (descr[3] > descr_len - 4)
+		o->data_lenght = 0;
+	else
+        	o->data_lenght = descr[3];
+        o->data = NULL;
+        o->next = NULL;
+        if (o->data_lenght > 0) {
+		o->data = calloc(1, o->data_lenght);
+		if (o->data == NULL) {
+			burn_feature_descr_free(new, 0);
+			return -1;
+		}
+		memcpy(o->data, descr + 4, o->data_lenght);
+	}
+	return 1;
+}
+
+
+/* ts B40106 */
+int burn_feature_descr_free(struct burn_feature_descr **descr, int flag)
+{
+	struct burn_feature_descr *o, *next;
+
+	if (*descr == NULL)
+		return 0;
+	for (o = *descr; o != NULL; o = next) {
+		next = o->next;
+		if (o->data != NULL)
+			free(o->data);
+		free((char *) o);
+	}
+	*descr = NULL;
+	return 1;
+}
+
+
+/* ts B40107 */
+int burn_drive_has_feature(struct burn_drive *d, int feature_code,
+                           struct burn_feature_descr **descr, int flag)
+{
+	struct burn_feature_descr *o;
+
+	for (o = d->features; o != NULL; o = o->next) {
+		if (o->feature_code == feature_code) {
+			if (descr != NULL)
+				*descr = o;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
