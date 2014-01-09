@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -4210,40 +4210,181 @@ ex:;
 }
 
 
-/* ts A61225 */
-/* @param flag bit0= register speed descriptors
+/* ts B40107 : Outsourced from mmc_get_performance_al()
 */
-static int mmc_get_write_performance_al(struct burn_drive *d,
-		 int *alloc_len, int *max_descr, int flag)
+static int new_burn_speed_descr(struct burn_drive *d, int sd_source,
+                               struct burn_speed_descriptor **sd, int flag)
 {
-	struct buffer *buf = NULL;
-	int len, i, b, num_descr, ret, old_alloc_len;
-	int exact_bit, read_speed, write_speed;
+	int ret;
 
-	/* >>> ts B10702: This rule seems questionable:
-	       TSST SH-203 delivers here for CD only 7040k
-	       whereas mode page 2Ah gives 1412k to 7056k
-	*/
-	/* if this call delivers usable data then they should override
-	   previously recorded min/max speed and not compete with them */
+	ret = burn_speed_descriptor_new(&(d->mdata->speed_descriptors),
+	                                NULL, d->mdata->speed_descriptors, 0);
+	if (ret <= 0)
+		return ret;
+
+	*sd = d->mdata->speed_descriptors;
+	(*sd)->source = sd_source;
+	if (d->current_profile > 0) {
+		(*sd)->profile_loaded = d->current_profile;
+		strcpy((*sd)->profile_name, d->current_profile_text);
+	}
+	return 1;
+}
+
+
+/* ts B40107 : Outsourced from mmc_get_performance_al()
+               and extended for descr_type 0x00
+   @param flag bit0= register speed descriptors
+*/
+static int interpret_performance(struct burn_drive *d, struct command *c,
+                                int descr_type, int *alloc_len, int *max_descr, 
+                                int *num_descr, int flag)
+{
+	int len, i, b, ret, old_alloc_len;
+	int exact_bit, read_speed, write_speed, start_speed;
 	int min_write_speed = 0x7fffffff, max_write_speed = 0;
 	int min_read_speed = 0x7fffffff, max_read_speed = 0;
-
-	struct command *c = NULL;
 	unsigned long end_lba;
 	unsigned char *pd;
 	struct burn_speed_descriptor *sd;
 
-	/* A61225 : 1 = report about speed descriptors */
+	/* ts A61225 : 1 = report about speed descriptors */
 	static int speed_debug = 0;
+
+        len = mmc_four_char_to_int(c->page->data);
+	old_alloc_len = *alloc_len;
+        *alloc_len = len + 4;
+	if (len + 4 > old_alloc_len)
+		len = old_alloc_len - 4;
+	*num_descr = ( *alloc_len - 8 ) / 16;
+	if (*max_descr == 0) {
+		*max_descr = *num_descr;
+		{ret = 1; goto ex;}
+	}
+	if (old_alloc_len < 16)
+		{ret = 1; goto ex;}
+	if (len < 12)
+		{ret = 0; goto ex;}
+
+	min_write_speed = d->mdata->min_write_speed;
+	max_write_speed = d->mdata->max_write_speed;
+	pd = c->page->data;
+	if (*num_descr > *max_descr)
+		*num_descr = *max_descr;
+	for (i = 0; i < *num_descr && (flag & 1); i++) {
+		end_lba = read_speed = write_speed = start_speed = 0;
+
+		if (descr_type == 0x03) {
+			exact_bit = !!(pd[8 + i*16] & 2);
+			for (b = 0; b < 4 ; b++) {
+				end_lba     += pd[8 + i*16 +  4 + b]
+				               << (24 - 8 * b);
+				read_speed  += pd[8 + i*16 +  8 + b]
+				               << (24 - 8 * b);
+				write_speed += pd[8 + i*16 + 12 + b]
+				               << (24 - 8 * b);
+			}
+			if (end_lba > 0x7ffffffe)
+				end_lba = 0x7ffffffe;
+
+			if (speed_debug)
+				fprintf(stderr,
+		"LIBBURN_DEBUG: kB/s: write=%d  read=%d  end=%lu  exact=%d\n",
+				        write_speed, read_speed,
+				        end_lba, exact_bit);
+
+			ret = new_burn_speed_descr(d, 2, &sd, 0);
+			if (ret > 0) {
+				sd->wrc = (pd[8 + i*16] >> 3 ) & 3;
+				sd->exact = exact_bit;
+				sd->mrw = pd[8 + i*16] & 1;
+				sd->end_lba = end_lba;
+				sd->write_speed = write_speed;
+				sd->read_speed = read_speed;
+			}
+
+		} else { /* descr_type == 0 */
+			for (b = 0; b < 4 ; b++) {
+				start_speed += pd[8 + i*16 +  4 + b]
+				               << (24 - 8 * b);
+				end_lba     += pd[8 + i*16 +  8 + b]
+				               << (24 - 8 * b);
+				read_speed  += pd[8 + i*16 + 12 + b]
+				               << (24 - 8 * b);
+			}
+
+			if (speed_debug)
+				fprintf(stderr,
+		       "LIBBURN_DEBUG: start=%d  end=%d  lba=%lu\n",
+				        start_speed, read_speed, end_lba);
+
+			if (end_lba > 0x7ffffffe)
+				end_lba = 0x7ffffffe;
+			ret = new_burn_speed_descr(d, 3, &sd, 0);
+			if (ret > 0) {
+				sd->end_lba = end_lba;
+				sd->read_speed = start_speed;
+			}
+			if (start_speed > 0 && start_speed < min_read_speed)
+				min_read_speed = start_speed;
+			if (start_speed > max_read_speed)
+                        	max_read_speed = start_speed;
+			ret = new_burn_speed_descr(d, 3, &sd, 0);
+			if (ret > 0) {
+				sd->end_lba = end_lba;
+				sd->read_speed = read_speed;
+			}
+		}
+
+		if ((int) end_lba > d->mdata->max_end_lba)
+			d->mdata->max_end_lba = end_lba;
+		if ((int) end_lba < d->mdata->min_end_lba)
+			d->mdata->min_end_lba = end_lba;
+		if (write_speed > 0 && write_speed < min_write_speed)
+			min_write_speed = write_speed;
+		if (write_speed > max_write_speed)
+                        max_write_speed = write_speed;
+		if (read_speed > 0 && read_speed < min_read_speed)
+			min_read_speed = read_speed;
+		if (read_speed > max_read_speed)
+                        max_read_speed = read_speed;
+	}
+	if (min_write_speed < 0x7fffffff)
+		d->mdata->min_write_speed = min_write_speed;
+	if (max_write_speed > 0)
+		d->mdata->max_write_speed = max_write_speed;
+	/* there is no mdata->min_read_speed yet 
+	if (min_read_speed < 0x7fffffff)
+		d->mdata->min_read_speed = min_read_speed;
+	*/
+	if (max_read_speed > 0)
+		d->mdata->max_read_speed = max_read_speed;
+
+        ret = 1;
+ex:;
+	return ret;
+}
+
+
+/* ts A61225 */
+/* @param flag bit0= register speed descriptors
+*/
+static int mmc_get_performance_al(struct burn_drive *d, int descr_type,
+		 int *alloc_len, int *max_descr, int flag)
+{
+	int num_descr, ret;
+	struct buffer *buf = NULL;
+	struct command *c = NULL;
 
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
 
-	if (d->current_profile <= 0)
+	if (d->current_profile < 0)
 		mmc_get_configuration(d);
 
 	if (*alloc_len < 8)
+		{ret = 0; goto ex;}
+	if (descr_type != 0x00 && descr_type != 0x03)
 		{ret = 0; goto ex;}
 
 	scsi_init_command(c, MMC_GET_PERFORMANCE,
@@ -4255,9 +4396,11 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 	*/
 	c->dxfer_len = *alloc_len;
 
+	if (descr_type == 0x00)
+		c->opcode[1] = 0x10; /* Data Type: nominal read performance */
 	c->opcode[8] = ( *max_descr >> 8 ) & 0xff;
 	c->opcode[9] = ( *max_descr >> 0 ) & 0xff;
-	c->opcode[10] = 3;
+	c->opcode[10] = descr_type;
 	c->retry = 1;
 	c->page = buf;
 	c->page->sectors = 0;
@@ -4275,86 +4418,12 @@ static int mmc_get_write_performance_al(struct burn_drive *d,
 
 	if (c->error)
 		{ret = 0; goto ex;}
-        len = mmc_four_char_to_int(c->page->data);
-	old_alloc_len = *alloc_len;
-        *alloc_len = len + 4;
-	if (len + 4 > old_alloc_len)
-		len = old_alloc_len - 4;
-	num_descr = ( *alloc_len - 8 ) / 16;
-	if (*max_descr == 0) {
-		*max_descr = num_descr;
-		{ret = 1; goto ex;}
-	}
-	if (old_alloc_len < 16)
-		{ret = 1; goto ex;}
-	if (len < 12)
-		{ret = 0; goto ex;}
 
-	/* ts B10702 : overriding the questionable override rule */
-	min_write_speed = d->mdata->min_write_speed;
-	max_write_speed = d->mdata->max_write_speed;
+	ret = interpret_performance(d, c, descr_type, alloc_len, max_descr,
+	      	                    &num_descr, flag);
+	if (ret <= 0)
+		goto ex;
 
-	pd = c->page->data;
-	if (num_descr > *max_descr)
-		num_descr = *max_descr;
-	for (i = 0; i < num_descr && (flag & 1); i++) {
-		exact_bit = !!(pd[8 + i*16] & 2);
-		end_lba = read_speed = write_speed = 0;
-		for (b = 0; b < 4 ; b++) {
-			end_lba     += pd[8 + i*16 +  4 + b] << (24 - 8 * b);
-			read_speed  += pd[8 + i*16 +  8 + b] << (24 - 8 * b);
-			write_speed += pd[8 + i*16 + 12 + b] << (24 - 8 * b);
-		}
-		if (end_lba > 0x7ffffffe)
-			end_lba = 0x7ffffffe;
-
-		if (speed_debug)
-			fprintf(stderr,
-		"LIBBURN_DEBUG: kB/s: write=%d  read=%d  end=%lu  exact=%d\n",
-				write_speed, read_speed, end_lba, exact_bit);
-
-		/* ts A61226 */
-		ret = burn_speed_descriptor_new(&(d->mdata->speed_descriptors),
-				 NULL, d->mdata->speed_descriptors, 0);
-		if (ret > 0) {
-			sd = d->mdata->speed_descriptors;
-			sd->source = 2;
-			if (d->current_profile > 0) {
-				sd->profile_loaded = d->current_profile;
-				strcpy(sd->profile_name,
-					d->current_profile_text);
-			}
-			sd->wrc = (pd[8 + i*16] >> 3 ) & 3;
-			sd->exact = exact_bit;
-			sd->mrw = pd[8 + i*16] & 1;
-			sd->end_lba = end_lba;
-			sd->write_speed = write_speed;
-			sd->read_speed = read_speed;
-		}
-
-		if ((int) end_lba > d->mdata->max_end_lba)
-			d->mdata->max_end_lba = end_lba;
-		if ((int) end_lba < d->mdata->min_end_lba)
-			d->mdata->min_end_lba = end_lba;
-		if (write_speed < min_write_speed)
-			min_write_speed = write_speed;
-		if (write_speed > max_write_speed)
-                        max_write_speed = write_speed;
-		if (read_speed < min_read_speed)
-			min_read_speed = read_speed;
-		if (read_speed > max_read_speed)
-                        max_read_speed = read_speed;
-	}
-	if (min_write_speed < 0x7fffffff)
-		d->mdata->min_write_speed = min_write_speed;
-	if (max_write_speed > 0)
-		d->mdata->max_write_speed = max_write_speed;
-	/* there is no mdata->min_read_speed yet 
-	if (min_read_speed < 0x7fffffff)
-		d->mdata->min_read_speed = min_read_speed;
-	*/
-	if (max_read_speed > 0)
-		d->mdata->max_read_speed = max_read_speed;
 	ret = num_descr;
 ex:;
 	BURN_FREE_MEM(buf);
@@ -4363,7 +4432,7 @@ ex:;
 }
 
 
-int mmc_get_write_performance(struct burn_drive *d)
+int mmc_get_performance(struct burn_drive *d, int descr_type, int flag)
 {
 	int alloc_len = 8, max_descr = 0, ret;
 
@@ -4374,24 +4443,34 @@ int mmc_get_write_performance(struct burn_drive *d)
 	/* first command execution to learn number of descriptors and 
            dxfer_len
 	*/
-	ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr, 0);
+	ret = mmc_get_performance_al(d, descr_type, &alloc_len, &max_descr, 0);
 	if (max_descr > 0 && ret > 0) {
 		/* Some drives announce only 1 descriptor if asked for 0.
 		   So ask twice for non-0 descriptors.
 		*/
-		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr,
-		                                   0);
+		ret = mmc_get_performance_al(d, descr_type,
+		                             &alloc_len, &max_descr, 0);
 	}
 /*
 	fprintf(stderr,"LIBBURN_DEBUG: ACh alloc_len = %d , ret = %d\n",
 			alloc_len, ret);
 */
-	if (max_descr > 0 && ret > 0)
+	if (max_descr > 0 && ret > 0) {
 		/* final execution with announced length */
 		max_descr = (alloc_len - 8) / 16;
-		ret = mmc_get_write_performance_al(d, &alloc_len, &max_descr,
-		                                   1);
+		ret = mmc_get_performance_al(d, descr_type,
+		                             &alloc_len, &max_descr, 1);
+	}
 	return ret; 
+}
+
+
+int mmc_get_write_performance(struct burn_drive *d)
+{
+	int ret;
+
+	ret = mmc_get_performance(d, 0x03, 0);
+	return ret;
 }
 
 
@@ -5240,6 +5319,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->wfb_timeout_sec = Libburn_wait_for_buffer_tio_seC;
 	d->wfb_min_percent = Libburn_wait_for_buffer_min_perC;
 	d->wfb_max_percent = Libburn_wait_for_buffer_max_perC;
+	d->sent_default_page_05 = 0;
 
 	return 1;
 }

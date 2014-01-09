@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -126,6 +126,9 @@ int mmc_get_phys_format_info(struct burn_drive *d, int *disk_category,
 /* ts B11201 */
 int mmc_get_leadin_text(struct burn_drive *d,
                         unsigned char **text_packs, int *num_packs, int flag);
+
+/* ts B40107 */
+int mmc_get_performance(struct burn_drive *d, int descr_type, int flag);
 
 
 #ifdef Libburn_develop_quality_scaN

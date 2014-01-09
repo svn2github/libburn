@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -416,6 +416,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	struct command *c = NULL;
 	struct burn_speed_descriptor *sd;
 	char *msg = NULL;
+	struct burn_feature_descr *feature_descr;
 
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
@@ -585,24 +586,25 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 		m->min_write_speed, m->max_write_speed);
 
 try_mmc_get_performance:;
-	if (m->cdrw_write || page_length >= 32) {
-		/* ts A90823:
-		   One has to avoid U3 enhanced memory sticks here. On my
-		   SuSE 10.2 a SanDisk Cruzer 4GB stalls at the second occasion
-		   of ACh GET PERFORMANCE. (The first one is obviously called
-		   by the OS at plug time.)
-		   This pseudo drive returns no write capabilities and a page
-		   length of 28. MMC-3 describes page length 32. Regrettably
-		   MMC-2 prescribes a page length of 26. Here i have to trust
-		   m->cdrw_write to reliably indicate any MMC-2 burner.
-		*/
-		ret = mmc_get_write_performance(d);
-		if (ret > 0 && speed_debug)
-			fprintf(stderr,
-	  "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
-			m->min_write_speed, m->max_write_speed);
+	/* ts B40107 : Feature 0x107 announces availability of GET PERFORMANCE
+	               Its WSPD bit announces Type 3.
+	               Try this even if the feature is not current.
+	*/
+	ret = burn_drive_has_feature(d, 0x107, &feature_descr, 0);
+	if (ret > 0) {
+		if (feature_descr->data_lenght > 0) {
+			if (feature_descr->data[0] & 2) {            /* WSPD */
+				ret = mmc_get_write_performance(d);
+				if (ret > 0 && speed_debug)
+					fprintf(stderr,
+	    "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
+				                m->min_write_speed,
+					        m->max_write_speed);
+			}
+			/* Get read performance */
+			mmc_get_performance(d, 0x00, 0);
+		}
 	}
-
 	ret = !was_error;
 ex:
 	BURN_FREE_MEM(msg);

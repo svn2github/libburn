@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    This is the official API definition of libburn.
@@ -713,7 +713,11 @@ struct burn_progress {
 struct burn_speed_descriptor {
 
 	/** Where this info comes from : 
-	    0 = misc , 1 = mode page 2Ah , 2 = ACh GET PERFORMANCE */
+	    0 = misc
+	    1 = mode page 2Ah
+	    2 = ACh GET PERFORMANCE Type 03h
+	    3 = ACh GET PERFORMANCE Type 00h Data Type 10h (read speed)
+	*/
 	int source;
 
 	/** The media type that was current at the time of report
