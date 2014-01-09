@@ -436,7 +436,8 @@ static int sgio_test(int fd)
 	c_end_time = burn_get_time(0);
 
 	sgio_log_reply(s.cmdp, NO_TRANSFER, NULL, 0, NULL,
-	               s.sbp, s.sb_len_wr, c_end_time - c_start_time, 0);
+	               (unsigned char *) (s.sbp),
+	               s.sb_len_wr, c_end_time - c_start_time, 0);
 	return ret;
 }
 
@@ -483,7 +484,8 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 	}
 
 	sgio_log_reply(s.cmdp, FROM_DRIVE, buf->data, s.dxfer_len, NULL,
-                       s.sbp, s.sb_len_wr, c_end_time - c_start_time, 0);
+	               (unsigned char *) (s.sbp),
+	               s.sb_len_wr, c_end_time - c_start_time, 0);
 
 	if (s.sb_len_wr > 0 || s.host_status != Libburn_sg_host_oK ||
 	    s.driver_status != Libburn_sg_driver_oK) {
@@ -492,7 +494,8 @@ static int sgio_inquiry_cd_drive(int fd, char *fname)
 			sprintf(msg + strlen(msg), " , sense data=");
 			msg_pt = msg + strlen(msg);
 			for (i = 0 ; i < s.sb_len_wr; i++)
-				sprintf(msg_pt + i * 3, " %2.2X", s.sbp[i]);
+				sprintf(msg_pt + i * 3, " %2.2X",
+				        ((unsigned char *) (s.sbp))[i]);
 		}
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
@@ -2184,7 +2187,9 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 			react_on_drive_loss(d, c, fp);
 			{ret = -1; goto ex;}
 		}
-                done = scsi_eval_cmd_outcome(d, c, fp, s.sbp, s.sb_len_wr,
+                done = scsi_eval_cmd_outcome(d, c, fp,
+		                             (unsigned char *) (s.sbp),
+		                             s.sb_len_wr,
 				             start_time, s.timeout, i, 0);
 		if (d->cancel)
 	break;
