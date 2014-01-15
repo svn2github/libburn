@@ -168,4 +168,6 @@ int burn_feature_descr_free(struct burn_feature_descr **new, int flag);
 int burn_drive_has_feature(struct burn_drive *d, int feature_code,
                            struct burn_feature_descr **descr, int flag);
 
+int burn_drive_grab_stdio(struct burn_drive *d, int flag);
+
 #endif /* __DRIVE */

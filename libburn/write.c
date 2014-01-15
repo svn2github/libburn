@@ -2860,10 +2860,10 @@ ex:;
 		close(d->stdio_fd);
 	d->stdio_fd = -1;
 
-	/* update media state records */
+	/* update pseudo-media state records by re-grabbing */
 	burn_drive_mark_unready(d, 8);
+	burn_drive_grab_stdio(d, 1);
 
-	/* <<< d->busy = BURN_DRIVE_IDLE; */
 	return ret;
 }
 

@@ -426,6 +426,8 @@ fprintf(stderr, "LIBBURN_DEBUG: burn_drive__is_rdwr: getfl_ret = %lX , O_RDWR = 
 }
 
 
+/* flag bit0= ( not needed yet: grab even if it is already grabbed )
+*/
 int burn_drive_grab_stdio(struct burn_drive *d, int flag)
 {
 	int stat_ret = -1, is_rdwr, ret;
