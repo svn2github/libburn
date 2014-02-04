@@ -352,6 +352,8 @@ void spc_inquiry(struct burn_drive *d)
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
 	id = (struct burn_scsi_inquiry_data *)d->idata;
+	id->peripheral = 0x7f; /* SPC-3: incabable undefined peripheral type */
+	id->version = 0;                  /* SPC-3: no claim for conformance */
 	memset(id->vendor, 0, 9);
 	memset(id->product, 0, 17);
 	memset(id->revision, 0, 5);
@@ -359,6 +361,8 @@ void spc_inquiry(struct burn_drive *d)
 		id->valid = -1;
 		goto ex;
 	}
+	id->peripheral = ((char *) c->page->data)[0];
+	id->version = ((char *) c->page->data)[2];
 	memcpy(id->vendor, c->page->data + 8, 8);
 	memcpy(id->product, c->page->data + 16, 16);
 	memcpy(id->revision, c->page->data + 32, 4);
@@ -1840,3 +1844,34 @@ ex:;
 	BURN_FREE_MEM(msg);
 	return done;
 }
+
+
+int spc_confirm_cd_drive(struct burn_drive *d, int flag)
+{
+	char *msg = NULL;
+	int ret;
+
+	BURN_ALLOC_MEM(msg, char, strlen(d->devname) + 1024); 
+
+	spc_inquiry(d);
+	if (d->idata->valid < 0) {
+		sprintf(msg, "INQUIRY failed with drive '%s'", d->devname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002000a,
+		                   LIBDAX_MSGS_SEV_FAILURE,
+		                   LIBDAX_MSGS_PRIO_HIGH, msg, 0,0);
+		ret = 0; goto ex;
+	}
+	if (d->idata->peripheral != 0x5) {
+		sprintf(msg, "Does not identify itself as CD-ROM drive '%s'",
+		             d->devname);
+		libdax_msgs_submit(libdax_messenger, -1, 0x0002000a,
+		                   LIBDAX_MSGS_SEV_FAILURE,
+		                   LIBDAX_MSGS_PRIO_HIGH, msg, 0,0);
+		ret = 0; goto ex;
+	}
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(msg);
+	return ret;
+}
+

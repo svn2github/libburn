@@ -73,9 +73,16 @@ struct command
 
 struct burn_scsi_inquiry_data
 {
+	char peripheral; /* bit0-4: device type should be 5
+	                    bit5-7: qualifier must be 0 */
+
+	char version;    /* should be 3 (SPC-1) to 5 (SPC-3) (or higher ?)
+	                    but is often 0. */
+
 	char vendor[9];
 	char product[17];
 	char revision[5];
+
 	int valid;
 };
 

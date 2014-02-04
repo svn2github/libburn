@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -115,6 +115,11 @@ int scsi_eval_cmd_outcome(struct burn_drive *d, struct command *c, void *fp_in,
                         unsigned char *sense, int sense_len,
                         time_t start_time, int timeout_ms,
 			int loop_count, int flag);
+
+/* ts B40204 */
+/* Verify by INQUIRY that the drive is indeed a MMC device.
+*/
+int spc_confirm_cd_drive(struct burn_drive *d, int flag);
 
 
 /* The waiting time before eventually retrying a failed SCSI command.
