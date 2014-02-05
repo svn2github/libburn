@@ -409,7 +409,10 @@ void spc_allow(struct burn_drive *d)
 /*
 ts A70518 - A90603 : Do not call with *alloc_len < 10
 */
-/** flag&1= do only inquire alloc_len */
+/** @param flag bit0= do only inquire alloc_len
+    @return  1=ok , <=0 error ,
+             2=Block Descriptor Length > 0, retry with flag bit1
+*/
 static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 {
 	struct buffer *buf = NULL;
@@ -459,6 +462,21 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	               The descriptors come between header and page.
 	*/
 	block_descr_len = c->page->data[6] * 256 + c->page->data[7];
+
+	if (block_descr_len + 8 + 2 > *alloc_len) {
+		if (block_descr_len + 8 + 2 > BUFFER_SIZE || !(flag & 1)) {
+			m->valid = -1;
+			sprintf(msg,
+		 "MODE SENSE page 2A with oversized Block Descriptors: %s : %d",
+				d->devname, block_descr_len);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002016e, LIBDAX_MSGS_SEV_DEBUG,
+				LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
+			{ret = 0; goto ex;}
+		}
+		*alloc_len = block_descr_len + 10;
+		{ret = 2; goto ex;}
+	}
 
 	/* Skip over Mode Data Header and block descriptors */
 	page = c->page->data + 8 + block_descr_len;
@@ -629,10 +647,14 @@ void spc_sense_caps(struct burn_drive *d)
 	/* first command execution to learn Allocation Length */
 	alloc_len = start_len;
 	ret = spc_sense_caps_al(d, &alloc_len, 1);
-/*
-	fprintf(stderr,"LIBBURN_DEBUG: 5Ah alloc_len = %d , ret = %d\n",
-			alloc_len, ret);
-*/
+	if (ret == 2) {
+		/* ts B40205: Unexpectedly found Block Descriptors.
+		              Repeat with new alloc_len.
+		*/
+		ret = spc_sense_caps_al(d, &alloc_len, 1);
+		if (ret == 2)
+			return;
+	}
 	/* ts B11103:
 	   qemu ATAPI DVD-ROM delivers only 28.
 	   SanDisk Cruzer U3 memory stick throws error on alloc_len < 30.
