@@ -431,6 +431,9 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	if (*alloc_len < 10)
 		{ret = 0; goto ex;}
 
+	if (!(flag & 1))
+		mmc_get_configuration(d);
+
 	BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 160);
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
@@ -496,7 +499,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	*/
 	page_length = page[1];
 	old_alloc_len = *alloc_len;
-	*alloc_len = page_length + 10;
+	*alloc_len = page_length + 10 + block_descr_len;
 	if (flag & 1)
 		{ret = !was_error; goto ex;}
 	if (page_length + 10 > old_alloc_len)
@@ -548,8 +551,6 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 
 	if (!was_error)
 		m->valid = 1;
-
-	mmc_get_configuration(d);
 
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
 	if (page_length < 30) /* no write speed descriptors ? */
