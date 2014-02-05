@@ -643,8 +643,7 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 	if (d->drive_role == 1) {
 		mvalid = 0;
 		if (d->mdata != NULL)
-			if (d->mdata->valid > 0)
-				mvalid = 1;
+			mvalid = 1;
 		if (!mvalid) {
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index, 0x00020113,

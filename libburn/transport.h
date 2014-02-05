@@ -89,6 +89,7 @@ struct burn_scsi_inquiry_data
 
 struct scsi_mode_data
 {
+	int p2a_valid;
 	int buffer_size;
 	int dvdram_read;
 	int dvdram_write;
@@ -100,8 +101,13 @@ struct scsi_mode_data
 	int cdr_read;
 	int cdr_write;
 	int simulate;
+	int c2_pointers;
+	int underrun_proof;
+
 	int max_read_speed;
+	int cur_read_speed;
 	int max_write_speed;
+	int cur_write_speed;
 
 	/* ts A61021 */
 	int min_write_speed;
@@ -112,15 +118,10 @@ struct scsi_mode_data
 	int max_end_lba;
 	struct burn_speed_descriptor *speed_descriptors;
 
-	int cur_read_speed;
-	int cur_write_speed;
 	int retry_page_length;
 	int retry_page_valid;
 	int write_page_length;
 	int write_page_valid;
-	int c2_pointers;
-	int valid;
-	int underrun_proof;
 };
 
 

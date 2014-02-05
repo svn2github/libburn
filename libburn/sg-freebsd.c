@@ -492,13 +492,13 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.idata = calloc(1, sizeof(struct burn_scsi_inquiry_data));
 	out.idata->valid = 0;
 	out.mdata = calloc(1, sizeof(struct scsi_mode_data));
-	out.mdata->valid = 0;
 	if (out.idata == NULL || out.mdata == NULL) {
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020108,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Could not allocate new drive object", 0, 0);
 		return;
 	}
+	out.mdata->p2a_valid = 0;
 	memset(&out.params, 0, sizeof(struct params));
 	t = burn_drive_register(&out);
 

@@ -594,6 +594,11 @@ struct burn_drive_info
             to inquire a device file address.            ^^^^^ ALWAYS ^^^^^^^*/
 	char location[17];
 
+	/* DEPRECATION:
+	   Start of information from mode page 2Ah which is declared
+	   obsolete by MMC-5. Do not rely on this, if you can get a
+	   meaningful reply from burn_drive_get_all_profiles()
+	*/
 	/** Can the drive read DVD-RAM discs */
 	unsigned int read_dvdram:1;
 	/** Can the drive read DVD-R discs */
@@ -622,6 +627,9 @@ struct burn_drive_info
 
 	/** The size of the drive's buffer (in kilobytes) */
 	int buffer_size;
+
+	/* End of DEPRECATION */
+
 	/** 
 	 * The supported block types in tao mode.
 	 * They should be tested with the desired block type.

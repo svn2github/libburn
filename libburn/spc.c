@@ -440,7 +440,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 
 	/* ts A90602 : Clearing mdata before command execution */
 	m = d->mdata;
-	m->valid = 0;
+	m->p2a_valid = 0;
 	burn_mdata_free_subs(m);
 
 	memset(buf, 0, sizeof(struct buffer));
@@ -457,7 +457,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	d->issue_command(d, c);
 	if (c->error) {
 		memset(buf, 0, sizeof(struct buffer));
-		m->valid = -1;
+		m->p2a_valid = -1;
 		was_error = 1;
 	}
 
@@ -468,7 +468,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 
 	if (block_descr_len + 8 + 2 > *alloc_len) {
 		if (block_descr_len + 8 + 2 > BUFFER_SIZE || !(flag & 1)) {
-			m->valid = -1;
+			m->p2a_valid = -1;
 			sprintf(msg,
 		 "MODE SENSE page 2A with oversized Block Descriptors: %s : %d",
 				d->devname, block_descr_len);
@@ -476,6 +476,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 				0x0002016e, LIBDAX_MSGS_SEV_DEBUG,
 				LIBDAX_MSGS_PRIO_LOW, msg, 0, 0);
 			{ret = 0; goto ex;}
+
 		}
 		*alloc_len = block_descr_len + 10;
 		{ret = 2; goto ex;}
@@ -508,7 +509,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	/* ts A90602 : page_length N asserts page[N+1]. (see SPC-1 8.3.3) */
 	/* ts B11031 : qemu drive has a page_length of 18 */
 	if (page_length < 18) {
-		m->valid = -1;
+		m->p2a_valid = -1;
 		sprintf(msg, "MODE SENSE page 2A too short: %s : %d",
 			d->devname, page_length);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
@@ -550,7 +551,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	m->max_end_lba = 0;
 
 	if (!was_error)
-		m->valid = 1;
+		m->p2a_valid = 1;
 
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
 	if (page_length < 30) /* no write speed descriptors ? */
@@ -719,6 +720,8 @@ void spc_select_error_params(struct burn_drive *d,
 	
 	scsi_init_command(c, SPC_MODE_SELECT, sizeof(SPC_MODE_SELECT));
 	c->retry = 1;
+	if (d->mdata->retry_page_valid <= 0)
+		d->mdata->retry_page_length = 0;
 	c->opcode[8] = 8 + 2 + d->mdata->retry_page_length;
 	c->page = buf;
 	c->page->bytes = 0;
@@ -834,6 +837,8 @@ void spc_select_write_params(struct burn_drive *d, struct burn_session *s,
 		o->block_type,spc_block_type(o->block_type));
 	*/
 
+	if (d->mdata->write_page_valid <= 0)
+		d->mdata->write_page_length = 0;
 	alloc_len = 8 + 2 + d->mdata->write_page_length;
 	memset(&(buf->data), 0, alloc_len);
 
@@ -1083,7 +1088,11 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 		return -1;
 	}
 	d->idata->valid = 0;
-	d->mdata->valid = 0;
+	d->mdata->p2a_valid = 0;
+	d->mdata->max_read_speed = 0;
+	d->mdata->cur_read_speed = 0;
+	d->mdata->max_write_speed = 0;
+	d->mdata->cur_write_speed = 0;
 	d->mdata->speed_descriptors = NULL;
 	if (!(flag & 1)) {
 		ret = spc_setup_drive(d);

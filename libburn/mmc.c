@@ -1523,7 +1523,8 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	   SanDisk Cruzer U3 memory stick stalls on format 2.
 	   Format 0 seems to be more conservative with read-only drives.
 	*/
-	if (!(d->mdata->cdrw_write || d->current_profile != 0x08)) {
+	if (!((d->mdata->p2a_valid > 0 && d->mdata->cdrw_write) ||
+	      d->current_profile != 0x08)) {
 		ret = mmc_read_toc_fmt0(d);
 		goto ex;
 	}
@@ -4635,6 +4636,13 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 			pd[32] = 0x80; /* TCVAL */
 			memcpy(pd + 33, isrc_text, 12);
 		}
+	}
+	if (d->mdata->write_page_valid <= 0) {
+		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+			"mmc_compose_mode_page_5: No mode page 05 was read",
+		 	0, 0);
+		return 0;
 	}
 	return 1;
 }

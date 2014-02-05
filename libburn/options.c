@@ -44,7 +44,8 @@ struct burn_write_opts *burn_write_opts_new(struct burn_drive *drive)
 	opts->toc_entry = NULL;
 	opts->toc_entries = 0;
 	opts->simulate = 0;
-	opts->underrun_proof = drive->mdata->underrun_proof;
+	opts->underrun_proof = drive->mdata->p2a_valid > 0 &&
+	                       drive->mdata->underrun_proof;
 	opts->perform_opc = 1;
 	opts->obs = -1;
 
@@ -172,17 +173,6 @@ void burn_write_opts_set_format(struct burn_write_opts *opts, int format)
 
 int burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim)
 {
-/* <<< ts A70529 :
-       One cannot predict the ability to simulate from page 05h
-       information alone. This check is now done later in 
-       function  burn_write_opts_auto_write_type().
-
-	if (opts->drive->mdata->simulate) {
-		opts->simulate = sim;
-		return 1;
-	}
-	return 0;
-*/
 	opts->simulate = !!sim;
 	return 1;
 }
@@ -190,9 +180,8 @@ int burn_write_opts_set_simulate(struct burn_write_opts *opts, int sim)
 int burn_write_opts_set_underrun_proof(struct burn_write_opts *opts,
 				       int underrun_proof)
 {
-	if (opts->drive->mdata->valid <= 0)
-		return 0;
-	if (opts->drive->mdata->underrun_proof) {
+	if (opts->drive->mdata->p2a_valid <= 0 ||
+	    opts->drive->mdata->underrun_proof) {
 		opts->underrun_proof = underrun_proof;
 		return 1;
 	}

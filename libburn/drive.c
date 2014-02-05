@@ -263,8 +263,9 @@ int burn_drive_inquire_media(struct burn_drive *d)
 
         /* ts A71128 : run read_disc_info() for any recognizeable profile */
 	if (d->current_profile > 0 || d->current_is_guessed_profile ||
-	    d->mdata->cdr_write || d->mdata->cdrw_write ||
-	    d->mdata->dvdr_write || d->mdata->dvdram_write) {
+	    (d->mdata->p2a_valid > 0 &&
+		(d->mdata->cdr_write || d->mdata->cdrw_write ||
+		 d->mdata->dvdr_write || d->mdata->dvdram_write)) ) {
 
 #define Libburn_knows_correct_state_after_loaD 1
 #ifdef Libburn_knows_correct_state_after_loaD
@@ -647,7 +648,7 @@ struct burn_drive *burn_drive_finish_enum(struct burn_drive *d)
 	        t->released = 1;
 	} else {
 		/* ts A90602 */
-		d->mdata->valid = -1;
+		d->mdata->p2a_valid = -1;
                 sprintf(msg, "Unable to grab scanned drive %s", d->devname);
                 libdax_msgs_submit(libdax_messenger, d->global_index,
                                 0x0002016f, LIBDAX_MSGS_SEV_DEBUG,
@@ -1227,7 +1228,7 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	a ssert(d->mdata);
 #endif
 
-	if(d->idata->valid <= 0 || d->mdata->valid <= 0)
+	if(d->idata->valid <= 0)
 		return 0;
 
 	id = (struct burn_scsi_inquiry_data *)d->idata;
@@ -1240,18 +1241,27 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	strip_spaces(out->revision);
 	strncpy(out->location, d->devname, 16);
 	out->location[16] = '\0';
-	out->buffer_size = d->mdata->buffer_size;
-	out->read_dvdram = !!d->mdata->dvdram_read;
-	out->read_dvdr = !!d->mdata->dvdr_read;
-	out->read_dvdrom = !!d->mdata->dvdrom_read;
-	out->read_cdr = !!d->mdata->cdr_read;
-	out->read_cdrw = !!d->mdata->cdrw_read;
-	out->write_dvdram = !!d->mdata->dvdram_write;
-	out->write_dvdr = !!d->mdata->dvdr_write;
-	out->write_cdr = !!d->mdata->cdr_write;
-	out->write_cdrw = !!d->mdata->cdrw_write;
-	out->write_simulate = !!d->mdata->simulate;
-	out->c2_errors = !!d->mdata->c2_pointers;
+
+	if (d->mdata->p2a_valid > 0) {
+		out->buffer_size = d->mdata->buffer_size;
+		out->read_dvdram = !!d->mdata->dvdram_read;
+		out->read_dvdr = !!d->mdata->dvdr_read;
+		out->read_dvdrom = !!d->mdata->dvdrom_read;
+		out->read_cdr = !!d->mdata->cdr_read;
+		out->read_cdrw = !!d->mdata->cdrw_read;
+		out->write_dvdram = !!d->mdata->dvdram_write;
+		out->write_dvdr = !!d->mdata->dvdr_write;
+		out->write_cdr = !!d->mdata->cdr_write;
+		out->write_cdrw = !!d->mdata->cdrw_write;
+		out->write_simulate = !!d->mdata->simulate;
+		out->c2_errors = !!d->mdata->c2_pointers;
+	} else {
+		out->buffer_size = out->read_dvdram = out->read_dvdr = 0;
+		out->read_dvdrom = out->read_cdr = out->read_cdrw = 0;
+		out->write_dvdram = out->write_dvdr = out->write_cdr = 0;
+		out->write_cdrw = out->write_simulate = out->c2_errors = 0;
+	}
+
 	out->drive = d;
 
 #ifdef Libburn_dummy_probe_write_modeS
@@ -1570,23 +1580,17 @@ void burn_sectors_to_msf(int sectors, int *m, int *s, int *f)
 
 int burn_drive_get_read_speed(struct burn_drive *d)
 {
-	if(d->mdata->valid <= 0)
-		return 0;
 	return d->mdata->max_read_speed;
 }
 
 int burn_drive_get_write_speed(struct burn_drive *d)
 {
-	if(d->mdata->valid <= 0)
-		return 0;
 	return d->mdata->max_write_speed;
 }
 
 /* ts A61021 : New API function */
 int burn_drive_get_min_write_speed(struct burn_drive *d)
 {
-	if(d->mdata->valid <= 0)
-		return 0;
 	return d->mdata->min_write_speed;
 }
 
@@ -2525,7 +2529,8 @@ int burn_disc_read_atip(struct burn_drive *d)
 	if(d->drive_role != 1)
 		return 0;
 	if ((d->current_profile == -1 || d->current_is_cd_profile)
-	    && (d->mdata->cdrw_write || d->current_profile != 0x08)) {
+	    && ((d->mdata->p2a_valid > 0 && d->mdata->cdrw_write) ||
+	        d->current_profile != 0x08)) {
 		d->read_atip(d);
 		/* >>> some control of success would be nice :) */
 	} else {
@@ -2754,8 +2759,6 @@ int burn_speed_descriptor_copy(struct burn_speed_descriptor *from,
 /* ts A61226 : free dynamically allocated sub data of struct scsi_mode_data */
 int burn_mdata_free_subs(struct scsi_mode_data *m)
 {
-	if(!m->valid)
-		return 0;
 	burn_speed_descriptor_destroy(&(m->speed_descriptors), 1);
 	return 1;
 }
@@ -2769,8 +2772,6 @@ int burn_drive_get_speedlist(struct burn_drive *d,
 	struct burn_speed_descriptor *sd, *csd = NULL;
 
 	(*speed_list) = NULL;
-	if(d->mdata->valid <= 0)
-		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		ret = burn_speed_descriptor_new(&csd, NULL, csd, 0);
 		if (ret <= 0)
@@ -2794,8 +2795,6 @@ int burn_drive_get_best_speed(struct burn_drive *d, int speed_goal,
 	if (speed_goal < 0)
 		best_speed = 2000000000;
 	*best_descr = NULL;
-	if(d->mdata->valid <= 0)
-		return 0;
 	for (sd = d->mdata->speed_descriptors; sd != NULL; sd = sd->next) {
 		if (flag & 1)
 			speed = sd->read_speed;
@@ -2939,7 +2938,8 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 			o->multi_session = o->multi_track = 0;
 		else if(wt == BURN_WRITE_NONE || wt == BURN_WRITE_SAO ||
 			wt == BURN_WRITE_TAO)
-			o->might_simulate = !!d->mdata->simulate;
+			o->might_simulate = !!(d->mdata->p2a_valid > 0 &&
+			                       d->mdata->simulate);
 	} else if (d->current_profile == 0x11 || d->current_profile == 0x14 ||
 			d->current_profile == 0x15) {
 		/* DVD-R , sequential DVD-RW , DVD-R/DL Sequential */
