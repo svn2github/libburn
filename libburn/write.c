@@ -3151,6 +3151,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 				char *data, off_t data_count, int flag)
 {
 	int alignment = 0, start, upto, chunksize, err, fd = -1, ret;
+	int do_close = 0, getfl_ret;
 	char msg[81], *rpt;
 	struct buffer *buf = NULL, *buffer_mem = d->buffer;
 
@@ -3223,10 +3224,25 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 			"Drive is busy on attempt to write random access",0,0);
 		{ret = 0; goto ex;}
 	}
-	if(d->drive_role != 1) {
-		fd = burn_stdio_open_write(d, byte_address, 2048, 0);
-		if (fd == -1)
-			{ret = 0; goto ex;}
+	if (d->drive_role != 1) {
+		if (d->stdio_fd >= 0) {
+			/* Avoid to have a read-only fd open */
+			getfl_ret = fcntl(d->stdio_fd, F_GETFL);
+			if (((O_RDWR | O_WRONLY | O_RDONLY) & getfl_ret) ==
+			    O_RDONLY) {
+				close(d->stdio_fd);
+				d->stdio_fd = -1;
+			}
+		}
+		if (d->stdio_fd >= 0) {
+			/* Avoid to have two fds open */
+			fd = d->stdio_fd;
+		} else {
+			fd = burn_stdio_open_write(d, byte_address, 2048, 0);
+			if (fd == -1)
+				{ret = 0; goto ex;}
+			do_close = 1;
+		}
 	}
 	d->cancel = 0;
 	d->busy = BURN_DRIVE_WRITING_SYNC;
@@ -3255,7 +3271,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		}
 		if (err == BE_CANCELLED) {
 			d->busy = BURN_DRIVE_IDLE;
-			if(fd >= 0)
+			if(fd >= 0 && do_close)
 				close(fd);
 			{ret = -(start * 2048 - byte_address); goto ex;}
 		}
@@ -3271,7 +3287,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		d->needs_sync_cache = 0;
 	}
 		
-	if(fd >= 0)
+	if(fd >= 0 && do_close)
 		close(fd);
 	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
