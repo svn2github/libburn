@@ -1,13 +1,19 @@
 
 /* sg.c
    Switcher for operating system dependent transport level modules of libburn.
-   Copyright (C) 2009 - 2010 Thomas Schmitt <scdbackup@gmx.net>, 
+   Copyright (C) 2009 - 2014 Thomas Schmitt <scdbackup@gmx.net>, 
    provided under GPLv2+
 */
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #undef HAVE_CONFIG_H
+#endif
+
+
+/* <<< Only for the time of Linux compilability tests */
+#ifdef __NetBSD__
+#define Libburn_use_sg_netbsD
 #endif
 
 
@@ -19,6 +25,12 @@
 #ifdef Libburn_use_libcdiO
 
 #include "sg-libcdio.c"
+
+#else
+#ifdef Libburn_use_sg_netbsD
+/* To become: # ifdef __NetBSD__ */
+
+#include "sg-netbsd.c"
 
 #else
 #ifdef __FreeBSD__
@@ -58,11 +70,11 @@
 static int intentional_compiler_warning(void)
 {
  int INTENTIONAL_COMPILER_WARNING_;
- int Cannot_recognize_GNU_Linux_nor_FreeBSD_nor_Solaris_;
+ int Cannot_recognize_GNU_Linux_nor_FreeBSD_nor_Solaris_nor_NetBSD_;
  int Have_to_use_dummy_MMC_transport_adapter_;
  int This_libburn_will_not_be_able_to_operate_on_real_CD_drives;
  int Have_to_use_dummy_MMC_transport_adapter;
- int Cannot_recognize_GNU_Linux_nor_FreeBSD_nor_Solaris;
+ int Cannot_recognize_GNU_Linux_nor_FreeBSD_nor_Solaris_nor_NetBSD_;
  int INTENTIONAL_COMPILER_WARNING;
 
  return(0);
@@ -74,6 +86,7 @@ static int intentional_compiler_warning(void)
 #endif /* ! __linux */
 #endif /* ! __FreeBSD_kernel__ */
 #endif /* ! __FreeBSD__ */
+#endif /* ! Libburn_use_sg_netbsD */
 #endif /* ! Libburn_use_libcdiO */
 #endif /* ! Libburn_use_sg_dummY */
 
