@@ -225,11 +225,13 @@ EXTRA_DIST = \
 	libburn/os-linux.h \
 	libburn/os-libcdio.h \
 	libburn/os-solaris.h \
+	libburn/os-netbsd.h \
 	libburn/sg-dummy.c \
 	libburn/sg-freebsd.c \
 	libburn/sg-linux.c \
 	libburn/sg-libcdio.c \
 	libburn/sg-solaris.c \
+	libburn/sg-netbsd.c \
 	COPYING \
 	NEWS \
 	ChangeLog \
