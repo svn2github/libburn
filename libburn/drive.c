@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1221,6 +1221,12 @@ static void strip_spaces(char *str)
 static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 {
 	struct burn_scsi_inquiry_data *id;
+	int i;
+	/* For faking CD recording capability of unavailable mode page 0x2A */
+	static int writer_profiles[] = {
+		0x09, 0x0a, 0x11, 0x12, 0x13, 0x14, 0x15, 0x1a, 0x1b, 0x2b,
+		0x41, 0x42, 0x43, 0x00
+	};
 
 	/* ts A61007 : now prevented in enumerate_common() */
 #if 0
@@ -1260,6 +1266,13 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 		out->read_dvdrom = out->read_cdr = out->read_cdrw = 0;
 		out->write_dvdram = out->write_dvdr = out->write_cdr = 0;
 		out->write_cdrw = out->write_simulate = out->c2_errors = 0;
+		/* If the drive reported a writer profile, attribute CD-R */
+		for (i = 0; writer_profiles[i] != 0; i++)
+			if (writer_profiles[i] == d->current_profile) {
+				out->write_cdr = 1;
+		break;
+			}
+
 	}
 
 	out->drive = d;

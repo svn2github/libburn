@@ -4637,13 +4637,6 @@ fprintf(stderr, "libburn_EXPERIMENTAL: block_type = %d, pd[4]= %u\n",
 			memcpy(pd + 33, isrc_text, 12);
 		}
 	}
-	if (d->mdata->write_page_valid <= 0) {
-		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			"mmc_compose_mode_page_5: No mode page 05 was read",
-		 	0, 0);
-		return 0;
-	}
 	return 1;
 }
 

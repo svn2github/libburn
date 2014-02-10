@@ -431,9 +431,6 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	if (*alloc_len < 10)
 		{ret = 0; goto ex;}
 
-	if (!(flag & 1))
-		mmc_get_configuration(d);
-
 	BURN_ALLOC_MEM(msg, char, BURN_DRIVE_ADR_LEN + 160);
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
@@ -646,6 +643,8 @@ void spc_sense_caps(struct burn_drive *d)
 	if (mmc_function_spy(d, "sense_caps") <= 0)
 		return;
 
+	mmc_get_configuration(d);
+
 	/* first command execution to learn Allocation Length */
 	alloc_len = start_len;
 	ret = spc_sense_caps_al(d, &alloc_len, 1);
@@ -694,7 +693,6 @@ void spc_sense_error_params(struct burn_drive *d)
 	c->page->sectors = 0;
 	c->dir = FROM_DRIVE;
 	d->issue_command(d, c);
-
 	m = d->mdata;
 	page = c->page->data + 8;
 	d->params.retries = page[3];
@@ -781,9 +779,11 @@ void spc_sense_write_params(struct burn_drive *d)
 	if (!c->error) {
 		page = c->page->data + 8;
 		m->write_page_length = page[1];
-		m->write_page_valid = 1;
-	} else
-		m->write_page_valid = 0;
+		if (m->write_page_length > 0)
+			m->write_page_valid = 1;
+		else
+			m->write_page_length = 0x32;
+	}
 	mmc_read_disc_info(d);
 
 	/* ts A70212 : try to setup d->media_capacity_remaining */
@@ -837,8 +837,6 @@ void spc_select_write_params(struct burn_drive *d, struct burn_session *s,
 		o->block_type,spc_block_type(o->block_type));
 	*/
 
-	if (d->mdata->write_page_valid <= 0)
-		d->mdata->write_page_length = 0;
 	alloc_len = 8 + 2 + d->mdata->write_page_length;
 	memset(&(buf->data), 0, alloc_len);
 
@@ -1094,6 +1092,8 @@ int burn_scsi_setup_drive(struct burn_drive *d, int bus_no, int host_no,
 	d->mdata->max_write_speed = 0;
 	d->mdata->cur_write_speed = 0;
 	d->mdata->speed_descriptors = NULL;
+	d->mdata->write_page_length = 0x32;
+	d->mdata->write_page_valid = 0;
 	if (!(flag & 1)) {
 		ret = spc_setup_drive(d);
 		if (ret<=0)
@@ -1733,7 +1733,7 @@ int scsi_log_reply(unsigned char *opcode, int data_dir, unsigned char *data,
 			l = 18;
 			if ((sense[0] & 0x7f) == 0x72 ||
 			    (sense[0] & 0x7f) == 0x73)
-				l = sense[7] + 7 + 1; /* SPC-5 4.5.2. */
+				l = sense[7] + 7 + 1; /* SPC-3 4.5.2. */
 			if (l > sense_len)
 				l = sense_len;
 			fprintf(fp, "+++ sense data =");
