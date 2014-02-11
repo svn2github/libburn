@@ -339,7 +339,7 @@ if test x$enable_debug != xyes; then
     CFLAGS="-DNDEBUG $CFLAGS"
 else
     if test x$GCC = xyes; then
-        CFLAGS="-g -pedantic -Wall -Wextra -Wno-unused-parameter $CFLAGS"
+        CFLAGS="-g -pedantic -Wall -Wextra -Wno-unused-parameter -Wno-char-subscripts $CFLAGS"
     fi
     CFLAGS="-DDEBUG $CFLAGS"
 fi

@@ -1,7 +1,7 @@
 AC_DEFUN([LIBBURNIA_SET_FLAGS],
 [
 case $target_os in
-freebsd*)
+freebsd* | netbsd*)
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
         ;;
