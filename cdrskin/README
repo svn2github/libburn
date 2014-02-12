@@ -6,15 +6,15 @@ Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
 http://scdbackup.sourceforge.net/cdrskin-1.3.5.tar.gz
 
-Copyright (C) 2006-2013 Thomas Schmitt, provided under GPL version 2 or later.
+Copyright (C) 2006-2014 Thomas Schmitt, provided under GPL version 2 or later.
 ------------------------------------------------------------------------------
 
 
 cdrskin is a limited cdrecord compatibility wrapper which allows to use
 most of the libburn features from the command line.
 
-Currently it is supported on GNU/Linux with kernels >= 2.4,
-on FreeBSD and on OpenSolaris.
+Currently it is fully supported on GNU/Linux with kernels >= 2.4, on FreeBSD,
+on OpenSolaris, and on NetBSD.
 IDE drives under Linux 2.4. need kernel module ide-scsi.
 ATA and SATA drives under FreeBSD need kernel module atapicam.
 On other X/Open compliant systems there will only be emulated drives, but no
@@ -108,8 +108,9 @@ On Linux, full and insecure enabling of both for everybody would look like
     chmod a+rw /dev/sr0 /dev/hda
 This is equivalent to the traditional setup chmod a+x,u+s cdrecord.
 
-On FreeBSD, device permissions are to be set in /etc/devfs.rules.
+On FreeBSD, device rw-permissions are to be set in /etc/devfs.rules.
 On Solaris, pfexec privileges may be restricted to "basic,sys_devices".
+On NetBSD, rw-permission may be granted by chmod a+rw /dev/rcd?d.
 See below "System Dependend Drive Permission Examples".
 
 I strongly discourage to run cdrskin with setuid root or via sudo !
@@ -464,7 +465,7 @@ closing it immediately, waiting, and only then opening it for real:
                   System Dependend Drive Permission Examples
 
 Accessing the optical drives requires privileges which usually are granted
-only to the superuser. Linux, FreeBSD and Solaris offer quite different
+only to the superuser. Linux, FreeBSD, Solaris, NetBSD, offer quite different
 approaches for avoiding the need for unrestricted privileges.
 
 First check whether some friendly system setting already allows you to
@@ -475,9 +476,9 @@ Those drives of which you see address and type strings are already usable.
 If there remain drives invisible which the superuser can see by the same
 command, then the following examples might help:
 
---------------------- 
-On all three systems:
---------------------- 
+--------------- 
+On all systems:
+--------------- 
 Add the authorized users of CD drives to group "floppy" in /etc/group.
 If missing: create this group.
 Changes to /etc/group often only affect new login sessions. So log out and in
@@ -537,6 +538,12 @@ Then allow the group r-access to the drives
 The last two commands have to be executed after each boot. I do not know
 the relevant device configuration files yet.
 
+----------
+On NetBSD:
+----------
+Allow rw-access to the drives
+  chgrp floppy /dev/rcd[01]d
+  chmod g+rw   /dev/rcd[01]d
 
 ------------------------------------------------------------------------------
                       Project aspects and legal stuff

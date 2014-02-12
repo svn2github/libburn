@@ -10,9 +10,9 @@ optical discs. This page is about its capability to handle optical media.
 For now this means CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD+R/DL, DVD-RW,
 DVD-R, DVD-R/DL, BD-R, BD-RE.
 
-Our scope is currently Linux 2.4 and 2.6, or FreeBSD, or Solaris . For ports
-to other systems we would need : login on a development machine resp.
-an OS ithat is installable on an AMD 64-bit PC, advise from a system person
+Our scope is currently Linux 2.4 and 2.6, FreeBSD, OpenSolaris, or NetBSD.
+For ports to other systems we would need : login on a development machine resp.
+an OS that is installable on an AMD 64-bit PC, advise from a system person
 about the equivalent of Linux sg or FreeBSD CAM, volunteers for testing of
 realistic use cases.
 
