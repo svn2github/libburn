@@ -354,7 +354,7 @@ static int guess_size_by_seek_set(int fd, off_t *bytes, int flag)
 	continue;
 			return 1;
 		}
-		*bytes = i;
+		*bytes = i + 1;
 	}
 	return 0;
 }
