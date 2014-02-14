@@ -1221,12 +1221,7 @@ static void strip_spaces(char *str)
 static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 {
 	struct burn_scsi_inquiry_data *id;
-	int i;
-	/* For faking CD recording capability of unavailable mode page 0x2A */
-	static int writer_profiles[] = {
-		0x09, 0x0a, 0x11, 0x12, 0x13, 0x14, 0x15, 0x1a, 0x1b, 0x2b,
-		0x41, 0x42, 0x43, 0x00
-	};
+	int i, profile;
 
 	/* ts A61007 : now prevented in enumerate_common() */
 #if 0
@@ -1266,13 +1261,20 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 		out->read_dvdrom = out->read_cdr = out->read_cdrw = 0;
 		out->write_dvdram = out->write_dvdr = out->write_cdr = 0;
 		out->write_cdrw = out->write_simulate = out->c2_errors = 0;
-		/* If the drive reported a writer profile, attribute CD-R */
-		for (i = 0; writer_profiles[i] != 0; i++)
-			if (writer_profiles[i] == d->current_profile) {
-				out->write_cdr = 1;
-		break;
-			}
-
+		for (i = 0; i < d->num_profiles; i++) {
+			profile = (d->all_profiles[i * 4] << 8) |
+						d->all_profiles[i * 4 + 1];
+			if (profile == 0x09)
+				out->write_cdr = out->read_cdr = 1;
+			else if (profile == 0x0a)
+				out->write_cdrw = out->read_cdrw = 1;
+			else if (profile == 0x10)
+				out->read_dvdrom = 1;
+			else if (profile == 0x11)
+				out->write_dvdr = out->read_dvdr = 1;
+			else if (profile == 0x12)
+				out->write_dvdram = out->read_dvdram = 1;
+		}
 	}
 
 	out->drive = d;
