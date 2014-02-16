@@ -406,6 +406,32 @@ void spc_allow(struct burn_drive *d)
 	d->issue_command(d, c);
 }
 
+
+/* ts B40216 : Outsourced from spc_sense_caps_al().
+               To be called by spc_sense_caps() after spc_sense_caps_al()
+*/
+static int spc_try_get_performance(struct burn_drive *d, int flag)
+{
+	int ret;
+	struct burn_feature_descr *feature_descr;
+
+	/* ts B40107 : Feature 0x107 announces availability of GET PERFORMANCE
+	               Its WSPD bit announces Type 3.
+	               Try this even if the feature is not current.
+	*/
+	ret = burn_drive_has_feature(d, 0x107, &feature_descr, 0);
+	if (ret <= 0)
+		return ret;
+	if (feature_descr->data_lenght <= 0)
+		return 1;
+	if (feature_descr->data[0] & 2)             /* WSPD */
+		ret = mmc_get_write_performance(d);
+	/* Get read performance */
+	mmc_get_performance(d, 0x00, 0);
+	return 1;
+}
+
+
 /*
 ts A70518 - A90603 : Do not call with *alloc_len < 10
 */
@@ -423,7 +449,6 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	struct command *c = NULL;
 	struct burn_speed_descriptor *sd;
 	char *msg = NULL;
-	struct burn_feature_descr *feature_descr;
 
 	/* ts A61225 : 1 = report about post-MMC-1 speed descriptors */
 	static int speed_debug = 0;
@@ -552,7 +577,7 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 
 	/* ts A61225 : end of MMC-1 , begin of MMC-3 */
 	if (page_length < 30) /* no write speed descriptors ? */
-		goto try_mmc_get_performance;
+		goto no_speed_descriptors;
 
 	m->cur_write_speed = page[28] * 256 + page[29];
 
@@ -606,26 +631,8 @@ static int spc_sense_caps_al(struct burn_drive *d, int *alloc_len, int flag)
 	"LIBBURN_DEBUG: 5Ah,2Ah min_write_speed = %d , max_write_speed = %d\n",
 		m->min_write_speed, m->max_write_speed);
 
-try_mmc_get_performance:;
-	/* ts B40107 : Feature 0x107 announces availability of GET PERFORMANCE
-	               Its WSPD bit announces Type 3.
-	               Try this even if the feature is not current.
-	*/
-	ret = burn_drive_has_feature(d, 0x107, &feature_descr, 0);
-	if (ret > 0) {
-		if (feature_descr->data_lenght > 0) {
-			if (feature_descr->data[0] & 2) {            /* WSPD */
-				ret = mmc_get_write_performance(d);
-				if (ret > 0 && speed_debug)
-					fprintf(stderr,
-	    "LIBBURN_DEBUG: ACh min_write_speed = %d , max_write_speed = %d\n",
-				                m->min_write_speed,
-					        m->max_write_speed);
-			}
-			/* Get read performance */
-			mmc_get_performance(d, 0x00, 0);
-		}
-	}
+no_speed_descriptors:;
+
 	ret = !was_error;
 ex:
 	BURN_FREE_MEM(msg);
@@ -654,7 +661,7 @@ void spc_sense_caps(struct burn_drive *d)
 		*/
 		ret = spc_sense_caps_al(d, &alloc_len, 1);
 		if (ret == 2)
-			return;
+			goto try_get_performance;
 	}
 	/* ts B11103:
 	   qemu ATAPI DVD-ROM delivers only 28.
@@ -664,6 +671,9 @@ void spc_sense_caps(struct burn_drive *d)
 	if (alloc_len >= minimum_len && ret > 0)
 		/* second execution with announced length */
 		spc_sense_caps_al(d, &alloc_len, 0);
+
+try_get_performance:;
+	spc_try_get_performance(d, 0);
 }
 
 
