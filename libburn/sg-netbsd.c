@@ -120,71 +120,7 @@ Send feedback to libburn-hackers@pykix.org .
 #endif /* Libburn_os_has_stavtfS */
 
 #include <sys/ioctl.h>
-
-
-/* <<< Porting mock-up to check general compilability by a Linux system
-       before bothering Freddy Fisker and his NetBSD .
-       Mostly from NetBSD 6 : /sys/scsiio.h
-
-       *** Do not run the resulting binary ***
-
-*/
-#ifdef __linux
-
-#define SENSEBUFLEN 48
-
-struct scsireq {
-       unsigned int  flags;          /* info about the request status and type */
-       unsigned int  timeout;
-       unsigned char  cmd[16];        /* 12 is actually the max */
-       unsigned char  cmdlen;
-       void *  databuf;        /* address in user space of buffer */
-       unsigned int  datalen;        /* size of user buffer (request) */
-       unsigned int  datalen_used;   /* size of user buffer (used)*/
-       unsigned char  sense[SENSEBUFLEN]; /* returned sense will be in here */
-       unsigned char  senselen;       /* sensedata request size (MAX of SENSEBUFLEN)*/
-       unsigned char  senselen_used;  /* return value only */
-       unsigned char  status;         /* what the scsi status was from the adapter */
-       unsigned char  retsts;         /* the return status for the command */
-       int     error;          /* error bits */
-};
-typedef struct scsireq scsireq_t;
-
-#define SCCMD_READ              0x00000001
-#define SCCMD_WRITE             0x00000002
-#define SCCMD_ESCAPE            0x00000010
-
-#define SCCMD_OK        0x00
-#define SCCMD_SENSE     0x03
-
-/* extra dummy values */
-#define SCIOCCOMMAND    12345
-#define SCIOCIDENTIFY   67890
-
-struct  oscsi_addr {
-        int     scbus;          /* -1 if wildcard */
-        int     target;         /* -1 if wildcard */
-        int     lun;            /* -1 if wildcard */
-};
-
-struct  scsi_addr {
-        int type;       /* bus type */
-#define TYPE_SCSI 0
-#define TYPE_ATAPI 1
-        union {
-                struct oscsi_addr scsi;
-                struct _atapi {
-                        int atbus;  /* -1 if wildcard */
-                        int drive;  /* -1 if wildcard */
-                } atapi;
-        } addr;
-};
-
-#else /* Linux compilability mock-up */
-
 #include <sys/scsiio.h>
-
-#endif /* ! Linux compilability mock-up */
 
 
 /** PORTING : ------ libburn portable headers and definitions ----- */

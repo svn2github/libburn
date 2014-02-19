@@ -15,7 +15,7 @@
 */
 
 
-/* <<< Only for the time of Linux compilability tests */
+/* <<< Until it is known whether this adapter would work on OpenBSD too */
 #ifdef __NetBSD__
 #define Libburn_use_sg_netbsD
 #endif
