@@ -594,10 +594,10 @@ struct burn_drive_info
             to inquire a device file address.            ^^^^^ ALWAYS ^^^^^^^*/
 	char location[17];
 
-	/* DEPRECATION:
-	   Start of information from mode page 2Ah which is declared
-	   obsolete by MMC-5. Do not rely on this, if you can get a
-	   meaningful reply from burn_drive_get_all_profiles()
+	/* NOTE: The capability to write particular media types is also
+	         announced by their profile number being in the list returned
+	         by burn_drive_get_all_profile(). This is the only way to
+	         inquire types DVD-RW, DVD+R, DVD+R DL, DVD+RW, BD-R, BD-RE.
 	*/
 	/** Can the drive read DVD-RAM discs */
 	unsigned int read_dvdram:1;
@@ -622,13 +622,12 @@ struct burn_drive_info
 	/** Can the drive simulate a write */
 	unsigned int write_simulate:1;
 
-	/** Can the drive report C2 errors */
+	/** DEPRECATED: Can the drive report C2 errors */
 	unsigned int c2_errors:1;
 
-	/** The size of the drive's buffer (in kilobytes) */
+	/** DEPRECATED: The size of the drive's buffer (in kilobytes) */
 	int buffer_size;
 
-	/* End of DEPRECATION */
 
 	/** 
 	 * The supported block types in tao mode.
@@ -1646,7 +1645,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
 /** Format media for use with libburn. This currently applies to DVD-RW
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h). DVD+RW can be "de-iced"
-    by setting bit2 of flag. DVD-RAM and BD-RE may get formatted initially
+    by setting bit4 of flag. DVD-RAM and BD-RE may get formatted initially
     or re-formatted to adjust their Defect Managment.
     This function usually returns while the drive is still in the process
     of formatting. The formatting is done, when burn_drive_get_status()

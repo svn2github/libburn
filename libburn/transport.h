@@ -151,6 +151,8 @@ struct burn_feature_descr {
                               */
 
         unsigned char  data_lenght;
+
+	/* Additional bytes after the first 4 bytes of the descriptor */
         unsigned char *data;
 
         struct burn_feature_descr *next;

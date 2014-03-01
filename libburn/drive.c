@@ -1222,6 +1222,7 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 {
 	struct burn_scsi_inquiry_data *id;
 	int i, profile;
+	struct burn_feature_descr *feat;
 
 	/* ts A61007 : now prevented in enumerate_common() */
 #if 0
@@ -1275,6 +1276,13 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 			else if (profile == 0x12)
 				out->write_dvdram = out->read_dvdram = 1;
 		}
+
+		/* Test Write bit of CD TAO, CD Mastering, DVD-R/-RW Write */
+		for (i = 0x002D; i <= 0x002F; i++)
+			if (burn_drive_has_feature(d, i, &feat, 0))
+				if (feat->data_lenght > 0)
+					out->write_simulate |=
+							 !!(feat->data[0] & 4);
 	}
 
 	out->drive = d;
