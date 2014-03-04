@@ -24,23 +24,22 @@ set -x
 # The top level directory in the SVN snapshot is named
 intermediate="./libburn_pykix"
 
-# libburn source used:  http://libburnia.pykix.org
+# libburn source used:  http://libburnia-project.org
 # Downloaded by:
-#  $ svn co http://libburnia-svn.pykix.org/libburn/tags/... $intermediate
+#  $ svn co http://libburnia-project.org/libburn/tags/... $intermediate
 # packed up in a tarball just to save it from inadverted changes by
 #  $ tar czf libburn_svn.tgz $intermediate
-original="./libburn_svn_release.tgz"
+original="./libburn_svn.tgz"
 # Historic moments:
 # original="./libburn_svn_A60815.tgz"
 # original="./libburn_cdrskin_A60819.tgz"
 
 
 # My changes are in $changes , mainly in $changes/cdrskin
-changes="./libburn-release"
+changes="./libburn-develop"
 
-skin_release="1.3.4"
+skin_release="1.3.7"
 patch_level=""
-# patch_level=".pl00"
 skin_rev="$skin_release""$patch_level"
 
 # The result directory and the name of the result tarballs
@@ -59,7 +58,6 @@ compile_result="cdrskin/cdrskin"
 man_to_html_cmd="./cdrskin/convert_man_to_html.sh"
 man_page_html="cdrskin/man_1_cdrskin.html"
 
-# bintarget_dynamic="cdrskin_${skin_rev}-x86-suse9_0"
 bintarget_dynamic="cdrskin_${skin_rev}-amd64-suse10_2"
 bintarget_static="$bintarget_dynamic"-static
 
@@ -105,9 +103,9 @@ cdrskin_target="$target"/cdrskin
 libburn_target="$target"/libburn
 
 # Create version timestamp
-# timestamp="$(date -u '+%Y.%m.%d.%H%M%S')"
-# echo "$timestamp"
-# echo '#define Cdrskin_timestamP "'"$timestamp"'"' >"$cdrskin_dir"/cdrskin_timestamp.h
+timestamp="$(date -u '+%Y.%m.%d.%H%M%S')"
+echo "$timestamp"
+echo '#define Cdrskin_timestamP "'"$timestamp"'"' >"$cdrskin_dir"/cdrskin_timestamp.h
 
 # Add the cdrskin files
 if test -e "$cdrskin_target"
@@ -146,6 +144,9 @@ rm "$cdrskin_target"/doener_*.gif "$cdrskin_target"/doener_*.png
 # Remove automatically generated HTML man page
 rm "$cdrskin_target"/man_1_cdrskin.html
 
+# Remove libcevap
+rm -rf "$target"/libcevap
+
 # Remove all add_ts_changes_to_libburn besides this one
 for i in "$cdrskin_target"/add_ts_changes_to_libburn*
 do
@@ -156,10 +157,6 @@ do
     rm $i
   fi
 done
-
-# Remove libcevap
-rm -rf "$target"/libcevap
-
 
 # Remove unwanted SVN stuff (TODO: avoid downloading it)
 for i in "$target"/.svn "$target"/*/.svn
@@ -201,7 +198,7 @@ do
 done
 
 # Repair non-portable shell code output of ./bootstrap
-(
+( 
  cd "$compile_dir" || exit 1
  sed -e 's/^for ac_header in$/test -z 1 \&\& for ac_header in dummy/' \
      < ./configure > ./configure-repaired
@@ -213,6 +210,7 @@ done
  chmod a+rx,go-w,u+w ./configure
 )
 
+
 # Pack it up to the new libburn+cdrskin-tarball
 tar czf "$cdrskin_tarball" "$target"
 
@@ -221,13 +219,15 @@ tar czf "$cdrskin_tarball" "$target"
  cd "$compile_dir" || exit 1
  ./configure
  make
- "$compile_cmd" -O2 -do_strip
+ "$compile_cmd" -libburn_svn -O2 -do_strip
  cp "$compile_result" "../$bintarget_dynamic"
  if test -n "$compile_static_opts"
  then
-   "$compile_cmd" $compile_static_opts -O2 -do_strip
+   "$compile_cmd" $compile_static_opts -libburn_svn -O2 -do_strip
    cp "$compile_result" "../$bintarget_static"
  fi
+#  "$compile_cmd" -libburn_svn -O2 -do_diet -do_strip
+#  cp "$compile_result" "../$bintarget_dynamic"_diet
  "$man_to_html_cmd"
  mv "$man_page_html" ..
 )
