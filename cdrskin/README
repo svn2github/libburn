@@ -4,7 +4,7 @@
 cdrskin. By Thomas Schmitt <scdbackup@gmx.net>
 Integrated sub project of libburnia-project.org but also published via:
 http://scdbackup.sourceforge.net/cdrskin_eng.html
-http://scdbackup.sourceforge.net/cdrskin-1.3.5.tar.gz
+http://scdbackup.sourceforge.net/cdrskin-1.3.7.tar.gz
 
 Copyright (C) 2006-2014 Thomas Schmitt, provided under GPL version 2 or later.
 ------------------------------------------------------------------------------
@@ -26,10 +26,10 @@ By using this software you agree to the disclaimer at the end of this text
 
                    Compilation, First Glimpse, Installation
 
-Obtain cdrskin-1.3.5.tar.gz, take it to a directory of your choice and do:
+Obtain cdrskin-1.3.7.tar.gz, take it to a directory of your choice and do:
 
-    tar xzf cdrskin-1.3.5.tar.gz
-    cd cdrskin-1.3.5
+    tar xzf cdrskin-1.3.7.tar.gz
+    cd cdrskin-1.3.7
 
 Within that directory execute:
 

@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2013 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2014 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
@@ -87,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.3.5"
+#define Cdrskin_prog_versioN "1.3.7"
 #endif
 
 /** The official libburn interface revision to use.
@@ -100,7 +100,7 @@ or
 #define Cdrskin_libburn_minoR 3
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
 
 
@@ -120,34 +120,34 @@ or
 #undef Cdrskin_libburn_versioN 
 #endif
 
-#ifdef Cdrskin_libburn_1_3_4
-#define Cdrskin_libburn_versioN "1.3.4"
+#ifdef Cdrskin_libburn_1_3_6
+#define Cdrskin_libburn_versioN "1.3.6"
 #endif
 
-#ifdef Cdrskin_libburn_1_3_5
-#define Cdrskin_libburn_versioN "1.3.5"
+#ifdef Cdrskin_libburn_1_3_7
+#define Cdrskin_libburn_versioN "1.3.7"
 #endif
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_3_4
-#define Cdrskin_libburn_versioN "1.3.4"
+#define Cdrskin_libburn_1_3_6
+#define Cdrskin_libburn_versioN "1.3.6"
 #endif
 
-#ifdef Cdrskin_libburn_1_3_4
+#ifdef Cdrskin_libburn_1_3_6
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 3
-#define Cdrskin_libburn_micrO 4
+#define Cdrskin_libburn_micrO 6
 #endif
-#ifdef Cdrskin_libburn_1_3_5
+#ifdef Cdrskin_libburn_1_3_7
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 3
-#define Cdrskin_libburn_micrO 5
+#define Cdrskin_libburn_micrO 7
 #endif
 
 
