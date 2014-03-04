@@ -1,7 +1,11 @@
-SVN trunk (to become libburn-1.3.6 or higher)
+SVN trunk (to become libburn-1.3.8 or higher)
 ===============================================================================
 - no novelties yet -
 
+
+libburn-1.3.6.tar.gz Tue Mar 04 2013
+===============================================================================
+* New system adapter for NetBSD
 
 libburn-1.3.4.tar.gz Thu Dec 12 2013
 ===============================================================================

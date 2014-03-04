@@ -12327,21 +12327,195 @@ Made number transition to 1.3.5
 + cdrskin/add_ts_changes_to_libburn_1_3_5
 Updated cdrskin tarball generator
 
-12 Dec 2013  []
+12 Dec 2013  [5201]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
-
 ------------------------------------ cycle  - cdrskin-1.3.5 - 2013.12.12.140531
 
+
+12 Dec 2013  [5202]
+svn move -m libburn release 1.3.4 is ready
+ http://svn.libburnia-project.org/libburn/branches/1.3.4
+ http://svn.libburnia-project.org/libburn/tags/1.3.4
+
+2014.01.07.115938  [5215]
+libburn/transport.h
+libburn/drive.h
+libburn/drive.c
+libburn/mmc.c
+Registering all drive-media feature descriptors in burn_drive
+
+2014.01.09.132159  [5216]
+libburn/libburn.h
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+Interpreting feature 0x107 when deciding from where to get speed info
+
+2014.01.09.214841  [5218]
+libburn/sg-linux.c
+Adapted Linux SG_IO adapter to scsi/sg.h of git.kernel.org
+
+2014.01.15.174741  [5225]
+libburn/sg-linux.c
+Updated copyright claim in sg-linux.c
+
+2014.01.15.174907  [5226]
+libburn/drive.h
+libburn/drive.c
+libburn/write.c
+Improved handling of stdio pseudo-drives after aborted burn runs
+
+2014.02.04.112944  [5233]
+libburn/transport.h
+libburn/spc.h
+libburn/spc.c
+Implemented a generic verification whether a SPC device is a MMC device
+
+2014.02.05.124803  [5234]
+libburn/spc.c
+Trying to better handle MMC violating replies of MODE SENSE (Block Descriptors)
+
+2014.02.05.185801  [5235]
+libburn/spc.c
+Fixed bugs introduced with previous commit
+
+2014.02.05.191839  [5237]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/options.c
+libburn/async.c
+libburn/spc.c
+libburn/mmc.c
+libburn/sg-freebsd.c
+Prepared for possible demise of mode page 2A
+
+2014.02.07.180650  [5238]
+libburn/write.c
+Avoiding to have two file descriptors open to the same stdio drive
+
+2014.02.10.213159  [5244]
+libburn/drive.c
+libburn/spc.c
+libburn/mmc.c
+Being more rugged towards missing MODE SENSE info
+
+2014.02.10.213500  [5245]
+libburn/os.h
+libburn/sg.c
++ libburn/os-netbsd.h
++ libburn/sg-netbsd.c
+Inmplemented a system adapter for NetBSD
+
+10 Feb 2014  [5246]
+Makefile.am
+Introduced NetBSD system adapter in tarball generator
+
+11 Feb 2014  [5247]
+configure.ac
+acinclude.m4
+Silenced warnings about -Wchar-subscripts, added /usr/local for NetBSD
+
+12 Feb 2014  [5249]
+doc/comments
+cdrskin/README
+Mentioned support for NetBSD
+
+2014.02.13.205358  [5252]
+libburn/sg-netbsd.c
+Corrected size determination of NetBSD block devices
+
+2014.02.14.200129  [5253]
+libburn/drive.c
+Improved workaround for missing mode page 2A
+
+2014.02.16.203859  [5254]
+libburn/spc.c
+Inquiring GET PERFORMANCE independently of existence of mode page 2A
+
+2014.02.19.111017  [5255]
+libburn/os.h
+libburn/sg.c
+libburn/sg-netbsd.c
+Removed Linux compilability mock-up from sg-netbsd.c
+
+2014.03.01.101537  [5257]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+Improved emulation of mode page 2A
+
+04 Mar 2014  [5260]
+svn copy -m Branching for libburn release 1.3.6
+ http://svn.libburnia-project.org/libburn/trunk
+ http://svn.libburnia-project.org/libburn/branches/1.3.6
+
+2014.03.04.110001  [5261]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.6
+
+04 Mar 2014  [5262]
+- cdrskin/add_ts_changes_to_libburn_1_3_4
+- cdrskin/add_ts_changes_to_libburn_1_3_5
++ cdrskin/add_ts_changes_to_libburn_1_3_6
++ cdrskin/add_ts_changes_to_libburn_1_3_7
+Updated cdrskin tarball generator
+
+04 Mar 2014  [5263]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------------- release - cdrskin-1.3.6 - 2014.03.04.110001
+* New system adapter for NetBSD
+
+
+2014.03.04.161835  [5269]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.7
+
+04 Mar 2014  [5270]
+- cdrskin/add_ts_changes_to_libburn_1_3_4
+- cdrskin/add_ts_changes_to_libburn_1_3_5
++ cdrskin/add_ts_changes_to_libburn_1_3_6
++ cdrskin/add_ts_changes_to_libburn_1_3_7
+Updated cdrskin tarball generator
+
+04 Mar 2014  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.3.7 - 2014.03.04.161835
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.5 - 
+------------------------------------ cycle  - cdrskin-1.3.7 - 
 
   []
 ChangeLog
@@ -12349,7 +12523,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.5 - 
+------------------------------------ cycle  - cdrskin-1.3.7 - 
 
 
 **********************************************************************
@@ -12362,6 +12536,9 @@ Important: When adding a public API function then add its name to file
 ===============================================================================
 
 >>> consider an option to set the cdrskin startup message
+
+>>> sg-netbsd.c os-netbsd.h
+    >>> check OpenBSD
 
 ----
 
