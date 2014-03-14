@@ -1101,7 +1101,7 @@ int burn_write_track(struct burn_write_opts *o, struct burn_session *s,
 	struct burn_drive *d = o->drive;
 	int i, tmp = 0, open_ended = 0, ret= 0, nwa, lba;
 	int sectors;
-	char msg[80];
+	char msg[160];
 
 	d->rlba = -150;
 
