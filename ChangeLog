@@ -1,6 +1,6 @@
 SVN trunk (to become libburn-1.3.8 or higher)
 ===============================================================================
-- no novelties yet -
+* Bug fix: CD TAO with multiple tracks could cause a buffer overrun
 
 
 libburn-1.3.6.tar.gz Tue Mar 04 2013
