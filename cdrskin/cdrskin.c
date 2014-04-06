@@ -3148,7 +3148,7 @@ set_severities:;
      int major, minor, micro;
 
      printf(
-"Cdrecord 2.01a27 Emulation. Copyright (C) 2006-2013, see libburnia-project.org\n");
+"Cdrecord 2.01a27 Emulation. Copyright (C) 2006-2014, see libburnia-project.org\n");
      if(o->fallback_program[0]) {
        char *hargv[2];
 
@@ -6691,9 +6691,10 @@ thank_you_for_patience:;
      if(p->buffer_capacity>0)
        buffer_fill= (double) (p->buffer_capacity - p->buffer_available)*100.0
                     / (double) p->buffer_capacity;
-     
-     if(buffer_fill<*min_buffer_fill)
-       *min_buffer_fill= buffer_fill;
+
+     if(p->buffered_bytes > p->buffer_capacity)     
+       if(buffer_fill < *min_buffer_fill)
+         *min_buffer_fill= buffer_fill;
 
      printf("%s%sTrack %-2.2d: %s MB written %s[buf %3d%%]  %4.1fx.%s",
             skin->pacifier_with_newline ? "" : "\r",
