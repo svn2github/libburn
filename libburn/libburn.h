@@ -3225,7 +3225,10 @@ void burn_write_opts_set_obs_pad(struct burn_write_opts *opts, int pad);
     from being clogged with lots of pending data for slow devices.
     @param opts   The write opts to change
     @param rythm  Number of 2KB output blocks after which fsync(2) is
-                  performed. -1 means no fsync(), 0 means default,
+                  performed.
+                  -1 means no fsync()
+                   0 means default
+                   1 means fsync() only at end, @since 1.3.8 (noop before 1.3.8)
                   elsewise the value must be >= 32.
                   Default is currently 8192 = 16 MB.
     @since 0.7.4

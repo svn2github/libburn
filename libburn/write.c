@@ -2665,7 +2665,7 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 */
 int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
-	int ret;
+	int ret, do_fsync;
 	char *msg = NULL;
 
 	if (fd < 0) {
@@ -2678,11 +2678,18 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 		return 0;
 	}
 	d->needs_sync_cache = 0;
-	if (!(flag & 1))
-		libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
-			   "syncing cache (stdio fsync)", 0, 0);
-	ret = fsync(fd);
+	do_fsync = 0;
+	if (d->write_opts != NULL)
+		do_fsync = (d->write_opts->stdio_fsync_size >= 0);
+	if (do_fsync) {
+		if (!(flag & 1))
+			libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+				"syncing cache (stdio fsync)", 0, 0);
+		ret = fsync(fd);
+	} else {
+		ret = 0;
+	}
 	if (ret != 0 && errno == EIO) {
 		BURN_ALLOC_MEM(msg, char, 160);
 

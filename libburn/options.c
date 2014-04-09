@@ -522,9 +522,11 @@ void burn_write_opts_set_obs_pad(struct burn_write_opts *opts, int pad)
 void burn_write_opts_set_stdio_fsync(struct burn_write_opts *opts, int rythm)
 {
 	if (rythm == -1)
-		opts->stdio_fsync_size = 0;
+		opts->stdio_fsync_size = -1; /* never */
 	else if (rythm == 0)
 		opts->stdio_fsync_size = Libburn_stdio_fsync_limiT;
+	else if (rythm == 1)
+		opts->stdio_fsync_size = 0; /* only at end of writing */
 	else if (rythm >= 32)
 		opts->stdio_fsync_size = rythm;
 }
