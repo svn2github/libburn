@@ -2662,6 +2662,7 @@ int burn_stdio_mmc_dummy_write(struct burn_drive *d, int start,
 /* ts A70911 */
 /* Flush stdio system buffer to physical device.
    @param flag bit0= do not report debug message (intermediate sync)
+               bit1= do fsync(2) unconditionally
 */
 int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 {
@@ -2679,7 +2680,9 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 	}
 	d->needs_sync_cache = 0;
 	do_fsync = 0;
-	if (d->write_opts != NULL)
+	if (flag & 2)
+		do_fsync = 1;
+	else if (d->write_opts != NULL)
 		do_fsync = (d->write_opts->stdio_fsync_size >= 0);
 	if (do_fsync) {
 		if (!(flag & 1))
@@ -3290,7 +3293,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		if(d->drive_role == 1)
 			d->sync_cache(d);
 		else
-			burn_stdio_sync_cache(fd, d, 0);
+			burn_stdio_sync_cache(fd, d, 2);
 		d->needs_sync_cache = 0;
 	}
 		
