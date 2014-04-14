@@ -86,6 +86,10 @@ extern struct libdax_msgs *libdax_messenger;
 */
 #define Libburn_bd_streamed_obS (64 * 1024)
 
+/* The number of retries if write(2) returns a short, non-negative write count.
+*/
+#define Libburn_stdio_write_retrieS 16
+
 
 static int type_to_ctrl(int mode)
 {
@@ -2575,29 +2579,41 @@ int burn_stdio_read_source(struct burn_source *source, char *buf, int bufsize,
 int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d, 
 			 int flag)
 {
-	int ret;
+	int ret = 0;
 	char *msg = NULL;
+	int todo, done, retries;
 
-	if (d->cancel)
+	if (d->cancel || count <= 0)
 		return 0;
+
+	todo = count;
+	done = 0;
+	for (retries = 0; todo > 0 && retries <= Libburn_stdio_write_retrieS;
+             retries++) {
 /*
 fprintf(stderr, "libburn_DEBUG: write(%d, %lX, %d)\n",
                 fd, (unsigned long) buf, count);
 */
-
-	ret = write(fd, buf, count);
-	if (ret != count) {
+		ret = write(fd, buf + done, todo);
+		if (ret < 0)
+	break;
+		done += ret;
+		todo -= ret;
+	}
+	if (done != count) {
 		BURN_ALLOC_MEM(msg, char, 160);
 
-		sprintf(msg,
-		  "Cannot write desired amount of data. write(2) returned %d.",
-		        ret);
+		sprintf(msg, "Cannot write desired amount of %d bytes.", count);
+		if (retries > 1)
+			sprintf(msg + strlen(msg), " Did %d retries. Last",
+			        retries - 1);
+		sprintf(msg + strlen(msg), " write(2) returned %d.", ret);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020148,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, errno, 0);
 		d->cancel = 1;
-		return 0;
+		ret = 0; goto ex;
 	}
 ex:;
 	BURN_FREE_MEM(msg);
