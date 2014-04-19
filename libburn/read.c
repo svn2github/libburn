@@ -309,6 +309,27 @@ static void flipq(unsigned char *sub)
 */
 
 
+/** @param flag bit1= be silent on failure
+*/
+static int burn_stdio_seek(int fd, off_t byte_address, struct burn_drive *d,
+                           int flag)
+{
+	char msg[80];
+
+	if (lseek(fd, byte_address, SEEK_SET) != -1)
+		return 1;
+	if (!(flag & 2)) {
+		sprintf(msg, "Cannot address start byte %.f",
+				(double) byte_address);
+				libdax_msgs_submit(libdax_messenger,
+			 	d->global_index, 0x00020147,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+				msg, errno, 0);
+	}
+	return 0;
+}
+
+
 /* ts A70904 */
 /** @param flag bit0=be silent on data shortage */
 int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
@@ -334,11 +355,80 @@ int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
 }
 
 
+/* With DVD and BD media, the minimum ECC entity is read instead of single
+   blocks.
+   @param flag see burn_read_data() in libburn.h
+*/
+static int retry_mmc_read(struct burn_drive *d, int chunksize, int sose_mem,
+                          int start, char **wpt, off_t *data_count,
+                          int flag)
+{
+	int i, err, todo;
+	int retry_at, retry_size;
+
+	retry_at = start;
+	retry_size = chunksize;
+	todo = chunksize;
+	retry_size = 16;                               /* DVD ECC block size */
+	if (d->current_is_cd_profile) {
+		retry_size = 1;                             /* CD block size */
+	} else if (d->current_profile >= 0x40 && d->current_profile <= 0x43) {
+		retry_size = 32;                          /* BD cluster size */
+	}
+	for (i = 0; todo > 0; i++) {
+		if (flag & 2)
+			d->silent_on_scsi_error = 1;
+		retry_at = start + i * retry_size;
+		if (retry_size > todo)
+			retry_size = todo;
+		err = d->read_10(d, retry_at, retry_size, d->buffer);
+		if (flag & 2) 
+			d->silent_on_scsi_error = sose_mem;
+		if (err == BE_CANCELLED)
+			return 0;
+		memcpy(*wpt, d->buffer->data, retry_size * 2048);
+		*wpt += retry_size * 2048;
+		*data_count += retry_size * 2048;
+		todo -= retry_size;
+	}
+	return 1;
+}
+
+
+/* @param flag see burn_read_data() in libburn.h
+*/
+static int retry_stdio_read(struct burn_drive *d, int fd, int chunksize,
+                            int start, char **wpt, off_t *data_count,
+                            int flag)
+{
+	int i, ret, to_read, todo;
+
+	ret = burn_stdio_seek(fd, ((off_t) start) * 2048, d, flag & 2);
+	if (ret <= 0)
+		return ret;
+	todo = chunksize * 2048;
+	for (i = 0; todo > 0; i += 2048) {
+		to_read = todo;
+		if (to_read > 2048)
+			to_read = 2048;
+		ret = burn_stdio_read(fd, (char *) d->buffer->data, to_read,
+					d, 1);
+		if (ret <= 0)
+			return 0;
+		memcpy(*wpt, d->buffer->data, to_read);
+		*wpt += to_read;
+		*data_count += to_read;
+		todo -= to_read;
+	}
+	return 1;
+}
+
+
 /* ts A70812 : API function */
 int burn_read_data(struct burn_drive *d, off_t byte_address,
                    char data[], off_t data_size, off_t *data_count, int flag)
 {
-	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size, i;
+	int alignment = 2048, start, upto, chunksize = 1, err, cpy_size;
 	int sose_mem = 0, fd = -1, ret;
 	char msg[81], *wpt;
 	struct buffer *buf = NULL, *buffer_mem = d->buffer;
@@ -444,18 +534,9 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 				ret= -2;
 			goto ex;
 		}
-		if (lseek(fd, byte_address, SEEK_SET) == -1) {
-			if (!(flag & 2)) {
-				sprintf(msg, "Cannot address start byte %.f",
-					(double) byte_address);
-				libdax_msgs_submit(libdax_messenger,
-				  d->global_index,
-				  0x00020147,
-				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				  msg, errno, 0);
-			}
-			ret = 0; goto ex;
-		}
+		ret = burn_stdio_seek(fd, byte_address, d, flag & 2);
+		if (ret <= 0)
+			goto ex;
 	}
 
 	d->busy = BURN_DRIVE_READING_SYNC;
@@ -484,7 +565,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			err = d->read_10(d, start, chunksize, d->buffer);
 		} else {
 			ret = burn_stdio_read(fd, (char *) d->buffer->data,
-						 cpy_size, d, !!(flag & 2));
+					      cpy_size, d, !!(flag & 2));
 			err = 0;
 			if (ret <= 0)
 				err = BE_CANCELLED;
@@ -494,41 +575,25 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 		if (err == BE_CANCELLED) {
 			if ((flag & 16) && (d->had_particular_error & 1))
 				{ret = -3; goto ex;}
-			/* Try to read a smaller part of the chunk */
-			if(!(flag & 4))
-			  for (i = 0; i < chunksize - 1; i++) {
-				if (flag & 2)
-					d->silent_on_scsi_error = 1;
-				if (d->drive_role == 1) {
-					err = d->read_10(d, start + i, 1,
-							 d->buffer);
-				} else {
-					ret = burn_stdio_read(fd,
-						(char *) d->buffer->data,
-						2048, d, 1);
-					if (ret <= 0)
-						err = BE_CANCELLED;
-				}
-				if (flag & 2) 
-					d->silent_on_scsi_error = sose_mem;
-				if (err == BE_CANCELLED)
-			break;
-				memcpy(wpt, d->buffer->data, 2048);
-				wpt += 2048;
-				*data_count += 2048;
+			/* Retry: with CD read by single blocks
+			          with other media: retry in full chunks
+			*/
+			if(flag & 4)
+				goto bad_read;
+			if (d->drive_role == 1) {
+				ret = retry_mmc_read(d, chunksize, sose_mem,
+						start, &wpt, data_count, flag);
+			} else {
+				ret = retry_stdio_read(d, fd, chunksize, 
+						start, &wpt, data_count, flag);
 			}
-			if (!(flag & 2))
-				libdax_msgs_submit(libdax_messenger,
-				  d->global_index,
-				  0x00020000,
-				  LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-				  "burn_read_data() returns 0",
-				  0, 0);
-			ret = 0; goto ex;
+			if (ret <= 0)
+				goto bad_read;
+		} else {
+			memcpy(wpt, d->buffer->data, cpy_size);
+			wpt += cpy_size;
+			*data_count += cpy_size;
 		}
-		memcpy(wpt, d->buffer->data, cpy_size);
-		wpt += cpy_size;
-		*data_count += cpy_size;
 	}
 
 	ret = 1;
@@ -537,6 +602,14 @@ ex:;
 	d->buffer = buffer_mem;
 	d->busy = BURN_DRIVE_IDLE;
 	return ret;
+
+bad_read:;
+	if (!(flag & 2))
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020000,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				"burn_read_data() returns 0", 0, 0);
+	ret = 0; goto ex;
 }
 
 

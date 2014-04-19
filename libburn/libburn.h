@@ -2913,7 +2913,8 @@ int burn_track_get_counters(struct burn_track *t,
 
 
 /** Sets drive read and write speed
-    Note: "k" is 1000, not 1024. 1xCD = 176.4 k/s, 1xDVD = 1385 k/s.
+    Note: "k" is 1000, not 1024.
+          1xCD = 176.4 k/s, 1xDVD = 1385 k/s, 1xBD = 4496 k/s.
           Fractional speeds should be rounded up. Like 4xCD = 706.
     @param d The drive to set speed for
     @param read Read speed in k/s (0 is max, -1 is min).
@@ -3917,6 +3918,7 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
     @param data_size    The amount of data to be read. This does not have to
                         be aligned to any block size.
     @param data_count   The amount of data actually read (interesting on error)
+                        The counted bytes are supposed to be valid.
     @param flag         Bitfield for control purposes:
                         bit0= - reserved -
                         bit1= do not submit error message if read error
