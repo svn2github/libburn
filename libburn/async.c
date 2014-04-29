@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -98,6 +98,14 @@ struct fifo_opts
 	int flag;
 };
 
+union w_list_data
+{
+	struct scan_opts scan;
+	struct erase_opts erase;
+	struct format_opts format;
+	struct write_opts write;
+	struct fifo_opts fifo;
+};
 
 struct w_list
 {
@@ -109,14 +117,7 @@ struct w_list
 
 	struct w_list *next;
 
-	union w_list_data
-	{
-		struct scan_opts scan;
-		struct erase_opts erase;
-		struct format_opts format;
-		struct write_opts write;
-		struct fifo_opts fifo;
-	} u;
+	union w_list_data u;
 };
 
 static struct w_list *workers = NULL;
@@ -133,7 +134,7 @@ static struct w_list *find_worker(struct burn_drive *d)
 }
 
 static void add_worker(int w_type, struct burn_drive *d,
-			WorkerFunc f, void *data)
+			WorkerFunc f, union w_list_data *data)
 {
 	struct w_list *a;
 	struct w_list *tmp;
@@ -146,7 +147,11 @@ static void add_worker(int w_type, struct burn_drive *d,
 	a = calloc(1, sizeof(struct w_list));
 	a->w_type = w_type;
 	a->drive = d;
-	a->u = *(union w_list_data *)data;
+
+	a->u = *data;
+/*
+	memcpy(&(a->u), data, sizeof(union w_list_data));
+*/
 
 	/* insert at front of the list */
 	a->next = workers;
@@ -253,7 +258,7 @@ static void reset_progress(struct burn_drive *d, int sessions, int tracks,
 
 int burn_drive_scan(struct burn_drive_info *drives[], unsigned int *n_drives)
 {
-	struct scan_opts o;
+	union w_list_data o;
 	int ret = 0;
 
 	/* ts A61006 : moved up from burn_drive_scan_sync , former Assert */
@@ -292,9 +297,9 @@ drive_is_active:;
 		*drives = NULL;
 		*n_drives = 0;
 
-		o.drives = drives;
-		o.n_drives = n_drives;
-		o.done = 0;
+		o.scan.drives = drives;
+		o.scan.n_drives = n_drives;
+		o.scan.done = 0;
 		add_worker(Burnworker_type_scaN, NULL,
 				 (WorkerFunc) scan_worker_func, &o);
 	} else if (workers->u.scan.done) {
@@ -346,7 +351,7 @@ static void *erase_worker_func(struct w_list *w)
 
 void burn_disc_erase(struct burn_drive *drive, int fast)
 {
-	struct erase_opts o;
+	union w_list_data o;
 
 	/* ts A61006 */
 	/* a ssert(drive); */
@@ -408,8 +413,8 @@ void burn_disc_erase(struct burn_drive *drive, int fast)
 		return;
 	}
 
-	o.drive = drive;
-	o.fast = fast;
+	o.erase.drive = drive;
+	o.erase.fast = fast;
 	add_worker(Burnworker_type_erasE, drive,
 			(WorkerFunc) erase_worker_func, &o);
 }
@@ -447,7 +452,7 @@ static void *format_worker_func(struct w_list *w)
 /* ts A61230 */
 void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 {
-	struct format_opts o;
+	union w_list_data o;
 	int ok = 0, ret;
 	char msg[40];
 
@@ -535,9 +540,9 @@ void burn_disc_format(struct burn_drive *drive, off_t size, int flag)
 		drive->cancel = 1;
 		return;
 	}
-	o.drive = drive;
-	o.size = size;
-	o.flag = flag;
+	o.format.drive = drive;
+	o.format.size = size;
+	o.format.flag = flag;
 	add_worker(Burnworker_type_formaT, drive,
 			(WorkerFunc) format_worker_func, &o);
 }
@@ -589,7 +594,7 @@ static void *write_disc_worker_func(struct w_list *w)
 
 void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 {
-	struct write_opts o;
+	union w_list_data o;
 	char *reasons= NULL;
 	struct burn_drive *d;
 	int mvalid;
@@ -683,9 +688,9 @@ void burn_disc_write(struct burn_write_opts *opts, struct burn_disc *disc)
 
 	d->cancel = 0; /* End of the return = failure area */
 
-	o.drive = d;
-	o.opts = opts;
-	o.disc = disc;
+	o.write.drive = d;
+	o.write.opts = opts;
+	o.write.disc = disc;
 
 	opts->refcount++;
 
@@ -731,7 +736,7 @@ static void *fifo_worker_func(struct w_list *w)
 
 int burn_fifo_start(struct burn_source *source, int flag)
 {
-	struct fifo_opts o;
+	union w_list_data o;
 	struct burn_source_fifo *fs = source->data;
 
 	fs->is_started = -1;
@@ -744,8 +749,8 @@ int burn_fifo_start(struct burn_source *source, int flag)
 		return -1;
 	}
 
-	o.source = source;
-	o.flag = flag;
+	o.fifo.source = source;
+	o.fifo.flag = flag;
 	add_worker(Burnworker_type_fifO, NULL,
 			(WorkerFunc) fifo_worker_func, &o);
 	fs->is_started = 1;
