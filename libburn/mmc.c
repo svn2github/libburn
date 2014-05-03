@@ -2680,6 +2680,10 @@ void mmc_erase(struct burn_drive *d, int fast)
 	c->dir = NO_TRANSFER;
 	c->timeout = Libburn_mmc_blank_timeouT;
 	d->issue_command(d, c);
+	if (c->error) {
+		d->cancel = 1;
+		scsi_notify_error(d, c, c->sense, 14, 2);
+	}
 }
 
 void mmc_read_lead_in(struct burn_drive *d, struct buffer *buf)
