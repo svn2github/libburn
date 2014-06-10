@@ -393,7 +393,7 @@ static int burn_drive__is_rdwr(char *fname, int *stat_ret,
 		if (S_ISREG(stbuf.st_mode))
 			read_size = stbuf.st_size;
 		else if (is_rdwr)
-			ret = burn_os_stdio_capacity(fname, &read_size);
+			ret = burn_os_stdio_capacity(fname, 0, &read_size);
 		if (ret <= 0 ||
 		    read_size / (off_t) 2048 >= (off_t) 0x7ffffff0) 
 			read_size = (off_t) 0x7ffffff0 * (off_t) 2048;  
@@ -450,7 +450,7 @@ int burn_drive_grab_stdio(struct burn_drive *d, int flag)
 		d->media_read_capacity =
 					read_size / 2048 - !(read_size % 2048);
 		if ((stat_ret == -1 || is_rdwr) && d->devname[0]) { 
-		       	ret = burn_os_stdio_capacity(d->devname, &size);
+		       	ret = burn_os_stdio_capacity(d->devname, 0, &size);
 			if (ret > 0)
 				burn_drive_set_media_capacity_remaining(d,
 									size);
@@ -1722,7 +1722,7 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		is_rdwr = burn_drive__is_rdwr(fname, &stat_ret, &stbuf,
 						&read_size, 1 | 2);
 		if (stat_ret == -1 || is_rdwr) {
-			ret = burn_os_stdio_capacity(fname, &size);
+			ret = burn_os_stdio_capacity(fname, 0, &size);
 			if (ret == -1) {
 				libdax_msgs_submit(libdax_messenger, -1,
 				 0x00020009,
@@ -2637,7 +2637,8 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start)
 off_t burn_disc_available_space(struct burn_drive *d,
 				 struct burn_write_opts *o)
 {
-	int lba, nwa;
+	int lba, nwa, ret;
+	off_t bytes;
 
 	if (burn_drive_is_released(d))
 		return 0;
@@ -2646,9 +2647,13 @@ off_t burn_disc_available_space(struct burn_drive *d,
 	if (d->drive_role == 0)
 		return 0;
 	if (d->drive_role != 1) {
-		if (d->media_capacity_remaining <= 0)
-			burn_drive_set_media_capacity_remaining(d,
-			  (off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048);
+		ret = burn_os_stdio_capacity(d->devname, o->start_byte, &bytes);
+		if (ret != 1)
+			bytes = d->media_capacity_remaining;
+		if (bytes <= 0)
+			bytes = (off_t) (512 * 1024 * 1024 - 1) * (off_t) 2048;
+		if (bytes != d->media_capacity_remaining)
+			burn_drive_set_media_capacity_remaining(d, bytes);
 	} else {
 		if (o != NULL)
 			d->send_write_parameters(d, NULL, -1, o);
@@ -2897,7 +2902,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		/* stdio file drive : random access read-write */
 		o->start_adr = 1;
 		size = d->media_capacity_remaining;
-		burn_os_stdio_capacity(d->devname, &size);
+		burn_os_stdio_capacity(d->devname, 0, &size);
 		burn_drive_set_media_capacity_remaining(d, size);
 		o->start_range_high = d->media_capacity_remaining;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
@@ -2909,7 +2914,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		/* stdio file drive : random access write-only */
 		o->start_adr = 1;
 		size = d->media_capacity_remaining;
-		burn_os_stdio_capacity(d->devname, &size);
+		burn_os_stdio_capacity(d->devname, 0, &size);
 		burn_drive_set_media_capacity_remaining(d, size);
 
 		/* >>> start_range_low = file size rounded to 2048 */;

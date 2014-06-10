@@ -2169,6 +2169,24 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 		c->end_time = burn_get_time(0);
 
+/*
+ # de fine Libburn_ff_netbsd_mockuP
+ */
+#ifdef Libburn_ff_netbsd_mockuP
+		if (c->opcode[0] == 0x5a) {
+			sprintf(msg, "Libburn_ff_netbsd_mockuP : Emulating zero reply from SCSI command 5A");
+			if (burn_sg_log_scsi & 3)
+				scsi_log_message(d, fp, msg, 0);
+			libdax_msgs_submit(libdax_messenger,
+				d->global_index, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
+			memset(c->page->data, 0, c->page->bytes);
+			c->error = 1;
+			c->dxfer_len = 0;
+		}
+#endif
+
 		/* ts A61010 */
 		/* a ssert(err != -1); */
 		if (err == -1) {
@@ -2353,7 +2371,7 @@ int burn_os_is_2k_seekrw(char *path, int flag)
                   0 = could not estimate size capacity of file object
                   1 = estimation has been made, bytes was set
 */
-int burn_os_stdio_capacity(char *path, off_t *bytes)
+int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 {
 	struct stat stbuf;
 	struct statvfs vfsbuf;
@@ -2386,7 +2404,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 			{ret = -2; goto ex;}
 		*bytes = ((off_t) blocks) * (off_t) 512;
 	} else if(S_ISREG(stbuf.st_mode)) {
-		add_size = stbuf.st_blocks * (off_t) 512;
+		add_size = burn_sparse_file_addsize(write_start, &stbuf);
 		strcpy(testpath, path);
 	} else
 		{ret = 0; goto ex;}

@@ -865,7 +865,7 @@ int burn_os_is_2k_seekrw(char *path, int flag)
                   0 = could not estimate size capacity of file object
                   1 = estimation has been made, bytes was set
 */
-int burn_os_stdio_capacity(char *path, off_t *bytes)
+int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 {
 	struct stat stbuf;
 
@@ -944,7 +944,7 @@ int burn_os_stdio_capacity(char *path, off_t *bytes)
 #endif /* Libburn_is_on_solariS */
 
 	} else if(S_ISREG(stbuf.st_mode)) {
-		add_size = stbuf.st_blocks * (off_t) 512;
+		add_size = burn_sparse_file_addsize(write_start, &stbuf);
 		strcpy(testpath, path);
 	} else
 		{ret = 0; goto ex;}

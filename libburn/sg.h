@@ -36,7 +36,7 @@ int sg_drive_is_open(struct burn_drive * d);
 
 int burn_os_is_2k_seekrw(char *path, int flag);
 
-int burn_os_stdio_capacity(char *path, off_t *bytes);
+int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes);
 
 /* ts A91227 */
 /** Returns the id string of the SCSI transport adapter and eventually

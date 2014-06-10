@@ -1478,7 +1478,7 @@ int burn_disc_get_msc1(struct burn_drive *d, int *start_lba);
     grabbed and BURN_DRIVE_IDLE. If not, then one will only get a canned value
     from the most recent automatic inquiry (e.g. during last drive grabbing).
     An eventual start address from burn_write_opts_set_start_byte() will be
-    subtracted from the obtained capacity estimation. Negative results get
+    taken into respect with the capacity estimation. Negative results get
     defaulted to 0.
     If the drive is actually a file in a large filesystem or a large block
     device, then the capacity is curbed to a maximum of 0x7ffffff0 blocks

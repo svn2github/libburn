@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 
@@ -377,4 +379,23 @@ double burn_get_time(int flag)
 	return (double) time(NULL);
 }
 
+/* ts B40609 */
+off_t burn_sparse_file_addsize(off_t write_start, struct stat *stbuf)
+{
+	off_t add_size;
+
+	add_size = stbuf->st_blocks * (off_t) 512;
+	if (add_size < stbuf->st_size) {
+		/* Sparse file */
+		if (write_start < stbuf->st_size) {
+			/* Might write into sparse gaps */
+			if (write_start > add_size)
+				add_size = write_start;
+		} else {
+			/* Will not write into sparse area */
+			add_size = stbuf->st_size;
+		}
+	}
+	return add_size;
+}
 
