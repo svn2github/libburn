@@ -2638,7 +2638,7 @@ off_t burn_disc_available_space(struct burn_drive *d,
 				 struct burn_write_opts *o)
 {
 	int lba, nwa, ret;
-	off_t bytes;
+	off_t bytes, start_byte = 0;
 
 	if (burn_drive_is_released(d))
 		return 0;
@@ -2647,7 +2647,9 @@ off_t burn_disc_available_space(struct burn_drive *d,
 	if (d->drive_role == 0)
 		return 0;
 	if (d->drive_role != 1) {
-		ret = burn_os_stdio_capacity(d->devname, o->start_byte, &bytes);
+		if (o != NULL)
+			start_byte = o->start_byte;
+		ret = burn_os_stdio_capacity(d->devname, start_byte, &bytes);
 		if (ret != 1)
 			bytes = d->media_capacity_remaining;
 		if (bytes <= 0)
