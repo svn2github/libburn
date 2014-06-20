@@ -730,7 +730,7 @@ int burn_os_is_2k_seekrw(char *path, int flag)
 {
 	struct stat stbuf;
 	int l, i, dev, tl;
-	char try[16], *cpt;
+	char try[16];
 
 	/* >>> ??? Is this a comprehensive list of lseek()-capable devices ? */
 	/* http://www.netbsd.org/docs/guide/en/chap-rmmedia.html */
@@ -755,7 +755,6 @@ int burn_os_is_2k_seekrw(char *path, int flag)
 		tl = strlen(try);
 		if (strncmp(path, try, tl) != 0)
 	continue;
-		cpt = path + tl;
 		l -= tl;
 		for (i = 0; i < Libburn_netbsd_max_cdnuM; i++) {
 			sprintf(try + tl, "%d", i);
