@@ -87,7 +87,7 @@ or
 
 /** The official program version */
 #ifndef Cdrskin_prog_versioN
-#define Cdrskin_prog_versioN "1.3.7"
+#define Cdrskin_prog_versioN "1.3.9"
 #endif
 
 /** The official libburn interface revision to use.
@@ -100,7 +100,7 @@ or
 #define Cdrskin_libburn_minoR 3
 #endif
 #ifndef Cdrskin_libburn_micrO
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
 
 
@@ -120,34 +120,34 @@ or
 #undef Cdrskin_libburn_versioN 
 #endif
 
-#ifdef Cdrskin_libburn_1_3_6
-#define Cdrskin_libburn_versioN "1.3.6"
+#ifdef Cdrskin_libburn_1_3_8
+#define Cdrskin_libburn_versioN "1.3.8"
 #endif
 
-#ifdef Cdrskin_libburn_1_3_7
-#define Cdrskin_libburn_versioN "1.3.7"
+#ifdef Cdrskin_libburn_1_3_9
+#define Cdrskin_libburn_versioN "1.3.9"
 #endif
 
 #ifndef Cdrskin_libburn_versioN
-#define Cdrskin_libburn_1_3_6
-#define Cdrskin_libburn_versioN "1.3.6"
+#define Cdrskin_libburn_1_3_8
+#define Cdrskin_libburn_versioN "1.3.8"
 #endif
 
-#ifdef Cdrskin_libburn_1_3_6
+#ifdef Cdrskin_libburn_1_3_8
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 3
-#define Cdrskin_libburn_micrO 6
+#define Cdrskin_libburn_micrO 8
 #endif
-#ifdef Cdrskin_libburn_1_3_7
+#ifdef Cdrskin_libburn_1_3_9
 #undef Cdrskin_libburn_majoR
 #undef Cdrskin_libburn_minoR
 #undef Cdrskin_libburn_micrO
 #define Cdrskin_libburn_majoR 1
 #define Cdrskin_libburn_minoR 3
-#define Cdrskin_libburn_micrO 7
+#define Cdrskin_libburn_micrO 9
 #endif
 
 

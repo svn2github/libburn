@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.3.6.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.3.8.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.3.6.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.3.8.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.3.6.tar.gz
-   cd libburn-1.3.6
+   tar xzf libburn-1.3.8.tar.gz
+   cd libburn-1.3.8
    ./configure --prefix=/usr
    make
 
@@ -725,6 +725,12 @@ Project history as far as known to me:
   a bug fix about HFS+ and enhancements about character set conversion.
   Minor bugs were fixed in libisoburn. xorriso can now find files with names
   which cannot be represented unchanged in ECMA-119, Joliet, or HFS+. 
+
+- Sat Jun 28 2014 release 1.3.8
+  libburn got several bugs fixed. libisofs offers new API calls for inspection
+  of boot sectors in ISO 9660 filesystems. xorriso improved its support for
+  NetBSD, offers new features with command -find, and a command to extract
+  ISO 9660 file content onto standard output or into filter processes.
 
 
 ------------------------------------------------------------------------------
