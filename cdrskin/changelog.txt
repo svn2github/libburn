@@ -12502,12 +12502,179 @@ Made number transition to 1.3.7
 + cdrskin/add_ts_changes_to_libburn_1_3_7
 Updated cdrskin tarball generator
 
-04 Mar 2014  []
+04 Mar 2014  [5271]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------- cycle  - cdrskin-1.3.7 - 2014.03.04.161835
+------------------------------------ cycle  - cdrskin-1.3.7 - 2014.03.04.162814
+
+
+04 Mar 2014  [5272]
+svn move -m libburn release 1.3.6 is ready
+http://svn.libburnia-project.org/libburn/branches/1.3.6
+http://svn.libburnia-project.org/libburn/tags/1.3.6
+
+2014.03.14.095413  [5281]
+libburn/write.c
+Bug fix: CD TAO with multiple tracks could cause a buffer overrun
+
+14 Mar 2013  [5282]
+ChangeLog
+cdrskin/cdrskin_eng.html
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.3.7 - 2014.03.14.100747
+* Bug fix: CD TAO with multiple tracks could cause a buffer overrun
+
+
+2014.03.17.221810  [5284]
+libburn/sg.c
+Bug fix: Compilation warning for unsupported systems mutated into an error
+
+18 Mar 2014  [5285]
+svn copy -m Branching for libburn bugfix release 1.3.6.pl01
+    http://svn.libburnia-project.org/libburn/tags/1.3.6
+    http://svn.libburnia-project.org/libburn/branches/1.3.6.pl01
+
+2014.03.18.100001 [5286 tag 1.3.6.pl01]
+libburn/write.c
+Bug fix: CD TAO with multiple tracks could cause a buffer overrun
+
+2014.03.18.100001 [5287 tag 1.3.6.pl01]
+libburn/sg.c
+Bug fix: Compilation warning for unsupported systems mutated into an error
+
+18 Mar 2014  [5291]
+svn move -m libburn bugfix release 1.3.6.pl01 is ready
+    http://svn.libburnia-project.org/libburn/branches/1.3.6.pl01
+    http://svn.libburnia-project.org/libburn/tags/1.3.6.pl01
+
+------------------------------ release - cdrskin-1.3.6.pl01 - 2014.03.18.100001
+* Bug fix: Compilation warning for unsupported systems mutated into an error
+* Bug fix: CD TAO with multiple tracks could cause a buffer overrun
+
+
+2014.04.06.111004  [5297]
+cdrskin/cdrskin.c
+Bug fix: Minimum drive buffer fill was measured before the buffer could get full
+
+2014.04.09.152035  [5302]
+libburn/libburn.h
+libburn/options.c
+libburn/write.c
+Bug fix: A final fsync(2) was performed with stdio drives, even if not desired
+
+2014.04.13.120906  [5309]
+libburn/write.c
+Restoring capability of burn_random_access_write() to fsync() (lost in rev 5302)
+
+2014.04.14.103311  [5310]
+libburn/write.c
+Retrying write(2) if it returns a short non-negative write count
+
+2014.04.19.114816  [5315]
+libburn/libburn.h
+libburn/read.c
+Improved read retrying with DVD and BD media
+
+2014.04.29.061645  [5324]
+libburn/async.c
+Bug fix: Wrong stack usage caused SIGBUS on sparc when compiled by gcc -O2
+
+2014.05.03.103448  [5328]
+libburn/mmc.c
+Bug fix: A failed MMC BLANK command did not cause error indication by libburn
+
+2014.06.09.183251  [5335]
+libburn/libburn.h
+libburn/drive.c
+libburn/util.h
+libburn/util.c
+libburn/sg.h
+libburn/sg-dummy.c
+libburn/sg-freebsd.c
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-linux.c
+libburn/sg-netbsd.c
+libburn/sg-solaris.c
+Improved drive capacity estimation for sparse regular files
+
+2014.06.10.130721  [5336]
+libburn/drive.c
+Fixed a SIGSEGV introduced by previous revision
+
+2014.06.20.145224  [5346]
+libburn/sg-netbsd.c
+Reacted on compiler warning of gcc on NetBSD-current
+
+27 Jun 2014  [5348]
+svn copy -m Branching for libburn release 1.3.8
+ http://svn.libburnia-project.org/libburn/trunk
+ http://svn.libburnia-project.org/libburn/branches/1.3.8
+
+2014.06.28.060001  [5349]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.8
+
+27 Jun 2014  [5350]
+- cdrskin/add_ts_changes_to_libburn_1_3_6
+- cdrskin/add_ts_changes_to_libburn_1_3_7
++ cdrskin/add_ts_changes_to_libburn_1_3_8
++ cdrskin/add_ts_changes_to_libburn_1_3_9
+Updated cdrskin tarball generator
+
+27 Jun 2014  [5351]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+----------------------------------- release - cdrskin-1.3.8 - 2014.06,28.060001
+* Bug fix: Wrong stack usage caused SIGBUS on sparc when compiled by gcc -O2
+* Bug fix: Minimum drive buffer fill was measured by cdrskin before the buffer
+           could get full
+* Bug fix: A failed MMC BLANK command did not cause error indication by libburn
+* Bug fix: A final fsync(2) was performed with stdio drives, even if not
+           desired
+
+
+2014.06.28.062807  [5356]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.3.9
+
+28 Jun 2014  [5357]
+- cdrskin/add_ts_changes_to_libburn_1_3_6
+- cdrskin/add_ts_changes_to_libburn_1_3_7
++ cdrskin/add_ts_changes_to_libburn_1_3_8
++ cdrskin/add_ts_changes_to_libburn_1_3_9
+Updated cdrskin tarball generator
+
+             [    ]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+------------------------------------ cycle  - cdrskin-1.3.9 - 2014.06.28.062807
+
 
   []
 ChangeLog
@@ -12516,6 +12683,7 @@ cdrskin/changelog.txt
 Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.3.7 - 
+
 
   []
 ChangeLog
@@ -12535,12 +12703,6 @@ Important: When adding a public API function then add its name to file
                                     TODO
 ===============================================================================
 
->>> consider an option to set the cdrskin startup message
-
->>> sg-netbsd.c os-netbsd.h
-    >>> check OpenBSD
-
-----
 
 CD-TEXT:
   - with SAO
@@ -12560,7 +12722,8 @@ qemu:
 
 Get sg-freebsd-port.c functional.
 
-Expose BD type from bytes 8+4 to 10+4 out of READ BD STRUCTURE form 0.
+Expose BD type from bytes 8+4 to 10+4 out of READ DISC STRUCTURE form 0.
+Expose Disc Size/Class/Version from byte 11+4.
 
 Better motivation of burn_set_signal_handling() in libburn.h.
 

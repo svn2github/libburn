@@ -1,7 +1,21 @@
-SVN trunk (to become libburn-1.3.8 or higher)
+SVN trunk (to become libburn-1.4.0 or higher)
+===============================================================================
+- no novelties yet -
+
+
+libburn-1.3.8.tar.gz Sat Jun 28 2014
+===============================================================================
+* Bug fix: Wrong stack usage caused SIGBUS on sparc when compiled by gcc -O2
+* Bug fix: Minimum drive buffer fill was measured by cdrskin before the buffer
+           could get full
+* Bug fix: A failed MMC BLANK command did not cause error indication by libburn
+* Bug fix: A final fsync(2) was performed with stdio drives, even if not
+           desired
+
+libburn-1.3.6.pl01.tar.gz Tue Mar 18 2013
 ===============================================================================
 * Bug fix: CD TAO with multiple tracks could cause a buffer overrun
-
+* Bug fix: Compilation warning for unsupported systems mutated into an error
 
 libburn-1.3.6.tar.gz Tue Mar 04 2013
 ===============================================================================
