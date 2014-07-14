@@ -1197,24 +1197,21 @@ void burn_drive_cancel(struct burn_drive *d)
 }
 
 
-static void strip_spaces(char *str)
+static void strip_spaces(char *str, size_t len)
 {
-	char *tmp;
+	char *tmp, *tmp2;
 
-	tmp = str + strlen(str) - 1;
-	while (isspace(*tmp))
-		*(tmp--) = '\0';
-
-	tmp = str;
-	while (*tmp) {
+	/* Remove trailing blanks */
+	for (tmp = str + len - 1; tmp >= str && (isspace(*tmp) || !*tmp); tmp--)
+		*tmp = 0;
+	/* Condense remaining blank intervals to single blanks */
+	for (tmp = str; tmp < str + len - 1 && *tmp; tmp++) {
 		if (isspace(*tmp) && isspace(*(tmp + 1))) {
-			char *tmp2;
-
-			for (tmp2 = tmp + 1; *tmp2; ++tmp2)
+			for (tmp2 = tmp + 1; tmp2 < str + len && *tmp2; tmp2++)
 				*(tmp2 - 1) = *tmp2;
 			*(tmp2 - 1) = '\0';
-		} else
-			++tmp;
+			tmp--; /* try same first blank again */
+		}
 	}
 }
 
@@ -1236,11 +1233,11 @@ static int drive_getcaps(struct burn_drive *d, struct burn_drive_info *out)
 	id = (struct burn_scsi_inquiry_data *)d->idata;
 
 	memcpy(out->vendor, id->vendor, sizeof(id->vendor));
-	strip_spaces(out->vendor);
+	strip_spaces(out->vendor, sizeof(id->vendor));
 	memcpy(out->product, id->product, sizeof(id->product));
-	strip_spaces(out->product);
+	strip_spaces(out->product, sizeof(id->product));
 	memcpy(out->revision, id->revision, sizeof(id->revision));
-	strip_spaces(out->revision);
+	strip_spaces(out->revision, sizeof(id->revision));
 	strncpy(out->location, d->devname, 16);
 	out->location[16] = '\0';
 
