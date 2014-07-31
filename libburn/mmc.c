@@ -3238,10 +3238,11 @@ ex:
 void mmc_get_configuration(struct burn_drive *d)
 {
 	int alloc_len = 8, ret;
+	char *msg = NULL;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_configuration") <= 0)
-		return;
+		goto ex;
 
 	/* first command execution to learn Allocation Length */
 	ret = mmc_get_configuration_al(d, &alloc_len);
@@ -3249,9 +3250,23 @@ void mmc_get_configuration(struct burn_drive *d)
 	fprintf(stderr,"LIBBURN_DEBUG: 46h alloc_len = %d , ret = %d\n",
 			alloc_len, ret);
 */
-	if (alloc_len > 8 && ret > 0)
+	if (alloc_len > 8 && ret > 0) {
+
+		if (alloc_len > 4096) {
+			/* MMC-5 6.6.2.1: The maximum is less than 1 KB */
+			BURN_ALLOC_MEM(msg, char, 256);
+			sprintf(msg, "Implausible lenght announcement from SCSI command GET CONFIGURATION: %d", alloc_len);
+	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000201a9,
+			   LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
+			goto ex;
+		}
+
 		/* second execution with announced length */
 		mmc_get_configuration_al(d, &alloc_len);
+	}
+ex:;
+	BURN_FREE_MEM(msg);
 }
 
 
