@@ -2130,6 +2130,26 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 		s.timeout = Libburn_scsi_default_timeouT;
 	if (c->page && !no_c_page) {
 		s.dxferp = c->page->data;
+
+/* # def ine Libburn_debug_dxferP 1 */
+#ifdef Libburn_debug_dxferP
+
+		{ char text[1024], *content; int i = c->page->bytes;
+			if (c->dir == FROM_DRIVE) {
+				for (i = 0; i < c->page->bytes && c->page->data[i] == 0; i++);
+				content = (i <  c->page->bytes) ?
+					  "  (some nonzero)" : "  (all zero)";
+			} else {
+				i = c->page->bytes;
+				content = "";
+			}
+			sprintf(text, "dxferp before = %lx%s",
+					(unsigned long) s.dxferp, content);
+			scsi_log_text(text, fp, 0);
+		}
+
+#endif
+
 		if (c->dir == FROM_DRIVE) {
 
 			/* ts A70519 : kernel 2.4 usb-storage seems to
@@ -2169,22 +2189,15 @@ int sg_issue_command(struct burn_drive *d, struct command *c)
 
 		c->end_time = burn_get_time(0);
 
-/*
- # de fine Libburn_ff_netbsd_mockuP
- */
-#ifdef Libburn_ff_netbsd_mockuP
-		if (c->opcode[0] == 0x5a) {
-			sprintf(msg, "Libburn_ff_netbsd_mockuP : Emulating zero reply from SCSI command 5A");
-			if (burn_sg_log_scsi & 3)
-				scsi_log_message(d, fp, msg, 0);
-			libdax_msgs_submit(libdax_messenger,
-				d->global_index, 0x00000002,
-				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
-			memset(c->page->data, 0, c->page->bytes);
-			c->error = 1;
-			c->dxfer_len = 0;
+
+#ifdef Libburn_debug_dxferP
+		if (c->page && !no_c_page) {
+			char text[1024];
+			sprintf(text, "dxferp after  = %lx",
+					(unsigned long) s.dxferp);
+			scsi_log_text(text, fp, 0);
 		}
+
 #endif
 
 		/* ts A61010 */
