@@ -1709,6 +1709,24 @@ int scsi_log_command(unsigned char *opcode, int oplen, int data_dir,
 }
 
 
+/* ts B40731 */ 
+/* Arbitrary SCSI log message */
+int scsi_log_text(char *text, void *fp_in, int flag)
+{
+	FILE *fp = fp_in;
+
+	if (fp != NULL && (fp == stderr || (burn_sg_log_scsi & 1))) {
+		fprintf(fp, "%s\n", text);
+		if (burn_sg_log_scsi & 4)
+			fflush(fp);
+	}
+	if (fp == stderr || !(burn_sg_log_scsi & 2))
+		return 1;
+	fprintf(stderr, "%s\n", text);
+	return 1;
+}
+
+
 /* ts A91218 (former sg_log_cmd ts A70518) */ 
 /** Logs command (before execution) */
 int scsi_log_cmd(struct command *c, void *fp_in, int flag)

@@ -76,6 +76,10 @@ int scsi_log_command(unsigned char *opcode, int oplen, int data_dir,
                      unsigned char *data, int bytes,
                      void *fp_in, int flag);
 
+/* ts B40731 */
+/* Arbitrary SCSI log message */
+int scsi_log_text(char *text, void *fp_in, int flag);
+
 /* ts A91218 (former sg_log_cmd ts A70518) */
 /** Legacy frontend to scsi_log_command() */
 int scsi_log_cmd(struct command *c, void *fp, int flag);
