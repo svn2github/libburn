@@ -1390,6 +1390,14 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			break;
 		goto return_fail;
+	case 0x51:
+		if (*ascq == 0)
+			sprintf(msg, "Erase failure");
+		else if (*ascq == 1)
+			sprintf(msg, "Erase failure. Incomplete erase operation");
+		else
+			break;
+		goto return_fail;
 	case 0x57:
 		if (*ascq == 0)
 			sprintf(msg, "Unable to recover Table-of-Content");
