@@ -268,53 +268,7 @@ int burn_drive_inquire_media(struct burn_drive *d)
 	    (d->mdata->p2a_valid > 0 &&
 		(d->mdata->cdr_write || d->mdata->cdrw_write ||
 		 d->mdata->dvdr_write || d->mdata->dvdram_write)) ) {
-
-#define Libburn_knows_correct_state_after_loaD 1
-#ifdef Libburn_knows_correct_state_after_loaD
-
 		d->read_disc_info(d);
-
-#else
-		/* ts A61227 : This repeated read_disc_info seems
-		               to be obsoleted by above d->getcaps(d).
-		*/
-		/* ts A60908 */
-		/* Trying to stabilize the disc status after eventual load
-		   without closing and re-opening the drive */
-		/* This seems to work for burn_disc_erasable() .
-		   Speed values on RIP-14 and LITE-ON 48125S are stable
-		   and false, nevertheless. */
-		int was_equal = 0, must_equal = 3, max_loop = 20;
-		int loop_count, old_speed = -1234567890, new_speed= -987654321;
-		int old_erasable = -1234567890, new_erasable = -987654321;
-
-		fprintf(stderr,"LIBBURN_DEBUG: read_disc_info()\n");
-		for (loop_count = 0; loop_count < max_loop; loop_count++){
-			old_speed = new_speed;
-			old_erasable = new_erasable;
-
-			d->read_disc_info(d);
-			if(d->status == BURN_DISC_UNSUITABLE)
-		break;
-
-			new_speed = burn_drive_get_write_speed(d);
-			new_erasable = burn_disc_erasable(d);
-		        if (new_speed == old_speed &&
-			    new_erasable == old_erasable) {
-				was_equal++;
-				if (was_equal >= must_equal)
-		break;
-			} else
-				was_equal = 0;
-			/*
-			if (loop_count >= 1 && was_equal == 0)
-			*/
-				fprintf(stderr,"LIBBURN_DEBUG: %d : speed %d:%d   erasable %d:%d\n",
-					loop_count,old_speed,new_speed,old_erasable,new_erasable);
-			usleep(100000);
-		}
-#endif /* ! Libburn_knows_correct_state_after_loaD */
-
 	} else {
 		if (d->current_profile == -1 || d->current_is_cd_profile)
 			d->read_toc(d);
