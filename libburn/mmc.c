@@ -3240,6 +3240,9 @@ void mmc_get_configuration(struct burn_drive *d)
 	int alloc_len = 8, ret;
 	char *msg = NULL;
 
+	if (d->current_profile > 0 && d->current_profile < 0xffff)
+		goto ex;
+
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_configuration") <= 0)
 		goto ex;

@@ -77,6 +77,8 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->released = 1;
 	d->stdio_fd = -1;
 	d->status = BURN_DISC_UNREADY;
+	d->erasable = 0;
+	d->current_profile = -1;
 	d->do_stream_recording = 0;
         d->stream_recording_start= 0;
 	d->role_5_nwa = 0;
