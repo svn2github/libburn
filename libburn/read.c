@@ -310,6 +310,7 @@ static void flipq(unsigned char *sub)
 
 
 /** @param flag bit1= be silent on failure
+                bit5= report failure with severity DEBUG
 */
 static int burn_stdio_seek(int fd, off_t byte_address, struct burn_drive *d,
                            int flag)
@@ -323,15 +324,18 @@ static int burn_stdio_seek(int fd, off_t byte_address, struct burn_drive *d,
 				(double) byte_address);
 				libdax_msgs_submit(libdax_messenger,
 			 	d->global_index, 0x00020147,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, errno, 0);
+				(flag & 32) ?
+				 LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+				LIBDAX_MSGS_PRIO_HIGH, msg, errno, 0);
 	}
 	return 0;
 }
 
 
 /* ts A70904 */
-/** @param flag bit0=be silent on data shortage */
+/** @param flag bit0= be silent on data shortage
+                bit5= report data shortage with severity DEBUG
+*/
 int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
 			int flag)
 {
@@ -346,7 +350,9 @@ int burn_stdio_read(int fd, char *buf, int bufsize, struct burn_drive *d,
 	if(todo > 0 && !(flag & 1)) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x0002014a,
-			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			(flag & 32) ?
+			  LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+			 LIBDAX_MSGS_PRIO_HIGH,
 			"Cannot read desired amount of data", errno, 0);
 	}
 	if (count < 0)
@@ -378,11 +384,13 @@ static int retry_mmc_read(struct burn_drive *d, int chunksize, int sose_mem,
 	for (i = 0; todo > 0; i++) {
 		if (flag & 2)
 			d->silent_on_scsi_error = 1;
+		else if (flag & 32)
+			d->silent_on_scsi_error = 3;
 		retry_at = start + i * retry_size;
 		if (retry_size > todo)
 			retry_size = todo;
 		err = d->read_10(d, retry_at, retry_size, d->buffer);
-		if (flag & 2) 
+		if (flag & (2 | 32)) 
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED)
 			return 0;
@@ -487,9 +495,9 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			  (int) (byte_address / 2048 + !!(byte_address % 2048)),
 			  d->media_read_capacity);
 			libdax_msgs_submit(libdax_messenger, d->global_index,
-				0x00020172,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
+				0x00020172, (flag & 32) ?
+				LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+				LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
 		}
 		{ret = 0; goto ex;}
 	}
@@ -523,18 +531,21 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 					  LIBDAX_MSGS_PRIO_HIGH,
 			  "Failed to open device (a pseudo-drive) for reading",
 					  errno, 0);
-			} else if (errno!= ENOENT || !(flag & 2))
+			} else if (errno != ENOENT || !(flag & 2))
 				libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x00020005,
-				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+					d->global_index, 0x00020005,
+					(flag & 32) && errno == ENOENT ?
+				   		LIBDAX_MSGS_SEV_DEBUG :
+						LIBDAX_MSGS_SEV_SORRY,
+					LIBDAX_MSGS_PRIO_HIGH,
 			  "Failed to open device (a pseudo-drive) for reading",
-				   errno, 0);
+					errno, 0);
 			ret = 0;
 			if (errno == EACCES && (flag & 8))
 				ret= -2;
 			goto ex;
 		}
-		ret = burn_stdio_seek(fd, byte_address, d, flag & 2);
+		ret = burn_stdio_seek(fd, byte_address, d, flag & (2 | 32));
 		if (ret <= 0)
 			goto ex;
 	}
@@ -556,6 +567,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			cpy_size = data_size - *data_count;
 		if (flag & 2)
 			d->silent_on_scsi_error = 1;
+		else if (flag & 32)
+			d->silent_on_scsi_error = 3;
 		if (flag & 16) {
 			d->had_particular_error &= ~1;
 			if (!d->silent_on_scsi_error)
@@ -565,12 +578,13 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 			err = d->read_10(d, start, chunksize, d->buffer);
 		} else {
 			ret = burn_stdio_read(fd, (char *) d->buffer->data,
-					      cpy_size, d, !!(flag & 2));
+					      cpy_size, d,
+					      (flag & 32) | !!(flag & 2));
 			err = 0;
 			if (ret <= 0)
 				err = BE_CANCELLED;
 		}
-		if (flag & (2 | 16))
+		if (flag & (2 | 16 | 32))
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
 			if ((flag & 16) && (d->had_particular_error & 1))
@@ -672,6 +686,8 @@ int burn_read_audio(struct burn_drive *d, int sector_no,
 		cpy_size = chunksize * alignment;
 		if (flag & 2)
 			d->silent_on_scsi_error = 1;
+		else if (flag & 32)
+			d->silent_on_scsi_error = 3;
 		if (flag & 16) {
 			d->had_particular_error &= ~1;
 			if (!d->silent_on_scsi_error)
@@ -679,7 +695,7 @@ int burn_read_audio(struct burn_drive *d, int sector_no,
 		}
 		err = d->read_cd(d, start, chunksize, 1, 0x10, NULL, d->buffer,
 				 (flag & 8) >> 3);
-		if (flag & (2 | 16))
+		if (flag & (2 | 16 | 32))
 			d->silent_on_scsi_error = sose_mem;
 		if (err == BE_CANCELLED) {
 			if ((flag & 16) && (d->had_particular_error & 1))
@@ -688,9 +704,11 @@ int burn_read_audio(struct burn_drive *d, int sector_no,
 			  for (i = 0; i < chunksize - 1; i++) {
 				if (flag & 2)
 					d->silent_on_scsi_error = 1;
+				else if (flag & 32)
+					d->silent_on_scsi_error = 3;
 				err = d->read_cd(d, start + i, 1, 1, 0x10,
 				             NULL, d->buffer, (flag & 8) >> 3);
-				if (flag & 2)
+				if (flag & (2 | 32))
 					d->silent_on_scsi_error = sose_mem;
 				if (err == BE_CANCELLED)
 			  break;

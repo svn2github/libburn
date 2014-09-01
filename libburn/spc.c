@@ -1583,7 +1583,7 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 	int key= -1, asc= -1, ascq= -1, ret;
 	char *msg = NULL, *scsi_msg = NULL;
 
-	if (d->silent_on_scsi_error)
+	if (d->silent_on_scsi_error == 1 || d->silent_on_scsi_error == 2)
 		{ret = 1; goto ex;}
 
 	BURN_ALLOC_MEM(msg, char, 320);
@@ -1608,7 +1608,8 @@ int scsi_notify_error(struct burn_drive *d, struct command *c,
 		scsi_command_name((unsigned int) c->opcode[0], 0));
 	strcat(msg, scsi_msg);
 	ret = libdax_msgs_submit(libdax_messenger, d->global_index, 0x0002010f,
-		flag & 2 ? LIBDAX_MSGS_SEV_FAILURE : LIBDAX_MSGS_SEV_DEBUG,
+		(flag & 2) || d->silent_on_scsi_error == 3 ?
+		  LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_FAILURE,
 		LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
 ex:;
 	BURN_FREE_MEM(msg);

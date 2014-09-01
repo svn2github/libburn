@@ -309,6 +309,7 @@ struct burn_drive
 	   1= do not report errors
 	   2= do not report errors which the libburn function indicates in
 	      member .had_particular_error
+	   3= report errors with severity DEBUG
 	*/
 	int silent_on_scsi_error;
 

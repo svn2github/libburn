@@ -3780,7 +3780,7 @@ typedef int (*burn_abort_handler_t)(void *handle, int signum, int flag);
     Depending on mode it may cancel all drive operations, wait for all drives
     to become idle, exit(1). It may also prepare function
     burn_drive_get_status() for waiting and performing exit(1). 
-    If parameter handle may be NULL or a text that shall be used as prefix for
+    Parameter handle may be NULL or a text that shall be used as prefix for
     pacifier messages of burn_abort_pacifier(). Other than with an application
     provided handler, the prefix char array does not have to be kept existing
     until the eventual signal event.
@@ -3935,6 +3935,9 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
                               (Useful to try the last two blocks of a CD
                                track which might be non-data because of TAO.)
                               @since 1.2.6
+                        bit5= issue messages with severity DEBUG if they would
+                              be suppressed by bit1.
+                              @since 1.4.0
     @return 1=sucessful , <=0 an error occured
                           with bit3:  -2= permission denied error
     @since 0.4.0
@@ -3979,6 +3982,9 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                               event message. Do not retry reading in this case.
                               (Useful to try the last two blocks of a CD
                                track which might be non-audio because of TAO.)
+                        bit5= issue messages with severity DEBUG if they would
+                              be suppressed by bit1.
+                              @since 1.4.0
     @return 1=sucessful , <=0 an error occured
                           with bit3:  -2= permission denied error
     @since 1.2.6

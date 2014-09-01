@@ -2079,16 +2079,19 @@ regard_as_blank:;
 
 	if ((d->current_profile != 0 || d->status != BURN_DISC_UNREADY) 
 		&& ! d->current_is_supported_profile) {
-		if (!d->silent_on_scsi_error) {
+		if (!(d->silent_on_scsi_error == 1 ||
+		      d->silent_on_scsi_error == 2)) {
 			msg = calloc(1, 160);
 			if (msg != NULL) {
 				sprintf(msg,
 				"Unsuitable media detected. Profile %4.4Xh  %s",
 				d->current_profile, d->current_profile_text);
 				libdax_msgs_submit(libdax_messenger,
-				  d->global_index, 0x0002011e,
-				  LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				  msg, 0,0);
+					d->global_index, 0x0002011e,
+					d->silent_on_scsi_error == 3 ?
+					  LIBDAX_MSGS_SEV_DEBUG :
+					  LIBDAX_MSGS_SEV_SORRY,
+					LIBDAX_MSGS_PRIO_HIGH, msg, 0,0);
 				free(msg);
 			}
 		}
@@ -2466,14 +2469,16 @@ int mmc_eval_read_error(struct burn_drive *d, struct command *c, char *what,
 		silent = (d->silent_on_scsi_error == 1);
 		if (key == 5 && asc == 0x64 && ascq == 0x0) {
 			d->had_particular_error |= 1;
-			silent = 1;
+			if (d->silent_on_scsi_error == 2)
+				silent = 1;
 		}
 		if(!silent)
 			libdax_msgs_submit(libdax_messenger,
 				d->global_index,
 				0x00020144,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
+				d->silent_on_scsi_error == 3 ?
+				 LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+				LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
 		free(msg);
 	}
 	return BE_CANCELLED;
@@ -2807,11 +2812,17 @@ int mmc_set_streaming(struct burn_drive *d,
 	d->issue_command(d, c);
 	if (c->error) {
 		spc_decode_sense(c->sense, 0, &key, &asc, &ascq);
-		if (key != 0 && !d->silent_on_scsi_error) {
+		if (key != 0 && d->silent_on_scsi_error != 1 &&
+		    d->silent_on_scsi_error != 2) {
 			sprintf(msg,
 				"SCSI error on set_streaming(%d): ", w_speed);
 			scsi_error_msg(d, c->sense, 14, msg + strlen(msg), 
 					&key, &asc, &ascq);
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x00020124,
+				d->silent_on_scsi_error == 3 ?
+				 LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+				LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
 		}
 		{ret = 0; goto ex;}
 	}
@@ -4701,14 +4712,16 @@ int mmc_read_10(struct burn_drive *d, int start,int amount, struct buffer *buf)
 			silent = (d->silent_on_scsi_error == 1);
 			if (key == 5 && asc == 0x64 && ascq == 0x0) {
 				d->had_particular_error |= 1;
-				silent = 1;
+				if (d->silent_on_scsi_error == 2)
+					silent = 1;
 			}
 			if(!silent)
 				libdax_msgs_submit(libdax_messenger,
 				d->global_index,
 				0x00020144,
-				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
-				msg, 0, 0);
+				(d->silent_on_scsi_error == 3) ?
+				 LIBDAX_MSGS_SEV_DEBUG : LIBDAX_MSGS_SEV_SORRY,
+				LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
 			free(msg);
 		}
 		return BE_CANCELLED;
