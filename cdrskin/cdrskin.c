@@ -5054,7 +5054,6 @@ int Cdrskin_cdtext_to_file(struct CdrskiN *skin, char *path, int flag)
    if(skin->verbosity >= Cdrskin_verbose_debuG)
      Cdrskin_print_text_packs(skin, text_packs, num_packs, 0);
    ret= Cdrskin_store_text_packs(skin, text_packs, num_packs, path, flag & 16);
-   free(text_packs);
    if(ret <= 0)
      goto ex;
    printf("CD-Text len: %d\n", num_packs * 18 + 4);
