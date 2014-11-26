@@ -50,7 +50,9 @@ static int ddlpa_debug_mode = 1;
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0
 #endif
-
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 /* ----------------------- private -------------------- */
 
@@ -173,7 +175,7 @@ static int ddlpa_occupy(struct ddlpa_lock *o, char *path, int *fd,
 	int ret, o_flags, o_rw, l_type;
 	char *o_rwtext;
 
-	o_flags = o->o_flags | O_NDELAY;
+	o_flags = o->o_flags | O_NDELAY | O_BINARY;
 	if(!no_o_excl)
 		o_flags |= O_EXCL;
 	o_rw = (o_flags) & (O_RDONLY | O_WRONLY | O_RDWR);
@@ -216,7 +218,7 @@ static int ddlpa_occupy(struct ddlpa_lock *o, char *path, int *fd,
 static int ddlpa_obtain_scsi_adr(struct ddlpa_lock *o, char *path,
 			int *bus, int *host, int *channel, int *id, int *lun)
 {
-	int fd, ret, open_mode = O_RDONLY | O_NDELAY;
+	int fd, ret, open_mode = O_RDONLY | O_NDELAY | O_BINARY;
 	struct my_scsi_idlun {
 		int x;
 		int host_unique_id;
@@ -550,7 +552,8 @@ usage:;
 	} else {
 		/*
 		   This substitutes for:
-			fd = open(my_path, O_RDWR | O_EXCL | O_LARGEFILE);
+			fd = open(my_path,
+			          O_RDWR | O_EXCL | O_LARGEFILE | O_BINARY);
 
 		*/
 

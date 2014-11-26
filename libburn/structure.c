@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -20,6 +20,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include "libburn.h"
 #include "structure.h"
@@ -1483,7 +1488,7 @@ static int cue_create_file_source(char *path, struct burn_cue_file_cursor *crs,
 		if (ret <= 0)
 			goto ex;
 	} else {
-		fd = open(path, O_RDONLY);
+		fd = open(path, O_RDONLY | O_BINARY);
 		if (fd == -1) {
 			sprintf(msg,
 				"In cue sheet: Cannot open FILE '%.4000s'",

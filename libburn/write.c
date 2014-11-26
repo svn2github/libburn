@@ -38,6 +38,11 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #include "error.h"
 #include "sector.h"
 #include "libburn.h"
@@ -1795,7 +1800,8 @@ static int transact_dvd_chunk(struct burn_write_opts *opts,
 	static int tee_fd= -1;
 	if(tee_fd==-1)
 		tee_fd= open("/tmp/libburn_sg_readin",
-				O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+				O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+				S_IRUSR | S_IWUSR);
 #endif /* Libburn_log_in_and_out_streaM */
 
 
@@ -2524,7 +2530,7 @@ int burn_stdio_open_write(struct burn_drive *d, off_t start_byte,
 	if (fd >= 0)
 		fd = dup(fd); /* check validity and make closeable */
 	else
-		fd = open(d->devname, mode,
+		fd = open(d->devname, mode | O_BINARY,
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (fd == -1) {
 		libdax_msgs_submit(libdax_messenger, d->global_index,

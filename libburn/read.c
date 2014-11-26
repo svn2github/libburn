@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -21,6 +21,11 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
+
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include "sector.h"
 #include "libburn.h"
@@ -521,7 +526,8 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
 		fd = d->stdio_fd;
 		if (fd < 0)
 			d->stdio_fd = fd =
-				open(d->devname, O_RDONLY | O_LARGEFILE);
+				open(d->devname,
+				     O_RDONLY | O_LARGEFILE | O_BINARY);
 		if (fd == -1) {
 			if (errno == EACCES && (flag & 2)) {
 				if (!(flag & 8))

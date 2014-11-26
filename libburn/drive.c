@@ -26,6 +26,12 @@
 #include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
+
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #include "libburn.h"
 #include "init.h"
 #include "drive.h"
@@ -1638,17 +1644,17 @@ static int burn_role_by_access(char *fname, int flag)
 #endif
 	int fd;
         
-	fd = open(fname, O_RDWR | O_LARGEFILE);
+	fd = open(fname, O_RDWR | O_LARGEFILE | O_BINARY);
 	if (fd != -1) {
 		close(fd);
 		return 2;
 	}
-	fd = open(fname, O_RDONLY | O_LARGEFILE);
+	fd = open(fname, O_RDONLY | O_LARGEFILE | O_BINARY);
         if (fd != -1) {
 		close(fd);
 		return 4;
 	}
-	fd = open(fname, O_WRONLY | O_LARGEFILE);
+	fd = open(fname, O_WRONLY | O_LARGEFILE | O_BINARY);
 	if (fd != -1) {
 		close(fd);
 		return 5;

@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -21,6 +21,11 @@
 #include <fcntl.h>
 #include <time.h>
 #include <pthread.h>
+
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include "source.h"
 #include "libburn.h"
@@ -121,11 +126,11 @@ struct burn_source *burn_file_source_new(const char *path, const char *subpath)
 
 	if (!path)
 		return NULL;
-	fd1 = open(path, O_RDONLY);
+	fd1 = open(path, O_RDONLY | O_BINARY);
 	if (fd1 == -1)
 		return NULL;
 	if (subpath != NULL) {
-		fd2 = open(subpath, O_RDONLY);
+		fd2 = open(subpath, O_RDONLY | O_BINARY);
 		if (fd2 == -1) {
 			close(fd1);
 			return NULL;
@@ -945,7 +950,7 @@ int burn_drive_extract_audio(struct burn_drive *drive,
 	BURN_ALLOC_MEM(msg, char, 4096);
 	BURN_ALLOC_MEM(buf, char, 24 * 2352);
 
-	fd = open(target_path, O_WRONLY | O_CREAT,
+	fd = open(target_path, O_WRONLY | O_CREAT | O_BINARY,
                   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (fd == -1) {
 		sprintf(msg, "Cannot open disk file for writing: %.4000s",

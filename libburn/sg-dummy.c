@@ -35,6 +35,11 @@ Present implementation: default dummy which enables libburn only to work
 #include <sys/statvfs.h>
 #endif /* Libburn_os_has_stavtfS */
 
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #include "transport.h"
 #include "drive.h"
 #include "sg.h"
@@ -277,7 +282,7 @@ int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 		long blocks;
 
 		blocks = *bytes / 512;
-		fd = open(path, open_mode);
+		fd = open(path, open_mode | O_BINARY);
 		if (fd == -1)
 			{ret = -2; goto ex;}
 		ret = ioctl(fd, BLKGETSIZE, &blocks);
@@ -330,7 +335,7 @@ int burn_os_open_track_src(char *path, int open_flags, int flag)
 {
 	int fd;
 
-	fd = open(path, open_flags);
+	fd = open(path, open_flags | O_BINARY);
 	return fd;
 }
 

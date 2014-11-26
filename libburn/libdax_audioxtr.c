@@ -17,6 +17,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
@@ -90,7 +94,7 @@ static int libdax_audioxtr_open(struct libdax_audioxtr *o, int flag)
  if(strcmp(o->path,"-")==0)
    o->fd= 0;
  else
-   o->fd= open(o->path, O_RDONLY);
+   o->fd= open(o->path, O_RDONLY | O_BINARY);
  if(o->fd<0) {
    sprintf(msg,"Cannot open audio source file : %s",o->path);
    libdax_msgs_submit(libdax_messenger,-1,0x00020200,

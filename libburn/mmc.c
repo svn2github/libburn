@@ -21,6 +21,11 @@
 #include <pthread.h>
 #include <ctype.h>
 
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #include "error.h"
 #include "sector.h"
 #include "libburn.h"
@@ -942,7 +947,8 @@ fprintf(stderr, "libburn_DEBUG: buffer sectors= %d  bytes= %d\n",
 	static int tee_fd= -1;
 	if(tee_fd==-1)
 		tee_fd= open("/tmp/libburn_sg_written",
-				O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+			O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+			S_IRUSR | S_IWUSR);
 #endif /* Libburn_log_in_and_out_streaM */
 
 	mmc_start_if_needed(d, 0);

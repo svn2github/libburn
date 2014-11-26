@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -40,6 +40,10 @@ extern struct libdax_msgs *libdax_messenger;
 #include <fcntl.h>
 #endif /* Libburn_log_in_and_out_streaM */
 
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 /*static unsigned char isrc[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";*/
 
@@ -109,7 +113,8 @@ static void get_bytes(struct burn_track *track, int count, unsigned char *data)
         static int tee_fd= -1;
         if(tee_fd==-1)
                 tee_fd= open("/tmp/libburn_sg_readin",
-                                O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+				O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+				S_IRUSR | S_IWUSR);
 #endif /* Libburn_log_in_and_out_streaM */
 
 

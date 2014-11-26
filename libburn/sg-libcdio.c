@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2009 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2009 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -148,6 +148,11 @@ Send feedback to libburn-hackers@pykix.org .
 #include <cdio/cdio.h>
 #include <cdio/logging.h>
 #include <cdio/mmc.h>
+
+/* ts B41126 : O_BINARY is needed for Cygwin but undefined elsewhere */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 
 /* The waiting time before eventually retrying a failed SCSI command.
@@ -895,7 +900,7 @@ int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 
 	/* GNU/Linux specific determination of block device size */
 	} else if(S_ISBLK(stbuf.st_mode)) {
-		int open_mode = O_RDONLY, fd;
+		int open_mode = O_RDONLY | O_BINARY, fd;
 		long blocks;
 
 		blocks = *bytes / 512;
@@ -915,7 +920,7 @@ int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 	} else if(S_ISCHR(stbuf.st_mode)) {
 		int fd;
 
-		fd = open(path, O_RDONLY);
+		fd = open(path, O_RDONLY | O_BINARY);
 		if (fd == -1)
 			{ret = -2; goto ex;}
 		ret = ioctl(fd, DIOCGMEDIASIZE, &add_size);
@@ -929,7 +934,7 @@ int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 #ifdef Libburn_is_on_solariS
 
 	} else if(S_ISBLK(stbuf.st_mode)) {
-		int open_mode = O_RDONLY, fd;
+		int open_mode = O_RDONLY | O_BINARY, fd;
 		
 		fd = open(path, open_mode);
 		if (fd == -1)
@@ -985,7 +990,7 @@ int burn_os_open_track_src(char *path, int open_flags, int flag)
 {
 	int fd;
 
-	fd = open(path, open_flags);
+	fd = open(path, open_flags | O_BINARY);
 	return fd;
 }
 
