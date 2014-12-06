@@ -250,13 +250,14 @@ static int start_enum_cXtYdZs2(burn_drive_enumerator_t *idx, int flag)
 static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 				char adr[], int adr_size, int flag)
 { 
-	int busno, tgtno, lunno, ret, fd = -1, volpath_size = 160;
-	char *volpath = NULL;
+	int busno, tgtno, lunno, ret, fd = -1, volpath_size = 160, os_errno;
+	char *volpath = NULL, *msg = NULL;
 	struct dirent *entry;
 	struct dk_cinfo cinfo;
 	DIR *dir;
 
 	BURN_ALLOC_MEM(volpath, char, volpath_size);
+	BURN_ALLOC_MEM(msg, char, 4096);
 
 	dir = idx->dir;
 	while (1) {
@@ -282,25 +283,64 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 
 		sprintf(volpath, "/dev/rdsk/%s", entry->d_name);
 		if (burn_drive_is_banned(volpath))
-	continue; 
-
-		fd = open(volpath, O_RDONLY | O_NDELAY);
-		if (fd < 0)
 	continue;
+		fd = open(volpath, O_RDONLY | O_NDELAY);
+		if (fd < 0) {
+			os_errno = errno;
+			sprintf(msg, "Could not open '%s' , errno = %d",
+				volpath, os_errno);
+			libdax_msgs_submit(libdax_messenger, -1,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, os_errno, 0);
+	continue;
+		}
 		/* See man dkio */
 		ret = ioctl(fd, DKIOCINFO, &cinfo);
 		close(fd);
-		if (ret < 0)
+		if (ret < 0) {
+			os_errno = errno;
+			sprintf(msg,
+			   "ioctl(DKIOCINFO) failed on drive '%s', errno = %d",
+				volpath, os_errno);
+			libdax_msgs_submit(libdax_messenger, -1,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, os_errno, 0);
 	continue;
-		if (cinfo.dki_ctype != DKC_CDROM)
+		}
+		if (cinfo.dki_ctype != DKC_CDROM) {
+			sprintf(msg,
+				"ioctl(DKIOCINFO) classifies drive '%s' as dki_ctype %ld, not as DKC_CDROM = %ld",
+				volpath, (long int) cinfo.dki_ctype,
+				(long int) DKC_CDROM);
+			libdax_msgs_submit(libdax_messenger, -1,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 	continue;
-		if (adr_size <= (int) strlen(volpath))
+		}
+		if (adr_size <= (int) strlen(volpath)) {
+			sprintf(msg,
+				"Device path '%s' too long. (Max. %d)",
+				volpath, adr_size - 1);
+			libdax_msgs_submit(libdax_messenger, -1,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 			{ret = -1; goto ex;}
+		}
 		strcpy(adr, volpath);
+		sprintf(msg, "Accepted as valid drive '%s'", volpath);
+		libdax_msgs_submit(libdax_messenger, -1,
+				0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+				msg, 0, 0);
 		{ret = 1; goto ex;}
 	}
 	ret = 0;
 ex:;
+	BURN_FREE_MEM(msg);
 	BURN_FREE_MEM(volpath);
 	return ret;
 }
@@ -530,10 +570,27 @@ int sg_grab(struct burn_drive *d)
 		{ret = 0; goto ex;}
 	}
 	ret = ioctl(d->fd, DKIOCINFO, &cinfo);
-	if (ret < 0)
+	if (ret < 0) {
+		os_errno = errno;
+		sprintf(msg, "ioctl(DKIOCINFO) failed on drive '%s'",
+			d->devname);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, os_errno, 0);
 		goto revoke;
-	if (cinfo.dki_ctype != DKC_CDROM)
+	}
+	if (cinfo.dki_ctype != DKC_CDROM) {
+		sprintf(msg,
+			"ioctl(DKIOCINFO) classifies drive '%s' as dki_ctype %ld, not as DKC_CDROM = %ld",
+			d->devname, (long int) cinfo.dki_ctype,
+			(long int) DKC_CDROM);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
 		goto revoke;
+	}
 
 	/* >>> obtain eventual locks */;
 
