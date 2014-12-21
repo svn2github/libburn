@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2010 - 2013 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2010 - 2014 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -116,6 +116,7 @@ Send feedback to libburn-hackers@pykix.org .
 #include <sys/statvfs.h>
 #endif /* Libburn_os_has_stavtfS */
 
+#include <volmgt.h>
 #include <sys/dkio.h>
 #include <sys/vtoc.h>
 
@@ -200,13 +201,13 @@ static int decode_btl_number(char **cpt, int stopper, int *no)
 }
 
 
-/* Read bus, target, lun from name "cXtYdZs2".
+/* Read bus, target, lun from name "cXtYdZs2" or "cXtYdZ/...".
    Return 0 if name is not of the desired form.
 */
 static int decode_btl_solaris(char *name, int *busno, int *tgtno, int *lunno,
                         int flag)
 {
-  char *cpt;
+  char *cpt, *cpt_mem;
   int ret;
 
   *busno = *tgtno = *lunno = -1;
@@ -219,9 +220,15 @@ static int decode_btl_solaris(char *name, int *busno, int *tgtno, int *lunno,
   ret = decode_btl_number(&cpt, 'd', tgtno);
   if (ret <= 0)
     return ret;
+  cpt_mem = cpt;
   ret = decode_btl_number(&cpt, 's', lunno);
-  if (ret <= 0)
-    return ret;
+  if (ret <= 0) {
+    cpt = cpt_mem;
+    ret = decode_btl_number(&cpt, '/', lunno);
+    if (ret <= 0)
+      return ret;
+    return(1);
+  }
   cpt++;
   if (*cpt != '2' || *(cpt + 1) != 0)
     return 0;
@@ -247,11 +254,58 @@ static int start_enum_cXtYdZs2(burn_drive_enumerator_t *idx, int flag)
 }
 
 
+static int sg_solaris_convert_devname(char *path, char **dev_to_open, int flag)
+{
+	char *sym_name = NULL, *media_name = NULL, *curr_name, *msg = NULL;
+	int ret;
+
+	BURN_ALLOC_MEM(msg, char, 4096);
+
+	BURN_FREE_MEM(*dev_to_open);
+	*dev_to_open = NULL;
+	curr_name = path;
+
+	if (! volmgt_running())
+		goto set_name;
+	sym_name = volmgt_symname(path); 
+	sprintf(msg, "Volume Management symbolic name: '%s' -> %s",
+			path, sym_name == NULL ? "NULL" : sym_name);
+	libdax_msgs_submit(libdax_messenger, -1,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+	if (sym_name != NULL)
+		media_name = media_findname(sym_name);
+	else
+		media_name = media_findname(path);
+	if (media_name != NULL)
+		curr_name = media_name;
+	sprintf(msg, "Media name: %s -> %s",
+			sym_name == NULL ? path : sym_name,
+			media_name == NULL ? "NULL" : media_name);
+	libdax_msgs_submit(libdax_messenger, -1,
+			0x00000002,
+			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
+			msg, 0, 0);
+set_name:
+	BURN_ALLOC_MEM(*dev_to_open, char, strlen(curr_name) + 1);
+	strcpy(*dev_to_open, curr_name);
+	ret = 1;
+ex:
+	if (media_name != NULL)
+		free(media_name);
+	if (sym_name != NULL)
+		free(sym_name);
+	BURN_FREE_MEM(msg);
+	return(ret);
+}
+
+
 static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 				char adr[], int adr_size, int flag)
 { 
 	int busno, tgtno, lunno, ret, fd = -1, volpath_size = 160, os_errno;
-	char *volpath = NULL, *msg = NULL;
+	char *volpath = NULL, *msg = NULL, *dev_to_open = NULL;
 	struct dirent *entry;
 	struct dk_cinfo cinfo;
 	DIR *dir;
@@ -284,11 +338,14 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 		sprintf(volpath, "/dev/rdsk/%s", entry->d_name);
 		if (burn_drive_is_banned(volpath))
 	continue;
-		fd = open(volpath, O_RDONLY | O_NDELAY);
+		ret = sg_solaris_convert_devname(volpath, &dev_to_open, 0);
+		if (ret <= 0)
+	continue;
+		fd = open(dev_to_open, O_RDONLY | O_NDELAY);
 		if (fd < 0) {
 			os_errno = errno;
 			sprintf(msg, "Could not open '%s' , errno = %d",
-				volpath, os_errno);
+				dev_to_open, os_errno);
 			libdax_msgs_submit(libdax_messenger, -1,
 				0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
@@ -340,6 +397,7 @@ static int next_enum_cXtYdZs2(burn_drive_enumerator_t *idx,
 	}
 	ret = 0;
 ex:;
+	BURN_FREE_MEM(dev_to_open);
 	BURN_FREE_MEM(msg);
 	BURN_FREE_MEM(volpath);
 	return ret;
@@ -549,7 +607,7 @@ int sg_drive_is_open(struct burn_drive * d)
 */  
 int sg_grab(struct burn_drive *d)
 {
-	char *msg = NULL;
+	char *msg = NULL, *dev_to_open = NULL;
 	int os_errno, ret;
 	struct dk_cinfo cinfo;
 
@@ -559,10 +617,16 @@ int sg_grab(struct burn_drive *d)
 		d->released = 0;
 		{ret = 1; goto ex;}
 	}
-	d->fd = open(d->devname, O_RDONLY | O_NDELAY);
+	ret = sg_solaris_convert_devname(d->devname, &dev_to_open, 0);
+	if (ret <= 0)
+		goto ex;
+	d->fd = open(dev_to_open, O_RDONLY | O_NDELAY);
 	if (d->fd == -1) {
 		os_errno = errno;
-		sprintf(msg, "Could not grab drive '%s'", d->devname);
+		sprintf(msg, "Could not grab drive '%s'",
+			d->devname);
+		if (strcmp(d->devname, dev_to_open))
+			sprintf(msg + strlen(msg), " via '%s'", dev_to_open);
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 			0x00020003,
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
@@ -605,6 +669,7 @@ revoke:;
 			msg, 0, 0);
 	ret = 0;
 ex:;
+	BURN_FREE_MEM(dev_to_open);
 	BURN_FREE_MEM(msg);
 	return ret;
 }

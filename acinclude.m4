@@ -33,6 +33,10 @@ AC_DEFUN([TARGET_SHIZZLE],
       ARCH=freebsd
       LIBBURN_ARCH_LIBS=-lcam
       ;;
+    *-solaris*)
+      ARCH=solaris
+      LIBBURN_ARCH_LIBS=-lvolmgt
+      ;;
     *)
       ARCH=
       LIBBURN_ARCH_LIBS=
