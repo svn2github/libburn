@@ -1363,6 +1363,12 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 		else
 			break;
 		goto return_fail;
+	case 0x32:
+		if (*ascq == 0)
+			sprintf(msg, "No defect spare location available");
+		else
+			break;
+		goto return_fail;
 	case 0x3A:
 		if (*ascq == 0)
 			sprintf(msg, "Medium not present");
