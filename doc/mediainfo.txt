@@ -190,7 +190,7 @@ Via libburn these manufacturer and media ids can be retrieved by API call
 burn_disc_get_media_id() as a single printable word product_id and as two
 printable words media_code1, media_code2. The latter can be translated into
 a manufacturer company name by API call burn_guess_manufacturer().
-(Both calls work for CD, too. burn_get_media_product_id() eventually calls
+(Both calls work for CD, too. burn_disc_get_media_id() eventually calls
  burn_disc_read_atip().) 
 
 
@@ -1186,7 +1186,7 @@ TYG11               TAIYO YUDEN  DVD-R DL 8x
 TYG-BD      Y01     TAIYO YUDEN Co., Ltd.  1-2X LTH   [Blu]
 TYG-BD      Y03     TAIYO YUDEN Co., Ltd.   1-4X LTH   [Blu]
 
-"UmeDisc Ltd. HK"
+"UmeDisc Limited"
 UMEDISC     DL1     Elite DVD+R DL [User report feb 2012]
 
 "Unifino Inc."

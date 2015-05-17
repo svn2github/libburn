@@ -1563,7 +1563,7 @@ int burn_disc_get_media_id(struct burn_drive *d,
 /** Guess the name of a manufacturer by profile number, manufacturer code
     and media code. The profile number can be obtained by
     burn_disc_get_profile(), the other two parameters can be obtained as
-    media_code1 and media_code2 by burn_get_media_product_id().
+    media_code1 and media_code2 by burn_disc_get_media_id().
     @param profile_no   Profile number (submit -1 if not known)
     @param manuf_code   Manufacturer code from media (e.g. "RICOHJPN")
     @param media_code   Media ID code from media (e.g. "W11")
