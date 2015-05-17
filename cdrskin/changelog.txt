@@ -12639,7 +12639,7 @@ ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
------------------------------------ release - cdrskin-1.3.8 - 2014.06,28.060001
+----------------------------------- release - cdrskin-1.3.8 - 2014.06.28.060001
 * Bug fix: Wrong stack usage caused SIGBUS on sparc when compiled by gcc -O2
 * Bug fix: Minimum drive buffer fill was measured by cdrskin before the buffer
            could get full
@@ -12668,13 +12668,176 @@ Made number transition to 1.3.9
 + cdrskin/add_ts_changes_to_libburn_1_3_9
 Updated cdrskin tarball generator
 
-             [    ]
+28 Jun 2014  [5358]
 ChangeLog
 cdrskin/changelog.txt
 Documented changes and release timestamp
 
 ------------------------------------ cycle  - cdrskin-1.3.9 - 2014.06.28.062807
 
+28 Jun 2014  [5359]
+svn move -m libburn release 1.3.8 is ready
+http://svn.libburnia-project.org/libburn/branches/1.3.8 
+http://svn.libburnia-project.org/libburn/tags/1.3.8
+
+06 Jul 2014  [5364]
+COPYRIGHT
+Updated copyright date
+
+2014.07.14.180122  [5366]
+libburn/drive.c
+Fixed a wrong read access to memory. Reported by valgrind of lian jianfei,
+
+2014.07.31.115829  [5367]
+libburn/spc.h
+libburn/spc.c
+New internal function for SCSI-logging arbitrary texts
+
+2014.07.31.122752  [5368]
+libburn/sg-linux.c
+Debugging macro Libburn_debug_dxferP to check sg_io_hdr_t.dxferp
+
+2014.07.31.123105  [5369]
+libburn/libdax_msgs.h
+libburn/mmc.c
+Keeping GET CONFIGURATION from requesting more than 4 KB of data
+
+2014.08.14.085604  [5370]
+libburn/spc.c
+Improved error message for erase failures
+
+2014.08.14.085850  [5371]
+libburn/mmc.c
+Small correction of rev5369
+
+2014.08.31.110308  [5373]
+libburn/drive.c
+libburn/mmc.c
+Reduced number of GET CONFIGURATION transactions
+
+2014.08.31.121421  [5374]
+libburn/drive.c
+Removed obsolete conditional code
+
+2014.09.01.161217  [5375]
+libburn/libburn.h
+libburn/transport.h
+libburn/read.c
+libburn/spc.c
+libburn/mmc.c
+New flag bit5 with burn_read_data() and burn_read_audio()
+
+2014.09.01.183908  [5376]
+libburn/spc.c
+Fixed a bug introduced with previous revision
+
+2014.11.23.190942  [5395]
+cdrskin/cdrskin.c
+Bug fix: Double free with cdrskin -vvv. Introduced with rev 5065, version 1.3.1
+
+2014.11.26.164119  [5397]
+libburn/drive.c
+libburn/file.c
+libburn/read.c
+libburn/write.c
+libburn/structure.c
+libburn/sector.c
+libburn/mmc.c
+libburn/sg-dummy.c
+libburn/sg-libcdio.c
+libburn/libdax_audioxtr.c
+libburn/ddlpa.c
+Equipped all non-system-dependent open(2) calls with O_BINARY
+
+2014.12.06.175109  [5399]
+libburn/sg-solaris.c
+Added debugging messages for drive recognition on Solaris
+
+2014.12.21.221245  [5400]
+acinclude.m4
+libburn/sg-solaris.c
+Using libvolmgt on older Solaris
+
+2014.12.29.105910  [5403]
+Makefile.am
+Fixed a typo in message of make install. Thanks to Jakub Wilk.
+
+2015.03.08.073635  [5412]
+libburn/spc.c
+Human readable error message for 3 32 00
+
+2015.05.17.083420  [5426]
+libburn/libburn.h
+doc/mediainfo.txt
+Corrected outdated references to function name burn_get_media_product_id()
+
+17 May 2015  [5427]
+svn copy -m Branching for libburn release 1.4.0
+ http://svn.libburnia-project.org/libburn/trunk
+ http://svn.libburnia-project.org/libburn/branches/1.4.0
+
+2015.05.17.110001  [5428]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.0
+
+17 May 2015  [5429]
+- cdrskin/add_ts_changes_to_libburn_1_3_8
+- cdrskin/add_ts_changes_to_libburn_1_3_9
++ cdrskin/add_ts_changes_to_libburn_1_4_0
++ cdrskin/add_ts_changes_to_libburn_1_4_1
+Updated cdrskin tarball generator
+
+17 May 2015  [5430]
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
+
+17 May 2015  [5435]
+acinclude.m4
+Made sure that cdrskin on Solaris gets linked with libvolmgt
+
+----------------------------------- release - cdrskin-1.4.0 - 2015.05.17.110001
+* Bug fix: Double free with cdrskin -vvv. Introduced with rev 5065, version 1.3.1
+* Bug fix: Wrong read access to memory. Reported by valgrind of lian jianfei.
+
+
+2015.05.17.193727  [5437]
+acinclude.m4
+Made sure that cdrskin on Solaris gets linked with libvolmgt
+
+2015.05.17.200218  [5438]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.1
+
+17 May 2015  [5439]
+- cdrskin/add_ts_changes_to_libburn_1_3_8
+- cdrskin/add_ts_changes_to_libburn_1_3_9
++ cdrskin/add_ts_changes_to_libburn_1_4_0
++ cdrskin/add_ts_changes_to_libburn_1_4_1
+Updated cdrskin tarball generator
+
+17 May 2015  []
+ChangeLog
+cdrskin/changelog.txt
+Documented changes and release timestamp
 
   []
 ChangeLog
@@ -12682,8 +12845,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.7 - 
-
+------------------------------------ cycle  - cdrskin-1.4.1 - 2015.05.17.200218
 
   []
 ChangeLog
@@ -12691,7 +12853,15 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.3.7 - 
+------------------------------------ cycle  - cdrskin-1.4.1 - 
+
+  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.1 - 
 
 
 **********************************************************************
