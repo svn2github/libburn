@@ -18,13 +18,13 @@ AC_DEFUN([TARGET_SHIZZLE],
 
   LIBBURNIA_LDCONFIG_CMD="echo 'No ldconfig run performed. If needed, configure manually for:'"
   
-  case $target_os in
-    linux*)
+  case $target in
+    *-*-linux*)
       ARCH=linux
       LIBBURN_ARCH_LIBS=
       LIBBURNIA_LDCONFIG_CMD=ldconfig
       ;;
-    freebsd*)
+    *-*-freebsd*)
       ARCH=freebsd
       LIBBURN_ARCH_LIBS=-lcam
       LIBBURNIA_PKGCONFDIR=$(echo "$libdir" | sed 's/\/lib$/\/libdata/')/pkgconfig
