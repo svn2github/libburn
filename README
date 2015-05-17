@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2014 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2015 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.3.8.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.4.0.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.3.8.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.4.0.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.3.8.tar.gz
-   cd libburn-1.3.8
+   tar xzf libburn-1.4.0.tar.gz
+   cd libburn-1.4.0
    ./configure --prefix=/usr
    make
 
@@ -732,6 +732,10 @@ Project history as far as known to me:
   NetBSD, offers new features with command -find, and a command to extract
   ISO 9660 file content onto standard output or into filter processes.
 
+- Sun May 17 2015 release 1.4.0
+  This release is mainly about bug fixes and a new feature of xorriso to
+  propose commands or as_mkisofs options which can reproduce the boot
+  equipment of the loaded ISO filesystem.
 
 ------------------------------------------------------------------------------
 
