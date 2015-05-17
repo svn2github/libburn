@@ -38,7 +38,7 @@ original="./libburn_svn_release.tgz"
 # My changes are in $changes , mainly in $changes/cdrskin
 changes="./libburn-release"
 
-skin_release="1.3.8"
+skin_release="1.4.0"
 patch_level=""
 # patch_level=".pl00"
 skin_rev="$skin_release""$patch_level"
