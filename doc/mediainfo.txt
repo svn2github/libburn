@@ -1036,6 +1036,9 @@ MEI         T02     Panasonic Corporation 1-4X HTL 12cm  [Blu]
 MEI 00V001          MATSUSHITA EI  2X   [Hij]
 MEI 00V002          MATSUSHITA EI  4X   [Hij]
 
+"Millenniata Inc."
+MILLENMR    MR1     Verbatim M-DISC 4x 25 GB (user reported)
+
 "Mitsubishi Kagaku Media Co."
 MKM         001     MKM  6X   [Hij]
 MKM         003     MKM  8X   [Hij]
