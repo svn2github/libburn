@@ -4980,6 +4980,7 @@ int mmc_read_disc_structure(struct burn_drive *d,
 /*
     @param flag    bit0= set bit1 in flag for burn_util_make_printable_word
                          and do not append media revision
+                   bit1= truncate media_code1 to 6 characters (else 8)
 */
 static int mmc_set_product_id(char *reply,
 	 int manuf_idx, int type_idx, int rev_idx,
@@ -4993,7 +4994,10 @@ static int mmc_set_product_id(char *reply,
 	if (*product_id == NULL ||
 	    *media_code1 == NULL || *media_code2 == NULL)
 		return -1;
-	sprintf(*media_code1, "%.8s", reply + manuf_idx);
+	if (flag & 2)
+		sprintf(*media_code1, "%.6s", reply + manuf_idx);
+	else
+		sprintf(*media_code1, "%.8s", reply + manuf_idx);
 	ret = burn_util_make_printable_word(media_code1,
 						 1 | ((flag & 1) << 1));
 	if (ret <= 0)
@@ -5143,7 +5147,7 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		/* Dig out manufacturer, media type and revision */
 		ret = mmc_set_product_id(reply, 100, 106, 111,
 			 	product_id, media_code1, media_code2,
-				flag & 1);
+				2 | (flag & 1));
 		if (ret <= 0)
 			goto ex;
 
