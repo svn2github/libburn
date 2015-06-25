@@ -428,6 +428,9 @@ It can also be enabled at configure time by
 Alternatively the transport of SCSI commands can be done via libcdio-0.83.
 You may install it and re-run libburn's ./configure with option
     --enable-libcdio
+Add option
+    -use_libcdio
+to your run of cdrskin/compile_cdrskin.sh .
 
 You may get a (super fat) statically linked binary by :
     cdrskin/compile_cdrskin.sh -static
