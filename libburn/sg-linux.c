@@ -219,14 +219,6 @@ static char linux_ata_device_family[80] = {"/dev/hd%c"};
 static int linux_ata_enumerate_verbous = 0;
 
 
-/* The waiting time before eventually retrying a failed SCSI command.
-   Before each retry wait Libburn_sg_linux_retry_incR longer than with
-   the previous one.
-*/
-#define Libburn_sg_linux_retry_usleeP 100000
-#define Libburn_sg_linux_retry_incR   100000
-
-
 /** PORTING : ------ libburn portable headers and definitions ----- */
 
 #include "libburn.h"
