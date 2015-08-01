@@ -239,14 +239,14 @@ CFLAGS="$LIBBURN_DVD_OBS_64K $CFLAGS"
 
 dnl ts B20413
 AC_ARG_ENABLE(dvd-obs-pad,
-[  --enable-dvd-obs-pad    pad DVD DAO sessions to 32 resp. 64 KB, default=no],
+[  --enable-dvd-obs-pad    pad DVD DAO sessions to 32 or 64 KB, default=no],
                , enable_dvd_obs_pad=no)
 if test x$enable_dvd_obs_pad = xyes; then
     LIBBURN_DVD_OBS_PAD="-DLibburn_dvd_always_obs_paD"
-    echo "enabled  padding of DVD DAO sessions to 32 resp. 64 KB"
+    echo "enabled  padding of DVD DAO sessions to 32 or 64 KB"
 else
     LIBBURN_DVD_OBS_64K=
-    echo "disabled padding of DVD DAO sessions to 32 resp. 64 KB"
+    echo "disabled padding of DVD DAO sessions to 32 or 64 KB"
 fi
 CFLAGS="$LIBBURN_DVD_OBS_PAD $CFLAGS"
 

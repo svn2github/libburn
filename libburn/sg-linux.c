@@ -1413,7 +1413,7 @@ static int add_proc_info_drives(int flag)
 	char **list= NULL;
 
 	if (burn_sg_use_family != 0)
-		return(1); /* Looking only for sr resp. scd resp. sg */
+		return(1); /* Looking only for sr , scd , sg */
 
 	ret = proc_sys_dev_cdrom_info(&list, &list_count, 0);
 	if (ret <= 0)
@@ -1651,7 +1651,7 @@ return_1_pre_proc:;
     and accessability. If burn activities are prone to external interference
     on your system it is also necessary to obtain exclusive access locks on
     the drives.
-    Hand over each accepted drive to enumerate_common() resp. its replacement
+    Hand over each accepted drive to enumerate_common() or its replacement
     within your port.
 
     See FreeBSD port sketch sg-freebsd-port.c for such an implementation.
@@ -1677,7 +1677,7 @@ int scsi_enumerate_drives(void)
 
 /** Tells wether libburn has the given drive in use or exclusively reserved.
     If it is "open" then libburn will eventually call sg_release() on it when
-    it is time to give up usage resp. reservation.
+    it is time to give up usage and reservation.
 */
 /** Published as burn_drive.drive_is_open() */
 int sg_drive_is_open(struct burn_drive * d)

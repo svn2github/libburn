@@ -618,7 +618,7 @@ BG Format 3 indicates fully formatted media.
 
 DVD-RW reaches this state either by Format Type 00h (or 10h) with maximum
 size given as Number Of Blocks, or by writing sequentially until the disc is
-completely full into an intermediate session opened by format 15h resp. 13h.
+completely full into an intermediate session opened by format 15h or 13h.
 (mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.1, 6.5.4.2.10, 6.5.4.2.8)
 A fully formatted DVD-RW can be recognized by 23h READ FORMAT CAPACITIES. The
 Descriptor Type of the Current/Maximum Capacity Descriptor is 10b ("Formatted
@@ -744,7 +744,7 @@ Elsewise the media is in Intermediate state. See below.
 A partly formatted DVD-RW can be recognized by 23h READ FORMAT CAPACITIES. The
 Descriptor Type of the Current/Maximum Capacity Descriptor is 10b ("Formatted
 Media") and the Number Of Blocks with formats 00h, 10h or 15h is larger than the
-currently formatted size, resp. more than 0 blocks are offered with Format
+currently formatted size, or more than 0 blocks are offered with Format
 Types 13h or 11h.
 (mmc5r03c.pdf, 6.24.3.2.1, 6.24.3.3)
 

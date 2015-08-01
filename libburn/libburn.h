@@ -821,7 +821,7 @@ int burn_abort_pacifier(void *handle, int patience, int elapsed);
 void burn_set_verbosity(int level);
 
 /* ts A91111 */
-/** Enable resp. disable logging of SCSI commands.
+/** Enable or disable logging of SCSI commands.
     This call can be made at any time - even before burn_initialize().
     It is in effect for all active drives and currently not very thread
     safe for multiple drives.
@@ -953,7 +953,7 @@ void burn_allow_untested_profiles(int yes);
                   Use with driveno 0 only.
     @param adr    The device file address of the desired drive. Either once
                   obtained by burn_drive_d_get_adr() or composed skillfully by
-                  application resp. its user. E.g. "/dev/sr0".
+                  application or its user. E.g. "/dev/sr0".
                   Consider to preprocess it by burn_drive_convert_fs_adr().
     @param load   Nonzero to make the drive attempt to load a disc (close its
                   tray door, etc).
@@ -1015,7 +1015,7 @@ int burn_drive_scan(struct burn_drive_info *drive_infos[],
                  function is called, and the amount of automatically provided
                  drive shutdown : 
                   0= drive must be ungrabbed and BURN_DRIVE_IDLE
-                  1= try to release drive resp. accept BURN_DRIVE_GRABBING 
+                  1= try to release drive even if in state BURN_DRIVE_GRABBING 
                  Use these two only. Further values are to be defined.
     @return 1 on success, 2 if drive was already forgotten,
             0 if not permissible, <0 on other failures, 
@@ -1291,8 +1291,8 @@ int burn_drive_get_start_end_lba(struct burn_drive *drive,
     burn_drive_get_start_end_lba(d, &start_lba, &end_lba, 0),
     burn_lba_to_msf(start_lba, &m_li, &s_li, &f_li) and
     burn_lba_to_msf(end_lba, &m_lo, &s_lo, &f_lo).
-    @param m_li  "minute" part of ATIP lead-in resp. start_lba
-    @param s_li  "second" of lead-in resp. start_lba
+    @param m_li  "minute" part of ATIP lead-in or start_lba
+    @param s_li  "second" of lead-in or start_lba
     @param f_li  "frame" of lead-in
     @param m_lo  "minute" part of ATIP lead-out
     @param s_lo  "second" of lead-out
@@ -1423,7 +1423,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 /* ts B10525 */
 /** Tells whether a previous attempt to determine the Next Writeable Address
     of the upcomming track reveiled that the READ TRACK INFORMATION Damage Bit
-    is set for this track, resp. that no valid writable address is available. 
+    is set for this track and that no valid writable address is available. 
     See MMC-5 6.27.3.7 Damage Bit, 6.27.3.11 NWA_V (NWA valid)
     @param d     The drive to query.
     @param flag  Bitfield for control purposes (unused yet, submit 0)
@@ -2116,8 +2116,7 @@ int burn_session_set_cdtext_par(struct burn_session *s,
          ""
 
 /* ts B11206 */
-/** Obtain the current settings as of burn_session_set_cdtext_par() resp.
-    by default.
+/** Obtain the current settings as of burn_session_set_cdtext_par() 
     @param s            Session which to inquire
     @param char_codes   Will return Character Codes for block 0 to 7
     @param copyrights   Will return Copyright bytes for block 0 to 7
@@ -2537,7 +2536,7 @@ int burn_track_clear_indice(struct burn_track *t, int flag);
 /* ts B20110 */
 /** Define whether a pre-gap shall be written before the track and how many
     sectors this pre-gap shall have. A pre-gap is written in the range of track
-    index 0 and contains zeros resp. silence. No bytes from the track source
+    index 0 and contains zeros (audio silence). No bytes from the track source
     will be read for writing the pre-gap.
     This setting affects only CD SAO write runs.
     The first track automatically gets a pre-gap of at least 150 sectors. Its
@@ -2854,7 +2853,7 @@ void burn_fifo_next_interval(struct burn_source *fifo, int *interval_min_fill);
     data have arrived or until it becomes clear that this will not happen.
     The call may be repeated with increased bufsize. It will always yield
     the bytes beginning from the first one in the fifo.
-    @param fifo     The fifo object to inquire resp. start
+    @param fifo     The fifo object to start and to inquire
     @param buf      Pointer to memory of at least bufsize bytes where to
                     deliver the peeked data.
     @param bufsize  Number of bytes to peek from the start of the fifo data
@@ -2893,7 +2892,7 @@ int burn_fifo_fill(struct burn_source *fifo, int fill, int flag);
 int burn_track_set_size(struct burn_track *t, off_t size);
 
 
-/** Tells how many sectors a track will have on disc, resp. already has on
+/** Tells how many sectors a track will have on disc, or already has on
     disc. This includes offset, payload, tail, and post-gap, but not pre-gap.
     The result is NOT RELIABLE with tracks of undefined length
 */
@@ -2989,7 +2988,7 @@ int burn_write_opts_set_write_type(struct burn_write_opts *opts,
     made, i.e. immediately before burn_disc_write().
     @param opts The nearly complete write opts to change
     @param disc The already composed session and track model
-    @param reasons This text string collects reasons for decision resp. failure
+    @param reasons This text string collects reasons for decision or failure
     @param flag Bitfield for control purposes:
                 bit0= do not choose type but check the one that is already set
                 bit1= do not issue error messages via burn_msgs queue
@@ -4063,16 +4062,17 @@ int burn_drive_get_drive_role(struct burn_drive *d);
     will get role 5.
     Candidates are drive addresses of the form stdio:/dev/fd/# , where # is
     the integer number of an open file descriptor. If this descriptor was
-    opened read-only resp. write-only, then it gets role 4 resp. role 5.
+    opened read-only or write-only, then it gets role 4 or role 5,
+    respectively.
     Other paths may get tested by an attempt to open them for read-write
-    (role 2) resp. read-only (role 4) resp. write-only (role 5). See bit1.
+    (role 2) or read-only (role 4) or write-only (role 5). See bit1.
     @param allowed      Bitfield for control purposes:
                         bit0= Enable roles 4 and 5 for drives which get
                               aquired after this call
                         bit1= with bit0:
                               Test whether the file can be opened for
-                              read-write resp. read-only resp. write-only.
-                              Classify as roles 2 resp. 4 resp. 5.
+                              read-write, read-only, or write-only.
+                              Classify as roles 2, 4, 5.
                         bit2= with bit0 and bit1:
                               Classify files which cannot be opened at all
                               as role 0 : useless dummy.
@@ -4104,7 +4104,7 @@ void burn_allow_drive_role_4(int allowed);
                    The string must be shorter than BURN_DRIVE_ADR_LEN.
     @param drive_role2  Role as burn_drive_get_drive_role() would attribute
                    to adr2 if it was a drive. Use value 2 for checking track
-                   sources resp. pseudo-drive addresses without "stdio:".
+                   sources or pseudo-drive addresses without "stdio:".
                    Use 1 for checking drive addresses including those with
                    prefix "stdio:".
     @return        1= adr2 leads to d1 , 0= adr2 seems not to lead to d1,
@@ -4243,7 +4243,7 @@ BURN_END_DECLS
 
 /* ts A91112 */
 /* Do not probe CD modes but declare only data and audio modes supported.
-   For other modes resp. real probing one has to call
+   For other modes or real probing one has to call
    burn_drive_probe_cd_write_modes().
 
 */

@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.4.1, May 17, 2015"
+.TH CDRSKIN 1 "Version 1.4.1, Aug 01, 2015"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -103,11 +103,11 @@ This information is also used by the operating systems' CD-ROM read drivers.
 .PP
 In general there are two types of tracks: data and audio. They differ in
 sector size, throughput and readability via the systems' CD-ROM drivers
-resp. by music CD players. With DVD and BD there is only type data.
+and by music CD players. With DVD and BD there is only type data.
 .br
 If not explicitly option -audio is given, then any track is burned as type
 data, unless the track source is a file with suffix ".wav" or ".au" and has a
-header part which identifies it as MS-WAVE resp. SUN Audio with suitable
+header part which identifies it as MS-WAVE or SUN Audio with suitable
 parameters. Such files are burned as audio tracks by default.
 .PP
 While audio tracks just contain a given time span of acoustic vibrations,
@@ -1315,8 +1315,8 @@ and eventually override the list of other speed offers.
 .br
 Only if the drive reports contradicting speed information there will appear
 "Write speed 0" or "Write speed-1", which tell the outcome of speed selection
-by options speed=0 resp. speed=-1, if it deviates from "Write speed L"
-resp. "Write speed H".
+by options speed=0 or speed=-1, if it deviates from "Write speed L"
+or "Write speed H", respectively.
 .TP
 .BI \--long_toc
 Like option -toc but marking each session start by a line "first: X last: Y"
@@ -1373,7 +1373,7 @@ exact track size prediction is demanded by the write mode.
 .br
 This was the fallback from bad old times when cdrskin was unable to burn
 in mode -tao . It came back with minimally blanked DVD-RW which allow no
-Incremental Streaming (-tao) resp. with explicitly selected write mode -sao
+Incremental Streaming (-tao) and with explicitly selected write mode -sao
 for best DVD-ROM compatibility.
 .br
 If the track source delivers less bytes than announced then the missing ones
@@ -1418,6 +1418,30 @@ or BD-RE byte_offset must be aligned to 2 kiB blocks, but better is 32 kiB.
 With DVD-RW 32 kiB alignment is mandatory.
 .br
 Other media are not suitable for this option yet.
+.TP
+.BI modesty_on_drive= <mode>[:min_percent=<num>][:max_percent=<num>]
+Mode 1 keeps the program from trying to write to the burner drive while its
+buffer is in danger to be filled by more than max_percent. If this filling is
+exceeded then the program will wait until the filling is at most min_percent.
+.br
+This can ease the load on operating system and drive controller and thus help
+with achieving better input bandwidth if disk and burner are not on independent
+controllers (like hda and hdb). Unsufficient input bandwidth is indicated by
+output "(fifo  xy%)" of option -v if xy is lower than 90 for some time.
+modesty_on_drive= might hamper output bandwidth and cause buffer underruns.
+.br
+To have max_percent larger than the burner's best actual
+buffer fill has the same effect as min_percent==max_percent. Some burners
+do not use their full buffer with all media types. Watch output "[buf xy%]"
+of option -v to get an impression of the actual buffer usage. Some burners
+are not suitable because they report buffer fill with granularity too large
+in size or time. 
+.br
+Mode 0 disables this feature. Mode -1 keeps it unchanged. Default is:
+.br
+modesty_on_drive=0:min_percent=65:max_percent=95
+.br
+Percentages are permissible in the range of 25 to 100.
 .PP
 Alphabetical list of options which are only intended for very special
 situations and not for  normal use:
@@ -1532,30 +1556,6 @@ Try to ignore any signals rather than to abort the program. This is not a
 very good idea. You might end up waiting a very long time for cdrskin
 to finish.
 .TP
-.BI modesty_on_drive= <mode>[:min_percent=<num>][:max_percent=<num>]
-Mode 1 keeps the program from trying to write to the burner drive while its
-buffer is in danger to be filled by more than max_percent. If this filling is
-exceeded then the program will wait until the filling is at most min_percent.
-.br
-This can ease the load on operating system and drive controller and thus help
-with achieving better input bandwidth if disk and burner are not on independent
-controllers (like hda and hdb). Unsufficient input bandwidth is indicated by
-output "(fifo  xy%)" of option -v if xy is lower than 90 for some time.
-modesty_on_drive= might hamper output bandwidth and cause buffer underruns.
-.br
-To have max_percent larger than the burner's best actual
-buffer fill has the same effect as min_percent==max_percent. Some burners
-do not use their full buffer with all media types. Watch output "[buf xy%]"
-of option -v to get an impression of the actual buffer usage. Some burners
-are not suitable because they report buffer fill with granularity too large
-in size or time. 
-.br
-Mode 0 disables this feature. Mode -1 keeps it unchanged. Default is:
-.br
-modesty_on_drive=0:min_percent=65:max_percent=95
-.br
-Percentages are permissible in the range of 25 to 100.
-.TP
 .BI \--no_abort_handler
 On signals exit even if the drive is in busy state. This is not a very good
 idea. You might end up with a stuck drive that refuses to hand out the media.
@@ -1602,7 +1602,7 @@ This setting affects only CD SAO write runs.
 .BI sao_pregap= off|number
 Define whether a pre-gap shall be written before the track and how many
 sectors this pre-gap shall have. A pre-gap is written in the range of track
-index 0 and contains zeros resp. silence. No bytes from the track source
+index 0 and contains zeros. No bytes from the track source
 will be read for writing the pre-gap.
 .br
 This setting affects only CD SAO write runs.

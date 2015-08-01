@@ -244,7 +244,7 @@ int libburner_aquire_by_driveno(int *driveno)
 	before accessing any drives again.
 
 	In both cases you have to be aware that the desired drive might get
-	aquired in the meantime by another user resp. libburn process.
+	aquired in the meantime by another user or libburn process.
 	*/
 
 	/* We already made our choice via command line. (default is 0)
@@ -488,7 +488,7 @@ int libburner_payload(struct burn_drive *drive,
 
 	  /* Convert this filedescriptor into a burn_source object */
 	  data_src = NULL;
-	  if (fd>=0)
+	  if (fd >= 0)
 	  	data_src = burn_fd_source_new(fd, -1, fixed_size);
 	  if (data_src == NULL) {
 		fprintf(stderr,

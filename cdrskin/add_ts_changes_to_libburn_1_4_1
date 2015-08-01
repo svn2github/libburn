@@ -18,7 +18,7 @@ set -x
 # Both binaries are static in respect to libburn.
 #
 # The script is to be run in the directory above the toplevel
-# directory of libburn resp. cdrskin development.
+# directory of libburn (or cdrskin) development.
 #
 
 # The top level directory in the SVN snapshot is named

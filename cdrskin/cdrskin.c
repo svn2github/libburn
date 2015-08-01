@@ -23,7 +23,7 @@ The implementation of an option would probably consist of
 - necessary structure members for structs CdrpreskiN and/or CdrskiN
 - code in Cdrpreskin_setup() and  Cdrskin_setup() which converts
   argv[i] into CdrpreskiN/CdrskiN members (or into direct actions)
-- removal of option from ignore list "ignored_partial_options" resp.
+- removal of option from ignore list "ignored_partial_options" or
   "ignored_full_options" in Cdrskin_setup()
 - functions which implement the option's run time functionality
 - eventually calls of those functions in Cdrskin_run()
@@ -846,7 +846,7 @@ struct CdrfifO {
 static double Cdrtrack_minimum_sizE= 300;
 
 
-/** This structure represents a track resp. a data source */
+/** This structure represents a track and its data source */
 struct CdrtracK {
 
  struct CdrskiN *boss;
@@ -916,7 +916,7 @@ int Cdrtrack_destroy(struct CdrtracK **o, int flag);
 int Cdrtrack_set_track_type(struct CdrtracK *o, int track_type, int flag);
 
 
-/** Create a track resp. data source object.
+/** Create a track and its data source object.
     @param track Returns the address of the new object.
     @param boss The cdrskin control object (corresponds to session)
     @param trackno The index in the cdrskin tracklist array (is not constant)

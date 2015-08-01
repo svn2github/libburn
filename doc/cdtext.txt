@@ -195,7 +195,7 @@ as it is limited to 64 kB - 2.)
 
 If a text of a track (pack types 0x80 to 0x85 and 0x8e) repeats identically
 for the next track, then it may be represented by a TAB character (ASCII 9)
-for single byte texts, resp. two TAB characters for double byte texts.
+for single byte texts, and two TAB characters for double byte texts.
 (This should be used because 256 * 12 bytes is few space for 99 tracks.)
 
 The two binary bytes of pack type 0x87 are written to the first 0x87 pack of

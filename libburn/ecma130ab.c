@@ -30,7 +30,7 @@
    -------------------------------------------------------------------------
 
 
-                            RSPC resp. P- and Q-Parity
+                            RSPC , P- and Q-Parity
 
    ECMA-130 Annex A prescribes to compute the parity bytes for P-columns and
    Q-diagonals by RSPC based on a Galois Field GF(2^8) with enumerating
@@ -245,7 +245,7 @@ static unsigned char gflog[256] = {
 #ifdef Libburn_use_h_matriceS
 
 /* On my AMD 2x64 bit 3000 MHz processor h[i] costs about 7 % more time
-   than using gfpow[25-i] resp. gfpow[44-1]. I blame this on the more
+   than using gfpow[25-i] and gfpow[44-1]. I blame this on the more
    condensed data representation which slightly increases the rate of cache
    hits.
    Nevertheless this effect is very likely depending on the exact cache

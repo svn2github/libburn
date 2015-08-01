@@ -118,7 +118,7 @@ int Cdrfifo_get_cdr_counters(struct CdrfifO *o,
                              int flag);
 
 /** Inquire the eventually detected size of an eventual ISO-9660 file system
-    @return 0=no ISO resp. size detected, 1=size_in_bytes is valid
+    @return 0=no ISO size detected, 1=size_in_bytes is valid
 */
 int Cdrfifo_get_iso_fs_size(struct CdrfifO *o, double *size_in_bytes,int flag);
 

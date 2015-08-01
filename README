@@ -26,7 +26,7 @@ Obtain libburn-1.4.0.tar.gz, take it to a directory of your choice and do:
    ./configure --prefix=/usr
    make
 
-To make libburn accessible for running resp. application development,
+To make libburn accessible for running and application development,
 and to install the cdrecord compatibility binary cdrskin, do
 (as Superuser):
 
@@ -78,7 +78,7 @@ configure time by:
 This may be combined with above --enable-track-src-odirect .
 
 If it is desired that DVD DAO writing and stdio: writing get padded up to
-a full write chunk of 32k resp. 64k, then use ./configure option:
+a full write chunk of 32k or 64k, then use ./configure option:
     --enable-dvd-obs-pad
 
 Alternatively the transport of SCSI commands can be done via libcdio-0.83.
@@ -143,7 +143,7 @@ On other X/Open compliant systems there will only be pseudo drives, but no
 direct MMC operation on real CD/DVD/BD drives.
 
 For full ports to other systems we would need : login on a development machine
-resp. a live OS on CD or DVD, advise from a system person about the equivalent
+or a live OS on CD or DVD, advise from a system person about the equivalent
 of Linux sg or FreeBSD CAM, volunteers for testing of realistic use cases.
 
 We have a well tested code base for burning data and audio CDs, DVDs and BDs.

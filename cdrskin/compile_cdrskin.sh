@@ -2,7 +2,7 @@
 
 # compile_cdrskin.sh  
 # Copyright 2005 - 2015 Thomas Schmitt, scdbackup@gmx.net, GPL v2 or later
-# to be executed within  ./libburn-*  resp ./cdrskin-*
+# to be executed within  ./libburn-*  or./cdrskin-*
 
 debug_opts="-O2"
 def_opts=

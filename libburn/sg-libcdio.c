@@ -529,7 +529,7 @@ ex:;
 
 /** Tells whether libburn has the given drive in use or exclusively reserved.
     If it is "open" then libburn will eventually call sg_release() on it when
-    it is time to give up usage resp. reservation.
+    it is time to give up usage and reservation.
 */
 /** Published as burn_drive.drive_is_open() */
 int sg_drive_is_open(struct burn_drive * d)

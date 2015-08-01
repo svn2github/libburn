@@ -280,7 +280,7 @@ There are two classes of device specific suffixes:
 If a lockfile does not exist and cannot be created then this shall not keep
 a program from working on a device. But if a lockfile exists and if permissions
 or locking state do not allow to obtain a lock of the appropirate type, then
-this shall prevent any opening of device file in question resp. shall cause
+this shall prevent any opening of device file in question and shall cause
 immediate close(2) of an already opened device file.
 
 The vulnerable programs shall not start their operation before they locked a
@@ -346,7 +346,7 @@ which keeps it from being the solution to all known legitimate use cases.
 The attempt has failed to compose a waterproof locking mechanism from means of
 POSIX, FHS and from hardly documented Linux open(O_EXCL) on device files.
 The resulting mechanisms would need about 1000 lines of code and still do
-not close all gaps resp. cover the well motivated use cases.
+not close all gaps and cover the well motivated use cases.
 This attempt you see above: DDLP-A and DDLP-B.
 
 
