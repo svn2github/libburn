@@ -3466,6 +3466,9 @@ struct CdrskiN {
                          bit31  : ignore bits 0 to 30
                        */
  int modesty_on_drive;
+ int min_buffer_usec;         /* The other parameters for this function */
+ int max_buffer_usec;
+ int buffer_timeout_sec;
  int min_buffer_percent;
  int max_buffer_percent;
 
@@ -3677,6 +3680,9 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->multi= 0;
  o->cdxa_conversion= 0;
  o->modesty_on_drive= 0;
+ o->buffer_timeout_sec= 120;
+ o->min_buffer_usec= 10000;
+ o->max_buffer_usec= 100000;
  o->min_buffer_percent= 65;
  o->max_buffer_percent= 95;
  o->write_start_address= -1.0;
@@ -3973,7 +3979,8 @@ int Cdrskin_adjust_speed(struct CdrskiN *skin, int flag)
  burn_drive_set_speed(skin->drives[skin->driveno].drive,k_speed,k_speed);
  modesty= skin->modesty_on_drive;
  burn_drive_set_buffer_waiting(skin->drives[skin->driveno].drive,
-                               modesty, -1, -1, -1,
+                               modesty, skin->min_buffer_usec,
+                               skin->max_buffer_usec, skin->buffer_timeout_sec,
                                skin->min_buffer_percent,
                                skin->max_buffer_percent);
  return(1);
@@ -8793,12 +8800,12 @@ minbuf_equals:;
 
    } else if(strncmp(argv[i],"modesty_on_drive=",17)==0) {
      value_pt= argv[i]+17;
-     if(*value_pt=='0') {
+     if(*value_pt == '0' || strncmp(value_pt, "off", 3) == 0) {
        skin->modesty_on_drive= 0;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
          ClN(printf(
                "cdrskin: modesty_on_drive=0 : buffer waiting by os driver\n"));
-     } else if(*value_pt=='1') {
+     } else if(*value_pt=='1' || strncmp(value_pt, "on", 2) == 0) {
        skin->modesty_on_drive= 1;
        if(skin->verbosity>=Cdrskin_verbose_cmD)
          ClN(printf(
@@ -8826,8 +8833,10 @@ minbuf_equals:;
            return(0);
          }
          skin->min_buffer_percent= value;
-         ClN(printf("cdrskin: modesty_on_drive : %d percent min buffer fill\n",
-                skin->min_buffer_percent));
+         if(skin->verbosity >= Cdrskin_verbose_cmD)
+           ClN(printf(
+                  "cdrskin: modesty_on_drive : %d percent min buffer fill\n",
+                  skin->min_buffer_percent));
        } else if(strncmp(value_pt,"max_percent=",12)==0) {
          sscanf(value_pt+12,"%lf",&value);
          if (value<25 || value>100) {
@@ -8836,8 +8845,37 @@ minbuf_equals:;
            return(0);
          }
          skin->max_buffer_percent= value;
-         ClN(printf("cdrskin: modesty_on_drive : %d percent max buffer fill\n",
-                skin->max_buffer_percent));
+         if(skin->verbosity >= Cdrskin_verbose_cmD)
+           ClN(printf(
+                  "cdrskin: modesty_on_drive : %d percent max buffer fill\n",
+                  skin->max_buffer_percent));
+       } else if(strncmp(value_pt, "min_usec=", 9) == 0) {
+         sscanf(value_pt + 9, "%lf", &value);
+         if(value < 0)
+           value= 0;
+         skin->min_buffer_usec= value;
+         if(skin->verbosity >= Cdrskin_verbose_cmD)
+           ClN(printf(
+            "cdrskin: modesty_on_drive : %d microseconds minimum sleep time\n",
+                  skin->min_buffer_usec));
+       } else if(strncmp(value_pt,"max_usec=", 9)==0) {
+         sscanf(value_pt + 9, "%lf", &value);
+         if(value < 0)
+           value= 0;
+         skin->max_buffer_usec= value;
+         if(skin->verbosity >= Cdrskin_verbose_cmD)
+           ClN(printf(
+            "cdrskin: modesty_on_drive : %d microseconds maximum sleep time\n",
+                  skin->max_buffer_usec));
+       } else if(strncmp(value_pt,"timeout_sec=", 12)==0) {
+         sscanf(value_pt + 9, "%lf", &value);
+         if(value < 0)
+           value= 0;
+         skin->buffer_timeout_sec= value;
+         if(skin->verbosity >= Cdrskin_verbose_cmD)
+           ClN(printf(
+                  "cdrskin: modesty_on_drive : %d seconds fallback timeout\n",
+                  skin->max_buffer_usec));
        } else {
          fprintf(stderr,
                 "cdrskin: SORRY : modest_on_drive= unknown option code : %s\n",
