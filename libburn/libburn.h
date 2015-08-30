@@ -2941,7 +2941,9 @@ void burn_drive_set_speed(struct burn_drive *d, int read, int write);
     To have max_percent larger than the burner's best reported buffer fill has
     the same effect as min_percent==max_percent. Some burners do not report
     their full buffer with all media types. Some are not suitable because
-    they report their buffer fill with delay.
+    they report their buffer fill with delay. Some do not go to full speed
+    unless their buffer is full.
+
     @param d The drive to control
     @param enable 0= disable , 1= enable waiting , (-1 = do not change setting)
     @param min_usec Shortest possible sleeping period (given in micro seconds)
