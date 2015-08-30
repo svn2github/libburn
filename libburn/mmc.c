@@ -2190,7 +2190,7 @@ void mmc_read_disc_info(struct burn_drive *d)
 	if (ret <= 0)
 		return;
 
-	/* for now there is no need to inquire the variable lenght part */
+	/* for now there is no need to inquire the variable length part */
 }
 
 
@@ -3275,7 +3275,7 @@ void mmc_get_configuration(struct burn_drive *d)
 		if (alloc_len > 4096) {
 			/* MMC-5 6.6.2.1: The maximum is less than 1 KB */
 			BURN_ALLOC_MEM_VOID(msg, char, 256);
-			sprintf(msg, "Implausible lenght announcement from SCSI command GET CONFIGURATION: %d", alloc_len);
+			sprintf(msg, "Implausible length announcement from SCSI command GET CONFIGURATION: %d", alloc_len);
 	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000201a9,
 			   LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_ZERO,
 			   msg, 0, 0);

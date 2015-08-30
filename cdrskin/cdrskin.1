@@ -237,7 +237,7 @@ of option
 .B --grow_overwriteable_iso .
 Without this option or without an ISO-9660 filesystem image present
 on media, -toc does not return information about the media content and
-media get treated as blank regardless wether they hold data or not.
+media get treated as blank regardless whether they hold data or not.
 .br
 Currently there is no difference between -sao and -tao. If ever, then -tao
 will be the mode which preserves the current behavior.
@@ -360,7 +360,7 @@ Announces that the subsequent tracks are to be burned as audio.
 The source is supposed to be uncompressed headerless PCM, 44100 Hz, 16 bit,
 stereo. For little-endian byte order (which is usual on PCs) use option
 -swab. Unless marked explicitly by option -data, input files with suffix
-".wav" are examined wether they have a header in MS-WAVE format confirming
+".wav" are examined whether they have a header in MS-WAVE format confirming
 those parameters and eventually raw audio data get extracted and burned as
 audio track. Same is done for suffix ".au" and SUN Audio.
 .br
@@ -1404,7 +1404,7 @@ and print its content in the human readable format that is described
 with option input_sheet_v07t=.
 .br
 The program run ends immediately thereafter.
-No drive scan will happen and no drive will be aquired.
+No drive scan will happen and no drive will be acquired.
 .br
 To avoid the cdrskin start message in the output, run:
   cdrskin textfile_to_v07t=cdtext.dat | grep -v '^cdrskin'
@@ -1526,7 +1526,7 @@ fcntl(2).
 .TP
 .BI \--drive_not_o_excl
 Linux specific: Do not ask the operating system to prevent opening busy drives.
-Wether this leads to senseful behavior depends on operating system and kernel.
+Whether this leads to senseful behavior depends on operating system and kernel.
 .TP
 .BI drive_scsi_dev_family= sr | scd | sg
 Linux specific: Select a SCSI device file family to be scanned for by
@@ -1543,7 +1543,7 @@ Linux specific:
 Try to exclusively reserve device files /dev/srN, /dev/scdM, /dev/sgK of drives.
 This would be helpful to protect against collisions with program growisofs.
 Regrettably on Linux kernel 2.4 with ide-scsi emulation this seems not to
-work. Wether it becomes helpful with new Linux systems has to be evaluated.
+work. Whether it becomes helpful with new Linux systems has to be evaluated.
 .TP
 .BI \--fifo_disable
 Disable fifo despite any fs=.

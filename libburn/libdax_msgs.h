@@ -610,7 +610,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x000201a6 (FATAL,HIGH)   = Lost connection to drive
  0x000201a7 (FAILURE,HIGH) = SCSI command yielded host problem
  0x000201a8 (FAILURE,HIGH) = SCSI command yielded driver problem
- 0x000201a9 (FAILURE,HIGH) = Implausible lenght from GET CONFIGURATION
+ 0x000201a9 (FAILURE,HIGH) = Implausible length from GET CONFIGURATION
 
 
  libdax_audioxtr:
