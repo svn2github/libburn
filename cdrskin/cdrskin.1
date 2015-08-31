@@ -130,7 +130,7 @@ In general there are two approaches for writing media:
 .br
 A permissive mode depicted by option
 .B -tao
-which needs no predicted track size and allows to make use of
+which needs no predicted track size and is able to make use of
 eventual multi-session capabilities.
 .br
 A more restrictive mode
@@ -156,8 +156,8 @@ read-only. Closing is done automatically unless option
 is given which keeps the media appendable.
 .br
 Write mode
--tao allows to use track sources of unpredictable length (like stdin) and
-allows to write further sessions to appendable media.
+-tao s able to use track sources of unpredictable length (like stdin) and
+to write further sessions to appendable media.
 -sao produces audio sessions with seamless tracks but needs predicted track
 sizes and cannot append sessions to media.
 .br
@@ -185,7 +185,8 @@ Used DVD-RW get into blank sequential state by option
 With DVD-R[W] two write modes may be available:
 .br
 Mode DAO has many restrictions. It does not work with
-appendable media, allows no -multi and only a single track. The size of the
+appendable media, cannot do -multi and writes only a single track.
+The size of the
 track needs to be known in advance. So either its source has to be a disk file
 of recognizable size or the size has to be announced explicitly by options
 .B tsize= 
@@ -202,8 +203,8 @@ The other mode, Incremental Streaming, is the default write mode if
 it is available and if the restrictions of DAO would prevent the job.
 Incremental Streaming may be selected explicitly by option
 .B -tao
-as it resembles much CD TAO by allowing track sources of
-unpredicted length and to keep media appendable by option
+as it resembles much CD TAO by accepting track sources of
+unpredicted length and being able to keep media appendable by option
 .B -multi . It does not work with DVD-R DL and minimally blanked DVD-RW.
 The only restriction towards CD-R[W] is the lack of support for -audio tracks.
 Multiple tracks per session are permissible.
@@ -214,7 +215,7 @@ with DVD+R[/DL] or BD-R.
 .br
 Quite deliberately write mode -sao insists in the tradition of a predicted
 track size and blank media, whereas -tao writes the tracks open ended and
-allows appendable media.
+can be applied to appendable media.
 .br
 BD-R may be formatted before first use to enable the Defect Management which
 might catch and repair some bad spots at the expense of slow speed
@@ -319,7 +320,7 @@ redirected to stderr and the stream data of a burn run will appear on stdout.
 .br
 Not good for terminals ! Redirect it.
 .br
-Pseudo-drives allow -dummy. Their reply with --tell_media_space can be utopic.
+Pseudo-drives support -dummy. Their reply with --tell_media_space can be utopic.
 -dummy burn runs touch the file but do not modify its data content.
 .br
 Note: --allow_emulated_drives is restricted to stdio:/dev/null if cdrskin
@@ -426,7 +427,7 @@ Format a DVD-RW to "Restricted Overwrite". The user should bring some patience.
 .TP
 format_overwrite_quickest
 Like format_overwrite without creating a 128 MiB trailblazer session.
-Leads to "intermediate" state which only allows sequential write
+Leads to "intermediate" state which only supports sequential write
 beginning from address 0.
 The "intermediate" state ends after the first session of writing data.
 .TP
@@ -445,7 +446,7 @@ format_defectmgt
 Format DVD-RAM or BD to reserve the default amount of spare blocks for
 defect management.
 .br
-The following format_defectmgt_* allow to submit user wishes which
+The following format_defectmgt_* enable the user to submit wishes which
 nevertheless have to match one of the available formats. These formats are
 offered by the drive after examining the media.
 .TP
@@ -481,7 +482,7 @@ Unformatted blank BD-R will be left unformatted.
 format_defectmgt_payload_<size>
 Format DVD-RAM or BD. The text after "format_defectmgt_payload_" gives a
 number of bytes, eventually with suffixes "s", "k", "m". The largest number
-of spare blocks will be chosen which allows at least the given payload size.
+of spare blocks will be chosen which enables at least the given payload size.
 .TP
 format_by_index_<number>
 Format DVD-RW, DVD+RW, DVD-RAM or BD.
@@ -832,7 +833,7 @@ This mode also applies pro-forma to overwriteable media
 Mode -tao can be used with track sources of unpredictable size, like standard
 input or named pipes. It is also the only mode that can be used for writing
 to appendable media which already hold data. With unformatted DVD-R[W] it is
-the only mode which allows -multi.
+the only mode which can keep media appendable by option -multi.
 .br
 Mode -tao is not usable for minimally blanked DVD-RW and for DVD-R DL.
 .TP
@@ -927,9 +928,9 @@ startup files. Level 3 is for debugging and useful mainly in conjunction with
 somebody who had a look into the program sourcecode.
 .TP
 .BI \-V
-Enable logging of SCSI commands to stderr. This allows expert examination
-of the interaction between libburn and the drive. The commands are specified
-in SCSI-3 standards SPC, SBC, MMC.
+Enable logging of SCSI commands to stderr. This is helpful for expert
+examination of the interaction between libburn and the drive.
+The commands are specified in SCSI-3 standards SPC, SBC, MMC.
 .TP
 .BI \-waiti
 Wait until input data is available at stdin or EOF occurs at stdin.
@@ -1372,8 +1373,8 @@ source cannot deliver a size prediction and no tsize= was specified and an
 exact track size prediction is demanded by the write mode.
 .br
 This was the fallback from bad old times when cdrskin was unable to burn
-in mode -tao . It came back with minimally blanked DVD-RW which allow no
-Incremental Streaming (-tao) and with explicitly selected write mode -sao
+in mode -tao . It came back with minimally blanked DVD-RW, which cannot do
+Incremental Streaming (-tao), and with explicitly selected write mode -sao
 for best DVD-ROM compatibility.
 .br
 If the track source delivers less bytes than announced then the missing ones
@@ -1383,7 +1384,7 @@ will be filled with zeros.
 Prepare a recording session, do not perform it but rather inquire the
 maximum number of 2048 byte data blocks which may be written in
 the current state of media with the prepared setup. So this option disables
-recording of data. It does allow blanking, though, and will measure space
+recording of data. It does not disable blanking, though, and will measure space
 afterwards.
 .br
 It is not mandatory to give track sources but their nature may influence
@@ -1532,7 +1533,7 @@ Whether this leads to senseful behavior depends on operating system and kernel.
 Linux specific: Select a SCSI device file family to be scanned for by
 options --devices, --device_links and -scanbus.
 Normally this is /dev/sgN on kernel versions < 2.6 and /dev/srN
-on kernels >= 2.6 . This option allows to explicitly override that default
+on kernels >= 2.6 . This option explicitly overrides that default
 in order to meet other programs at a common device file for each drive.
 On kernel 2.4 families sr and scd will find no drives.
 .br
