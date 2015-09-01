@@ -83,7 +83,7 @@ burn_os_is_2k_seekrw()  tells whether the given path leads to a file object
 
 burn_os_stdio_capacity()  estimates the emulated media space of stdio-drives.
 
-burn_os_open_track_src()  opens a disk file in a way that allows best
+burn_os_open_track_src()  opens a disk file in a way that offers best
                         throughput with file reading and/or SCSI write command
                         transmission.
 

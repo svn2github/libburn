@@ -128,10 +128,10 @@ the archivers afio and star. Not suitable seems GNU tar.
 .br
 In general there are two approaches for writing media:
 .br
-A permissive mode depicted by option
+A permissive mode selected by option
 .B -tao
-which needs no predicted track size and is able to make use of
-eventual multi-session capabilities.
+which needs no predicted track size and can use
+multi-session capabilities if offered by drive and medium.
 .br
 A more restrictive mode
 .B -sao
@@ -156,7 +156,7 @@ read-only. Closing is done automatically unless option
 is given which keeps the media appendable.
 .br
 Write mode
--tao s able to use track sources of unpredictable length (like stdin) and
+-tao is able to use track sources of unpredictable length (like stdin) and
 to write further sessions to appendable media.
 -sao produces audio sessions with seamless tracks but needs predicted track
 sizes and cannot append sessions to media.

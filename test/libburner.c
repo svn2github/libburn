@@ -101,7 +101,7 @@ static int current_profile= -1;
 static char current_profile_name[80]= {""};
 
 
-/* Some in-advance definitions to allow a more comprehensive ordering
+/* Some in-advance definitions make possible a more comprehensive ordering
    of the functions and their explanations in here */
 int libburner_aquire_by_adr(char *drive_adr);
 int libburner_aquire_by_driveno(int *drive_no);
@@ -434,7 +434,7 @@ int libburner_format(struct burn_drive *drive)
     In case of external signals expect abort handling of an ongoing burn to
     last up to a minute. Wait the normal burning timespan before any kill -9.
 
-    For simplicity, this function allows memory leaks in case of failure.
+    For simplicity, this function has memory leaks in case of failure.
     In apps which do not abort immediately, one should clean up better.
 */
 int libburner_payload(struct burn_drive *drive, 

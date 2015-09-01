@@ -174,8 +174,8 @@ The project components (list subject to growth, hopefully):
            content.
 
 - libisoburn is an add-on to libburn and libisofs which coordinates both and
-           also allows to grow ISO-9660 filesystem images on multi-session
-           media as well as on overwriteable media via the same API.
+           also can grow ISO-9660 filesystem images on multi-session media
+           as well as on overwriteable media via the same API.
            All media peculiarities are handled automatically.
            It also contains the methods of command oriented application
            xorriso and offers them via a C language API.
@@ -355,7 +355,7 @@ Project history as far as known to me:
 - 27th Apr 2008 libisofs-0.6.4 can now read data file content from images
   and can map pieces of disk files onto image files. Image directory iteration
   has been enhanced. Input data streams and extended information have been
-  exposed in the API to allow future development.
+  exposed in the API to enable future development.
 
 - 29th Apr 2008 libisoburn-0.1.4 was made more efficient with reading of
   image tree nodes. It now depends on libisofs-0.6.4 and libburn-0.4.4.
@@ -369,7 +369,8 @@ Project history as far as known to me:
   type with automatic media state recognition.
 
 - 17th May 2008 an old bug with DVD-RAM and now with BD-RE is fixed by
-  libburn-0.4.8 to allow libisoburn emulation of multisession on those media.
+  libburn-0.4.8. So libisoburn can now perform emulation of multisession
+  on those media.
 
 - 19th May 2008 libisoburn-0.1.6 brings better table-of-content emulation
   on overwriteble media and disk files.
@@ -394,8 +395,8 @@ Project history as far as known to me:
 - 24th Aug 2008 libisoburn/xorriso-0.2.4 introduces a media readability check
   with data retrieval option.
 
-- 18th Sep 2008 libisofs-0.6.8 supports ISO 9660 Level 3 which allows very
-  large data files in the image.
+- 18th Sep 2008 libisofs-0.6.8 supports ISO 9660 Level 3 which can represent
+  very large data files in the image.
 
 - 20th Sep 2008 libisoburn/xorriso-0.2.6 takes into respect the new Level 3
   capabilities of libisofs. 
@@ -413,7 +414,7 @@ Project history as far as known to me:
   of an aborted burn run.
 
 - 26th Nov 2008 libisofs-0.6.12 can produce a ISOLINUX isohybrid MBR on the fly
-  and allows to produce ISO images which resemble old mkisofs images.
+  and can produce ISO images which resemble old mkisofs images.
 
 - 2nd Dec 2008 libisoburn-0.3.0. xorriso now is ready for exotic character
   sets, for legacy FreeBSD systems which expect an outdated Rock Ridge
@@ -425,7 +426,7 @@ Project history as far as known to me:
 
 - 9th Dec 2008 Our project received a donation from Thomas Weber.
 
-- 2nd Jan 2009 libburn-0.6.0 allows to format BD-R and to write to either
+- 2nd Jan 2009 libburn-0.6.0 learned to format BD-R and write to either
   formatted or unformatted BD-R.
 
 - 6th Jan 2009 libisoburn-0.3.2. xorriso can produce and execute commands for
@@ -448,15 +449,16 @@ Project history as far as known to me:
 
 - 13 Mar 2009 libburn-0.6.4 got a dummy adapter for SCSI/MMC command transport.
   It will show no drives and thus libburn will only be able to perform
-  operations on "stdio:" pseudo drives. Nevertheless this allowed to lift the
-  ban to build libburn on operating systems other than Linux and FreeBSD.
+  operations on "stdio:" pseudo drives. Nevertheless this was precondition
+  to lift the ban to build libburn on operating systems other than Linux
+  and FreeBSD.
 
 - 16 Mar 2009 libisoburn-0.3.6: xorriso uses RRIP version 1.10 as default 
   in order to be mountable where mkisofs images are mountable.
 
 - 17 Apr 2009 libisofs-0.6.18 introduces content filtering of data files.
-  Built-in filters allow compression to formats gzip and zisofs. External
-  filter processes allow arbitrary data conversions like encryption.
+  Built-in filters implement compression to formats gzip and zisofs. External
+  filter processes can perform arbitrary data conversions like encryption.
 
 - 19 Apr 2009 libisoburn-0.3.8 makes use of the new libisofs capability to
   perform content filtering of data files.
@@ -481,10 +483,10 @@ Project history as far as known to me:
   Affected are releases since libisoburn-0.3.2 in january 2009.
 
 - 25 Aug 2009 libisofs-0.6.22 can record MD5 checksums for the whole session
-  and for each single data file. Checksum tags allow to verify superblock and
-  directory tree before importing them.
+  and for each single data file. Checksum tags can be used to verify superblock
+  and directory tree before importing them.
 
-- 27 Aug 2009 libburn-0.7.0 allows to calm down a drive and to inquire its
+- 27 Aug 2009 libburn-0.7.0 learned to calm down a drive and to inquire its
   supported profiles. It works around some pitfalls with U3 enhanced memory
   sticks which emulate a CD-ROM.
 
@@ -518,7 +520,7 @@ Project history as far as known to me:
   provides throughput enhancements with hampered busses on Linux, and new
   API calls to log SCSI commands and to control the libburn fifo.
 
-- 09 Dec 2009 libisoburn-0.4.6 allows performance tuning of output to DVD
+- 09 Dec 2009 libisoburn-0.4.6 now offers performance tuning of output to DVD
   drives or disk files.
 
 - 26 Dec 2009 libburn-0.7.4.pl01 fixes the release tarball which was lacking
@@ -531,7 +533,7 @@ Project history as far as known to me:
   portability.
 
 - 22 Jan 2010 libburn-0.7.6 has an improved system adapter for FreeBSD,
-  fixes bugs about the generic X/Open system adapter, and allows to use
+  fixes bugs about the generic X/Open system adapter, and can use
   libcdio >= 0.83 as SCSI transport facility.
 
 - 10 Feb 2010 libisofs-0.6.28 fixes a regression about bootable images which
@@ -553,7 +555,8 @@ Project history as far as known to me:
 
 - 03 May 2010 Version 0.6.32 of libisofs is able to create ISO images with
   multiple boot images. All boot catalog parameters described in El-Torito
-  specs can be set and inquired. This allows to use GRUB boot images for EFI. 
+  specs can be set and inquired. This was needed to use GRUB boot images
+  for EFI. 
 
 - 04 May 2010 Release 0.5.6.pl00 of libisoburn makes use of the new libisofs
   capabilities about boot images.
@@ -607,11 +610,11 @@ Project history as far as known to me:
 - Mon Jan 17 2011 we go for release 1.0.0. This does not indicate a
   technological overhaul but shall emphasize the maturity of the software.
   libisofs-1.0.0 fixes a bug about the length of ECMA-119 directory names and
-  is ready to allow untranslated ECMA-119 names (violating the specs).
-  libburn-1.0.0.pl00 allows umask to create stdio-drive files with
-  rw-permissions for all. cdrskin now refuses to burn if the foreseeable size
-  exceeds media capacity
-  libisoburn-1.0.0.pl00 allows to create an ISO 9660:1999 directory tree,
+  is ready to store untranslated ECMA-119 names (violating the specs).
+  libburn-1.0.0.pl00 is now willing to create stdio-drive files with
+  rw-permissions for all, if umask really asks for it. cdrskin now refuses
+  to burn if the foreseeable size exceeds media capacity
+  libisoburn-1.0.0.pl00 can now create an ISO 9660:1999 directory tree,
   improved the emulation fidelity of command -as mkisofs, lowered the default
   abort threshold for xorriso batch mode, and increased that threshold for
   xorriso dialog mode.

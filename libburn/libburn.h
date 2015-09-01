@@ -416,13 +416,14 @@ struct burn_toc_entry
 
 
 /** Data source interface for tracks.
-    This allows to use arbitrary program code as provider of track input data.
+    This allows you to use arbitrary program code as provider of track input
+    data.
 
     Objects compliant to this interface are either provided by the application
     or by API calls of libburn: burn_fd_source_new() , burn_file_source_new(),
     and burn_fifo_source_new().
 
-    The API calls allow to use any file object as data source. Consider to feed
+    The API calls may use any file object as data source. Consider to feed
     an eventual custom data stream asynchronously into a pipe(2) and to let
     libburn handle the rest. 
     In this case the following rule applies:
@@ -499,7 +500,7 @@ struct burn_source {
 
 
 	/** Get the size of the source's data. Return 0 means unpredictable
-	    size. If application provided (*get_size) allows return 0, then
+	    size. If application provided (*get_size) might return 0, then
 	    the application MUST provide a fully functional (*set_size).
 	*/
 	off_t (*get_size)(struct burn_source *); 
@@ -1178,7 +1179,7 @@ int burn_drive_probe_cd_write_modes(struct burn_drive_info *drive_info);
     @param d      The drive to influence.
     @param flag   Bitfield for control purposes
                   bit0= become alert (else start snoozing)
-                        This is not mandatory to allow further drive operations
+                        This is not mandatory for further drive operations
     @return       1= success , 0= drive role not suitable for calming
     @since 0.7.0
 */
@@ -1530,7 +1531,7 @@ int burn_disc_get_profile(struct burn_drive *d, int *pno, char name[80]);
 /** Obtain product id and standards defined media codes.
     The product id is a printable string which is supposed to be the same
     for identical media but should vary with non-identical media. Some media
-    do not allow to obtain such an id at all. 
+    cannot provide such an id at all. 
     The pair (profile_number, product_id) should be the best id to identify
     media with identical product specifications.
     The reply parameters media_code1 and media_code2 can be used with
@@ -3138,8 +3139,8 @@ int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
 
 
 /* ts A61222 */
-/** Sets a start address for writing to media and write modes which allow to
-    choose this address at all (for now: DVD+RW, DVD-RAM, formatted DVD-RW).
+/** Sets a start address for writing to media and write modes which are able
+    to choose this address at all (for now: DVD+RW, DVD-RAM, formatted DVD-RW).
     now). The address is given in bytes. If it is not -1 then a write run
     will fail if choice of start address is not supported or if the block
     alignment of the address is not suitable for media and write mode.
@@ -3401,7 +3402,7 @@ int burn_drive_free_speedlist(struct burn_speed_descriptor **speed_list);
 */
 struct burn_multi_caps {
 
-	/* Multi-session capability allows to keep the media appendable after
+	/* Multi-session capability can keep the media appendable after
 	   writing a session. It also guarantees that the drive will be able
 	   to predict and use the appropriate Next Writeable Address to place
 	   the next session on the media without overwriting the existing ones.
@@ -3414,7 +3415,7 @@ struct burn_multi_caps {
 	*/
 	int multi_session;
 
-	/* Multi-track capability allows to write more than one track source
+	/* Multi-track capability can write more than one track source
 	   during a single session. The written tracks can later be found in
 	   libburn's TOC model with their start addresses and sizes.
 	    1= multiple tracks per session are allowed
@@ -3422,7 +3423,7 @@ struct burn_multi_caps {
 	*/
 	int multi_track;
 
-	/* Start-address capability allows to set a non-zero address with
+	/* Start-address capability can set a non-zero address with
 	   burn_write_opts_set_start_byte(). Eventually this has to respect
 	   .start_alignment and .start_range_low, .start_range_high in this
 	   structure.
@@ -3524,7 +3525,7 @@ void burn_session_get_leadout_entry(struct burn_session *s,
     The result array contains *num + burn_disc_get_incomplete_sessions()
     elements. All above *num are incomplete sessions.
     Typically there is at most one incomplete session with one empty track.
-    DVD+R and BD-R seem to allow more than one track with even readable data.
+    DVD+R and BD-R seem support more than one track with even readable data.
     @param d Disc to get session array for
     @param num Returns the number of sessions in the array
     @return array of sessions
@@ -3634,7 +3635,7 @@ At runtime (via *_is_compatible()):
 
 Vreixo Formoso advises to compare the application's
 requirements of library revisions with the runtime
-library. This is to allow runtime libraries which are
+library. This is to enable runtime libraries which are
 young enough for the application but too old for
 the lib*.h files seen at compile time.
 
@@ -4059,8 +4060,8 @@ int burn_drive_get_drive_role(struct burn_drive *d);
     and drive role 5 "random access write-only".
     By default a random access file assumes drive role 2 "read-write"
     regardless whether it is actually readable or writeable.
-    If enabled, random-access file objects which recognizably allow no
-    writing will be classified as role 4 and those which allow no reading
+    If enabled, random-access file objects which recognizably permit no
+    writing will be classified as role 4 and those which permit no reading
     will get role 5.
     Candidates are drive addresses of the form stdio:/dev/fd/# , where # is
     the integer number of an open file descriptor. If this descriptor was

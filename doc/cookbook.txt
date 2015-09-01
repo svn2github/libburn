@@ -647,7 +647,7 @@ In the reply, BG Format 0 indicates unformatted media (or unsuitable media).
 (mmc5r03c.pdf 6.22.3.1.13)
 
 Formatting has to be started by command 04h FORMAT UNIT, Format Type 26h.
-Different from other format types, 26h allows to send a fantasy size of
+Different from other format types, 26h is allowed to send a fantasy size of
 0xffffffff blocks and does not require the caller to know the exact maximum
 size offered with that format.
 (mmc5r03c.pdf, 6.5 FORMAT UNIT, 6.5.4.2.14 Format Type = 26h)
@@ -753,7 +753,7 @@ be unnecessary to do any further formatting.
 But in order to make the DVD-RW surely accept its maximum number of bytes,
 partial formatting may be expanded by command 04h FORMAT UNIT, Format Type 13h,
 which is supposed to be offered by the drive in this state. This brings the
-session again into Intermediate state and thus allows expansion by sequential
+session again into Intermediate state and thus enables expansion by sequential
 writing. As with Format Type 15h it is ok to set Number Of Blocks to 0, so that
 no fixed size formatting work is done and writing can begin soon after.
 (mmc5r03c.pdf, 6.5.4.2.8 Format Type = 13h)
@@ -803,8 +803,8 @@ Two format types are relevant for DVD-RAM : 00h and 01h.
 00h offers the default size format and usually a maximum payload size format.
 Even with that maximum size payload there is hardware defect management.
 (mmc5r03c.pdf 6.5.4.2.1.2)
-01h allows to convert payload capacity into spare blocks for defect
-managment. There is no way to increase payload capacity by format 01h.
+01h can convert payload capacity into spare blocks for defect managment.
+There is no way to increase payload capacity by format 01h.
 (mmc5r03c.pdf 6.5.4.2.2.1)
 
 With BD-RE there are three format types : 00h, 30h and 31h.
@@ -978,10 +978,10 @@ DVD-RW Sequential Recording    0014h
 DVD-R/DL Sequential Recording  0015h (can only do single-session)
 
 There are two approaches for writing to sequential DVD-R[W]: DAO and
-Incremental. Not all media and drives offer Incremental which allows 
+Incremental. Not all media and drives offer Incremental which can do 
 multi-session as with CD media and does not demand a predicted track size.
-DAO seems to be the older method. It allows only one single session and
-track and it demands an exactly predicted track size.
+DAO seems to be the older method. It can only write one single session and
+track, and it demands an exactly predicted track size.
 
 - About overwriteable, blank, appendable and finalized DVD-R[W] media
 - Incremental writing
@@ -1025,7 +1025,7 @@ brings back this feature.
 -------------------------------------------------------------------------------
 Incremental writing :
 
-Incremental writing allows to produce multi-session DVDs. It is indicated
+Incremental writing can produce multi-session DVDs. It is indicated
 by feature 0021h being marked current in the reply of 46h GET CONFIGURATION.
 growisofs inquires 0021h by setting Starting Feature Number to 0x21 and
 Allocation Length to 16 in order to get only this one. The feature descriptor
@@ -1042,8 +1042,8 @@ which are returned by ACh.
 
 growisofs fetches a mode page 05h template by MODE SENSE and inserts its own
 parameters.  It sets Multi-session to 11b, unless dvd_compat is nonzero.
-libburn composes its mode page 05h from zero and allows control of
-Multi-Session by the application.
+libburn composes its mode page 05h from zero and enables the application
+to control Multi-Session.
  BUFE             Buffer Underrun protection      0=off, 1=on
  LS_V             Link size valid                 1=true
  Test Write       -dummy mode for writing         0=off, 1=on
@@ -1456,7 +1456,7 @@ eventually RRM) chosen by the format sub-type:
   10b = (RRM)
 (mmc5r03c.pdf 6.5.4.2.1.6)
 
-Format type 32h uses the same sub-types but allows to allocate non-default
+Format type 32h uses the same sub-types but can allocate non-default
 amounts of spares. Similar to BD-RE format 31h, three format descriptors are
 offered: #1: default size, #2: maximum spare area, #3: minimal spare.
 The size may be chosen within that range.

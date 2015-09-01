@@ -4515,7 +4515,8 @@ int mmc_get_write_performance(struct burn_drive *d)
 
 
 /* ts A61229 : outsourced from spc_select_write_params() */
-/* Note: Page data is not zeroed here to allow preset defaults. Thus
+/* Note: Page data is not zeroed here in order not to overwrite preset
+         defaults. Thus
            memset(pd, 0, 2 + d->mdata->write_page_length);
          is the eventual duty of the caller.
 */

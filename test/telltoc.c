@@ -71,7 +71,7 @@ static unsigned int drive_count;
 static int drive_is_grabbed = 0;
 
 
-/* Some in-advance definitions to allow a more comprehensive ordering
+/* Some in-advance definitions to make possible a more comprehensive ordering
    of the functions and their explanations in here */
 int telltoc_aquire_by_adr(char *drive_adr);
 int telltoc_aquire_by_driveno(int *drive_no, int silent);
@@ -296,15 +296,15 @@ int telltoc_media(struct burn_drive *drive)
 		/* Media appears writeable */
 		printf("Write multi  : ");
 		printf("%s multi-session , ",
-			 caps->multi_session == 1 ? "allows" : "prohibits");
+			 caps->multi_session == 1 ? "offers" : "cannot do");
 		if (caps->multi_track)
-			printf("allows multiple tracks\n");
+			printf("offers multiple tracks\n");
 		else
-			printf("enforces single track\n");
+			printf("offers only single track\n");
 		printf("Write start  : ");
 		if (caps->start_adr == 1)
 			printf(
-			"allows addresses [%.f , %.f]s , alignment=%.fs\n",
+			"offers addresses [%.f , %.f]s , alignment=%.fs\n",
 				(double) caps->start_range_low / 2048 ,
 				(double) caps->start_range_high / 2048 ,
 				(double) caps->start_alignment / 2048 );

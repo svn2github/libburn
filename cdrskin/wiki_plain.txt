@@ -23,11 +23,6 @@ About libburn API for burning CD, DVD, and BD: http://api.libburnia-project.org
 
 --------------------------------------------------------------------------
 
-For yet unsupported media types see the advice to use dvd+rw-tools at
-the end of this text.
-
---------------------------------------------------------------------------
-
 About the command line options of cdrskin:
 
 They are described in detail in [http://scdbackup.sourceforge.net/man_1_cdrskin_devel.html#OPTIONS section OPTIONS] of
@@ -61,7 +56,7 @@ Some are of general user interest, though:
 
 --------------------------------------------------------------------------
 
---devices allows the sysadmin to scan the system for possible drives
+--devices can be used by the sysadmin to scan the system for possible drives
 and displays their detected properties.
 The drives are listed one per line, with fields:
 libburn-drive-number, sysadmin-device-file, permissions, vendor, type
@@ -172,7 +167,7 @@ media with a single session and track on it. blank= invalidates ISO images.
 
 --------------------------------------------------------------------------
 
-assert_write_lba=<lba> allows to ensure that the start block address which
+assert_write_lba=<lba> ensures that the start block address which
 was used with the formatter program (e.g. mkisofs -C) matches the start block
 address which will be used by the upcoming burn.
 
@@ -220,7 +215,7 @@ With a very fat fs=# buffer (128 MB for 12x CD is not unrealistic) this
 can cause a big delay until burning finally starts and takes its due time.
 
 fifo_start_at=<num> makes cdrskin start burning after the given number of bytes
-is read rather than waiting for the FIFO to be completely full resp. the data
+is read rather than waiting for the FIFO to be completely full or the data
 stream to end. It risks a few drive buffer underruns at the beginning of burn
 - but modern drives stand this.
 

@@ -80,7 +80,7 @@
    Addition and subtraction are identical with the binary exor operator.
    Multiplication and division would demand polynomial division, e.g. by the
    euclidian algorithm. The computing path over logarithms and powers follows
-   algebra and allows to reduce the arithmetic task to table lookups, additions
+   algebra and reduces the arithmetic task to table lookups, additions
    modulo 255, and exor operations. Note that the logarithms are natural
    numbers, not polynomials. They get added or subtracted by the usual addition
    (not by exor) and their polynomial power depends on their value modulo 255.

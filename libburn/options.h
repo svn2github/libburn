@@ -46,7 +46,7 @@ struct burn_write_opts
 	                2 indicates burn_write_opts_set_obs_pad(,1)
 	             */
 
-	/* ts A61222 : Start address for media which allow a choice */
+	/* ts A61222 : Start address for media which offer a choice */
 	off_t start_byte;
 
 	/* ts A70213 : Wether to fill up the available space on media */
@@ -142,7 +142,7 @@ struct burn_read_opts
 
 	/* ts B21119 */
 	/* >>> Needs API access */
-	/** Whether to set DAP bit which allows drive to apply
+	/** Whether to set DAP bit which allows the drive to apply
 	    "flaw obscuring mechanisms like audio data mute and interpolate"
 	*/
 	unsigned int dap_bit;
