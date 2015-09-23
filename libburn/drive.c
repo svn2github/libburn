@@ -2865,7 +2865,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 		size = d->media_capacity_remaining;
 		burn_os_stdio_capacity(d->devname, 0, &size);
 		burn_drive_set_media_capacity_remaining(d, size);
-		o->start_range_high = d->media_capacity_remaining;
+		o->start_range_high = d->media_capacity_remaining - 2048;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		o->might_do_sao = 4;
 		o->might_do_tao = 2;
@@ -2880,7 +2880,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 
 		/* >>> start_range_low = file size rounded to 2048 */;
 
-		o->start_range_high = d->media_capacity_remaining;
+		o->start_range_high = d->media_capacity_remaining - 2048;
 		o->start_alignment = 2048; /* imposting a drive, not a file */
 		if (s == BURN_DISC_APPENDABLE) {
 			if (wt == BURN_WRITE_SAO || wt == BURN_WRITE_RAW)
@@ -2961,7 +2961,7 @@ int burn_disc_get_multi_caps(struct burn_drive *d, enum burn_write_types wt,
 					&num_formats);
 		if (ret == 1) {
 			if (status == BURN_FORMAT_IS_FORMATTED)
-				o->start_range_high = size;
+				o->start_range_high = size - 2048;
 			if (d->current_profile == 0x13) {
 				o->start_alignment = 32 * 1024;
 				for (i = 0; i < num_formats; i++) {
