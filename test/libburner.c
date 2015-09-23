@@ -16,6 +16,8 @@
   to serve the libburnia team as reference application. libburner.c does indeed
   define the standard way how above three gestures can be implemented and
   stay upward compatible for a good while.
+  There is another demo program, test/telltoc.c, which inspects drive, media
+  state, and media contents.
   
   Before you can do anything, you have to initialize libburn by
      burn_initialize()

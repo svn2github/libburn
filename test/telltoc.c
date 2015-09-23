@@ -14,6 +14,7 @@
   to serve the libburn team as reference application. telltoc.c does indeed
   define the standard way how above gestures can be implemented and stay upward
   compatible for a good while.
+  The burn aspects of libburn are demonstrated by program test/libburner.c .
   
   Before you can do anything, you have to initialize libburn by
      burn_initialize()
@@ -964,6 +965,6 @@ finish_libburn:;
 }
 
 /*  License and copyright aspects:
-    See libburner.c
+    See test/libburner.c
 */
 
