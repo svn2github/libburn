@@ -89,6 +89,10 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
         d->stream_recording_start= 0;
 	d->role_5_nwa = 0;
 	d->features = NULL;
+	d->drive_serial_number = NULL;
+	d->drive_serial_number_len = -1;
+	d->media_serial_number = NULL;
+	d->media_serial_number_len = -1;
 	return 1;
 }
 
@@ -704,6 +708,14 @@ int burn_drive_release_fl(struct burn_drive *d, int flag)
 	}
 
 	d->needs_sync_cache = 0; /* just to be sure */
+
+	if (d->drive_serial_number != NULL)
+		BURN_FREE_MEM(d->drive_serial_number);
+	if (d->media_serial_number != NULL)
+		BURN_FREE_MEM(d->media_serial_number);
+	d->drive_serial_number = d->media_serial_number = NULL;
+	d->drive_serial_number_len = d->media_serial_number_len = 0;
+
 	d->released = 1;
 
 	/* ts A61125 : outsourced model aspects */
@@ -3489,4 +3501,70 @@ int burn_drive_has_feature(struct burn_drive *d, int feature_code,
 	return 0;
 }
 
+
+/* ts B51016 API */
+int burn_drive_get_serial_no(struct burn_drive *d, char **sno, int *sno_len)
+{
+	int ret;
+
+	if (*sno != NULL)
+		BURN_FREE_MEM(*sno);
+	if (d->drive_serial_number_len > 0)
+		*sno_len = d->drive_serial_number_len;
+	else
+		*sno_len = 0;
+	BURN_ALLOC_MEM(*sno, char, *sno_len + 1);
+	if (d->drive_serial_number_len > 0)
+		memcpy(*sno, d->drive_serial_number, *sno_len);
+	(*sno)[*sno_len] = 0;
+	ret = 1;
+ex:
+	return ret;
+}
+
+
+/* ts B51016 API */
+int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len)
+{
+	int ret;
+
+#ifdef Libburn_enable_scsi_cmd_ABh
+	struct burn_feature_descr *feat;
+#endif
+
+	if (*sno != NULL)
+		BURN_FREE_MEM(*sno);
+	*sno = NULL;
+
+	if (d->media_serial_number_len == -1) {
+
+#ifdef Libburn_enable_scsi_cmd_ABh
+
+		if (burn_drive_has_feature(d, 0x109, &feat, 0))
+
+#ifndef Libburn_enable_scsi_cmd_ABh_pretend_currenT
+			if (feat->flags & 1) /* current */
+#endif
+
+				spc_read_media_serial_number(d);
+
+#else
+		;
+
+#endif /* ! Libburn_enable_scsi_cmd_ABh */
+
+	}
+
+	if (d->media_serial_number_len > 0)
+		*sno_len = d->media_serial_number_len;
+	else
+		*sno_len = 0;
+	BURN_ALLOC_MEM(*sno, char, *sno_len + 1);
+	if (*sno_len > 0)
+		memcpy(*sno, d->media_serial_number, *sno_len);
+	(*sno)[*sno_len] = 0;
+	ret = 1;
+ex:
+	return ret;
+}
 

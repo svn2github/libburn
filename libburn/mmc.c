@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -257,7 +257,7 @@ static unsigned char MMC_READ_CAPACITY[] =
 static unsigned char MMC_READ_DISC_STRUCTURE[] =
 	{ 0xAD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-/* ts B21125 : An alternatvie to BEh READ CD
+/* ts B21125 : An alternative to BEh READ CD
 */
 static unsigned char MMC_READ_CD_MSF[] =
 	{ 0xB9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -3225,13 +3225,31 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 				!!(descr[4] & 8), !!(descr[4] & 4),
 				!!(descr[4] & 2));
 
-		} else if (feature_code == 0x108 || feature_code == 0x10c) {
-			int i, c_limit;
+#endif /* Libburn_print_feature_descriptorS */
 
+		} else if (feature_code == 0x108 || feature_code == 0x10c) {
+			int c_limit;
+
+#ifdef Libburn_print_feature_descriptorS
+			int i;
 			fprintf(stderr, "LIBBURN_EXPERIMENTAL :     %s = ", 
 				feature_code == 0x108 ? 
 				"Drive Serial Number" : "Drive Firmware Date");
+#endif /* Libburn_print_feature_descriptorS */
+
 			c_limit = descr[3] - 2 * (feature_code == 0x10c);
+			if (feature_code == 0x108) {
+				if (d->drive_serial_number != NULL)
+					BURN_FREE_MEM(d->drive_serial_number);
+				BURN_ALLOC_MEM(d->drive_serial_number,
+						char, c_limit + 1);
+				memcpy(d->drive_serial_number, descr + 4,
+					c_limit);
+				d->drive_serial_number[c_limit] = 0;
+				d->drive_serial_number_len = c_limit;
+			}
+
+#ifdef Libburn_print_feature_descriptorS
 			for (i = 0; i < c_limit; i++)
 				if (descr[4 + i] < 0x20 || descr[4 + i] > 0x7e
 					|| descr[4 + i] == '\\')
@@ -5279,7 +5297,6 @@ ex:;
 		free(reply);
 	return ret;
 }
-
 
 
 /* ts A61021 : the mmc specific part of sg.c:enumerate_common()

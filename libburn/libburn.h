@@ -1257,6 +1257,51 @@ int burn_disc_pretend_full(struct burn_drive *drive);
 int burn_disc_pretend_full_uncond(struct burn_drive *drive);
 
 
+/* ts B51016 */
+/** Returns the Drive Serial Number as of MMC feature 108h.
+    @param d        The drive to inquire.
+    @param sno      Returns the bytes of the serial number. A trailing 0-byte
+                    is appended for convenience. MMC specifies ASCII 0x20 to
+                    0x7h as possible byte values. But given drive firmware
+                    habits there is no warranty that *sno contains no other
+                    byte values.
+                    Submit *sno as NULL or pointing to free()-able memory.
+                    Apply free() to *sno when no longer needed.
+    @param sno_len  Returns the number of valid bytes in returned *sno,
+                    not counting the appended trailing 0.
+    @return         1= success (but maybe *sno_len is 0), <= 0 severe failure
+    @since 1.4.2
+*/
+int burn_drive_get_serial_no(struct burn_drive *d, char **sno, int *sno_len);
+
+
+/* ts B51016 */
+/** Returns the Media Serial Number as of MMC feature 109h and command ABh
+    READ MEDIA SERIAL NUMBER.
+
+    Note: This call will return an empty result unless the macro
+             Libburn_enable_scsi_cmd_ABh
+          is defined at compile time.
+          This is because the command READ MEDIA SERIAL NUMBER demands
+          superuser authority on Linux, because no medium with serial number
+          could be tested yet, and because this command made one of the test
+          drives unusable until power cycle when it was executed despite
+          feature 109h was not announced as "current".
+
+    @param d        The drive to inquire.
+    @param sno      Returns the bytes of the serial number. A trailing 0-byte
+                    is appended for convenience. There is no warranty that
+                    *sno contains no other byte values.
+                    Submit *sno as NULL or pointing to free()-able memory.
+                    Apply free() to *sno when no longer needed.
+    @param sno_len  Returns the number of valid bytes in returned *sno,
+                    not counting the appended trailing 0.
+    @return         1= success (but maybe *sno_len is 0), <= 0 severe failure
+    @since 1.4.2
+*/
+int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len);
+
+
 /* ts A61021 */
 /** Reads ATIP information from inserted media. To be obtained via
     burn_drive_get_write_speed(), burn_drive_get_min_write_speed(),
@@ -4273,6 +4318,13 @@ int burn_nec_optiarc_rep_err_rate(struct burn_drive *d,
 
 #endif /* Libburn_develop_quality_scaN */
 
+
+/* Linux 3.16 problems with ABh Read Media Serial Number:
+   - as normal user lets ioctl(SG_IO) return -1 and errno = EFAULT
+   - as superuser renders LG BH16NS40 unusable until power cycle
+ #de fine Libburn_enable_scsi_cmd_ABh yes
+ #de fine Libburn_enable_scsi_cmd_ABh_pretend_currenT yes
+*/
 
 
 #endif /*LIBBURN_H*/

@@ -59,6 +59,10 @@ static unsigned char SPC_MODE_SELECT[] = { 0x55, 16, 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned char SPC_REQUEST_SENSE[] = { 0x03, 0, 0, 0, 18, 0 };
 static unsigned char SPC_TEST_UNIT_READY[] = { 0x00, 0, 0, 0, 0, 0 };
 
+#ifdef Libburn_enable_scsi_cmd_ABh
+static unsigned char SPC_READ_MEDIA_SERIAL_NUMBER[] =
+				{ 0xAB, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+#endif
 
 /* ts A70519 : An initializer for the abstract SCSI command structure */
 int scsi_init_command(struct command *c, unsigned char *opcode, int oplen)
@@ -891,6 +895,109 @@ ex:;
 	BURN_FREE_MEM(c);
 }
 
+
+#ifdef Libburn_enable_scsi_cmd_ABh
+
+/* At least on Linux kernel 3.16 the command ABh causes EFAULT if not sent
+   from the superuser.
+   For a test it may be replaced by a dummy 28h READ12 on block 0.
+   This causes no EFAULT although it sets the wrong dxfer_len 4 rather
+   than 2048. So it is indeed a permission problem and not bad alignment.
+*/
+
+/* ts B51016 */
+int spc_read_media_serial_number_al(struct burn_drive *d, int *alloc_len)
+{
+	struct buffer *buf = NULL;
+	struct command *c = NULL;
+	unsigned char *data;
+	int ret;
+
+	if (*alloc_len < 4)
+		{ret = 0; goto ex;}
+
+	BURN_ALLOC_MEM(buf, struct buffer, 1);
+	BURN_ALLOC_MEM(c, struct command, 1);
+	if (mmc_function_spy(d, "spc_read_media_serial_number") <= 0)
+		{ret = 0; goto ex;}
+/*
+ #de fine Spc_read_media_serial_number_dummY yes
+*/
+#ifdef Spc_read_media_serial_number_dummY
+
+{
+static unsigned char MMC_READ_12[] =
+                                 { 0x28, 0,  0, 0, 0, 0,  0, 0, 0, 1,  0, 0 };
+
+        scsi_init_command(c, MMC_READ_12, sizeof(MMC_READ_12));
+        c->dxfer_len = *alloc_len;
+}
+
+#else
+
+	scsi_init_command(c, SPC_READ_MEDIA_SERIAL_NUMBER,
+			 sizeof(SPC_READ_MEDIA_SERIAL_NUMBER));
+	c->dxfer_len = *alloc_len;
+	/* (Will not accept more than 32 KB anyway) */
+	c->opcode[8] = (c->dxfer_len >> 8) & 0xff;
+	c->opcode[9] = c->dxfer_len & 0xff;
+
+#endif /* ! Spc_read_media_serial_number_dummY */
+
+	c->retry = 1;
+	c->page = buf;
+	memset(c->page->data, 0, *alloc_len);
+	c->page->bytes = 0;
+	c->page->sectors = 0;
+
+	c->dir = FROM_DRIVE;
+	d->issue_command(d, c);
+
+	if (c->error)
+		{ret = 0; goto ex;}
+
+	data = c->page->data;
+
+#ifdef Spc_read_media_serial_number_dummY
+	d->media_serial_number_len = 0;
+#else
+	d->media_serial_number_len =
+		(data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[7];
+#endif
+
+	if (*alloc_len >= d->media_serial_number_len + 4) {
+		if (d->media_serial_number != NULL)
+			BURN_FREE_MEM(d->media_serial_number);
+		BURN_ALLOC_MEM(d->media_serial_number, char,
+				d->media_serial_number_len + 1);
+		if (d->media_serial_number_len > 0)
+			memcpy(d->media_serial_number, data + 4,
+				d->media_serial_number_len);
+		d->media_serial_number[d->media_serial_number_len] = 0;
+	}
+
+	*alloc_len = d->media_serial_number_len + 4;
+	ret = 1;
+ex:;
+	BURN_FREE_MEM(c);
+	BURN_FREE_MEM(buf);
+	return ret;
+}
+
+
+int spc_read_media_serial_number(struct burn_drive *d)
+{
+	int alloc_len = 4, ret;
+
+	ret = spc_read_media_serial_number_al(d, &alloc_len);
+	if (alloc_len > 4 && alloc_len <= 0x8000 && ret > 0)
+		ret = spc_read_media_serial_number_al(d, &alloc_len);
+	return ret;
+}
+
+#endif /* Libburn_enable_scsi_cmd_ABh */
+
+
 void spc_getcaps(struct burn_drive *d)
 {
 	if (mmc_function_spy(d, "getcaps") <= 0)
@@ -1554,6 +1661,8 @@ static char *scsi_command_name(unsigned int c, int flag)
 		return "BLANK";
         case 0xaa:
 		return "WRITE(12)";
+        case 0xab:
+		return "READ MEDIA SERIAL NUMBER";
         case 0xac:
 		return "GET PERFORMANCE";
         case 0xad:

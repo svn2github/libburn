@@ -23,6 +23,11 @@ void spc_sense_write_params(struct burn_drive *);
 void spc_select_write_params(struct burn_drive *,
 			     struct burn_session *, int,
 			     const struct burn_write_opts *);
+
+#ifdef Libburn_enable_scsi_cmd_ABh
+int spc_read_media_serial_number(struct burn_drive *d);
+#endif
+
 void spc_probe_write_modes(struct burn_drive *);
 void spc_request_sense(struct burn_drive *d, struct buffer *buf);
 int spc_block_type(enum burn_block_types b);
