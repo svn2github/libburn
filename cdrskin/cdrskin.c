@@ -4806,6 +4806,8 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  struct burn_drive_info *drive_info;
  int ret;
  char btldev[Cdrskin_adrleN];
+ char *sno= NULL;
+ int sno_len = 0;
 
  if(!(flag&1)) {
    if(flag&2)
@@ -4844,6 +4846,12 @@ int Cdrskin_checkdrive(struct CdrskiN *skin, char *profile_name, int flag)
  if(flag&2)
    {ret= 1; goto ex;}
 
+ burn_drive_get_serial_no(drive_info->drive, &sno, &sno_len);
+ if(sno_len > 0)
+   printf("Drive id       : '%s'\n", sno);
+ if(sno != NULL)
+   free(sno);
+ sno= NULL;
  printf("Driver flags   : %s\n","BURNFREE");
  printf("Supported modes:");
  if((drive_info->tao_block_types & (BURN_BLOCK_MODE1))
@@ -5537,6 +5545,8 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  int profile_number= 0;
  char profile_name[80], *manuf= NULL, *media_code1= NULL, *media_code2= NULL;
  char *book_type= NULL, *product_id= NULL;
+ char *sno= NULL;
+ int sno_len = 0, i;
 
  ClN(printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno));
  ret= Cdrskin_grab_drive(skin,0);
@@ -5680,6 +5690,20 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
      }
    }
  }
+
+ burn_drive_get_media_sno(drive, &sno, &sno_len);
+ if(sno_len > 0) {
+   printf("Media id:      ");
+   for(i= 0; i < sno_len && i < 1024; i++)
+     printf("%2.2X", (unsigned int) ((unsigned char *) sno)[i]);
+   if(i < sno_len)
+     printf("...");
+   printf("\n");
+ }
+ if(sno != NULL)
+   free(sno);
+ sno= NULL;
+
 
  ret= 1;
  if(flag&1)
