@@ -5225,8 +5225,10 @@ summary:
  if(ret <= 0)
    strcpy(profile_name, "media");
 
+ if(open_sessions > 0 && !have_real_open_session)
+   open_sessions--;
  printf("Media summary: %d sessions, %d tracks, %s %s\n",
-        num_sessions + open_sessions - 1 + have_real_open_session, track_count, 
+        num_sessions + open_sessions, track_count, 
         s==BURN_DISC_BLANK ? "blank" :
         s==BURN_DISC_APPENDABLE ? "appendable" :
         s==BURN_DISC_FULL ? "closed" :
