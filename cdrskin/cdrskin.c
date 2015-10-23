@@ -1700,11 +1700,15 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
 */
 {
  struct burn_track *tr;
- struct burn_source *src= NULL, *fd_src= NULL;
+ struct burn_source *src= NULL;
  double padding,lib_padding;
  int ret,sector_pad_up;
  double fixed_size;
  int source_fd;
+
+#ifdef Cdrskin_use_libburn_fifO
+ struct burn_source *fd_src= NULL;
+#endif
 
  track->trackno= trackno;
  tr= burn_track_create();
@@ -1811,8 +1815,12 @@ int Cdrtrack_add_to_session(struct CdrtracK *track, int trackno,
  burn_session_add_track(session,tr,BURN_POS_END);
  ret= 1;
 ex:
+
+#ifdef Cdrskin_use_libburn_fifO
  if(fd_src!=NULL)
    burn_source_free(fd_src);
+#endif
+
  if(src!=NULL)
    burn_source_free(src);
  return(ret);
