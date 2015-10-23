@@ -1753,12 +1753,12 @@ int scsi_show_command(unsigned char *opcode, int oplen, int dir,
 	if (flag & 1)
 		return 1;
 	if (opcode[0] == 0x2A) { /* WRITE 10 */
-		if (flag & 2)
+		if ((flag & 2) && oplen > 8)
 			fprintf(fp, "%d -> %d\n",
 				(opcode[7] << 8) | opcode[8], 
 				mmc_four_char_to_int(opcode + 2));
 	} else if (opcode[0] == 0xAA) { /* WRITE 12 */
-		if (flag & 2)
+		if ((flag & 2) && oplen > 9)
 			fprintf(fp, "%d -> %d\n",
 				mmc_four_char_to_int(opcode + 6),
 				mmc_four_char_to_int(opcode + 2));	
