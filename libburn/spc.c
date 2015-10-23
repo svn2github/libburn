@@ -128,7 +128,7 @@ int spc_test_unit_ready_r(struct burn_drive *d, int *key, int *asc, int *ascq,
 		    ((c->sense[2] & 0x0f) == 0 || (c->sense[2] & 0x0f) == 2) &&
 		    (c->sense[15] & 0x80))
 			*progress = (c->sense[16] << 8) + c->sense[17];
-		return (key == 0);
+		return (*key == 0);
 	}
 	return 1;
 }
