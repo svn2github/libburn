@@ -278,10 +278,12 @@ int burn_write_opts_set_leadin_text(struct burn_write_opts *opts,
 	if (num_packs > 0) {
 		memcpy(pack_buffer, text_packs, num_packs * 18);
 		opts->text_packs = pack_buffer;
+		pack_buffer = NULL;
 	}
 	opts->num_text_packs = num_packs;
 	ret = 1;
 ex:;
+	BURN_FREE_MEM(pack_buffer);
 	return ret;
 }
 
