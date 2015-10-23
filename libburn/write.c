@@ -2698,7 +2698,7 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 			"Invalid file descriptor with stdio pseudo-drive",
 			0, 0);
 		d->cancel = 1;
-		return 0;
+		ret = 0; goto ex;
 	}
 	d->needs_sync_cache = 0;
 	do_fsync = 0;
@@ -2726,7 +2726,7 @@ int burn_stdio_sync_cache(int fd, struct burn_drive *d, int flag)
 			LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
 			msg, errno, 0);
 		d->cancel = 1;
-		return 0;
+		ret = 0; goto ex;
 	}
 	ret = 1;
 ex:;
