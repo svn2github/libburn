@@ -48,6 +48,11 @@ int main(int argc, char **argv)
    goto help;
  }
  for(i= 1; i<argc; i++) {
+   if(strlen(argv[i]) >= 4096) {
+     fprintf(stderr,"%s: argument at position %d is much too long.\n",
+             argv[0], i);
+     exit(1);
+   }
    if(strcmp(argv[i],"-o")==0) {
      if(i>=argc-1) {
        fprintf(stderr,"%s: option -o needs a file address as argument.\n",
