@@ -6506,9 +6506,9 @@ int Cdrskin_burn_pacifier(struct CdrskiN *skin, int start_tno,
  time_to_tell= (elapsed_time>=1.0)&&(elapsed_total_time>=1.0);
  written_total_bytes= *last_count; /* to be overwritten by p.sector */
 
- if(drive_status==BURN_DRIVE_FORMATTING) {
+ if(drive_status==BURN_DRIVE_FORMATTING)
    formatting= 1;
- } else if(drive_status==BURN_DRIVE_WRITING) {
+ if(drive_status==BURN_DRIVE_WRITING) {
    ;
  } else if(drive_status==BURN_DRIVE_WRITING_LEADIN
            || drive_status==BURN_DRIVE_WRITING_PREGAP
