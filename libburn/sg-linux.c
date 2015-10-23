@@ -2391,7 +2391,6 @@ int burn_os_stdio_capacity(char *path, off_t write_start, off_t *bytes)
 
 	BURN_ALLOC_MEM(testpath, char, 4096);
 	testpath[0] = 0;
-	blocks = *bytes / 512;
 	if (stat(path, &stbuf) == -1) {
 		strcpy(testpath, path);
 		cpt = strrchr(testpath, '/');
