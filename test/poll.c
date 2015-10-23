@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 #include <assert.h>
 
 static struct burn_drive_info *drives;
@@ -62,6 +63,7 @@ int main()
 		return 1;
 	} 
 
+	memset(&newact, 0, sizeof(newact));
 	newact.sa_handler = catch_int;
 	sigaction(SIGINT, &newact, &oldact);
 	for (i = 0; i < (int) n_drives; i++) {
