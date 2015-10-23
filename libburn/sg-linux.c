@@ -383,10 +383,14 @@ static int sgio_log_cmd(unsigned char *cmd, int cmd_len, FILE *fp_in, int flag)
 	/* >>> ts B11110 : move this into scsi_log_command() */
 	if (fp == NULL && (burn_sg_log_scsi & 1)) {
 		fp= fopen("/tmp/libburn_sg_command_log", "a");
-		fprintf(fp, "\n=========================================\n");
+		if (fp != NULL)
+			fprintf(fp,
+			    "\n=========================================\n");
 	}
 
-	ret = scsi_log_command(cmd, cmd_len, NO_TRANSFER, NULL, 0, fp, flag);
+	if (fp != NULL)
+		ret = scsi_log_command(cmd, cmd_len, NO_TRANSFER, NULL, 0,
+					fp, flag);
 	if (fp_in == NULL && fp != NULL)
 		fclose(fp);
 	return ret;
