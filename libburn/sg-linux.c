@@ -378,7 +378,7 @@ static int sg_exchange_scd_for_sr(char *fname, int flag)
 static int sgio_log_cmd(unsigned char *cmd, int cmd_len, FILE *fp_in, int flag)
 {
 	FILE *fp = fp_in;
-	int ret;
+	int ret = 0;
 
 	/* >>> ts B11110 : move this into scsi_log_command() */
 	if (fp == NULL && (burn_sg_log_scsi & 1)) {
