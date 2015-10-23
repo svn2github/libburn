@@ -1893,14 +1893,15 @@ int burn_drive_adr_debug_msg(char *fmt, char *arg)
 	int ret;
 	char *msg = NULL, *msgpt;
 
-	BURN_ALLOC_MEM(msg, char, 4096);
-	msgpt = msg;
-	if(arg != NULL)
-		sprintf(msg, fmt, arg);
-	else
-		msgpt = fmt;
 	if(libdax_messenger == NULL)
 		return 0;
+	if(arg != NULL) {
+		BURN_ALLOC_MEM(msg, char, 4096);
+		msgpt = msg;
+		sprintf(msg, fmt, arg);
+	} else {
+		msgpt = fmt;
+	}
 	ret = libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
 				msgpt, 0, 0);
