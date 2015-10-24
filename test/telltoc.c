@@ -245,7 +245,7 @@ int telltoc_media(struct burn_drive *drive)
 	off_t available = 0;
 	enum burn_disc_status s;
 	char profile_name[80], speed_unit[40];
-	struct burn_multi_caps *caps;
+	struct burn_multi_caps *caps = NULL;
 	struct burn_write_opts *o = NULL;
 
 	printf("Media current: ");
@@ -380,6 +380,8 @@ int telltoc_media(struct burn_drive *drive)
 	}
 	printf("Speed unit 1x: %s\n", speed_unit);
 
+	if (caps != NULL)
+		burn_disc_free_multi_caps(&caps);
 	return 1;
 }
 
