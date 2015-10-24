@@ -1,6 +1,6 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2011 Thomas Schmitt <scdbackup@gmx.net> */
+/* Copyright (C) 2005 - 2015 Thomas Schmitt <scdbackup@gmx.net> */
 /* Provided under GPL, see also "License and copyright aspects" at file end */
 
 
@@ -435,27 +435,30 @@ int libburner_format(struct burn_drive *drive)
 
     In case of external signals expect abort handling of an ongoing burn to
     last up to a minute. Wait the normal burning timespan before any kill -9.
-
-    For simplicity, this function has memory leaks in case of failure.
-    In apps which do not abort immediately, one should clean up better.
 */
 int libburner_payload(struct burn_drive *drive, 
 		      char source_adr[][4096], int source_adr_count,
 		      int multi, int simulate_burn, int all_tracks_type)
 {
-	struct burn_source *data_src, *fifo_src[99];
-	struct burn_disc *target_disc;
-	struct burn_session *session;
-	struct burn_write_opts *burn_options;
+	struct burn_source *data_src = NULL, *fifo_src[99];
+	struct burn_disc *target_disc = NULL;
+	struct burn_session *session = NULL;
+	struct burn_write_opts *burn_options = NULL;
 	enum burn_disc_status disc_state;
 	struct burn_track *track, *tracklist[99];
 	struct burn_progress progress;
 	time_t start_time;
 	int last_sector = 0, padding = 0, trackno, unpredicted_size = 0, fd;
 	int fifo_chunksize = 2352, fifo_chunks = 1783; /* ~ 4 MB fifo */
+	int ret;
 	off_t fixed_size;
 	char *adr, reasons[BURN_REASONS_LEN];
 	struct stat stbuf;
+
+	for (trackno = 0 ; trackno < source_adr_count; trackno++) {
+		fifo_src[trackno] = NULL;
+		tracklist[trackno] = NULL;
+	}
 
 	if (all_tracks_type != BURN_AUDIO) {
 		all_tracks_type = BURN_MODE1;
@@ -498,7 +501,7 @@ int libburner_payload(struct burn_drive *drive,
 		if(errno!=0)
 			fprintf(stderr,"(Most recent system error: %s )\n",
 				strerror(errno));
-		return 0;
+		{ret = 0; goto ex;}
 	  }
 	  /* Install a fifo object on top of that data source object */
 	  fifo_src[trackno] = burn_fifo_source_new(data_src,
@@ -506,7 +509,7 @@ int libburner_payload(struct burn_drive *drive,
 	  if (fifo_src[trackno] == NULL) {
 		fprintf(stderr,
 			"FATAL: Could not create fifo object of 4 MB\n");
-		return 0;
+		{ret = 0; goto ex;}
 	  }
 
 	  /* Use the fifo object as data source for the track */
@@ -514,7 +517,7 @@ int libburner_payload(struct burn_drive *drive,
 							 != BURN_SOURCE_OK) {
 		fprintf(stderr,
 		       "FATAL: Cannot attach source object to track object\n");
-		return 0;
+		{ret = 0; goto ex;}
 	  }
 
 	  burn_session_add_track(session, track, BURN_POS_END);
@@ -522,6 +525,7 @@ int libburner_payload(struct burn_drive *drive,
 
 	  /* Give up local reference to the data burn_source object */
 	  burn_source_free(data_src);
+	  data_src = NULL;
 	  
 	} /* trackno loop end */
 
@@ -538,7 +542,7 @@ int libburner_payload(struct burn_drive *drive,
 		else
 			fprintf(stderr,
 			 "FATAL: Cannot recognize state of drive and media\n");
-		return 0;
+		{ret = 0; goto ex;}
 	}
 
 	burn_options = burn_write_opts_new(drive);
@@ -553,7 +557,7 @@ int libburner_payload(struct burn_drive *drive,
 					reasons, 0) == BURN_WRITE_NONE) {
 		fprintf(stderr, "FATAL: Failed to find a suitable write mode with this media.\n");
 		fprintf(stderr, "Reasons given:\n%s\n", reasons);
-		return 0;
+		{ret = 0; goto ex;}
 	}
 	burn_set_signal_handling("libburner : ", NULL, 0x30);
 
@@ -561,7 +565,6 @@ int libburner_payload(struct burn_drive *drive,
 	start_time = time(0);
 	burn_disc_write(burn_options, target_disc);
 
-	burn_write_opts_free(burn_options);
 	while (burn_drive_get_status(drive, NULL) == BURN_DRIVE_SPAWNING)
 		usleep(100002);
 	while (burn_drive_get_status(drive, &progress) != BURN_DRIVE_IDLE) {
@@ -597,21 +600,32 @@ int libburner_payload(struct burn_drive *drive,
 	}
 	printf("\n");
 
-	for (trackno = 0 ; trackno < source_adr_count; trackno++) {
-	  	burn_source_free(fifo_src[trackno]);
-		burn_track_free(tracklist[trackno]);
-	}
-	burn_session_free(session);
-	burn_disc_free(target_disc);
 	if (burn_is_aborting(0) > 0)
-		return -1;
+		{ret = -1; goto ex;}
 	if (multi && current_profile != 0x1a && current_profile != 0x13 &&
 		current_profile != 0x12 && current_profile != 0x43) 
 			/* not with DVD+RW, formatted DVD-RW, DVD-RAM, BD-RE */
 		printf("NOTE: Media left appendable.\n");
 	if (simulate_burn)
 		printf("\n*** Did TRY to SIMULATE burning ***\n\n");
-	return 1;
+	ret = 1;
+ex:;
+	/* Dispose objects */
+	if (burn_options != NULL)
+		burn_write_opts_free(burn_options);
+	for (trackno = 0 ; trackno < source_adr_count; trackno++) {
+		if (fifo_src[trackno] != NULL)
+	  		burn_source_free(fifo_src[trackno]);
+		if (tracklist[trackno])
+			burn_track_free(tracklist[trackno]);
+	}
+	if (data_src != NULL)
+		burn_source_free(data_src);
+	if (session != NULL)
+		burn_session_free(session);
+	if (target_disc != NULL)
+		burn_disc_free(target_disc);
+	return ret;
 }
 
 
