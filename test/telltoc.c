@@ -1,6 +1,6 @@
 
 /*  test/telltoc.c , API illustration of obtaining media status info */
-/*  Copyright (C) 2006 - 2011 Thomas Schmitt <scdbackup@gmx.net> 
+/*  Copyright (C) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net> 
     Provided under GPL */
 
 /**                               Overview 
@@ -240,7 +240,9 @@ int telltoc_regrab(struct burn_drive *drive) {
 
 int telltoc_media(struct burn_drive *drive)
 {
-	int ret, media_found = 0, profile_no = -1;
+	int ret, media_found = 0, profile_no = -1, num_profiles = 0, i;
+	int profiles[64];
+	char is_current_profile[64];
 	double max_speed = 0.0, min_speed = 0.0, speed_conv;
 	off_t available = 0;
 	enum burn_disc_status s;
@@ -258,14 +260,31 @@ int telltoc_media(struct burn_drive *drive)
 	} else
 		printf("is not recognizable\n");
 
+	/* Determine speed unit before profile_name gets reused */
 	speed_conv = 176.4;
 	strcpy(speed_unit,"176.4 kB/s  (CD, data speed 150 KiB/s)");
 	if (strstr(profile_name, "DVD") == profile_name) {
 		speed_conv = 1385.0;
 		strcpy(speed_unit,"1385.0 kB/s  (DVD)");
-	}
+	} else if (strstr(profile_name, "BD") == profile_name) {
+                speed_conv = 4495.625;
+		strcpy(speed_unit,"4495.625 kB/s  (BD)");
+        }
 
-	/* >>> libburn does not obtain full profile list yet */
+	ret = burn_drive_get_all_profiles(drive, &num_profiles, profiles,
+					is_current_profile);
+	if (ret > 0) {
+		for (i = 0; i < num_profiles; i++) {
+			ret = burn_obtain_profile_name(profiles[i],
+							profile_name);
+			if (ret <= 0)
+				sprintf(profile_name,
+					"Unknown media type 0x%4.4X",
+					(unsigned int) profiles[i]);
+			printf("Drive can do : %s%s\n", profile_name,
+				is_current_profile[i] ? " (current)" : "");
+		}
+	}
 
 	printf("Media status : ");
 	s = burn_disc_get_status(drive);
@@ -516,8 +535,8 @@ int telltoc_toc(struct burn_drive *drive)
 				cd_is_audio = -1;
 			}
 
-			printf("Media content: session %2d  ", session_no+1);
-			printf("track    %2d %s  lba: %9d  %4.2d:%2.2d:%2.2d\n",
+			printf("Media content: session %3d  ", session_no+1);
+			printf("track    %3d %s  lba: %9d  %4.2d:%2.2d:%2.2d\n",
 				track_count,
 				(track_is_audio ? "audio" : "data "),
 				lba, pmin, psec, pframe);
@@ -534,8 +553,8 @@ int telltoc_toc(struct burn_drive *drive)
 			pframe = toc_entry.pframe;
 			lba= burn_msf_to_lba(pmin, psec, pframe);
 		}
-		printf("Media content: session %2d  ", session_no+1);
-		printf("leadout            lba: %9d  %4.2d:%2.2d:%2.2d\n",
+		printf("Media content: session %3d  ", session_no+1);
+		printf("leadout             lba: %9d  %4.2d:%2.2d:%2.2d\n",
 			lba, pmin, psec, pframe);
 		last_track_size = lba - last_track_start;
 		telltoc_detect_cd(drive);
