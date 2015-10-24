@@ -774,6 +774,8 @@ print_result:;
 		start_sector, sector_count,
 	        (int) (total_count / (off_t) sector_size));
 
+	if (raw_fp != NULL)
+		fclose(raw_fp);
 	return ret;
 }
 
