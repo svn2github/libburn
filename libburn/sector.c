@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -353,7 +353,7 @@ static int convert_data(struct burn_write_opts *o, struct burn_track *track,
 
 	/* ts A61010 */
 	/* a ssert(outlen >= inlen); */
-	if (outlen < inlen)
+	if (outlen < inlen || outlen < 0 || inlen < 0)
 		return 0;
 
 	if ((outmode & BURN_MODE_BITS) == (inmode & BURN_MODE_BITS)) {
