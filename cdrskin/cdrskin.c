@@ -7341,6 +7341,7 @@ burn_failed:;
        skin->num_text_packs= num_packs;
      }
    }
+   text_packs= NULL; /* Now either freed or attached */
    ret= Cdrskin_cdrtracks_from_session(skin, session, 0);
    if(ret <= 0)
      goto burn_failed;
