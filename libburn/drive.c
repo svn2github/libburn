@@ -3445,7 +3445,7 @@ int burn_feature_descr_new(struct burn_feature_descr **new,
 	*new = NULL;
 	if (descr_len < 4)
 		return 0;
-	(*new) = o = calloc(1, sizeof(struct burn_speed_descriptor));
+	(*new) = o = calloc(1, sizeof(struct burn_feature_descr));
 	if (o == NULL)
 		return -1;
 	o->feature_code = (descr[0] << 8) | descr[1];
