@@ -4365,7 +4365,8 @@ static int interpret_performance(struct burn_drive *d, struct command *c,
 			for (b = 0; b < 4 ; b++) {
 				start_speed += pd[8 + i*16 +  4 + b]
 				               << (24 - 8 * b);
-				end_lba     += pd[8 + i*16 +  8 + b]
+				end_lba     += ((unsigned long int)
+				                pd[8 + i*16 +  8 + b])
 				               << (24 - 8 * b);
 				read_speed  += pd[8 + i*16 + 12 + b]
 				               << (24 - 8 * b);
