@@ -2155,6 +2155,8 @@ ex:
 	cue_crs_destroy(&crs, 0);
 	BURN_FREE_MEM(line);
 	BURN_FREE_MEM(msg);
+	if (fp != NULL)
+		fclose(fp);
 	return ret;
 }
 
