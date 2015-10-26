@@ -208,10 +208,6 @@ static int libdax_audioxtr_identify_au(struct libdax_audioxtr *o, int flag)
  sprintf(o->fmt_info,
          ".au , num_channels=%d , sample_rate=%d , bits_per_sample=%d",
          o->num_channels,o->sample_rate,o->bits_per_sample);
-
- /* <<< for testing only */; 
- return(1);
-
  return(o->bits_per_sample>0); /* Audio format must be linear PCM */
 }
 
