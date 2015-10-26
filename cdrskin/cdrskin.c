@@ -7255,8 +7255,8 @@ int Cdrskin_write_result_string(struct CdrskiN *skin, char *msg, int flag)
 */
 int Cdrskin_burn(struct CdrskiN *skin, int flag)
 {
- struct burn_disc *disc;
- struct burn_session *session;
+ struct burn_disc *disc = NULL;
+ struct burn_session *session = NULL;
  struct burn_write_opts *o = NULL;
  struct burn_source *cuefile_fifo= NULL;
  enum burn_disc_status s;
@@ -7308,12 +7308,7 @@ int Cdrskin_burn(struct CdrskiN *skin, int flag)
  if(ret==0) {
    fprintf(stderr,"cdrskin: FATAL : Cannot add session to disc object.\n");
 burn_failed:;
-   if(cuefile_fifo != NULL)
-     burn_source_free(cuefile_fifo);
-   if(skin->verbosity>=Cdrskin_verbose_progresS) 
-     printf("cdrskin: %s failed\n", doing);
-   fprintf(stderr,"cdrskin: FATAL : %s failed.\n", doing);
-   return(0);
+   ret= 0; goto ex;
  }
  skin->fixed_size= 0.0;
  skin->has_open_ended_track= 0;
@@ -7861,8 +7856,10 @@ ex:;
    burn_write_opts_free(o);
  if(cuefile_fifo != NULL)
    burn_source_free(cuefile_fifo);
- burn_session_free(session);
- burn_disc_free(disc);
+ if(session != NULL)
+   burn_session_free(session);
+ if(disc != NULL)
+   burn_disc_free(disc);
  return(ret);
 }
 
