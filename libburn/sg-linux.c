@@ -2002,7 +2002,7 @@ static int evaluate_transport_success(struct burn_drive *d, struct command *c,
 		give_up_drive= 1;
 	break; case 0x80:
 		driver_sugg = "SG_ERR_SUGGEST_SENSE";
-	default:
+	break; default:
 		driver_sugg = "(unknown driver_status suggestion)";
 	}
 	if ((driver_status & 0xf7) != Libburn_sg_driver_oK) {
