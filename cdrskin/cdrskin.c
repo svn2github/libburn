@@ -1402,8 +1402,11 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    }
    if(track->use_data_image_size==1 && xtr_size<=0) {
      ret= Cdrtrack_seek_isosize(track,*fd,0);
-     if(ret==-1)
+     if(ret == -1) {
+       close(*fd);
+       *fd= -1;
        return(-1);
+     }
    } else if(track->fixed_size<=0) {
 
      /* >>> ??? is it intentional that tsize overrides .wav header ? */
@@ -1424,6 +1427,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    }
  }
 
+ track->source_fd= *fd;
  if(track->fixed_size < Cdrtrack_minimum_sizE * track->sector_size
     && (track->fixed_size>0 || size_from_file) && !(flag&2)) {
    if(track->track_type == BURN_AUDIO) {
@@ -1441,7 +1445,6 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
      track->fixed_size= Cdrtrack_minimum_sizE*track->sector_size;
    }
  }
- track->source_fd= *fd;
  return(*fd>=0);
 }
 
