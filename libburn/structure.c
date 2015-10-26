@@ -1426,7 +1426,7 @@ static int cue_open_audioxtr(char *path, struct burn_cue_file_cursor *crs,
 
 	ret= libdax_audioxtr_new(&xtr, path, 0);
 	if (ret <= 0)
-		return ret;
+		goto ex;
 	libdax_audioxtr_get_id(xtr, &fmt, &fmt_info, &num_channels,
 		 		&sample_rate, &bits_per_sample, &msb_first, 0);
 	if ((flag & 255) == 1) {
