@@ -1085,6 +1085,7 @@ int burn_cdtext_from_packfile(char *path, unsigned char **text_packs,
 
 	BURN_ALLOC_MEM(msg, char, 4096);
 
+	*text_packs = NULL;
 	if (stat(path, &stbuf) == -1) {
 cannot_open:;
 		sprintf(msg, "Cannot open CD-TEXT pack file '%.4000s'", path);
@@ -1136,7 +1137,14 @@ cannot_read:;
 			path);
 		libdax_msgs_submit(libdax_messenger, -1, 0x0002018b,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-				burn_printify(msg), errno, 0);
+				burn_printify(msg), 0, 0);
+		ret = 0; goto ex;
+	} if (*num_packs <= 0) {
+		strcpy(msg,
+			"CD-Text pack file contains no complete text pack");
+		libdax_msgs_submit(libdax_messenger, -1, 0x000201aa,
+				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
+				burn_printify(msg), 0, 0);
 		ret = 0; goto ex;
 	}
 
