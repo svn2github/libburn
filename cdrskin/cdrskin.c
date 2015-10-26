@@ -1322,7 +1322,7 @@ int Cdrtrack_seek_isosize(struct CdrtracK *track, int fd, int flag)
 */
 int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
 {
- int is_wav= 0, size_from_file= 0, ret;
+ int is_wav= 0, size_from_file= 0, ret, self_opened= 0;
  off_t xtr_size= 0;
  struct stat stbuf;
  char *device_adr,*raw_adr;
@@ -1340,6 +1340,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
    *fd= atoi(track->source_path+1);
  else {
    *fd= -1;
+   self_opened= 1;
 
    ret= Cdrskin_get_device_adr(track->boss,&device_adr,&raw_adr,
                                &no_convert_fs_adr,0);
@@ -1445,7 +1446,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
      track->fixed_size= Cdrtrack_minimum_sizE*track->sector_size;
    }
  }
- return(*fd>=0);
+ return((*fd >= 0) * (2 * self_opened));
 }
 
 
@@ -6958,6 +6959,7 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
 {
  off_t byte_address, data_count, chunksize, i, alignment, fill;
  int ret, max_chunksize= 64*1024, source_fd= -1, is_from_stdin, eof_sensed= 0;
+ int self_opened= 0;
  char *buf= NULL, *source_path, amount_text[81];
  struct burn_multi_caps *caps= NULL;
 
@@ -6994,6 +6996,8 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
                                (4 * (skin->fifo_size >= 256 * 1024)));
    if(ret<=0)
      goto ex;
+   if(ret == 2)
+     self_opened= 1;
  }
  buf= calloc(1, max_chunksize);
  if(buf==NULL) {
@@ -7067,6 +7071,8 @@ ex:;
    burn_disc_free_multi_caps(&caps);
  if(buf!=NULL)
    free(buf);
+ if(self_opened && source_fd >= 0)
+   close(source_fd);
  if(ret>0)
    fprintf(stderr,"writing done\n"); 
  else
