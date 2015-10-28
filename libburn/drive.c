@@ -118,6 +118,10 @@ void burn_drive_free_subs(struct burn_drive *d)
 		close (d->stdio_fd);
 	d->stdio_fd = -1;
 	burn_feature_descr_free(&(d->features), 0);
+	BURN_FREE_MEM(d->drive_serial_number);
+	BURN_FREE_MEM(d->media_serial_number);
+        d->drive_serial_number = d->media_serial_number = NULL;
+	d->drive_serial_number_len = d->media_serial_number_len = 0;
 	sg_dispose_drive(d, 0);
 }
 
