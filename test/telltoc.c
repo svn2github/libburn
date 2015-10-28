@@ -801,6 +801,13 @@ int telltoc_setup(int argc, char **argv)
     int i;
 
     for (i = 1; i < argc; ++i) {
+        if (strlen(argv[i]) >= 4096) {
+            fprintf(stderr,
+                  "Argument at position %d is much too long. (Max 4095)\n", i);
+            return 2;
+        }
+    }
+    for (i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "--drive")) {
             ++i;
             if (i >= argc) {
