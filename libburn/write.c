@@ -226,8 +226,6 @@ int burn_write_track_minsize(struct burn_write_opts *o, struct burn_session *s,
 			0x0002011a,
 			LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH, msg,0,0);
 		step = BUFFER_SIZE / 4096; /* shall fit any sector size */
-		if (step <= 0)
-			step = 1;
 		seclen = burn_sector_length(t->mode);
 		if (seclen <= 0)
 			seclen = 2048;
