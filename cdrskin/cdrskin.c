@@ -3103,6 +3103,12 @@ see_cdrskin_eng_html:;
      o->abort_handler= 2;
 
    } else if(strncmp(argv[i],"fallback_program=",17)==0) {
+     if(strlen(argv[i] + 17) >= sizeof(o->fallback_program)) {
+       fprintf(stderr,
+       "cdrskin: FATAL : fallback_program=... too long (max. %d characters)\n",
+               (int) sizeof(o->fallback_program) - 1);
+       {ret= 0; goto ex;}
+     }
      strcpy(o->fallback_program,argv[i]+17);
 
    } else if(strcmp(argv[i],"--no_abort_handler")==0) {
