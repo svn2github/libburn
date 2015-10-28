@@ -3,7 +3,8 @@
    Fakes a file in SUN .au format from a raw little-endian PCM audio file
    (e.g. a file extracted from .wav by test/dewav). The input data are assumed
    to be 16 bit, stereo, 44100 Hz.
-   Copyright (C) 2006 Thomas Schmitt <scdbackup@gmx.net>, provided under GPL
+   Copyright (C) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
+   Provided under GPL version 2 or later.
 
    Info used: http://www.opengroup.org/public/pubs/external/auformat.html
 */
@@ -53,6 +54,8 @@ int main(int argc, char **argv)
              argv[0], i);
      exit(1);
    }
+ }
+ for(i= 1; i<argc; i++) {
    if(strcmp(argv[i],"-o")==0) {
      if(i>=argc-1) {
        fprintf(stderr,"%s: option -o needs a file address as argument.\n",
