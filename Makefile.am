@@ -88,8 +88,7 @@ noinst_PROGRAMS = \
 	test/telltoc \
 	test/dewav \
 	test/fake_au \
-	test/poll \
-	test/structest
+	test/poll
 
 bin_PROGRAMS = \
 	cdrskin/cdrskin
@@ -114,9 +113,6 @@ test_fake_au_SOURCES = test/fake_au.c
 test_poll_CPPFLAGS = -Ilibburn
 test_poll_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
 test_poll_SOURCES = test/poll.c
-test_structest_CPPFLAGS = -Ilibburn
-test_structest_LDADD = $(libburn_libburn_la_OBJECTS) $(LIBBURN_EXTRALIBS)
-test_structest_SOURCES = test/structest.c
 
 ##  cdrskin construction site - ts A60816 - B50517
 cdrskin_cdrskin_CPPFLAGS = -Ilibburn
@@ -175,8 +171,7 @@ uninstall-local:
 # Indent source files
 indent_files = \
 	$(libburn_libburn_la_SOURCES) \
-	$(test_poll_SOURCES) \
-	$(test_structest_SOURCES)
+	$(test_poll_SOURCES)
 	
 
 indent: $(indent_files)
