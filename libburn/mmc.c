@@ -2944,7 +2944,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 {
 	struct buffer *buf = NULL;
 	int len, cp, descr_len = 0, feature_code, only_current = 1, i;
-	int old_alloc_len, only_current_profile = 0, key, asc, ascq, ret;
+	int old_alloc_len, key, asc, ascq, ret;
 	int feature_is_current;
 	unsigned char *descr, *prf, *up_to, *prf_end;
 	struct command *c = NULL;
@@ -3139,8 +3139,6 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 				memcpy(d->all_profiles, descr + 4,
 							d->num_profiles * 4);
 			for (prf = descr + 4; prf + 2 < prf_end; prf += 4) {
-				if (only_current_profile && !(prf[2] & 1))
-			continue;
 
 #ifdef Libburn_print_feature_descriptorS
 				prf_number =  (prf[0] << 8) | prf[1];
