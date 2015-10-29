@@ -714,8 +714,16 @@ int telltoc_read_and_print(struct burn_drive *drive,
 print_result:;
 		total_count += data_count;
 		if (encoding == 1) {
-			if (data_count > 0)
-				fwrite(buf, data_count, 1, raw_fp);
+			if (data_count > 0) {
+				ret = fwrite(buf, data_count, 1, raw_fp);
+				if (ret < 1) {
+                   	 		fprintf(stderr,
+					    "FAILURE: writing to '%s' : %s\n",
+					    raw_file, strerror(errno));
+					fclose(raw_fp);
+					return 1;
+				}
+			}
 		} else for (i = 0; i < data_count; i += 16) {
 			if (encoding == 0) {
 				sprintf(line, "%8ds + %4d : ",
