@@ -3832,9 +3832,13 @@ int Cdrskin_assert_driveno(struct CdrskiN *skin, int flag)
 int Cdrskin_get_device_adr(struct CdrskiN *skin,
            char **device_adr, char **raw_adr, int *no_convert_fs_adr, int flag)
 {
+ int ret;
+
  if(skin->driveno < 0 || (unsigned int) skin->driveno >= skin->n_drives)
    return(0);
- burn_drive_get_adr(&skin->drives[skin->driveno],skin->device_adr);
+ ret= burn_drive_get_adr(&skin->drives[skin->driveno],skin->device_adr);
+ if(ret <= 0)
+   return(0);
  *device_adr= skin->device_adr;
  *raw_adr= skin->preskin->raw_device_adr;
  *no_convert_fs_adr= skin->preskin->no_convert_fs_adr;
