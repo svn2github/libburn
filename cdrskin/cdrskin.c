@@ -6194,6 +6194,11 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
    if(skin->force_is_set) {
      ClN(fprintf(stderr,"cdrskin: NOTE : -force blank=... : Treating unsuitable media as burn_disc_full\n"));
      ret= burn_disc_pretend_full(drive);
+     if(ret <= 0) {
+       ClN(fprintf(stderr,
+                   "cdrskin: FAILURE : Medium still considered unsuitable\n"));
+       {ret= 0; goto ex;}
+     }
      s= burn_disc_get_status(drive);
    } else
      hint_force= 1;
