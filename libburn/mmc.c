@@ -2951,6 +2951,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	int phys_if_std = 0;
 	char *phys_name = "";
 	struct burn_feature_descr *recent_feature = NULL, *new_feature;
+	char *msg = NULL;
 
 /* Enable this to get loud and repeated reports about the feature set :
  # define Libburn_print_feature_descriptorS 1
@@ -3015,8 +3016,19 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	*alloc_len = len = mmc_four_char_to_int(c->page->data) + 4;
 	if (len > old_alloc_len)
 		len = old_alloc_len;
-	if (len < 8 || len > 4096)
+	if (len < 8)
 		{ret = 0; goto ex;}
+	if (len > 4096) {
+		/* MMC-5 6.6.2.1, Note 11: The maximum is less than 1 KB */
+		BURN_ALLOC_MEM_VOID(msg, char, 256);
+		sprintf(msg, "Implausible length announcement from SCSI command GET CONFIGURATION: %d", *alloc_len);
+		libdax_msgs_submit(libdax_messenger, d->global_index,
+			   0x000201a9,
+			   LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_ZERO,
+			   msg, 0, 0);
+		ret = 0; goto ex;
+	}
+
 	cp = (c->page->data[6]<<8) | c->page->data[7];
 
 #ifdef Libburn_rom_as_profilE
@@ -3088,10 +3100,8 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 
 	/* ts A70127 : Interpret list of profile and feature descriptors.
  	see mmc5r03c.pdf 5.2
-	>>> Ouch: What to do if list is larger than buffer size.
-	          Specs state that the call has to be repeated.
 	*/
-	up_to = c->page->data + (len < BUFFER_SIZE ? len : BUFFER_SIZE);
+	up_to = c->page->data + len;
 
 #ifdef Libburn_print_feature_descriptorS
 	fprintf(stderr,
@@ -3262,6 +3272,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len)
 	}
 	ret = 1;
 ex:
+	BURN_FREE_MEM(msg);
 	BURN_FREE_MEM(buf);
 	BURN_FREE_MEM(c);
 	return ret;
@@ -3271,14 +3282,13 @@ ex:
 void mmc_get_configuration(struct burn_drive *d)
 {
 	int alloc_len = 8, ret;
-	char *msg = NULL;
 
 	if (d->current_profile > 0 && d->current_profile < 0xffff)
-		goto ex;
+		return;
 
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_get_configuration") <= 0)
-		goto ex;
+		return;
 
 	/* first command execution to learn Allocation Length */
 	ret = mmc_get_configuration_al(d, &alloc_len);
@@ -3287,22 +3297,9 @@ void mmc_get_configuration(struct burn_drive *d)
 			alloc_len, ret);
 */
 	if (alloc_len > 8 && ret > 0) {
-
-		if (alloc_len > 4096) {
-			/* MMC-5 6.6.2.1: The maximum is less than 1 KB */
-			BURN_ALLOC_MEM_VOID(msg, char, 256);
-			sprintf(msg, "Implausible length announcement from SCSI command GET CONFIGURATION: %d", alloc_len);
-	libdax_msgs_submit(libdax_messenger, d->global_index, 0x000201a9,
-			   LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_ZERO,
-			   msg, 0, 0);
-			goto ex;
-		}
-
 		/* second execution with announced length */
 		mmc_get_configuration_al(d, &alloc_len);
 	}
-ex:;
-	BURN_FREE_MEM(msg);
 }
 
 
