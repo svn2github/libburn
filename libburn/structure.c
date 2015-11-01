@@ -2146,10 +2146,12 @@ ex:
 		tracks = burn_session_get_tracks(session, &num_tracks);
 		for (i = 0; i < num_tracks; i++)
 			burn_track_free(tracks[i]);
-		if(*text_packs != NULL)
-			free(*text_packs);
-		*text_packs = NULL;
-		*num_packs = 0;
+		if(text_packs != NULL) {
+			if(*text_packs != NULL)
+				free(*text_packs);
+			*text_packs = NULL;
+			*num_packs = 0;
+		}
 	} else {
 		if (fifo != NULL) {
 			*fifo = crs->fifo;
