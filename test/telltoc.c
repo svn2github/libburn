@@ -856,7 +856,8 @@ int telltoc_setup(int argc, char **argv)
             sscanf(argv[i-2], "%d", &read_start);
             sscanf(argv[i-1], "%d", &read_count);
             print_encoding = 0;
-            if(strncmp(argv[i], "raw:", 4) == 0 || strcmp(argv[i],"1:") == 0) {
+            if(strncmp(argv[i], "raw:", 4) == 0 ||
+               strncmp(argv[i], "1:", 2) == 0) {
                 print_encoding = 1;
                 strcpy(print_raw_file, strchr(argv[i], ':') + 1);
 		if (strcmp(print_raw_file, "-") == 0) {
