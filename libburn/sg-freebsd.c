@@ -441,6 +441,11 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	struct burn_drive *t;
 	struct burn_drive out;
 
+	/* Initialize pointers to managed memory */
+	out.devname = NULL;
+	out.idata = NULL;
+	out.mdata = NULL;
+
 	/* ts A60923 */
 	out.bus_no = bus_no;
 	out.host = host_no;
@@ -449,6 +454,8 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.lun = lun_no;
 
 	out.devname = strdup(fname);
+	if (out.devname == NULL)
+		goto could_not_allocate;
 
 	out.cam = NULL;
 	out.lock_fd = -1;
@@ -493,9 +500,19 @@ static void enumerate_common(char *fname, int bus_no, int host_no,
 	out.idata->valid = 0;
 	out.mdata = calloc(1, sizeof(struct scsi_mode_data));
 	if (out.idata == NULL || out.mdata == NULL) {
+could_not_allocate:;
 		libdax_msgs_submit(libdax_messenger, -1, 0x00020108,
 			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 			"Could not allocate new drive object", 0, 0);
+		if (out.devname != NULL)
+			free(out.devname);
+		out.devname = NULL;
+		if (out.idata != NULL)
+			free(out.idata);
+		out.idata = NULL;
+		if (out.mdata != NULL)
+			free(out.mdata);
+		out.mdata = NULL;
 		return;
 	}
 	out.mdata->p2a_valid = 0;
