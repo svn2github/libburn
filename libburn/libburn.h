@@ -1291,7 +1291,7 @@ int burn_drive_get_serial_no(struct burn_drive *d, char **sno, int *sno_len);
     @param d        The drive to inquire.
     @param sno      Returns the bytes of the serial number. A trailing 0-byte
                     is appended for convenience. There is no warranty that
-                    *sno contains no other byte values.
+                    *sno contains only non-zero printable bytes.
                     Submit *sno as NULL or pointing to free()-able memory.
                     Apply free() to *sno when no longer needed.
     @param sno_len  Returns the number of valid bytes in returned *sno,
@@ -3644,7 +3644,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  4
-#define burn_header_version_micro  1
+#define burn_header_version_micro  3
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.

@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.4.0.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.4.2.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.4.0.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.4.2.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.4.0.tar.gz
-   cd libburn-1.4.0
+   tar xzf libburn-1.4.2.tar.gz
+   cd libburn-1.4.2
    ./configure --prefix=/usr
    make
 
@@ -739,6 +739,18 @@ Project history as far as known to me:
   This release is mainly about bug fixes and a new feature of xorriso to
   propose commands or as_mkisofs options which can reproduce the boot
   equipment of the loaded ISO filesystem.
+
+- Sat Nov 28 2015 release 1.4.2
+  libburn got some bugs fixed and learned to inquire the drive serial number.
+  libisofs now sorts data file content by ECMA-119 file names for better
+  reproducability of ISO content. Rock Ridge filenames may be restricted to
+  lengths between 64 and 255 bytes. If needed, a qualified truncation happens.
+  xorriso now can replay boot settings when modifying ISO filesystems.
+  In order to avoid clogging of concurrent Linux SG_IO, xorriso got command
+  -modesty_on_drive to enable an old workaround from IDE master/slave days. 
+  The source code underwent a scan by Coverity. About 150 code changes
+  resulted, but no easy-to-trigger bugs were found.
+  
 
 ------------------------------------------------------------------------------
 

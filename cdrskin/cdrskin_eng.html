@@ -67,7 +67,7 @@ with drives connected via SCSI, PATA (aka IDE, ATA), USB, or SATA.
 GPL software included:<BR>
 </H2>
 <DL>
-<DT>libburn-1.4.0</DT>
+<DT>libburn-1.4.2</DT>
 <DD>(founded by Derek Foreman and Ben Jansens,
 developed and maintained since August 2006 by
 Thomas Schmitt from team of libburnia-project.org)
@@ -202,13 +202,13 @@ Standalone ISO 9660 multi-session CD/DVD/BD tool
 <P>
 <DL>
 <DT>Download as source code (see README):</DT>
-<DD><A HREF="cdrskin-1.4.0.tar.gz">cdrskin-1.4.0.tar.gz</A>
-(975 KB).
+<DD><A HREF="cdrskin-1.4.2.tar.gz">cdrskin-1.4.2.tar.gz</A>
+(1050 KB).
 </DD>
-<DD><A HREF="cdrskin-1.4.0.tar.gz.sig">cdrskin-1.4.0.tar.gz.sig</A></DD>
+<DD><A HREF="cdrskin-1.4.2.tar.gz.sig">cdrskin-1.4.2.tar.gz.sig</A></DD>
 <DD>
 (detached GPG signature for verification by
-<KBD>gpg --verify cdrskin-1.4.0.tar.gz.sig cdrskin-1.4.0.tar.gz</KBD>
+<KBD>gpg --verify cdrskin-1.4.2.tar.gz.sig cdrskin-1.4.2.tar.gz</KBD>
 <BR>
 after <KBD>gpg --keyserver keys.gnupg.net --recv-keys ABC0A854</KBD>).
 </DD>
@@ -259,18 +259,18 @@ cdrskin_0.4.2.pl00-x86-suse9_0-static.tar.gz</A>, (310 KB), -static compiled,
 <HR>
 
 <P>
-Enhancements towards previous stable version cdrskin-1.3.8:
+Enhancements towards previous stable version cdrskin-1.4.0:
 <UL>
-<LI>none</LI>
+<LI>New -toc line "Drive id" tells the drive's individual serial number</LI>
 <!--
 <LI>none</LI>
 -->
 </UL>
 
-Bug fixes towards cdrskin-1.3.8:
+Bug fixes towards cdrskin-1.4.0:
 <UL>
-<LI>Double free with cdrskin -vvv. Introduced with rev 5065, version 1.3.1</LI>
-<LI>Wrong read access to memory. Reported by valgrind of lian jianfei.</LI>
+<LI>Media summary session count of blank and closed media was short by 1</LI>
+<LI>Endless loop if transport error occured while waiting for drive ready</LI>
 <!--
 <LI>none</LI>
 -->
@@ -280,8 +280,8 @@ Bug fixes towards cdrskin-1.3.8:
 
 <P>
 <DL>
-<DT><H3>Development snapshot, version 1.4.1 :</H3></DT>
-<DD>Enhancements towards current stable version 1.4.0:
+<DT><H3>Development snapshot, version 1.4.3 :</H3></DT>
+<DD>Enhancements towards current stable version 1.4.2:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -290,7 +290,7 @@ Bug fixes towards cdrskin-1.3.8:
 </UL>
 </DD>
 
-<DD>Bug fixes towards cdrskin-1.4.0:
+<DD>Bug fixes towards cdrskin-1.4.2:
 <UL>
 <LI>none yet</LI>
 <!--
@@ -300,10 +300,10 @@ Bug fixes towards cdrskin-1.3.8:
 </DD>
 
 <DD>&nbsp;</DD>
-<DD><A HREF="README_cdrskin_devel">README 1.4.1</A>
-<DD><A HREF="cdrskin__help_devel">cdrskin-1.4.1 --help</A></DD>
-<DD><A HREF="cdrskin_help_devel">cdrskin-1.4.1 -help</A></DD>
-<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.4.1)</A></DD>
+<DD><A HREF="README_cdrskin_devel">README 1.4.3</A>
+<DD><A HREF="cdrskin__help_devel">cdrskin-1.4.3 --help</A></DD>
+<DD><A HREF="cdrskin_help_devel">cdrskin-1.4.3 -help</A></DD>
+<DD><A HREF="man_1_cdrskin_devel.html">man cdrskin (as of 1.4.3)</A></DD>
 <DD>&nbsp;</DD>
 <DT>Maintainers of cdrskin unstable packages please use SVN of
 <A HREF="http://libburnia-project.org"> libburnia-project.org</A></DT>
@@ -323,8 +323,8 @@ admins with full system sovereignty.</DT>
 <A HREF="README_cdrskin_devel">upcoming README</A> ):
 </DD>
 <DD>
-<A HREF="cdrskin-1.4.1.tar.gz">cdrskin-1.4.1.tar.gz</A>
-(975 KB).
+<A HREF="cdrskin-1.4.3.tar.gz">cdrskin-1.4.3.tar.gz</A>
+(1050 KB).
 </DD>
 
 <!-- This is not offered any more since spring 2008
