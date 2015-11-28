@@ -1,7 +1,18 @@
-SVN trunk (to become libburn-1.4.2 or higher)
+
+SVN trunk (to become libburn-1.4.4 or higher)
 ===============================================================================
 - no novelties yet -
+ 
 
+libburn-1.4.2.tar.gz Sat Nov 28 2015
+===============================================================================
+* Bug fix: burn_disc_get_media_id() returned BD identifiers 2 chars too long
+* Bug fix: burn_disc_get_multi_caps() returned 2048 bytes too many in
+           caps.start_range_high
+* Bug fix: Media summary session count of blank and closed media was short by 1
+* Bug fix: Endless loop if transport error occurs while waiting for drive ready
+* New API calls burn_drive_get_serial_no() and burn_drive_get_media_sno()
+* Result of a Coverity audit: 40+ code changes, but no easy-to-trigger bugs
 
 libburn-1.4.0.tar.gz Sun May 17 2015
 ===============================================================================

@@ -12834,10 +12834,403 @@ Made number transition to 1.4.1
 + cdrskin/add_ts_changes_to_libburn_1_4_1
 Updated cdrskin tarball generator
 
-17 May 2015  []
+17 May 2015  [5440]
 ChangeLog
 cdrskin/changelog.txt
-Documented changes and release timestamp
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.1 - 2015.05.17.202234
+
+17 May 2015  [5441]
+svn move -m libburn release 1.4.0 is ready
+http://svn.libburnia-project.org/libburn/branches/1.4.0 
+http://svn.libburnia-project.org/libburn/tags/1.4.0
+
+18 May 2015  [5442]
+doc/doxygen.conf.in
+Trying to become suitable for Debian reproducible builds
+
+2015.05.25.204252  [5448]
+libburn/util.c
+doc/mediainfo.txt
+Registered BD-R producer Millenniata. Thanks to Lucjan Bryndza.
+
+2015.05.26.054224  [5449]
+libburn/mmc.c
+libburn/util.c
+Bug fix: burn_disc_get_media_id() returned BD identifiers 2 chars too long
+
+25 Jun 2015  [5452]
+cdrskin/README
+Mentioned option -use_libcdio of cdrskin/compile_cdrskin.sh
+
+2015.06.25.192439  [5453]
+libburn/sg-linux.c
+Removed unused macro definitions
+
+2015.08.01.135727  [5463]
+libburn/libburn.h
+libburn/sg-freebsd-port.c
+libburn/sg-libcdio.c
+libburn/sg-solaris.c
+libburn/sg-netbsd.c
+libburn/sg-linux.c
+libburn/sg-dummy.c
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+libburn/ecma130ab.c
+configure.ac
+README
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+cdrskin/compile_cdrskin.sh
+cdrskin/make_timestamp.sh
+doc/cdtext.txt
+doc/comments
+doc/cookbook.txt
+doc/ddlp.txt
+test/libburner.c
+cdrskin/add_ts_changes_to_libburn_1_4_0
+cdrskin/add_ts_changes_to_libburn_1_4_1
+Changed wrong use of "resp." in docs
+
+2015.08.02.141552  [5464]
+cdrskin/convert_man_to_html.sh
++ cdrskin/unite_html_b_line.c
+Reacting on changes in the output of my local man -H
+
+2015.08.30.185208  [5471]
+libburn/libburn.h
+Small change in API documentation about burn_drive_set_buffer_waiting()
+
+2015.08.30.185714  [5472]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New paramaters for option modesty_on_drive= timeout_sec, min_usec, max_usec
+
+30 Aug 2015  [5473]
+libburn/mmc.c
+libburn/libdax_msgs.h
+cdrskin/cdrskin.1
+Fixed typos reported by J.S.Junior
+
+30Aug 2015  [5474]
+cdrskin/cdrskin.1
+Avoiding to trigger lintian check "allows to allows one to"
+
+2015.09.01.065852  [5475]
+libburn/libburn.h
+libburn/options.h
+libburn/mmc.c
+libburn/ecma130ab.c
+libburn/sg-linux.c
+libburn/sg-solaris.c
+libburn/sg-netbsd.c
+libburn/sg-libcdio.c
+libburn/sg-freebsd-port.c
+test/libburner.c
+test/telltoc.c
+README
+cdrskin/cdrskin.1
+cdrskin/cdrskin_eng.html
+cdrskin/wiki_plain.txt
+doc/cookbook.txt
+More hunt for "allow to"
+
+2015.09.17.160121  [5480]
+acinclude.m4
+Recognizing again Debian GNU/kFreeBSD, regression by rev 5437
+
+2015.09.23.110012  [5486]
+libburn/drive.c
+Bug fix: burn_disc_get_multi_caps() returned 2048 bytes too many in .start_range_high
+
+23 Sep 2015  [5487]
+test/libburner.c
+test/telltoc.c
+Mutally mentioned the other demo program in their introdution comments
+
+2015.10.18.125353  [5493]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/spc.h
+libburn/spc.c
+libburn/mmc.c
+New API calls burn_drive_get_serial_no() and burn_drive_get_media_sno()
+
+2015.10.18.133327  [5495]
+cdrskin/cdrskin.c
+New -toc output lines "Drive id" and "Media id"
+
+2015.10.19.174459  [5496]
+cdrskin/cdrskin.c
+Bug fix: Media summary session count of blank and closed media was short by 1
+
+23 Oct 2015  [5498]
+libburn/sg-linux.c
+Prevented potential use of file pointer after fopen() failed
+
+2015.10.23.103324  [5499]
+libburn/spc.c
+Made sure that only existent CDB bytes get accessed by SCSI command logging. Coverity CID 21806.
+
+2015.10.23.121415  [5500]
+libburn/sg-linux.c
+Completed rev 5498, which is a reaction on Coverity CID 21805.
+
+2015.10.23.122644  [5501]
+libburn/spc.c
+Bug fix: Endless loop if transport error occurs while waiting for drive ready.
+
+2015.10.23.123606  [5502]
+test/fake_au.c
+Checking program arguments of test/fake_au. Coverity CID 21832.
+
+2015.10.23.124544  [5503]
+cdrskin/cdrskin.c
+Prevented use of an uninitialized variable. Coverity CID 21842.
+
+2015.10.23.130707  [5504]
+libburn/sg-linux.c
+Removed surplus code statement which used uninitialized variable. Coverity CID 21843.
+
+23 Oct 2015  [5505] [5506]
+test/poll.c
+Completed initialization of struct sigaction in test/poll.c. Coverity CID 21845.
+
+2015.10.23.135526  [5507]
+cdrskin/cdrskin.c
+Moved unused variable into its ifdef case. Coverity CID 21799.
+
+2015.10.23.140731  [5508]
+cdrskin/cdrskin.c
+Enabled display of pacifier state "formatting" in cdrskin. Coverity CID 21793.
+
+2015.10.23.160546  [5509]
+libburn/drive.c
+Avoided a potential memory leak with debug messages. Coverity CID 21808.
+
+2015.10.23.162527  [5510]
+libburn/options.c
+Closed a potential memory leak with CD-TEXT production. Coverity CID 21809.
+
+2015.10.23.164931  [5511]
+libburn/write.c
+Closed a potential memory leak with writing to stdio pseudo drives. Coverity CID 21810.
+
+2015.10.24.075251  [5512]
+cdrskin/cdrskin.c
+Closed memory leak with errors while attaching fifo. Coverity CID 21811.
+
+24 Oct 2015  [5513]
+test/telltoc.c
+Closed memory leak in telltoc. Coverity CID 21812.
+
+24 Oct 2015  [5514]
+test/telltoc.c
+Updated telltoc to BD and other old novelties.
+
+24 Oct  [5515]
+test/telltoc.c
+Closing output file pointer of telltoc --read_and_print. Coverity CID 21813.
+
+24 Oct 2015  [5516]
+test/libburner.c
+Closed various memory leaks in libburner. Coverity CID 21814, CID 21815.
+
+2015.10.26.092929  [5518]
+cdrskin/cdrskin.c
+Closed file pointer leak in case of error with audio source. Coverity CID 21816.
+
+2015.10.26.102430  [5519]
+cdrskin/cdrskin.c
+Closed memory leak in case of burn failure. Coverity CID 21817.
+
+2015.10.26.105324  [5520]
+libburn/cdtext.c
+libburn/libdax_msgs.h
+Avoiding to allocate empty buffer for texp packs. Indirectly Coverity CID 21818.
+
+2015.10.26.105754  [5521]
+cdrskin/cdrskin.c
+Clarified the scope of an allocated variable. Coverity CID 21818.
+
+2015.10.26.145305  [5522]
+cdrskin/cdrskin.c
+Distinguishing between self-opened and inherited file descriptors as track input. Coverity CID 21819.
+
+2015.10.26.145941  [5523]
+libburn/structure.c
+Closed a memory leak with error opening audio input of CUE sheet. Coverity CID 21820.
+
+2015.10.26.150529  [5524]
+libburn/structure.c
+Closed a file pointer leak with CUE file interpretation. Coverity CID 21821.
+
+2015.10.26.151914  [5525]
+libburn/sg-linux.c
+Added missing break statement to SG_IO error reporting. Coverity CID 21803.
+
+2015.10.26.153745  [5526]
+libburn/sector.c
+Corrected reaction on unsupported track modes. Coverity CID 21804.
+
+2015.10.26.154728  [5527]
+libburn/mmc.c
+Preventing very improbable signed 32 bit overflow with MMC speed range. Coverity CID 21823.
+
+2015.10.26.183813  [5528]
+libburn/drive.c
+Fixed memory waste by oversized feature descriptor objects. Coverity CID 21824.
+
+2015.10.26.184231  [5529]
+libburn/libdax_audioxtr.c
+Removed overly optimistic test ocde for SUN audio. Coverity CID 21846.
+
+2015.10.28.153929  [5530]
+libburn/write.c
+Removed a surplus test. Coverity CID 21796.
+
+2015.10.28.162205  [5531]
+libburn/drive.c
+Closed memory leak with minor cdrskin jobs. Found by valgrind.
+
+28 Oct 2015  [5532]
+test/fake_au.c
+Testing all arguments of fake_au for oversize. Coverity CID 21830.
+
+2015.10.28.162537  [5533] [5534]
+cdrskin/cdrskin.c
+Prevented a quite unlikely buffer overflow by argument. Coverity CID 21827.
+
+28 Oct 2015  [5535]
+test/telltoc.c
+Prevented a quite unlikely buffer overflow by argument. Coverity CID 21831.
+
+2015.10.29.082150  [5536]
+cdrskin/cdrskin.c
+Cared for an improbable error case. Coverity CID 21784.
+
+29 Oct 2015  [5537]
+Makefile.am
+test/structest.c
+Removed useless and faulty test/structest.c. Coverity CID 21785.
+
+29 Oct 2015  [5538]
+libburn/libburn.ver
+Forgot to put burn_drive_get_serial_no and burn_drive_get_media_sno into API
+
+29 Oct 2015  [5539]
+test/telltoc.c
+Handling failure to write to disk file. Coverity CID 21786.
+
+2015.10.29.105609  [5540]
+libburn/mmc.c
+Removed a surplus development variable. Coverity CID 21795.
+
+2015.10.31.122151  [5541]
+cdrskin/cdrskin.c
+Reacting on (improbable) failure of burn_disc_pretend_full(). Coverity CID 21847.
+
+2015.11.01.102608  [5542]
+libburn/mmc.c
+Unified the tests against rogue GET CONFIGURATION replies. Coverity CID 21794.
+
+2015.11.01.125502  [5543]
+libburn/mmc.c
+Corrected a mistake made in rev 5542. Coverity CID 28636.
+
+2015.11.01.184659  [5544]
+libburn/structure.c
+Closed a memory leak with error around C-TEXT. Another try on Coverity CID 21818.
+
+2015.11.01.194734  [5545]
+libburn/structure.c
+Took into respect that burn_session_by_cue_file() parameter text_packs may be NULL.
+
+2015.11.01.195218  [5546]
+libburn/mmc.c
+Completed revision 5527. Coverity CID 21823.
+
+02 Nov 2015  [5547]
+Corrected misperception of telltoc --read_and_print 1:.
+
+2015.11.02.151241  [5548]
+libburn/mmc.c
+Completed revision 5527. Coverity CID 21823.
+
+2015.11.25.093414  [5613]
+libburn/sg-freebsd.c
+Fixed a theoretical memory leak in actually unused code. Reported by cppcheck.
+
+28 Nov 2015  [5614]
+svn copy -m Branching for libburn release 1.4.2
+ http://svn.libburnia-project.org/libburn/trunk
+ http://svn.libburnia-project.org/libburn/branches/1.4.2
+
+2015.11.28.120001  [5615]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.2
+
+28 Nov 2015  [5616]
+- cdrskin/add_ts_changes_to_libburn_1_4_0
+- cdrskin/add_ts_changes_to_libburn_1_4_1
++ cdrskin/add_ts_changes_to_libburn_1_4_2
++ cdrskin/add_ts_changes_to_libburn_1_4_3
+Updated cdrskin tarball generator
+
+28 Nov 2015  [5617]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - cdrskin-1.4.2 - 2015.11.28.120001
+* Bug fix: burn_disc_get_media_id() returned BD identifiers 2 chars too long
+* Bug fix: burn_disc_get_multi_caps() returned 2048 bytes too many in
+           caps.start_range_high
+* Bug fix: Media summary session count of blank and closed media was short by 1
+* Bug fix: Endless loop if transport error occurs while waiting for drive ready
+* New API calls burn_drive_get_serial_no() and burn_drive_get_media_sno()
+* Result of a Coverity audit: 40+ code changes, but no easy-to-trigger bugs
+
+
+2015.11.28.210034  []
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.3
+
+28 Nov 2015  []
+- cdrskin/add_ts_changes_to_libburn_1_4_0
+- cdrskin/add_ts_changes_to_libburn_1_4_1
++ cdrskin/add_ts_changes_to_libburn_1_4_2
++ cdrskin/add_ts_changes_to_libburn_1_4_3
+Updated cdrskin tarball generator
+
+28 Nov 2015  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.3 - 
+
 
   []
 ChangeLog
@@ -12845,7 +13238,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.1 - 2015.05.17.200218
+------------------------------------ cycle  - cdrskin-1.4.3 - 
 
   []
 ChangeLog
@@ -12853,15 +13246,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.1 - 
-
-  []
-ChangeLog
-cdrskin/cdrskin_eng.html
-cdrskin/changelog.txt
-Updated change log
-
------------------------------------- cycle  - cdrskin-1.4.1 - 
+------------------------------------ cycle  - cdrskin-1.4.3 - 
 
 
 **********************************************************************
