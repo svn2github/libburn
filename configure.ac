@@ -317,6 +317,9 @@ else
     echo "disabled strict symbol encapsulation"
 fi
 
+# Check for system dependent mandatory libraries (LIBBURN_ARCH_LIBS)
+LIBBURNIA_CHECK_ARCH_LIBS(mandatory)
+
 AC_ARG_ENABLE(ldconfig-at-install,
 [  --enable-ldconfig-at-install    On GNU/Linux run ldconfig, default=yes],
                , ldconfig_at_install=yes)

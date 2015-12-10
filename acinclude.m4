@@ -113,3 +113,37 @@ dnl For debugging only
 
 ])
 
+dnl LIBBURNIA_CHECK_ARCH_LIBS is by Thomas Schmitt, libburnia project
+dnl It tests whether the OS dependent libraries are available.
+dnl With libisoburn they are needed only for the case that indirect linking
+dnl does not work. So it is worth a try to omit them.
+dnl $1 = "mandatory" or "optional" define the action if test linking fails.
+AC_DEFUN([LIBBURNIA_CHECK_ARCH_LIBS],
+[
+    libburnia_save_LIBS="$LIBS"
+    if test "x$LIBBURN_ARCH_LIBS" = x
+    then
+      dummy=dummy
+    else
+      LIBS="$LIBS $LIBBURN_ARCH_LIBS"
+      AC_TRY_LINK([#include <stdio.h>], [printf("Hello\n");],
+                  [archlibs_test="yes"], [archlibs_test="no"])
+      LIBS="$libburnia_save_LIBS"
+      if test x$archlibs_test = xno
+      then
+        if test x"$1" = xmandatory
+        then
+          echo >&2
+          echo "FATAL: Test linking with mandatory library options failed: $LIBBURN_ARCH_LIBS" >&2
+          echo >&2
+          (exit 1); exit 1;
+        else
+          echo "disabled linking with $LIBBURN_ARCH_LIBS (because not found)"
+          LIBBURN_ARCH_LIBS=""
+        fi
+      else
+        echo "enabled  linking with $LIBBURN_ARCH_LIBS"
+      fi
+    fi
+])
+
