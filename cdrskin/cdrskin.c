@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2015 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2016 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
@@ -1446,7 +1446,7 @@ int Cdrtrack_open_source_path(struct CdrtracK *track, int *fd, int flag)
      track->fixed_size= Cdrtrack_minimum_sizE*track->sector_size;
    }
  }
- return((*fd >= 0) * (2 * self_opened));
+ return((*fd >= 0) * (1 + self_opened));
 }
 
 
