@@ -13204,7 +13204,7 @@ Updated change log
 * Result of a Coverity audit: 40+ code changes, but no easy-to-trigger bugs
 
 
-2015.11.28.210034  []
+2015.11.28.210034  [5621]
 Makefile.am
 configure.ac
 README
@@ -13217,19 +13217,43 @@ cdrskin/cdrskin_timestamp.h
 cdrskin/cdrskin_eng.html
 Made number transition to 1.4.3
 
-28 Nov 2015  []
+28 Nov 2015  [5622]
 - cdrskin/add_ts_changes_to_libburn_1_4_0
 - cdrskin/add_ts_changes_to_libburn_1_4_1
 + cdrskin/add_ts_changes_to_libburn_1_4_2
 + cdrskin/add_ts_changes_to_libburn_1_4_3
 Updated cdrskin tarball generator
 
-28 Nov 2015  []
+28 Nov 2015  [5623]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
+------------------------------------ cycle  - cdrskin-1.4.3 - 2015.11.28.211845
+
+28 Nov 2015  [5624]
+svn move -m libburn release 1.4.2 is ready
+http://svn.libburnia-project.org/libburn/branches/1.4.2 
+http://svn.libburnia-project.org/libburn/tags/1.4.2
+
+10 Dec 2015  [5634]
+configure.ac
+acinclude.m4
+Checking for availability of LIBBURN_ARCH_LIBS
+
+2016.01.27.174553  [5653]
+cdrskin/cdrskin.c
+Bug fix: "failed to attach fifo" when burning from stdin. Regression of 1.4.2, rev 5522.
+
+28 Jan 2016  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
 ------------------------------------ cycle  - cdrskin-1.4.3 - 
+* Bug fix: "failed to attach fifo" when burning from stdin.
+           Regression of 1.4.2, rev 5522.
 
 
   []
