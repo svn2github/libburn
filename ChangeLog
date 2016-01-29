@@ -1,9 +1,12 @@
 
 SVN trunk (to become libburn-1.4.4 or higher)
 ===============================================================================
-* Bug fix: "failed to attach fifo" when burning from stdin. 
+- no novelties yet, except the fix of libburn-1.4.2.pl01.tar.gz -
+
+libburn-1.4.2.pl01.tar.gz Fri Jan 29 2016
+===============================================================================
+* Bug fix: cdrskin "failed to attach fifo" when burning from stdin. 
            Regression of 1.4.2, rev 5522.
- 
 
 libburn-1.4.2.tar.gz Sat Nov 28 2015
 ===============================================================================

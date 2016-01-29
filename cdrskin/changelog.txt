@@ -13245,14 +13245,51 @@ Checking for availability of LIBBURN_ARCH_LIBS
 cdrskin/cdrskin.c
 Bug fix: "failed to attach fifo" when burning from stdin. Regression of 1.4.2, rev 5522.
 
-28 Jan 2016  []
+28 Jan 2016  [5564]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.3 - 
-* Bug fix: "failed to attach fifo" when burning from stdin.
+------------------------------------ cycle  - cdrskin-1.4.3 - 2016.01.28.101456
+* Bug fix: cdrskin "failed to attach fifo" when burning from stdin.
+           Regression of 1.4.2, rev 5522.
+
+
+29 Jan 2016  [5655]
+svn copy -m Branching for libburn bugfix release 1.4.2.pl01 
+http://svn.libburnia-project.org/libburn/tags/1.4.2
+http://svn.libburnia-project.org/libburn/branches/1.4.2.pl01
+
+
+2016.01.29.100001  [5656]
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin.c
+Bug fix: cdrskin "failed to attach fifo" when burning from stdin.
+         Regression of 1.4.2, rev 5522.
+
+29 Jan 2016  [5657]
+README
+cdrskin/README
+ChangeLog
+cdrskin/changelog.txt
+cdrskin/cdrskin_eng.html
+Mentioned bug fix and pl01
+
+29 Jan 2016  [5658]
+svn move -m libburn bugfix release 1.4.2.pl01 is ready
+http://svn.libburnia-project.org/libburn/branches/1.4.2.pl01
+http://svn.libburnia-project.org/libburn/tags/1.4.2.pl01
+
+  []
+README
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated README and change log
+
+------------------------------ release - cdrskin-1.4.2.pl01 - 2016.01.29.100001
+* Bug fix: cdrskin "failed to attach fifo" when burning from stdin.
            Regression of 1.4.2, rev 5522.
 
 

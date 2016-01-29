@@ -6,12 +6,12 @@ This all is under GPL.
 ------------------------------------------------------------------------------
 libburnia-project.org
 By Mario Danic <mario.danic@gmail.com> and Thomas Schmitt <scdbackup@gmx.net>
-Copyright (C) 2006-2015 Mario Danic, Thomas Schmitt
+Copyright (C) 2006-2016 Mario Danic, Thomas Schmitt
 Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.4.2.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.4.2.pl01.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,9 +19,9 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.4.2.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.4.2.pl01.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.4.2.tar.gz
+   tar xzf libburn-1.4.2.pl01.tar.gz
    cd libburn-1.4.2
    ./configure --prefix=/usr
    make
@@ -723,24 +723,24 @@ Project history as far as known to me:
   xorriso now by default puts EL Torito boot images to low block addresses.
   It can report and set read speeds. Several rarely occuring bugs were fixed.
 
-- Tue Mar 04 2014 release 1.3.6
+- Tue Mar 04 2014 release 1.3.6:
   libburn learned to operate optical drives and media on NetBSD. libisofs got
   a bug fix about HFS+ and enhancements about character set conversion.
   Minor bugs were fixed in libisoburn. xorriso can now find files with names
   which cannot be represented unchanged in ECMA-119, Joliet, or HFS+. 
 
-- Sat Jun 28 2014 release 1.3.8
+- Sat Jun 28 2014 release 1.3.8:
   libburn got several bugs fixed. libisofs offers new API calls for inspection
   of boot sectors in ISO 9660 filesystems. xorriso improved its support for
   NetBSD, offers new features with command -find, and a command to extract
   ISO 9660 file content onto standard output or into filter processes.
 
-- Sun May 17 2015 release 1.4.0
+- Sun May 17 2015 release 1.4.0:
   This release is mainly about bug fixes and a new feature of xorriso to
   propose commands or as_mkisofs options which can reproduce the boot
   equipment of the loaded ISO filesystem.
 
-- Sat Nov 28 2015 release 1.4.2
+- Sat Nov 28 2015 release 1.4.2:
   libburn got some bugs fixed and learned to inquire the drive serial number.
   libisofs now sorts data file content by ECMA-119 file names for better
   reproducability of ISO content. Rock Ridge filenames may be restricted to
@@ -751,6 +751,9 @@ Project history as far as known to me:
   The source code underwent a scan by Coverity. About 150 code changes
   resulted, but no easy-to-trigger bugs were found.
   
+- Fri Jan 29 2016 patch release libburn-1.4.2.pl01:
+  cdrskin did not work with "-" (stdin) as input.
+  Regression introduced by version 1.4.2.
 
 ------------------------------------------------------------------------------
 
