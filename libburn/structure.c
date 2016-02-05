@@ -1647,7 +1647,7 @@ out_of_mem:;
 		if (crs->file_source != NULL) {
 			libdax_msgs_submit(libdax_messenger, -1, 0x00020192,
 				LIBDAX_MSGS_SEV_FAILURE, LIBDAX_MSGS_PRIO_HIGH,
-			      "In cue sheet file: Multiple occurences of FILE",
+			     "In cue sheet file: Multiple occurrences of FILE",
 				0, 0);
 			ret = 0; goto ex;
 		}
