@@ -5096,7 +5096,7 @@ int Cdrskin_cdtext_to_file(struct CdrskiN *skin, char *path, int flag)
    printf("CD-Text len: %d\n", num_packs * 18 + 4);
 
  } else {
-   fprintf(stderr, "cdrskin: FATAL : Program error : Unknow format %d with Cdrskin_cdtext_to_file.\n", fmt);
+   fprintf(stderr, "cdrskin: FATAL : Program error : Unknown format %d with Cdrskin_cdtext_to_file.\n", fmt);
    {ret= -1; goto ex;}
  }
  ret= 1;
