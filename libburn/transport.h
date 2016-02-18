@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -256,12 +256,12 @@ struct burn_drive
 	/* ts B51016 : Result from feature 108h : Drive Serial Number
 	*/
 	char *drive_serial_number;
-	char drive_serial_number_len;
+	int drive_serial_number_len;
 
 	/* ts B51016 : Result from command AB READ MEDIA SERIAL NUMBER
 	*/
 	char *media_serial_number;
-	char media_serial_number_len;
+	int media_serial_number_len;
 
 	/* ts B10524 : whether the damage bit was set for the future track.
 	               bit0= damage bit , bit1= nwa valid bit
