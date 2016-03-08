@@ -419,6 +419,7 @@ int burn_drive_grab_stdio(struct burn_drive *d, int flag)
 		/* despite its name : last valid address, not size */
 		d->media_read_capacity =
 					read_size / 2048 - !(read_size % 2048);
+		d->mr_capacity_trusted = 1;
 		if ((stat_ret == -1 || is_rdwr) && d->devname[0]) { 
 		       	ret = burn_os_stdio_capacity(d->devname, 0, &size);
 			if (ret > 0)
@@ -1782,10 +1783,12 @@ int burn_drive_grab_dummy(struct burn_drive_info *drive_infos[], char *fname)
 		strcpy(d->current_profile_text,"stdio file");
 		d->current_is_cd_profile = 0;
 		d->current_is_supported_profile = 1;
-		if (read_size >= 0)
+		if (read_size >= 0) {
 			/* despite its name : last valid address, not size */
 			d->media_read_capacity =
 				read_size / 2048 - !(read_size % 2048);
+			d->mr_capacity_trusted = 1;
+		}
 		burn_drive_set_media_capacity_remaining(d, size);
 	} else
 		d->current_profile = 0; /* Drives return this if empty */
@@ -3322,7 +3325,8 @@ int burn_drive_set_media_capacity_remaining(struct burn_drive *d, off_t value)
 /* ts A81215 : API */
 int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag)
 {
-	*capacity = d->media_read_capacity + 1;
+	*capacity = d->media_read_capacity +
+			(d->media_read_capacity != 0x7fffffff);
 	return (d->media_read_capacity != 0x7fffffff);
 }
 

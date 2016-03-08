@@ -749,10 +749,23 @@ int burn_session_get_hidefirst(struct burn_session *session)
 }
 
 
+static void burn_track_info_high_read(unsigned char *data,
+					int *higest_readable)
+{
+	int ret;
+
+	ret = mmc_four_char_to_int(data + 8) +
+	      mmc_four_char_to_int(data + 24);
+	if (ret - 1> *higest_readable)
+		*higest_readable = ret - 1;
+}
+
+
 /* ts A80808 : Enhance CD toc to DVD toc */
 int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 {
 	int sidx= 0, tidx= 0, ret, track_offset, alloc_len = 34;
+	int higest_readable = -1;
 	struct burn_toc_entry *entry, *prev_entry= NULL;
 	struct burn_disc *d;
 	/* ts A81126 : ticket 146 : There was a SIGSEGV in here */
@@ -835,6 +848,9 @@ int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 					    ((!drive->current_is_cd_profile) ||
 					   ret < prev_entry->track_blocks - 2))
 						prev_entry->track_blocks = ret;
+					if (!drive->mr_capacity_trusted)
+						burn_track_info_high_read(
+						  buf->data, &higest_readable);
 				}
 				prev_entry->extensions_valid |= 1;
 			}
@@ -847,6 +863,19 @@ int burn_disc_cd_toc_extensions(struct burn_drive *drive, int flag)
 			prev_entry = entry;
 		}
 	}
+
+	if (!drive->mr_capacity_trusted) {
+		if (higest_readable == drive->media_read_capacity - 2) {
+			drive->media_read_capacity = higest_readable;
+			drive->mr_capacity_trusted = 1;
+			libdax_msgs_submit(libdax_messenger,
+				drive->global_index, 0x00000002,
+				LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
+	"Corrected READ CAPACITY by READ TRACK INFORMATION. Assuming TAO.",
+				0, 0);
+		}
+	}
+
 	{ret = 1; goto ex;}
 failure:
 	libdax_msgs_submit(libdax_messenger, -1, 0x0002015f,

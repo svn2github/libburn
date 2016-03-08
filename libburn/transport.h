@@ -369,6 +369,11 @@ struct burn_drive
 	               0x7ffffff0 = 32 bit overflow, or unknown stdio size
 	 */
 	int media_read_capacity;
+	/* ts B60305 : Whether READ CAPACITY of CD is credible:
+	               -1= no READ CAPACITY yet , 0= untrusted READ CAPACITY
+	               1= READ CAPACITY confirmed or corrected by other commands
+	*/
+	int mr_capacity_trusted;
 
 	/* ts B10314 : Next Writeable Adress for drive_role == 5 */
         int role_5_nwa;

@@ -1485,6 +1485,20 @@ ex:;
 }
 
 
+static int mmc_register_leadout(struct burn_drive *d, int *highest_leadout,
+                             int toc_idx)
+{
+	int lba;
+
+	lba = burn_msf_to_lba(d->toc_entry[toc_idx].pmin,
+				d->toc_entry[toc_idx].psec,
+				d->toc_entry[toc_idx].pframe);
+	if (lba > *highest_leadout)
+		*highest_leadout = lba;
+	return 1;
+}
+
+
 static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 {
 /* read full toc, all sessions, in m/s/f form, 4k buffer */
@@ -1494,7 +1508,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 	struct buffer *buf = NULL;
 	struct command *c = NULL;
 	int dlen;
-	int i, old_alloc_len, t_idx, ret;
+	int i, old_alloc_len, t_idx, ret, highest_leadout = -1;
 	unsigned char *tdata;
 	char *msg = NULL;
 
@@ -1652,9 +1666,12 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 			d->disc->session[tdata[0] - 1]->firsttrack = tdata[8];
 		if (tdata[3] == 0xA1)
 			d->disc->session[tdata[0] - 1]->lasttrack = tdata[8];
-		if (tdata[3] == 0xA2)
+		if (tdata[3] == 0xA2) {
 			d->disc->session[tdata[0] - 1]->leadout_entry =
 				&d->toc_entry[i];
+			/* ts B60305 */
+			mmc_register_leadout(d, &highest_leadout, i);
+		}
 	}
 
 	/* ts A70131 : was (d->status != BURN_DISC_BLANK) */
@@ -1700,6 +1717,23 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 
 	/* A80808 */
 	burn_disc_cd_toc_extensions(d, 0);
+
+	/* ts B60304
+	   Most drives report READ CAPACITY of TAO CD too high by 2 blocks.
+	   TOC format 2 always reports 2 blocks more than are readable.
+	   So here it is possible to check and mark as trusted.
+	*/
+	if (highest_leadout > 0 && d->media_read_capacity != 0x7fffffff &&
+	    !d->mr_capacity_trusted) {
+		if (highest_leadout - 3 == d->media_read_capacity) {
+			d->mr_capacity_trusted = 1;
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				 0x00000002, LIBDAX_MSGS_SEV_DEBUG,
+				 LIBDAX_MSGS_PRIO_ZERO,
+	      "Trusting READ CAPACITY by 2 extra blocks in TOC. Assuming TAO.",
+				 0, 0);
+		}
+	}
 
 	ret = 1;
 ex:;
@@ -1909,6 +1943,7 @@ static int mmc_read_disc_info_al(struct burn_drive *d, int *alloc_len)
 
 	/* ts A81210 */
 	d->media_read_capacity = 0x7fffffff;
+	d->mr_capacity_trusted = -1;
 
 	/* ts A61202 */
 	d->toc_entries = 0;
@@ -4836,6 +4871,7 @@ int mmc_read_capacity(struct burn_drive *d)
 	BURN_ALLOC_MEM(buf, struct buffer, 1);
 	BURN_ALLOC_MEM(c, struct command, 1);
 	d->media_read_capacity = 0x7fffffff;
+	d->mr_capacity_trusted = -1;
 	mmc_start_if_needed(d, 1);
 	if (mmc_function_spy(d, "mmc_read_capacity") <= 0)
 		{ret = 0; goto ex;}
@@ -4853,6 +4889,10 @@ int mmc_read_capacity(struct burn_drive *d)
 		d->media_read_capacity = 0x7fffffff;
 		{ret = 0; goto ex;}
 	}
+	if (d->current_profile >= 0x08 && d->current_profile <= 0x0A)
+		d->mr_capacity_trusted = 0;
+	else
+		d->mr_capacity_trusted = 1;
 	ret = 1;
 ex:;
 	BURN_FREE_MEM(c);
@@ -5367,6 +5407,7 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->media_capacity_remaining = 0;
 	d->media_lba_limit = 0;
 	d->media_read_capacity = 0x7fffffff;
+	d->mr_capacity_trusted = 0;
 	d->pessimistic_buffer_free = 0;
 	d->pbf_altered = 0;
 	d->wait_for_buffer_free = Libburn_wait_for_buffer_freE;

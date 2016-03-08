@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    This is the official API definition of libburn.
@@ -3935,7 +3935,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 
 /* ts A81215 */
 /** Inquire the maximum amount of readable data.
-    It is supposed that all LBAs in the range from 0 to media_read_acpacity-1
+    It is supposed that all LBAs in the range from 0 to capacity - 1
     can be read via burn_read_data() although some of them may never have been
     recorded. If tracks are recognizable then it is better to only read
     LBAs which are part of some track.
