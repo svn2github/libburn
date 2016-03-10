@@ -1,7 +1,7 @@
 
 /* libdax_msgs
    Message handling facility of libdax.
-   Copyright (C) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>,
+   Copyright (C) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPL version 2 or later.
 */
 
@@ -34,14 +34,13 @@ static int libdax_msgs_item_new(struct libdax_msgs_item **item,
  int ret;
  struct libdax_msgs_item *o;
  struct timeval tv;
- struct timezone tz;
 
  (*item)= o= 
         (struct libdax_msgs_item *) calloc(1, sizeof(struct libdax_msgs_item));
  if(o==NULL)
    return(-1);
  o->timestamp= 0.0;
- ret= gettimeofday(&tv,&tz);
+ ret= gettimeofday(&tv, NULL);
  if(ret==0)
    o->timestamp= tv.tv_sec+0.000001*tv.tv_usec;
  o->process_id= getpid();

@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -2748,16 +2748,15 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 			 int amount, int flag)
 {
 	struct timeval tnow;
-	struct timezone dummy_tz;
 	double to_wait;
 
 	if (flag & 1) {
-		gettimeofday(prev_time, &dummy_tz);
+		gettimeofday(prev_time, NULL);
 		return 1;
 	}
 	if(d->nominal_write_speed <= 0)
 		return 2;
-	gettimeofday(&tnow, &dummy_tz);
+	gettimeofday(&tnow, NULL);
 	to_wait = ( ((double) amount) / (double) d->nominal_write_speed ) - 
 		(double) ( tnow.tv_sec - prev_time->tv_sec ) -
 		(double) ( tnow.tv_usec - prev_time->tv_usec ) / 1.0e6
@@ -2765,7 +2764,7 @@ int burn_stdio_slowdown(struct burn_drive *d, struct timeval *prev_time,
 	if (to_wait >= 0.0001) {
 		usleep((int) (to_wait * 1000000.0));
 	}
-	gettimeofday(prev_time, &dummy_tz);
+	gettimeofday(prev_time, NULL);
 	return 1;
 }
 

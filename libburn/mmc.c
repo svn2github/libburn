@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -744,7 +744,6 @@ static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
 {
 	int usec= 0, need, reported_3s = 0, first_wait = 1;
 	struct timeval t0,tnow;
-	struct timezone dummy_tz;
 	double max_fac, min_fac, waiting;
 
 /* Enable to get reported waiting activities and total time.
@@ -781,7 +780,7 @@ static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
 	/* There is need to inquire the buffer fill */
 	d->pessimistic_writes++;
 	min_fac = ((double) d->wfb_min_percent) / 100.0;
-	gettimeofday(&t0, &dummy_tz);
+	gettimeofday(&t0, NULL);
 #ifdef Libburn_mmc_wfb_debuG
 	sleeplist[0]= 0;
 	sprintf(sleeplist,"(%d%s %d)",
@@ -802,7 +801,7 @@ static int mmc_wait_for_buffer_free(struct burn_drive *d, struct buffer *buf)
 			(d->pbf_altered ? "? -" : " -"),
 			(int) ((1.0 - min_fac) * d->progress.buffer_capacity));
 #endif
-		gettimeofday(&tnow,&dummy_tz);
+		gettimeofday(&tnow, NULL);
 		waiting = (tnow.tv_sec - t0.tv_sec) +
 			  ((double) (tnow.tv_usec - t0.tv_usec)) / 1.0e6;
 		if (d->pessimistic_buffer_free - buf->bytes >=
@@ -905,10 +904,9 @@ static int print_time(int flag)
 {
 	static struct timeval prev = {0, 0};
 	struct timeval now;
-	struct timezone tz;
 	int ret, diff;
 
-	ret = gettimeofday(&now, &tz);
+	ret = gettimeofday(&now, NULL);
 	if (ret == -1)
 		return 0;
 	if (now.tv_sec - prev.tv_sec < Libburn_scsi_write_timeouT) {
