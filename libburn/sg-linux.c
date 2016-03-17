@@ -1620,6 +1620,8 @@ next_ata:;
 
 next_proc_info:;
 	baseno += ata_limit;
+	if (burn_sg_use_family != 0) /* Only with default enumeration */
+		return 0;
 	for (i = 0; i < idx->info_count; i++) {
 		if ((idx->info_list)[i][0] == 0)
 	continue;
