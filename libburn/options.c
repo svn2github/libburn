@@ -89,12 +89,22 @@ int burn_write_opts_clone(struct burn_write_opts *from,
 		return 1;
 	*to = calloc(1, sizeof(struct burn_write_opts));
 	if (*to == NULL) {
+out_of_mem:;
 		libdax_msgs_submit(libdax_messenger, -1, 0x00000003,
 				LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
 				"Out of virtual memory", 0, 0);
 		return -1;
 	}
 	memcpy(*to, from, sizeof(struct burn_write_opts));
+	(*to)->text_packs = NULL;
+	(*to)->num_text_packs = 0;
+	if (from->text_packs != NULL && from->num_text_packs > 0) {
+		(*to)->text_packs = calloc(1, from->num_text_packs * 18);
+		if ((*to)->text_packs == NULL)
+			goto out_of_mem;
+		memcpy((*to)->text_packs, from->text_packs,
+		       from->num_text_packs * 18);
+	}
 	(*to)->refcount= 1;
 	return 1;
 }
