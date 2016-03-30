@@ -1259,7 +1259,7 @@ static int collect_payload(unsigned char *text_packs, int num_packs,
 	break;
 		memcpy(*payload + *payload_count, pack + 4, 12);
 		*payload_count += 12;
-		if (pack[4] & 128)
+		if (pack[3] & 128)
 			double_byte = 1;
 	}
 	(*payload)[*payload_count] = 0;
