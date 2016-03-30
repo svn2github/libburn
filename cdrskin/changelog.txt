@@ -13323,7 +13323,7 @@ Replaced unused timezone parameter of gettimeofday() by NULL
 libburn/sg-linux.c
 Bug fix: Linux /proc/sys/dev/cdrom/info overrode SCSI dev family conversion
 
-  []
+18 Mar 2016  [i5682]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
@@ -13331,6 +13331,25 @@ Updated change log
 
 ------------------------------------ cycle  - cdrskin-1.4.3 - 2016.03.18.130253
 * Bug fix: Option drive_scsi_dev_family=sg did not convert /dev/sr* to /dev/sg*
+
+
+2016.03.30.113137  [5686]
+libburn/cdtext.c
+Bug fix: burn_make_input_sheet_v07t() falsly recognized double byte encoding
+
+2016.03.30.185545  [5687]
+libburn/options.c
+Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() is used
+
+30 Mar 2016  []
+ChangeLog
+cdrskin/cdrskin_eng.html
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.3 - 2016.03.30.191115
+* Bug fix: burn_make_input_sheet_v07t() falsly recognized double byte encoding
+* Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() is used
 
 
   []

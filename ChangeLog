@@ -2,6 +2,10 @@
 SVN trunk (to become libburn-1.4.4 or higher)
 ===============================================================================
 * Bug fix: Option drive_scsi_dev_family=sg did not convert /dev/sr* to /dev/sg*
+* Bug fix: burn_make_input_sheet_v07t() falsly recognized double byte encoding.
+           Affected cdrskin option: cdtext_to_v07t=
+* Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() isi
+           used. Affected cdrskin option: textfile=
 
 libburn-1.4.2.pl01.tar.gz Fri Jan 29 2016
 ===============================================================================
