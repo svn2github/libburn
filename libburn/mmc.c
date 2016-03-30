@@ -5091,7 +5091,7 @@ int mmc_get_media_product_id(struct burn_drive *d,
 		"DVD-ROM", "DVD-RAM", "DVD-R", "DVD-RW",
 		"HD DVD-ROM", "HD DVD-RAM", "HD DVD-R", "unknown",
 		"unknown", "DVD+RW", "DVD+R", "unknown",
-		"unknown", "DVD+RW DL" "DVD+R DL", "unknown"};
+		"unknown", "DVD+RW DL", "DVD+R DL", "unknown"};
 
 	*product_id = *media_code1 = *media_code2 = *book_type = NULL;
 	prf = d->current_profile;
