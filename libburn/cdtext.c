@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2011 Thomas Schmitt <scdbackup@gmx.net>
+/* Copyright (c) 2011 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1620,7 +1620,7 @@ static int burn_make_v07t(unsigned char *text_packs, int num_packs,
 		return 0;
 	}
 
-	/* Obtain first_tno and last_tno from type 0x88 if present. */
+	/* Obtain first_tno and last_tno from type 0x8f if present. */
 	if (first_tno <= 0) {
 		if (pack[5] > 0 &&  pack[5] + pack[6] < 100 &&
 		    pack[5] <= pack[6]) {
@@ -1647,6 +1647,21 @@ static int burn_make_v07t(unsigned char *text_packs, int num_packs,
 	/* Report content */
 	result_size = 0;
 	for (block = 0; block < 8; block++) {
+		/* Obtain character code, reject unknown ones */
+		ret = search_pack(text_packs, num_packs, 0, 0x8f, block, 
+                          	&pack, &pack_no, 0);
+		if (ret > 0)
+			*char_code = pack[4];
+		if (*char_code != 0x00 && *char_code != 0x01 &&
+		    *char_code != 0x80) {
+			sprintf(msg,
+			  "CD-TEXT block %d with unknown character code %2.2x",
+			  block, (unsigned int) *char_code);
+			libdax_msgs_submit(libdax_messenger, -1, 0x0002019f,
+					LIBDAX_MSGS_SEV_FAILURE,
+					LIBDAX_MSGS_PRIO_HIGH, msg, 0, 0);
+			return 0;
+		}
 		ret = report_block(text_packs, num_packs, block, 
 		                   first_tno, last_tno, *char_code,
 		                   result, result_size, flag & 1);
@@ -1656,16 +1671,7 @@ static int burn_make_v07t(unsigned char *text_packs, int num_packs,
 	continue;
 		result_size = ret;
 	}
-
-#ifdef NIX
-	if (flag & 1)
-		return result_size;
-	return (int) strlen((char *) result);
-#else /* NIX */
-
 	return result_size;
-
-#endif /* ! NIX */
 }
 
 
