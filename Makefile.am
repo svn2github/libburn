@@ -12,7 +12,7 @@ ACLOCAL_AMFLAGS = -I ./
 
 # Build libraries
 libburn_libburn_la_LDFLAGS = \
-	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) $(LIBLDFLAGS)
 # This causes undesired .o names
 # configure.ac appends -D options to variable CFLAG
 ### libburn_libburn_la_CFLAGS = $(LIBBURN_DVD_OBS_64K)
