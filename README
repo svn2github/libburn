@@ -11,7 +11,7 @@ Still containing parts of Libburn. By Derek Foreman <derek@signalmarketing.com>
 and Ben Jansens <xor@orodu.net>
 Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
-     http://files.libburnia-project.org/releases/libburn-1.4.2.pl01.tar.gz
+     http://files.libburnia-project.org/releases/libburn-1.4.4.tar.gz
 
 ------------------------------------------------------------------------------
 
@@ -19,10 +19,10 @@ Copyright (C) 2002-2006  Derek Foreman and Ben Jansens
 
                                 From tarball
 
-Obtain libburn-1.4.2.pl01.tar.gz, take it to a directory of your choice and do:
+Obtain libburn-1.4.4.tar.gz, take it to a directory of your choice and do:
 
-   tar xzf libburn-1.4.2.pl01.tar.gz
-   cd libburn-1.4.2
+   tar xzf libburn-1.4.4.tar.gz
+   cd libburn-1.4.4
    ./configure --prefix=/usr
    make
 
@@ -754,6 +754,14 @@ Project history as far as known to me:
 - Fri Jan 29 2016 patch release libburn-1.4.2.pl01:
   cdrskin did not work with "-" (stdin) as input.
   Regression introduced by version 1.4.2.
+
+- Fri Jul 01 2016 release 1.4.4:
+  The capability to use Linux /dev/sg was revived in order to circumvent the
+  sr_mutex lock which hampers concurrent use of optical drives via SG_IO.
+  libisofs now can use appended partitions by El Torito, avoiding the need
+  for duplicate EFI System Partition images.
+  Several bugs have been fixed.
+
 
 ------------------------------------------------------------------------------
 
