@@ -13341,7 +13341,7 @@ Bug fix: burn_make_input_sheet_v07t() falsly recognized double byte encoding
 libburn/options.c
 Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() is used
 
-30 Mar 2016  []
+30 Mar 2016  [5688]
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
@@ -13352,13 +13352,95 @@ Updated change log
 * Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() is used
 
 
+2016.03.30.200445  [5689]
+libburn/mmc.c
+Bug fix: DVD book type of DVD+RW DL and DVD+R DL was reported wrong. Thanks to Etienne Bergeron.
+
+2016.03.31.124348  [5690]
+libburn/cdtext.c
+Bug fix: burn_make_input_sheet_v07t() used character code of block 0 for all blocks
+
+19 Apr 2016  [5693]
+acinclude.m4
+Makefile.am
+Prevented option --version-script with linker runs of binaries. By Matthias Klose.
+
+27 Apr 2016  [5697]
+configure.ac
+Removed option --silent from libtool runs
+
+01 Jul 2016  [5700]
+svn copy -m Branching for libburn release 1.4.4
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.4.4
+
+2016.07.01.110001  [5701]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.4
+
+01 Jul 2016  [5702]
+- cdrskin/add_ts_changes_to_libburn_1_4_2
+- cdrskin/add_ts_changes_to_libburn_1_4_3
++ cdrskin/add_ts_changes_to_libburn_1_4_4
++ cdrskin/add_ts_changes_to_libburn_1_4_5
+Updated cdrskin tarball generator
+
+01 Jul 2016  [5703]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - cdrskin-1.4.4 - 2016.07.01.110001
+* Bug fix: Option drive_scsi_dev_family=sg did not convert /dev/sr* to /dev/sg*
+* Bug fix: burn_make_input_sheet_v07t() falsly recognized double byte encoding
+* Bug fix: Double free at end of run if burn_write_opts_set_leadin_text() is used
+* Bug fix: DVD book type of DVD+RW DL and DVD+R DL was reported wrong.
+           Thanks to Etienne Bergeron.
+
+
+2016.07.01.190459  [5707]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.5
+
+01 Jul 2016  [5708]
+- cdrskin/add_ts_changes_to_libburn_1_4_2
+- cdrskin/add_ts_changes_to_libburn_1_4_3
++ cdrskin/add_ts_changes_to_libburn_1_4_4
++ cdrskin/add_ts_changes_to_libburn_1_4_5
+Updated cdrskin tarball generator
+
+01 Jul 2016  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.5 - 
+
   []
 ChangeLog
 cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.3 - 
+------------------------------------ cycle  - cdrskin-1.4.5 - 
 
   []
 ChangeLog
@@ -13366,7 +13448,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.3 - 
+------------------------------------ cycle  - cdrskin-1.4.5 - 
 
 
 **********************************************************************
