@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.4.5, Jul 01, 2016"
+.TH CDRSKIN 1 "Version 1.4.5, Jul 03, 2016"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -111,7 +111,7 @@ header part which identifies it as MS-WAVE or SUN Audio with suitable
 parameters. Such files are burned as audio tracks by default.
 .PP
 While audio tracks just contain a given time span of acoustic vibrations,
-data tracks may have an arbitray meaning. Nevertheless, ISO-9660 filesystems
+data tracks may have an arbitrary meaning. Nevertheless, ISO-9660 filesystems
 are established as a format which can represent a tree of directories and
 files on all major operating systems. Such filesystem images can be
 produced by programs mkisofs or genisoimage or xorriso.
@@ -1140,7 +1140,7 @@ of bytes is read. This option may be helpful to bring the average throughput
 near to the maximum throughput of a drive. A large fs= and a small 
 fifo_start_at= combine a quick burn start and a large savings buffer to
 compensate for temporary lack of source data. At the beginning of burning,
-the software protection against buffer underun is as weak as the size of
+the software protection against buffer underrun is as weak as the size of
 fifo_start_at= . So it is best if the drive offers hardware protection which
 is enabled automatically if not driveropts=noburnfree is given.
 .TP
@@ -1634,7 +1634,7 @@ The first track automatically gets a pre-gap of at least 150 sectors. Its
 size can only be enlarged by this call.
 .TP
 .BI --xa1-ignore
-Silently interpret option -xa1 as -data. This may be necessary if a frontent
+Silently interpret option -xa1 as -data. This may be necessary if a frontend
 does not prepare -xa1 block headers but insists in using option -xa1.
 .SH EXAMPLES
 .SS
