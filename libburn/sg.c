@@ -1,19 +1,13 @@
 
 /* sg.c
    Switcher for operating system dependent transport level modules of libburn.
-   Copyright (C) 2009 - 2014 Thomas Schmitt <scdbackup@gmx.net>, 
+   Copyright (C) 2009 - 2016 Thomas Schmitt <scdbackup@gmx.net>, 
    provided under GPLv2+
 */
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #undef HAVE_CONFIG_H
-#endif
-
-
-/* <<< Until it is known whether this adapter would work on OpenBSD too */
-#ifdef __NetBSD__
-#define Libburn_use_sg_netbsD
 #endif
 
 
@@ -27,8 +21,12 @@
 #include "sg-libcdio.c"
 
 #else
-#ifdef Libburn_use_sg_netbsD
-/* To become: # ifdef __NetBSD__ */
+#ifdef __NetBSD__
+
+#include "sg-netbsd.c"
+
+#else
+#ifdef __OpenBSD__
 
 #include "sg-netbsd.c"
 
@@ -88,7 +86,8 @@ static int intentional_compiler_warning(void)
 #endif /* ! __linux */
 #endif /* ! __FreeBSD_kernel__ */
 #endif /* ! __FreeBSD__ */
-#endif /* ! Libburn_use_sg_netbsD */
+#endif /* ! __OpenBSD__ */
+#endif /* ! __NetBSD__ */
 #endif /* ! Libburn_use_libcdiO */
 #endif /* ! Libburn_use_sg_dummY */
 

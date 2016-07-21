@@ -1,13 +1,15 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /*
-   Copyright (c) 2010 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2010 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    Derived 2014 from libburn/sg-solaris.c with information learned from
    dvd+rw-tools, http://fxr.watson.org/fxr/source/sys/scsiio.h?v=NETBSD,
    http://netbsd.gw.com/cgi-bin/man-cgi?scsi+4+NetBSD-current, 
    and experiments made by Freddy Fisker.
+   Adapted 2016 to OpenBSD by help of SASANO Takayoshi <uaa@mx5.nisiq.net>.
+
 */
 
 
@@ -312,7 +314,11 @@ static int guess_size_by_seek_set(int fd, off_t *bytes, int flag)
 */
 int sg_id_string(char msg[1024], int flag)
 {
+#ifdef __OpenBSD___
+	sprintf(msg, "internal OpenBSD SCIOCCOMMAND adapter sg-netbsd");
+#else
 	sprintf(msg, "internal NetBSD SCIOCCOMMAND adapter sg-netbsd");
+#endif
 	return 1;
 }
 
@@ -687,10 +693,21 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 		{ret = 0; goto ex;}
 	if (addr.type != TYPE_SCSI)
 		{ret = 0; goto ex;}
+
+#ifdef __OpenBSD___
+
+	*bus_no = *host_no = addr.scbus;
+	*target_no = addr.target;
+	*lun_no = addr.lun;
+
+#else /* __OpenBSD___ */
+
 	*bus_no = *host_no = addr.addr.scsi.scbus;
-	*channel_no = 0;
 	*target_no = addr.addr.scsi.target;
 	*lun_no = addr.addr.scsi.lun;
+
+#endif /* ! __OpenBSD___ */
+
 	ret = 1;
 ex:;
 	if (fd != -1)

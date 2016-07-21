@@ -6,10 +6,11 @@
            with  MMC transport adapter sg-netbsd.c
            >>> for OpenBSD too ?
 
-   Copyright (C) 2010 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (C) 2010 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    provided under GPLv2+
 
    Derived 2014 from libburn/os-solaris.c
+   Adapted 2016 to OpenBSD by help of SASANO Takayoshi <uaa@mx5.nisiq.net>
 */
 
 
@@ -33,6 +34,19 @@
 /* The number of above list items */
 #define BURN_OS_SIGNAL_COUNT 20
 
+#ifdef __OpenBSD__
+
+/** To list all signals which shall surely not be caught */
+#define BURN_OS_NON_SIGNAL_MACRO_LIST \
+ SIGKILL, SIGURG, SIGSTOP, SIGTSTP, SIGCONT, \
+ SIGCHLD, SIGTTIN, SIGTTOU, SIGIO, SIGWINCH, \
+ SIGINFO
+
+/* The number of above list items */
+#define BURN_OS_NON_SIGNAL_COUNT 11
+
+#else /* __OpenBSD__ */
+
 /** To list all signals which shall surely not be caught */
 #define BURN_OS_NON_SIGNAL_MACRO_LIST \
  SIGKILL, SIGURG, SIGSTOP, SIGTSTP, SIGCONT, \
@@ -42,6 +56,7 @@
 /* The number of above list items */
 #define BURN_OS_NON_SIGNAL_COUNT 12
 
+#endif /* ! __OpenBSD__ */
 
 /* The maximum size for a (SCSI) i/o transaction */
 /* Important : MUST be at least 32768 ! */

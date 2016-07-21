@@ -3,7 +3,7 @@
    Operating system specific libburn definitions and declarations.
    The macros defined here are used by libburn modules in order to
    avoid own system dependent case distinctions.
-   Copyright (C) 2009 - 2014 Thomas Schmitt <scdbackup@gmx.net>,
+   Copyright (C) 2009 - 2016 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPLv2+
 */
 
@@ -37,11 +37,18 @@
 
 
 #else
-#ifdef Libburn_use_sg_netbsD
-/* To become: # ifdef __NetBSD__ */
+#ifdef __NetBSD__
 
 
 /* -------------------------- NetBSD with SCIOCCOMMAND --------------------- */
+#include "os-netbsd.h"
+
+
+#else
+#ifdef __OpenBSD__
+
+
+/* -------------------------- OpenBSD with SCIOCCOMMAND -------------------- */
 #include "os-netbsd.h"
 
 
@@ -88,7 +95,8 @@
 #endif /* ! __linux */
 #endif /* ! __FreeBSD__kernel__ */
 #endif /* ! __FreeBSD__ */
-#endif /* ! Libburn_use_sg_netbsD */
+#endif /* ! __OpenBSD__ */
+#endif /* ! __NetBSD__ */
 #endif /* ! Libburn_use_libcdiO */
 #endif /* ! Libburn_use_sg_dummY */
 
