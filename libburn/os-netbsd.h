@@ -2,9 +2,8 @@
 /* os-netbsd.h
    Operating system specific libburn definitions and declarations. Included
    by os.h in case of compilation for
-           NetBSD 6
+           NetBSD 6 or OpenBSD 5.9
            with  MMC transport adapter sg-netbsd.c
-           >>> for OpenBSD too ?
 
    Copyright (C) 2010 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    provided under GPLv2+

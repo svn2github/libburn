@@ -19,7 +19,7 @@ This is the main operating system dependent SCSI part of libburn. It implements
 the transport level aspects of SCSI control and command i/o.
 
 Present implementation: NetBSD 6, ioctl SCIOCCOMMAND
-                        >>> ??? for OpenBSD too ?
+                        OpenBSD 5.9, ioctl SCIOCCOMMAND
 
 PORTING:
 
@@ -212,7 +212,7 @@ static void enumerate_common(char *fname,
 
 	/* PORTING: ------------------- non portable part --------------- */
 
-	/* Transport adapter is NetBSD SCIOCCOMMAND */
+	/* Transport adapter is NetBSD/OpenBSD ioctl SCIOCCOMMAND */
 	/* Adapter specific handles and data */
 
 	out.fd = -1;
