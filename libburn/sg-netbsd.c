@@ -314,7 +314,7 @@ static int guess_size_by_seek_set(int fd, off_t *bytes, int flag)
 */
 int sg_id_string(char msg[1024], int flag)
 {
-#ifdef __OpenBSD___
+#ifdef __OpenBSD__
 	sprintf(msg, "internal OpenBSD SCIOCCOMMAND adapter sg-netbsd");
 #else
 	sprintf(msg, "internal NetBSD SCIOCCOMMAND adapter sg-netbsd");
@@ -694,19 +694,19 @@ int sg_obtain_scsi_adr(char *path, int *bus_no, int *host_no, int *channel_no,
 	if (addr.type != TYPE_SCSI)
 		{ret = 0; goto ex;}
 
-#ifdef __OpenBSD___
+#ifdef __OpenBSD__
 
 	*bus_no = *host_no = addr.scbus;
 	*target_no = addr.target;
 	*lun_no = addr.lun;
 
-#else /* __OpenBSD___ */
+#else /* __OpenBSD__ */
 
 	*bus_no = *host_no = addr.addr.scsi.scbus;
 	*target_no = addr.addr.scsi.target;
 	*lun_no = addr.addr.scsi.lun;
 
-#endif /* ! __OpenBSD___ */
+#endif /* ! __OpenBSD__ */
 
 	ret = 1;
 ex:;
