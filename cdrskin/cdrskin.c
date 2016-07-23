@@ -1906,7 +1906,7 @@ static char Cdrpreskin_sys_rc_nameS[Cdrpreskin_rc_nuM][80]= {
 */
 struct CdrpreskiN {
 
- /* to be transfered into skin */
+ /* to be transferred into skin */
  int verbosity;
  char queue_severity[81];
  char print_severity[81];
@@ -3329,7 +3329,7 @@ ex:;
 
 
 /** List of furter wishes towards libburn:
-    - a possibilty to implement cdrskin -reset
+    - a possibility to implement cdrskin -reset
 */
 
 
@@ -3358,7 +3358,7 @@ static double Cdrskin_libburn_bd_speed_factoR= 4495.625;
 /* The effective speed conversion factor for burn_drive_set_speed() */
 static double Cdrskin_libburn_speed_factoR= 176.4;
 
-/** Add-on for burn_drive_set_speed() to accomodate to the slightley oversized
+/** Add-on for burn_drive_set_speed() to accommodate to the slightly oversized
     speed ideas of my LG DVDRAM GSA-4082B. LITE-ON LTR-48125S tolerates it.
 */
 static double Cdrskin_libburn_cd_speed_addoN= 40.0;
@@ -3476,7 +3476,7 @@ struct CdrskiN {
  int tell_media_space; /* actually do not burn but tell the available space */
  int burnfree;
  /** The write mode (like SAO or TAO). See libburn. 
-     Controled by preskin->write_mode_name */
+     Controlled by preskin->write_mode_name */
  enum burn_write_types write_type;
  int block_type;
  int multi;

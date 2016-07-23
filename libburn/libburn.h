@@ -842,7 +842,7 @@ void burn_set_scsi_logging(int flag);
     @param exclusive
                      0 = no attempt to make drive access exclusive.
                      1 = Try to open only devices which are not marked as busy
-                     and try to mark them busy if opened sucessfully. (O_EXCL
+                     and try to mark them busy if opened successfully. (O_EXCL
                      on GNU/Linux , flock(LOCK_EX) on FreeBSD.)
                      2 = in case of a SCSI device, also try to open exclusively
                          the matching /dev/sr, /dev/scd and /dev/st .
@@ -880,7 +880,7 @@ void burn_allow_untested_profiles(int yes);
 
 
 /* ts A60823 */
-/** Aquire a drive with known device file address.
+/** Acquire a drive with known device file address.
 
     This is the sysadmin friendly way to open one drive and to leave all
     others untouched. It bundles the following API calls to form a
@@ -902,12 +902,12 @@ void burn_allow_untested_profiles(int yes);
 
     Different than with burn_drive_scan() it is allowed to call
     burn_drive_scan_and_grab() without giving up any other scanned drives. So
-    this call can be used to get a collection of more than one aquired drives.
-    The attempt to aquire the same drive twice will fail, though.
+    this call can be used to get a collection of more than one acquired drives.
+    The attempt to acquire the same drive twice will fail, though.
 
     Pseudo-drives:
 
-    burn_drive_scan_and_grab() is able to aquire virtual drives which will
+    burn_drive_scan_and_grab() is able to acquire virtual drives which will
     accept options much like a MMC burner drive. Many of those options will not
     cause any effect, though. The address of a pseudo-drive begins with
     prefix "stdio:" followed by a path.
@@ -1001,7 +1001,7 @@ void burn_drive_clear_whitelist(void);
                   burn_drive_scan() again.
     @param n_drives Returns the number of drive items in drive_infos.
     @return 0 while scanning is not complete
-            >0 when it is finished sucessfully,
+            >0 when it is finished successfully,
             <0 when finished but failed.
 */
 int burn_drive_scan(struct burn_drive_info *drive_infos[],
@@ -1307,7 +1307,7 @@ int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len);
     burn_drive_get_write_speed(), burn_drive_get_min_write_speed(),
     burn_drive_get_start_end_lba(). The drive must be grabbed for this call.
     @param drive The drive to query.
-    @return 1=sucess, 0=no valid ATIP info read, -1 severe error
+    @return 1=success, 0=no valid ATIP info read, -1 severe error
     @since 0.2.6
 */
 int burn_disc_read_atip(struct burn_drive *drive);
@@ -1376,7 +1376,7 @@ char *burn_guess_cd_manufacturer(int m_li, int s_li, int f_li,
                      bit5= Disc is nominally erasable (Erasable bit)
                            This will be set with overwriteable media which
                            libburn normally considers to be unerasable blank.
-    @return          1 success, <= 0 an error occured
+    @return          1 success, <= 0 an error occurred
     @since 0.7.2
 */
 int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
@@ -1400,7 +1400,7 @@ int burn_disc_get_cd_info(struct burn_drive *d, char disc_type[80],
                       bytes in text_packs divided by 18.
     @param flag       Bitfield for control purposes,
                       Unused yet. Submit 0.
-    @return           1 success, 0= no CD-TEXT found, < 0 an error occured
+    @return           1 success, 0= no CD-TEXT found, < 0 an error occurred
     @since 1.2.0
 */
 int burn_disc_get_leadin_text(struct burn_drive *d,
@@ -1468,7 +1468,7 @@ int burn_disc_track_lba_nwa(struct burn_drive *d, struct burn_write_opts *o,
 
 /* ts B10525 */
 /** Tells whether a previous attempt to determine the Next Writeable Address
-    of the upcomming track reveiled that the READ TRACK INFORMATION Damage Bit
+    of the upcoming track reveiled that the READ TRACK INFORMATION Damage Bit
     is set for this track and that no valid writable address is available. 
     See MMC-5 6.27.3.7 Damage Bit, 6.27.3.11 NWA_V (NWA valid)
     @param d     The drive to query.
@@ -1692,7 +1692,7 @@ void burn_disc_erase(struct burn_drive *drive, int fast);
     in state "Sequential Recording" (profile 0014h) which get formatted to
     state "Restricted Overwrite" (profile 0013h). DVD+RW can be "de-iced"
     by setting bit4 of flag. DVD-RAM and BD-RE may get formatted initially
-    or re-formatted to adjust their Defect Managment.
+    or re-formatted to adjust their Defect Management.
     This function usually returns while the drive is still in the process
     of formatting. The formatting is done, when burn_drive_get_status()
     returns BURN_DRIVE_IDLE. This may be immediately after return or may
@@ -1880,7 +1880,7 @@ int burn_drive_wrote_well(struct burn_drive *d);
 
 
 /* ts B31023 */
-/** Inquire whether a write error occured which is suspected to have happened
+/** Inquire whether a write error occurred which is suspected to have happened
     due to a false report about DVD-RW capability to be written in write type
     BURN_WRITE_TAO.
     @param d The drive to inquire.
@@ -2645,7 +2645,7 @@ struct burn_disc *burn_drive_get_disc(struct burn_drive *d);
 	@param t The track to set the data source for
 	@param s The data source to use for the contents of the track
 	@return An error code stating if the source is ready for use for
-	        writing the track, or if an error occured
+	        writing the track, or if an error occurred
     
 */
 enum burn_source_status burn_track_set_source(struct burn_track *t,
@@ -2660,7 +2660,7 @@ enum burn_source_status burn_track_set_source(struct burn_track *t,
     announced then the track will be padded up with zeros.
     @param t The track to change
     @param size The size to set
-    @return 0=failure 1=sucess
+    @return 0=failure 1=success
     @since 0.3.4
 */
 int burn_track_set_default_size(struct burn_track *t, off_t size);
@@ -3268,7 +3268,7 @@ void burn_write_opts_set_obs_pad(struct burn_write_opts *opts, int pad);
 
 
 /* ts A91115 */
-/** Sets the rythm by which stdio pseudo drives force their output data to
+/** Sets the rhythm by which stdio pseudo drives force their output data to
     be consumed by the receiving storage device. This forcing keeps the memory
     from being clogged with lots of pending data for slow devices.
     @param opts   The write opts to change
@@ -3914,7 +3914,7 @@ int burn_is_aborting(int flag);
     resulting struct burn_multi_caps elements .start_adr , .start_alignment ,
     .start_range_low , .start_range_high .
     Other than burn_disc_write() this is a synchronous call which returns
-    only after the write transaction has ended (sucessfully or not). So it is
+    only after the write transaction has ended (successfully or not). So it is
     wise not to transfer giant amounts of data in a single call.
     Important: Data have to fit into the already formatted area of the media.
     @param d            The drive to which to write 
@@ -3926,7 +3926,7 @@ int burn_is_aborting(int flag);
                         drive buffer without further data transfer).
     @param flag         Bitfield for control purposes:
                         bit0 = flush the drive buffer after eventual writing
-    @return 1=sucessful , <=0 : number of transfered bytes * -1
+    @return 1=successful , <=0 : number of transferred bytes * -1
     @since 0.4.0
 */
 int burn_random_access_write(struct burn_drive *d, off_t byte_address,
@@ -3944,7 +3944,7 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
     @param d            The drive from which to read
     @param capacity     Will return the result if valid
     @param flag         Bitfield for control purposes: Unused yet, submit 0.
-    @return 1=sucessful , <=0 an error occured
+    @return 1=successful , <=0 an error occurred
     @since 0.6.0
 */
 int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
@@ -3957,7 +3957,7 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
     be aligned to 2048 bytes. Only data tracks with 2048 bytes per sector
     can be read this way. I.e. not CD-audio, not CD-video-stream ...
     This is a synchronous call which returns only after the full read job
-    has ended (sucessfully or not). So it is wise not to read giant amounts
+    has ended (successfully or not). So it is wise not to read giant amounts
     of data in a single call.
     @param d            The drive from which to read
     @param byte_address The start address of the read in byte (aligned to 2048)
@@ -3973,7 +3973,7 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
                               with single block steps.
                               @since 0.5.2 
                         bit3= return -2 on permission denied error rather than
-                              issueing a warning message.
+                              issuing a warning message.
                               @since 1.0.6
                         bit4= return -3 on SCSI error
                                 5 64 00 ILLEGAL MODE FOR THIS TRACK
@@ -3985,7 +3985,7 @@ int burn_get_read_capacity(struct burn_drive *d, int *capacity, int flag);
                         bit5= issue messages with severity DEBUG if they would
                               be suppressed by bit1.
                               @since 1.4.0
-    @return 1=sucessful , <=0 an error occured
+    @return 1=successful , <=0 an error occurred
                           with bit3:  -2= permission denied error
     @since 0.4.0
 */
@@ -4032,7 +4032,7 @@ int burn_read_data(struct burn_drive *d, off_t byte_address,
                         bit5= issue messages with severity DEBUG if they would
                               be suppressed by bit1.
                               @since 1.4.0
-    @return 1=sucessful , <=0 an error occured
+    @return 1=successful , <=0 an error occurred
                           with bit3:  -2= permission denied error
     @since 1.2.6
 */
@@ -4116,7 +4116,7 @@ int burn_drive_get_drive_role(struct burn_drive *d);
     (role 2) or read-only (role 4) or write-only (role 5). See bit1.
     @param allowed      Bitfield for control purposes:
                         bit0= Enable roles 4 and 5 for drives which get
-                              aquired after this call
+                              acquired after this call
                         bit1= with bit0:
                               Test whether the file can be opened for
                               read-write, read-only, or write-only.

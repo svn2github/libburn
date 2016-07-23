@@ -206,7 +206,7 @@ See output of command
 If you have use cases for them, please report your wishes and expectations.
 
 On the other hand, the capability of multi-session and of writing streams
-of unpredicted lenght surpass the current DVD capabilities of cdrecord.
+of unpredicted length surpass the current DVD capabilities of cdrecord.
 
 
                            Inspiration and Standard
@@ -357,7 +357,7 @@ but leaves the media in "intermediate" state. In the first session of writing
 one may only write sequentially to such a DVD. After that, it gets random
 addressable by cdrskin. DVD-ROM drives might show ill behavior with them.
 
-blank=format_overwrite_full  uses preferrably "Full Format" (type 00h).
+blank=format_overwrite_full  uses preferably "Full Format" (type 00h).
 This formatting lasts as long as writing a full DVD. It includes writing of
 lead-out which is said to be good for DVD ROM compatibility. 
 
@@ -526,7 +526,7 @@ Run cdrskin by
 The following settings will make pfexec keep original UID and EUID and prevent
 most superuser powers. Be aware that you still can manipulate all device files
 if you have the file permissions for that.
-Full root privileges for cdrskin can then be aquired only by command su.
+Full root privileges for cdrskin can then be acquired only by command su.
 
 Edit /etc/security/exec_attr and add this line to the other "Media Backup"
 lines:

@@ -803,7 +803,7 @@ Two format types are relevant for DVD-RAM : 00h and 01h.
 00h offers the default size format and usually a maximum payload size format.
 Even with that maximum size payload there is hardware defect management.
 (mmc5r03c.pdf 6.5.4.2.1.2)
-01h can convert payload capacity into spare blocks for defect managment.
+01h can convert payload capacity into spare blocks for defect management.
 There is no way to increase payload capacity by format 01h.
 (mmc5r03c.pdf 6.5.4.2.2.1)
 
@@ -895,7 +895,8 @@ The term "superblock" shall depict the first 64 KiB after the sbsector address.
 
 ISO 9660 multi-session depends on typical TOC information in two ways:
 It needs the superblock address MSC1 of the most recently recorded session and
-it needs the Next Writeable Address NWA for which to prepare the adress offset.
+it needs the Next Writeable Address NWA for which to prepare the address
+offset.
 
 The following is learned from growisofs and from ECMA-119:
 http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-119.pdf

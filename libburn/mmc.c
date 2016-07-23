@@ -60,7 +60,7 @@ static int mmc_get_configuration_al(struct burn_drive *d, int *alloc_len);
 extern struct libdax_msgs *libdax_messenger;
 
 
-/* ts A61219 : Based on knowlege from dvd+rw-tools-7.0 and mmc5r03c.pdf */
+/* ts A61219 : Based on knowledge from dvd+rw-tools-7.0 and mmc5r03c.pdf */
 #define Libburn_support_dvd_plus_rW 1
 
 /* ts A61229 */
@@ -499,7 +499,7 @@ int mmc_get_nwa(struct burn_drive *d, int trackno, int *lba, int *nwa)
 	if (trackno > 0)
 		sprintf(msg, "Track number %d: ", trackno);
 	else
-		sprintf(msg, "Upcomming track: ");
+		sprintf(msg, "Upcoming track: ");
 	if (d->current_profile == 0x1a || d->current_profile == 0x13 ||
 	    d->current_profile == 0x12 || d->current_profile == 0x43) {
 		 /* overwriteable */
@@ -1153,7 +1153,7 @@ err_ex:;
 			 "Could not inquire TOC", 0,0);
 		d->status = BURN_DISC_UNSUITABLE;
 		d->toc_entries = 0;
-		/* Prefering memory leaks over fandangos */
+		/* Preferring memory leaks over fandangos */
 		d->toc_entry = calloc(1, sizeof(struct burn_toc_entry));
 		{ret = 0; goto ex;}
 	}
@@ -1574,7 +1574,7 @@ static int mmc_read_toc_al(struct burn_drive *d, int *alloc_len)
 			 "Could not inquire TOC", 0,0);
 		d->status = BURN_DISC_UNSUITABLE;
 		d->toc_entries = 0;
-		/* Prefering memory leaks over fandangos */
+		/* Preferring memory leaks over fandangos */
 		d->toc_entry = calloc(1, sizeof(struct burn_toc_entry));
 		{ret = 0; goto ex;}
 	}
@@ -1785,7 +1785,7 @@ int mmc_read_multi_session_c1(struct burn_drive *d, int *trackno, int *start)
 	if (mmc_function_spy(d, "mmc_read_multi_session_c1") <= 0)
 		{ret = 0; goto ex;}
 
-	/* First try to evaluate the eventually loaded TOC before issueing
+	/* First try to evaluate the possibly loaded TOC before issuing
 	   a MMC command. This search obtains the first track of the last
 	   complete session which has a track.
 	*/

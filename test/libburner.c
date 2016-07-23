@@ -1,6 +1,6 @@
 
 /* test/libburner.c , API illustration of burning data or audio tracks to CD */
-/* Copyright (C) 2005 - 2015 Thomas Schmitt <scdbackup@gmx.net> */
+/* Copyright (C) 2005 - 2016 Thomas Schmitt <scdbackup@gmx.net> */
 /* Provided under GPL, see also "License and copyright aspects" at file end */
 
 
@@ -24,17 +24,17 @@
   and provide some signal and abort handling, e.g. by the builtin handler, by
      burn_set_signal_handling("libburner : ", NULL, 0x0) 
   as it is done in main() at the end of this file.
-  Then you aquire a drive in an appropriate way conforming to the API. The twoi
+  Then you acquire a drive in an appropriate way conforming to the API. The two
   main approaches are shown here in application functions:
      libburner_aquire_by_adr()     demonstrates usage as of cdrecord traditions
      libburner_aquire_by_driveno()      demonstrates a scan-and-choose approach
 
-  With that aquired drive you can blank a CD-RW or DVD-RW as shown in
+  With that acquired drive you can blank a CD-RW or DVD-RW as shown in
      libburner_blank_disc()
   or you can format a DVD-RW to profile "Restricted Overwrite" (needed once)
   or an unused BD to default size with spare blocks
      libburner_format()
-  With the aquired drive you can burn to CD, DVD, BD. See
+  With the acquired drive you can burn to CD, DVD, BD. See
      libburner_payload()
 
   These three functions switch temporarily to a non-fatal signal handler
@@ -98,7 +98,7 @@ static unsigned int drive_count;
     finally released */
 static int drive_is_grabbed = 0;
 
-/** A number and a text describing the type of media in aquired drive */
+/** A number and a text describing the type of media in acquired drive */
 static int current_profile= -1;
 static char current_profile_name[80]= {""};
 
@@ -111,7 +111,7 @@ int libburner_aquire_by_driveno(int *drive_no);
 
 /* ------------------------------- API gestures ---------------------------- */
 
-/** You need to aquire a drive before burning. The API offers this as one
+/** You need to acquire a drive before burning. The API offers this as one
     compact call and alternatively as application controllable gestures of
     whitelisting, scanning for drives and finally grabbing one of them.
 
@@ -239,14 +239,14 @@ int libburner_aquire_by_driveno(int *driveno)
 	and to restart when the choice has been made. The list of selectable
 	drives should also hold persistent drive addresses as obtained
 	above by burn_drive_get_adr(). By such an address one may use
-	burn_drive_scan_and_grab() to finally aquire exactly one drive.
+	burn_drive_scan_and_grab() to finally acquire exactly one drive.
 
 	A not yet tested shortcut should be to call burn_drive_info_free()
 	and to call either burn_drive_scan() or burn_drive_scan_and_grab()
 	before accessing any drives again.
 
 	In both cases you have to be aware that the desired drive might get
-	aquired in the meantime by another user or libburn process.
+	acquired in the meantime by another user or libburn process.
 	*/
 
 	/* We already made our choice via command line. (default is 0)
@@ -784,7 +784,7 @@ int main(int argc, char **argv)
 	/** Note: driveno might change its value in this call */
 	ret = libburner_aquire_drive(drive_adr, &driveno);
 	if (ret<=0) {
-		fprintf(stderr,"\nFATAL: Failed to aquire drive.\n");
+		fprintf(stderr,"\nFATAL: Failed to acquire drive.\n");
 		{ ret = 34; goto finish_libburn; }
 	}
 	if (ret == 2)

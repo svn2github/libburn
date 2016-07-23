@@ -271,7 +271,7 @@ int burn_drive_scan(struct burn_drive_info *drives[], unsigned int *n_drives)
 		return -1;
 	}
 
-	/* cant be anything working! */
+	/* cannot be anything working! */
 
 	/* ts A61006 */
 	/* a ssert(!(workers && workers->drive)); */

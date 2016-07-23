@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -912,7 +912,7 @@ void process_q(struct burn_drive *d, unsigned char *q)
 		}
 		break;
 	case 2:
-		/* XXX dont ignore these */
+		/* XXX do not ignore these */
 		break;
 	case 3:
 /*              burn_print(12, "ISRC data in mode 3 q\n");*/
@@ -931,7 +931,7 @@ void process_q(struct burn_drive *d, unsigned char *q)
 
 /* this needs more info.  subs in the data? control/adr? */
 
-/* ts A61119 : One should not use inofficial compiler extensions.
+/* ts A61119 : One should not use unofficial compiler extensions.
    >>> Some day this function needs to be implemented. At least for now
        the result does not match the "mode" of cdrecord -toc.
  */

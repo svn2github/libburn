@@ -128,7 +128,7 @@ int sg_initialize(char msg[1024], int flag)
 
 /* ts A91227 */
 /** Performs global finalization of the SCSI transport adapter and eventually
-    needed operating system facilities. Releases globally aquired resources.
+    needed operating system facilities. Releases globally acquired resources.
     @param flag  unused yet, submit 0
     @return      1 = success, <=0 = failure
 */  
@@ -995,7 +995,7 @@ ex:;
 
 /* ts B00115 */
 /* Return 1 if the given path leads to a regular file or a device that can be
-   seeked, read and eventually written with 2 kB granularity.
+   fseeked, read and eventually written with 2 kB granularity.
 */
 int burn_os_is_2k_seekrw(char *path, int flag)
 {

@@ -51,7 +51,7 @@ sg_initialize()         performs global initialization of the SCSI transport
                         software components.
 
 sg_shutdown()           performs global finalizations and releases golbally
-                        aquired resources.
+                        acquired resources.
 
 sg_give_next_adr()      iterates over the set of potentially useful drive 
                         address strings.
@@ -60,7 +60,7 @@ scsi_enumerate_drives() brings all available, not-whitelist-banned, and
                         accessible drives into libburn's list of drives.
 
 sg_dispose_drive()      finalizes adapter specifics of struct burn_drive
-                        on destruction. Releases resources which were aquired
+                        on destruction. Releases resources which were acquired
                         underneath scsi_enumerate_drives().
 
 sg_drive_is_open()      tells wether libburn has the given drive in use.
@@ -201,7 +201,7 @@ static int linux_sg_auto_family = 1;
 
 /* Set this to 1 in order to accept any TYPE_* (see scsi/scsi.h) */
 /* But try with 0 first. There is hope via CDROM_DRIVE_STATUS. */
-/* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL INDISPENSIBLE DEVICES
+/* !!! DO NOT SET TO 1 UNLESS YOU PROTECTED ALL INDISPENSABLE DEVICES
        chmod -rw !!! */
 static int linux_sg_accept_any_type = 0;
 
@@ -1526,7 +1526,7 @@ int sg_initialize(char msg[1024], int flag)
 
 
 /** Performs global finalization of the SCSI transport adapter and eventually
-    needed operating system facilities. Releases globally aquired resources.
+    needed operating system facilities. Releases globally acquired resources.
     @param flag  unused yet, submit 0
     @return      1 = success, <=0 = failure
 */  
@@ -2355,7 +2355,7 @@ ex:;
 
 /* ts B00115 */
 /* Return 1 if the given path leads to a regular file or a device that can be
-   seeked, read, and possibly written with 2 kB granularity. 
+   fseeked, read, and possibly written with 2 kB granularity. 
 */
 int burn_os_is_2k_seekrw(char *path, int flag)
 {

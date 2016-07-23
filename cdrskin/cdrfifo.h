@@ -1,6 +1,6 @@
 
 /*
- cdrfifo.c , Copyright 2006 Thomas Schmitt <scdbackup@gmx.net>
+ cdrfifo.c , Copyright 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
 
  A fd-to-fd or fd-to-memory fifo to be used within cdrskin or independently.
  By chaining of fifo objects, several fifos can be run simultaneously
@@ -136,7 +136,7 @@ int Cdrfifo_adopt_iso_fs_descr(struct CdrfifO *o, char **pt, int flag);
 /** Check for pending data at the fifo's source file descriptor and wether the
     fifo is ready to take them. Simultaneously check the buffer for existing
     data and the destination fd for readiness to accept some. If so, a small
-    chunk of data is transfered to and/or from the fifo.
+    chunk of data is transferred to and/or from the fifo.
     This is done for the given fifo object and all members of its next-chain.
     The check and transactions are repeated until a given timespan has elapsed.
     libburn applications call this function in the burn loop instead of sleep().

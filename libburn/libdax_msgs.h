@@ -1,7 +1,7 @@
 
 /* libdax_msgs
    Message handling facility of libburn and libisofs.
-   Copyright (C) 2006-2011 Thomas Schmitt <scdbackup@gmx.net>,
+   Copyright (C) 2006-2016 Thomas Schmitt <scdbackup@gmx.net>,
    provided under GPL version 2 or later.
 */
 
@@ -266,8 +266,9 @@ int libdax_msgs_new(struct libdax_msgs **m, int flag);
 
 /** Destroy a message handling facility and all its eventual messages.
     The submitted pointer gets set to NULL.
-    Actually only the last destroy call of all offical references to the object
-    will really dispose it. All others just decrement the reference counter.
+    Actually only the last destroy call of all official references to the
+    object will really dispose it. All others just decrement the reference
+    counter.
     Call this function only with official reference pointers obtained by
     libdax_msgs_new() or libdax_msgs_refer(), and only once per such pointer.
     @param flag Bitfield for control purposes (unused yet, submit 0)
@@ -554,7 +555,7 @@ Range "scdbackup"          :  0x00020000 to 0x0002ffff
  0x0002016e (DEBUG,HIGH)   = MODE SENSE page 2A too short
  0x0002016f (DEBUG,HIGH)   = Unable to grab scanned drive
  0x00020170 (NOTE,HIGH)    = Closing open session before writing new one
- 0x00020171 (NOTE,HIGH)    = Closing BD-R with accidently open session
+ 0x00020171 (NOTE,HIGH)    = Closing BD-R with accidentaly open session
  0x00020172 (SORRY,HIGH)   = Read start address larger than number of readable blocks
  0x00020173 (FAILURE,HIGH) = Drive tells NWA smaller than last written address
  0x00020174 (SORRY,HIGH)   = Fifo alignment does not allow desired read size

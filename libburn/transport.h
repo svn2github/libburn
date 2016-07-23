@@ -324,7 +324,7 @@ struct burn_drive
 	int silent_on_scsi_error;
 
 	/* ts B21023 */
-	/* bit0= 5 64 00 occured with READ10 in mmc_read_10()
+	/* bit0= 5 64 00 occurred with READ10 in mmc_read_10()
 	*/
 	int had_particular_error;
 
@@ -375,7 +375,7 @@ struct burn_drive
 	*/
 	int mr_capacity_trusted;
 
-	/* ts B10314 : Next Writeable Adress for drive_role == 5 */
+	/* ts B10314 : Next Writeable Address for drive_role == 5 */
         int role_5_nwa;
 
 	int toc_temp;

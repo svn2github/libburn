@@ -789,7 +789,7 @@ XXX this is untested :)
 			rem += burn_track_get_shortage(tar[i]);
 
 			/* ts A61101 : I doubt that linking would yield a
-					desireable effect. With TAO it is
+					desirable effect. With TAO it is
 					counterproductive in any way.
 			*/
 			if (o->write_type == BURN_WRITE_TAO)
@@ -2106,7 +2106,7 @@ int burn_dvd_write_session(struct burn_write_opts *o,
 		libdax_msgs_submit(libdax_messenger, d->global_index,
 				0x00020171,
 				LIBDAX_MSGS_SEV_NOTE, LIBDAX_MSGS_PRIO_HIGH,
-				"Closing BD-R with accidently open session",
+				"Closing BD-R with accidentally open session",
 				0, 0);
  		d->close_track_session(d, 3, 0); /* CLOSE SESSION, 110b */
 		d->state_of_last_session = 3; /* mark as complete session */

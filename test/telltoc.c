@@ -1,6 +1,6 @@
 
 /*  test/telltoc.c , API illustration of obtaining media status info */
-/*  Copyright (C) 2006 - 2015 Thomas Schmitt <scdbackup@gmx.net> 
+/*  Copyright (C) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net> 
     Provided under GPL */
 
 /**                               Overview 
@@ -18,12 +18,12 @@
   
   Before you can do anything, you have to initialize libburn by
      burn_initialize()
-  as it is done in main() at the end of this file. Then you aquire a
+  as it is done in main() at the end of this file. Then you acquire a
   drive in an appropriate way conforming to the API. The two main
   approaches are shown here in application functions:
      telltoc_aquire_by_adr()       demonstrates usage as of cdrecord traditions
      telltoc_aquire_by_driveno()   demonstrates a scan-and-choose approach
-  With that aquired drive you can call
+  With that acquired drive you can call
      telltoc_media()   prints some information about the media in a drive
      telltoc_toc()     prints a table of content (if there is content)
      telltoc_msinfo()  prints parameters for mkisofs option -C
@@ -86,7 +86,7 @@ static int cd_is_audio = 0;           /* 0 = undecided , -1 = no , 1 = yes */
 
 /* ------------------------------- API gestures ---------------------------- */
 
-/** You need to aquire a drive before burning. The API offers this as one
+/** You need to acquire a drive before burning. The API offers this as one
     compact call and alternatively as application controllable gestures of
     whitelisting, scanning for drives and finally grabbing one of them.
 
@@ -128,7 +128,7 @@ int telltoc_aquire_by_adr(char *drive_adr)
 		return 0;
 	}
 
-	fprintf(stderr,"Aquiring drive '%s' ...\n", libburn_drive_adr);
+	fprintf(stderr,"Acquiring drive '%s' ...\n", libburn_drive_adr);
 	ret = burn_drive_scan_and_grab(&drive_list, libburn_drive_adr, 1);
 
 	if (ret <= 0) {

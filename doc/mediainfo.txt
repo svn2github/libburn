@@ -34,7 +34,7 @@ CD-ROM media (0x08) cannot be inquired by command 43h READ TOC/PMA/ATIP.
 in 6.26.3.6 Response Format 0100b: ATIP.
 The minute, second, and frame number of lead-in can be read from byte 4 to 6
 of the ATIP descriptor. The lead-out bytes are at position 8 to 10. The ATIP
-descriptor is preceeded by a four byte header.
+descriptor is preceded by a four byte header.
 
 I could not find out yet whether (lead-in,lead-out) is mandatorily unique for
 each particular media product.
@@ -176,7 +176,7 @@ BD-R and BD-RE:
         printf (" Media ID:              %6.6s/%-3.3s\n",di+4+100,di+4+106);
  = MMC-5 6.23.3.3.1 Format Code 00h: Disc Information (DI)
    Table 288 says that Media Type Code (byte 1 of CDB) for BD media is 1.
-   Table 446 says that Disc Information is preceeded by 4 bytes of header.
+   Table 446 says that Disc Information is preceded by 4 bytes of header.
    Table 448 says that bytes 0   to   1 are Disc Information Identifier "DI".
                   that bytes 8   to  10 are Disc Type Identifier
                                             BDO for BD-ROM, BDW for BD-RE,
@@ -1080,6 +1080,7 @@ OTCBRE      001     Optodisc Technology Corporation 1-2X HTL 25GB (12cm)  [Blu]
 "Moser Baer India Limited"
 PHILIP      R02     Moser Baer India Ltd 1-2X HTL 25GB  [Blu]
 PHILIP      R04     Moser Baer India Ltd 1-4X HTL 25GB  [Blu]
+PHILIPR0    R04     TDK 4x 25 GB  (own buy)
 PHILIP      W02     Moser Baer India Ltd 1-2X HTL 25GB  [Blu]
 
 "Philips"

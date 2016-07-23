@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1499,7 +1499,7 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[])
 
 	/* ts A60904 : This looks a bit weird. [ts A70907 : not any more]
 	   burn_drive_info is not the manager of burn_drive but only its
-	   spokesperson. To my knowlege drive_infos from burn_drive_scan()
+	   spokesperson. To my knowledge drive_infos from burn_drive_scan()
 	   are not memorized globally. */
 	free((void *) drive_infos);
 
@@ -1507,7 +1507,7 @@ void burn_drive_info_free(struct burn_drive_info drive_infos[])
 	/* ts A70903 : THIS IS WRONG !      (disabled now)
 	   It endangers multi drive usage.
 	   This call is not entitled to delete all drives, only the
-	   ones of the array which it recieves a parmeter.
+	   ones of the array which it receives a parmeter.
 
 	   Problem:  It was unclear how many items are listed in drive_infos
            Solution: Added a end marker element to any burn_drive_info array 
@@ -1833,7 +1833,7 @@ ex:;
 
 
 /* ts A60823 */
-/** Aquire a drive with known persistent address. 
+/** Acquire a drive with known persistent address. 
 */
 int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 			     int load)
@@ -1841,7 +1841,7 @@ int burn_drive_scan_and_grab(struct burn_drive_info *drive_infos[], char* adr,
 	unsigned int n_drives;
 	int ret, i;
 
-	/* check wether drive adress is already registered */
+	/* check wether drive address is already registered */
 	for (i = 0; i <= drivetop; i++)
 		if (drive_array[i].global_index >= 0)
 			if (strcmp(drive_array[i].devname, adr) == 0)
@@ -3217,7 +3217,7 @@ int burn_drive_equals_adr(struct burn_drive *d1, char *adr2_in, int role2)
 		if (stat_ret1 == -1 || stat_ret2 == -1) {
 			if (stat_ret1 != -1 || stat_ret2 != -1)
 				 {ret = 0; goto ex;}
-					/* one adress existing, one not */
+					/* one address existing, one not */
 
 			/* Two non-existing file objects */
 

@@ -62,7 +62,7 @@ int sg_initialize(char msg[1024], int flag);
 
 /* ts A91227 */
 /** Performs global finalization of the SCSI transport adapter and eventually
-    needed operating system facilities. Releases globally aquired resources.
+    needed operating system facilities. Releases globally acquired resources.
     @param flag  unused yet, submit 0
     @return      1 = success, <=0 = failure
 */

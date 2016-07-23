@@ -51,7 +51,7 @@
    of two elements "GF(2)". If bytes 0 .. M are given, then bit n of byte m
    is mapped to the coefficient of x exponent (n + ((M - m) * 8) + 16).
    I.e. they translate the bits into a polynomial with the highest bit
-   becomming the coefficient of the highest power of x. Then this polynomial
+   becoming the coefficient of the highest power of x. Then this polynomial
    is multiplied by (x exp 16).
 
    The set of all such polynomials forms a commutative ring. Its addition

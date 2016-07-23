@@ -85,7 +85,7 @@ Option blank= offers several specialized blanking and formatting types,
 which one may use for particular purposes on DVD-RW, DVD-RAM and BD-RE.
 (See also below: blank=format_overwrite)
 The drive offers a list of possible formats by cdrskin option --list_formats.
-One should aquire MMC background information before making use of them.
+One should acquire MMC background information before making use of them.
 
 --------------------------------------------------------------------------
 
@@ -263,7 +263,7 @@ would be the appropriate translation:
 {{{
 dev_translation=+0,0,0+/dev/hdc
 }}}
-The "+" character is a separator to be choosen by you.
+The "+" character is a separator to be chosen by you.
 Currently i am not aware of the need to choose any other than "+"
 unless you get playful with custom translations like
 {{{

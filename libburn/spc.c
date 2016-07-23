@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1417,13 +1417,13 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 	case 0x29:
 		if (*ascq == 0)
 			sprintf(msg,
-                               "Power on, reset, or bus device reset occured");
+                              "Power on, reset, or bus device reset occurred");
 		else if (*ascq == 1)
-			sprintf(msg, "Power on occured");
+			sprintf(msg, "Power on occurred");
 		else if (*ascq == 2)
-			sprintf(msg, "Bus reset occured");
+			sprintf(msg, "Bus reset occurred");
 		else if (*ascq == 3)
-			sprintf(msg, "Bus device reset function occured");
+			sprintf(msg, "Bus device reset function occurred");
 		else if (*ascq == 4)
 			sprintf(msg, "Device internal reset");
 		else
