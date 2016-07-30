@@ -378,6 +378,9 @@ struct burn_drive
 	/* ts B10314 : Next Writeable Address for drive_role == 5 */
         int role_5_nwa;
 
+	/* ts B60730 */
+	int do_no_immed;
+
 	int toc_temp;
 	struct burn_disc *disc;	/* disc structure */
 	int block_types[4];

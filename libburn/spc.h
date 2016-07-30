@@ -156,17 +156,23 @@ int spc_confirm_cd_drive(struct burn_drive *d, int flag);
 /* RESERVE TRACK */
 #define Libburn_mmc_reserve_timeouT          200000
 
-/* CLOSE TRACK/SESSION (with Immed bit) */
+/* CLOSE TRACK/SESSION with Immed bit */
 #define Libburn_mmc_close_timeouT            200000
+/* CLOSE TRACK/SESSION without Immed bit */
+#define Libburn_mmc_close_noim_timeouT      3600000
 
-/* BLANK , FORMAT UNIT (with Immed bit) */
+/* BLANK , FORMAT UNIT with Immed bit */
 #define Libburn_mmc_blank_timeouT            200000
+/* BLANK , FORMAT UNIT without Immed bit */
+#define Libburn_mmc_blank_noim_timeouT     18000000
 
 /* SEND OPC INFORMATION */
 #define Libburn_mmc_opc_timeouT              200000
 
-/* MMC_SYNC_CACHE */
+/* MMC_SYNC_CACHE with Immed bit */
 #define Libburn_mmc_sync_timeouT             200000
+/* MMC_SYNC_CACHE without Immed bit */
+#define Libburn_mmc_sync_noim_timeouT       3600000
 
 /* START STOP UNIT with Start bit and Load bit set */
 #define Libburn_mmc_load_timeouT             300000

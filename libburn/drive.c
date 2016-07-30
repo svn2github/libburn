@@ -58,6 +58,9 @@
 /* A90815 : for mmc_obtain_profile_name() */
 #include "mmc.h"
 
+/* B60730 : for Libburn_do_no_immed_defaulT */
+#include "os.h"
+
 #include "libdax_msgs.h"
 extern struct libdax_msgs *libdax_messenger;
 
@@ -88,6 +91,13 @@ int burn_setup_drive(struct burn_drive *d, char *fname)
 	d->do_stream_recording = 0;
         d->stream_recording_start= 0;
 	d->role_5_nwa = 0;
+
+#ifdef Libburn_do_no_immed_defaulT
+	d->do_no_immed = Libburn_do_no_immed_defaulT;
+#else
+	d->do_no_immed = 0;
+#endif
+
 	d->features = NULL;
 	d->drive_serial_number = NULL;
 	d->drive_serial_number_len = -1;
@@ -888,6 +898,12 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 #else /* Libburn_old_progress_looP */
 
 	while (1) {
+
+		/* >>> ??? ts B60730 : abort if user interrupts ?
+		if (d->cancel)
+	break;
+		*/
+
 		ret = d->get_erase_progress(d);
 		if (ret == -2 || ret > 0)
 	break;
@@ -896,6 +912,12 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 		sleep(1);
 	}
 	while (1) {
+
+		/* >>> ??? ts B60730 : abort if user interrupts ?
+		if (d->cancel)
+	break;
+		*/
+
 		ret = d->get_erase_progress(d);
 		if(ret == -2)
 	break;
@@ -912,7 +934,7 @@ void burn_disc_erase_sync(struct burn_drive *d, int fast)
 
 	/* ts A61125 : update media state records */
 	burn_drive_mark_unready(d, 0);
-	if (d->drive_role == 1)
+	if (d->drive_role == 1 && !d->cancel)
 		burn_drive_inquire_media(d);
 	d->busy = BURN_DRIVE_IDLE;
 	if (was_error)
@@ -3576,4 +3598,18 @@ int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len)
 ex:
 	return ret;
 }
+
+
+int burn_drive_set_immed(struct burn_drive *drive, int enable)
+{
+	drive->do_no_immed = !enable;
+	return 1;
+}
+
+
+int burn_drive_get_immed(struct burn_drive *drive)
+{
+	return !drive->do_no_immed;
+}
+
 

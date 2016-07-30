@@ -1858,6 +1858,33 @@ void burn_disc_write(struct burn_write_opts *o, struct burn_disc *disc);
 int burn_drive_set_stream_recording(struct burn_drive *drive, int recmode,
                                     int start, int flag);
 
+
+/* ts B60730 */
+/** Enable or disable use of the Immed bit with long running SCSI commands.
+    If the Immed bit is used, then those SCSI commands end early and leave
+    the drive in not-ready state. libburn then tries periodically whether
+    the drive became ready again. Only then it assumes the command to be
+    completely done.
+    The default setting may depend on the operating system on which libburn
+    was compiled.
+    @param drive    The drive which will be affected.
+    @param enable   1= use Immed bit.
+                    0= use no Immed bit. Affected commands can last very long.
+    @return         1=success , <=0 failure
+    @since 1.4.6
+*/
+int burn_drive_set_immed(struct burn_drive *drive, int enable);
+
+
+/* ts B60730 */
+/** Inquire the current setting of usage of the Immed bit. Either the still set
+    system dependent default or the value set by call burn_drive_set_immed().
+    @return         The current value.
+    @since 1.4.6
+*/
+int burn_drive_get_immed(struct burn_drive *drive);
+
+
 /** Cancel an operation on a drive.
     This will only work when the drive's busy state is BURN_DRIVE_READING or
     BURN_DRIVE_WRITING.

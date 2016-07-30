@@ -114,12 +114,15 @@ int sbc_start_unit_flag(struct burn_drive *d, int flag)
 
 	scsi_init_command(c, SBC_START_UNIT, sizeof(SBC_START_UNIT));
 	c->retry = 1;
-	c->opcode[1] |= (flag & 1); /* ts A70918 : Immed */
+	if (d->do_no_immed && (flag & 1))
+		c->timeout = 1800 * 1000;
+	else
+		c->opcode[1] |= (flag & 1); /* ts A70918 : Immed */
 	c->dir = NO_TRANSFER;
 	d->issue_command(d, c);
 	if (c->error)
 		return 0;
-	if (!(flag & 1))
+	if (d->do_no_immed || !(flag & 1))
 		return 1;
 	/* ts A70918 : asynchronous */
 	ret = spc_wait_unit_attention(d, 1800, "START UNIT", 0);

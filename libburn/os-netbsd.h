@@ -44,6 +44,14 @@
 /* The number of above list items */
 #define BURN_OS_NON_SIGNAL_COUNT 11
 
+/* ts B60730 */
+/* Either OpenBSD or SASANO Takayoshi's LG BH14NS48 throw 2,0,0
+   on Immed bit with BLANK and SYNCHRONIZE CACHE.
+   Until it is clear that the drive is to blame, the OpenBSD default is
+   not to use Immed.
+*/
+#define Libburn_do_no_immed_defaulT 1
+
 #else /* __OpenBSD__ */
 
 /** To list all signals which shall surely not be caught */

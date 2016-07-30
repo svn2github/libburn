@@ -613,7 +613,8 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	scsi_init_command(c, MMC_CLOSE, sizeof(MMC_CLOSE));
 	c->retry = 1;
 
-	c->opcode[1] |= 1; /* ts A70918 : Immed */
+	if (!d->do_no_immed)
+		c->opcode[1] |= 1; /* ts A70918 : Immed */
 
 	/* (ts A61030 : shifted !!session rather than or-ing plain session ) */
 	c->opcode[2] = ((session & 3) << 1) | !!track;
@@ -621,7 +622,10 @@ void mmc_close(struct burn_drive *d, int session, int track)
 	c->opcode[5] = track & 0xFF;
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
-	c->timeout = Libburn_mmc_close_timeouT;
+	if (d->do_no_immed)
+		c->timeout = Libburn_mmc_close_noim_timeouT;
+	else
+		c->timeout = Libburn_mmc_close_timeouT;
 	d->issue_command(d, c);
 
 	/* ts A70918 : Immed : wait for drive to complete command */
@@ -2717,12 +2721,16 @@ void mmc_erase(struct burn_drive *d, int fast)
 		return;
 
 	scsi_init_command(c, MMC_BLANK, sizeof(MMC_BLANK));
-	c->opcode[1] = 16;	/* IMMED set to 1 */
+	if (!d->do_no_immed)
+		c->opcode[1] = 16;	/* IMMED set to 1 */
 	c->opcode[1] |= !!fast;
 	c->retry = 1;
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
-	c->timeout = Libburn_mmc_blank_timeouT;
+	if (d->do_no_immed)
+		c->timeout = Libburn_mmc_blank_noim_timeouT;
+	else
+		c->timeout = Libburn_mmc_blank_timeouT;
 	d->issue_command(d, c);
 	if (c->error) {
 		d->cancel = 1;
@@ -3522,10 +3530,14 @@ void mmc_sync_cache(struct burn_drive *d)
 
 	scsi_init_command(c, MMC_SYNC_CACHE, sizeof(MMC_SYNC_CACHE));
 	c->retry = 1;
-	c->opcode[1] |= 2; /* ts A70918 : Immed */
+	if (!d->do_no_immed)
+		c->opcode[1] |= 2; /* ts A70918 : Immed */
 	c->page = NULL;
 	c->dir = NO_TRANSFER;
-	c->timeout = Libburn_mmc_sync_timeouT;
+	if (d->do_no_immed)
+		c->timeout = Libburn_mmc_sync_noim_timeouT;
+	else
+		c->timeout = Libburn_mmc_sync_timeouT;
 
 	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
 			   LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_ZERO,
@@ -3674,11 +3686,15 @@ int mmc_format_unit(struct burn_drive *d, off_t size, int flag)
 	c->page->bytes = 12;
 	c->page->sectors = 0;
 	c->dir = TO_DRIVE;
-	c->timeout = Libburn_mmc_blank_timeouT;
+	if (d->do_no_immed)
+		c->timeout = Libburn_mmc_blank_noim_timeouT;
+	else
+		c->timeout = Libburn_mmc_blank_timeouT;
 	memset(c->page->data, 0, c->page->bytes);
 
 	descr[0] = 0;
-	c->page->data[1] = 0x02;                  /* Immed */
+	if (!d->do_no_immed)
+		c->page->data[1] = 0x02;          /* Immed */
 	c->page->data[3] = 8;                     /* Format descriptor length */
 	num_of_blocks = size / 2048;
 	mmc_int_to_four_char(c->page->data + 4, num_of_blocks);
