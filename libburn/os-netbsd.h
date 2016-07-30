@@ -49,8 +49,14 @@
    on Immed bit with BLANK and SYNCHRONIZE CACHE.
    Until it is clear that the drive is to blame, the OpenBSD default is
    not to use Immed.
+
+   This may be overridden at ./configure time by
+     export CFLAGS
+     CFLAGS="$CFLAGS -DLibburn_do_no_immed_defaulT=0"
 */
+#ifndef Libburn_do_no_immed_defaulT
 #define Libburn_do_no_immed_defaulT 1
+#endif
 
 #else /* __OpenBSD__ */
 
