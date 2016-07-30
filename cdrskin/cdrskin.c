@@ -2950,6 +2950,8 @@ set_dev:;
           "                    print CD-TEXT file in Sony format and exit.\n");
      printf(" --two_channel      indicate that audio tracks have 2 channels\n");
      printf(
+         " use_immed_bit=on|off|default  real control over SCSI Immed bit\n");
+     printf(
          " write_start_address=<num>  write to given byte address (DVD+RW)\n");
      printf(
          " --xa1-ignore       with -xa1 do not strip 8 byte headers\n");
@@ -3387,6 +3389,7 @@ struct CdrskiN {
  int stdio_sync;              /* stdio fsync interval: -1, 0, >=32 */
  int single_track;
  int prodvd_cli_compatible;
+ int use_immed;               /* 1= yes, 0= libburn default, -1= no */
 
  int do_devices;              /* 1= --devices , 2= --device_links */
 
@@ -3659,6 +3662,7 @@ int Cdrskin_new(struct CdrskiN **skin, struct CdrpreskiN *preskin, int flag)
  o->stdio_sync= 0;
  o->single_track= 0;
  o->prodvd_cli_compatible= 0;
+ o->use_immed= 0;
  o->do_devices= 0;
  o->do_scanbus= 0;
  o->do_load= 0;
@@ -4169,6 +4173,8 @@ aborted:;
      goto ex;
    }
  }
+ if(skin->use_immed != 0)
+   burn_drive_set_immed(drive, skin->use_immed > 0);
  skin->drive_is_grabbed= 1;
 
  s= burn_disc_get_status(drive);
@@ -6163,12 +6169,12 @@ int Cdrskin_blank(struct CdrskiN *skin, int flag)
  struct burn_progress p;
  struct burn_drive *drive;
  int ret,loop_counter= 0,hint_force= 0,do_format= 0, profile_number= -1;
- int wrote_well= 1, format_flag= 0, status, num_formats;
+ int wrote_well= 1, format_flag= 0, status, num_formats, using_immed= 1;
  off_t size;
  unsigned dummy;
  double start_time;
  char *verb= "blank", *presperf="blanking", *fmt_text= "...";
- char profile_name[80];
+ char profile_name[80], progress_text[40];
  static char fmtp[][40]= {
                   "...", "format_overwrite", "deformat_sequential",
                   "(-format)", "format_defectmgt", "format_by_index",
@@ -6379,6 +6385,7 @@ unsupported_format_type:;
 
  if(Cdrskin__is_aborting(0))
    {ret= 0; goto ex;}
+ using_immed= burn_drive_get_immed(drive);
  skin->drive_is_busy= 1;
  if(do_format==0 || do_format==2) {
    burn_disc_erase(drive,skin->blank_fast);
@@ -6401,6 +6408,8 @@ unsupported_format_type:;
 
  loop_counter= 0;
  start_time= Sfile_microtime(0);
+ if(!using_immed)
+   sprintf(progress_text, "synchronous");
  while(burn_drive_get_status(drive, &p) != BURN_DRIVE_IDLE) {
    if(loop_counter>0)
      if(skin->verbosity>=Cdrskin_verbose_progresS) {
@@ -6408,10 +6417,14 @@ unsupported_format_type:;
 
        if(p.sectors>0) /* i want a display of 1 to 99 percent */
          percent= 1.0+((double) p.sector+1.0)/((double) p.sectors)*98.0;
+       if(using_immed)
+         sprintf(progress_text, "done %.1f%%", percent);
        fprintf(stderr,
-          "%scdrskin: %s ( done %.1f%% , %lu seconds elapsed )          %s",
+          "%scdrskin: %s ( %s , %lu seconds elapsed )          %s",
           skin->pacifier_with_newline ? "" : "\r",
-          presperf,percent,(unsigned long) (Sfile_microtime(0)-start_time),
+          presperf,
+          progress_text,
+          (unsigned long) (Sfile_microtime(0)-start_time),
           skin->pacifier_with_newline ? "\n" : "");
      }
    sleep(1);
@@ -9211,6 +9224,18 @@ track_too_large:;
 
    } else if(strcmp(argv[i],"--two_channel")==0) {
      skin->track_modemods&= ~BURN_4CH;
+
+   } else if(strncmp(argv[i], "use_immed_bit=", 14) == 0) {
+     if(strcmp(argv[i] + 14, "on") == 0) {
+       skin->use_immed= 1;
+     } else if(strcmp(argv[i] + 14, "off") == 0) {
+       skin->use_immed= -1;
+     } else if(strcmp(argv[i] + 14, "default") == 0) {
+       skin->use_immed= 0;
+     } else {
+       fprintf(stderr, "cdrskin: FATAL : use_immed_bits= must be \"on\", \"off\", or \"default\"\n");
+       return(0);
+     }
 
    } else if(strcmp(argv[i],"-V")==0 || strcmp(argpt, "-Verbose")==0) {
      /* is handled in Cdrpreskin_setup() */;

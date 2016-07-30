@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.4.5, Jul 03, 2016"
+.TH CDRSKIN 1 "Version 1.4.5, Jul 30, 2016"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -618,7 +618,8 @@ modesty_on_drive=1:min_percent=75:max_percent=95
 The name of this cdrecord option stems from the "Immed" bit which can make some
 long running drive commands asynchronous and thus eases the load on some
 wiring hardware types. Regardless of option -immed, cdrskin uses asynchronous
-commands where possible and appropriate. 
+commands where possible and appropriate. To really disable asynchronous command
+execution, use option use_immed_bit=off .
 .TP
 .BI index= list
 Set a comma separated list of index start address numbers for the next track.
@@ -1632,6 +1633,16 @@ This setting affects only CD SAO write runs.
 .br
 The first track automatically gets a pre-gap of at least 150 sectors. Its
 size can only be enlarged by this call.
+.TP 
+.BI use_immed_bit= on|off|default
+Control whether several long lasting SCSI commands shall be executed with the
+Immed bit, which makes the commands end early while the drive operation is
+still going on. cdrskin then inquires progress indication until the drive
+reports to be ready again. If this feature is turned off, then blanking and
+formatting will show no progress indication.
+.br
+It may depend on the operating system whether use_immed_bit= is set to "off"
+by default.
 .TP
 .BI --xa1-ignore
 Silently interpret option -xa1 as -data. This may be necessary if a frontend
