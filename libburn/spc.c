@@ -1459,6 +1459,16 @@ enum response scsi_error_msg(struct burn_drive *d, unsigned char *sense,
 				"Cannot format medium, incompatible medium");
 		else if (*ascq == 7)
 			sprintf(msg, "Cleaning failure");
+		else if (*ascq == 8)
+			sprintf(msg,
+                                "Cannot write, application code mismatch");
+		else if (*ascq == 9)
+			sprintf(msg, "Current session not fixated for append");
+		else if (*ascq == 10)
+			sprintf(msg, "Medium not formatted");
+		else if (*ascq == 11)
+			sprintf(msg,
+                            "Cannot write medium, unsupported medium version");
 		else
 			break;
 		goto return_fail;
