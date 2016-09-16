@@ -13427,12 +13427,175 @@ Made number transition to 1.4.5
 + cdrskin/add_ts_changes_to_libburn_1_4_5
 Updated cdrskin tarball generator
 
-01 Jul 2016  []
+01 Jul 2016  [5709]
 ChangeLog
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.5 - 
+------------------------------------ cycle  - cdrskin-1.4.5 - 2016.07.01.192618
+
+
+01 Jul 2016  [5710]
+svn move -m libburn release 1.4.4 is ready
+http://svn.libburnia-project.org/libburn/branches/1.4.4
+http://svn.libburnia-project.org/libburn/tags/1.4.4
+
+03 Jul 2016  [5716]
+cdrskin/cdrskin.1
+Fixed three spelling errors found by lintian
+
+2016.07.21.102919  [5720]
+libburn/os.h
+libburn/os-netbsd.h
+libburn/sg.c
+libburn/sg-netbsd.c
+Enabled SCSI command execution on OpenBSD. Thanks to SASANO Takayoshi.
+
+2016.07.21.141139  [5722]
+libburn/sg-netbsd.c
+Fixed a macro typo in rev 5720. Thanks again to SASANO Takayoshi.
+
+2016.07.21.175105  [5723]
+libburn/os.h
+libburn/os-netbsd.h
+libburn/sg-netbsd.c
+Mentioned OpenBSD in adapter files
+
+2016.07.23.104100  [5724]
+README
+libburn/libburn.h
+libburn/drive.c
+libburn/write.c
+libburn/sector.c
+libburn/async.c
+libburn/libdax_msgs.h
+libburn/transport.h
+libburn/spc.c
+libburn/mmc.h
+libburn/mmc.c
+libburn/crc.c
+libburn/sg.h
+libburn/sg-dummy.c
+libburn/sg-netbsd.c
+libburn/sg-linux.c
+libburn/sg-libcdio.c
+libburn/sg-solaris.c
+libburn/sg-freebsd.c
+cdrskin/cdrskin.c
+cdrskin/cdrfifo.h
+cdrskin/cdrfifo.c
+cdrskin/README
+test/libburner.c
+test/telltoc.c
+cdrskin/wiki_plain.txt
+doc/cookbook.txt
+doc/mediainfo.txt
+Reacted on some of the complaints of codespell
+
+2016.07.30.140328  [5725]
+libburn/libburn.h
+libburn/transport.h
+libburn/drive.c
+libburn/os-netbsd.h
+libburn/spc.h
+libburn/sbc.c
+libburn/mmc.c
+New API call burn_drive_set_immed()
+
+2016.07.30.140859  [5726]
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+New cdrskin option use_immed_bit=
+
+30 Jul 2016  [5727]
+libburn/libburn.ver
+Forgot to commit the libburn.ver file with the new API symbols 
+
+2016.07.30.200623  [5728]
+libburn/os-netbsd.h
+Enabled overriding of OpenBSD default for Immed usage
+
+2016.07.31.190417  [5732]
+libburn/structure.c
+Bug fix: SAO CD could be perceived 2 blocks too short. Regression in 1.4.4 by rev 5672.
+
+23 Aug 2016  [5752]
+configure.ac
+Eased re-enabling of libtool --silent at bootstrap time
+
+28 Aug 2016  [5754]
+doc/doxygen.conf.in
+Removed @abs_top_builddir@ from doxygen.conf.in where it hampered reproducibe build
+(Removed tags XML_SCHEMA, XML_DTD from doxygen.conf.in because doxygen-1.8.11 says they are obsolete)
+
+2016.09.10.083123  [5756]
+libburn/spc.c
+Added a few ASCQ texts to error code 5,30,X
+
+16 Sep 2016  [5756]
+svn copy -m Branching for libburn release 1.4.6
+http://svn.libburnia-project.org/libburn/trunk
+http://svn.libburnia-project.org/libburn/branches/1.4.6
+
+2016.09.16.113001  [5761]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.6
+
+16 Sep 2016  [5762]
+- cdrskin/add_ts_changes_to_libburn_1_4_4
+- cdrskin/add_ts_changes_to_libburn_1_4_5
++ cdrskin/add_ts_changes_to_libburn_1_4_6
++ cdrskin/add_ts_changes_to_libburn_1_4_7
+Updated cdrskin tarball generator
+
+16 Sep 2016  [5763]
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+----------------------------------- release - cdrskin-1.4.6 - 2016.09.16.113001
+* Bug fix: SAO CD could be perceived 2 blocks to short. Regression in 1.4.4 by rev 5672.
+* Now operating drives on OpenBSD
+* New API call burn_drive_set_immed()
+* New cdrskin option use_immed_bit=
+
+
+2016.09.16.190600  [5768]
+Makefile.am
+configure.ac
+README
+libburn/libburn.h
+cdrskin/cdrskin.c
+cdrskin/cdrskin.1
+cdrskin/README
+cdrskin/compile_cdrskin.sh
+cdrskin/cdrskin_timestamp.h
+cdrskin/cdrskin_eng.html
+Made number transition to 1.4.7
+
+16 Sep 2016  [5769]
+- cdrskin/add_ts_changes_to_libburn_1_4_4
+- cdrskin/add_ts_changes_to_libburn_1_4_5
++ cdrskin/add_ts_changes_to_libburn_1_4_6
++ cdrskin/add_ts_changes_to_libburn_1_4_7
+Updated cdrskin tarball generator
+
+16 Sep 2016  []
+ChangeLog
+cdrskin/changelog.txt
+Updated change log
+
+------------------------------------ cycle  - cdrskin-1.4.7 - 2016.09.16.190600
+
 
   []
 ChangeLog
@@ -13440,7 +13603,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.5 - 
+------------------------------------ cycle  - cdrskin-1.4.7 - 
 
   []
 ChangeLog
@@ -13448,7 +13611,7 @@ cdrskin/cdrskin_eng.html
 cdrskin/changelog.txt
 Updated change log
 
------------------------------------- cycle  - cdrskin-1.4.5 - 
+------------------------------------ cycle  - cdrskin-1.4.7 - 
 
 
 **********************************************************************
