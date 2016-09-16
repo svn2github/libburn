@@ -3671,7 +3671,7 @@ void burn_version(int *major, int *minor, int *micro);
 */
 #define burn_header_version_major  1
 #define burn_header_version_minor  4
-#define burn_header_version_micro  5
+#define burn_header_version_micro  7
 /** Note:
     Above version numbers are also recorded in configure.ac because libtool
     wants them as parameters at build time.
@@ -4241,7 +4241,7 @@ int libdax_audioxtr_get_id(struct libdax_audioxtr *xtr,
 
 /** Obtain a prediction about the extracted size based on internal information
     of the formatted file.
-    @param xtr Opaque handle to extractor
+    @param o    Opaque handle to extractor
     @param size Gets filled with the predicted size
     @param flag Bitfield for control purposes (unused yet, submit 0)
     @return 1 prediction was possible , 0 no prediction could be made
@@ -4273,8 +4273,8 @@ int libdax_audioxtr_read(struct libdax_audioxtr *xtr,
     object will have forgotten its file descriptor and libdax_audioxtr_read()
     will return a usage error. One may use *fd after libdax_audioxtr_destroy()
     and will have to close it via close(2) when done with it.
-    @param xtr Opaque handle to extractor
-    @param fd Eventually returns the file descriptor number
+    @param o    Opaque handle to extractor
+    @param fd   Returns the file descriptor number
     @param flag Bitfield for control purposes
                 bit0= do not dup(2) and close(2) but hand out original fd
     @return 1 success, 0 cannot hand out fd , -1 severe error
