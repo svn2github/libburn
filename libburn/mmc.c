@@ -5383,6 +5383,8 @@ int mmc_setup_drive(struct burn_drive *d)
 	d->start_lba = -2000000000;
 	d->end_lba = -2000000000;
 
+	d->do_simulate= 0;
+
 	/* ts A61201 - A90815*/
 	d->erasable = 0;
 	d->current_profile = -1;

@@ -1587,6 +1587,20 @@ int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
 }
 
 
+int burn_drive_reset_simulate(struct burn_drive *d, int simulate)
+{
+	if (d->busy != BURN_DRIVE_IDLE) {
+		libdax_msgs_submit(libdax_messenger,
+			d->global_index, 0x00020140,
+			LIBDAX_MSGS_SEV_FATAL, LIBDAX_MSGS_PRIO_HIGH,
+			"Drive is busy on attempt to write random access",0,0);
+		return 0;
+	}
+	d->do_simulate = !!simulate;
+	return 1;
+}
+
+
 int burn_msf_to_sectors(int m, int s, int f)
 {
 	return (m * 60 + s) * 75 + f;

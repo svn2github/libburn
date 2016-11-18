@@ -336,6 +336,8 @@ struct burn_drive
 	int start_lba;
 	int end_lba;
 
+	/* ts B61116 */
+	int do_simulate;
 
 	/* ts A70131 : from 51h READ DISC INFORMATION Number of Sessions (-1)*/
 	int complete_sessions;

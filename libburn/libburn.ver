@@ -71,6 +71,7 @@ burn_drive_obtain_scsi_adr;
 burn_drive_probe_cd_write_modes;
 burn_drive_re_assess;
 burn_drive_release;
+burn_drive_reset_simulate;
 burn_drive_scan;
 burn_drive_scan_and_grab;
 burn_drive_set_buffer_waiting;

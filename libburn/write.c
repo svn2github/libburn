@@ -2589,6 +2589,8 @@ int burn_stdio_write(int fd, char *buf, int count, struct burn_drive *d,
 
 	if (d->cancel || count <= 0)
 		return 0;
+	if(d->do_simulate)
+		return 1;
 
 	todo = count;
 	done = 0;
@@ -2619,6 +2621,7 @@ fprintf(stderr, "libburn_DEBUG: write(%d, %lX, %d)\n",
 		d->cancel = 1;
 		ret = 0; goto ex;
 	}
+	ret = 1;
 ex:;
 	BURN_FREE_MEM(msg);
 	return ret;
@@ -2794,6 +2797,7 @@ int burn_stdio_write_track(struct burn_write_opts *o, struct burn_session *s,
 		d->write = burn_stdio_mmc_dummy_write;
 	else
 		d->write = burn_stdio_mmc_write;
+	d->do_simulate = o->simulate;
 	d->sync_cache = burn_stdio_mmc_sync_cache;
 
 	burn_stdio_slowdown(d, &prev_time, 0, 1); /* initialize */
@@ -3289,7 +3293,9 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 		rpt += d->buffer->bytes;
 		d->buffer->sectors = chunksize;
 		d->nwa = start;
-		if(d->drive_role == 1) {
+		if(d->do_simulate) {
+			err = 0;
+		} else if(d->drive_role == 1) {
 			err = d->write(d, d->nwa, d->buffer);
 		} else {
 			ret = burn_stdio_write(fd, (char *) d->buffer->data,
@@ -3309,7 +3315,9 @@ int burn_random_access_write(struct burn_drive *d, off_t byte_address,
 	if(d->drive_role == 1)
 		d->needs_sync_cache = 1;
 	if(flag & 1) {
-		if(d->drive_role == 1)
+		if(d->do_simulate) {
+			;
+		} else if(d->drive_role == 1)
 			d->sync_cache(d);
 		else
 			burn_stdio_sync_cache(fd, d, 2);

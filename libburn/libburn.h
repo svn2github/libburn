@@ -3033,6 +3033,24 @@ int burn_drive_set_buffer_waiting(struct burn_drive *d, int enable,
                                 int min_usec, int max_usec, int timeout_sec,
                                 int min_percent, int max_percent);
 
+/* ts B61116 */
+/** Control the write simulation mode before or after burn_write_opts get
+    into effect.
+    Beginning with version 1.4.8 a burn run by burn_disc_write() brings the
+    burn_drive object in the simulation state as set to the burn_write_opts
+    by burn_write_opts_set_simulate(). This state is respected by call
+    burn_random_access_write() until a new call of burn_disc_write() happens
+    or until burn_drive_reset_simulate() is called.
+    This call may only be made when burn_drive_get_status() returns
+    BURN_DRIVE_IDLE.
+
+    @param d         The drive to control
+    @param simulate  1 enables simulation, 0 enables real writing
+    @return 1=success , 0=failure
+    @since 1.4.8
+*/
+int burn_drive_reset_simulate(struct burn_drive *d, int simulate);
+
 
 /* these are for my [Derek Foreman's ?] debugging, they will disappear */
 /* ts B11012 :
@@ -3100,8 +3118,13 @@ void burn_write_opts_set_format(struct burn_write_opts *opts, int format);
     media content and burn_disc_get_status() stay unchanged.
     Note: With stdio-drives, the target file gets eventually created, opened,
           lseeked, and closed, but not written. So there are effects on it.
-    Warning: Call burn_random_access_write() will never do simulation because
-             it does not get any burn_write_opts.
+    Note: Up to version 1.4.6 the call burn_random_access_write() after
+          burn_disc_write() did not simulate because it does not get any
+          burn_write_opts and the drive did not memorize the simulation state.
+          This has changed now. burn_random_access_write() will not write after
+          a simulated burn run.
+          Use burn_drive_reset_simulate(drive, 0) if you really want to end
+          simulation before you call burn_disc_write() with new write options.
     @param opts The write opts to change
     @param sim  Non-zero enables simulation, 0 enables real writing
     @return Returns 1 on success and 0 on failure.
@@ -3944,6 +3967,11 @@ int burn_is_aborting(int flag);
     only after the write transaction has ended (successfully or not). So it is
     wise not to transfer giant amounts of data in a single call.
     Important: Data have to fit into the already formatted area of the media.
+
+    If the burn_drive object is in simulation mode, then no actual write
+    operation or synchronization of the drive buffer will happen.
+    See burn_drive_reset_simulate().
+
     @param d            The drive to which to write 
     @param byte_address The start address of the write in byte
                         (1 LBA unit = 2048 bytes) (do respect media alignment)
