@@ -6989,6 +6989,7 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
  int ret, max_chunksize= 64*1024, source_fd= -1, is_from_stdin, eof_sensed= 0;
  int self_opened= 0;
  char *buf= NULL, *source_path, amount_text[81];
+ char *dummy_text= "";
  struct burn_multi_caps *caps= NULL;
 
  ret= Cdrskin_grab_drive(skin,0);
@@ -7042,8 +7043,11 @@ int Cdrskin_direct_write(struct CdrskiN *skin, int flag)
    sprintf(amount_text,"%.fk",(double) (data_count/1024));
  else
    strcpy(amount_text,"0=open_ended");
- fprintf(stderr,"Beginning direct write (start=%.fk,amount=%s) ...\n",
-         (double) (byte_address/1024),amount_text);
+ burn_drive_reset_simulate(skin->grabbed_drive, !!skin->dummy_mode);
+ if(skin->dummy_mode)
+   dummy_text= " simulation of";
+ fprintf(stderr,"Beginning%s direct write (start=%.fk,amount=%s) ...\n",
+         dummy_text, (double) (byte_address / 1024), amount_text);
  for(i= 0; i<data_count || data_count==0; i+= chunksize) {
    if(data_count==0)
      chunksize= (alignment > 0 ? alignment : 2048);
