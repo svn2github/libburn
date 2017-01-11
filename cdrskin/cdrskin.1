@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CDRSKIN 1 "Version 1.4.7, Sep 16, 2016"
+.TH CDRSKIN 1 "Version 1.4.7, Dec 17, 2016"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -532,6 +532,7 @@ to mark the end of the range of an eventual option -audio or -xa1.
 .br
 Options -mode2, -xa, and -xa2 get mapped to -data, not using the desired CD
 sector formats and thus not taking advantage of eventual higher payload.
+.TP
 .BI \-xa1
 Subsequent tracks are data tracks with input suitable for CD-ROM XA mode 2
 form 1. This differs from -data input by 8 additional header bytes per block.
@@ -810,7 +811,7 @@ means -nocopy surely without -scms.
 .TP
 .BI speed= number
 Set speed of drive. With data CD, 1x speed corresponds to a throughput of
-150,000 bytes/second. With DVD, 1x = 1,385,000 bytes/second.
+153,600 bytes/second. With DVD, 1x = 1,385,000 bytes/second.
 With BD 1x = 4,495,625 bytes/second.
 It is not an error to set a speed higher than is suitable for drive
 and media. One should stay within a realistic speed range, though.
