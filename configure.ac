@@ -298,6 +298,10 @@ else
     fi
 fi
 
+dnl ts B70127
+# There are Linuxes with no public generic SCSI interface
+LIBBURNIA_CHECK_LINUX_SCSI
+
 dnl ts B00704
 # Library versioning normally serves a complex purpose.
 # Since libburn obeys strict ABI backward compatibility, it needs only the

@@ -149,3 +149,24 @@ AC_DEFUN([LIBBURNIA_CHECK_ARCH_LIBS],
     fi
 ])
 
+
+dnl LIBBURNIA_CHECK_LINUX_SCSI is by Thomas Schmitt, libburnia project
+dnl
+AC_DEFUN([LIBBURNIA_CHECK_LINUX_SCSI],
+[
+  dnl Check whether it is a Linux without scsi/scsi.h
+  AH_TEMPLATE([Libburn_use_sg_dummY],
+              [Define to compile without OS specific SCSI features])
+  AC_MSG_CHECKING([for missing scsi/scsi.h on Linux])
+  AC_TRY_COMPILE([
+#ifdef __linux
+#include <scsi/scsi.h>
+#endif
+     ],
+     [return;],
+     [AC_MSG_RESULT([no])],
+     [AC_DEFINE([Libburn_use_sg_dummY], [yes])
+      AC_MSG_RESULT([yes])]
+  )
+])
+
