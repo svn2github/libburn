@@ -163,7 +163,7 @@ AC_DEFUN([LIBBURNIA_CHECK_LINUX_SCSI],
 #include <scsi/scsi.h>
 #endif
      ],
-     [return;],
+     [;],
      [AC_MSG_RESULT([no])],
      [AC_DEFINE([Libburn_use_sg_dummY], [yes])
       AC_MSG_RESULT([yes])]
