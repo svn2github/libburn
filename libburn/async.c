@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -123,6 +123,42 @@ struct w_list
 static struct w_list *workers = NULL;
 
 
+int burn_async_manage_lock(int mode)
+{
+	int ret;
+
+	static pthread_mutex_t access_lock;
+	static int mutex_initialized = 0;
+	static int mutex_locked = 0;
+
+	if (mode == BURN_ASYNC_LOCK_INIT) {
+		if (mutex_initialized)
+			return 2;
+		ret = pthread_mutex_init(&access_lock, NULL);
+		if (ret != 0)
+			return 0;
+		mutex_initialized = 1;
+		return 1;
+	}
+	if (!mutex_initialized)
+		return 0;
+	if (mode == BURN_ASYNC_LOCK_OBTAIN) {
+		ret = pthread_mutex_lock(&access_lock);
+		if (ret != 0)
+			return 0;
+		mutex_locked = 1;
+	} else if (mode == BURN_ASYNC_LOCK_RELEASE) {
+		if (!mutex_locked)
+			return 2;
+		ret = pthread_mutex_unlock(&access_lock);
+		if (ret != 0)
+			return 0;
+		mutex_locked = 0;
+	}
+	return 1;
+}
+
+
 static struct w_list *find_worker(struct burn_drive *d)
 {
 	struct w_list *a;
@@ -149,9 +185,8 @@ static void add_worker(int w_type, struct burn_drive *d,
 	a->drive = d;
 
 	a->u = *data;
-/*
-	memcpy(&(a->u), data, sizeof(union w_list_data));
-*/
+
+	burn_async_manage_lock(BURN_ASYNC_LOCK_INIT);
 
 	/* insert at front of the list */
 	a->next = workers;
@@ -162,6 +197,7 @@ static void add_worker(int w_type, struct burn_drive *d,
 		d->busy = BURN_DRIVE_SPAWNING;
 
 #ifdef Libburn_create_detached_threadS
+
 	/* ts A71019 :
 	   Trying to start the threads detached to get rid of the zombies
 	   which do neither react on pthread_join() nor on pthread_detach().
@@ -169,12 +205,12 @@ static void add_worker(int w_type, struct burn_drive *d,
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	attr_pt= &attr;
-/*
-	libdax_msgs_submit(libdax_messenger, -1, 0x00020158,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_LOW,
-			"add_worker(): Creating detached thread.", 0, 0);
-*/
-#endif
+
+#endif /* Libburn_create_detached_threadS */
+
+	/* Worker specific locks are to be released early by the worker */
+	if (f == (WorkerFunc) burn_fifo_source_shoveller)
+		burn_async_manage_lock(BURN_ASYNC_LOCK_OBTAIN);
 
 	if (pthread_create(&a->thread, attr_pt, f, a)) {
 		free(a);
@@ -704,7 +740,6 @@ ex:;
 
 static void *fifo_worker_func(struct w_list *w)
 {
-	int old;
 
 #define Libburn_protect_fifo_threaD 1
 
@@ -717,10 +752,6 @@ static void *fifo_worker_func(struct w_list *w)
 	sigdelset(&sigset, SIGILL);
 	pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
 #endif /* Libburn_protect_fifo_threaD */
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &old);
-		/* Note: Only burn_fifo_abort() shall cancel the fifo thread */
 
 	burn_fifo_source_shoveller(w->u.fifo.source, w->u.fifo.flag);
 	remove_worker(pthread_self());
@@ -764,18 +795,19 @@ int burn_fifo_abort(struct burn_source_fifo *fs, int flag)
 	int ret;
 	pthread_t pt;
 
-	if (fs->thread_is_valid <= 0 || fs->thread_handle == NULL)
-		return(2);
+	burn_async_manage_lock(BURN_ASYNC_LOCK_OBTAIN);
 
-#ifdef NIX
-	libdax_msgs_submit(libdax_messenger, -1, 0x00000002,
-			LIBDAX_MSGS_SEV_DEBUG, LIBDAX_MSGS_PRIO_HIGH,
-			"Aborting running burn_source_fifo thread", 0, 0);
-#endif /* NIX */
+	if (fs->thread_is_valid <= 0 || fs->thread_handle == NULL) {
+		burn_async_manage_lock(BURN_ASYNC_LOCK_RELEASE);
+		return 2;
+	}
+	pt = *((pthread_t *) fs->thread_handle);
 
-	pt= *((pthread_t *) fs->thread_handle);
-	remove_worker(pt);
-	ret = pthread_cancel(pt);
+	burn_async_manage_lock(BURN_ASYNC_LOCK_RELEASE);
+
+	fs->do_abort = 1;
+	ret = pthread_join(pt, NULL);
+
 	return (ret == 0);
 }
 

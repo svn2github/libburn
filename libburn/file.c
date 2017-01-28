@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2014 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -356,13 +356,20 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 	fs->thread_pid = getpid();
 	fs->thread_is_valid = 1;
 
+	/* Lock was obtained by async.c:add_worker() */
+	burn_async_manage_lock(BURN_ASYNC_LOCK_RELEASE);
+
 	bufsize = fs->chunksize * fs->chunks;
 	while (!fs->end_of_consumption) {
+		if (fs->do_abort)
+			goto emergency_exit;
 
 		/* wait for enough buffer space available */
 		wpos = fs->buf_writepos;
 		counted = 0;
 		while (1) {
+			if (fs->do_abort)
+				goto emergency_exit;
 			rpos = fs->buf_readpos;
 			diff = rpos - wpos;
 			trans_end = 0;
@@ -405,6 +412,8 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		}
 
 		/* Obtain next chunk */
+		if (fs->do_abort)
+			goto emergency_exit;
 		if (fs->inp->read != NULL)
 			ret = fs->inp->read(fs->inp,
 				 (unsigned char *) bufpt, fs->inp_read_size);
@@ -430,6 +439,8 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		fs->put_counter++;
 
 		/* activate read chunk */
+		if (fs->do_abort)
+			goto emergency_exit;
 		if (ret > fs->inp_read_size)
 					/* beware of ill custom burn_source */
 			ret = fs->inp_read_size;
@@ -463,8 +474,11 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 		fs->end_of_input = 1;
 
 	/* wait for end of reading by consumer */;
-	while (fs->buf_readpos != fs->buf_writepos && !fs->end_of_consumption)
-			fifo_sleep(0);
+	while (fs->buf_readpos != fs->buf_writepos && !fs->end_of_consumption) {
+		if (fs->do_abort)
+			goto emergency_exit;
+		fifo_sleep(0);
+	}
 
 	/* destroy ring buffer */;
 	if (!fs->end_of_consumption)
@@ -481,8 +495,11 @@ int burn_fifo_source_shoveller(struct burn_source *source, int flag)
 			((size_t) fs->chunksize) * (size_t) fs->chunks, 0);
 	fs->buf = NULL;
 
+emergency_exit:;
+	burn_async_manage_lock(BURN_ASYNC_LOCK_OBTAIN);
 	fs->thread_handle= NULL;
 	fs->thread_is_valid = 0;
+	burn_async_manage_lock(BURN_ASYNC_LOCK_RELEASE);
 	return (fs->input_error == 0);
 }
 
@@ -524,6 +541,7 @@ struct burn_source *burn_fifo_source_new(struct burn_source *inp,
 	fs->thread_handle = NULL;
 	fs->thread_pid = 0;
 	fs->thread_is_valid = 0;
+	fs->do_abort = 0;
 	fs->inp = NULL; /* set later */
 	if (flag & 1)
 		fs->inp_read_size = 32 * 1024;

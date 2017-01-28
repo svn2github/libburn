@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2010 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -27,8 +27,8 @@ struct burn_source_fifo {
 	/* The fifo stays inactive and unequipped with eventual resources
 	   until its read() method is called for the first time.
 	   Only then burn_fifo_start() gets called, allocates the complete
-           resources, starts a thread with burn_fifo_source_shuffler()
-	   which shuffles data and finally destroys the resources.
+	   resources, starts a thread with burn_fifo_source_shoveller()
+	   which shovels data and finally destroys the resources.
 	   This late start is to stay modest in case of multiple tracks
 	   in one disc.
 	*/
@@ -37,6 +37,9 @@ struct burn_source_fifo {
 	void *thread_handle; /* actually a pointer to a thread_t */
 	int thread_pid;
 	int thread_is_valid;
+
+	/* The shoveller aborts if this is 1. Resource leaks are possible. */
+	volatile int do_abort;
 
 	/* the burn_source for which this fifo is acting as proxy */
 	struct burn_source *inp;
