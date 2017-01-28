@@ -2855,7 +2855,7 @@ set_dev:;
      printf(" --drive_not_exclusive  combined not_o_excl and not_f_setlk.\n");
      printf(" --drive_not_f_setlk  do not obtain exclusive lock via fcntl.\n");
      printf(" --drive_not_o_excl   do not ask kernel to prevent opening\n");
-     printf("                    busy drives. Effect is kernel dependend.\n");
+     printf("                    busy drives. Effect is kernel dependent.\n");
      printf(
          " drive_scsi_dev_family=<sr|scd|sg|default> select Linux device\n");
      printf("                    file family to be used for (pseudo-)SCSI.\n");
