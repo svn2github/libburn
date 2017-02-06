@@ -1317,6 +1317,7 @@ int burn_disc_read_atip(struct burn_drive *drive);
 /** Tells whether a BD-R medium with Pseudo Overwrite (POW) formatting is in
     the drive. Such a formatting may have been applied by dvd+rw-tools. It
     prevents sequential multi-session.
+    libburn will refuse to write to such a medium.
     @param drive The drive to query.
     @return 1 if BD-R Pseudo Overwrite , 0 if not BD-R or not POW
     @since 1.4.8

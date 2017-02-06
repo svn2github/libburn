@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -1419,7 +1419,7 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 	enum burn_write_types wt;
 	struct burn_drive *d = o->drive;
 	char *msg = NULL, *reason_pt;
-	int no_media = 0, ret, has_cdtext;
+	int no_media = 0, ret, has_cdtext, is_bd_pow = 0;
 
 	reason_pt= reasons;
 	reasons[0] = 0;
@@ -1497,6 +1497,20 @@ int burn_precheck_write(struct burn_write_opts *o, struct burn_disc *disc,
 		   sequential stdio "drive" */
 		if (o->start_byte >= 0)
 			strcat(reasons, "write start address not supported, ");
+
+		is_bd_pow = burn_drive_get_bd_r_pow(d);
+		if (is_bd_pow && !silent) 
+			libdax_msgs_submit(libdax_messenger, d->global_index,
+				0x0002011e,
+				LIBDAX_MSGS_SEV_SORRY, LIBDAX_MSGS_PRIO_HIGH,
+			   "Unsuitable media detected: BD-R formatted to POW.",
+				0, 0);
+		if (is_bd_pow) {
+			strcat(reasons,
+				"unsuitable media formatting POW detected, ");
+			return 0;
+		}
+
 	} else {
 unsuitable_profile:;
 		msg = calloc(1, 160);

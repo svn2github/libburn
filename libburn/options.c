@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2012 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -323,6 +323,11 @@ enum burn_write_types burn_write_opts_auto_write_type(
 
 	reasons[0] = 0;
 
+	if (burn_drive_get_bd_r_pow(d)) {
+		strcat(reasons,
+		       "MEDIA: unsuitable BD-R Pseudo Overwrite formatting, ");
+		return BURN_WRITE_NONE;
+	}
 	if (d->status != BURN_DISC_BLANK &&
 	    d->status != BURN_DISC_APPENDABLE){
 		if (d->status == BURN_DISC_FULL)
