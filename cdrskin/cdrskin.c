@@ -1,6 +1,6 @@
 
 /*
- cdrskin.c , Copyright 2006-2016 Thomas Schmitt <scdbackup@gmx.net>
+ cdrskin.c , Copyright 2006-2017 Thomas Schmitt <scdbackup@gmx.net>
 Provided under GPL version 2 or later.
 
 A cdrecord compatible command line interface for libburn.
@@ -5134,7 +5134,7 @@ int Cdrskin_toc(struct CdrskiN *skin, int flag)
  struct burn_toc_entry toc_entry;
  enum burn_disc_status s;
  char profile_name[80];
- int profile_number;
+ int profile_number, is_bdr_pow= 0;
 
  drive= skin->drives[skin->driveno].drive;
 
@@ -5255,8 +5255,10 @@ summary:
 
  if(open_sessions > 0 && !have_real_open_session)
    open_sessions--;
+ is_bdr_pow= burn_drive_get_bd_r_pow(drive);
  printf("Media summary: %d sessions, %d tracks, %s %s\n",
         num_sessions + open_sessions, track_count, 
+        is_bdr_pow ? "unusable (POW)" :
         s==BURN_DISC_BLANK ? "blank" :
         s==BURN_DISC_APPENDABLE ? "appendable" :
         s==BURN_DISC_FULL ? "closed" :
@@ -5294,7 +5296,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  struct burn_toc_entry toc_entry;
  enum burn_disc_status s, show_status;
  char profile_name[80];
- int pno;
+ int pno, is_bdr_pow= 0;
  char media_class[80];
  int nominal_sessions= 1, ftils= 1, ltils= 1, first_track= 1, read_capacity= 0;
  int app_code, cd_info_valid, lra, alloc_blocks, free_blocks;
@@ -5323,10 +5325,12 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
    strcpy(media_class, "BD");
  else
    sprintf(media_class, "Unknown class (profile 0x%4.4X)", pno);
+ is_bdr_pow= burn_drive_get_bd_r_pow(drive);
 
  printf("\n");
  printf("Mounted media class:      %s\n", media_class);
- printf("Mounted media type:       %s\n", profile_name);
+ printf("Mounted media type:       %s%s\n", profile_name,
+        is_bdr_pow ? ", Pseudo Overwrite formatted" : "");
  ret= burn_disc_erasable(drive);
  printf("Disk Is %serasable\n",
         (ret || skin->media_is_overwriteable) ? "" : "not ");
@@ -5339,6 +5343,7 @@ int Cdrskin_minfo(struct CdrskiN *skin, int flag)
  if(ovwrt_full)
    show_status= BURN_DISC_FULL;
  printf("disk status:              %s\n",
+        is_bdr_pow ?                          "unusable (POW)" :
         show_status == BURN_DISC_BLANK ?      "empty" :
         show_status == BURN_DISC_APPENDABLE ? "incomplete/appendable" :
         show_status == BURN_DISC_FULL ?       "complete" :
@@ -5576,7 +5581,7 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
  char profile_name[80], *manuf= NULL, *media_code1= NULL, *media_code2= NULL;
  char *book_type= NULL, *product_id= NULL;
  char *sno= NULL;
- int sno_len = 0, i;
+ int sno_len = 0, i, is_bdr_pow= 0;
 
  ClN(printf("cdrskin: pseudo-atip on drive %d\n",skin->driveno));
  ret= Cdrskin_grab_drive(skin,0);
@@ -5651,7 +5656,9 @@ int Cdrskin_atip(struct CdrskiN *skin, int flag)
    if(profile_number==0x13) /* DVD-RW */
      printf("cdrskin: message for sdvdbackup: \"(growisofs mode Restricted Overwrite)\"\n");
  } else if(strstr(profile_name,"BD")==profile_name) {
-   printf("Mounted Media: %2.2Xh, %s\n", profile_number, profile_name);
+   is_bdr_pow= burn_drive_get_bd_r_pow(drive);
+   printf("Mounted Media: %2.2Xh, %s%s\n", profile_number, profile_name,
+          is_bdr_pow ? ", Pseudo Overwrite formatted" : "");
  } else {
    printf("ATIP info from disk:\n");
    if(burn_disc_erasable(drive)) {
@@ -5766,6 +5773,7 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
 {
  struct burn_drive *drive;
  int ret, i, status, num_formats, profile_no, type, alloc_blocks, free_blocks;
+ int is_bdr_pow= 0;
  off_t size;
  unsigned dummy;
  char status_text[80], profile_name[90];
@@ -5782,10 +5790,12 @@ int Cdrskin_list_formats(struct CdrskiN *skin, int flag)
    ret= 0; goto ex;
  }
  ret= burn_disc_get_profile(drive, &profile_no, profile_name);
+ is_bdr_pow= burn_drive_get_bd_r_pow(drive);
  printf("Media current: ");
  if(profile_no > 0 && ret > 0) {
    if(profile_name[0])
-     printf("%s\n", profile_name);
+     printf("%s%s\n", profile_name,
+                      is_bdr_pow ? ", Pseudo Overwrite formatted" : "");
    else
      printf("%4.4Xh\n", profile_no);
  } else
@@ -5835,7 +5845,7 @@ ex:;
 int Cdrskin_list_speeds(struct CdrskiN *skin, int flag)
 {
  struct burn_drive *drive;
- int ret, i, profile_no, high= -1, low= 0x7fffffff, is_cd= 0;
+ int ret, i, profile_no, high= -1, low= 0x7fffffff, is_cd= 0, is_bdr_pow= 0;
  char profile_name[90], *speed_unit= "D";
  double speed_factor= 1385000.0, cd_factor= 75.0 * 2352;
  struct burn_speed_descriptor *speed_list= NULL, *item, *other;
@@ -5850,10 +5860,12 @@ int Cdrskin_list_speeds(struct CdrskiN *skin, int flag)
    ret= 0; goto ex;
  }
  ret= burn_disc_get_profile(drive, &profile_no, profile_name);
+ is_bdr_pow= burn_drive_get_bd_r_pow(drive);
  printf("Media current: ");
  if(profile_no > 0 && ret > 0) {
    if(profile_name[0])
-     printf("%s\n", profile_name);
+     printf("%s%s\n", profile_name,
+                    is_bdr_pow ? ", Pseudo Overwrite formatted" : "");
    else
      printf("%4.4Xh\n", profile_no);
  } else
@@ -7941,7 +7953,7 @@ int Cdrskin_qcheck(struct CdrskiN *skin, int flag)
 int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
 {
  int num_sessions, session_no, ret, num_tracks, open_sessions= 0;
- int nwa= -123456789, lba= -123456789, aux_lba;
+ int nwa= -123456789, lba= -123456789, aux_lba, is_bdr_pow= 0;
  char msg[80];
  enum burn_disc_status s;
  struct burn_drive *drive;
@@ -7968,6 +7980,12 @@ int Cdrskin_msinfo(struct CdrskiN *skin, int flag)
    fprintf(stderr,"cdrskin: FATAL : -msinfo can only operate on appendable (i.e. -multi) discs\n");
    if(skin->grow_overwriteable_iso>0)
      fprintf(stderr,"cdrskin:         or on overwriteables with existing ISO-9660 file system.\n");
+   {ret= 0; goto ex;}
+ }
+ is_bdr_pow= burn_drive_get_bd_r_pow(drive);
+ if(is_bdr_pow) {
+   fprintf(stderr,
+      "cdrskin: FATAL : -msinfo cannot operate on POW formatted BD-R discs\n");
    {ret= 0; goto ex;}
  }
  disc= burn_drive_get_disc(drive);
