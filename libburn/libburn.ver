@@ -50,6 +50,7 @@ burn_drive_extract_audio_track;
 burn_drive_free_speedlist;
 burn_drive_get_adr;
 burn_drive_get_all_profiles;
+burn_drive_get_bd_r_pow;
 burn_drive_get_best_speed;
 burn_drive_get_disc;
 burn_drive_get_drive_role;

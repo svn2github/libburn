@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 
    This is the official API definition of libburn.
@@ -1311,6 +1311,17 @@ int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len);
     @since 0.2.6
 */
 int burn_disc_read_atip(struct burn_drive *drive);
+
+
+/* ts B70206 */
+/** Tells whether a BD-R medium with Pseudo Overwrite (POW) formatting is in
+    the drive. Such a formatting may have been applied by dvd+rw-tools. It
+    prevents sequential multi-session.
+    @param drive The drive to query.
+    @return 1 if BD-R Pseudo Overwrite , 0 if not BD-R or not POW
+    @since 1.4.8
+*/
+int burn_drive_get_bd_r_pow(struct burn_drive *drive);
 
 
 /* ts A61020 */

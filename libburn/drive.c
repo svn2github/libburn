@@ -1,7 +1,7 @@
 /* -*- indent-tabs-mode: t; tab-width: 8; c-basic-offset: 8; -*- */
 
 /* Copyright (c) 2004 - 2006 Derek Foreman, Ben Jansens
-   Copyright (c) 2006 - 2016 Thomas Schmitt <scdbackup@gmx.net>
+   Copyright (c) 2006 - 2017 Thomas Schmitt <scdbackup@gmx.net>
    Provided under GPL version 2 or later.
 */
 
@@ -3611,6 +3611,18 @@ int burn_drive_get_media_sno(struct burn_drive *d, char **sno, int *sno_len)
 	ret = 1;
 ex:
 	return ret;
+}
+
+
+int burn_drive_get_bd_r_pow(struct burn_drive *d)
+{
+	struct burn_feature_descr *feature;
+
+	if (d->current_profile == 0x41)
+		if (burn_drive_has_feature(d, 0x38, &feature, 0) == 1)
+			if (feature->flags & 1)
+				return 1;
+	return 0;
 }
 
 
